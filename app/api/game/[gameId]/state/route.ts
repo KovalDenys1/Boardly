@@ -210,7 +210,13 @@ export async function POST(
             // Notify all clients via Socket.IO about the bot's move
             console.log('🤖 [BOT-EXECUTOR] Sending Socket.IO notification to clients...')
             const finalState = botGameEngine.getState()
-            const socketUrl = process.env.SOCKET_URL || 'http://localhost:3001'
+            
+            // Use NEXT_PUBLIC_SOCKET_URL or fallback to localhost
+            const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 
+                             process.env.SOCKET_URL || 
+                             'http://localhost:3001'
+            
+            console.log('🤖 [BOT-EXECUTOR] Socket URL:', socketUrl)
             
             try {
               // Send notification to Socket.IO server to broadcast to all clients
@@ -225,10 +231,8 @@ export async function POST(
                     payload: finalState,
                   },
                 }),
-              }).catch(() => {
-                // If dedicated endpoint doesn't exist, use alternative method
-                // This is a fallback - ideally Socket.IO server should have /api/notify endpoint
-                console.log('🤖 [BOT-EXECUTOR] Socket.IO notification endpoint not available, using alternative')
+              }).catch((fetchError) => {
+                console.error('🤖 [BOT-EXECUTOR] Fetch error:', fetchError)
                 return null
               })
               
