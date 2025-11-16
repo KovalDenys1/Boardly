@@ -263,15 +263,17 @@ export class YahtzeeBot {
     }
 
     // Task 2.2: Improved upper section strategy with bonus consideration
-    const upperCategories: YahtzeeCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
-    if (upperCategories.includes(category)) {
+    const upperValueMap = { ones: 1, twos: 2, threes: 3, fours: 4, fives: 5, sixes: 6 } as const
+    type UpperCategory = keyof typeof upperValueMap
+    const upperCategories: UpperCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
+    if (upperCategories.includes(category as UpperCategory)) {
       const upperSum = this.getUpperSectionSum(scorecard)
       const remaining = 63 - upperSum
       const availableUpper = upperCategories.filter(cat => scorecard[cat] === undefined)
       
       // Calculate if bonus is still achievable (max points per category: ones=5, twos=10, threes=15, etc.)
       const maxPossibleFromAvailable = availableUpper.reduce((sum, cat) => {
-        const value = { ones: 1, twos: 2, threes: 3, fours: 4, fives: 5, sixes: 6 }[cat] || 0
+        const value = upperValueMap[cat]
         return sum + (value * 5) // Max 5 dice of that value
       }, 0)
       const maxPossibleUpper = upperSum + maxPossibleFromAvailable
@@ -351,7 +353,7 @@ export class YahtzeeBot {
       }
       
       // Prefer completing upper section if bonus is still achievable
-      if (upperCategories.includes(category)) {
+      if (upperCategories.includes(category as UpperCategory)) {
         const upperSum = this.getUpperSectionSum(scorecard)
         const remaining = 63 - upperSum
         if (remaining > 0 && remaining <= 15) {
