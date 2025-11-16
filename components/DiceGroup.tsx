@@ -18,7 +18,7 @@ export default function DiceGroup({ dice, held, onToggleHold, disabled = false, 
       <div className="flex flex-wrap gap-3 justify-center mb-4">
         {dice.map((value, index) => (
           <Dice
-            key={index}
+            key={`die-${index}`}
             value={value}
             held={held[index]}
             onToggleHold={() => onToggleHold(index)}

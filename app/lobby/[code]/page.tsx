@@ -357,13 +357,13 @@ function LobbyPageContent() {
             setPreviousGameState(updatedState)
             
             setGameEngine(newEngine)
-          }
-          
-          // Debounce lobby reload to avoid excessive API calls
-          const timeout = setTimeout(() => {
+            
+            // Note: We don't need to reload lobby here as we already have the updated state
+            // The socket update provides real-time state, loadLobby() would just cause extra API calls
+          } else {
+            // If gameEngine is not initialized, reload lobby to get initial state
             loadLobby()
-          }, 500)
-          setUpdateTimeout(timeout)
+          }
           
         } else if (data.action === 'player-left') {
           // Don't show toast if it's the current user leaving (they get their own success message)

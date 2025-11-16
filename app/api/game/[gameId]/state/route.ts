@@ -162,14 +162,19 @@ export async function POST(
             botGameEngine.restoreState(botGameState)
 
             // Execute bot's turn
+            console.log('🤖 [BOT-EXECUTOR] Starting bot turn execution...')
             await BotMoveExecutor.executeBotTurn(
               botGameEngine,
               currentPlayer.userId,
               async (botMove: Move) => {
+                console.log(`🤖 [BOT-EXECUTOR] Bot making move: ${botMove.type}`, botMove.data)
+                
                 // Make the bot's move
-                botGameEngine.makeMove(botMove)
+                const moveSuccess = botGameEngine.makeMove(botMove)
+                console.log(`🤖 [BOT-EXECUTOR] Move result: ${moveSuccess}`)
                 
                 // Save to database
+                console.log('🤖 [BOT-EXECUTOR] Saving bot move to database...')
                 await prisma.game.update({
                   where: { id: params.gameId },
                   data: {
@@ -179,6 +184,7 @@ export async function POST(
                     updatedAt: new Date(),
                   },
                 })
+                console.log('🤖 [BOT-EXECUTOR] Database updated successfully')
 
                 // Update player scores
                 await Promise.all(
@@ -195,10 +201,45 @@ export async function POST(
                     }
                   })
                 )
+                console.log('🤖 [BOT-EXECUTOR] Player scores updated')
               }
             )
 
-            console.log('🤖 Bot turn completed successfully')
+            console.log('🤖 [BOT-EXECUTOR] Bot turn completed successfully')
+            
+            // Notify all clients via Socket.IO about the bot's move
+            console.log('🤖 [BOT-EXECUTOR] Sending Socket.IO notification to clients...')
+            const finalState = botGameEngine.getState()
+            const socketUrl = process.env.SOCKET_URL || 'http://localhost:3001'
+            
+            try {
+              // Send notification to Socket.IO server to broadcast to all clients
+              const socketResponse = await fetch(`${socketUrl}/api/notify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  room: `lobby:${latestGame.lobby.code}`,
+                  event: 'game-update',
+                  data: {
+                    action: 'state-change',
+                    payload: finalState,
+                  },
+                }),
+              }).catch(() => {
+                // If dedicated endpoint doesn't exist, use alternative method
+                // This is a fallback - ideally Socket.IO server should have /api/notify endpoint
+                console.log('🤖 [BOT-EXECUTOR] Socket.IO notification endpoint not available, using alternative')
+                return null
+              })
+              
+              if (socketResponse?.ok) {
+                console.log('🤖 [BOT-EXECUTOR] Socket.IO notification sent successfully')
+              } else {
+                console.warn('🤖 [BOT-EXECUTOR] Failed to send Socket.IO notification, clients may need to poll for updates')
+              }
+            } catch (error) {
+              console.error('🤖 [BOT-EXECUTOR] Error sending Socket.IO notification:', error)
+            }
           } catch (error) {
             console.error('Error executing bot turn:', error)
           }

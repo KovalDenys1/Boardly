@@ -67,7 +67,7 @@ export class YahtzeeGame extends GameEngine {
 
     switch (move.type) {
       case 'roll':
-        // Roll unheld dice
+        // Roll unheld dice - create new array to ensure React detects change
         gameData.dice = gameData.dice.map((die, index) =>
           gameData.held[index] ? die : Math.floor(Math.random() * 6) + 1
         )
@@ -76,7 +76,10 @@ export class YahtzeeGame extends GameEngine {
 
       case 'hold':
         const { diceIndex } = move.data
-        gameData.held[diceIndex] = !gameData.held[diceIndex]
+        // Immutable update to ensure React detects the change
+        gameData.held = gameData.held.map((isHeld, idx) => 
+          idx === diceIndex ? !isHeld : isHeld
+        )
         break
 
       case 'score':
@@ -89,9 +92,12 @@ export class YahtzeeGame extends GameEngine {
           gameData.scores[playerIndex] = {}
         }
 
-        // Calculate and set score
+        // Calculate and set score - immutable update
         const score = calculateScore(gameData.dice, category)
-        gameData.scores[playerIndex][category] = score
+        gameData.scores[playerIndex] = {
+          ...gameData.scores[playerIndex],
+          [category]: score
+        }
 
         // Update player score
         this.state.players[playerIndex].score = calculateTotalScore(gameData.scores[playerIndex])

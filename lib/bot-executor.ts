@@ -31,15 +31,21 @@ export class BotMoveExecutor {
     onMove: (move: Move) => Promise<void>,
     onBotAction?: (event: BotActionEvent) => void
   ): Promise<void> {
-    console.log(`🤖 Bot ${botUserId} starting turn...`)
+    console.log(`🤖 [BOT-TURN] ============================================`)
+    console.log(`🤖 [BOT-TURN] Starting turn for bot: ${botUserId}`)
+    console.log(`🤖 [BOT-TURN] Current game state:`, JSON.stringify(gameEngine.getState(), null, 2))
 
     const gameState = gameEngine.getState()
     const botPlayer = gameEngine.getPlayers().find(p => p.id === botUserId)
 
     if (!botPlayer) {
-      console.error('Bot player not found in game')
+      console.error('🤖 [BOT-TURN] ERROR: Bot player not found in game!')
+      console.error('🤖 [BOT-TURN] Looking for bot ID:', botUserId)
+      console.error('🤖 [BOT-TURN] Available players:', gameEngine.getPlayers().map(p => ({ id: p.id, name: p.name })))
       return
     }
+    
+    console.log(`🤖 [BOT-TURN] Bot player found: ${botPlayer.name}`)
 
     // Get bot's scorecard
     const botScorecard = gameEngine.getScorecard(botUserId) || {}
@@ -180,12 +186,17 @@ export class BotMoveExecutor {
     })
     await this.delay(1200) // Final decision time
     
+    console.log('🤖 [BOT-TURN] Bot analyzing best category to score...')
+    console.log('🤖 [BOT-TURN] Final dice:', currentDice)
+    console.log('🤖 [BOT-TURN] Bot scorecard:', botScorecard)
+    
     const category = YahtzeeBot.selectCategory(currentDice, botScorecard)
-    console.log(`🤖 Bot selected category: ${category}`)
+    console.log(`🤖 [BOT-TURN] Bot chose category: ${category}`)
 
     // Calculate score for this category
     const { calculateScore } = require('./yahtzee')
     const score = calculateScore(currentDice, category)
+    console.log(`🤖 [BOT-TURN] Expected score: ${score}`)
 
     // Show category selection
     onBotAction?.({
@@ -204,8 +215,15 @@ export class BotMoveExecutor {
       data: { category },
       timestamp: new Date(),
     }
+    
+    console.log('🤖 [BOT-TURN] Submitting score move to game engine...')
     await onMove(scoreMove)
-    console.log('🤖 Bot completed turn')
+    console.log('🤖 [BOT-TURN] Score move submitted successfully')
+    console.log('🤖 [BOT-TURN] Bot turn completed!')
+    console.log(`🤖 [BOT-TURN] ============================================`)
+    console.log('🤖 [BOT-TURN] Score move submitted successfully')
+    console.log('🤖 [BOT-TURN] Bot turn completed!')
+    console.log(`🤖 [BOT-TURN] ============================================`)
   }
 
   /**

@@ -18,12 +18,54 @@ const hostname = process.env.HOSTNAME || '0.0.0.0'
 
 const server = createServer((req, res) => {
   const url = parse(req.url || '/')
+  
   if (url.pathname === '/health') {
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({ ok: true }))
     return
   }
+  
+  // API endpoint for server-side bot notifications
+  if (url.pathname === '/api/notify' && req.method === 'POST') {
+    let body = ''
+    req.on('data', chunk => {
+      body += chunk.toString()
+    })
+    req.on('end', () => {
+      try {
+        const { room, event, data } = JSON.parse(body)
+        
+        if (!room || !event) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Missing room or event' }))
+          return
+        }
+        
+        logger.info('Server notification received', { room, event })
+        
+        // Broadcast to all clients in the room
+        io.to(room).emit(event, data)
+        
+        // Notify lobby list if it's a state change
+        if (data?.action === 'state-change') {
+          io.to('lobby-list').emit('lobby-list-update')
+        }
+        
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true }))
+      } catch (error) {
+        logger.error('Error processing notification', error as Error)
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Internal server error' }))
+      }
+    })
+    return
+  }
+  
   // Minimal root response for sanity checks
   res.statusCode = 200
   res.setHeader('Content-Type', 'text/plain')
