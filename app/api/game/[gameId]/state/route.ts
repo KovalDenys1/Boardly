@@ -137,117 +137,26 @@ export async function POST(
       const currentPlayer = updatedGame.players[currentPlayerIndex]
       
       if (currentPlayer && BotMoveExecutor.isBot(currentPlayer)) {
-        console.log('🤖 Next player is a bot, scheduling automatic turn...')
+        console.log('🤖 Next player is a bot, triggering bot turn via separate request...')
         
-        // Execute bot turn asynchronously (don't wait for it)
-        setImmediate(async () => {
-          try {
-            // Reload game state to ensure we have the latest
-            const latestGame = await prisma.game.findUnique({
-              where: { id: params.gameId },
-              include: {
-                players: {
-                  include: {
-                    user: true,
-                  },
-                },
-                lobby: true,
-              },
-            })
-
-            if (!latestGame) return
-
-            const botGameState = JSON.parse(latestGame.state)
-            const botGameEngine = new YahtzeeGame(latestGame.id)
-            botGameEngine.restoreState(botGameState)
-
-            // Execute bot's turn
-            console.log('🤖 [BOT-EXECUTOR] Starting bot turn execution...')
-            await BotMoveExecutor.executeBotTurn(
-              botGameEngine,
-              currentPlayer.userId,
-              async (botMove: Move) => {
-                console.log(`🤖 [BOT-EXECUTOR] Bot making move: ${botMove.type}`, botMove.data)
-                
-                // Make the bot's move
-                const moveSuccess = botGameEngine.makeMove(botMove)
-                console.log(`🤖 [BOT-EXECUTOR] Move result: ${moveSuccess}`)
-                
-                // Save to database
-                console.log('🤖 [BOT-EXECUTOR] Saving bot move to database...')
-                await prisma.game.update({
-                  where: { id: params.gameId },
-                  data: {
-                    state: JSON.stringify(botGameEngine.getState()),
-                    status: botGameEngine.getState().status,
-                    currentTurn: botGameEngine.getState().currentPlayerIndex,
-                    updatedAt: new Date(),
-                  },
-                })
-                console.log('🤖 [BOT-EXECUTOR] Database updated successfully')
-
-                // Update player scores
-                await Promise.all(
-                  botGameEngine.getPlayers().map(async (player: any) => {
-                    const dbPlayer = latestGame.players.find((p: any) => p.userId === player.id)
-                    if (dbPlayer) {
-                      await prisma.player.update({
-                        where: { id: dbPlayer.id },
-                        data: {
-                          score: player.score || 0,
-                          scorecard: JSON.stringify(botGameEngine.getScorecard?.(player.id) || {}),
-                        },
-                      })
-                    }
-                  })
-                )
-                console.log('🤖 [BOT-EXECUTOR] Player scores updated')
-              }
-            )
-
-            console.log('🤖 [BOT-EXECUTOR] Bot turn completed successfully')
-            
-            // Notify all clients via Socket.IO about the bot's move
-            console.log('🤖 [BOT-EXECUTOR] Sending Socket.IO notification to clients...')
-            const finalState = botGameEngine.getState()
-            
-            // Use NEXT_PUBLIC_SOCKET_URL or fallback to localhost
-            const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 
-                             process.env.SOCKET_URL || 
-                             'http://localhost:3001'
-            
-            console.log('🤖 [BOT-EXECUTOR] Socket URL:', socketUrl)
-            
-            try {
-              // Send notification to Socket.IO server to broadcast to all clients
-              const socketResponse = await fetch(`${socketUrl}/api/notify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  room: `lobby:${latestGame.lobby.code}`,
-                  event: 'game-update',
-                  data: {
-                    action: 'state-change',
-                    payload: finalState,
-                  },
-                }),
-              }).catch((fetchError) => {
-                console.error('🤖 [BOT-EXECUTOR] Fetch error:', fetchError)
-                return null
-              })
-              
-              if (socketResponse?.ok) {
-                console.log('🤖 [BOT-EXECUTOR] Socket.IO notification sent successfully')
-              } else {
-                console.warn('🤖 [BOT-EXECUTOR] Failed to send Socket.IO notification, clients may need to poll for updates')
-              }
-            } catch (error) {
-              console.error('🤖 [BOT-EXECUTOR] Error sending Socket.IO notification:', error)
-            }
-          } catch (error) {
-            console.error('Error executing bot turn:', error)
-          }
+        // Trigger bot turn via separate HTTP request (fire and forget)
+        // This ensures the function doesn't terminate before bot completes
+        const botApiUrl = `${request.nextUrl.origin}/api/game/${params.gameId}/bot-turn`
+        
+        fetch(botApiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            botUserId: currentPlayer.userId,
+            lobbyCode: game.lobby.code,
+          }),
+        }).catch(error => {
+          console.error('🤖 Failed to trigger bot turn:', error)
         })
+        
+        console.log('🤖 Bot turn request sent to:', botApiUrl)
       }
     }
 
