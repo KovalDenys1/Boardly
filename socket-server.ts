@@ -89,6 +89,17 @@ const io = new SocketIOServer(server, {
   connectTimeout: 45000, // Connection timeout
 })
 
+// Keep-alive mechanism to prevent Render.com free tier from sleeping
+// Ping self every 10 minutes (within the 15 min sleep window)
+if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
+  const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000 // 10 minutes
+  setInterval(() => {
+    const url = `http://${hostname}:${port}/health`
+    logger.info('Keep-alive ping to prevent sleep')
+    fetch(url).catch(err => logger.error('Keep-alive ping failed', err))
+  }, KEEP_ALIVE_INTERVAL)
+}
+
 io.on('connection', (socket) => {
   logger.info('Client connected', { socketId: socket.id })
 

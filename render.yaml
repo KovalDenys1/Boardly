@@ -18,3 +18,10 @@ services:
       - key: DATABASE_URL
         sync: false
     healthCheckPath: /health
+    # Performance optimizations for free tier
+    autoDeploy: true
+    # Note: Free tier has 512MB RAM and spins down after 15 min inactivity
+    # Consider upgrading to Starter plan ($7/mo) for:
+    # - No spin down
+    # - More RAM
+    # - Better performance

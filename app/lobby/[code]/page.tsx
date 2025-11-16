@@ -28,8 +28,6 @@ import { detectCelebration, detectPatternOnRoll, CelebrationEvent } from '@/lib/
 import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
 
-let socket: Socket
-
 function LobbyPageContent() {
   const router = useRouter()
   const params = useParams()
@@ -37,6 +35,9 @@ function LobbyPageContent() {
   const { data: session, status } = useSession()
   const toast = useToast()
   const code = params.code as string
+  
+  // Move socket to component state to properly manage lifecycle
+  const [socket, setSocket] = useState<Socket | null>(null)
   
   // Guest mode support
   const isGuest = searchParams.get('guest') === 'true'
@@ -76,8 +77,8 @@ function LobbyPageContent() {
   const [possibleMoves, setPossibleMoves] = useState<Position[]>([])
   const [chessCurrentPlayer, setChessCurrentPlayer] = useState<PieceColor>('white')
 
-  // Debounce for game state updates to avoid excessive re-renders
-  const [updateTimeout, setUpdateTimeout] = useState<NodeJS.Timeout | null>(null)
+  // Remove the global updateTimeout state - not needed anymore
+  // Debounce is now handled inside the useEffect cleanup
 
   // Initialize guest user data
   useEffect(() => {
@@ -193,240 +194,220 @@ function LobbyPageContent() {
   useEffect(() => {
     if (!lobby || !code) return
 
-    if (!socket) {
-      const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
 
-      // Get authentication token (NextAuth for users, guest ID for guests)
-      const getAuthToken = () => {
-        if (isGuest) {
-          return guestId
-        }
-        
-        const cookies = document.cookie.split(';')
-        for (const cookie of cookies) {
-          const [name, value] = cookie.trim().split('=')
-          if (name === 'next-auth.session-token') {
-            return value
-          }
-        }
-        return null
+    // Get authentication token (NextAuth for users, guest ID for guests)
+    const getAuthToken = () => {
+      if (isGuest) {
+        return guestId
       }
-
-      const token = getAuthToken()
       
-      socket = io(url, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10, // More attempts
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000, // Max delay between attempts
-        timeout: 20000, // Connection timeout
-        autoConnect: true,
-        auth: {
-          token: token,
-          isGuest: isGuest,
-          guestName: isGuest ? guestName : undefined,
-        },
-        query: {
-          token: token,
-          isGuest: isGuest ? 'true' : 'false',
-          guestName: isGuest ? guestName : undefined,
-        },
-      })
+      const cookies = document.cookie.split(';')
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=')
+        if (name === 'next-auth.session-token') {
+          return value
+        }
+      }
+      return null
+    }
 
-      let isFirstConnection = true
+    const token = getAuthToken()
+    
+    const newSocket = io(url, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      autoConnect: true,
+      auth: {
+        token: token,
+        isGuest: isGuest,
+        guestName: isGuest ? guestName : undefined,
+      },
+      query: {
+        token: token,
+        isGuest: isGuest ? 'true' : 'false',
+        guestName: isGuest ? guestName : undefined,
+      },
+    })
 
-      socket.on('connect', () => {
-        socket.emit('join-lobby', code)
+    let isFirstConnection = true
+    let celebrationTimeout: NodeJS.Timeout | null = null
+
+    const handleConnect = () => {
+      newSocket.emit('join-lobby', code)
+      
+      if (isFirstConnection) {
+        isFirstConnection = false
+      }
+    }
+
+    const handleDisconnect = (reason: string) => {
+      if (reason === 'io server disconnect') {
+        newSocket.connect()
+      }
+    }
+
+    const handleConnectError = (error: Error) => {
+      console.error('Socket connection error:', error.message)
+      const retryCount = (newSocket as any).io?.engine?.transport?.attempts || 0
+      if (retryCount > 5) {
+        toast.error('Connection issues. Retrying...')
+      }
+    }
+
+    const handleGameUpdate = (data: any) => {
+      if (data.action === 'state-change') {
+        const updatedState = data.payload
         
-        // Only show toast on first connection, not on reconnects
-        if (isFirstConnection) {
-          isFirstConnection = false
-        }
-      })
-
-      socket.on('disconnect', (reason) => {
-        // Auto-reconnect is handled by Socket.IO
-        // Only manually reconnect if server initiated disconnect
-        if (reason === 'io server disconnect') {
-          socket.connect()
-        }
-      })
-
-      socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error.message)
-        // Socket.IO will auto-retry with exponential backoff
-        // Only show error after multiple failed attempts
-        const retryCount = (socket as any).io.engine?.transport?.attempts || 0
-        if (retryCount > 5) {
-          toast.error('Connection issues. Retrying...')
-        }
-      })
-
-      socket.on('game-update', (data) => {
-        
-        if (data.action === 'state-change') {
-          // Clear previous timeout to debounce rapid updates
-          if (updateTimeout) {
-            clearTimeout(updateTimeout)
-          }
+        // Detect if this was a bot move (for Yahtzee only)
+        if (gameEngine && lobby?.gameType === 'yahtzee' && previousGameState) {
+          const prevEngine = new YahtzeeGame(gameEngine.getState().id)
+          prevEngine.restoreState(previousGameState)
           
-          const updatedState = data.payload
-          
-          // Detect if this was a bot move (for Yahtzee only)
-          if (gameEngine && lobby?.gameType === 'yahtzee' && previousGameState) {
-            const prevEngine = new YahtzeeGame(gameEngine.getState().id)
-            prevEngine.restoreState(previousGameState)
+          const botInfo = detectBotMove(
+            prevEngine.getPlayers(),
+            gameEngine.getPlayers(),
+            prevEngine.getState().currentPlayerIndex,
+            updatedState.currentPlayerIndex
+          )
+
+          if (botInfo) {
+            const botUserId = botInfo.botId
+            const botName = botInfo.botName
             
-            const botInfo = detectBotMove(
-              prevEngine.getPlayers(),
-              gameEngine.getPlayers(), // Use current for comparison
-              prevEngine.getState().currentPlayerIndex,
-              updatedState.currentPlayerIndex
-            )
-
-            if (botInfo) {
-              // Found a bot move! Get details
-              const botUserId = botInfo.botId
-              const botName = botInfo.botName
-              
-              // Get the bot's scorecard changes
-              const prevScorecard = (prevEngine.getScorecard(botUserId) || {}) as Record<YahtzeeCategory, number | undefined>
-              const newEngine = new YahtzeeGame(gameEngine.getState().id)
-              newEngine.restoreState(updatedState)
-              const currScorecard = (newEngine.getScorecard(botUserId) || {}) as Record<YahtzeeCategory, number | undefined>
-              
-              const filledCategoryInfo = findFilledCategory(prevScorecard, currScorecard)
-              
-              if (filledCategoryInfo) {
-                // Create visualization steps
-                const steps = createBotMoveVisualization(
-                  botName,
-                  newEngine.getDice(), // Dice state after bot's turn
-                  filledCategoryInfo.category,
-                  filledCategoryInfo.score
-                )
-                
-                // Show bot overlay
-                setBotMoveSteps(steps)
-                setCurrentBotStepIndex(0)
-                setBotPlayerName(botName)
-                setShowingBotOverlay(true)
-                
-                // Play sound
-                soundManager.play('turnChange')
-
-                // Add bot's roll to history
-                const rollNumber = 3 - prevEngine.getRollsLeft() || 3
-                const botHistoryEntry: RollHistoryEntry = {
-                  id: `bot_${Date.now()}_${Math.random()}`,
-                  turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
-                  playerName: botName,
-                  rollNumber: rollNumber,
-                  dice: newEngine.getDice(),
-                  held: newEngine.getHeld().map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1),
-                  timestamp: Date.now(),
-                  isBot: true,
-                }
-                setRollHistory(prev => [...prev.slice(-9), botHistoryEntry]) // Keep last 10
-
-                // Detect celebration for bot's move (show after overlay completes)
-                const celebration = detectCelebration(
-                  newEngine.getDice(),
-                  filledCategoryInfo.category,
-                  filledCategoryInfo.score
-                )
-                if (celebration) {
-                  // Delay showing celebration until after bot overlay
-                  setTimeout(() => {
-                    setCelebrationEvent(celebration)
-                  }, 5000) // After bot overlay duration
-                }
-              }
-            }
-          }
-          
-          // Update game engine state
-          if (gameEngine) {
-            const newEngine = lobby?.gameType === 'chess' 
-              ? new ChessGame(gameEngine.getState().id)
-              : new YahtzeeGame(gameEngine.getState().id)
+            const prevScorecard = (prevEngine.getScorecard(botUserId) || {}) as Record<YahtzeeCategory, number | undefined>
+            const newEngine = new YahtzeeGame(gameEngine.getState().id)
             newEngine.restoreState(updatedState)
+            const currScorecard = (newEngine.getScorecard(botUserId) || {}) as Record<YahtzeeCategory, number | undefined>
             
-            // Store this state for next comparison
-            setPreviousGameState(updatedState)
+            const filledCategoryInfo = findFilledCategory(prevScorecard, currScorecard)
             
-            setGameEngine(newEngine)
-            
-            // Note: We don't need to reload lobby here as we already have the updated state
-            // The socket update provides real-time state, loadLobby() would just cause extra API calls
-          } else {
-            // If gameEngine is not initialized, reload lobby to get initial state
-            loadLobby()
-          }
-          
-        } else if (data.action === 'player-left') {
-          // Don't show toast if it's the current user leaving (they get their own success message)
-          const currentUserId = getCurrentUserId()
-          const isCurrentUser = data.payload.userId === currentUserId
-          
-          if (!isCurrentUser) {
-            toast.info(`${data.payload.username || 'A player'} left the lobby`)
-          }
-          
-          if (data.payload.gameEnded) {
-            if (!isCurrentUser) {
-              toast.warning('⚠️ Game ended! Not enough players remaining.')
-            }
-            setGameEngine(null)
-          }
-          loadLobby()
-        } else if (data.action === 'chat-message') {
-          // Add chat message to state, but avoid duplicates
-          setChatMessages(prev => {
-            const messageExists = prev.some(msg => msg.id === data.payload.id)
-            if (messageExists) return prev
-            
-            // Play sound for new messages from other users
-            const currentUserId = getCurrentUserId()
-            if (data.payload.userId !== currentUserId) {
-              soundManager.play('message')
+            if (filledCategoryInfo) {
+              const steps = createBotMoveVisualization(
+                botName,
+                newEngine.getDice(),
+                filledCategoryInfo.category,
+                filledCategoryInfo.score
+              )
               
-              // Increment unread count if chat is minimized
-              if (chatMinimized) {
-                setUnreadMessageCount(prev => prev + 1)
+              setBotMoveSteps(steps)
+              setCurrentBotStepIndex(0)
+              setBotPlayerName(botName)
+              setShowingBotOverlay(true)
+              
+              soundManager.play('turnChange')
+
+              const rollNumber = 3 - prevEngine.getRollsLeft() || 3
+              const botHistoryEntry: RollHistoryEntry = {
+                id: `bot_${Date.now()}_${Math.random()}`,
+                turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
+                playerName: botName,
+                rollNumber: rollNumber,
+                dice: newEngine.getDice(),
+                held: newEngine.getHeld().map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1),
+                timestamp: Date.now(),
+                isBot: true,
+              }
+              setRollHistory(prev => [...prev.slice(-9), botHistoryEntry])
+
+              const celebration = detectCelebration(
+                newEngine.getDice(),
+                filledCategoryInfo.category,
+                filledCategoryInfo.score
+              )
+              if (celebration) {
+                celebrationTimeout = setTimeout(() => {
+                  setCelebrationEvent(celebration)
+                }, 5000)
               }
             }
-            
-            return [...prev, data.payload]
-          })
+          }
+        }
+        
+        if (gameEngine) {
+          const newEngine = lobby?.gameType === 'chess' 
+            ? new ChessGame(gameEngine.getState().id)
+            : new YahtzeeGame(gameEngine.getState().id)
+          newEngine.restoreState(updatedState)
           
-          // Show notification for other users
+          setPreviousGameState(updatedState)
+          setGameEngine(newEngine)
+        } else {
+          loadLobby()
+        }
+        
+      } else if (data.action === 'player-left') {
+        const currentUserId = getCurrentUserId()
+        const isCurrentUser = data.payload.userId === currentUserId
+        
+        if (!isCurrentUser) {
+          toast.info(`${data.payload.username || 'A player'} left the lobby`)
+        }
+        
+        if (data.payload.gameEnded) {
+          if (!isCurrentUser) {
+            toast.warning('⚠️ Game ended! Not enough players remaining.')
+          }
+          setGameEngine(null)
+        }
+        loadLobby()
+      } else if (data.action === 'chat-message') {
+        setChatMessages(prev => {
+          const messageExists = prev.some(msg => msg.id === data.payload.id)
+          if (messageExists) return prev
+          
           const currentUserId = getCurrentUserId()
           if (data.payload.userId !== currentUserId) {
-            // Optional: show toast for new messages if chat is minimized
+            soundManager.play('message')
+            
             if (chatMinimized) {
-              toast.info(`💬 ${data.payload.username}: ${data.payload.message}`)
+              setUnreadMessageCount(prev => prev + 1)
             }
           }
+          
+          return [...prev, data.payload]
+        })
+        
+        const currentUserId = getCurrentUserId()
+        if (data.payload.userId !== currentUserId && chatMinimized) {
+          toast.info(`💬 ${data.payload.username}: ${data.payload.message}`)
         }
-      })
+      }
     }
 
+    newSocket.on('connect', handleConnect)
+    newSocket.on('disconnect', handleDisconnect)
+    newSocket.on('connect_error', handleConnectError)
+    newSocket.on('game-update', handleGameUpdate)
+
+    setSocket(newSocket)
+
     return () => {
-      if (socket && socket.connected) {
-        console.log('🔌 Disconnecting socket')
-        socket.emit('leave-lobby', code)
-        socket.disconnect()
-        socket = null as any
+      console.log('🔌 Cleaning up socket connection')
+      
+      // Remove all event listeners to prevent memory leaks
+      newSocket.off('connect', handleConnect)
+      newSocket.off('disconnect', handleDisconnect)
+      newSocket.off('connect_error', handleConnectError)
+      newSocket.off('game-update', handleGameUpdate)
+      
+      // Clear any pending timeouts
+      if (celebrationTimeout) {
+        clearTimeout(celebrationTimeout)
       }
       
-      // Clear any pending update timeouts
-      if (updateTimeout) {
-        clearTimeout(updateTimeout)
+      if (newSocket.connected) {
+        newSocket.emit('leave-lobby', code)
+        newSocket.disconnect()
       }
+      
+      setSocket(null)
     }
-  }, [lobby, code])
+  }, [lobby, code, isGuest, guestId, guestName, gameEngine, previousGameState, game?.players?.length, chatMinimized])
 
   const loadLobby = async () => {
     try {
