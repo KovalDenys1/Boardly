@@ -20,6 +20,13 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { soundManager } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
+import { createBotMoveVisualization, detectBotMove, findFilledCategory } from '@/lib/bot-visualization'
+import BotMoveOverlay from '@/components/BotMoveOverlay'
+import CelebrationBanner from '@/components/CelebrationBanner'
+import RollHistory, { RollHistoryEntry } from '@/components/RollHistory'
+import { detectCelebration, detectPatternOnRoll, CelebrationEvent } from '@/lib/celebrations'
+import YahtzeeResults from '@/components/YahtzeeResults'
+import { analyzeResults } from '@/lib/yahtzee-results'
 
 let socket: Socket
 
@@ -52,6 +59,17 @@ function LobbyPageContent() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
   const [isMoveInProgress, setIsMoveInProgress] = useState(false) // Prevent double moves
+
+  // Bot visualization state
+  const [botMoveSteps, setBotMoveSteps] = useState<any[]>([])
+  const [currentBotStepIndex, setCurrentBotStepIndex] = useState(0)
+  const [botPlayerName, setBotPlayerName] = useState('')
+  const [showingBotOverlay, setShowingBotOverlay] = useState(false)
+  const [previousGameState, setPreviousGameState] = useState<any>(null)
+
+  // Roll history and celebrations state
+  const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([])
+  const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
 
   // Chess-specific state
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null)
@@ -158,6 +176,20 @@ function LobbyPageContent() {
     }
   }, [gameEngine, game?.players?.length])
 
+  // Bot move step animation
+  useEffect(() => {
+    if (!showingBotOverlay || botMoveSteps.length === 0) return
+
+    // Auto-advance through steps
+    if (currentBotStepIndex < botMoveSteps.length - 1) {
+      const timer = setTimeout(() => {
+        setCurrentBotStepIndex(prev => prev + 1)
+      }, 1500) // 1.5 seconds per step
+
+      return () => clearTimeout(timer)
+    }
+  }, [showingBotOverlay, currentBotStepIndex, botMoveSteps.length])
+
   useEffect(() => {
     if (!lobby || !code) return
 
@@ -241,12 +273,89 @@ function LobbyPageContent() {
           
           const updatedState = data.payload
           
+          // Detect if this was a bot move (for Yahtzee only)
+          if (gameEngine && lobby?.gameType === 'yahtzee' && previousGameState) {
+            const prevEngine = new YahtzeeGame(gameEngine.getState().id)
+            prevEngine.restoreState(previousGameState)
+            
+            const botInfo = detectBotMove(
+              prevEngine.getPlayers(),
+              gameEngine.getPlayers(), // Use current for comparison
+              prevEngine.getState().currentPlayerIndex,
+              updatedState.currentPlayerIndex
+            )
+
+            if (botInfo) {
+              // Found a bot move! Get details
+              const botUserId = botInfo.botId
+              const botName = botInfo.botName
+              
+              // Get the bot's scorecard changes
+              const prevScorecard = (prevEngine.getScorecard(botUserId) || {}) as Record<YahtzeeCategory, number | undefined>
+              const newEngine = new YahtzeeGame(gameEngine.getState().id)
+              newEngine.restoreState(updatedState)
+              const currScorecard = (newEngine.getScorecard(botUserId) || {}) as Record<YahtzeeCategory, number | undefined>
+              
+              const filledCategoryInfo = findFilledCategory(prevScorecard, currScorecard)
+              
+              if (filledCategoryInfo) {
+                // Create visualization steps
+                const steps = createBotMoveVisualization(
+                  botName,
+                  newEngine.getDice(), // Dice state after bot's turn
+                  filledCategoryInfo.category,
+                  filledCategoryInfo.score
+                )
+                
+                // Show bot overlay
+                setBotMoveSteps(steps)
+                setCurrentBotStepIndex(0)
+                setBotPlayerName(botName)
+                setShowingBotOverlay(true)
+                
+                // Play sound
+                soundManager.play('turnChange')
+
+                // Add bot's roll to history
+                const rollNumber = 3 - prevEngine.getRollsLeft() || 3
+                const botHistoryEntry: RollHistoryEntry = {
+                  id: `bot_${Date.now()}_${Math.random()}`,
+                  turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
+                  playerName: botName,
+                  rollNumber: rollNumber,
+                  dice: newEngine.getDice(),
+                  held: newEngine.getHeld().map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1),
+                  timestamp: Date.now(),
+                  isBot: true,
+                }
+                setRollHistory(prev => [...prev.slice(-9), botHistoryEntry]) // Keep last 10
+
+                // Detect celebration for bot's move (show after overlay completes)
+                const celebration = detectCelebration(
+                  newEngine.getDice(),
+                  filledCategoryInfo.category,
+                  filledCategoryInfo.score
+                )
+                if (celebration) {
+                  // Delay showing celebration until after bot overlay
+                  setTimeout(() => {
+                    setCelebrationEvent(celebration)
+                  }, 5000) // After bot overlay duration
+                }
+              }
+            }
+          }
+          
           // Update game engine state
           if (gameEngine) {
             const newEngine = lobby?.gameType === 'chess' 
               ? new ChessGame(gameEngine.getState().id)
               : new YahtzeeGame(gameEngine.getState().id)
             newEngine.restoreState(updatedState)
+            
+            // Store this state for next comparison
+            setPreviousGameState(updatedState)
+            
             setGameEngine(newEngine)
           }
           
@@ -360,6 +469,9 @@ function LobbyPageContent() {
             // Restore state
             engine.restoreState(parsedState)
             setGameEngine(engine)
+            
+            // Initialize previous state for bot detection
+            setPreviousGameState(parsedState)
           } catch (parseError) {
             console.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
@@ -475,6 +587,27 @@ function LobbyPageContent() {
         newEngine = new YahtzeeGame(gameEngine.getState().id)
         newEngine.restoreState(data.game.state)
         setGameEngine(newEngine)
+
+        // Add to roll history
+        const currentPlayer = newEngine.getCurrentPlayer()
+        const rollNumber = 3 - newEngine.getRollsLeft() // Calculate which roll this was
+        const newEntry: RollHistoryEntry = {
+          id: `${Date.now()}_${Math.random()}`,
+          turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
+          playerName: currentPlayer?.name || session?.user?.name || 'You',
+          rollNumber: rollNumber,
+          dice: newEngine.getDice(),
+          held: newEngine.getHeld().map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1),
+          timestamp: Date.now(),
+          isBot: false,
+        }
+        setRollHistory(prev => [...prev.slice(-9), newEntry]) // Keep last 10
+
+        // Detect celebration-worthy patterns in the roll
+        const celebration = detectPatternOnRoll(newEngine.getDice())
+        if (celebration) {
+          setCelebrationEvent(celebration)
+        }
       }
       
       soundManager.play('diceRoll')
@@ -617,6 +750,13 @@ function LobbyPageContent() {
         toast.success(`Scored in ${categoryName}!`)
         
         soundManager.play('score')
+
+        // Detect celebration for this scoring move
+        const score = newEngine.getScorecard(getCurrentUserId() || '')![category] || 0
+        const celebration = detectCelebration(gameEngine.getDice(), category, score)
+        if (celebration) {
+          setCelebrationEvent(celebration)
+        }
         
         // Emit to other players
         socket?.emit('game-action', {
@@ -687,6 +827,10 @@ function LobbyPageContent() {
       
       setTimerActive(true)
       setTimeLeft(60)
+      
+      // Clear roll history and celebrations for new game
+      setRollHistory([])
+      setCelebrationEvent(null)
       
       socket?.emit('game-action', {
         lobbyCode: code,
@@ -1173,98 +1317,61 @@ function LobbyPageContent() {
                 )}
               </div>
             ) : gameEngine?.isGameFinished() ? (
-              <div className="card text-center animate-scale-in">
-                <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in">
-                    <span className="text-6xl">🏆</span>
-                  </div>
-                  <h2 className="text-4xl font-bold mb-2">Game Over!</h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {lobby.gameType === 'chess' ? 'Checkmate!' : '13 rounds completed'}
-                  </p>
-                </div>
-
-                {(() => {
-                  if (lobby.gameType === 'chess' && gameEngine instanceof ChessGame) {
-                    const chessGame = gameEngine as ChessGame
-                    const winner = chessGame.checkWinCondition()
-                    const winnerPlayer = winner ? game.players.find((p: any) => p.userId === winner.id) : null
-
-                    return (
-                      <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
-                        <p className="text-2xl font-bold mb-2">
-                          {winner && winnerPlayer?.userId === session?.user?.id ? '🎊 You Won! 🎊' :
-                           winner ? `🏆 ${winnerPlayer?.user?.username || winner.name} Wins! 🏆` :
-                           '🤝 It\'s a Draw! 🤝'}
-                        </p>
-                        <p className="text-lg text-gray-700 dark:text-gray-300">
-                          {winner ? 'Checkmate!' : 'Stalemate or draw by agreement'}
-                        </p>
-                      </div>
-                    )
-                  } else {
-                    const players = gameEngine.getPlayers()
-                    const winner = gameEngine.checkWinCondition()
-
-                    return (
-                      <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
-                        <p className="text-2xl font-bold mb-2">
-                          {winner && winner.name === session?.user?.name ? '🎊 You Won! 🎊' : `🏆 ${winner?.name || 'Player'} Wins! 🏆`}
-                        </p>
-                        <p className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
-                          {winner?.score || 0} points
-                        </p>
-                      </div>
-                    )
-                  }
-                })()}
-
-                {/* Winner Podium - Only for Yahtzee */}
-                {lobby.gameType !== 'chess' && (
+              // Game finished - show results
+              lobby.gameType === 'yahtzee' && gameEngine instanceof YahtzeeGame ? (
+                <YahtzeeResults
+                  results={analyzeResults(
+                    gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
+                    (id) => (gameEngine as YahtzeeGame).getScorecard(id)
+                  )}
+                  currentUserId={getCurrentUserId() || null}
+                  onPlayAgain={handleStartGame}
+                  onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+                />
+              ) : (
+                // Keep existing chess results display
+                <div className="card text-center animate-scale-in">
                   <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-4">Final Standings</h3>
-                    {gameEngine.getPlayers()
-                      .sort((a: any, b: any) => (b.score || 0) - (a.score || 0))
-                      .map((player: any, rank: number) => (
-                        <div
-                          key={player.id}
-                          className={`
-                            p-4 mb-3 rounded-lg transition-all duration-300
-                            ${rank === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white scale-105 shadow-xl' : ''}
-                            ${rank === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400 shadow-lg' : ''}
-                            ${rank === 2 ? 'bg-gradient-to-r from-orange-300 to-orange-400 shadow-lg' : ''}
-                            ${rank > 2 ? 'bg-gray-100 dark:bg-gray-700' : ''}
-                            transform
-                          `}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-3xl font-bold">
-                                {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
-                              </span>
-                              <div className="text-left">
-                                <p className="text-xl font-semibold">{player.name}</p>
-                                <p className={`text-sm ${rank === 0 ? 'text-yellow-100' : 'text-gray-600 dark:text-gray-400'}`}>
-                                  Score: {player.score || 0}
-                                </p>
-                              </div>
-                            </div>
-                            <span className="text-3xl font-bold">{player.score || 0}</span>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in">
+                      <span className="text-6xl">🏆</span>
+                    </div>
+                    <h2 className="text-4xl font-bold mb-2">Game Over!</h2>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {lobby.gameType === 'chess' ? 'Checkmate!' : 'Game completed'}
+                    </p>
                   </div>
-                )}
 
-                <div className="flex gap-4 justify-center">
-                  <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
-                    🔄 Play Again
-                  </button>
-                  <button onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)} className="btn btn-secondary text-lg px-8 py-3">
-                    🏠 Back to Lobbies
-                  </button>
+                  {(() => {
+                    if (lobby.gameType === 'chess' && gameEngine instanceof ChessGame) {
+                      const chessGame = gameEngine as ChessGame
+                      const winner = chessGame.checkWinCondition()
+                      const winnerPlayer = winner ? game.players.find((p: any) => p.userId === winner.id) : null
+
+                      return (
+                        <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
+                          <p className="text-2xl font-bold mb-2">
+                            {winner && winnerPlayer?.userId === session?.user?.id ? '🎊 You Won! 🎊' :
+                             winner ? `🏆 ${winnerPlayer?.user?.username || winner.name} Wins! 🏆` :
+                             '🤝 It\'s a Draw! 🤝'}
+                          </p>
+                          <p className="text-lg text-gray-700 dark:text-gray-300">
+                            {winner ? 'Checkmate!' : 'Stalemate or draw by agreement'}
+                          </p>
+                        </div>
+                      )
+                    }
+                  })()}
+
+                  <div className="flex gap-4 justify-center">
+                    <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
+                      🔄 Play Again
+                    </button>
+                    <button onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)} className="btn btn-secondary text-lg px-8 py-3">
+                      🏠 Back to Lobbies
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <>
                 {/* Game Status Bar */}
@@ -1498,6 +1605,13 @@ function LobbyPageContent() {
                             🎲 {isMoveInProgress ? 'Rolling...' : 'Roll Dice'}
                           </button>
                         </div>
+
+                        {/* Roll History */}
+                        {rollHistory.length > 0 && (
+                          <div className="mt-4">
+                            <RollHistory entries={rollHistory} />
+                          </div>
+                        )}
                       </div>
 
                       {/* Yahtzee Scorecard Section - Right Columns */}
@@ -1600,6 +1714,29 @@ function LobbyPageContent() {
           </>
         )}
       </div>
+
+      {/* Bot Move Overlay */}
+      {showingBotOverlay && botMoveSteps.length > 0 && (
+        <BotMoveOverlay
+          steps={botMoveSteps}
+          currentStepIndex={currentBotStepIndex}
+          botName={botPlayerName}
+          onComplete={() => {
+            setShowingBotOverlay(false)
+            setBotMoveSteps([])
+            setCurrentBotStepIndex(0)
+            setBotPlayerName('')
+          }}
+        />
+      )}
+
+      {/* Celebration Banner */}
+      {celebrationEvent && (
+        <CelebrationBanner
+          event={celebrationEvent}
+          onComplete={() => setCelebrationEvent(null)}
+        />
+      )}
 
       {/* Chat Component */}
       {isInGame && (

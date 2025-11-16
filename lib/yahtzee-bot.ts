@@ -44,16 +44,24 @@ export class YahtzeeBot {
   ): YahtzeeCategory {
     const availableCategories = this.getAvailableCategories(scorecard)
     
+    // Task 2.1: Graceful fallback if no categories available
+    // This should never happen in normal gameplay, but provides safety
     if (availableCategories.length === 0) {
-      throw new Error('No available categories')
+      console.error('⚠️  Bot error: No available categories in scorecard')
+      // Fallback: return 'chance' as it's typically filled last
+      // If this is called, the game state is corrupted, but we won't crash
+      return 'chance'
     }
+
+    // Task 2.3: Endgame strategy when few categories remain
+    const isEndgame = availableCategories.length <= 3
 
     // Calculate expected value for each category
     const categoryScores: Array<{ category: YahtzeeCategory; score: number; priority: number }> = []
 
     for (const category of availableCategories) {
       const score = calculateScore(dice, category)
-      const priority = this.getCategoryPriority(category, score, dice, scorecard)
+      const priority = this.getCategoryPriority(category, score, dice, scorecard, isEndgame)
       categoryScores.push({ category, score, priority })
     }
 
@@ -211,12 +219,15 @@ export class YahtzeeBot {
 
   /**
    * Calculate priority for a category based on score and game state
+   * Task 2.2: Enhanced upper section bonus logic
+   * Task 2.3: Endgame strategy considerations
    */
   private static getCategoryPriority(
     category: YahtzeeCategory,
     score: number,
     dice: number[],
-    scorecard: YahtzeeScorecard
+    scorecard: YahtzeeScorecard,
+    isEndgame: boolean = false
   ): number {
     // Base priority on actual score
     let priority = score
@@ -251,20 +262,102 @@ export class YahtzeeBot {
       return 200 + score
     }
 
-    // Upper section strategy: bonus consideration
+    // Task 2.2: Improved upper section strategy with bonus consideration
     const upperCategories: YahtzeeCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
     if (upperCategories.includes(category)) {
       const upperSum = this.getUpperSectionSum(scorecard)
       const remaining = 63 - upperSum
+      const availableUpper = upperCategories.filter(cat => scorecard[cat] === undefined)
       
-      // Prioritize if close to bonus
-      if (remaining > 0 && remaining <= 20) {
-        priority += 100
+      // Calculate if bonus is still achievable (max points per category: ones=5, twos=10, threes=15, etc.)
+      const maxPossibleFromAvailable = availableUpper.reduce((sum, cat) => {
+        const value = { ones: 1, twos: 2, threes: 3, fours: 4, fives: 5, sixes: 6 }[cat] || 0
+        return sum + (value * 5) // Max 5 dice of that value
+      }, 0)
+      const maxPossibleUpper = upperSum + maxPossibleFromAvailable
+      const bonusAchievable = maxPossibleUpper >= 63
+      
+      if (bonusAchievable && remaining > 0) {
+        // Strategy: prioritize based on how close we are to bonus
+        if (remaining <= 10) {
+          // Very close to bonus - strongly prioritize upper section
+          priority += 300
+          // Prioritize the category that gives us the most points
+          if (category === 'fives' || category === 'sixes') {
+            priority += 150
+          }
+          
+          // If this exact category can complete the bonus, mega boost
+          if (score >= remaining) {
+            priority += 300 // CRITICAL: This secures the +35 bonus!
+          }
+        } else if (remaining <= 20) {
+          // Moderately close - increase priority
+          priority += 250
+          if (category === 'fives' || category === 'sixes') {
+            priority += 100
+          }
+          
+          // If this category can complete or nearly complete the bonus
+          if (score >= remaining) {
+            priority += 250 // Secures bonus
+          } else if (score >= remaining - 5) {
+            priority += 150
+          }
+        } else if (remaining <= 35) {
+          // Still have room - moderate boost
+          priority += 100
+          if (category === 'fives' || category === 'sixes') {
+            priority += 50
+          }
+        } else {
+          // Early game - slight boost for high-value categories
+          if (category === 'fives' || category === 'sixes') {
+            priority += 50
+          }
+        }
+        
+        // Don't sacrifice high-value combinations for tiny upper section gains
+        // If we have a good lower section combo (e.g., Yahtzee, straights), don't force upper
+        const hasHighValueCombo = dice.every(d => d === dice[0]) || // Yahtzee
+                                   this.isLargeStraight(dice) ||
+                                   (category === 'ones' || category === 'twos') && score <= 3
+        
+        if (hasHighValueCombo && (category === 'ones' || category === 'twos')) {
+          // Don't waste excellent combos on 1-3 points in upper section
+          priority -= 100
+        }
+      } else if (!bonusAchievable) {
+        // Bonus is mathematically impossible - don't prioritize upper section
+        // Just take the score value as-is
+        if (category === 'ones' || category === 'twos' || category === 'threes') {
+          // Low-value categories become dump targets
+          priority -= 50
+        }
       }
+    }
 
-      // Prioritize high-value upper section
-      if (category === 'fives' || category === 'sixes') {
+    // Task 2.3: Endgame strategy
+    if (isEndgame) {
+      // In endgame, be more conservative and take guaranteed points
+      // Avoid risky plays and prioritize actual score over potential
+      
+      if (score === 0) {
+        // In endgame, taking 0 is very bad - try to avoid if possible
+        priority = -200
+      } else if (score >= 15) {
+        // Boost any decent score in endgame
         priority += 50
+      }
+      
+      // Prefer completing upper section if bonus is still achievable
+      if (upperCategories.includes(category)) {
+        const upperSum = this.getUpperSectionSum(scorecard)
+        const remaining = 63 - upperSum
+        if (remaining > 0 && remaining <= 15) {
+          // Can still get bonus - strongly prioritize
+          priority += 150
+        }
       }
     }
 
@@ -277,6 +370,11 @@ export class YahtzeeBot {
       if (category === 'ones' || category === 'twos') {
         priority = -50
       }
+      
+      // In endgame, avoid zeros even more
+      if (isEndgame) {
+        priority -= 100
+      }
     }
 
     // Chance - good for moderate scores when nothing else fits
@@ -285,6 +383,11 @@ export class YahtzeeBot {
         priority = 150
       } else if (score < 15) {
         priority = -80
+      }
+      
+      // In endgame, chance is often the last resort
+      if (isEndgame && score >= 15) {
+        priority += 30
       }
     }
 
@@ -392,6 +495,19 @@ export class YahtzeeBot {
            (scorecard.fours || 0) +
            (scorecard.fives || 0) +
            (scorecard.sixes || 0)
+  }
+
+  /**
+   * Helper: Check if dice form a large straight
+   */
+  private static isLargeStraight(dice: number[]): boolean {
+    const uniqueSorted = [...new Set(dice)].sort((a, b) => a - b)
+    if (uniqueSorted.length !== 5) return false
+    
+    return uniqueSorted.every((val, idx) => {
+      if (idx === 0) return true
+      return val === uniqueSorted[idx - 1] + 1
+    })
   }
 
   /**

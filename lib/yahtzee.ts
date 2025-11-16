@@ -55,21 +55,59 @@ export function calculateScore(dice: number[], category: YahtzeeCategory): numbe
       return counts.some(c => c >= 4) ? dice.reduce((a, b) => a + b, 0) : 0
     
     case 'fullHouse': {
-      const hasThree = counts.some(c => c === 3)
-      const hasTwo = counts.some(c => c === 2)
-      return (hasThree && hasTwo) ? 25 : 0
+      // Full House: 3 of one kind + 2 of another kind = 25 points
+      // Note: Yahtzee (5 of a kind) also counts as Full House
+      const nonZeroCounts = counts.filter(c => c > 0)
+      
+      // Check for classic Full House: exactly 2 groups (3 and 2)
+      if (nonZeroCounts.length === 2 && nonZeroCounts.includes(3) && nonZeroCounts.includes(2)) {
+        return 25
+      }
+      
+      // Check for Yahtzee (5 of a kind) - also valid as Full House
+      if (counts.some(c => c === 5)) {
+        return 25
+      }
+      
+      return 0
     }
     
     case 'smallStraight': {
-      const straights = ['1234', '2345', '3456']
-      const diceStr = [...new Set(sortedDice)].join('')
-      return straights.some(s => diceStr.includes(s)) ? 30 : 0
+      // Small Straight: 4 consecutive dice (1-2-3-4, 2-3-4-5, or 3-4-5-6) = 30 points
+      const uniqueSorted = [...new Set(sortedDice)].sort((a, b) => a - b)
+      
+      // Check each possible small straight
+      const possibleStraights = [
+        [1, 2, 3, 4],
+        [2, 3, 4, 5],
+        [3, 4, 5, 6]
+      ]
+      
+      for (const straight of possibleStraights) {
+        if (straight.every(num => uniqueSorted.includes(num))) {
+          return 30
+        }
+      }
+      
+      return 0
     }
     
     case 'largeStraight': {
-      const straights = ['12345', '23456']
-      const diceStr = sortedDice.join('')
-      return straights.includes(diceStr) ? 40 : 0
+      // Large Straight: 5 consecutive dice (1-2-3-4-5 or 2-3-4-5-6) = 40 points
+      const uniqueSorted = [...new Set(sortedDice)].sort((a, b) => a - b)
+      
+      // Must have exactly 5 unique values
+      if (uniqueSorted.length !== 5) {
+        return 0
+      }
+      
+      // Check if they form a consecutive sequence
+      const isConsecutive = uniqueSorted.every((val, idx) => {
+        if (idx === 0) return true
+        return val === uniqueSorted[idx - 1] + 1
+      })
+      
+      return isConsecutive ? 40 : 0
     }
     
     case 'yahtzee':

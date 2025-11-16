@@ -8,6 +8,18 @@ import { YahtzeeCategory } from './yahtzee'
  * Handles automatic bot decision-making and move execution
  */
 
+export interface BotActionEvent {
+  type: 'thinking' | 'roll' | 'hold' | 'score'
+  data?: {
+    dice?: number[]
+    held?: number[]
+    category?: YahtzeeCategory
+    score?: number
+    rollNumber?: number
+  }
+  message: string
+}
+
 export class BotMoveExecutor {
   /**
    * Execute a bot's turn with realistic delays
@@ -16,7 +28,8 @@ export class BotMoveExecutor {
   static async executeBotTurn(
     gameEngine: YahtzeeGame,
     botUserId: string,
-    onMove: (move: Move) => Promise<void>
+    onMove: (move: Move) => Promise<void>,
+    onBotAction?: (event: BotActionEvent) => void
   ): Promise<void> {
     console.log(`🤖 Bot ${botUserId} starting turn...`)
 
@@ -31,8 +44,21 @@ export class BotMoveExecutor {
     // Get bot's scorecard
     const botScorecard = gameEngine.getScorecard(botUserId) || {}
 
+    // Emit thinking event
+    onBotAction?.({
+      type: 'thinking',
+      message: 'Bot is thinking...',
+    })
+    await this.delay(800)
+
     // Initial roll (always roll first)
-    await this.delay(1000) // Think for 1 second
+    await this.delay(500)
+    onBotAction?.({
+      type: 'roll',
+      data: { rollNumber: 1 },
+      message: 'Bot is rolling dice...',
+    })
+    
     const rollMove: Move = {
       playerId: botUserId,
       type: 'roll',
@@ -42,8 +68,19 @@ export class BotMoveExecutor {
     await onMove(rollMove)
     console.log('🤖 Bot rolled dice (roll 1)')
 
-    // Get updated state after roll
+    // Show result
     let currentDice = gameEngine.getDice()
+    onBotAction?.({
+      type: 'roll',
+      data: { 
+        dice: currentDice,
+        rollNumber: 1
+      },
+      message: `Bot rolled: ${currentDice.join(', ')}`,
+    })
+    await this.delay(1000)
+
+    // Get updated state after roll
     let currentHeld = gameEngine.getHeld()
     let rollsLeft = gameEngine.getRollsLeft()
 
@@ -52,11 +89,21 @@ export class BotMoveExecutor {
       // Decide whether to roll again or score now
       if (this.shouldStopRolling(currentDice, botScorecard)) {
         console.log('🤖 Bot decided to stop rolling and score')
+        onBotAction?.({
+          type: 'thinking',
+          message: 'Bot is satisfied with this roll!',
+        })
+        await this.delay(800)
         break
       }
 
       // Decide which dice to hold
-      await this.delay(800) // Think time
+      onBotAction?.({
+        type: 'thinking',
+        message: 'Bot is deciding which dice to hold...',
+      })
+      await this.delay(800)
+      
       const diceToHold = YahtzeeBot.decideDiceToHold(
         currentDice,
         currentHeld,
@@ -65,6 +112,19 @@ export class BotMoveExecutor {
       )
 
       console.log(`🤖 Bot holding dice at indices: ${diceToHold}`)
+
+      // Show hold decision
+      onBotAction?.({
+        type: 'hold',
+        data: {
+          dice: currentDice,
+          held: diceToHold,
+        },
+        message: diceToHold.length > 0 
+          ? `Bot is holding ${diceToHold.length} ${diceToHold.length === 1 ? 'die' : 'dice'}`
+          : 'Bot is not holding any dice',
+      })
+      await this.delay(1000)
 
       // Apply holds
       for (let i = 0; i < currentHeld.length; i++) {
@@ -81,7 +141,13 @@ export class BotMoveExecutor {
       }
 
       // Roll again
+      onBotAction?.({
+        type: 'roll',
+        data: { rollNumber: rollNum },
+        message: `Bot is rolling again (roll ${rollNum})...`,
+      })
       await this.delay(1000)
+      
       const nextRollMove: Move = {
         playerId: botUserId,
         type: 'roll',
@@ -93,14 +159,44 @@ export class BotMoveExecutor {
 
       // Update state
       currentDice = gameEngine.getDice()
+      onBotAction?.({
+        type: 'roll',
+        data: { 
+          dice: currentDice,
+          rollNumber: rollNum
+        },
+        message: `Bot rolled: ${currentDice.join(', ')}`,
+      })
+      await this.delay(1000)
+      
       currentHeld = gameEngine.getHeld()
       rollsLeft = gameEngine.getRollsLeft()
     }
 
     // Select category to score
+    onBotAction?.({
+      type: 'thinking',
+      message: 'Bot is choosing a category...',
+    })
     await this.delay(1200) // Final decision time
+    
     const category = YahtzeeBot.selectCategory(currentDice, botScorecard)
     console.log(`🤖 Bot selected category: ${category}`)
+
+    // Calculate score for this category
+    const { calculateScore } = require('./yahtzee')
+    const score = calculateScore(currentDice, category)
+
+    // Show category selection
+    onBotAction?.({
+      type: 'score',
+      data: {
+        category,
+        score,
+      },
+      message: `Bot selected category: ${category}`,
+    })
+    await this.delay(1500)
 
     const scoreMove: Move = {
       playerId: botUserId,

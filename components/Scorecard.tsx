@@ -42,6 +42,79 @@ const categoryDescriptions: Record<YahtzeeCategory, string> = {
   chance: 'Sum of all dice',
 }
 
+// Category state classification for enhanced visual feedback
+type CategoryState = 'high-value' | 'low-value' | 'sacrifice' | 'filled' | 'disabled'
+
+interface CategoryStateInfo {
+  state: CategoryState
+  potentialScore: number | null
+}
+
+function getCategoryState(
+  category: YahtzeeCategory,
+  scorecard: YahtzeeScorecard,
+  currentDice: number[],
+  canSelectCategory: boolean,
+  isCurrentPlayer: boolean
+): CategoryStateInfo {
+  const isFilled = scorecard[category] !== undefined
+  
+  if (isFilled) {
+    return { state: 'filled', potentialScore: null }
+  }
+  
+  if (!canSelectCategory || !isCurrentPlayer) {
+    return { state: 'disabled', potentialScore: null }
+  }
+  
+  const potentialScore = currentDice.length > 0 
+    ? calculateScore(currentDice, category) 
+    : null
+  
+  if (potentialScore === null) {
+    return { state: 'disabled', potentialScore: null }
+  }
+  
+  if (potentialScore === 0) {
+    return { state: 'sacrifice', potentialScore: 0 }
+  }
+  
+  if (potentialScore >= 20) {
+    return { state: 'high-value', potentialScore }
+  }
+  
+  return { state: 'low-value', potentialScore }
+}
+
+// Styling configuration for each category state
+const stateStyles: Record<CategoryState, { container: string; score: string; icon: string | null }> = {
+  'high-value': {
+    container: 'border-2 border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 cursor-pointer shadow-md transition-all duration-200',
+    score: 'text-green-600 dark:text-green-400 font-bold text-xl',
+    icon: '⭐'
+  },
+  'low-value': {
+    container: 'border-2 border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 cursor-pointer transition-all duration-200',
+    score: 'text-blue-600 dark:text-blue-400 font-semibold text-lg',
+    icon: null
+  },
+  'sacrifice': {
+    container: 'border-2 border-orange-300 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 cursor-pointer transition-all duration-200',
+    score: 'text-orange-600 dark:text-orange-400 font-semibold text-lg',
+    icon: '⚠️'
+  },
+  'filled': {
+    container: 'bg-gray-100 dark:bg-gray-800 cursor-default opacity-80',
+    score: 'text-green-600 dark:text-green-400 font-bold text-lg',
+    icon: '✓'
+  },
+  'disabled': {
+    container: 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed opacity-40',
+    score: 'text-gray-400',
+    icon: null
+  }
+}
+
 export default function Scorecard({ 
   scorecard, 
   currentDice, 
@@ -61,54 +134,58 @@ export default function Scorecard({
   ]
 
   const renderCategory = (category: YahtzeeCategory) => {
-    const score = scorecard[category]
-    const isFilled = score !== undefined
-    const canSelect = canSelectCategory && !isFilled && isCurrentPlayer
-    const potentialScore = !isFilled && currentDice.length > 0 ? calculateScore(currentDice, category) : null
-    const isGoodScore = potentialScore !== null && potentialScore >= 20 // Highlight good scores
-
+    const { state, potentialScore } = getCategoryState(
+      category,
+      scorecard,
+      currentDice,
+      canSelectCategory,
+      isCurrentPlayer
+    )
+    
+    const styles = stateStyles[state]
+    const filledScore = scorecard[category]
+    
     return (
       <button
         key={category}
-        onClick={() => canSelect && onSelectCategory(category)}
-        disabled={!canSelect}
-        className={`
-          scorecard-row group relative
-          ${isFilled ? 'cursor-default bg-gray-100 dark:bg-gray-800' : ''}
-          ${canSelect && isGoodScore ? 'hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer ring-2 ring-green-400 dark:ring-green-600' : ''}
-          ${canSelect && !isGoodScore ? 'hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer' : ''}
-          ${!canSelect && !isFilled ? 'opacity-50' : ''}
-        `}
+        onClick={() => (state !== 'filled' && state !== 'disabled') && onSelectCategory(category)}
+        disabled={state === 'filled' || state === 'disabled'}
+        className={`scorecard-row group relative ${styles.container}`}
       >
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm md:text-base">{categoryLabels[category]}</span>
-          {!isFilled && (
+          <span className="font-medium text-sm md:text-base">
+            {categoryLabels[category]}
+          </span>
+          {state !== 'filled' && (
             <span className="text-xs text-gray-500 dark:text-gray-400 hidden md:inline">
               {categoryDescriptions[category]}
             </span>
           )}
         </div>
+        
         <div className="flex items-center gap-2">
-          {isFilled ? (
-            <span className="font-bold text-lg text-green-600 dark:text-green-400">
-              {score}
-            </span>
-          ) : canSelect && potentialScore !== null ? (
-            <div className="flex items-center gap-1">
-              <span className={`text-lg font-semibold group-hover:scale-110 transition-transform ${
-                isGoodScore ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'
-              }`}>
-                +{potentialScore}
+          {state === 'filled' ? (
+            <>
+              <span className={styles.score}>{filledScore}</span>
+              <span className="text-lg">{styles.icon}</span>
+            </>
+          ) : state !== 'disabled' && potentialScore !== null ? (
+            <>
+              {styles.icon && <span className="text-xl animate-pulse">{styles.icon}</span>}
+              <span className={`${styles.score} group-hover:scale-110 transition-transform`}>
+                {state === 'sacrifice' ? '0' : `+${potentialScore}`}
               </span>
-              {isGoodScore && <span className="text-xl animate-pulse">⭐</span>}
-              {potentialScore === 50 && <span className="text-xl animate-bounce">🎯</span>}
-            </div>
-          ) : canSelect ? (
-            <span className="text-sm text-blue-600 dark:text-blue-400">
-              Click to score
-            </span>
+              {state === 'sacrifice' && (
+                <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                  (sacrifice)
+                </span>
+              )}
+              {category === 'yahtzee' && potentialScore === 50 && (
+                <span className="text-xl animate-bounce">🎯</span>
+              )}
+            </>
           ) : (
-            <span className="text-gray-400">—</span>
+            <span className={styles.score}>—</span>
           )}
         </div>
       </button>
@@ -150,13 +227,25 @@ export default function Scorecard({
             <span className="font-semibold">Subtotal</span>
             <span className="font-bold">{upperTotal}</span>
           </div>
-          <div className="flex justify-between items-center p-3 bg-yellow-50 dark:bg-yellow-900/20 border-t border-gray-200 dark:border-gray-600">
-            <span className="font-semibold">
-              Bonus {upperTotal >= 63 ? '✓' : `(${upperTotal}/63)`}
-            </span>
-            <span className={`font-bold ${bonus > 0 ? 'text-green-600 dark:text-green-400' : ''}`}>
-              {bonus > 0 ? `+${bonus}` : '—'}
-            </span>
+          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold">
+                Bonus {upperTotal >= 63 ? '✓' : ''}
+              </span>
+              <span className={`font-bold ${bonus > 0 ? 'text-green-600 dark:text-green-400' : ''}`}>
+                {bonus > 0 ? `+${bonus}` : `${upperTotal}/63`}
+              </span>
+            </div>
+            {bonus === 0 && (
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    upperTotal >= 50 ? 'bg-green-500' : upperTotal >= 30 ? 'bg-yellow-500' : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${Math.min(100, (upperTotal / 63) * 100)}%` }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

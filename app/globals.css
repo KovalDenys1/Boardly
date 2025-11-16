@@ -135,6 +135,32 @@ body {
   animation: shake-roll 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scale-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out forwards;
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 0.8s ease-in-out infinite;
+}
+
 /* Form inputs */
 input, select, textarea {
   @apply text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700;
