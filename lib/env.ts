@@ -15,10 +15,10 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL URL'),
   
-  // Authentication - Required
-  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
-  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters'),
-  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  // Authentication - Required for Next.js, optional for socket server
+  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL').optional(),
+  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters').optional(),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').optional(),
   
   // OAuth Providers - Optional
   GITHUB_CLIENT_ID: z.string().optional(),
@@ -117,9 +117,18 @@ export function printEnvInfo(): void {
   console.log('🔧 Environment Configuration:')
   console.log(`  - NODE_ENV: ${env.NODE_ENV}`)
   console.log(`  - DATABASE_URL: ${maskSecret(env.DATABASE_URL)}`)
-  console.log(`  - NEXTAUTH_URL: ${env.NEXTAUTH_URL}`)
-  console.log(`  - NEXTAUTH_SECRET: ${maskSecret(env.NEXTAUTH_SECRET)}`)
-  console.log(`  - JWT_SECRET: ${maskSecret(env.JWT_SECRET)}`)
+  
+  if (env.NEXTAUTH_URL) {
+    console.log(`  - NEXTAUTH_URL: ${env.NEXTAUTH_URL}`)
+  }
+  
+  if (env.NEXTAUTH_SECRET) {
+    console.log(`  - NEXTAUTH_SECRET: ${maskSecret(env.NEXTAUTH_SECRET)}`)
+  }
+  
+  if (env.JWT_SECRET) {
+    console.log(`  - JWT_SECRET: ${maskSecret(env.JWT_SECRET)}`)
+  }
   
   if (env.GITHUB_CLIENT_ID) {
     console.log(`  - GitHub OAuth: ✅ Enabled`)
@@ -136,7 +145,7 @@ export function printEnvInfo(): void {
   }
   
   console.log(`  - Socket.IO URL: ${env.NEXT_PUBLIC_SOCKET_URL || 'Not set (using default)'}`)
-  console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set (using NEXTAUTH_URL)'}`)
+  console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set'}`)
   console.log(`  - Log Level: ${env.LOG_LEVEL || 'auto'}`)
 }
 
