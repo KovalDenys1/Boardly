@@ -22,7 +22,11 @@ class SoundManager {
 
     Object.entries(soundFiles).forEach(([key, path]) => {
       const audio = new Audio(path)
-      audio.preload = 'auto'
+      audio.preload = 'metadata' // Changed from 'auto' to prevent aggressive caching
+      // Add error handler to prevent console errors
+      audio.addEventListener('error', (e) => {
+        console.warn(`Failed to load sound: ${path}`, e)
+      })
       this.sounds.set(key, audio)
     })
   }

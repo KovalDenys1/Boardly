@@ -407,7 +407,9 @@ function LobbyPageContent() {
       
       setSocket(null)
     }
-  }, [lobby, code, isGuest, guestId, guestName, gameEngine, previousGameState, game?.players?.length, chatMinimized])
+    // Only reconnect when lobby/code changes, not on every state update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lobby?.id, code])
 
   const loadLobby = async () => {
     try {
