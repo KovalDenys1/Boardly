@@ -1,3 +1,11 @@
+// Load environment variables from .env.local (for local development)
+import dotenv from 'dotenv'
+import { resolve } from 'path'
+
+// Load .env.local if it exists (local development), otherwise fall back to .env
+dotenv.config({ path: resolve(process.cwd(), '.env.local') })
+dotenv.config({ path: resolve(process.cwd(), '.env') })
+
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { parse } from 'url'

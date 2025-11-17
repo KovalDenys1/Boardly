@@ -60,6 +60,8 @@ function LobbyPageContent() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
   const [isMoveInProgress, setIsMoveInProgress] = useState(false) // Prevent double moves
+  const [isRolling, setIsRolling] = useState(false) // Roll dice loading
+  const [isScoring, setIsScoring] = useState(false) // Score selection loading
   const [stateVersion, setStateVersion] = useState(0) // Prevent race conditions
 
   // Bot visualization state
@@ -332,14 +334,19 @@ function LobbyPageContent() {
     let celebrationTimeout: NodeJS.Timeout | null = null
 
     const handleConnect = () => {
+      console.log('✅ Socket connected to lobby:', code)
       newSocket.emit('join-lobby', code)
       
       if (isFirstConnection) {
         isFirstConnection = false
+        toast.success('🟢 Connected to lobby')
       }
     }
 
     const handleDisconnect = (reason: string) => {
+      console.log('❌ Socket disconnected:', reason)
+      toast.warning('🔴 Disconnected from lobby')
+      
       if (reason === 'io server disconnect') {
         newSocket.connect()
       }
@@ -358,6 +365,8 @@ function LobbyPageContent() {
     }
 
     const handleGameUpdate = (data: any) => {
+      console.log('📥 Received game-update:', data.action)
+      
       if (data.action === 'player-joined') {
         // Reload lobby to show new player
         console.log('Player joined, reloading lobby...')
@@ -369,6 +378,7 @@ function LobbyPageContent() {
           soundManager.play('turnChange')
         }
       } else if (data.action === 'state-change') {
+        console.log('State change received, updating game engine...')
         const updatedState = data.payload
         
         // Prevent processing old state updates (race condition protection)
@@ -523,9 +533,9 @@ function LobbyPageContent() {
       
       setSocket(null)
     }
-    // Only reconnect when lobby/code changes, not on every state update
+    // Only reconnect when code changes or authentication changes, NOT on lobby updates
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lobby?.id, code])
+  }, [code, session?.user?.id, isGuest, guestId])
 
   const loadLobby = async () => {
     try {
@@ -609,11 +619,16 @@ function LobbyPageContent() {
       await loadLobby()
       
       // Notify lobby list and lobby members about player joining
-      socket?.emit('player-joined', {
-        lobbyCode: code,
-        username: session?.user?.name || 'Guest',
-        userId: session?.user?.id,
-      })
+      if (socket && socket.connected) {
+        console.log('📡 Emitting player-joined event')
+        socket.emit('player-joined', {
+          lobbyCode: code,
+          username: session?.user?.name || 'Guest',
+          userId: session?.user?.id,
+        })
+      } else {
+        console.warn('⚠️ Socket not connected, cannot emit player-joined')
+      }
       
       // Add system message to chat
       const joinMessage = {
@@ -652,6 +667,7 @@ function LobbyPageContent() {
     }
 
     setIsMoveInProgress(true)
+    setIsRolling(true)
 
     // Create roll move
     const move: Move = {
@@ -716,11 +732,16 @@ function LobbyPageContent() {
       soundManager.play('diceRoll')
       
       // Emit to other players
-      socket?.emit('game-action', {
-        lobbyCode: code,
-        action: 'state-change',
-        payload: data.game.state,
-      })
+      if (socket && socket.connected) {
+        console.log('📡 Emitting roll action to other players')
+        socket.emit('game-action', {
+          lobbyCode: code,
+          action: 'state-change',
+          payload: data.game.state,
+        })
+      } else {
+        console.warn('⚠️ Socket not connected, cannot emit roll action')
+      }
 
       // Check if this was the last roll using the NEW engine state
       if (newEngine && newEngine.getRollsLeft() === 0) {
@@ -731,10 +752,11 @@ function LobbyPageContent() {
       toast.error(error.message || 'Failed to roll dice')
     } finally {
       setIsMoveInProgress(false)
+      setIsRolling(false)
     }
   }
 
-  const handleToggleHold = (index: number) => {
+  const handleToggleHold = async (index: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || gameEngine.getRollsLeft() === 3) return
 
     // Create hold move
@@ -745,44 +767,52 @@ function LobbyPageContent() {
       timestamp: new Date(),
     }
 
-    // Send move to server
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    }
-    
-    if (isGuest && guestId) {
-      headers['X-Guest-Id'] = guestId
-    }
-    
-    fetch(`/api/game/${game?.id}/state`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ move }),
-    }).then(res => {
+    try {
+      // Send move to server
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (isGuest && guestId) {
+        headers['X-Guest-Id'] = guestId
+      }
+      
+      const res = await fetch(`/api/game/${game?.id}/state`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ move }),
+      })
+
       if (res.ok) {
-        res.json().then(data => {
-          // Update local game engine with new instance
-          if (gameEngine && data.game && data.game.state) {
-            const newEngine = lobby?.gameType === 'chess' 
-              ? new ChessGame(gameEngine.getState().id)
-              : new YahtzeeGame(gameEngine.getState().id)
-            newEngine.restoreState(data.game.state)
-            setGameEngine(newEngine)
-          }
-          
-          soundManager.play('click')
-          
-          // Emit to other players
-          socket?.emit('game-action', {
+        const data = await res.json()
+        
+        // Update with server state
+        if (data.game && data.game.state) {
+          const newEngine = new YahtzeeGame(gameEngine.getState().id)
+          newEngine.restoreState(data.game.state)
+          setGameEngine(newEngine)
+        }
+        
+        soundManager.play('click')
+        
+        // Emit to other players
+        if (socket && socket.connected) {
+          console.log('📡 Emitting hold action to other players')
+          socket.emit('game-action', {
             lobbyCode: code,
             action: 'state-change',
             payload: data.game.state,
           })
-        })
+        } else {
+          console.warn('⚠️ Socket not connected, cannot emit hold action')
+        }
+      } else {
+        toast.error('Failed to hold dice')
       }
-    }).catch(error => {
+    } catch (error) {
       console.error('Failed to toggle hold:', error)
-    })
+      toast.error('Failed to hold dice')
+    }
   }
 
   const handleScoreSelection = async (category: YahtzeeCategory) => {
@@ -807,6 +837,7 @@ function LobbyPageContent() {
     }
 
     setIsMoveInProgress(true)
+    setIsScoring(true)
 
     // Create score move
     const move: Move = {
@@ -857,11 +888,16 @@ function LobbyPageContent() {
         }
         
         // Emit to other players
-        socket?.emit('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
+        if (socket && socket.connected) {
+          console.log('📡 Emitting score action to other players')
+          socket.emit('game-action', {
+            lobbyCode: code,
+            action: 'state-change',
+            payload: data.game.state,
+          })
+        } else {
+          console.warn('⚠️ Socket not connected, cannot emit score action')
+        }
 
         // Use newEngine for checks after state update
         if (newEngine.isGameFinished()) {
@@ -886,6 +922,7 @@ function LobbyPageContent() {
       toast.error(error.message || 'Failed to score')
     } finally {
       setIsMoveInProgress(false)
+      setIsScoring(false)
     }
   }
 
@@ -1697,10 +1734,38 @@ function LobbyPageContent() {
                           </div>
                           <button
                             onClick={handleRollDice}
-                            disabled={isMoveInProgress || (gameEngine as YahtzeeGame).getRollsLeft() === 0 || !isMyTurn()}
-                            className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2"
+                            disabled={isRolling || isMoveInProgress || (gameEngine as YahtzeeGame).getRollsLeft() === 0 || !isMyTurn()}
+                            className="btn btn-primary w-full text-lg py-4 flex items-center justify-center gap-2 relative"
                           >
-                            🎲 {isMoveInProgress ? 'Rolling...' : 'Roll Dice'}
+                            {isRolling ? (
+                              <>
+                                <svg
+                                  className="animate-spin h-5 w-5"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  />
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  />
+                                </svg>
+                                Rolling...
+                              </>
+                            ) : (
+                              <>
+                                🎲 Roll Dice
+                              </>
+                            )}
                           </button>
                         </div>
 
@@ -1796,8 +1861,9 @@ function LobbyPageContent() {
                           scorecard={(gameEngine as YahtzeeGame).getScorecard(game.players[viewingPlayerIndex]?.userId) || {}}
                           currentDice={(gameEngine as YahtzeeGame).getDice()}
                           onSelectCategory={handleScoreSelection}
-                          canSelectCategory={(gameEngine as YahtzeeGame).getRollsLeft() < 3 && isMyTurn() && viewingPlayerIndex === getCurrentPlayerIndex()}
+                          canSelectCategory={(gameEngine as YahtzeeGame).getRollsLeft() < 3 && isMyTurn() && viewingPlayerIndex === getCurrentPlayerIndex() && !isScoring}
                           isCurrentPlayer={viewingPlayerIndex === getCurrentPlayerIndex()}
+                          isLoading={isScoring}
                         />
                       </div>
                     </>

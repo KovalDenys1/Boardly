@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "socket:dev": "tsx socket-server.ts",
-    "socket:start": "NODE_ENV=production tsx socket-server.ts",
+    "socket:start": "tsx socket-server.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -29,6 +29,7 @@
     "bcrypt": "5.1.1",
     "bcryptjs": "^3.0.2",
     "canvas-confetti": "^1.9.3",
+    "dotenv": "^17.2.3",
     "jsonwebtoken": "9.0.2",
     "nanoid": "5.0.7",
     "next": "^14.2.11",
@@ -45,7 +46,5 @@
     "tsx": "4.19.1",
     "typescript": "5.6.3",
     "zod": "3.23.8"
-  },
-  "devDependencies": {
   }
 }
