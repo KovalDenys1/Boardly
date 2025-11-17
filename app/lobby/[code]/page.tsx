@@ -202,14 +202,24 @@ function LobbyPageContent() {
         return guestId
       }
       
+      // Try both secure and non-secure cookie names
       const cookies = document.cookie.split(';')
+      const cookieNames = [
+        'next-auth.session-token',
+        '__Secure-next-auth.session-token',
+        'next-auth.session-token.0',
+        'next-auth.session-token.1'
+      ]
+      
       for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=')
-        if (name === 'next-auth.session-token') {
+        if (cookieNames.includes(name) && value && value !== 'undefined') {
           return value
         }
       }
-      return null
+      
+      // Fallback: use session user id if available
+      return session?.user?.id || null
     }
 
     const token = getAuthToken()
@@ -254,13 +264,27 @@ function LobbyPageContent() {
     const handleConnectError = (error: Error) => {
       console.error('Socket connection error:', error.message)
       const retryCount = (newSocket as any).io?.engine?.transport?.attempts || 0
-      if (retryCount > 5) {
-        toast.error('Connection issues. Retrying...')
+      
+      // Show user-friendly error message
+      if (error.message.includes('timeout')) {
+        console.warn('Socket connection timeout - retrying...')
+      } else if (retryCount > 3) {
+        toast.error('⚠️ Connection issues. Trying to reconnect...')
       }
     }
 
     const handleGameUpdate = (data: any) => {
-      if (data.action === 'state-change') {
+      if (data.action === 'player-joined') {
+        // Reload lobby to show new player
+        console.log('Player joined, reloading lobby...')
+        loadLobby()
+        
+        // Show notification
+        if (data.payload?.username) {
+          toast.info(`${data.payload.username} joined the lobby`)
+          soundManager.play('turnChange')
+        }
+      } else if (data.action === 'state-change') {
         const updatedState = data.payload
         
         // Detect if this was a bot move (for Yahtzee only)
@@ -492,8 +516,12 @@ function LobbyPageContent() {
       setGame(data.game)
       await loadLobby()
       
-      // Notify lobby list about player joining
-      socket?.emit('player-joined')
+      // Notify lobby list and lobby members about player joining
+      socket?.emit('player-joined', {
+        lobbyCode: code,
+        username: session?.user?.name || 'Guest',
+        userId: session?.user?.id,
+      })
       
       // Add system message to chat
       const joinMessage = {

@@ -89,9 +89,21 @@ function CreateLobbyPage() {
 
       // Notify lobby list about new lobby via WebSocket
       const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
-      const socket = io(socketUrl)
-      socket.emit('lobby-created')
-      socket.disconnect()
+      const socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: false, // Don't reconnect for this one-time notification
+        timeout: 5000,
+      })
+      
+      socket.on('connect', () => {
+        socket.emit('lobby-created')
+        socket.disconnect()
+      })
+      
+      socket.on('connect_error', (error) => {
+        console.warn('Socket notification failed (non-critical):', error.message)
+        socket.disconnect()
+      })
 
       console.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
       // Redirect to the new lobby

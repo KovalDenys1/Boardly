@@ -153,9 +153,25 @@ io.on('connection', (socket) => {
     io.to('lobby-list').emit('lobby-list-update')
   })
 
-  socket.on('player-joined', () => {
-    socketLogger('player-joined').info('Player joined lobby, notifying lobby list')
+  socket.on('player-joined', (data: { lobbyCode: string; username?: string; userId?: string }) => {
+    socketLogger('player-joined').info('Player joined lobby, notifying lobby list and lobby members', { 
+      lobbyCode: data?.lobbyCode,
+      username: data?.username 
+    })
+    
+    // Notify lobby list about update
     io.to('lobby-list').emit('lobby-list-update')
+    
+    // Notify all players in the lobby about the new player
+    if (data?.lobbyCode) {
+      io.to(`lobby:${data.lobbyCode}`).emit('game-update', {
+        action: 'player-joined',
+        payload: {
+          username: data.username,
+          userId: data.userId,
+        },
+      })
+    }
   })
 
   socket.on('disconnect', (reason) => {
