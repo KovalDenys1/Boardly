@@ -1,6 +1,8 @@
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { parse } from 'url'
+import jwt from 'jsonwebtoken'
+import { prisma } from './lib/db'
 import { socketLogger, logger } from './lib/logger'
 import { validateEnv, printEnvInfo } from './lib/env'
 
@@ -89,6 +91,88 @@ const io = new SocketIOServer(server, {
   connectTimeout: 45000, // Connection timeout
 })
 
+// Rate limiting for socket events
+const socketRateLimits = new Map<string, { count: number; resetTime: number }>()
+const MAX_EVENTS_PER_SECOND = 10
+
+function checkRateLimit(socketId: string): boolean {
+  const now = Date.now()
+  const limit = socketRateLimits.get(socketId)
+  
+  if (!limit || now > limit.resetTime) {
+    socketRateLimits.set(socketId, { count: 1, resetTime: now + 1000 })
+    return true
+  }
+  
+  if (limit.count >= MAX_EVENTS_PER_SECOND) {
+    return false
+  }
+  
+  limit.count++
+  return true
+}
+
+// JWT Authentication middleware
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token || socket.handshake.query.token
+    const isGuest = socket.handshake.auth.isGuest === true || socket.handshake.query.isGuest === 'true'
+    
+    // Allow guests without token validation
+    if (isGuest) {
+      const guestId = token || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const guestName = socket.handshake.auth.guestName || socket.handshake.query.guestName || 'Guest'
+      
+      socket.data.user = {
+        id: guestId,
+        username: guestName,
+        isGuest: true,
+      }
+      logger.info('Guest socket authenticated', { guestId, guestName })
+      return next()
+    }
+    
+    if (!token || token === 'null' || token === 'undefined') {
+      logger.warn('Socket connection rejected: No valid token provided')
+      return next(new Error('Authentication required'))
+    }
+    
+    // Verify JWT token for regular users
+    const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
+    if (!secret) {
+      logger.error('JWT secret not configured')
+      return next(new Error('Server configuration error'))
+    }
+    
+    const decoded = jwt.verify(token, secret) as any
+    
+    if (!decoded?.id && !decoded?.sub) {
+      logger.warn('Socket connection rejected: Invalid token structure')
+      return next(new Error('Invalid token'))
+    }
+    
+    const userId = decoded.id || decoded.sub
+    
+    // Verify user exists in database
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, email: true, isBot: true }
+    })
+    
+    if (!user) {
+      logger.warn('Socket connection rejected: User not found', { userId })
+      return next(new Error('User not found'))
+    }
+    
+    socket.data.user = user
+    logger.info('Socket authenticated', { userId: user.id, username: user.username })
+    next()
+  } catch (error) {
+    logger.error('Socket authentication error', error as Error)
+    next(new Error('Authentication failed'))
+  }
+})
+
 // Keep-alive mechanism to prevent Render.com free tier from sleeping
 // Ping self every 10 minutes (within the 15 min sleep window)
 if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
@@ -103,14 +187,62 @@ if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
 io.on('connection', (socket) => {
   logger.info('Client connected', { socketId: socket.id })
 
-  socket.on('join-lobby', (lobbyCode: string) => {
+  socket.on('join-lobby', async (lobbyCode: string) => {
+    // Rate limiting
+    if (!checkRateLimit(socket.id)) {
+      socket.emit('error', { message: 'Too many requests' })
+      return
+    }
+    
     // Basic validation
     if (!lobbyCode || typeof lobbyCode !== 'string' || lobbyCode.length > 20) {
       logger.warn('Invalid lobby code received', { lobbyCode, socketId: socket.id })
+      socket.emit('error', { message: 'Invalid lobby code' })
       return
     }
-    socket.join(`lobby:${lobbyCode}`)
-    socketLogger('join-lobby').debug('Socket joined lobby', { socketId: socket.id, lobbyCode })
+    
+    try {
+      // Verify lobby exists in database
+      const lobby = await prisma.lobby.findUnique({
+        where: { code: lobbyCode },
+        include: {
+          games: {
+            where: { status: { in: ['waiting', 'playing'] } },
+            include: {
+              players: {
+                select: { userId: true }
+              }
+            }
+          }
+        }
+      })
+      
+      if (!lobby) {
+        socket.emit('error', { message: 'Lobby not found' })
+        return
+      }
+      
+      // Check if user is allowed to join (if there's an active game)
+      const activeGame = lobby.games[0]
+      if (activeGame && !socket.data.user.isGuest) {
+        const isPlayer = activeGame.players.some((p: any) => p.userId === socket.data.user.id)
+        if (!isPlayer) {
+          socket.emit('error', { message: 'You are not a player in this game' })
+          return
+        }
+      }
+      
+      socket.join(`lobby:${lobbyCode}`)
+      socketLogger('join-lobby').info('Socket joined lobby', { 
+        socketId: socket.id, 
+        lobbyCode,
+        userId: socket.data.user.id,
+        username: socket.data.user.username
+      })
+    } catch (error) {
+      logger.error('Error joining lobby', error as Error, { lobbyCode })
+      socket.emit('error', { message: 'Failed to join lobby' })
+    }
   })
 
   socket.on('leave-lobby', (lobbyCode: string) => {
@@ -129,9 +261,23 @@ io.on('connection', (socket) => {
   })
 
   socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
+    // Rate limiting
+    if (!checkRateLimit(socket.id)) {
+      socket.emit('error', { message: 'Too many actions. Please slow down.' })
+      return
+    }
+    
     // Validate input
     if (!data?.lobbyCode || !data?.action || typeof data.lobbyCode !== 'string') {
       logger.warn('Invalid game-action data received', { socketId: socket.id })
+      socket.emit('error', { message: 'Invalid action data' })
+      return
+    }
+    
+    // Validate action type
+    const validActions = ['state-change', 'player-left', 'player-joined', 'chat-message']
+    if (!validActions.includes(data.action)) {
+      logger.warn('Invalid action type', { action: data.action, socketId: socket.id })
       return
     }
     

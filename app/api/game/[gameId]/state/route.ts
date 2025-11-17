@@ -51,7 +51,25 @@ export async function POST(
     }
 
     // Recreate game engine from saved state
-    const gameState = JSON.parse(game.state)
+    let gameState: any
+    try {
+      gameState = JSON.parse(game.state)
+      
+      // Basic validation of state structure
+      if (!gameState || typeof gameState !== 'object') {
+        throw new Error('Invalid game state structure')
+      }
+      
+      if (!Array.isArray(gameState.players)) {
+        throw new Error('Game state missing players array')
+      }
+    } catch (parseError) {
+      console.error('Failed to parse game state:', parseError)
+      return NextResponse.json({ 
+        error: 'Corrupted game state. Please restart the game.' 
+      }, { status: 500 })
+    }
+    
     let gameEngine: any
 
     switch (game.lobby.gameType) {
@@ -143,6 +161,10 @@ export async function POST(
         // This ensures the function doesn't terminate before bot completes
         const botApiUrl = `${request.nextUrl.origin}/api/game/${params.gameId}/bot-turn`
         
+        // Add timeout to prevent hanging
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+        
         fetch(botApiUrl, {
           method: 'POST',
           headers: {
@@ -152,8 +174,16 @@ export async function POST(
             botUserId: currentPlayer.userId,
             lobbyCode: game.lobby.code,
           }),
-        }).catch(error => {
-          console.error('🤖 Failed to trigger bot turn:', error)
+          signal: controller.signal,
+        })
+        .then(() => clearTimeout(timeoutId))
+        .catch(error => {
+          clearTimeout(timeoutId)
+          if (error.name === 'AbortError') {
+            console.error('🤖 Bot turn timeout - request aborted after 30s')
+          } else {
+            console.error('🤖 Failed to trigger bot turn:', error)
+          }
         })
         
         console.log('🤖 Bot turn request sent to:', botApiUrl)

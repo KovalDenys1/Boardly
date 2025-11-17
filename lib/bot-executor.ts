@@ -221,9 +221,6 @@ export class BotMoveExecutor {
     console.log('🤖 [BOT-TURN] Score move submitted successfully')
     console.log('🤖 [BOT-TURN] Bot turn completed!')
     console.log(`🤖 [BOT-TURN] ============================================`)
-    console.log('🤖 [BOT-TURN] Score move submitted successfully')
-    console.log('🤖 [BOT-TURN] Bot turn completed!')
-    console.log(`🤖 [BOT-TURN] ============================================`)
   }
 
   /**

@@ -60,6 +60,7 @@ function LobbyPageContent() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
   const [isMoveInProgress, setIsMoveInProgress] = useState(false) // Prevent double moves
+  const [stateVersion, setStateVersion] = useState(0) // Prevent race conditions
 
   // Bot visualization state
   const [botMoveSteps, setBotMoveSteps] = useState<any[]>([])
@@ -143,6 +144,77 @@ function LobbyPageContent() {
     }
   }, [game?.players, session?.user?.id, guestId])
 
+  const handleTimeOut = useCallback(async () => {
+    if (!gameEngine || !game || !isMyTurn()) return
+
+    console.warn('⏰ Time is up! Auto-skipping turn...')
+    
+    try {
+      // For Yahtzee: automatically score 0 in the first available category
+      if (gameEngine instanceof YahtzeeGame) {
+        const currentUserId = getCurrentUserId()
+        if (!currentUserId) return
+
+        const scorecard = gameEngine.getScorecard(currentUserId)
+        if (!scorecard) return
+
+        // Find first empty category
+        const categories: YahtzeeCategory[] = [
+          'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
+          'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
+          'largeStraight', 'yahtzee', 'chance'
+        ]
+
+        const emptyCategory = categories.find(cat => scorecard[cat] === undefined)
+        if (emptyCategory) {
+          toast.warning('⏰ Time\'s up! Auto-scoring in ' + emptyCategory)
+          
+          // Create score move directly
+          const move: Move = {
+            playerId: currentUserId,
+            type: 'score',
+            data: { category: emptyCategory },
+            timestamp: new Date(),
+          }
+
+          const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+          }
+          
+          if (isGuest && guestId) {
+            headers['X-Guest-Id'] = guestId
+          }
+          
+          const res = await fetch(`/api/game/${game.id}/state`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ move }),
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            const newEngine = new YahtzeeGame(gameEngine.getState().id)
+            newEngine.restoreState(data.game.state)
+            setGameEngine(newEngine)
+            
+            socket?.emit('game-action', {
+              lobbyCode: code,
+              action: 'state-change',
+              payload: data.game.state,
+            })
+          }
+        }
+      } 
+      // For Chess: forfeit the game
+      else if (gameEngine instanceof ChessGame) {
+        toast.error('⏰ Time\'s up! You lost by timeout.')
+        // TODO: Implement chess forfeit logic
+      }
+    } catch (error) {
+      console.error('Failed to handle timeout:', error)
+    }
+  }, [gameEngine, game, isMyTurn, getCurrentUserId, isGuest, guestId, socket, code, toast])
+
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined
     
@@ -154,11 +226,19 @@ function LobbyPageContent() {
 
       timer = setInterval(() => {
         setTimeLeft((prev) => {
-          if (!isMyTurn()) return prev
+          // Re-check isMyTurn in case it changed
+          const stillMyTurn = gameEngine && !gameEngine.isGameFinished() && 
+                              getCurrentPlayerIndex() !== -1 && 
+                              getCurrentPlayerIndex() === gameEngine.getState().currentPlayerIndex
+          
+          if (!stillMyTurn) return prev
           
           if (prev <= 1) {
             console.warn('⏰ Timer expired, calling handleTimeOut')
-            handleTimeOut()
+            // Use setTimeout to avoid closure issues
+            setTimeout(() => {
+              handleTimeOut()
+            }, 0)
             return 60
           }
           return prev - 1
@@ -171,7 +251,7 @@ function LobbyPageContent() {
         clearInterval(timer)
       }
     }
-  }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished()])
+  }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished(), handleTimeOut])
 
   useEffect(() => {
     if (gameEngine && !gameEngine.isGameFinished() && game?.players?.length >= 2) {
@@ -290,6 +370,14 @@ function LobbyPageContent() {
         }
       } else if (data.action === 'state-change') {
         const updatedState = data.payload
+        
+        // Prevent processing old state updates (race condition protection)
+        const newVersion = updatedState.updatedAt ? new Date(updatedState.updatedAt).getTime() : Date.now()
+        if (stateVersion > 0 && newVersion <= stateVersion) {
+          console.log('Ignoring old state update', { newVersion, stateVersion })
+          return
+        }
+        setStateVersion(newVersion)
         
         // Detect if this was a bot move (for Yahtzee only)
         if (gameEngine && lobby?.gameType === 'yahtzee' && previousGameState) {
@@ -695,43 +783,6 @@ function LobbyPageContent() {
     }).catch(error => {
       console.error('Failed to toggle hold:', error)
     })
-  }
-
-  const handleTimeOut = async () => {
-    if (!gameEngine || !game || !isMyTurn()) return
-
-    console.warn('⏰ Time is up! Auto-skipping turn...')
-    
-    try {
-      // For Yahtzee: automatically score 0 in the first available category
-      if (gameEngine instanceof YahtzeeGame) {
-        const currentUserId = getCurrentUserId()
-        if (!currentUserId) return
-
-        const scorecard = gameEngine.getScorecard(currentUserId)
-        if (!scorecard) return
-
-        // Find first empty category
-        const categories: YahtzeeCategory[] = [
-          'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-          'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
-          'largeStraight', 'yahtzee', 'chance'
-        ]
-
-        const emptyCategory = categories.find(cat => scorecard[cat] === undefined)
-        if (emptyCategory) {
-          toast.warning('⏰ Time\'s up! Auto-scoring in ' + emptyCategory)
-          await handleScoreSelection(emptyCategory)
-        }
-      } 
-      // For Chess: forfeit the game
-      else if (gameEngine instanceof ChessGame) {
-        toast.error('⏰ Time\'s up! You lost by timeout.')
-        // TODO: Implement chess forfeit logic
-      }
-    } catch (error) {
-      console.error('Failed to handle timeout:', error)
-    }
   }
 
   const handleScoreSelection = async (category: YahtzeeCategory) => {
