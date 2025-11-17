@@ -5,16 +5,13 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { ChessGame } from '@/lib/games/chess-game'
 import { Move } from '@/lib/game-engine'
 import { YahtzeeCategory } from '@/lib/yahtzee'
-import { ChessMove, Position, PieceColor } from '@/lib/games/chess-types'
 import { saveGameState } from '@/lib/game'
 import { useToast } from '@/contexts/ToastContext'
 import toast from 'react-hot-toast'
 import DiceGroup from '@/components/DiceGroup'
 import Scorecard from '@/components/Scorecard'
-import ChessBoard from '@/components/ChessBoard'
 import PlayerList from '@/components/PlayerList'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
@@ -46,7 +43,7 @@ function LobbyPageContent() {
 
   const [lobby, setLobby] = useState<any>(null)
   const [game, setGame] = useState<any>(null)
-  const [gameEngine, setGameEngine] = useState<YahtzeeGame | ChessGame | null>(null)
+  const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
   const [loading, setLoading] = useState(true)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -74,11 +71,6 @@ function LobbyPageContent() {
   // Roll history and celebrations state
   const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([])
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
-
-  // Chess-specific state
-  const [selectedSquare, setSelectedSquare] = useState<Position | null>(null)
-  const [possibleMoves, setPossibleMoves] = useState<Position[]>([])
-  const [chessCurrentPlayer, setChessCurrentPlayer] = useState<PieceColor>('white')
 
   // Remove the global updateTimeout state - not needed anymore
   // Debounce is now handled inside the useEffect cleanup
@@ -206,11 +198,6 @@ function LobbyPageContent() {
             })
           }
         }
-      } 
-      // For Chess: forfeit the game
-      else if (gameEngine instanceof ChessGame) {
-        toast.error('⏰ Time\'s up! You lost by timeout.')
-        // TODO: Implement chess forfeit logic
       }
     } catch (error) {
       console.error('Failed to handle timeout:', error)
@@ -455,9 +442,7 @@ function LobbyPageContent() {
         }
         
         if (gameEngine) {
-          const newEngine = lobby?.gameType === 'chess' 
-            ? new ChessGame(gameEngine.getState().id)
-            : new YahtzeeGame(gameEngine.getState().id)
+          const newEngine = new YahtzeeGame(gameEngine.getState().id)
           newEngine.restoreState(updatedState)
           
           setPreviousGameState(updatedState)
@@ -569,12 +554,7 @@ function LobbyPageContent() {
             const parsedState = JSON.parse(activeGame.state)
             
             // Create game engine from saved state based on game type
-            let engine: YahtzeeGame | ChessGame
-            if (data.lobby.gameType === 'chess') {
-              engine = new ChessGame(activeGame.id)
-            } else {
-              engine = new YahtzeeGame(activeGame.id)
-            }
+            const engine = new YahtzeeGame(activeGame.id)
             // Restore state
             engine.restoreState(parsedState)
             setGameEngine(engine)
@@ -938,7 +918,7 @@ function LobbyPageContent() {
         body: JSON.stringify({
           gameType: lobby.gameType || 'yahtzee',
           lobbyId: lobby.id,
-          config: { maxPlayers: lobby.maxPlayers, minPlayers: lobby.gameType === 'chess' ? 2 : 1 }
+          config: { maxPlayers: lobby.maxPlayers, minPlayers: 1 }
         }),
       })
 
@@ -949,14 +929,8 @@ function LobbyPageContent() {
 
       const data = await res.json()
       
-      // Create game engine from response based on game type
-      let engine: YahtzeeGame | ChessGame
-      if (lobby.gameType === 'chess') {
-        engine = new ChessGame(data.game.id)
-        setChessCurrentPlayer('white') // Initialize chess player
-      } else {
-        engine = new YahtzeeGame(data.game.id)
-      }
+      // Create game engine from response
+      const engine = new YahtzeeGame(data.game.id)
       engine.restoreState(data.game.state)
       setGameEngine(engine)
       
@@ -1041,101 +1015,6 @@ function LobbyPageContent() {
       return newState
     })
   }
-
-  const handleChessSquareClick = useCallback((position: Position) => {
-    if (!gameEngine || !(gameEngine instanceof ChessGame) || !game) return
-
-    const chessGame = gameEngine as ChessGame
-    const piece = chessGame.getBoard().pieces[position.row][position.col]
-
-    if (selectedSquare) {
-      // If clicking on a possible move, make the move
-      const isPossibleMove = possibleMoves.some(move => move.row === position.row && move.col === position.col)
-      if (isPossibleMove) {
-        const move: ChessMove = {
-          from: selectedSquare,
-          to: position,
-          piece: chessGame.getBoard().pieces[selectedSquare.row][selectedSquare.col]!,
-          capturedPiece: piece || undefined
-        }
-        handleChessMove(move)
-        return
-      }
-    }
-
-    // Select a piece if it's the current player's piece
-    if (piece && piece.color === chessCurrentPlayer && isMyTurn()) {
-      setSelectedSquare(position)
-      // Calculate possible moves for this piece
-      const moves = chessGame.getPossibleMoves(position)
-      setPossibleMoves(moves)
-    } else {
-      // Deselect if clicking on empty square or opponent's piece
-      setSelectedSquare(null)
-      setPossibleMoves([])
-    }
-  }, [gameEngine, game, selectedSquare, possibleMoves, chessCurrentPlayer, isMyTurn])
-
-  const handleChessMove = useCallback(async (move: ChessMove) => {
-    if (!gameEngine || !(gameEngine instanceof ChessGame) || !game) return
-
-    try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (isGuest && guestId) {
-        headers['X-Guest-Id'] = guestId
-      }
-      
-      const res = await fetch(`/api/game/${game.id}/state`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          move: {
-            playerId: getCurrentUserId() || '',
-            type: 'move',
-            data: {
-              from: move.from,
-              to: move.to,
-            },
-            timestamp: new Date(),
-          }
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to make move')
-      }
-
-      // Clear selection
-      setSelectedSquare(null)
-      setPossibleMoves([])
-
-      // Update local game engine with new instance
-      if (gameEngine && data.game && data.game.state) {
-        const newEngine = new ChessGame(gameEngine.getState().id)
-        newEngine.restoreState(data.game.state)
-        setGameEngine(newEngine)
-        setChessCurrentPlayer(newEngine.getState().data.currentPlayer)
-      }
-      
-      soundManager.play('click')
-
-      // Emit move to other players
-      if (socket) {
-        socket.emit('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to make move')
-    }
-  }, [gameEngine, game, isGuest, guestId, socket, code, getCurrentUserId])
 
   const handleLeaveLobby = async () => {
 
@@ -1238,7 +1117,7 @@ function LobbyPageContent() {
         <div className="card max-w-md">
           <h1 className="text-2xl font-bold mb-4">Lobby Not Found</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button onClick={() => router.push('/games/chess/lobbies')} className="btn btn-primary">
+          <button onClick={() => router.push('/games/yahtzee/lobbies')} className="btn btn-primary">
             Back to Lobbies
           </button>
         </div>
@@ -1273,7 +1152,7 @@ function LobbyPageContent() {
             onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             className="hover:text-white transition-colors"
           >
-            {lobby.gameType === 'chess' ? '♟️ Chess' : '🎲 Yahtzee'}
+            🎲 Yahtzee
           </button>
           <span>›</span>
           <span className="text-white font-semibold">{lobby.code}</span>
@@ -1387,17 +1266,17 @@ function LobbyPageContent() {
               <div className="card text-center animate-scale-in">
                 <div className="mb-6">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-                    <span className="text-4xl">{lobby.gameType === 'chess' ? '♟️' : '🎲'}</span>
+                    <span className="text-4xl">🎲</span>
                   </div>
                   <h2 className="text-3xl font-bold mb-2">
-                    Ready to Play {lobby.gameType === 'chess' ? 'Chess' : 'Yahtzee'}?
+                    Ready to Play Yahtzee?
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
                     {game?.players?.length || 0} player(s) in lobby
                   </p>
-                  {game?.players?.length < (lobby.gameType === 'chess' ? 2 : 2) ? (
+                  {game?.players?.length < 2 ? (
                     <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
-                      ⏳ Waiting for more players to join... (minimum {lobby.gameType === 'chess' ? 2 : 2} players)
+                      ⏳ Waiting for more players to join... (minimum 2 players)
                     </p>
                   ) : (
                     <p className="text-sm text-green-600 dark:text-green-400 mb-4">
@@ -1405,10 +1284,7 @@ function LobbyPageContent() {
                     </p>
                   )}
                   <p className="text-sm text-gray-500 dark:text-gray-500">
-                    {lobby.gameType === 'chess'
-                      ? 'Checkmate your opponent to win!'
-                      : 'Roll the dice, score big, and have fun!'
-                    }
+                    Roll the dice, score big, and have fun!
                   </p>
                 </div>
 
@@ -1419,10 +1295,10 @@ function LobbyPageContent() {
                         soundManager.play('click')
                         handleStartGame()
                       }}
-                      disabled={game?.players?.length < (lobby.gameType === 'chess' ? 2 : 2)}
+                      disabled={game?.players?.length < 2}
                       className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed w-full"
                     >
-                      🎮 Start {lobby.gameType === 'chess' ? 'Chess' : 'Yahtzee'} Game
+                      🎮 Start Yahtzee Game
                     </button>
                     
                     {/* Add Bot Button */}
@@ -1453,92 +1329,20 @@ function LobbyPageContent() {
               </div>
             ) : gameEngine?.isGameFinished() ? (
               // Game finished - show results
-              lobby.gameType === 'yahtzee' && gameEngine instanceof YahtzeeGame ? (
-                <YahtzeeResults
-                  results={analyzeResults(
-                    gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
-                    (id) => (gameEngine as YahtzeeGame).getScorecard(id)
-                  )}
-                  currentUserId={getCurrentUserId() || null}
-                  onPlayAgain={handleStartGame}
-                  onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
-                />
-              ) : (
-                // Keep existing chess results display
-                <div className="card text-center animate-scale-in">
-                  <div className="mb-6">
-                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in">
-                      <span className="text-6xl">🏆</span>
-                    </div>
-                    <h2 className="text-4xl font-bold mb-2">Game Over!</h2>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {lobby.gameType === 'chess' ? 'Checkmate!' : 'Game completed'}
-                    </p>
-                  </div>
-
-                  {(() => {
-                    if (lobby.gameType === 'chess' && gameEngine instanceof ChessGame) {
-                      const chessGame = gameEngine as ChessGame
-                      const winner = chessGame.checkWinCondition()
-                      const winnerPlayer = winner ? game.players.find((p: any) => p.userId === winner.id) : null
-
-                      return (
-                        <div className="mb-8 p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl">
-                          <p className="text-2xl font-bold mb-2">
-                            {winner && winnerPlayer?.userId === session?.user?.id ? '🎊 You Won! 🎊' :
-                             winner ? `🏆 ${winnerPlayer?.user?.username || winner.name} Wins! 🏆` :
-                             '🤝 It\'s a Draw! 🤝'}
-                          </p>
-                          <p className="text-lg text-gray-700 dark:text-gray-300">
-                            {winner ? 'Checkmate!' : 'Stalemate or draw by agreement'}
-                          </p>
-                        </div>
-                      )
-                    }
-                  })()}
-
-                  <div className="flex gap-4 justify-center">
-                    <button onClick={handleStartGame} className="btn btn-success text-lg px-8 py-3">
-                      🔄 Play Again
-                    </button>
-                    <button onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)} className="btn btn-secondary text-lg px-8 py-3">
-                      🏠 Back to Lobbies
-                    </button>
-                  </div>
-                </div>
-              )
+              <YahtzeeResults
+                results={analyzeResults(
+                  gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
+                  (id) => (gameEngine as YahtzeeGame).getScorecard(id)
+                )}
+                currentUserId={getCurrentUserId() || null}
+                onPlayAgain={handleStartGame}
+                onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+              />
             ) : (
               <>
                 {/* Game Status Bar */}
                 <div className="card mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                  {lobby.gameType === 'chess' && gameEngine instanceof ChessGame ? (
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-sm opacity-90">Current Player</p>
-                        <p className="text-3xl font-bold">
-                          {chessCurrentPlayer === 'white' ? '⚪ White' : '⚫ Black'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm opacity-90">Move</p>
-                        <p className="text-3xl font-bold">{(gameEngine as ChessGame).getFullMoveNumber()}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm opacity-90">Time Left</p>
-                        <div className="flex items-center justify-center gap-2">
-                          <div className={`text-3xl font-bold ${
-                            timeLeft <= 10 ? 'text-red-300 animate-pulse' :
-                            timeLeft <= 30 ? 'text-yellow-300' : ''
-                          }`}>
-                            {timeLeft}s
-                          </div>
-                          {timeLeft <= 10 && (
-                            <span className="text-2xl animate-bounce">⏰</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ) : lobby.gameType === 'yahtzee' && gameEngine instanceof YahtzeeGame ? (
+                  {gameEngine instanceof YahtzeeGame ? (
                     <div className="grid grid-cols-4 gap-4 text-center">
                       <div>
                         <p className="text-sm opacity-90">Round</p>
@@ -1579,98 +1383,7 @@ function LobbyPageContent() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {lobby.gameType === 'chess' && gameEngine instanceof ChessGame ? (
-                    <>
-                      {/* Chess Board - Center */}
-                      <div className="lg:col-span-2 flex justify-center">
-                        <div className="card p-6">
-                          <ChessBoard
-                            board={(gameEngine as ChessGame).getBoard().pieces}
-                            currentPlayer={chessCurrentPlayer}
-                            selectedSquare={selectedSquare || undefined}
-                            possibleMoves={possibleMoves}
-                            onSquareClick={handleChessSquareClick}
-                            onMove={handleChessMove}
-                            disabled={!isMyTurn()}
-                            flipped={chessCurrentPlayer === 'black'} // Flip board for black player
-                          />
-                        </div>
-                      </div>
-
-                      {/* Chess Game Info - Right */}
-                      <div className="lg:col-span-1">
-                        <div className="card">
-                          <h3 className="text-lg font-bold mb-4">♟️ Chess Game</h3>
-
-                          {/* Current Turn */}
-                          <div className={`text-center mb-4 p-4 rounded-lg transition-all ${
-                            isMyTurn()
-                              ? timeLeft <= 10
-                                ? 'bg-red-100 dark:bg-red-900 border-2 border-red-500 animate-pulse'
-                                : timeLeft <= 30
-                                  ? 'bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-500'
-                                  : 'bg-green-100 dark:bg-green-900 border-2 border-green-500'
-                              : 'bg-gray-100 dark:bg-gray-700'
-                          }`}>
-                            {isMyTurn() ? (
-                              <div className="space-y-2">
-                                <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                                  🎯 YOUR TURN!
-                                </p>
-                                <p className="text-lg">
-                                  Playing as <span className="font-bold">{chessCurrentPlayer === 'white' ? '⚪ White' : '⚫ Black'}</span>
-                                </p>
-                                <div className={`text-3xl font-extrabold ${
-                                  timeLeft <= 10
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : timeLeft <= 30
-                                      ? 'text-yellow-600 dark:text-yellow-400'
-                                      : 'text-gray-700 dark:text-gray-300'
-                                }`}>
-                                  <span className={timeLeft <= 10 ? 'animate-bounce inline-block' : ''}>
-                                    {timeLeft <= 10 ? '⏰' : '⏱️'}
-                                  </span> {timeLeft}s
-                                </div>
-                                {timeLeft <= 10 && (
-                                  <p className="text-sm text-red-600 dark:text-red-400 font-semibold">
-                                    ⚠️ Hurry up! Time is running out!
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                                  ⏳ Waiting for opponent...
-                                </p>
-                                <p className="text-sm">
-                                  Current player: <span className="font-bold">{chessCurrentPlayer === 'white' ? '⚪ White' : '⚫ Black'}</span>
-                                </p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Game Status */}
-                          <div className="mb-4">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Move: {(gameEngine as ChessGame).getFullMoveNumber()}
-                            </p>
-                          </div>
-
-                          {/* Selected Square Info */}
-                          {selectedSquare && (
-                            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                                Selected: {String.fromCharCode(97 + selectedSquare.col)}{8 - selectedSquare.row}
-                              </p>
-                              <p className="text-xs text-blue-600 dark:text-blue-400">
-                                {possibleMoves.length} possible moves
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  ) : lobby.gameType === 'yahtzee' && gameEngine instanceof YahtzeeGame ? (
+                  {gameEngine instanceof YahtzeeGame ? (
                     <>
                       {/* Yahtzee Dice Section - Left Column */}
                       <div className="lg:col-span-1">

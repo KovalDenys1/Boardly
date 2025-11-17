@@ -5,26 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
 
-type GameType = 'yahtzee' | 'chess'
+type GameType = 'yahtzee'
 
 const GAME_INFO = {
   yahtzee: {
-    emoji: '🎲',
-    name: 'Yahtzee',
-    description: 'Set up your Yahtzee game and invite friends to join!',
-    defaultMaxPlayers: 4,
-    allowedPlayers: [2, 3, 4, 6, 8],
-    gradient: 'from-blue-500 via-purple-600 to-pink-500'
-  },
-  chess: {
-    emoji: '♟️',
-    name: 'Chess',
-    description: 'Create a chess match and challenge your opponent!',
-    defaultMaxPlayers: 2,
-    allowedPlayers: [2],
-    gradient: 'from-gray-800 via-gray-700 to-gray-900'
-  }
-}
 
 function CreateLobbyPage() {
   const router = useRouter()

@@ -124,7 +124,7 @@ export abstract class GameEngine {
 
   // Override this in subclasses to control when turn advances
   protected shouldAdvanceTurn(move: Move): boolean {
-    // By default, advance turn after every move (Chess behavior)
+    // By default, advance turn after every move
     return true;
   }
 

@@ -12,8 +12,8 @@ export const metadata: Metadata = {
     default: 'Boardly - Play Board Games Online with Friends',
     template: '%s | Boardly'
   },
-  description: 'Play popular board games online with friends in real-time. Join Yahtzee, Chess, and more multiplayer games. Free, no download required. Create lobbies, invite friends, and start playing instantly!',
-  keywords: ['board games', 'online games', 'multiplayer games', 'yahtzee online', 'chess online', 'play with friends', 'browser games', 'free online games', 'real-time games', 'boardly'],
+  description: 'Play popular board games online with friends in real-time. Join Yahtzee and more multiplayer games. Free, no download required. Create lobbies, invite friends, and start playing instantly!',
+  keywords: ['board games', 'online games', 'multiplayer games', 'yahtzee online', 'play with friends', 'browser games', 'free online games', 'real-time games', 'boardly'],
   authors: [{ name: 'Boardly' }],
   creator: 'Boardly',
   publisher: 'Boardly',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://www.boardly.online',
     title: 'Boardly - Play Board Games Online with Friends',
-    description: 'Play popular board games online with friends in real-time. Join Yahtzee, Chess, and more multiplayer games. Free, no download required.',
+    description: 'Play popular board games online with friends in real-time. Join Yahtzee and more multiplayer games. Free, no download required.',
     siteName: 'Boardly',
     images: [
       {

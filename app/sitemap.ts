@@ -25,14 +25,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${baseUrl}/games/yahtzee/lobbies`,
       lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/games/chess/lobbies`,
-      lastModified: new Date(),
-      changeFrequency: 'hourly',
-      priority: 0.8,
+      changeFrequency: 'daily',
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/auth/login`,

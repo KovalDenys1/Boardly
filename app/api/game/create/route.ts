@@ -3,8 +3,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { ChessGame } from '@/lib/games/chess-game'
-import { GameConfig } from '@/lib/game-engine'
+import { GameEngine } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 
@@ -71,14 +70,6 @@ export async function POST(request: NextRequest) {
           ...config
         }
         gameEngine = new YahtzeeGame(`game_${Date.now()}`, gameConfig)
-        break
-      case 'chess':
-        gameConfig = {
-          maxPlayers: 2,
-          minPlayers: 2,
-          ...config
-        }
-        gameEngine = new ChessGame(`game_${Date.now()}`, gameConfig)
         break
       default:
         return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })

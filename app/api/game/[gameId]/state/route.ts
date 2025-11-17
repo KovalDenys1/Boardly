@@ -3,7 +3,6 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { ChessGame } from '@/lib/games/chess-game'
 import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 
@@ -75,11 +74,6 @@ export async function POST(
     switch (game.lobby.gameType) {
       case 'yahtzee':
         gameEngine = new YahtzeeGame(game.id)
-        // Restore state
-        gameEngine.restoreState(gameState)
-        break
-      case 'chess':
-        gameEngine = new ChessGame(game.id)
         // Restore state
         gameEngine.restoreState(gameState)
         break

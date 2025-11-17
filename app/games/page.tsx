@@ -39,17 +39,6 @@ const games: Game[] = [
     color: 'from-red-500 to-pink-600'
   },
   {
-    id: 'chess',
-    name: 'Chess',
-    emoji: '♟️',
-    description: 'Strategic board game for two players. Checkmate your opponent to win!',
-    players: '2 players',
-    difficulty: 'Hard',
-    status: 'available',
-    route: '/games/chess/lobbies',
-    color: 'from-gray-700 to-gray-900'
-  },
-  {
     id: 'checkers',
     name: 'Checkers',
     emoji: '⚫',

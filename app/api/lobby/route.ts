@@ -13,7 +13,7 @@ const createLobbySchema = z.object({
   name: z.string().min(1).max(50),
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(8).default(4),
-  gameType: z.enum(['yahtzee', 'chess']).default('yahtzee'),
+  gameType: z.enum(['yahtzee']).default('yahtzee'),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -61,28 +61,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Create lobby with initial game and add creator as first player
-    // Initial state depends on game type
-    let initialState: any
-    
-    if (gameType === 'chess') {
-      // Chess initial state
-      initialState = {
-        gameType: 'chess',
-        players: [],
-        currentPlayerIndex: 0,
-        status: 'waiting',
-        data: {
-          board: null, // Will be initialized when game starts
-          currentPlayer: 'white',
-          moveHistory: [],
-          halfMoveClock: 0,
-          fullMoveNumber: 1,
-          gameStatus: 'waiting'
-        }
-      }
-    } else {
-      // Yahtzee initial state
-      initialState = {
+    // Initial state for Yahtzee
+    const initialState: any = {
         gameType: 'yahtzee',
         players: [],
         currentPlayerIndex: 0,
@@ -94,7 +74,6 @@ export async function POST(request: NextRequest) {
           rollsLeft: 3,
           scores: [{}],
         }
-      }
     }
     
     const lobby = await prisma.lobby.create({
