@@ -147,13 +147,17 @@ function LobbyPageContent() {
     let timer: NodeJS.Timeout | undefined
     
     if (gameEngine && !gameEngine.isGameFinished() && timerActive) {
-      setTimeLeft(60)
+      // Reset timer when it's your turn
+      if (isMyTurn()) {
+        setTimeLeft(60)
+      }
 
       timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (!isMyTurn()) return prev
           
           if (prev <= 1) {
+            console.warn('⏰ Timer expired, calling handleTimeOut')
             handleTimeOut()
             return 60
           }
@@ -694,8 +698,40 @@ function LobbyPageContent() {
   }
 
   const handleTimeOut = async () => {
-    // Time out logic is now handled on the server side
-    // This function is kept for compatibility but does nothing
+    if (!gameEngine || !game || !isMyTurn()) return
+
+    console.warn('⏰ Time is up! Auto-skipping turn...')
+    
+    try {
+      // For Yahtzee: automatically score 0 in the first available category
+      if (gameEngine instanceof YahtzeeGame) {
+        const currentUserId = getCurrentUserId()
+        if (!currentUserId) return
+
+        const scorecard = gameEngine.getScorecard(currentUserId)
+        if (!scorecard) return
+
+        // Find first empty category
+        const categories: YahtzeeCategory[] = [
+          'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
+          'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
+          'largeStraight', 'yahtzee', 'chance'
+        ]
+
+        const emptyCategory = categories.find(cat => scorecard[cat] === undefined)
+        if (emptyCategory) {
+          toast.warning('⏰ Time\'s up! Auto-scoring in ' + emptyCategory)
+          await handleScoreSelection(emptyCategory)
+        }
+      } 
+      // For Chess: forfeit the game
+      else if (gameEngine instanceof ChessGame) {
+        toast.error('⏰ Time\'s up! You lost by timeout.')
+        // TODO: Implement chess forfeit logic
+      }
+    } catch (error) {
+      console.error('Failed to handle timeout:', error)
+    }
   }
 
   const handleScoreSelection = async (category: YahtzeeCategory) => {
