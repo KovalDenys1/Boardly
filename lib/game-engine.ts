@@ -81,6 +81,15 @@ export abstract class GameEngine {
     return true;
   }
 
+  shufflePlayers(): void {
+    // Fisher-Yates shuffle algorithm
+    for (let i = this.state.players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.state.players[i], this.state.players[j]] = [this.state.players[j], this.state.players[i]];
+    }
+    this.state.updatedAt = new Date();
+  }
+
   startGame(): boolean {
     if (this.state.players.length < this.config.minPlayers) {
       return false;

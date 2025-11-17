@@ -6,6 +6,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { ChessGame } from '@/lib/games/chess-game'
 import { GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { BotMoveExecutor } from '@/lib/bot-executor'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -93,6 +94,9 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Shuffle players before starting to randomize turn order
+    gameEngine.shufflePlayers()
+
     // Start the game
     const gameStarted = gameEngine.startGame()
     if (!gameStarted) {
@@ -121,6 +125,44 @@ export async function POST(request: NextRequest) {
       where: { id: lobbyId },
       data: { isActive: false }, // Mark lobby as inactive when game starts
     })
+
+    // Check if first player is a bot and trigger bot turn
+    const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
+    const currentPlayer = game.players[currentPlayerIndex]
+    
+    if (currentPlayer && BotMoveExecutor.isBot(currentPlayer)) {
+      console.log('🤖 First player is a bot, triggering bot turn...')
+      
+      // Trigger bot turn via separate HTTP request (fire and forget)
+      const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+      
+      fetch(botApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          botUserId: currentPlayer.userId,
+          lobbyCode: lobby.code,
+        }),
+        signal: controller.signal,
+      })
+        .then(() => clearTimeout(timeoutId))
+        .catch(error => {
+          clearTimeout(timeoutId)
+          if (error.name === 'AbortError') {
+            console.error('🤖 Bot turn timeout - request aborted after 30s')
+          } else {
+            console.error('🤖 Failed to trigger bot turn:', error)
+          }
+        })
+        
+      console.log('🤖 Bot turn request sent to:', botApiUrl)
+    }
 
     return NextResponse.json({
       game: {

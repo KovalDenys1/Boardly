@@ -42,18 +42,14 @@
 - **Email**: [Resend](https://resend.com/)
 - **Hosting**: 
   - Frontend: [Vercel](https://vercel.com/)
-  - Database: [Supabase](https://supabase.com/)
   - WebSocket: [Render](https://render.com/)
+  - Database: Any PostgreSQL provider (e.g., Render, Railway, Supabase)
 
 ## 🚀 Deployment
 
-See our comprehensive deployment guides:
-- **Quick Start**: [DEPLOYMENT_QUICKSTART.md](DEPLOYMENT_QUICKSTART.md) - Fast deployment in 30 minutes
-- **Full Guide**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Detailed step-by-step instructions
-
 ### Quick Deploy
 
-1. **Database Setup (Supabase)**:
+1. **Database Setup (PostgreSQL)**:
    ```bash
    # Set DATABASE_URL in .env
    npm install
@@ -61,30 +57,26 @@ See our comprehensive deployment guides:
    ```
 
 2. **WebSocket Server (Render)**:
-   - Use `render.yaml` for auto-configuration
-   - See `.render-env-template.md` for environment variables
+   - Deploy `socket-server.ts` as a Node.js service
+   - Set environment variables (DATABASE_URL, JWT_SECRET, etc.)
+   - Use provided `render.yaml` for configuration
 
 3. **Frontend (Vercel)**:
-   - Connect your GitHub repository
-   - See `.vercel-env-template.md` for environment variables
-   - Configure custom domain: boardly.online
-
-### Environment Setup Script
-
-```bash
-# Linux/Mac
-chmod +x setup-env.sh
-./setup-env.sh
-
-# Windows
-setup-env.bat
-```
+   - Connect your GitHub repository to Vercel
+   - Set environment variables
+   - Deploy automatically on push
 
 ## 🏃 Local Development
-- **Socket.IO**: Simplifies real-time bidirectional communication for live multiplayer games
-- **Prisma**: Type-safe database queries and excellent migration system
-- **Supabase**: Offers PostgreSQL with great developer tools and real-time capabilities
-- **Vercel**: Perfect integration with Next.js, instant deployments, and global CDN
+
+**Start the Next.js development server:**
+```bash
+npm run dev
+```
+
+**Start the Socket.IO server (in a separate terminal):**
+```bash
+npm run socket:dev
+```
 
 
 ## 🎯 Roadmap
@@ -141,8 +133,6 @@ EMAIL_FROM="noreply@example.com"
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
-
-**Using Supabase?** Get your PostgreSQL connection string from your Supabase project settings.
 
 ### 3. Database Setup
 
@@ -229,14 +219,13 @@ Boardly/
 ├── public/
 │   └── sounds/               # Sound effect files
 ├── types/                    # TypeScript type definitions
-├── server.ts                 # Custom Next.js server with Socket.IO
-├── socket-server.ts          # Socket.IO event handlers
+├── socket-server.ts          # Standalone Socket.IO server
 └── package.json              # Project dependencies and scripts
 ```
 
 ## 🚀 Deployment
 
-This project is configured to deploy on **Vercel** with a **Supabase** PostgreSQL database.
+This project deploys to **Vercel** (frontend) with **PostgreSQL** database and **Render** (Socket.IO server).
 
 ### Deploy to Vercel
 
