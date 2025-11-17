@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Dice from './Dice'
 
 interface DiceGroupProps {
@@ -10,7 +11,7 @@ interface DiceGroupProps {
   isRolling?: boolean
 }
 
-export default function DiceGroup({ dice, held, onToggleHold, disabled = false, isRolling = false }: DiceGroupProps) {
+const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disabled = false, isRolling = false }: DiceGroupProps) {
   return (
     <div className="card">
       <h2 className="text-2xl font-bold mb-4 text-center">🎲 Dice</h2>
@@ -37,4 +38,6 @@ export default function DiceGroup({ dice, held, onToggleHold, disabled = false, 
       </div>
     </div>
   )
-}
+})
+
+export default DiceGroup

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface Player {
   id: string
@@ -21,7 +21,7 @@ interface PlayerListProps {
   currentUserId?: string
 }
 
-export default function PlayerList({ players, currentTurn, currentUserId }: PlayerListProps) {
+const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId }: PlayerListProps) {
   const sortedPlayers = [...players].sort((a, b) => a.position - b.position)
   const [prevScores, setPrevScores] = useState<Record<string, number>>({})
   const [animatingScores, setAnimatingScores] = useState<Record<string, boolean>>({})
@@ -138,4 +138,6 @@ export default function PlayerList({ players, currentTurn, currentUserId }: Play
       </div>
     </div>
   )
-}
+})
+
+export default PlayerList
