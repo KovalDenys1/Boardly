@@ -7,8 +7,25 @@ import { io } from 'socket.io-client'
 
 type GameType = 'yahtzee'
 
-const GAME_INFO = {
+type GameInfo = {
+  name: string
+  emoji: string
+  description: string
+  gradient: string
+  allowedPlayers: number[]
+  defaultMaxPlayers: number
+}
+
+const GAME_INFO: Record<GameType, GameInfo> = {
   yahtzee: {
+    name: 'Yahtzee',
+    emoji: '🎲',
+    description: 'Roll five dice, score combos, and race friends to the highest total.',
+    gradient: 'from-purple-600 via-pink-500 to-orange-400',
+    allowedPlayers: [2, 3, 4],
+    defaultMaxPlayers: 4,
+  },
+}
 
 function CreateLobbyPage() {
   const router = useRouter()

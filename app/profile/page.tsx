@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession()
+  const { data: session, update, status } = useSession()
   const router = useRouter()
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,6 +16,12 @@ export default function ProfilePage() {
       setUsername(session.user.name)
     }
   }, [session])
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/auth/login')
+    }
+  }, [status, router])
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,8 +75,15 @@ export default function ProfilePage() {
     }
   }
 
-  if (!session) {
-    router.push('/auth/login')
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    )
+  }
+
+  if (status === 'unauthenticated') {
     return null
   }
 

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { GameEngine } from '@/lib/game-engine'
+import { GameEngine, GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 

@@ -1,10 +1,11 @@
-'use client'
+﻿'use client'
 
 import { PlayerResults } from '@/lib/yahtzee-results'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
   currentUserId: string | null
+  canStartGame: boolean
   onPlayAgain: () => void
   onBackToLobby: () => void
 }
@@ -12,6 +13,7 @@ interface YahtzeeResultsProps {
 export default function YahtzeeResults({
   results,
   currentUserId,
+  canStartGame,
   onPlayAgain,
   onBackToLobby
 }: YahtzeeResultsProps) {
@@ -27,13 +29,13 @@ export default function YahtzeeResults({
       {/* Header Section */}
       <div className="mb-6">
         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in shadow-2xl">
-          <span className="text-6xl">🏆</span>
+          <span className="text-6xl">ðŸ†</span>
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
           Game Over!
         </h2>
         <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
-          13 rounds completed • {results.length} {results.length === 1 ? 'player' : 'players'}
+          13 rounds completed â€¢ {results.length} {results.length === 1 ? 'player' : 'players'}
         </p>
       </div>
       
@@ -41,7 +43,7 @@ export default function YahtzeeResults({
       <div className="mb-8 p-4 sm:p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl border-4 border-yellow-400 dark:border-yellow-600 shadow-xl">
         <div className="text-center mb-4">
           <p className="text-2xl sm:text-3xl font-bold mb-2">
-            {isWinner ? '🎊 You Won! 🎊' : `🏆 ${winner.playerName} Wins! 🏆`}
+            {isWinner ? 'ðŸŽŠ You Won! ðŸŽŠ' : `ðŸ† ${winner.playerName} Wins! ðŸ†`}
           </p>
           <p className="text-4xl sm:text-5xl font-bold text-yellow-600 dark:text-yellow-400">
             {winner.totalScore} points
@@ -106,7 +108,7 @@ export default function YahtzeeResults({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <span className="text-2xl sm:text-3xl font-bold">
-                      {player.rank === 0 ? '🥇' : player.rank === 1 ? '🥈' : player.rank === 2 ? '🥉' : `#${player.rank + 1}`}
+                      {player.rank === 0 ? 'ðŸ¥‡' : player.rank === 1 ? 'ðŸ¥ˆ' : player.rank === 2 ? 'ðŸ¥‰' : `#${player.rank + 1}`}
                     </span>
                     <div>
                       <p className="text-base sm:text-xl font-bold flex items-center gap-2">
@@ -168,18 +170,26 @@ export default function YahtzeeResults({
       
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-8">
-        <button 
-          onClick={onPlayAgain} 
-          className="btn btn-success text-base sm:text-lg px-6 sm:px-8 py-3 flex items-center gap-2 justify-center hover:scale-105 transition-transform"
-        >
-          <span className="text-xl">🔄</span>
-          <span>Play Again</span>
-        </button>
-        <button 
-          onClick={onBackToLobby} 
+        <div className="flex flex-col items-center">
+          <button
+            onClick={onPlayAgain}
+            disabled={!canStartGame}
+            className="btn btn-success text-base sm:text-lg px-6 sm:px-8 py-3 flex items-center gap-2 justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="text-xl">�Y""</span>
+            <span>Play Again</span>
+          </button>
+          {!canStartGame && (
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Only the lobby host can start the next round.
+            </p>
+          )}
+        </div>
+        <button
+          onClick={onBackToLobby}
           className="btn btn-secondary text-base sm:text-lg px-6 sm:px-8 py-3 flex items-center gap-2 justify-center hover:scale-105 transition-transform"
         >
-          <span className="text-xl">🏠</span>
+          <span className="text-xl">�Y?�</span>
           <span>Back to Lobbies</span>
         </button>
       </div>

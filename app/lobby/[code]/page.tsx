@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
@@ -100,6 +100,11 @@ function LobbyPageContent() {
     return session?.user?.id
   }
 
+  const getCurrentUserName = () => {
+    if (isGuest) return guestName || 'Guest'
+    return session?.user?.name || 'Player'
+  }
+
   const getCurrentPlayerIndex = () => {
     if (!game?.players) {
       return -1
@@ -141,7 +146,7 @@ function LobbyPageContent() {
   const handleTimeOut = useCallback(async () => {
     if (!gameEngine || !game || !isMyTurn()) return
 
-    console.warn('⏰ Time is up! Auto-skipping turn...')
+    console.warn('â° Time is up! Auto-skipping turn...')
     
     try {
       // For Yahtzee: automatically score 0 in the first available category
@@ -161,7 +166,7 @@ function LobbyPageContent() {
 
         const emptyCategory = categories.find(cat => scorecard[cat] === undefined)
         if (emptyCategory) {
-          toast.warning('⏰ Time\'s up! Auto-scoring in ' + emptyCategory)
+          toast.warning('â° Time\'s up! Auto-scoring in ' + emptyCategory)
           
           // Create score move directly
           const move: Move = {
@@ -223,7 +228,7 @@ function LobbyPageContent() {
           if (!stillMyTurn) return prev
           
           if (prev <= 1) {
-            console.warn('⏰ Timer expired, calling handleTimeOut')
+            console.warn('â° Timer expired, calling handleTimeOut')
             // Use setTimeout to avoid closure issues
             setTimeout(() => {
               handleTimeOut()
@@ -291,8 +296,8 @@ function LobbyPageContent() {
         }
       }
       
-      // Fallback: use session user id if available
-      return session?.user?.id || null
+      // Fallback: use current user identifier if available
+      return getCurrentUserId() || null
     }
 
     const token = getAuthToken()
@@ -321,18 +326,18 @@ function LobbyPageContent() {
     let celebrationTimeout: NodeJS.Timeout | null = null
 
     const handleConnect = () => {
-      console.log('✅ Socket connected to lobby:', code)
+      console.log('âœ… Socket connected to lobby:', code)
       newSocket.emit('join-lobby', code)
       
       if (isFirstConnection) {
         isFirstConnection = false
-        toast.success('🟢 Connected to lobby')
+        toast.success('ðŸŸ¢ Connected to lobby')
       }
     }
 
     const handleDisconnect = (reason: string) => {
-      console.log('❌ Socket disconnected:', reason)
-      toast.warning('🔴 Disconnected from lobby')
+      console.log('âŒ Socket disconnected:', reason)
+      toast.warning('ðŸ”´ Disconnected from lobby')
       
       if (reason === 'io server disconnect') {
         newSocket.connect()
@@ -347,12 +352,12 @@ function LobbyPageContent() {
       if (error.message.includes('timeout')) {
         console.warn('Socket connection timeout - retrying...')
       } else if (retryCount > 3) {
-        toast.error('⚠️ Connection issues. Trying to reconnect...')
+        toast.error('âš ï¸ Connection issues. Trying to reconnect...')
       }
     }
 
     const handleGameUpdate = (data: any) => {
-      console.log('📥 Received game-update:', data.action)
+      console.log('ðŸ“¥ Received game-update:', data.action)
       
       if (data.action === 'player-joined') {
         // Reload lobby to show new player
@@ -461,7 +466,7 @@ function LobbyPageContent() {
         
         if (data.payload.gameEnded) {
           if (!isCurrentUser) {
-            toast.warning('⚠️ Game ended! Not enough players remaining.')
+            toast.warning('âš ï¸ Game ended! Not enough players remaining.')
           }
           setGameEngine(null)
         }
@@ -485,7 +490,7 @@ function LobbyPageContent() {
         
         const currentUserId = getCurrentUserId()
         if (data.payload.userId !== currentUserId && chatMinimized) {
-          toast.info(`💬 ${data.payload.username}: ${data.payload.message}`)
+          toast.info(`ðŸ’¬ ${data.payload.username}: ${data.payload.message}`)
         }
       }
     }
@@ -498,7 +503,7 @@ function LobbyPageContent() {
     setSocket(newSocket)
 
     return () => {
-      console.log('🔌 Cleaning up socket connection')
+      console.log('ðŸ”Œ Cleaning up socket connection')
       
       // Remove all event listeners to prevent memory leaks
       newSocket.off('connect', handleConnect)
@@ -574,6 +579,55 @@ function LobbyPageContent() {
     }
   }
 
+  const addBotToLobby = async (options?: { auto?: boolean }) => {
+    try {
+      const res = await fetch(`/api/lobby/${code}/add-bot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        if (options?.auto && data?.error === 'Bot already in lobby') {
+          return true
+        }
+        throw new Error(data.error || 'Failed to add bot')
+      }
+
+      await loadLobby()
+      const successMessage = options?.auto
+        ? 'ðŸ¤– Added an AI opponent so you can start playing!'
+        : 'ðŸ¤– Bot added to lobby!'
+      toast.success(successMessage)
+      return true
+    } catch (err: any) {
+      if (options?.auto) {
+        console.warn('Auto bot addition skipped:', err.message)
+        return false
+      }
+
+      toast.error(err.message || 'Failed to add bot')
+      return false
+    }
+  }
+
+  const announceBotJoined = () => {
+    socket?.emit('player-joined')
+
+    const botJoinMessage = {
+      id: Date.now().toString() + '_botjoin',
+      userId: 'system',
+      username: 'System',
+      message: 'ðŸ¤– AI Bot joined the lobby',
+      timestamp: Date.now(),
+      type: 'system'
+    }
+    setChatMessages(prev => [...prev, botJoinMessage])
+  }
+
   const handleJoinLobby = async () => {
     try {
       if (!session?.user?.id) {
@@ -600,14 +654,14 @@ function LobbyPageContent() {
       
       // Notify lobby list and lobby members about player joining
       if (socket && socket.connected) {
-        console.log('📡 Emitting player-joined event')
+        console.log('ðŸ“¡ Emitting player-joined event')
         socket.emit('player-joined', {
           lobbyCode: code,
-          username: session?.user?.name || 'Guest',
-          userId: session?.user?.id,
+          username: getCurrentUserName(),
+          userId: getCurrentUserId(),
         })
       } else {
-        console.warn('⚠️ Socket not connected, cannot emit player-joined')
+        console.warn('âš ï¸ Socket not connected, cannot emit player-joined')
       }
       
       // Add system message to chat
@@ -615,7 +669,7 @@ function LobbyPageContent() {
         id: Date.now().toString() + '_join',
         userId: 'system',
         username: 'System',
-        message: `${session?.user?.name || 'A player'} joined the lobby`,
+        message: `${getCurrentUserName() || 'A player'} joined the lobby`,
         timestamp: Date.now(),
         type: 'system'
       }
@@ -636,13 +690,13 @@ function LobbyPageContent() {
 
     // Validate that it's the current player's turn
     if (!isMyTurn()) {
-      toast.error('🚫 It\'s not your turn to roll the dice!')
+      toast.error('ðŸš« It\'s not your turn to roll the dice!')
       return
     }
 
     // Validate that there are rolls left
     if (gameEngine.getRollsLeft() === 0) {
-      toast.error('🚫 No rolls left! Choose a category to score.')
+      toast.error('ðŸš« No rolls left! Choose a category to score.')
       return
     }
 
@@ -693,7 +747,7 @@ function LobbyPageContent() {
         const newEntry: RollHistoryEntry = {
           id: `${Date.now()}_${Math.random()}`,
           turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
-          playerName: currentPlayer?.name || session?.user?.name || 'You',
+          playerName: currentPlayer?.name || getCurrentUserName() || 'You',
           rollNumber: rollNumber,
           dice: newEngine.getDice(),
           held: newEngine.getHeld().map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1),
@@ -713,14 +767,14 @@ function LobbyPageContent() {
       
       // Emit to other players
       if (socket && socket.connected) {
-        console.log('📡 Emitting roll action to other players')
+        console.log('ðŸ“¡ Emitting roll action to other players')
         socket.emit('game-action', {
           lobbyCode: code,
           action: 'state-change',
           payload: data.game.state,
         })
       } else {
-        console.warn('⚠️ Socket not connected, cannot emit roll action')
+        console.warn('âš ï¸ Socket not connected, cannot emit roll action')
       }
 
       // Check if this was the last roll using the NEW engine state
@@ -777,14 +831,14 @@ function LobbyPageContent() {
         
         // Emit to other players
         if (socket && socket.connected) {
-          console.log('📡 Emitting hold action to other players')
+          console.log('ðŸ“¡ Emitting hold action to other players')
           socket.emit('game-action', {
             lobbyCode: code,
             action: 'state-change',
             payload: data.game.state,
           })
         } else {
-          console.warn('⚠️ Socket not connected, cannot emit hold action')
+          console.warn('âš ï¸ Socket not connected, cannot emit hold action')
         }
       } else {
         toast.error('Failed to hold dice')
@@ -806,13 +860,13 @@ function LobbyPageContent() {
 
     // Validate that it's the current player's turn
     if (!isMyTurn()) {
-      toast.error('🚫 It\'s not your turn to score!')
+      toast.error('ðŸš« It\'s not your turn to score!')
       return
     }
 
     // Validate that the player has rolled at least once (rollsLeft < 3)
     if (gameEngine.getRollsLeft() === 3) {
-      toast.error('🚫 You must roll the dice at least once before scoring!')
+      toast.error('ðŸš« You must roll the dice at least once before scoring!')
       return
     }
 
@@ -869,14 +923,14 @@ function LobbyPageContent() {
         
         // Emit to other players
         if (socket && socket.connected) {
-          console.log('📡 Emitting score action to other players')
+          console.log('ðŸ“¡ Emitting score action to other players')
           socket.emit('game-action', {
             lobbyCode: code,
             action: 'state-change',
             payload: data.game.state,
           })
         } else {
-          console.warn('⚠️ Socket not connected, cannot emit score action')
+          console.warn('âš ï¸ Socket not connected, cannot emit score action')
         }
 
         // Use newEngine for checks after state update
@@ -888,7 +942,7 @@ function LobbyPageContent() {
             soundManager.play('win')
             fireworks()
             
-            toast.success(`🎉 Game Over! ${winner.name} wins!`)
+            toast.success(`ðŸŽ‰ Game Over! ${winner.name} wins!`)
           }
         } else {
           const nextPlayer = newEngine.getCurrentPlayer()
@@ -910,6 +964,13 @@ function LobbyPageContent() {
     if (!game) return
 
     try {
+      if ((game?.players?.length || 0) < 2) {
+        const botAdded = await addBotToLobby({ auto: true })
+        if (botAdded) {
+          announceBotJoined()
+        }
+      }
+
       const res = await fetch('/api/game/create', {
         method: 'POST',
         headers: {
@@ -948,14 +1009,14 @@ function LobbyPageContent() {
       })
 
       const firstPlayerName = data.game.players[0]?.name || 'Player 1'
-      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
+      toast.success(`ðŸŽ² Game started! ${firstPlayerName} goes first!`)
 
       // Add system message to chat
       const gameStartMessage = {
         id: Date.now().toString() + '_gamestart',
         userId: 'system',
         username: 'System',
-        message: `🎲 Game started! ${firstPlayerName} goes first!`,
+        message: `ðŸŽ² Game started! ${firstPlayerName} goes first!`,
         timestamp: Date.now(),
         type: 'system'
       }
@@ -969,7 +1030,9 @@ function LobbyPageContent() {
   }
 
   const handleSendChatMessage = (message: string) => {
-    if (!session?.user?.id || !session?.user?.name) return
+    const userId = getCurrentUserId()
+    const username = getCurrentUserName()
+    if (!userId || !username) return
 
     // Basic sanitization to prevent XSS
     const sanitizedMessage = message
@@ -981,8 +1044,8 @@ function LobbyPageContent() {
 
     const chatMessage = {
       id: Date.now().toString() + Math.random(),
-      userId: session.user.id,
-      username: session.user.name,
+      userId,
+      username,
       message: sanitizedMessage,
       timestamp: Date.now(),
       type: 'message'
@@ -1002,7 +1065,7 @@ function LobbyPageContent() {
   const clearChat = () => {
     setChatMessages([])
     setUnreadMessageCount(0)
-    toast.success('🗑️ Chat cleared!')
+    toast.success('ðŸ—‘ï¸ Chat cleared!')
   }
 
   const handleToggleChat = () => {
@@ -1037,8 +1100,8 @@ function LobbyPageContent() {
           lobbyCode: code,
           action: 'player-left',
           payload: {
-            userId: session?.user?.id,
-            username: session?.user?.name,
+            userId: getCurrentUserId(),
+            username: getCurrentUserName(),
             gameEnded: data.gameEnded,
           },
         })
@@ -1052,7 +1115,7 @@ function LobbyPageContent() {
         id: Date.now().toString() + '_leave',
         userId: 'system',
         username: 'System',
-        message: `${session?.user?.name || 'A player'} left the lobby`,
+        message: `${getCurrentUserName() || 'A player'} left the lobby`,
         timestamp: Date.now(),
         type: 'system'
       }
@@ -1066,41 +1129,9 @@ function LobbyPageContent() {
   }
 
   const handleAddBot = async () => {
-    try {
-      const res = await fetch(`/api/lobby/${code}/add-bot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to add bot')
-      }
-
-      toast.success('🤖 Bot added to lobby!')
-      
-      // Reload lobby to show updated player list
-      await loadLobby()
-
-      // Notify other players
-      socket?.emit('player-joined')
-
-      // Add system message to chat
-      const botJoinMessage = {
-        id: Date.now().toString() + '_botjoin',
-        userId: 'system',
-        username: 'System',
-        message: '🤖 AI Bot joined the lobby',
-        timestamp: Date.now(),
-        type: 'system'
-      }
-      setChatMessages(prev => [...prev, botJoinMessage])
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add bot')
-    }
+    const added = await addBotToLobby()
+    if (!added) return
+    announceBotJoined()
   }
 
   if (loading) {
@@ -1125,9 +1156,11 @@ function LobbyPageContent() {
     )
   }
 
-  const isInGame = game?.players?.some((p: any) => p.userId === session?.user?.id)
+  const isInGame = game?.players?.some((p: any) => p.userId === getCurrentUserId())
   const isGameStarted = gameEngine !== null && game?.status === 'playing'
   const isWaitingInLobby = isInGame && !isGameStarted
+  const canStartGame = lobby?.creatorId && lobby.creatorId === getCurrentUserId()
+  const myTurn = isMyTurn()
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
@@ -1138,23 +1171,23 @@ function LobbyPageContent() {
             onClick={() => router.push('/')}
             className="hover:text-white transition-colors"
           >
-            🏠 Home
+            ðŸ  Home
           </button>
-          <span>›</span>
+          <span>â€º</span>
           <button 
             onClick={() => router.push('/games')}
             className="hover:text-white transition-colors"
           >
-            🎮 Games
+            ðŸŽ® Games
           </button>
-          <span>›</span>
+          <span>â€º</span>
           <button 
             onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             className="hover:text-white transition-colors"
           >
-            🎲 Yahtzee
+            ðŸŽ² Yahtzee
           </button>
-          <span>›</span>
+          <span>â€º</span>
           <span className="text-white font-semibold">{lobby.code}</span>
         </div>
 
@@ -1171,12 +1204,12 @@ function LobbyPageContent() {
                 onClick={() => {
                   soundManager.toggle()
                   setSoundEnabled(soundManager.isEnabled())
-                  toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
+                  toast.success(soundManager.isEnabled() ? 'ðŸ”Š Sound enabled' : 'ðŸ”‡ Sound disabled')
                 }} 
                 className="btn btn-secondary"
                 title={soundEnabled ? 'Disable sound' : 'Enable sound'}
               >
-                {soundEnabled ? '🔊' : '🔇'}
+                {soundEnabled ? 'ðŸ”Š' : 'ðŸ”‡'}
               </button>
               <button onClick={handleLeaveLobby} className="btn btn-secondary">
                 Leave
@@ -1189,7 +1222,7 @@ function LobbyPageContent() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
                 <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 mb-1">
-                  🔗 Invite Friends
+                  ðŸ”— Invite Friends
                 </p>
                 <div className="flex items-center gap-2">
                   <input
@@ -1202,12 +1235,12 @@ function LobbyPageContent() {
                     onClick={() => {
                       if (typeof window !== 'undefined') {
                         navigator.clipboard.writeText(`${window.location.origin}/lobby/join/${lobby.code}`)
-                        toast.success('📋 Invite link copied to clipboard!')
+                        toast.success('ðŸ“‹ Invite link copied to clipboard!')
                       }
                     }}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors whitespace-nowrap"
                   >
-                    📋 Copy
+                    ðŸ“‹ Copy
                   </button>
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
@@ -1243,7 +1276,7 @@ function LobbyPageContent() {
           </div>
         ) : (
           <>
-            {/* Player List - показываем только когда есть игроки */}
+            {/* Player List - Ð¿Ð¾ÐºÐ°Ð·Ñ‹Ð²Ð°ÐµÐ¼ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ ÐºÐ¾Ð³Ð´Ð° ÐµÑÑ‚ÑŒ Ð¸Ð³Ñ€Ð¾ÐºÐ¸ */}
             {game?.players && game.players.length > 0 && (
               <PlayerList
                 players={game.players.map((p: any, index: number) => ({
@@ -1258,7 +1291,7 @@ function LobbyPageContent() {
                   isReady: true,
                 }))}
                 currentTurn={gameEngine?.getState().currentPlayerIndex ?? -1}
-                currentUserId={session?.user?.id}
+                currentUserId={getCurrentUserId() || undefined}
               />
             )}
 
@@ -1266,7 +1299,7 @@ function LobbyPageContent() {
               <div className="card text-center animate-scale-in">
                 <div className="mb-6">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-                    <span className="text-4xl">🎲</span>
+                    <span className="text-4xl">ðŸŽ²</span>
                   </div>
                   <h2 className="text-3xl font-bold mb-2">
                     Ready to Play Yahtzee?
@@ -1276,11 +1309,11 @@ function LobbyPageContent() {
                   </p>
                   {game?.players?.length < 2 ? (
                     <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
-                      ⏳ Waiting for more players to join... (minimum 2 players)
+                      You're the only human player right now. We'll auto-add an AI opponent once you start.
                     </p>
                   ) : (
                     <p className="text-sm text-green-600 dark:text-green-400 mb-4">
-                      ✅ Ready to start!
+                      âœ… Ready to start!
                     </p>
                   )}
                   <p className="text-sm text-gray-500 dark:text-gray-500">
@@ -1295,11 +1328,17 @@ function LobbyPageContent() {
                         soundManager.play('click')
                         handleStartGame()
                       }}
-                      disabled={game?.players?.length < 2}
+                      disabled={(game?.players?.length || 0) < 1}
                       className="btn btn-success text-lg px-8 py-3 animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed w-full"
                     >
-                      🎮 Start Yahtzee Game
+                      ðŸŽ® Start Yahtzee Game
                     </button>
+                    {game?.players?.length < 2 && (
+                      <p className="text-xs text-gray-500 text-center">
+                        An AI bot will join automatically if no other players are present.
+                      </p>
+                    )}
+
                     
                     {/* Add Bot Button */}
                     {lobby.gameType === 'yahtzee' && game?.players?.length < lobby.maxPlayers && (
@@ -1312,14 +1351,14 @@ function LobbyPageContent() {
                         className="btn btn-secondary text-lg px-8 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         title={game?.players?.some((p: any) => p.user?.isBot) ? 'Bot already added' : 'Add AI opponent'}
                       >
-                        🤖 Add Bot Player
+                        ðŸ¤– Add Bot Player
                       </button>
                     )}
                   </div>
                 ) : (
                   <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-600 rounded-lg p-4">
                     <p className="text-blue-700 dark:text-blue-300 font-semibold">
-                      ⏳ Waiting for host to start the game...
+                      â³ Waiting for host to start the game...
                     </p>
                     <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
                       Host: {lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}
@@ -1335,6 +1374,7 @@ function LobbyPageContent() {
                   (id) => (gameEngine as YahtzeeGame).getScorecard(id)
                 )}
                 currentUserId={getCurrentUserId() || null}
+                canStartGame={!!canStartGame}
                 onPlayAgain={handleStartGame}
                 onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
               />
@@ -1357,7 +1397,7 @@ function LobbyPageContent() {
                       <div>
                         <p className="text-sm opacity-90">Your Score</p>
                         <p className="text-3xl font-bold">
-                          {(gameEngine as YahtzeeGame).getPlayers().find(p => p.id === session?.user?.id)?.score || 0}
+                          {(gameEngine as YahtzeeGame).getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
                         </p>
                       </div>
                       <div>
@@ -1370,7 +1410,7 @@ function LobbyPageContent() {
                             {timeLeft}s
                           </div>
                           {timeLeft <= 10 && (
-                            <span className="text-2xl animate-bounce">⏰</span>
+                            <span className="text-2xl animate-bounce">â°</span>
                           )}
                         </div>
                       </div>
@@ -1409,7 +1449,7 @@ function LobbyPageContent() {
                             {isMyTurn() ? (
                               <div className="space-y-2">
                                 <p className="text-xl font-bold text-green-600 dark:text-green-400">
-                                  🎯 YOUR TURN!
+                                  ðŸŽ¯ YOUR TURN!
                                 </p>
                                 <div className={`text-3xl font-extrabold ${
                                   timeLeft <= 10
@@ -1419,18 +1459,18 @@ function LobbyPageContent() {
                                       : 'text-gray-700 dark:text-gray-300'
                                 }`}>
                                   <span className={timeLeft <= 10 ? 'animate-bounce inline-block' : ''}>
-                                    {timeLeft <= 10 ? '⏰' : '⏱️'}
+                                    {timeLeft <= 10 ? 'â°' : 'â±ï¸'}
                                   </span> {timeLeft}s
                                 </div>
                                 {timeLeft <= 10 && (
                                   <p className="text-sm text-red-600 dark:text-red-400 font-semibold">
-                                    ⚠️ Hurry up! Time is running out!
+                                    âš ï¸ Hurry up! Time is running out!
                                   </p>
                                 )}
                               </div>
                             ) : (
                               <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
-                                ⏳ Waiting for {game?.players?.[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.username || game?.players?.[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.name || 'player'}...
+                                â³ Waiting for {game?.players?.[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.username || game?.players?.[(gameEngine as YahtzeeGame).getState().currentPlayerIndex]?.user?.name || 'player'}...
                               </p>
                             )}
                           </div>
@@ -1476,7 +1516,7 @@ function LobbyPageContent() {
                               </>
                             ) : (
                               <>
-                                🎲 Roll Dice
+                                ðŸŽ² Roll Dice
                               </>
                             )}
                           </button>
@@ -1500,7 +1540,7 @@ function LobbyPageContent() {
                             </h3>
                             <div className="flex gap-2">
                               {game?.players?.map((player: any, index: number) => {
-                                const isMe = player.userId === session?.user?.id
+                                const isMe = player.userId === getCurrentUserId()
                                 const isViewing = viewingPlayerIndex === index
                                 const isCurrentTurn = (gameEngine as YahtzeeGame).getState().currentPlayerIndex === index
 
@@ -1516,7 +1556,7 @@ function LobbyPageContent() {
                                       }
                                     `}
                                   >
-                                    {isMe ? '👤 You' : player.user?.username || `Player ${index + 1}`}
+                                    {isMe ? 'ðŸ‘¤ You' : player.user?.username || `Player ${index + 1}`}
                                     {isCurrentTurn && (
                                       <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
                                     )}
@@ -1536,7 +1576,7 @@ function LobbyPageContent() {
                               <div className="flex items-center gap-2">
                                 {viewingPlayerIndex === getCurrentPlayerIndex() ? (
                                   <>
-                                    <span className="text-2xl">📊</span>
+                                    <span className="text-2xl">ðŸ“Š</span>
                                     <div>
                                       <p className="font-bold text-blue-700 dark:text-blue-300">Your Scorecard</p>
                                       <p className="text-sm text-blue-600 dark:text-blue-400">
@@ -1546,7 +1586,7 @@ function LobbyPageContent() {
                                   </>
                                 ) : (
                                   <>
-                                    <span className="text-2xl">👀</span>
+                                    <span className="text-2xl">ðŸ‘€</span>
                                     <div>
                                       <p className="font-bold text-yellow-700 dark:text-yellow-300">
                                         Viewing: {game?.players[viewingPlayerIndex]?.user?.username || `Player ${viewingPlayerIndex + 1}`}
@@ -1643,3 +1683,11 @@ export default function LobbyPage() {
     </Suspense>
   )
 }
+
+
+
+
+
+
+
+
