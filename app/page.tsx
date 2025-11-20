@@ -69,7 +69,7 @@ export default function HomePage() {
             <p className="text-white/80 text-sm">Yahtzee, Guess the Spy, and many more games coming soon!</p>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="text-4xl mb-4">�</div>
+            <div className="text-4xl mb-4">💬</div>
             <h3 className="text-xl font-bold mb-2">Live Chat</h3>
             <p className="text-white/80 text-sm">Chat with friends in real-time while playing your favorite games</p>
           </div>

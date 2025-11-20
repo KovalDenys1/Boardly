@@ -52,7 +52,7 @@ export default function YahtzeeLobbiesPage() {
       // Setup WebSocket for real-time updates
       if (!socket) {
         const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
-        console.log('ðŸ”Œ Connecting to Socket.IO for Yahtzee lobby list:', url)
+        console.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
         
         socket = io(url, {
           transports: ['websocket', 'polling'],
@@ -62,24 +62,24 @@ export default function YahtzeeLobbiesPage() {
         })
 
         socket.on('connect', () => {
-          console.log('âœ… Socket connected for Yahtzee lobby list')
+          console.log('✅ Socket connected for Yahtzee lobby list')
           socket.emit('join-lobby-list')
         })
 
         socket.on('lobby-list-update', () => {
-          console.log('ðŸ“¡ Yahtzee lobby list update received')
+          console.log('📡 Yahtzee lobby list update received')
           loadLobbies()
         })
 
         socket.on('disconnect', () => {
-          console.log('âŒ Socket disconnected from Yahtzee lobby list')
+          console.log('❌ Socket disconnected from Yahtzee lobby list')
         })
       }
 
       return () => {
         clearInterval(refreshInterval)
         if (socket && socket.connected) {
-          console.log('ðŸ”Œ Disconnecting socket from Yahtzee lobby list')
+          console.log('🔌 Disconnecting socket from Yahtzee lobby list')
           socket.emit('leave-lobby-list')
           socket.disconnect()
           socket = null as any
@@ -137,23 +137,23 @@ export default function YahtzeeLobbiesPage() {
             onClick={() => router.push('/')}
             className="hover:text-white transition-colors"
           >
-            ðŸ  Home
+            🏠 Home
           </button>
-          <span>â€º</span>
+          <span>›</span>
           <button 
             onClick={() => router.push('/games')}
             className="hover:text-white transition-colors"
           >
-            ðŸŽ® Games
+            🎮 Games
           </button>
-          <span>â€º</span>
-          <span className="text-white font-semibold">ðŸŽ² Yahtzee Lobbies</span>
+          <span>›</span>
+          <span className="text-white font-semibold">🎲 Yahtzee Lobbies</span>
         </div>
 
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">ðŸŽ² Yahtzee Lobbies</h1>
+            <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">🎲 Yahtzee Lobbies</h1>
             <p className="text-xl text-white/90">
               {isAuthenticated ? 'Join a game or create your own lobby!' : 'Browse lobbies and sign in when you want to host or join.'}
             </p>
@@ -162,7 +162,7 @@ export default function YahtzeeLobbiesPage() {
             onClick={() => router.push('/games')}
             className="px-6 py-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105"
           >
-            â† Back to Games
+            ← Back to Games
           </button>
         </div>
 
@@ -203,7 +203,7 @@ export default function YahtzeeLobbiesPage() {
             }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="text-6xl">âœ¨</div>
+              <div className="text-6xl">✨</div>
               <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
                 NEW GAME
               </div>
@@ -220,7 +220,7 @@ export default function YahtzeeLobbiesPage() {
 
           {/* Quick Join Card */}
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow border-2 border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-4">ðŸ” Quick Join</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">🔍 Quick Join</h2>
             <p className="text-sm text-white/80 mb-6">
               Have a lobby code? Enter it below to join instantly!
             </p>
@@ -279,7 +279,7 @@ export default function YahtzeeLobbiesPage() {
           ) : lobbies.length === 0 ? (
             <div className="text-center py-16">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 mb-4">
-                <span className="text-5xl">ðŸŽ²</span>
+                <span className="text-5xl">🎲</span>
               </div>
               <h3 className="text-xl font-bold text-white mb-2">No Active Lobbies</h3>
               <p className="text-white/80 mb-6">Be the first to create one and start playing!</p>
@@ -308,9 +308,9 @@ export default function YahtzeeLobbiesPage() {
                         <span className="font-mono bg-white/20 text-white px-2 py-0.5 rounded font-bold">
                           {lobby.code}
                         </span>
-                        <span>â€¢</span>
+                        <span>•</span>
                         <span className="truncate">
-                          ðŸ‘¤ {lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'}
+                          👤 {lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'}
                         </span>
                       </div>
                     </div>
@@ -331,7 +331,7 @@ export default function YahtzeeLobbiesPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-white/80">
-                      ðŸ‘¥ Max {lobby.maxPlayers} players
+                      👥 Max {lobby.maxPlayers} players
                     </span>
                     <span className="text-yellow-300 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Join Game

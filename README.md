@@ -83,7 +83,7 @@ npm run socket:dev
 
 ### Immediate Focus
 - 🎨 **UI/UX Improvements** - Enhanced visual design and user experience
-- �️ **Guess the Spy Game** - Social deduction party game
+- 🕵️ **Guess the Spy Game** - Social deduction party game
 - 🎲 **Additional Casual Games** - More lightweight games suitable for online play
 
 ### Future Plans
@@ -94,7 +94,7 @@ npm run socket:dev
 - 📱 **Progressive Web App** - Installable mobile experience
 - 🤝 **Community Contributions** - Open platform for developers to add their own games
 
-## �📋 Prerequisites
+## 📋 Prerequisites
 
 Before running this project, ensure you have:
 
