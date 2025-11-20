@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getSecurityHeaders } from '@/lib/csrf'
+import { getServerSocketUrl } from '@/lib/socket-url'
 
 export function middleware(request: NextRequest) {
   const response = NextResponse.next()
@@ -13,7 +14,7 @@ export function middleware(request: NextRequest) {
 
   // Add CSP (Content Security Policy) header
   const isDevelopment = process.env.NODE_ENV === 'development'
-  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'
+  const socketUrl = getServerSocketUrl()
   
   const cspHeader = `
     default-src 'self';

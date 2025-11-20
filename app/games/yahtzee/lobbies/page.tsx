@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
+import { getBrowserSocketUrl } from '@/lib/socket-url'
 
 let socket: Socket
 
@@ -51,7 +52,7 @@ export default function YahtzeeLobbiesPage() {
 
       // Setup WebSocket for real-time updates
       if (!socket) {
-        const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+        const url = getBrowserSocketUrl()
         console.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
         
         socket = io(url, {

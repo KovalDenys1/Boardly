@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
+import { getBrowserSocketUrl } from '@/lib/socket-url'
 
 type GameType = 'yahtzee'
 
@@ -89,7 +90,7 @@ function CreateLobbyPage() {
       }
 
       // Notify lobby list about new lobby via WebSocket
-      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+      const socketUrl = getBrowserSocketUrl()
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: false, // Don't reconnect for this one-time notification

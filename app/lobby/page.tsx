@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import { io, Socket } from 'socket.io-client'
+import { getBrowserSocketUrl } from '@/lib/socket-url'
 
 let socket: Socket
 
@@ -49,7 +50,7 @@ export default function LobbyListPage() {
 
     // Setup WebSocket for real-time updates
     if (!socket) {
-      const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+      const url = getBrowserSocketUrl()
       console.log('🔌 Connecting to Socket.IO for lobby list:', url)
       
       socket = io(url, {

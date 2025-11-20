@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
+import { getServerSocketUrl } from '@/lib/socket-url'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -113,7 +114,7 @@ export async function POST(
 
     // Notify all clients via Socket.IO
     const finalState = gameEngine.getState()
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001'
+    const socketUrl = getServerSocketUrl()
     
     console.log('🤖 [BOT-TURN-API] Sending Socket.IO notification...')
     console.log('🤖 [BOT-TURN-API] Socket URL:', socketUrl)

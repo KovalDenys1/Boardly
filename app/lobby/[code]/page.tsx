@@ -24,6 +24,7 @@ import RollHistory, { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, detectPatternOnRoll, CelebrationEvent } from '@/lib/celebrations'
 import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
+import { getBrowserSocketUrl } from '@/lib/socket-url'
 
 function LobbyPageContent() {
   const router = useRouter()
@@ -272,7 +273,7 @@ function LobbyPageContent() {
   useEffect(() => {
     if (!lobby || !code) return
 
-    const url = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+    const url = getBrowserSocketUrl()
 
     // Get authentication token (NextAuth for users, guest ID for guests)
     const getAuthToken = () => {
