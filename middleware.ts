@@ -22,7 +22,8 @@ export function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
-    connect-src 'self' ${socketUrl} wss://*.onrender.com ws://localhost:* http://localhost:* https://vercel.live ${isDevelopment ? 'http://Denys:* ws://Denys:*' : ''};
+    connect-src 'self' ${socketUrl} wss://*.onrender.com ws://localhost:* http://localhost:* https://vercel.live https://*.ingest.sentry.io https://*.ingest.de.sentry.io ${isDevelopment ? 'http://Denys:* ws://Denys:*' : ''};
+    worker-src 'self' blob:;
     frame-src 'self' https://accounts.google.com https://vercel.live;
     object-src 'none';
     base-uri 'self';
