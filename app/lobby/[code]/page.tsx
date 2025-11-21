@@ -87,6 +87,83 @@ function LobbyPageContent() {
   // Create ref for loadLobby to avoid circular dependency
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
 
+  // Memoize socket event handlers to prevent infinite loops
+  const onGameUpdate = useCallback((payload: any) => {
+    clientLogger.log('📡 Received game-update:', payload)
+    if (payload.state) {
+      try {
+        const parsedState = typeof payload.state === 'string' 
+          ? JSON.parse(payload.state) 
+          : payload.state
+        
+        if (game?.id) {
+          const newEngine = new YahtzeeGame(game.id)
+          newEngine.restoreState(parsedState)
+          setGameEngine(newEngine)
+          
+          // Update game object with new state
+          setGame((prevGame: any) => ({
+            ...prevGame,
+            state: JSON.stringify(parsedState),
+          }))
+        }
+        
+        // TODO: Detect bot moves (requires refactoring bot visualization logic)
+        
+        setPreviousGameState(parsedState)
+      } catch (e) {
+        clientLogger.error('Failed to parse game state:', e)
+      }
+    }
+  }, [game?.id])
+
+  const onChatMessage = useCallback((message: any) => {
+    setChatMessages(prev => [...prev, message])
+    if (chatMinimized) {
+      setUnreadMessageCount(prev => prev + 1)
+    }
+  }, [chatMinimized])
+
+  const onPlayerTyping = useCallback((data: any) => {
+    if (data.userId !== getCurrentUserId()) {
+      setSomeoneTyping(true)
+      setTimeout(() => setSomeoneTyping(false), 3000)
+    }
+  }, [getCurrentUserId])
+
+  const onLobbyUpdate = useCallback((data: any) => {
+    clientLogger.log('📡 Received lobby-update:', data)
+    // Use ref to avoid circular dependency
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+  }, [])
+
+  const onPlayerJoined = useCallback((data: any) => {
+    clientLogger.log('📡 Player joined:', data)
+    // Use ref to avoid circular dependency
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+    
+    // Show notification
+    if (data.username && data.userId !== getCurrentUserId()) {
+      toast.success(`${data.username} joined the lobby`)
+      soundManager.play('playerJoin')
+    }
+  }, [getCurrentUserId])
+
+  const onGameStarted = useCallback((data: any) => {
+    clientLogger.log('📡 Game started:', data)
+    // Use ref to avoid circular dependency
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+    
+    soundManager.play('gameStart')
+    toast.success('🎮 Game started!')
+  }, [])
+
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, emitWhenConnected } = useSocketConnection({
     code,
@@ -94,76 +171,12 @@ function LobbyPageContent() {
     isGuest,
     guestId,
     guestName,
-    onGameUpdate: (payload) => {
-      clientLogger.log('📡 Received game-update:', payload)
-      if (payload.state) {
-        try {
-          const parsedState = typeof payload.state === 'string' 
-            ? JSON.parse(payload.state) 
-            : payload.state
-          
-          if (game?.id) {
-            const newEngine = new YahtzeeGame(game.id)
-            newEngine.restoreState(parsedState)
-            setGameEngine(newEngine)
-            
-            // Update game object with new state
-            setGame((prevGame: any) => ({
-              ...prevGame,
-              state: JSON.stringify(parsedState),
-            }))
-          }
-          
-          // TODO: Detect bot moves (requires refactoring bot visualization logic)
-          
-          setPreviousGameState(parsedState)
-        } catch (e) {
-          clientLogger.error('Failed to parse game state:', e)
-        }
-      }
-    },
-    onChatMessage: (message) => {
-      setChatMessages(prev => [...prev, message])
-      if (chatMinimized) {
-        setUnreadMessageCount(prev => prev + 1)
-      }
-    },
-    onPlayerTyping: (data) => {
-      if (data.userId !== getCurrentUserId()) {
-        setSomeoneTyping(true)
-        setTimeout(() => setSomeoneTyping(false), 3000)
-      }
-    },
-    onLobbyUpdate: (data) => {
-      clientLogger.log('📡 Received lobby-update:', data)
-      // Use ref to avoid circular dependency
-      if (loadLobbyRef.current) {
-        loadLobbyRef.current()
-      }
-    },
-    onPlayerJoined: (data) => {
-      clientLogger.log('📡 Player joined:', data)
-      // Use ref to avoid circular dependency
-      if (loadLobbyRef.current) {
-        loadLobbyRef.current()
-      }
-      
-      // Show notification
-      if (data.username && data.userId !== getCurrentUserId()) {
-        toast.success(`${data.username} joined the lobby`)
-        soundManager.play('playerJoin')
-      }
-    },
-    onGameStarted: (data) => {
-      clientLogger.log('📡 Game started:', data)
-      // Use ref to avoid circular dependency
-      if (loadLobbyRef.current) {
-        loadLobbyRef.current()
-      }
-      
-      soundManager.play('gameStart')
-      toast.success('🎮 Game started!')
-    },
+    onGameUpdate,
+    onChatMessage,
+    onPlayerTyping,
+    onLobbyUpdate,
+    onPlayerJoined,
+    onGameStarted,
   })
 
   // Lobby actions hook - after socket is initialized

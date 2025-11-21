@@ -114,8 +114,15 @@ npm install
 
 ### 2. Environment Configuration
 
-Create a `.env.local` file in the root directory with the following variables:
+**📝 See detailed setup guide:** [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md)
 
+**Quick setup:**
+```bash
+cp .env.example .env.local
+# Edit .env.local with your credentials
+```
+
+**Required variables:**
 ```env
 # Database
 DATABASE_URL="postgresql://username:password@host:port/database"

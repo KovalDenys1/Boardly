@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
+import { getServerSocketUrl } from '@/lib/socket-url'
 
 export async function GET(
   request: NextRequest,
@@ -173,6 +174,36 @@ export async function POST(
       })
     } catch (error) {
       console.error('Error updating game state with new player scores:', error)
+    }
+
+    // Notify all clients via WebSocket that a player joined
+    try {
+      const socketUrl = getServerSocketUrl()
+      await fetch(`${socketUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: `lobby:${params.code}`,
+          event: 'player-joined',
+          data: {
+            username: user.username,
+            userId: user.id,
+          },
+        }),
+      }).catch(err => console.error('Failed to notify socket server:', err))
+
+      // Also send lobby-update event
+      await fetch(`${socketUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: `lobby:${params.code}`,
+          event: 'lobby-update',
+          data: { lobbyCode: params.code },
+        }),
+      }).catch(err => console.error('Failed to notify socket server:', err))
+    } catch (error) {
+      console.error('Error sending WebSocket notification:', error)
     }
 
     return NextResponse.json({ game, player })

@@ -144,6 +144,9 @@ setup-*.*
 
 # Documentation (optional - uncomment if you want to ignore deployment docs)
 # DEPLOYMENT_*.md
-*.md
+# Ignore specific markdown files if needed
+# *.md
 !README.md
 !CONTRIBUTING.md
+!SEO_GUIDE.md
+!LICENSE

@@ -69,8 +69,8 @@ export function useSocketConnection({
       clientLogger.log('✅ Socket connected to lobby:', code)
       setIsConnected(true)
       
-      // Join lobby room
-      newSocket.emit('join-lobby', { lobbyCode: code })
+      // Join lobby room (server expects string, not object)
+      newSocket.emit('join-lobby', code)
     })
 
     newSocket.on('disconnect', (reason) => {

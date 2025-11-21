@@ -6,6 +6,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { BotMoveExecutor } from '@/lib/bot-executor'
+import { getServerSocketUrl } from '@/lib/socket-url'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -116,6 +117,39 @@ export async function POST(request: NextRequest) {
       where: { id: lobbyId },
       data: { isActive: false }, // Mark lobby as inactive when game starts
     })
+
+    // Notify all clients via WebSocket that game started
+    try {
+      const socketUrl = getServerSocketUrl()
+      await fetch(`${socketUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: `lobby:${lobby.code}`,
+          event: 'game-started',
+          data: {
+            lobbyCode: lobby.code,
+            gameId: game.id,
+          },
+        }),
+      }).catch(err => console.error('Failed to notify socket server:', err))
+
+      // Also send game state update
+      await fetch(`${socketUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: `lobby:${lobby.code}`,
+          event: 'game-update',
+          data: {
+            action: 'state-change',
+            payload: { state: gameEngine.getState() },
+          },
+        }),
+      }).catch(err => console.error('Failed to notify socket server:', err))
+    } catch (error) {
+      console.error('Error sending WebSocket notification:', error)
+    }
 
     // Check if first player is a bot and trigger bot turn
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex

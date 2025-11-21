@@ -2,8 +2,9 @@
 import dotenv from 'dotenv'
 import { resolve } from 'path'
 
-// Load .env.local if it exists (local development), otherwise fall back to .env
-dotenv.config({ path: resolve(process.cwd(), '.env.local') })
+// Load .env.local first (local development overrides), then .env
+// Use override: true to ensure .env.local values take precedence
+dotenv.config({ path: resolve(process.cwd(), '.env.local'), override: true })
 dotenv.config({ path: resolve(process.cwd(), '.env') })
 
 import { createServer } from 'http'
@@ -238,16 +239,8 @@ io.on('connection', (socket) => {
         return
       }
       
-      // Check if user is allowed to join (if there's an active game)
-      const activeGame = lobby.games[0]
-      if (activeGame && !socket.data.user.isGuest) {
-        const isPlayer = activeGame.players.some((p: any) => p.userId === socket.data.user.id)
-        if (!isPlayer) {
-          socket.emit('error', { message: 'You are not a player in this game' })
-          return
-        }
-      }
-      
+      // Always allow joining the room to receive updates
+      // Access control will be handled at the action level
       socket.join(`lobby:${lobbyCode}`)
       socketLogger('join-lobby').info('Socket joined lobby', { 
         socketId: socket.id, 
