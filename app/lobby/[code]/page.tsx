@@ -41,6 +41,11 @@ function LobbyPageContent() {
   const isGuest = searchParams.get('guest') === 'true'
   const { guestName, guestId } = useGuestMode(isGuest, code)
 
+  // Log session status for debugging
+  useEffect(() => {
+    clientLogger.log('Session status:', { status, isGuest, hasSession: !!session, userId: session?.user?.id })
+  }, [status, isGuest, session])
+
   // Core state
   const [lobby, setLobby] = useState<any>(null)
   const [game, setGame] = useState<any>(null)
@@ -329,6 +334,16 @@ function LobbyPageContent() {
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+
+  // Show loading while session is being fetched (for non-guest users)
+  if (!isGuest && status === 'loading') {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" />
+        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading session...</p>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

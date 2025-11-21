@@ -127,6 +127,14 @@ io.use(async (socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.query.token
     const isGuest = socket.handshake.auth.isGuest === true || socket.handshake.query.isGuest === 'true'
     
+    logger.info('Socket authentication attempt', { 
+      hasToken: !!token, 
+      tokenPreview: token ? String(token).substring(0, 20) + '...' : 'none',
+      isGuest,
+      authKeys: Object.keys(socket.handshake.auth),
+      queryKeys: Object.keys(socket.handshake.query)
+    })
+    
     // Allow guests without token validation
     if (isGuest) {
       const guestId = token || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -141,8 +149,12 @@ io.use(async (socket, next) => {
       return next()
     }
     
-    if (!token || token === 'null' || token === 'undefined') {
-      logger.warn('Socket connection rejected: No valid token provided')
+    if (!token || token === 'null' || token === 'undefined' || token === '') {
+      logger.warn('Socket connection rejected: No valid token provided', {
+        token: token,
+        auth: socket.handshake.auth,
+        query: socket.handshake.query
+      })
       return next(new Error('Authentication required'))
     }
     
@@ -154,21 +166,28 @@ io.use(async (socket, next) => {
       try {
         const decoded = jwt.verify(token, secret) as any
         userId = decoded.id || decoded.sub
+        logger.info('JWT token verified successfully', { userId })
       } catch (jwtError) {
         // If JWT verification fails, treat token as userId directly
         // This handles the case where client sends userId instead of JWT
-        logger.info('Token is not a JWT, treating as userId', { token: token.substring(0, 10) })
-        userId = token
+        logger.info('Token is not a JWT, treating as userId', { 
+          tokenPreview: String(token).substring(0, 20) + '...',
+          tokenLength: String(token).length
+        })
+        userId = String(token)
       }
     } else {
+      logger.warn('No NEXTAUTH_SECRET or JWT_SECRET configured, treating token as userId')
       // No secret configured, treat token as userId
-      userId = token
+      userId = String(token)
     }
     
     if (!userId) {
       logger.warn('Socket connection rejected: Could not extract userId')
       return next(new Error('Invalid authentication'))
     }
+    
+    logger.info('Attempting to find user in database', { userId })
     
     // Verify user exists in database
     const user = await prisma.user.findUnique({
@@ -177,7 +196,10 @@ io.use(async (socket, next) => {
     })
     
     if (!user) {
-      logger.warn('Socket connection rejected: User not found', { userId })
+      logger.warn('Socket connection rejected: User not found in database', { 
+        userId,
+        tokenPreview: String(token).substring(0, 20) + '...'
+      })
       return next(new Error('User not found'))
     }
     

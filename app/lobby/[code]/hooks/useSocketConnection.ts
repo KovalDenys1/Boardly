@@ -34,19 +34,41 @@ export function useSocketConnection({
   const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
-    if (!code) return
+    if (!code) {
+      clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
+      return
+    }
+
+    // For authenticated users, wait for session to load
+    if (!isGuest && !session?.user?.id) {
+      clientLogger.log('⏳ Waiting for session to load before connecting socket...')
+      return
+    }
 
     const url = getBrowserSocketUrl()
+    clientLogger.log('🔌 Initializing socket connection', { url, code, isGuest })
 
     // Get authentication token
     const getAuthToken = () => {
       if (isGuest && guestId) {
+        clientLogger.log('🔐 Using guest authentication:', { guestId, guestName })
         return guestId
       }
-      return session?.user?.id || null
+      const userId = session?.user?.id
+      if (userId) {
+        clientLogger.log('🔐 Using authenticated user:', { userId })
+      } else {
+        clientLogger.warn('⚠️ No user ID found in session:', { session })
+      }
+      return userId || null
     }
 
     const token = getAuthToken()
+    
+    if (!token && !isGuest) {
+      clientLogger.error('❌ Cannot connect socket: No authentication token available')
+      return
+    }
     
     const newSocket = io(url, {
       transports: ['websocket', 'polling'],
