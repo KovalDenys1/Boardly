@@ -48,6 +48,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
       newPrevScores[player.id] = player.score
     })
     setPrevScores(newPrevScores)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players.map(p => p.score).join(',')]) // Следим за изменениями счёта
 
   return (

@@ -132,15 +132,25 @@ export async function POST(
             payload: finalState,
           },
         }),
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       })
 
       if (socketResponse.ok) {
         console.log('🤖 [BOT-TURN-API] Socket.IO notification sent successfully')
       } else {
-        console.error('🤖 [BOT-TURN-API] Socket.IO notification failed:', await socketResponse.text())
+        const errorText = await socketResponse.text()
+        console.error('🤖 [BOT-TURN-API] Socket.IO notification failed:', errorText)
+        // Don't throw error - bot turn was successful, notification is secondary
       }
     } catch (error) {
-      console.error('🤖 [BOT-TURN-API] Error sending Socket.IO notification:', error)
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.error('🤖 [BOT-TURN-API] Socket.IO notification timeout')
+        } else {
+          console.error('🤖 [BOT-TURN-API] Error sending Socket.IO notification:', error.message)
+        }
+      }
+      // Don't throw - bot turn completed successfully, notification failure is non-critical
     }
 
     return NextResponse.json({ 

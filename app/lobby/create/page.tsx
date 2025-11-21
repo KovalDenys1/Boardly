@@ -97,13 +97,22 @@ function CreateLobbyPage() {
         timeout: 5000,
       })
       
+      // Set a timeout to force cleanup after 10 seconds
+      const cleanupTimeout = setTimeout(() => {
+        if (socket.connected) {
+          socket.disconnect()
+        }
+      }, 10000)
+      
       socket.on('connect', () => {
         socket.emit('lobby-created')
+        clearTimeout(cleanupTimeout)
         socket.disconnect()
       })
       
       socket.on('connect_error', (error) => {
         console.warn('Socket notification failed (non-critical):', error.message)
+        clearTimeout(cleanupTimeout)
         socket.disconnect()
       })
 

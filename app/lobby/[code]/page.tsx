@@ -96,17 +96,17 @@ function LobbyPageContent() {
     }
   }, [isGuest, code, router])
 
-  const getCurrentUserId = () => {
+  const getCurrentUserId = useCallback(() => {
     if (isGuest) return guestId
     return session?.user?.id
-  }
+  }, [isGuest, guestId, session?.user?.id])
 
-  const getCurrentUserName = () => {
+  const getCurrentUserName = useCallback(() => {
     if (isGuest) return guestName || 'Guest'
     return session?.user?.name || 'Player'
-  }
+  }, [isGuest, guestName, session?.user?.name])
 
-  const getCurrentPlayerIndex = () => {
+  const getCurrentPlayerIndex = useCallback(() => {
     if (!game?.players) {
       return -1
     }
@@ -116,13 +116,13 @@ function LobbyPageContent() {
     
     const index = game.players.findIndex((p: any) => p.userId === userId)
     return index
-  }
+  }, [game?.players, getCurrentUserId])
 
-  const isMyTurn = () => {
+  const isMyTurn = useCallback(() => {
     if (!gameEngine) return false
     const myIndex = getCurrentPlayerIndex()
     return myIndex !== -1 && myIndex === gameEngine.getState().currentPlayerIndex
-  }
+  }, [gameEngine, getCurrentPlayerIndex])
 
   useEffect(() => {
     if (!isGuest && status === 'unauthenticated') {
@@ -132,6 +132,7 @@ function LobbyPageContent() {
     if (status === 'authenticated' || (isGuest && guestId)) {
       loadLobby()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, status, isGuest, guestId])
 
   useEffect(() => {
@@ -142,7 +143,7 @@ function LobbyPageContent() {
         setViewingPlayerIndex(myIndex)
       }
     }
-  }, [game?.players, session?.user?.id, guestId])
+  }, [game?.players, session?.user?.id, guestId, getCurrentUserId, getCurrentPlayerIndex])
 
   const handleTimeOut = useCallback(async () => {
     if (!gameEngine || !game || !isMyTurn()) return
@@ -246,6 +247,7 @@ function LobbyPageContent() {
         clearInterval(timer)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished(), handleTimeOut])
 
   useEffect(() => {

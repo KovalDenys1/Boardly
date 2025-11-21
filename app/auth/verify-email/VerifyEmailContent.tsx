@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -15,13 +15,7 @@ export default function VerifyEmailContent() {
   const [sent, setSent] = useState(false)
   const token = searchParams.get('token')
 
-  useEffect(() => {
-    if (token) {
-      verifyEmail(token)
-    }
-  }, [token])
-
-  const verifyEmail = async (verificationToken: string) => {
+  const verifyEmail = useCallback(async (verificationToken: string) => {
     setLoading(true)
     try {
       const res = await fetch('/api/auth/verify-email', {
@@ -43,7 +37,13 @@ export default function VerifyEmailContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router, toast])
+
+  useEffect(() => {
+    if (token) {
+      verifyEmail(token)
+    }
+  }, [token, verifyEmail])
 
   const resendVerification = async () => {
     if (!session?.user?.email) {
