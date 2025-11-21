@@ -211,15 +211,40 @@ function LobbyPageContent() {
     }
   }, [gameEngine, game, isMyTurn, getCurrentUserId, isGuest, guestId, socket, code, toast])
 
+  // Track current player index to detect turn changes
+  const [lastPlayerIndex, setLastPlayerIndex] = React.useState(-1)
+  const [isInitialLoad, setIsInitialLoad] = React.useState(true)
+
+  useEffect(() => {
+    if (!gameEngine) return
+    
+    const currentIndex = gameEngine.getState().currentPlayerIndex
+    
+    // Reset timer only when turn actually changes (not on initial load)
+    if (currentIndex !== lastPlayerIndex) {
+      setLastPlayerIndex(currentIndex)
+      
+      // On initial load, don't reset timer
+      if (isInitialLoad) {
+        setIsInitialLoad(false)
+        // Keep timer at current value (or set to 30 as default mid-turn value)
+        if (isMyTurn()) {
+          console.log('🔄 Initial load - my turn, starting timer at 30s')
+          setTimeLeft(30)
+        }
+      } else if (isMyTurn()) {
+        // Turn changed to me - reset to full 60 seconds
+        console.log('🔄 Turn changed to me, resetting timer to 60s')
+        setTimeLeft(60)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameEngine?.getState().currentPlayerIndex, isMyTurn, lastPlayerIndex, isInitialLoad])
+
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined
     
-    if (gameEngine && !gameEngine.isGameFinished() && timerActive) {
-      // Reset timer when it's your turn
-      if (isMyTurn()) {
-        setTimeLeft(60)
-      }
-
+    if (gameEngine && !gameEngine.isGameFinished() && timerActive && isMyTurn()) {
       timer = setInterval(() => {
         setTimeLeft((prev) => {
           // Re-check isMyTurn in case it changed
@@ -248,7 +273,7 @@ function LobbyPageContent() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished(), handleTimeOut])
+  }, [gameEngine?.getState().currentPlayerIndex, timerActive, gameEngine?.isGameFinished(), isMyTurn, handleTimeOut])
 
   useEffect(() => {
     if (gameEngine && !gameEngine.isGameFinished() && game?.players?.length >= 2) {
@@ -772,16 +797,26 @@ function LobbyPageContent() {
       soundManager.play('diceRoll')
       
       // Emit to other players
-      if (socket && socket.connected) {
-        console.log('📡 Emitting roll action to other players')
-        socket.emit('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
-      } else {
-        console.warn('⚠️ Socket not connected, cannot emit roll action')
+      const emitRollAction = () => {
+        if (socket && socket.connected) {
+          console.log('📡 Emitting roll action to other players')
+          socket.emit('game-action', {
+            lobbyCode: code,
+            action: 'state-change',
+            payload: data.game.state,
+          })
+        } else if (socket) {
+          console.log('⏳ Waiting for socket to emit roll action...')
+          socket.once('connect', () => {
+            socket.emit('game-action', {
+              lobbyCode: code,
+              action: 'state-change',
+              payload: data.game.state,
+            })
+          })
+        }
       }
+      emitRollAction()
 
       // Check if this was the last roll using the NEW engine state
       if (newEngine && newEngine.getRollsLeft() === 0) {
@@ -836,16 +871,26 @@ function LobbyPageContent() {
         soundManager.play('click')
         
         // Emit to other players
-        if (socket && socket.connected) {
-          console.log('📡 Emitting hold action to other players')
-          socket.emit('game-action', {
-            lobbyCode: code,
-            action: 'state-change',
-            payload: data.game.state,
-          })
-        } else {
-          console.warn('⚠️ Socket not connected, cannot emit hold action')
+        const emitHoldAction = () => {
+          if (socket && socket.connected) {
+            console.log('📡 Emitting hold action to other players')
+            socket.emit('game-action', {
+              lobbyCode: code,
+              action: 'state-change',
+              payload: data.game.state,
+            })
+          } else if (socket) {
+            console.log('⏳ Waiting for socket to emit hold action...')
+            socket.once('connect', () => {
+              socket.emit('game-action', {
+                lobbyCode: code,
+                action: 'state-change',
+                payload: data.game.state,
+              })
+            })
+          }
         }
+        emitHoldAction()
       } else {
         toast.error('Failed to hold dice')
       }
@@ -928,16 +973,29 @@ function LobbyPageContent() {
         }
         
         // Emit to other players
-        if (socket && socket.connected) {
-          console.log('📡 Emitting score action to other players')
-          socket.emit('game-action', {
-            lobbyCode: code,
-            action: 'state-change',
-            payload: data.game.state,
-          })
-        } else {
-          console.warn('⚠️ Socket not connected, cannot emit score action')
+        const emitScoreAction = () => {
+          if (socket && socket.connected) {
+            console.log('📡 Emitting score action to other players')
+            socket.emit('game-action', {
+              lobbyCode: code,
+              action: 'state-change',
+              payload: data.game.state,
+            })
+          } else if (socket) {
+            console.log('⏳ Waiting for socket connection to emit score action...')
+            socket.once('connect', () => {
+              console.log('📡 Socket connected, emitting score action')
+              socket.emit('game-action', {
+                lobbyCode: code,
+                action: 'state-change',
+                payload: data.game.state,
+              })
+            })
+          } else {
+            console.warn('⚠️ Socket not available')
+          }
         }
+        emitScoreAction()
 
         // Use newEngine for checks after state update
         if (newEngine.isGameFinished()) {
@@ -1101,7 +1159,7 @@ function LobbyPageContent() {
         throw new Error(data.error || 'Failed to leave lobby')
       }
 
-      if (socket) {
+      if (socket && socket.connected) {
         socket.emit('game-action', {
           lobbyCode: code,
           action: 'player-left',
