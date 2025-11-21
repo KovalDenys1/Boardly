@@ -1,0 +1,115 @@
+import { useEffect, useState, useCallback } from 'react'
+import { io, Socket } from 'socket.io-client'
+import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { clientLogger } from '@/lib/client-logger'
+
+interface UseSocketConnectionProps {
+  code: string
+  session: any
+  isGuest: boolean
+  guestId: string
+  guestName: string
+  onGameUpdate: (data: any) => void
+  onChatMessage: (message: any) => void
+  onPlayerTyping: (data: any) => void
+}
+
+export function useSocketConnection({
+  code,
+  session,
+  isGuest,
+  guestId,
+  guestName,
+  onGameUpdate,
+  onChatMessage,
+  onPlayerTyping,
+}: UseSocketConnectionProps) {
+  const [socket, setSocket] = useState<Socket | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(() => {
+    if (!code) return
+
+    const url = getBrowserSocketUrl()
+
+    // Get authentication token
+    const getAuthToken = () => {
+      if (isGuest && guestId) {
+        return guestId
+      }
+      return session?.user?.id || null
+    }
+
+    const token = getAuthToken()
+    
+    const newSocket = io(url, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      auth: {
+        token: token,
+        isGuest: isGuest,
+        guestName: isGuest ? guestName : undefined,
+      },
+      query: {
+        token: token || '',
+        isGuest: isGuest ? 'true' : 'false',
+        guestName: isGuest ? guestName : undefined,
+      },
+    })
+
+    newSocket.on('connect', () => {
+      clientLogger.log('✅ Socket connected to lobby:', code)
+      setIsConnected(true)
+      
+      // Join lobby room
+      newSocket.emit('join-lobby', { lobbyCode: code })
+    })
+
+    newSocket.on('disconnect', (reason) => {
+      clientLogger.log('❌ Socket disconnected:', reason)
+      setIsConnected(false)
+    })
+
+    newSocket.on('connect_error', (error) => {
+      clientLogger.error('Socket connection error:', error.message)
+      setIsConnected(false)
+      
+      if (error.message.includes('timeout')) {
+        clientLogger.warn('Socket connection timeout - retrying...')
+      }
+    })
+
+    newSocket.on('game-update', onGameUpdate)
+    newSocket.on('chat-message', onChatMessage)
+    newSocket.on('player-typing', onPlayerTyping)
+
+    setSocket(newSocket)
+
+    return () => {
+      clientLogger.log('🔌 Cleaning up socket connection')
+      newSocket.off('connect')
+      newSocket.off('disconnect')
+      newSocket.off('connect_error')
+      newSocket.off('game-update')
+      newSocket.off('chat-message')
+      newSocket.off('player-typing')
+      newSocket.close()
+    }
+  }, [code, session?.user?.id, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping])
+
+  const emitWhenConnected = useCallback((event: string, data: any) => {
+    if (!socket) return
+
+    if (isConnected) {
+      socket.emit(event, data)
+    } else {
+      socket.once('connect', () => {
+        socket.emit(event, data)
+      })
+    }
+  }, [socket, isConnected])
+
+  return { socket, isConnected, emitWhenConnected }
+}
