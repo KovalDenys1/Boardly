@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Game {
   id: string
@@ -75,6 +75,13 @@ export default function GamesPage() {
   const { data: session, status } = useSession()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
+  // Handle authentication redirect in useEffect to avoid hydration issues
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/login')
+    }
+  }, [status, router])
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -84,7 +91,6 @@ export default function GamesPage() {
   }
 
   if (status === 'unauthenticated') {
-    router.push('/auth/login')
     return null
   }
 

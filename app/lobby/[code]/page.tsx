@@ -25,6 +25,7 @@ import { detectCelebration, detectPatternOnRoll, CelebrationEvent } from '@/lib/
 import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { clientLogger } from '@/lib/client-logger'
 
 function LobbyPageContent() {
   const router = useRouter()
@@ -148,7 +149,7 @@ function LobbyPageContent() {
   const handleTimeOut = useCallback(async () => {
     if (!gameEngine || !game || !isMyTurn()) return
 
-    console.warn('⏰ Time is up! Auto-skipping turn...')
+    clientLogger.warn('⏰ Time is up! Auto-skipping turn...')
     
     try {
       // For Yahtzee: automatically score 0 in the first available category
@@ -207,7 +208,7 @@ function LobbyPageContent() {
         }
       }
     } catch (error) {
-      console.error('Failed to handle timeout:', error)
+      clientLogger.error('Failed to handle timeout:', error)
     }
   }, [gameEngine, game, isMyTurn, getCurrentUserId, isGuest, guestId, socket, code, toast])
 
@@ -229,12 +230,12 @@ function LobbyPageContent() {
         setIsInitialLoad(false)
         // Keep timer at current value (or set to 30 as default mid-turn value)
         if (isMyTurn()) {
-          console.log('🔄 Initial load - my turn, starting timer at 30s')
+          clientLogger.log('🔄 Initial load - my turn, starting timer at 30s')
           setTimeLeft(30)
         }
       } else if (isMyTurn()) {
         // Turn changed to me - reset to full 60 seconds
-        console.log('🔄 Turn changed to me, resetting timer to 60s')
+        clientLogger.log('🔄 Turn changed to me, resetting timer to 60s')
         setTimeLeft(60)
       }
     }
@@ -255,7 +256,7 @@ function LobbyPageContent() {
           if (!stillMyTurn) return prev
           
           if (prev <= 1) {
-            console.warn('⏰ Timer expired, calling handleTimeOut')
+            clientLogger.warn('⏰ Timer expired, calling handleTimeOut')
             // Use setTimeout to avoid closure issues
             setTimeout(() => {
               handleTimeOut()
@@ -341,7 +342,7 @@ function LobbyPageContent() {
     let celebrationTimeout: NodeJS.Timeout | null = null
 
     const handleConnect = () => {
-      console.log('✅ Socket connected to lobby:', code)
+      clientLogger.log('✅ Socket connected to lobby:', code)
       newSocket.emit('join-lobby', code)
       
       if (isFirstConnection) {
@@ -351,7 +352,7 @@ function LobbyPageContent() {
     }
 
     const handleDisconnect = (reason: string) => {
-      console.log('❌ Socket disconnected:', reason)
+      clientLogger.log('❌ Socket disconnected:', reason)
       toast.warning('🔴 Disconnected from lobby')
       
       if (reason === 'io server disconnect') {
@@ -360,23 +361,23 @@ function LobbyPageContent() {
     }
 
     const handleConnectError = (error: Error) => {
-      console.error('Socket connection error:', error.message)
+      clientLogger.error('Socket connection error:', error.message)
       const retryCount = (newSocket as any).io?.engine?.transport?.attempts || 0
       
       // Show user-friendly error message
       if (error.message.includes('timeout')) {
-        console.warn('Socket connection timeout - retrying...')
+        clientLogger.warn('Socket connection timeout - retrying...')
       } else if (retryCount > 3) {
         toast.error('⚠️ Connection issues. Trying to reconnect...')
       }
     }
 
     const handleGameUpdate = (data: any) => {
-      console.log('📥 Received game-update:', data.action)
+      clientLogger.log('📥 Received game-update:', data.action)
       
       if (data.action === 'player-joined') {
         // Reload lobby to show new player
-        console.log('Player joined, reloading lobby...')
+        clientLogger.log('Player joined, reloading lobby...')
         loadLobby()
         
         // Show notification
@@ -385,13 +386,13 @@ function LobbyPageContent() {
           soundManager.play('turnChange')
         }
       } else if (data.action === 'state-change') {
-        console.log('State change received, updating game engine...')
+        clientLogger.log('State change received, updating game engine...')
         const updatedState = data.payload
         
         // Prevent processing old state updates (race condition protection)
         const newVersion = updatedState.updatedAt ? new Date(updatedState.updatedAt).getTime() : Date.now()
         if (stateVersion > 0 && newVersion <= stateVersion) {
-          console.log('Ignoring old state update', { newVersion, stateVersion })
+          clientLogger.log('Ignoring old state update', { newVersion, stateVersion })
           return
         }
         setStateVersion(newVersion)
@@ -518,7 +519,7 @@ function LobbyPageContent() {
     setSocket(newSocket)
 
     return () => {
-      console.log('🔌 Cleaning up socket connection')
+      clientLogger.log('🔌 Cleaning up socket connection')
       
       // Remove all event listeners to prevent memory leaks
       newSocket.off('connect', handleConnect)
@@ -582,7 +583,7 @@ function LobbyPageContent() {
             // Initialize previous state for bot detection
             setPreviousGameState(parsedState)
           } catch (parseError) {
-            console.error('Failed to parse game state:', parseError)
+            clientLogger.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
           }
         }
@@ -620,7 +621,7 @@ function LobbyPageContent() {
       return true
     } catch (err: any) {
       if (options?.auto) {
-        console.warn('Auto bot addition skipped:', err.message)
+        clientLogger.warn('Auto bot addition skipped:', err.message)
         return false
       }
 
@@ -673,7 +674,7 @@ function LobbyPageContent() {
       // Wait for socket to be connected before emitting
       const emitPlayerJoined = () => {
         if (socket && socket.connected) {
-          console.log('📡 Emitting player-joined event')
+          clientLogger.log('📡 Emitting player-joined event')
           socket.emit('player-joined', {
             lobbyCode: code,
             username: getCurrentUserName(),
@@ -681,9 +682,9 @@ function LobbyPageContent() {
           })
         } else if (socket) {
           // If socket exists but not connected yet, wait for connection
-          console.log('⏳ Waiting for socket connection to emit player-joined...')
+          clientLogger.log('⏳ Waiting for socket connection to emit player-joined...')
           socket.once('connect', () => {
-            console.log('📡 Socket connected, emitting player-joined event')
+            clientLogger.log('📡 Socket connected, emitting player-joined event')
             socket.emit('player-joined', {
               lobbyCode: code,
               username: getCurrentUserName(),
@@ -715,7 +716,7 @@ function LobbyPageContent() {
 
     // Prevent double-clicks
     if (isMoveInProgress) {
-      console.log('Move already in progress, ignoring')
+      clientLogger.log('Move already in progress, ignoring')
       return
     }
 
@@ -799,14 +800,14 @@ function LobbyPageContent() {
       // Emit to other players
       const emitRollAction = () => {
         if (socket && socket.connected) {
-          console.log('📡 Emitting roll action to other players')
+          clientLogger.log('📡 Emitting roll action to other players')
           socket.emit('game-action', {
             lobbyCode: code,
             action: 'state-change',
             payload: data.game.state,
           })
         } else if (socket) {
-          console.log('⏳ Waiting for socket to emit roll action...')
+          clientLogger.log('⏳ Waiting for socket to emit roll action...')
           socket.once('connect', () => {
             socket.emit('game-action', {
               lobbyCode: code,
@@ -873,14 +874,14 @@ function LobbyPageContent() {
         // Emit to other players
         const emitHoldAction = () => {
           if (socket && socket.connected) {
-            console.log('📡 Emitting hold action to other players')
+            clientLogger.log('📡 Emitting hold action to other players')
             socket.emit('game-action', {
               lobbyCode: code,
               action: 'state-change',
               payload: data.game.state,
             })
           } else if (socket) {
-            console.log('⏳ Waiting for socket to emit hold action...')
+            clientLogger.log('⏳ Waiting for socket to emit hold action...')
             socket.once('connect', () => {
               socket.emit('game-action', {
                 lobbyCode: code,
@@ -895,7 +896,7 @@ function LobbyPageContent() {
         toast.error('Failed to hold dice')
       }
     } catch (error) {
-      console.error('Failed to toggle hold:', error)
+      clientLogger.error('Failed to toggle hold:', error)
       toast.error('Failed to hold dice')
     }
   }
@@ -905,7 +906,7 @@ function LobbyPageContent() {
 
     // Prevent double-clicks
     if (isMoveInProgress) {
-      console.log('Move already in progress, ignoring')
+      clientLogger.log('Move already in progress, ignoring')
       return
     }
 
@@ -975,16 +976,16 @@ function LobbyPageContent() {
         // Emit to other players
         const emitScoreAction = () => {
           if (socket && socket.connected) {
-            console.log('📡 Emitting score action to other players')
+            clientLogger.log('📡 Emitting score action to other players')
             socket.emit('game-action', {
               lobbyCode: code,
               action: 'state-change',
               payload: data.game.state,
             })
           } else if (socket) {
-            console.log('⏳ Waiting for socket connection to emit score action...')
+            clientLogger.log('⏳ Waiting for socket connection to emit score action...')
             socket.once('connect', () => {
-              console.log('📡 Socket connected, emitting score action')
+              clientLogger.log('📡 Socket connected, emitting score action')
               socket.emit('game-action', {
                 lobbyCode: code,
                 action: 'state-change',
@@ -992,7 +993,7 @@ function LobbyPageContent() {
               })
             })
           } else {
-            console.warn('⚠️ Socket not available')
+            clientLogger.warn('⚠️ Socket not available')
           }
         }
         emitScoreAction()

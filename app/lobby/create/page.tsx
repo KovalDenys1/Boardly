@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { clientLogger } from '@/lib/client-logger'
 
 type GameType = 'yahtzee'
 
@@ -47,19 +48,42 @@ function CreateLobbyPage() {
 
   // Update formData when gameType changes from URL
   useEffect(() => {
-    console.log('🎮 Game type from URL:', gameType)
-    setFormData(prev => ({
-      ...prev,
-      maxPlayers: gameInfo.defaultMaxPlayers,
-      gameType: gameType,
-    }))
-  }, [gameType, gameInfo.defaultMaxPlayers])
+    clientLogger.log('🎮 Game type from URL:', gameType)
+    if (gameInfo) {
+      setFormData(prev => ({
+        ...prev,
+        maxPlayers: gameInfo.defaultMaxPlayers,
+        gameType: gameType,
+      }))
+    }
+  }, [gameType, gameInfo])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login')
     }
   }, [status, router])
+  
+  // Validate game type - show error UI if invalid
+  if (!gameInfo) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-md w-full text-center">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-white mb-4">Game Not Found</h1>
+          <p className="text-white/80 mb-6">
+            The game type &quot;{gameType}&quot; is not supported yet.
+          </p>
+          <button
+            onClick={() => router.push('/games')}
+            className="w-full bg-white text-purple-600 rounded-xl px-6 py-3 font-semibold hover:bg-white/90 transition-colors"
+          >
+            ← Back to Games
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,7 +96,7 @@ function CreateLobbyPage() {
         return
       }
 
-      console.log('📤 Sending lobby creation request:', formData)
+      clientLogger.log('📤 Sending lobby creation request:', formData)
 
       const res = await fetch('/api/lobby', {
         method: 'POST',
@@ -83,7 +107,7 @@ function CreateLobbyPage() {
       })
 
       const data = await res.json()
-      console.log('📥 Received response:', { status: res.status, data })
+      clientLogger.log('📥 Received response:', { status: res.status, data })
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to create lobby')
@@ -121,16 +145,16 @@ function CreateLobbyPage() {
       })
       
       socket.on('connect_error', (error) => {
-        console.warn('Socket notification failed (non-critical):', error.message)
+        clientLogger.warn('Socket notification failed (non-critical):', error.message)
         clearTimeout(cleanupTimeout)
         socket.disconnect()
       })
 
-      console.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
+      clientLogger.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
       // Redirect to the new lobby
       router.push(`/lobby/${data.lobby.code}`)
     } catch (err: any) {
-      console.error('❌ Lobby creation error:', err)
+      clientLogger.error('❌ Lobby creation error:', err)
       setError(err.message)
     } finally {
       setLoading(false)

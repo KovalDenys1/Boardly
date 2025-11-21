@@ -7,6 +7,7 @@ import Link from 'next/link'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { clientLogger } from '@/lib/client-logger'
 
 let socket: Socket
 
@@ -36,11 +37,6 @@ export default function LobbyListPage() {
   const [joinCode, setJoinCode] = useState('')
 
   useEffect(() => {
-    // Redirect to new games page
-    router.push('/games')
-  }, [router])
-
-  useEffect(() => {
     loadLobbies()
     // Trigger automatic cleanup of inactive lobbies
     triggerCleanup()
@@ -53,7 +49,7 @@ export default function LobbyListPage() {
     // Setup WebSocket for real-time updates
     if (!socket) {
       const url = getBrowserSocketUrl()
-      console.log('🔌 Connecting to Socket.IO for lobby list:', url)
+      clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
       
       // Get auth token - use userId for authenticated users, null for guests
       const token = session?.user?.id || null
@@ -74,24 +70,24 @@ export default function LobbyListPage() {
       })
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected for lobby list')
+        clientLogger.log('✅ Socket connected for lobby list')
         socket.emit('join-lobby-list')
       })
 
       socket.on('lobby-list-update', () => {
-        console.log('📡 Lobby list update received')
+        clientLogger.log('📡 Lobby list update received')
         loadLobbies()
       })
 
       socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected from lobby list')
+        clientLogger.log('❌ Socket disconnected from lobby list')
       })
     }
 
     return () => {
       clearInterval(refreshInterval)
       if (socket && socket.connected) {
-        console.log('🔌 Disconnecting socket from lobby list')
+        clientLogger.log('🔌 Disconnecting socket from lobby list')
         socket.emit('leave-lobby-list')
         socket.disconnect()
         socket = null as any
@@ -108,7 +104,7 @@ export default function LobbyListPage() {
       })
     } catch (error) {
       // Ignore errors - cleanup is not critical for user experience
-      console.log('Background cleanup skipped:', error)
+      clientLogger.log('Background cleanup skipped:', error)
     }
   }
 
@@ -118,7 +114,7 @@ export default function LobbyListPage() {
       const data = await res.json()
       setLobbies(data.lobbies || [])
     } catch (error) {
-      console.error('Failed to load lobbies:', error)
+      clientLogger.error('Failed to load lobbies:', error)
     } finally {
       setLoading(false)
     }

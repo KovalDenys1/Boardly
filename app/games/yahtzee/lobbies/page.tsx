@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { clientLogger } from '@/lib/client-logger'
 
 let socket: Socket
 
@@ -53,7 +54,7 @@ export default function YahtzeeLobbiesPage() {
       // Setup WebSocket for real-time updates
       if (!socket) {
         const url = getBrowserSocketUrl()
-        console.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
+        clientLogger.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
         
         // Get auth token - use userId for authenticated users
         const token = session?.user?.id || null
@@ -74,24 +75,24 @@ export default function YahtzeeLobbiesPage() {
         })
 
         socket.on('connect', () => {
-          console.log('✅ Socket connected for Yahtzee lobby list')
+          clientLogger.log('✅ Socket connected for Yahtzee lobby list')
           socket.emit('join-lobby-list')
         })
 
         socket.on('lobby-list-update', () => {
-          console.log('📡 Yahtzee lobby list update received')
+          clientLogger.log('📡 Yahtzee lobby list update received')
           loadLobbies()
         })
 
         socket.on('disconnect', () => {
-          console.log('❌ Socket disconnected from Yahtzee lobby list')
+          clientLogger.log('❌ Socket disconnected from Yahtzee lobby list')
         })
       }
 
       return () => {
         clearInterval(refreshInterval)
         if (socket && socket.connected) {
-          console.log('🔌 Disconnecting socket from Yahtzee lobby list')
+          clientLogger.log('🔌 Disconnecting socket from Yahtzee lobby list')
           socket.emit('leave-lobby-list')
           socket.disconnect()
           socket = null as any
@@ -107,7 +108,7 @@ export default function YahtzeeLobbiesPage() {
         method: 'POST',
       })
     } catch (error) {
-      console.log('Background cleanup skipped:', error)
+      clientLogger.log('Background cleanup skipped:', error)
     }
   }
 
@@ -117,7 +118,7 @@ export default function YahtzeeLobbiesPage() {
       const data = await res.json()
       setLobbies(data.lobbies || [])
     } catch (error) {
-      console.error('Failed to load Yahtzee lobbies:', error)
+      clientLogger.error('Failed to load Yahtzee lobbies:', error)
     } finally {
       setLoading(false)
     }
