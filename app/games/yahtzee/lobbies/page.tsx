@@ -55,11 +55,22 @@ export default function YahtzeeLobbiesPage() {
         const url = getBrowserSocketUrl()
         console.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
         
+        // Get auth token - use userId for authenticated users
+        const token = session?.user?.id || null
+        
         socket = io(url, {
           transports: ['websocket', 'polling'],
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 1000,
+          auth: {
+            token: token,
+            isGuest: false,
+          },
+          query: {
+            token: token,
+            isGuest: 'false',
+          },
         })
 
         socket.on('connect', () => {
@@ -87,6 +98,7 @@ export default function YahtzeeLobbiesPage() {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, router])
 
   const triggerCleanup = async () => {

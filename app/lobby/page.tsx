@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import { io, Socket } from 'socket.io-client'
@@ -29,6 +30,7 @@ interface Lobby {
 
 export default function LobbyListPage() {
   const router = useRouter()
+  const { data: session } = useSession()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
@@ -53,11 +55,22 @@ export default function LobbyListPage() {
       const url = getBrowserSocketUrl()
       console.log('🔌 Connecting to Socket.IO for lobby list:', url)
       
+      // Get auth token - use userId for authenticated users, null for guests
+      const token = session?.user?.id || null
+      
       socket = io(url, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
+        auth: {
+          token: token,
+          isGuest: !session?.user,
+        },
+        query: {
+          token: token,
+          isGuest: !session?.user ? 'true' : 'false',
+        },
       })
 
       socket.on('connect', () => {
@@ -84,6 +97,7 @@ export default function LobbyListPage() {
         socket = null as any
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const triggerCleanup = async () => {

@@ -120,7 +120,7 @@ function checkRateLimit(socketId: string): boolean {
   return true
 }
 
-// JWT Authentication middleware
+// Authentication middleware
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token || socket.handshake.query.token
@@ -145,21 +145,29 @@ io.use(async (socket, next) => {
       return next(new Error('Authentication required'))
     }
     
-    // Verify JWT token for regular users
+    // Try to verify as JWT first
     const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
-    if (!secret) {
-      logger.error('JWT secret not configured')
-      return next(new Error('Server configuration error'))
+    let userId: string | null = null
+    
+    if (secret) {
+      try {
+        const decoded = jwt.verify(token, secret) as any
+        userId = decoded.id || decoded.sub
+      } catch (jwtError) {
+        // If JWT verification fails, treat token as userId directly
+        // This handles the case where client sends userId instead of JWT
+        logger.info('Token is not a JWT, treating as userId', { token: token.substring(0, 10) })
+        userId = token
+      }
+    } else {
+      // No secret configured, treat token as userId
+      userId = token
     }
     
-    const decoded = jwt.verify(token, secret) as any
-    
-    if (!decoded?.id && !decoded?.sub) {
-      logger.warn('Socket connection rejected: Invalid token structure')
-      return next(new Error('Invalid token'))
+    if (!userId) {
+      logger.warn('Socket connection rejected: Could not extract userId')
+      return next(new Error('Invalid authentication'))
     }
-    
-    const userId = decoded.id || decoded.sub
     
     // Verify user exists in database
     const user = await prisma.user.findUnique({

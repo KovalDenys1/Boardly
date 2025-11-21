@@ -277,30 +277,17 @@ function LobbyPageContent() {
 
     const url = getBrowserSocketUrl()
 
-    // Get authentication token (NextAuth for users, guest ID for guests)
+    // Get authentication token
+    // For guests: use guestId
+    // For authenticated users: use userId (NextAuth cookies are httpOnly, not accessible from JS)
     const getAuthToken = () => {
-      if (isGuest) {
+      if (isGuest && guestId) {
         return guestId
       }
       
-      // Try both secure and non-secure cookie names
-      const cookies = document.cookie.split(';')
-      const cookieNames = [
-        'next-auth.session-token',
-        '__Secure-next-auth.session-token',
-        'next-auth.session-token.0',
-        'next-auth.session-token.1'
-      ]
-      
-      for (const cookie of cookies) {
-        const [name, value] = cookie.trim().split('=')
-        if (cookieNames.includes(name) && value && value !== 'undefined') {
-          return value
-        }
-      }
-      
-      // Fallback: use current user identifier if available
-      return getCurrentUserId() || null
+      // For authenticated users, use their userId as token
+      // Socket server will recognize it's not a JWT and treat it as userId
+      return session?.user?.id || null
     }
 
     const token = getAuthToken()
@@ -658,16 +645,30 @@ function LobbyPageContent() {
       await loadLobby()
       
       // Notify lobby list and lobby members about player joining
-      if (socket && socket.connected) {
-        console.log('📡 Emitting player-joined event')
-        socket.emit('player-joined', {
-          lobbyCode: code,
-          username: getCurrentUserName(),
-          userId: getCurrentUserId(),
-        })
-      } else {
-        console.warn('⚠️ Socket not connected, cannot emit player-joined')
+      // Wait for socket to be connected before emitting
+      const emitPlayerJoined = () => {
+        if (socket && socket.connected) {
+          console.log('📡 Emitting player-joined event')
+          socket.emit('player-joined', {
+            lobbyCode: code,
+            username: getCurrentUserName(),
+            userId: getCurrentUserId(),
+          })
+        } else if (socket) {
+          // If socket exists but not connected yet, wait for connection
+          console.log('⏳ Waiting for socket connection to emit player-joined...')
+          socket.once('connect', () => {
+            console.log('📡 Socket connected, emitting player-joined event')
+            socket.emit('player-joined', {
+              lobbyCode: code,
+              username: getCurrentUserName(),
+              userId: getCurrentUserId(),
+            })
+          })
+        }
       }
+      
+      emitPlayerJoined()
       
       // Add system message to chat
       const joinMessage = {

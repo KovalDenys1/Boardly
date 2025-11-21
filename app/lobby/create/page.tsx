@@ -91,10 +91,20 @@ function CreateLobbyPage() {
 
       // Notify lobby list about new lobby via WebSocket
       const socketUrl = getBrowserSocketUrl()
+      const token = session?.user?.id || null
+      
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: false, // Don't reconnect for this one-time notification
         timeout: 5000,
+        auth: {
+          token: token,
+          isGuest: false,
+        },
+        query: {
+          token: token,
+          isGuest: 'false',
+        },
       })
       
       // Set a timeout to force cleanup after 10 seconds
