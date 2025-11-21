@@ -84,37 +84,10 @@ function LobbyPageContent() {
     return currentPlayer?.id === getCurrentUserId()
   }, [gameEngine, game, getCurrentUserId])
 
-  // Lobby actions hook
-  const {
-    loadLobby,
-    addBotToLobby,
-    handleJoinLobby,
-    handleStartGame,
-    password,
-    setPassword,
-  } = useLobbyActions({
-    code,
-    lobby,
-    game,
-    setGame,
-    setLobby,
-    setGameEngine,
-    setTimerActive: (active) => {}, // Will be set by timer hook
-    setTimeLeft: (time) => {},
-    setRollHistory,
-    setCelebrationEvent,
-    setChatMessages,
-    socket: null, // Will be set after socket initialization
-    isGuest,
-    guestId,
-    guestName,
-    getCurrentUserName,
-    getCurrentUserId,
-    setError,
-    setLoading,
-  })
+  // Create ref for loadLobby to avoid circular dependency
+  const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
 
-  // Socket connection hook
+  // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, emitWhenConnected } = useSocketConnection({
     code,
     session,
@@ -122,15 +95,24 @@ function LobbyPageContent() {
     guestId,
     guestName,
     onGameUpdate: (payload) => {
+      clientLogger.log('📡 Received game-update:', payload)
       if (payload.state) {
         try {
           const parsedState = typeof payload.state === 'string' 
             ? JSON.parse(payload.state) 
             : payload.state
           
-          const newEngine = new YahtzeeGame(game?.id || '')
-          newEngine.restoreState(parsedState)
-          setGameEngine(newEngine)
+          if (game?.id) {
+            const newEngine = new YahtzeeGame(game.id)
+            newEngine.restoreState(parsedState)
+            setGameEngine(newEngine)
+            
+            // Update game object with new state
+            setGame((prevGame: any) => ({
+              ...prevGame,
+              state: JSON.stringify(parsedState),
+            }))
+          }
           
           // TODO: Detect bot moves (requires refactoring bot visualization logic)
           
@@ -152,7 +134,72 @@ function LobbyPageContent() {
         setTimeout(() => setSomeoneTyping(false), 3000)
       }
     },
+    onLobbyUpdate: (data) => {
+      clientLogger.log('📡 Received lobby-update:', data)
+      // Use ref to avoid circular dependency
+      if (loadLobbyRef.current) {
+        loadLobbyRef.current()
+      }
+    },
+    onPlayerJoined: (data) => {
+      clientLogger.log('📡 Player joined:', data)
+      // Use ref to avoid circular dependency
+      if (loadLobbyRef.current) {
+        loadLobbyRef.current()
+      }
+      
+      // Show notification
+      if (data.username && data.userId !== getCurrentUserId()) {
+        toast.success(`${data.username} joined the lobby`)
+        soundManager.play('playerJoin')
+      }
+    },
+    onGameStarted: (data) => {
+      clientLogger.log('📡 Game started:', data)
+      // Use ref to avoid circular dependency
+      if (loadLobbyRef.current) {
+        loadLobbyRef.current()
+      }
+      
+      soundManager.play('gameStart')
+      toast.success('🎮 Game started!')
+    },
   })
+
+  // Lobby actions hook - after socket is initialized
+  const {
+    loadLobby,
+    addBotToLobby,
+    handleJoinLobby,
+    handleStartGame,
+    password,
+    setPassword,
+  } = useLobbyActions({
+    code,
+    lobby,
+    game,
+    setGame,
+    setLobby,
+    setGameEngine,
+    setTimerActive: (active) => {}, // Will be set by timer hook
+    setTimeLeft: (time) => {},
+    setRollHistory,
+    setCelebrationEvent,
+    setChatMessages,
+    socket, // Now socket is available
+    isGuest,
+    guestId,
+    guestName,
+    getCurrentUserName,
+    getCurrentUserId,
+    setError,
+    setLoading,
+  })
+
+  // Update ref with loadLobby function
+  React.useEffect(() => {
+    loadLobbyRef.current = loadLobby
+  }, [loadLobby])
 
   // Game timer hook
   const { timeLeft, timerActive } = useGameTimer({
@@ -325,25 +372,6 @@ function LobbyPageContent() {
             />
           ) : (
             <>
-              {/* Player List */}
-              {game?.players && game.players.length > 0 && (
-                <PlayerList
-                  players={game.players.map((p: any, index: number) => ({
-                    id: p.id,
-                    userId: p.userId,
-                    user: {
-                      username: p.user.username,
-                      email: p.user.email,
-                    },
-                    score: gameEngine ? gameEngine.getPlayers()[index]?.score || 0 : 0,
-                    position: p.position || game.players.indexOf(p),
-                    isReady: true,
-                  }))}
-                  currentTurn={gameEngine?.getState().currentPlayerIndex ?? -1}
-                  currentUserId={getCurrentUserId() || undefined}
-                />
-              )}
-
               {/* Game States */}
               {!isGameStarted ? (
                 <WaitingRoom

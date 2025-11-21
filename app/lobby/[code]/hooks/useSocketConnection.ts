@@ -12,6 +12,9 @@ interface UseSocketConnectionProps {
   onGameUpdate: (data: any) => void
   onChatMessage: (message: any) => void
   onPlayerTyping: (data: any) => void
+  onLobbyUpdate: (data: any) => void
+  onPlayerJoined: (data: any) => void
+  onGameStarted: (data: any) => void
 }
 
 export function useSocketConnection({
@@ -23,6 +26,9 @@ export function useSocketConnection({
   onGameUpdate,
   onChatMessage,
   onPlayerTyping,
+  onLobbyUpdate,
+  onPlayerJoined,
+  onGameStarted,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -84,6 +90,9 @@ export function useSocketConnection({
     newSocket.on('game-update', onGameUpdate)
     newSocket.on('chat-message', onChatMessage)
     newSocket.on('player-typing', onPlayerTyping)
+    newSocket.on('lobby-update', onLobbyUpdate)
+    newSocket.on('player-joined', onPlayerJoined)
+    newSocket.on('game-started', onGameStarted)
 
     setSocket(newSocket)
 
@@ -95,9 +104,12 @@ export function useSocketConnection({
       newSocket.off('game-update')
       newSocket.off('chat-message')
       newSocket.off('player-typing')
+      newSocket.off('lobby-update')
+      newSocket.off('player-joined')
+      newSocket.off('game-started')
       newSocket.close()
     }
-  }, [code, session?.user?.id, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping])
+  }, [code, session?.user?.id, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
     if (!socket) return

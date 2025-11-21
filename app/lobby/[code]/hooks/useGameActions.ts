@@ -125,7 +125,9 @@ export function useGameActions(props: UseGameActionsProps) {
       emitWhenConnected('game-action', {
         lobbyCode: code,
         action: 'state-change',
-        payload: data.game.state,
+        payload: {
+          state: data.game.state,
+        },
       })
     } catch (error: any) {
       toast.error(error.message || 'Failed to roll dice')
@@ -179,7 +181,9 @@ export function useGameActions(props: UseGameActionsProps) {
       emitWhenConnected('game-action', {
         lobbyCode: code,
         action: 'state-change',
-        payload: data.game.state,
+        payload: {
+          state: data.game.state,
+        },
       })
     } catch (error: any) {
       toast.error('Failed to toggle hold')
@@ -237,7 +241,9 @@ export function useGameActions(props: UseGameActionsProps) {
       emitWhenConnected('game-action', {
         lobbyCode: code,
         action: 'state-change',
-        payload: data.game.state,
+        payload: {
+          state: data.game.state,
+        },
       })
 
       if (newEngine.isGameFinished()) {

@@ -261,6 +261,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setRollHistory([])
       setCelebrationEvent(null)
       
+      // Emit game-started event to all clients
+      socket?.emit('game-started', {
+        lobbyCode: code,
+        game: data.game,
+      })
+      
+      // Also emit state change
       socket?.emit('game-action', {
         lobbyCode: code,
         action: 'state-change',

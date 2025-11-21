@@ -326,14 +326,59 @@ io.on('connection', (socket) => {
     
     // Notify all players in the lobby about the new player
     if (data?.lobbyCode) {
-      io.to(`lobby:${data.lobbyCode}`).emit('game-update', {
-        action: 'player-joined',
-        payload: {
-          username: data.username,
-          userId: data.userId,
-        },
+      io.to(`lobby:${data.lobbyCode}`).emit('player-joined', {
+        username: data.username,
+        userId: data.userId,
+      })
+      
+      // Also send lobby-update event to refresh player list
+      io.to(`lobby:${data.lobbyCode}`).emit('lobby-update', {
+        lobbyCode: data.lobbyCode,
       })
     }
+  })
+
+  socket.on('game-started', (data: { lobbyCode: string; game?: any }) => {
+    socketLogger('game-started').info('Game started, notifying all players', { 
+      lobbyCode: data?.lobbyCode 
+    })
+    
+    if (data?.lobbyCode) {
+      // Notify all players in the lobby that game has started
+      io.to(`lobby:${data.lobbyCode}`).emit('game-started', {
+        lobbyCode: data.lobbyCode,
+        game: data.game,
+      })
+      
+      // Also update lobby list
+      io.to('lobby-list').emit('lobby-list-update')
+    }
+  })
+
+  socket.on('send-chat-message', (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
+    if (!data?.lobbyCode || !data?.message) {
+      logger.warn('Invalid chat message data', { socketId: socket.id })
+      return
+    }
+    
+    // Broadcast chat message to all clients in the lobby
+    io.to(`lobby:${data.lobbyCode}`).emit('chat-message', {
+      id: Date.now().toString(),
+      userId: data.userId,
+      username: data.username,
+      message: data.message,
+      timestamp: Date.now(),
+    })
+  })
+
+  socket.on('player-typing', (data: { lobbyCode: string; userId: string; username: string }) => {
+    if (!data?.lobbyCode) return
+    
+    // Broadcast typing indicator to other clients (not sender)
+    socket.to(`lobby:${data.lobbyCode}`).emit('player-typing', {
+      userId: data.userId,
+      username: data.username,
+    })
   })
 
   socket.on('disconnect', (reason) => {
