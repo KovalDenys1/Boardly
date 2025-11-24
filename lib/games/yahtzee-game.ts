@@ -40,8 +40,20 @@ export class YahtzeeGame extends GameEngine {
         const holdPlayerIndex = this.state.players.findIndex(p => p.id === move.playerId)
         if (holdPlayerIndex !== this.state.currentPlayerIndex) return false
         
-        const { diceIndex } = move.data
-        return diceIndex >= 0 && diceIndex < 5 && gameData.rollsLeft < 3
+        // Support both formats: diceIndex (toggle one) or held array (set all)
+        const { diceIndex, held } = move.data
+        
+        // If using diceIndex format
+        if (diceIndex !== undefined) {
+          return diceIndex >= 0 && diceIndex < 5 && gameData.rollsLeft < 3
+        }
+        
+        // If using held array format
+        if (held !== undefined && Array.isArray(held)) {
+          return held.length === 5 && gameData.rollsLeft < 3
+        }
+        
+        return false
 
       case 'score':
         const { category } = move.data as { category: YahtzeeCategory }
@@ -75,11 +87,18 @@ export class YahtzeeGame extends GameEngine {
         break
 
       case 'hold':
-        const { diceIndex } = move.data
-        // Immutable update to ensure React detects the change
-        gameData.held = gameData.held.map((isHeld, idx) => 
-          idx === diceIndex ? !isHeld : isHeld
-        )
+        const { diceIndex, held } = move.data
+        
+        // Support both formats for backward compatibility
+        if (held !== undefined && Array.isArray(held)) {
+          // Client sends entire held array - use it directly
+          gameData.held = [...held]
+        } else if (diceIndex !== undefined) {
+          // Client sends index to toggle - toggle that die
+          gameData.held = gameData.held.map((isHeld, idx) => 
+            idx === diceIndex ? !isHeld : isHeld
+          )
+        }
         break
 
       case 'score':

@@ -16,7 +16,8 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
       process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001',
       'http://localhost:3000',
       'http://localhost:3001',
-      'http://Denys:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
       'https://boardly.online',
     ]
 
@@ -40,7 +41,7 @@ export function verifyCsrfToken(request: NextRequest): boolean {
 
   // In development, allow localhost and local hostnames
   if (process.env.NODE_ENV === 'development' && requestOrigin) {
-    if (requestOrigin.includes('localhost') || requestOrigin.includes('Denys') || requestOrigin.includes('127.0.0.1')) {
+    if (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')) {
       return true
     }
   }

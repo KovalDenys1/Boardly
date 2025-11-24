@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
-    connect-src 'self' ${socketUrl} wss://*.onrender.com ws://localhost:* http://localhost:* https://vercel.live https://*.ingest.sentry.io https://*.ingest.de.sentry.io ${isDevelopment ? 'http://Denys:* ws://Denys:*' : ''};
+    connect-src 'self' ${socketUrl} wss://*.onrender.com ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://vercel.live https://*.ingest.sentry.io https://*.ingest.de.sentry.io;
     worker-src 'self' blob:;
     frame-src 'self' https://accounts.google.com https://vercel.live;
     object-src 'none';
@@ -41,7 +41,8 @@ export function middleware(request: NextRequest) {
     const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
       'http://localhost:3000',
       'http://localhost:3001',
-      'http://Denys:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
       'https://boardly.online'
     ]
     
