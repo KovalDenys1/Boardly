@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { comparePassword, createToken } from '@/lib/auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { withErrorHandler, AuthenticationError, assertExists } from '@/lib/error-handler'
 import { apiLogger } from '@/lib/logger'
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-})
+import { loginSchema } from '@/lib/validation/auth'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/auth/login')

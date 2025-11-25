@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { hashPassword, createToken } from '@/lib/auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
-
-const registerSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3).max(20),
-  password: z.string().min(6),
-})
+import { registerSchema } from '@/lib/validation/auth'
+import { z } from 'zod'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 
