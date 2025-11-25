@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   req: NextRequest,
@@ -130,7 +131,8 @@ export async function POST(
       lobbyDeactivated: false
     })
   } catch (error: any) {
-    console.error('Leave lobby error:', error)
+    const log = apiLogger('POST /api/lobby/[code]/leave')
+    log.error('Leave lobby error', error)
     return NextResponse.json(
       { error: 'Failed to leave lobby' },
       { status: 500 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 export async function PATCH(req: NextRequest) {
   try {
@@ -68,7 +69,8 @@ export async function PATCH(req: NextRequest) {
       user: updatedUser,
     })
   } catch (error: any) {
-    console.error('Profile update error:', error)
+    const log = apiLogger('PATCH /api/user/profile')
+    log.error('Profile update error', error)
     return NextResponse.json(
       { error: 'Failed to update profile' },
       { status: 500 }

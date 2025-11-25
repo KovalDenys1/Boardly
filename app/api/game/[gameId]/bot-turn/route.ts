@@ -4,6 +4,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 import { getServerSocketUrl } from '@/lib/socket-url'
+import { apiLogger } from '@/lib/logger'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -18,10 +19,11 @@ export async function POST(
       return NextResponse.json({ error: 'Bot user ID required' }, { status: 400 })
     }
 
-    console.log('🤖 [BOT-TURN-API] ==========================================')
-    console.log('🤖 [BOT-TURN-API] Bot turn endpoint called')
-    console.log('🤖 [BOT-TURN-API] Game ID:', params.gameId)
-    console.log('🤖 [BOT-TURN-API] Bot User ID:', botUserId)
+    const log = apiLogger('POST /api/game/[gameId]/bot-turn')
+    log.info('Bot turn endpoint called', {
+      gameId: params.gameId,
+      botUserId
+    })
 
     // Load game state
     const game = await prisma.game.findUnique({
@@ -37,11 +39,14 @@ export async function POST(
     })
 
     if (!game) {
-      console.error('🤖 [BOT-TURN-API] Game not found')
+      log.error('Game not found', undefined, { gameId: params.gameId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    console.log('🤖 [BOT-TURN-API] Game found, current state:', game.state?.substring(0, 100))
+    log.info('Game found, processing bot turn', {
+      gameId: game.id,
+      statePreview: game.state?.substring(0, 100)
+    })
 
     const gameState = JSON.parse(game.state)
     const gameEngine = new YahtzeeGame(game.id)
@@ -52,7 +57,10 @@ export async function POST(
     const currentPlayer = game.players[currentPlayerIndex]
 
     if (!currentPlayer || currentPlayer.userId !== botUserId) {
-      console.warn('🤖 [BOT-TURN-API] Not bot\'s turn')
+      log.warn('Not bot\'s turn', {
+        currentPlayer: currentPlayer?.userId,
+        expectedBot: botUserId
+      })
       return NextResponse.json({ 
         error: 'Not bot\'s turn',
         currentPlayer: currentPlayer?.userId,
@@ -60,26 +68,26 @@ export async function POST(
       }, { status: 400 })
     }
 
-    console.log('🤖 [BOT-TURN-API] Verified it\'s bot\'s turn, executing...')
+    log.info('Verified it\'s bot\'s turn, executing...')
 
     // Execute bot's turn
     await BotMoveExecutor.executeBotTurn(
       gameEngine,
       botUserId,
       async (botMove: Move) => {
-        console.log(`🤖 [BOT-TURN-API] Bot making move: ${botMove.type}`, botMove.data)
+        log.info('Bot making move', { moveType: botMove.type, data: botMove.data })
         
         // Make the bot's move
         const moveSuccess = gameEngine.makeMove(botMove)
-        console.log(`🤖 [BOT-TURN-API] Move result: ${moveSuccess}`)
+        log.info('Move result', { success: moveSuccess })
         
         if (!moveSuccess) {
-          console.error('🤖 [BOT-TURN-API] Move validation failed!')
+          log.error('Move validation failed')
           return
         }
 
         // Save to database
-        console.log('🤖 [BOT-TURN-API] Saving bot move to database...')
+        log.info('Saving bot move to database...')
         await prisma.game.update({
           where: { id: params.gameId },
           data: {
@@ -89,7 +97,7 @@ export async function POST(
             updatedAt: new Date(),
           },
         })
-        console.log('🤖 [BOT-TURN-API] Database updated successfully')
+        log.info('Database updated successfully')
 
         // Update player scores
         await Promise.all(
@@ -106,19 +114,17 @@ export async function POST(
             }
           })
         )
-        console.log('🤖 [BOT-TURN-API] Player scores updated')
+        log.info('Player scores updated')
       }
     )
 
-    console.log('🤖 [BOT-TURN-API] Bot turn execution completed')
+    log.info('Bot turn execution completed')
 
     // Notify all clients via Socket.IO
     const finalState = gameEngine.getState()
     const socketUrl = getServerSocketUrl()
     
-    console.log('🤖 [BOT-TURN-API] Sending Socket.IO notification...')
-    console.log('🤖 [BOT-TURN-API] Socket URL:', socketUrl)
-    console.log('🤖 [BOT-TURN-API] Lobby code:', lobbyCode)
+    log.info('Sending Socket.IO notification', { socketUrl, lobbyCode })
     
     try {
       const socketResponse = await fetch(`${socketUrl}/api/notify`, {
@@ -136,18 +142,18 @@ export async function POST(
       })
 
       if (socketResponse.ok) {
-        console.log('🤖 [BOT-TURN-API] Socket.IO notification sent successfully')
+        log.info('Socket.IO notification sent successfully')
       } else {
         const errorText = await socketResponse.text()
-        console.error('🤖 [BOT-TURN-API] Socket.IO notification failed:', errorText)
+        log.error('Socket.IO notification failed', undefined, { error: errorText })
         // Don't throw error - bot turn was successful, notification is secondary
       }
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          console.error('🤖 [BOT-TURN-API] Socket.IO notification timeout')
+          log.error('Socket.IO notification timeout')
         } else {
-          console.error('🤖 [BOT-TURN-API] Error sending Socket.IO notification:', error.message)
+          log.error('Error sending Socket.IO notification', error)
         }
       }
       // Don't throw - bot turn completed successfully, notification failure is non-critical
@@ -160,7 +166,8 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('🤖 [BOT-TURN-API] Error:', error)
+    const log = apiLogger('POST /api/game/[gameId]/bot-turn')
+    log.error('Bot turn execution failed', error as Error)
     return NextResponse.json({ 
       error: 'Failed to execute bot turn',
       details: error instanceof Error ? error.message : 'Unknown error'

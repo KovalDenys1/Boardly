@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
 import crypto from 'crypto'
+import { apiLogger } from '@/lib/logger'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -21,7 +22,8 @@ export async function POST(request: NextRequest) {
     // Security: Always return success even if user doesn't exist
     // This prevents email enumeration attacks
     if (!user) {
-      console.log(`Password reset requested for non-existent email: ${email}`)
+      const log = apiLogger('POST /api/auth/forgot-password')
+      log.info('Password reset requested for non-existent email', { email })
       return NextResponse.json({
         message: 'If an account exists with that email, you will receive password reset instructions.',
       })
@@ -49,7 +51,8 @@ export async function POST(request: NextRequest) {
     const result = await sendPasswordResetEmail(email, token)
 
     if (!result.success) {
-      console.error('Failed to send password reset email:', result.error)
+      const log = apiLogger('POST /api/auth/forgot-password')
+      log.error('Failed to send password reset email', undefined, { error: result.error })
       return NextResponse.json(
         { error: 'Failed to send reset email. Please try again later.' },
         { status: 500 }
@@ -67,7 +70,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.error('Forgot password error:', error)
+    const log = apiLogger('POST /api/auth/forgot-password')
+    log.error('Forgot password error', error as Error)
     return NextResponse.json(
       { error: 'An error occurred. Please try again later.' },
       { status: 500 }

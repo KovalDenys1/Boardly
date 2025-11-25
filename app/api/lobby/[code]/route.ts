@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { getServerSocketUrl } from '@/lib/socket-url'
+import { apiLogger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -44,15 +45,11 @@ export async function GET(
 
     return NextResponse.json({ lobby })
   } catch (error) {
-    console.error('Get lobby error:', error)
-    // Log error details
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        code: params.code
-      })
-    }
+    const log = apiLogger('GET /api/lobby/[code]')
+    log.error('Get lobby error', error as Error, {
+      code: params.code,
+      stack: (error as Error).stack
+    })
     return NextResponse.json({ 
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
@@ -173,7 +170,8 @@ export async function POST(
         },
       })
     } catch (error) {
-      console.error('Error updating game state with new player scores:', error)
+      const log = apiLogger('POST /api/lobby/[code]')
+      log.error('Error updating game state with new player scores', error as Error)
     }
 
     // Notify all clients via WebSocket that a player joined
@@ -190,7 +188,10 @@ export async function POST(
             userId: user.id,
           },
         }),
-      }).catch(err => console.error('Failed to notify socket server:', err))
+      }).catch(err => {
+        const log = apiLogger('POST /api/lobby/[code]')
+        log.error('Failed to notify socket server', err)
+      })
 
       // Also send lobby-update event
       await fetch(`${socketUrl}/api/notify`, {
@@ -201,22 +202,22 @@ export async function POST(
           event: 'lobby-update',
           data: { lobbyCode: params.code },
         }),
-      }).catch(err => console.error('Failed to notify socket server:', err))
+      }).catch(err => {
+        const log = apiLogger('POST /api/lobby/[code]')
+        log.error('Failed to notify socket server', err)
+      })
     } catch (error) {
-      console.error('Error sending WebSocket notification:', error)
+      const log = apiLogger('POST /api/lobby/[code]')
+      log.error('Error sending WebSocket notification', error as Error)
     }
 
     return NextResponse.json({ game, player })
   } catch (error) {
-    console.error('Join lobby error:', error)
-    // Log error details
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        code: params.code
-      })
-    }
+    const log = apiLogger('POST /api/lobby/[code]')
+    log.error('Join lobby error', error as Error, {
+      code: params.code,
+      stack: (error as Error).stack
+    })
     return NextResponse.json({ 
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined

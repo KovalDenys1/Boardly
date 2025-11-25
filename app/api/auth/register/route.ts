@@ -5,6 +5,7 @@ import { hashPassword, createToken } from '@/lib/auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
+import { apiLogger } from '@/lib/logger'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -80,7 +81,8 @@ export async function POST(request: NextRequest) {
     const emailResult = await sendVerificationEmail(email, verificationToken)
     
     if (!emailResult.success) {
-      console.error('Failed to send verification email:', emailResult.error)
+      const log = apiLogger('POST /api/auth/register')
+      log.error('Failed to send verification email', undefined, { error: emailResult.error })
       // Continue anyway - user can request resend
     }
 
@@ -97,7 +99,8 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
-    console.error('Register error:', error)
+    const log = apiLogger('POST /api/auth/register')
+    log.error('Register error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

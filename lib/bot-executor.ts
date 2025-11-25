@@ -2,6 +2,7 @@ import { YahtzeeBot } from './yahtzee-bot'
 import { YahtzeeGame } from './games/yahtzee-game'
 import { Move } from './game-engine'
 import { YahtzeeCategory } from './yahtzee'
+import { clientLogger } from './client-logger'
 
 /**
  * Bot move executor for Yahtzee game
@@ -31,21 +32,22 @@ export class BotMoveExecutor {
     onMove: (move: Move) => Promise<void>,
     onBotAction?: (event: BotActionEvent) => void
   ): Promise<void> {
-    console.log(`🤖 [BOT-TURN] ============================================`)
-    console.log(`🤖 [BOT-TURN] Starting turn for bot: ${botUserId}`)
-    console.log(`🤖 [BOT-TURN] Current game state:`, JSON.stringify(gameEngine.getState(), null, 2))
+    clientLogger.log(`🤖 [BOT-TURN] ============================================`)
+    clientLogger.log(`🤖 [BOT-TURN] Starting turn for bot: ${botUserId}`)
+    clientLogger.log(`🤖 [BOT-TURN] Current game state:`, JSON.stringify(gameEngine.getState(), null, 2))
 
     const gameState = gameEngine.getState()
     const botPlayer = gameEngine.getPlayers().find(p => p.id === botUserId)
 
     if (!botPlayer) {
-      console.error('🤖 [BOT-TURN] ERROR: Bot player not found in game!')
-      console.error('🤖 [BOT-TURN] Looking for bot ID:', botUserId)
-      console.error('🤖 [BOT-TURN] Available players:', gameEngine.getPlayers().map(p => ({ id: p.id, name: p.name })))
+      clientLogger.error('Bot player not found in game', {
+        botUserId,
+        availablePlayers: gameEngine.getPlayers().map(p => ({ id: p.id, name: p.name }))
+      })
       return
     }
     
-    console.log(`🤖 [BOT-TURN] Bot player found: ${botPlayer.name}`)
+    clientLogger.log(`🤖 [BOT-TURN] Bot player found: ${botPlayer.name}`)
 
     // Get bot's scorecard
     const botScorecard = gameEngine.getScorecard(botUserId) || {}
@@ -72,7 +74,7 @@ export class BotMoveExecutor {
       timestamp: new Date(),
     }
     await onMove(rollMove)
-    console.log('🤖 Bot rolled dice (roll 1)')
+    clientLogger.log('🤖 Bot rolled dice (roll 1)')
 
     // Show result
     let currentDice = gameEngine.getDice()
@@ -94,7 +96,7 @@ export class BotMoveExecutor {
     for (let rollNum = 2; rollNum <= 3 && rollsLeft > 0; rollNum++) {
       // Decide whether to roll again or score now
       if (this.shouldStopRolling(currentDice, botScorecard)) {
-        console.log('🤖 Bot decided to stop rolling and score')
+        clientLogger.log('🤖 Bot decided to stop rolling and score')
         onBotAction?.({
           type: 'thinking',
           message: 'Bot is satisfied with this roll!',
@@ -117,7 +119,7 @@ export class BotMoveExecutor {
         botScorecard
       )
 
-      console.log(`🤖 Bot holding dice at indices: ${diceToHold}`)
+      clientLogger.log(`🤖 Bot holding dice at indices: ${diceToHold}`)
 
       // Show hold decision
       onBotAction?.({
@@ -161,7 +163,7 @@ export class BotMoveExecutor {
         timestamp: new Date(),
       }
       await onMove(nextRollMove)
-      console.log(`🤖 Bot rolled dice (roll ${rollNum})`)
+      clientLogger.log(`🤖 Bot rolled dice (roll ${rollNum})`)
 
       // Update state
       currentDice = gameEngine.getDice()
@@ -186,17 +188,18 @@ export class BotMoveExecutor {
     })
     await this.delay(1200) // Final decision time
     
-    console.log('🤖 [BOT-TURN] Bot analyzing best category to score...')
-    console.log('🤖 [BOT-TURN] Final dice:', currentDice)
-    console.log('🤖 [BOT-TURN] Bot scorecard:', botScorecard)
+    clientLogger.log('🤖 [BOT-TURN] Bot analyzing best category to score...', {
+      dice: currentDice,
+      scorecard: botScorecard
+    })
     
     const category = YahtzeeBot.selectCategory(currentDice, botScorecard)
-    console.log(`🤖 [BOT-TURN] Bot chose category: ${category}`)
+    clientLogger.log(`🤖 [BOT-TURN] Bot chose category: ${category}`)
 
     // Calculate score for this category
     const { calculateScore } = require('./yahtzee')
     const score = calculateScore(currentDice, category)
-    console.log(`🤖 [BOT-TURN] Expected score: ${score}`)
+    clientLogger.log(`🤖 [BOT-TURN] Expected score: ${score}`)
 
     // Show category selection
     onBotAction?.({
@@ -216,11 +219,11 @@ export class BotMoveExecutor {
       timestamp: new Date(),
     }
     
-    console.log('🤖 [BOT-TURN] Submitting score move to game engine...')
+    clientLogger.log('🤖 [BOT-TURN] Submitting score move to game engine...')
     await onMove(scoreMove)
-    console.log('🤖 [BOT-TURN] Score move submitted successfully')
-    console.log('🤖 [BOT-TURN] Bot turn completed!')
-    console.log(`🤖 [BOT-TURN] ============================================`)
+    clientLogger.log('🤖 [BOT-TURN] Score move submitted successfully')
+    clientLogger.log('🤖 [BOT-TURN] Bot turn completed!')
+    clientLogger.log(`🤖 [BOT-TURN] ============================================`)
   }
 
   /**

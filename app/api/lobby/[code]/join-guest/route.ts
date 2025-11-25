@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   req: NextRequest,
@@ -145,7 +146,8 @@ export async function POST(
       { status: 200 }
     )
   } catch (error: any) {
-    console.error('Error joining as guest:', error)
+    const log = apiLogger('POST /api/lobby/[code]/join-guest')
+    log.error('Error joining as guest', error)
     return NextResponse.json(
       { error: 'Failed to join as guest' },
       { status: 500 }

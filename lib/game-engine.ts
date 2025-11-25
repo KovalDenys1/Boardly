@@ -9,18 +9,18 @@ export interface Player {
 export interface Move {
   playerId: string;
   type: string;
-  data: any;
+  data: Record<string, unknown>;
   timestamp: Date;
 }
 
-export interface GameState {
+export interface GameState<TGameData = unknown> {
   id: string;
   gameType: string;
   players: Player[];
   currentPlayerIndex: number;
   status: 'waiting' | 'playing' | 'finished';
   winner?: string;
-  data: any; // Game-specific state
+  data: TGameData; // Game-specific state
   createdAt: Date;
   updatedAt: Date;
 }

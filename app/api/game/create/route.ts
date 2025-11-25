@@ -7,6 +7,7 @@ import { GameEngine, GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 import { getServerSocketUrl } from '@/lib/socket-url'
+import { apiLogger } from '@/lib/logger'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -132,7 +133,10 @@ export async function POST(request: NextRequest) {
             gameId: game.id,
           },
         }),
-      }).catch(err => console.error('Failed to notify socket server:', err))
+      }).catch(err => {
+        const log = apiLogger('POST /api/game/create')
+        log.error('Failed to notify socket server', err)
+      })
 
       // Also send game state update
       await fetch(`${socketUrl}/api/notify`, {
@@ -146,9 +150,13 @@ export async function POST(request: NextRequest) {
             payload: { state: gameEngine.getState() },
           },
         }),
-      }).catch(err => console.error('Failed to notify socket server:', err))
+      }).catch(err => {
+        const log = apiLogger('POST /api/game/create')
+        log.error('Failed to notify socket server', err)
+      })
     } catch (error) {
-      console.error('Error sending WebSocket notification:', error)
+      const log = apiLogger('POST /api/game/create')
+      log.error('Error sending WebSocket notification', error as Error)
     }
 
     // Check if first player is a bot and trigger bot turn
@@ -156,7 +164,8 @@ export async function POST(request: NextRequest) {
     const currentPlayer = game.players[currentPlayerIndex]
     
     if (currentPlayer && BotMoveExecutor.isBot(currentPlayer)) {
-      console.log('🤖 First player is a bot, triggering bot turn...')
+      const log = apiLogger('POST /api/game/create')
+      log.info('First player is a bot, triggering bot turn...', { botUserId: currentPlayer.userId })
       
       // Trigger bot turn via separate HTTP request (fire and forget)
       const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
@@ -180,13 +189,13 @@ export async function POST(request: NextRequest) {
         .catch(error => {
           clearTimeout(timeoutId)
           if (error.name === 'AbortError') {
-            console.error('🤖 Bot turn timeout - request aborted after 30s')
+            log.error('Bot turn timeout - request aborted after 30s')
           } else {
-            console.error('🤖 Failed to trigger bot turn:', error)
+            log.error('Failed to trigger bot turn', error)
           }
         })
         
-      console.log('🤖 Bot turn request sent to:', botApiUrl)
+      log.info('Bot turn request sent', { botApiUrl })
     }
 
     return NextResponse.json({
@@ -203,7 +212,8 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Create game error:', error)
+    const log = apiLogger('POST /api/game/create')
+    log.error('Create game error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

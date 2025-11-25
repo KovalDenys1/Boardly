@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   request: Request,
@@ -120,7 +121,8 @@ export async function POST(
       message: 'Bot added to lobby'
     })
   } catch (error) {
-    console.error('Error adding bot:', error)
+    const log = apiLogger('POST /api/lobby/[code]/add-bot')
+    log.error('Error adding bot', error as Error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

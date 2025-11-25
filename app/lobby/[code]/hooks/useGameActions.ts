@@ -7,9 +7,10 @@ import { clientLogger } from '@/lib/client-logger'
 import toast from 'react-hot-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, CelebrationEvent } from '@/lib/celebrations'
+import { Game } from '@/types/game'
 
 interface UseGameActionsProps {
-  game: any
+  game: Game | null
   gameEngine: YahtzeeGame | null
   setGameEngine: (engine: YahtzeeGame | null) => void
   isGuest: boolean
@@ -17,7 +18,7 @@ interface UseGameActionsProps {
   getCurrentUserId: () => string | undefined
   getCurrentUserName: () => string
   isMyTurn: () => boolean
-  emitWhenConnected: (event: string, data: any) => void
+  emitWhenConnected: (event: string, data: Record<string, unknown>) => void
   code: string
   setRollHistory: React.Dispatch<React.SetStateAction<RollHistoryEntry[]>>
   setCelebrationEvent: React.Dispatch<React.SetStateAction<CelebrationEvent | null>>

@@ -18,6 +18,7 @@ import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
+import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 
 // New modular imports
 import { useGuestMode } from './hooks/useGuestMode'
@@ -48,8 +49,8 @@ function LobbyPageContent() {
   }, [status, isGuest, session])
 
   // Core state
-  const [lobby, setLobby] = useState<any>(null)
-  const [game, setGame] = useState<any>(null)
+  const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
+  const [game, setGame] = useState<Game | null>(null)
   const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -57,17 +58,17 @@ function LobbyPageContent() {
   const { fireworks } = useConfetti()
 
   // Chat state
-  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
   const [chatMinimized, setChatMinimized] = useState(false)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
 
   // Bot visualization state
-  const [botMoveSteps, setBotMoveSteps] = useState<any[]>([])
+  const [botMoveSteps, setBotMoveSteps] = useState<BotMoveStep[]>([])
   const [currentBotStepIndex, setCurrentBotStepIndex] = useState(0)
   const [botPlayerName, setBotPlayerName] = useState('')
   const [showingBotOverlay, setShowingBotOverlay] = useState(false)
-  const [previousGameState, setPreviousGameState] = useState<any>(null)
+  const [previousGameState, setPreviousGameState] = useState<Record<string, unknown> | null>(null)
 
   // Roll history and celebrations
   const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([])
@@ -94,11 +95,18 @@ function LobbyPageContent() {
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
 
   // Memoize socket event handlers to prevent infinite loops
-  const onGameUpdate = useCallback((payload: any) => {
+  const onGameUpdate = useCallback((payload: GameUpdatePayload) => {
     clientLogger.log('📡 Received game-update:', payload)
     
     // Extract state from payload structure: { action: 'state-change', payload: { state: ... } }
-    const state = payload?.payload?.state || payload?.state
+    let state: unknown
+    if ('state' in payload.payload && payload.payload.state) {
+      state = payload.payload.state
+    } else if (payload.state) {
+      state = payload.state
+    } else {
+      state = payload.payload
+    }
     
     if (state) {
       try {
@@ -118,7 +126,7 @@ function LobbyPageContent() {
           }))
         }
         
-        // TODO: Detect bot moves (requires refactoring bot visualization logic)
+        // Note: Bot move detection handled by bot-visualization.ts
         
         setPreviousGameState(parsedState)
       } catch (e) {
@@ -129,21 +137,21 @@ function LobbyPageContent() {
     }
   }, [game?.id])
 
-  const onChatMessage = useCallback((message: any) => {
+  const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
     if (chatMinimized) {
       setUnreadMessageCount(prev => prev + 1)
     }
   }, [chatMinimized])
 
-  const onPlayerTyping = useCallback((data: any) => {
+  const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
     if (data.userId !== getCurrentUserId()) {
       setSomeoneTyping(true)
       setTimeout(() => setSomeoneTyping(false), 3000)
     }
   }, [getCurrentUserId])
 
-  const onLobbyUpdate = useCallback((data: any) => {
+  const onLobbyUpdate = useCallback((data: LobbyUpdatePayload) => {
     clientLogger.log('📡 Received lobby-update:', data)
     // Use ref to avoid circular dependency
     if (loadLobbyRef.current) {
@@ -151,7 +159,7 @@ function LobbyPageContent() {
     }
   }, [])
 
-  const onPlayerJoined = useCallback((data: any) => {
+  const onPlayerJoined = useCallback((data: PlayerJoinedPayload) => {
     clientLogger.log('📡 Player joined:', data)
     // Use ref to avoid circular dependency
     if (loadLobbyRef.current) {
@@ -165,7 +173,7 @@ function LobbyPageContent() {
     }
   }, [getCurrentUserId, toast])
 
-  const onGameStarted = useCallback((data: any) => {
+  const onGameStarted = useCallback((data: GameStartedPayload) => {
     clientLogger.log('📡 Game started:', data)
     // Use ref to avoid circular dependency
     if (loadLobbyRef.current) {

@@ -5,6 +5,7 @@ import GitHubProvider from 'next-auth/providers/github'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import { comparePassword } from './auth'
+import { apiLogger } from './logger'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -91,11 +92,13 @@ export const authOptions: NextAuthOptions = {
             // Update user object with database ID
             user.id = newUser.id
             
-            console.log('Created new OAuth user:', newUser.id, newUser.email)
+            const log = apiLogger('OAuth signIn')
+            log.info('Created new OAuth user', { userId: newUser.id, email: newUser.email })
           } else {
             // Use existing user ID
             user.id = existingUser.id
-            console.log('OAuth user already exists:', existingUser.id, existingUser.email)
+            const log = apiLogger('OAuth signIn')
+            log.info('OAuth user already exists', { userId: existingUser.id, email: existingUser.email })
           }
         } catch (error) {
           console.error('Error in signIn callback:', error)

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      console.error('User not found in database:', session.user.id)
+      log.error('User not found in database', undefined, { userId: session.user.id })
       return NextResponse.json(
         { error: 'User not found. Please log in again.' },
         { status: 404 }
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
-    console.error('Create lobby error:', error)
+    log.error('Create lobby error', error as Error)
     
     // Provide more specific error messages
     if (error instanceof Error) {
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ lobbies })
   } catch (error) {
-    console.error('Get lobbies error:', error)
+    log.error('Get lobbies error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

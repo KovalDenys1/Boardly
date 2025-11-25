@@ -44,7 +44,7 @@ export class YahtzeeGame extends GameEngine {
         const { diceIndex, held } = move.data
         
         // If using diceIndex format
-        if (diceIndex !== undefined) {
+        if (diceIndex !== undefined && diceIndex !== null && typeof diceIndex === 'number') {
           return diceIndex >= 0 && diceIndex < 5 && gameData.rollsLeft < 3
         }
         

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
+import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   request: NextRequest,
@@ -63,7 +64,8 @@ export async function POST(
         throw new Error('Game state missing players array')
       }
     } catch (parseError) {
-      console.error('Failed to parse game state:', parseError)
+      const log = apiLogger('POST /api/game/[gameId]/state')
+      log.error('Failed to parse game state', parseError as Error)
       return NextResponse.json({ 
         error: 'Corrupted game state. Please restart the game.' 
       }, { status: 500 })
@@ -145,7 +147,8 @@ export async function POST(
 
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Update game state error:', error)
+    const log = apiLogger('POST /api/game/[gameId]/state')
+    log.error('Update game state error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

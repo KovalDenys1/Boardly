@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Email verified successfully' })
   } catch (error) {
-    console.error('Email verification error:', error)
+    const log = apiLogger('POST /api/auth/verify-email')
+    log.error('Email verification error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

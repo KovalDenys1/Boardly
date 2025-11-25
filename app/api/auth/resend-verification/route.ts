@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
 import crypto from 'crypto'
+import { apiLogger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +43,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Verification email sent' })
   } catch (error) {
-    console.error('Resend verification error:', error)
+    const log = apiLogger('POST /api/auth/resend-verification')
+    log.error('Resend verification error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

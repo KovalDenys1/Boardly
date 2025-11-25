@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { apiLogger } from '@/lib/logger'
 
 // This endpoint is called automatically when users visit the lobby page
 // No authentication required - it's a public cleanup utility
@@ -68,7 +69,8 @@ export async function POST(req: NextRequest) {
       deactivatedCount: lobbiesToDeactivate.length
     })
   } catch (error: any) {
-    console.error('Cleanup error:', error)
+    const log = apiLogger('POST /api/lobby/cleanup')
+    log.error('Cleanup error', error)
     return NextResponse.json(
       { error: 'Cleanup failed' },
       { status: 500 }
