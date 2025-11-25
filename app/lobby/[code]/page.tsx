@@ -285,6 +285,14 @@ function LobbyPageContent() {
     fireworks,
   })
 
+  // Bot turn automation hook
+  const { triggerBotTurn } = useBotTurn({
+    game,
+    gameEngine,
+    code,
+    isGameStarted: game?.status === 'playing',
+  })
+
   // Load lobby on mount
   useEffect(() => {
     if (status === 'loading') return
