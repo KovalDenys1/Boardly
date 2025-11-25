@@ -95,6 +95,10 @@ model Lobby {
   creatorId String
   creator   User     @relation("LobbyCreator", fields: [creatorId], references: [id])
   games     Game[]
+  
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([creatorId])
 }
 
 model Game {
@@ -107,6 +111,10 @@ model Game {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   players   Player[]
+  
+  @@index([lobbyId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model Player {
@@ -122,4 +130,6 @@ model Player {
   createdAt DateTime @default(now())
   
   @@unique([gameId, userId])
+  @@index([gameId])
+  @@index([userId])
 }
