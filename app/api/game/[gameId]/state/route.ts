@@ -143,47 +143,6 @@ export async function POST(
       }
     }
 
-    // Check if next player is a bot and execute their turn
-    if (game.lobby.gameType === 'yahtzee' && !gameEngine.isGameFinished()) {
-      const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
-      const currentPlayer = updatedGame.players[currentPlayerIndex]
-      
-      if (currentPlayer && BotMoveExecutor.isBot(currentPlayer)) {
-        console.log('🤖 Next player is a bot, triggering bot turn via separate request...')
-        
-        // Trigger bot turn via separate HTTP request (fire and forget)
-        // This ensures the function doesn't terminate before bot completes
-        const botApiUrl = `${request.nextUrl.origin}/api/game/${params.gameId}/bot-turn`
-        
-        // Add timeout to prevent hanging
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
-        
-        fetch(botApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            botUserId: currentPlayer.userId,
-            lobbyCode: game.lobby.code,
-          }),
-          signal: controller.signal,
-        })
-        .then(() => clearTimeout(timeoutId))
-        .catch(error => {
-          clearTimeout(timeoutId)
-          if (error.name === 'AbortError') {
-            console.error('🤖 Bot turn timeout - request aborted after 30s')
-          } else {
-            console.error('🤖 Failed to trigger bot turn:', error)
-          }
-        })
-        
-        console.log('🤖 Bot turn request sent to:', botApiUrl)
-      }
-    }
-
     return NextResponse.json(response)
   } catch (error) {
     console.error('Update game state error:', error)

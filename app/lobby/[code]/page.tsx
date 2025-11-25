@@ -25,6 +25,7 @@ import { useSocketConnection } from './hooks/useSocketConnection'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
+import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
 import GameBoard from './components/GameBoard'
 import WaitingRoom from './components/WaitingRoom'
@@ -95,11 +96,15 @@ function LobbyPageContent() {
   // Memoize socket event handlers to prevent infinite loops
   const onGameUpdate = useCallback((payload: any) => {
     clientLogger.log('📡 Received game-update:', payload)
-    if (payload.state) {
+    
+    // Extract state from payload structure: { action: 'state-change', payload: { state: ... } }
+    const state = payload?.payload?.state || payload?.state
+    
+    if (state) {
       try {
-        const parsedState = typeof payload.state === 'string' 
-          ? JSON.parse(payload.state) 
-          : payload.state
+        const parsedState = typeof state === 'string' 
+          ? JSON.parse(state) 
+          : state
         
         if (game?.id) {
           const newEngine = new YahtzeeGame(game.id)
@@ -119,6 +124,8 @@ function LobbyPageContent() {
       } catch (e) {
         clientLogger.error('Failed to parse game state:', e)
       }
+    } else {
+      clientLogger.warn('📡 game-update received but no state found:', payload)
     }
   }, [game?.id])
 
@@ -235,7 +242,7 @@ function LobbyPageContent() {
         const scorecard = gameEngine.getScorecard(currentPlayer.id)
         if (scorecard) {
           const availableCategories = Object.keys(scorecard).filter(
-            key => scorecard[key as keyof typeof scorecard] === null
+            key => scorecard[key as keyof typeof scorecard] === undefined
           ) as any[]
           if (availableCategories.length > 0) {
             await handleScore(availableCategories[0])
@@ -335,6 +342,14 @@ function LobbyPageContent() {
   )
   const isGameStarted = game?.status === 'playing'
 
+  // Bot turn hook - triggers bot moves automatically (must be after isGameStarted)
+  useBotTurn({
+    game,
+    gameEngine,
+    code,
+    isGameStarted,
+  })
+
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
@@ -432,6 +447,7 @@ function LobbyPageContent() {
                   isRolling={isRolling}
                   isScoring={isScoring}
                   celebrationEvent={celebrationEvent}
+                  getCurrentUserId={getCurrentUserId}
                   onRollDice={handleRollDice}
                   onToggleHold={handleToggleHold}
                   onScore={handleScore}

@@ -14,6 +14,7 @@ interface GameBoardProps {
   isRolling: boolean
   isScoring: boolean
   celebrationEvent: CelebrationEvent | null
+  getCurrentUserId: () => string | undefined
   onRollDice: () => void
   onToggleHold: (index: number) => void
   onScore: (category: YahtzeeCategory) => void
@@ -29,6 +30,7 @@ export default function GameBoard({
   isRolling,
   isScoring,
   celebrationEvent,
+  getCurrentUserId,
   onRollDice,
   onToggleHold,
   onScore,
@@ -54,7 +56,7 @@ export default function GameBoard({
           <div>
             <p className="text-sm opacity-90">Your Score</p>
             <p className="text-3xl font-bold">
-              {gameEngine.getPlayers().find(p => p.id === game?.players?.find((gp: any) => !gp.user.isBot)?.userId)?.score || 0}
+              {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
             </p>
           </div>
           <div>
@@ -81,7 +83,7 @@ export default function GameBoard({
             dice={gameEngine.getDice()}
             held={gameEngine.getHeld()}
             onToggleHold={onToggleHold}
-            disabled={isMoveInProgress || gameEngine.getRollsLeft() === 3 || !isMyTurn}
+            disabled={isMoveInProgress || gameEngine.getRollsLeft() >= 3 || !isMyTurn}
           />
 
           {/* Roll Button */}
@@ -159,8 +161,6 @@ export default function GameBoard({
         <div className="lg:col-span-2">
           {(() => {
             const currentPlayer = gameEngine.getCurrentPlayer()
-            const currentUserId = game?.players?.find((p: any) => !p.user.isBot)?.userId
-            const isCurrentUserTurn = currentPlayer?.id === currentUserId
             const scorecard = gameEngine.getScorecard(currentPlayer?.id || '')
             
             if (!scorecard) return null
@@ -170,8 +170,8 @@ export default function GameBoard({
                 scorecard={scorecard}
                 currentDice={gameEngine.getDice()}
                 onSelectCategory={onScore}
-                canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() !== 3}
-                isCurrentPlayer={isCurrentUserTurn}
+                canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3}
+                isCurrentPlayer={isMyTurn}
                 isLoading={isScoring}
               />
             )

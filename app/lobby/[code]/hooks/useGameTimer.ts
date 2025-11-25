@@ -46,12 +46,12 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
       // Only reset timer if turn changed
       if (turnChanged) {
         if (isInitialLoad) {
-          clientLogger.log('🔄 Initial load - my turn, starting timer at 30s')
-          setTimeLeft(30)
+          clientLogger.log('🔄 Initial load - my turn, starting timer at 60s')
+          setTimeLeft(60)
           setIsInitialLoad(false)
         } else {
-        clientLogger.log('🔄 Turn changed to me, resetting timer to 60s')
-        setTimeLeft(60)
+          clientLogger.log('🔄 Turn changed to me, resetting timer to 60s')
+          setTimeLeft(60)
         }
       }
     } else {

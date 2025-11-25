@@ -22,24 +22,25 @@ export default function WaitingRoom({
 }: WaitingRoomProps) {
   const playerCount = game?.players?.length || 0
   const hasBot = game?.players?.some((p: any) => p.user?.isBot)
+  const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
 
   return (
     <>
       {/* Player List */}
       {game?.players && game.players.length > 0 && (
         <PlayerList
-          players={game.players.map((p: any, index: number) => ({
+          players={game.players.map((p: any) => ({
             id: p.id,
             userId: p.userId,
             user: {
               username: p.user.username,
               email: p.user.email,
             },
-            score: gameEngine ? gameEngine.getPlayers()[index]?.score || 0 : 0,
+            score: 0, // Game not started yet
             position: p.position || game.players.indexOf(p),
             isReady: true,
           }))}
-          currentTurn={gameEngine?.getState().currentPlayerIndex ?? -1}
+          currentTurn={-1} // No turns before game starts
           currentUserId={getCurrentUserId() || undefined}
         />
       )}
@@ -57,7 +58,7 @@ export default function WaitingRoom({
           </p>
           {playerCount < 2 ? (
             <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-4">
-              You're the only human player right now. We'll auto-add an AI opponent once you start.
+              You're the only player right now. Add a bot or wait for others to join.
             </p>
           ) : (
             <p className="text-sm text-green-600 dark:text-green-400 mb-4">
@@ -81,22 +82,22 @@ export default function WaitingRoom({
             >
               🎮 Start Yahtzee Game
             </button>
-            {playerCount < 2 && (
+            {playerCount === 1 && !hasBot && (
               <p className="text-xs text-gray-500 text-center">
-                An AI bot will join automatically if no other players are present.
+                💡 Tip: A bot will be auto-added when you start if you're still alone
               </p>
             )}
 
             {/* Add Bot Button */}
-            {lobby.gameType === 'yahtzee' && playerCount < lobby.maxPlayers && (
+            {lobby.gameType === 'yahtzee' && canAddMorePlayers && (
               <button
                 onClick={() => {
                   soundManager.play('click')
                   onAddBot()
                 }}
-                disabled={hasBot}
+                disabled={!canAddMorePlayers}
                 className="btn btn-secondary text-lg px-8 py-3 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                title={hasBot ? 'Bot already added' : 'Add AI opponent'}
+                title={!canAddMorePlayers ? 'Lobby is full' : 'Add AI opponent'}
               >
                 🤖 Add Bot Player
               </button>

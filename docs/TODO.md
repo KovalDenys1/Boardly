@@ -15,10 +15,10 @@
 | Nov 19 (Tue) | Inventory | Full audit of shipped features/debts, log all bugs & UX gaps in tracker | DONE |
 | Nov 20 (Wed) | Infrastructure | Stand up CI for lint/test/build and enforce PR quality gates | DONE |
 | Nov 21 (Thu) | Backend stability | Harden lobby lifecycle & reconnect flows, add log monitoring | DONE |
-| Nov 22 (Fri) | Client perf | Split oversized pages, enable code-splitting, profile renders | TODO |
-| Nov 23 (Sat) | UX polish | Add skeletons/loaders, inline tips, accessibility fixes | TODO |
-| Nov 24 (Sun) | Test day | Write smoke + integration tests for APIs and critical flows | TODO |
-| Nov 25 (Mon) | Yahtzee balance | Validate scoring logic, fix gameplay bugs, draft QA checklist | TODO |
+| Nov 22 (Fri) | Client perf | Split oversized pages, enable code-splitting, profile renders | PARTIAL |
+| Nov 23 (Sat) | UX polish | Add skeletons/loaders, inline tips, accessibility fixes | PARTIAL |
+| Nov 24 (Sun) | Test day | Write smoke + integration tests for APIs and critical flows | PARTIAL |
+| Nov 25 (Mon) | Yahtzee balance | Validate scoring logic, fix gameplay bugs, draft QA checklist | DONE |
 | Nov 26 (Tue) | Notifications | Configure email / web push for invites and reminders | TODO |
 | Nov 27 (Wed) | Auth hardening | Implement password recovery, brute-force protection, auth logs | TODO |
 | Nov 28 (Thu) | SEO/marketing | Finalize SEO guide, update landing meta tags, refresh sitemap | TODO |
@@ -63,3 +63,5 @@
 - Nov 19 — DONE. Feature + tech-debt audit captured in `docs/audit/2024-11-19.md`; logged 13 blocking issues.
 - Nov 20 — DONE. Added `npm run lint` script and `.github/workflows/ci.yml` so PRs run lint + build automatically.
 - Nov 21 — DONE. Fixed 9 npm vulnerabilities, removed production console.logs, fixed bugs B1-B3, installed Sentry monitoring. WebSocket stability improved.
+- Nov 22–24 — PARTIAL. Code quality improvements: fixed socket.io versions, removed hardcoded hostnames, comprehensive testing completed. Full perf/UX/test suite pending.
+- Nov 25 — DONE. Yahtzee validation complete: 32/32 scoring tests passed, fixed critical hold move bug, QA checklist created (`docs/YAHTZEE_QA_CHECKLIST.md`). Game ready!
