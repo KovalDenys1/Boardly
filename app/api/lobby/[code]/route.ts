@@ -30,6 +30,7 @@ export async function GET(
                     id: true,
                     username: true,
                     email: true,
+                    isBot: true,
                   },
                 },
               },
