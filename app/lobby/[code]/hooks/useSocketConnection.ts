@@ -131,7 +131,8 @@ export function useSocketConnection({
       newSocket.off('game-started')
       newSocket.close()
     }
-  }, [code, session?.user?.id, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
     if (!socket) return

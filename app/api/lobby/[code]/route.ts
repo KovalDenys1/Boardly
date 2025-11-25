@@ -45,7 +45,7 @@ export async function GET(
     return NextResponse.json({ lobby })
   } catch (error) {
     console.error('Get lobby error:', error)
-    // Логируем подробности ошибки
+    // Log error details
     if (error instanceof Error) {
       console.error('Error details:', {
         message: error.message,
@@ -209,7 +209,7 @@ export async function POST(
     return NextResponse.json({ game, player })
   } catch (error) {
     console.error('Join lobby error:', error)
-    // Логируем подробности ошибки
+    // Log error details
     if (error instanceof Error) {
       console.error('Error details:', {
         message: error.message,

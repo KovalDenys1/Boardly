@@ -163,7 +163,7 @@ function LobbyPageContent() {
       toast.success(`${data.username} joined the lobby`)
       soundManager.play('playerJoin')
     }
-  }, [getCurrentUserId])
+  }, [getCurrentUserId, toast])
 
   const onGameStarted = useCallback((data: any) => {
     clientLogger.log('📡 Game started:', data)
@@ -174,7 +174,7 @@ function LobbyPageContent() {
     
     soundManager.play('gameStart')
     toast.success('🎮 Game started!')
-  }, [])
+  }, [toast])
 
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, emitWhenConnected } = useSocketConnection({

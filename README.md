@@ -6,6 +6,27 @@
 
 🌐 **Live Demo**: [boardly.online](https://boardly.online)
 
+## 🚀 Quick Start for Developers
+
+**New to the project?** Start here:
+- 📖 [QUICKSTART.md](QUICKSTART.md) - Get up and running in 5 minutes
+- 🛠 [DEV_SETUP.md](DEV_SETUP.md) - Detailed development guide
+- ✨ [POLISH_CHECKLIST.md](POLISH_CHECKLIST.md) - Project polish checklist
+
+```bash
+# Clone and setup
+git clone <your-repo-url>
+cd Boardly
+npm install
+
+# Start development (both servers)
+npm run dev:all
+
+# Or separately:
+npm run socket:dev  # Terminal 1
+npm run dev         # Terminal 2
+```
+
 ## 🚀 Project Status
 
 **Current Stage**: Production Ready  

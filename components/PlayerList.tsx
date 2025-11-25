@@ -42,14 +42,14 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
       setAnimatingScores(newAnimating)
     }
 
-    // Обновляем предыдущие счета
+    // Update previous scores
     const newPrevScores: Record<string, number> = {}
     players.forEach(player => {
       newPrevScores[player.id] = player.score
     })
     setPrevScores(newPrevScores)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.map(p => p.score).join(',')]) // Следим за изменениями счёта
+  }, [players.map(p => p.score).join(',')]) // Track score changes
 
   return (
     <div className="card animate-fade-in">

@@ -150,3 +150,6 @@ setup-*.*
 !CONTRIBUTING.md
 !SEO_GUIDE.md
 !LICENSE
+
+# Sentry Config File
+.env.sentry-build-plugin
