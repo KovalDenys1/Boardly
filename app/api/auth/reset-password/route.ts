@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import { apiLogger } from '@/lib/logger'
 
 // Use strong password validation from auth validation
