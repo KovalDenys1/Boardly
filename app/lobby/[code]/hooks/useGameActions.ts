@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
-import { YahtzeeCategory } from '@/lib/yahtzee'
+import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import toast from 'react-hot-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
-import { detectPatternOnRoll, CelebrationEvent } from '@/lib/celebrations'
+import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game } from '@/types/game'
 
 interface UseGameActionsProps {
@@ -23,6 +23,7 @@ interface UseGameActionsProps {
   setRollHistory: React.Dispatch<React.SetStateAction<RollHistoryEntry[]>>
   setCelebrationEvent: React.Dispatch<React.SetStateAction<CelebrationEvent | null>>
   setTimerActive: (active: boolean) => void
+  celebrate: () => void
   fireworks: () => void
 }
 
@@ -41,6 +42,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setRollHistory,
     setCelebrationEvent,
     setTimerActive,
+    celebrate,
     fireworks,
   } = props
 
@@ -153,6 +155,7 @@ export function useGameActions(props: UseGameActionsProps) {
           // Only show celebration if category is available (undefined in scorecard)
           if (!category || !scorecard || scorecard[category] === undefined) {
             setCelebrationEvent(celebration)
+            celebrate() // Trigger confetti animation
           }
         }
       }
@@ -172,7 +175,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, getCurrentUserName, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, getCurrentUserName, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -246,6 +249,16 @@ export function useGameActions(props: UseGameActionsProps) {
       // Reset local held state for next turn
       setHeld([false, false, false, false, false])
 
+      // Calculate score for celebration detection
+      const scoredValue = calculateScore(gameEngine.getDice(), category)
+      
+      // Check if this score deserves a celebration
+      const celebration = detectCelebration(gameEngine.getDice(), category, scoredValue)
+      if (celebration) {
+        setCelebrationEvent(celebration)
+        celebrate() // Trigger confetti for good scores
+      }
+
       soundManager.play('score')
 
       emitWhenConnected('game-action', {
@@ -277,7 +290,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, code, setGameEngine, emitWhenConnected, setTimerActive, fireworks])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
 
   return {
     handleRollDice,

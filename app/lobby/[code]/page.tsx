@@ -55,7 +55,7 @@ function LobbyPageContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
-  const { fireworks } = useConfetti()
+  const { celebrate, fireworks } = useConfetti()
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
@@ -320,6 +320,7 @@ function LobbyPageContent() {
     setRollHistory,
     setCelebrationEvent,
     setTimerActive: () => {}, // Timer managed by useGameTimer
+    celebrate,
     fireworks,
   })
 

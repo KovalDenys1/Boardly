@@ -54,11 +54,14 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
     <button
       onClick={!disabled ? onToggleHold : undefined}
       disabled={disabled}
+      aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
+      aria-pressed={held}
       className={`
-        relative w-16 h-16 md:w-20 md:h-20 rounded-xl shadow-lg transition-all duration-200
+        relative w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-xl shadow-lg transition-all duration-200
         ${held ? 'bg-blue-500 border-4 border-blue-600 scale-95' : 'bg-white border-4 border-gray-800 hover:scale-105 active:scale-95'}
         ${isRolling ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none
       `}
       key={animationKey}
     >

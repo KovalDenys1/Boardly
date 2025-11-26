@@ -80,11 +80,12 @@ export default function Chat({
       <div className="fixed bottom-4 right-4 z-50 animate-bounce-in">
         <button
           onClick={onToggleMinimize}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform transition-all duration-200 hover:scale-105"
+          aria-label={`Open chat. ${unreadCount > 0 ? `${unreadCount} unread messages` : 'No unread messages'}`}
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform transition-all duration-200 hover:scale-105 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
         >
           💬 Chat
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse" aria-label={`${unreadCount} unread`}>
               {unreadCount}
             </span>
           )}
@@ -94,27 +95,29 @@ export default function Chat({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col animate-slide-up">
+    <div className="fixed bottom-4 right-4 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md lg:max-w-lg h-[70vh] max-h-[600px] sm:h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col animate-slide-up">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl">
         <div className="flex items-center gap-3">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-          <h3 className="font-bold text-lg">💬 Lobby Chat</h3>
-          <span className="text-sm bg-blue-400/30 px-2 py-1 rounded-full">
+          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" aria-hidden="true"></div>
+          <h3 className="font-bold text-lg" id="chat-title">💬 Lobby Chat</h3>
+          <span className="text-sm bg-blue-400/30 px-2 py-1 rounded-full" aria-label={`${messages.length} total messages`}>
             {messages.length}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="group" aria-label="Chat controls">
           <button
             onClick={onClearChat}
-            className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors"
+            aria-label="Clear chat messages"
+            className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             title="Clear chat"
           >
             🗑️
           </button>
           <button
             onClick={onToggleMinimize}
-            className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors"
+            aria-label="Minimize chat"
+            className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
             title="Minimize chat"
           >
             ➖
@@ -123,7 +126,13 @@ export default function Chat({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div 
+        className="flex-1 overflow-y-auto p-4 space-y-3" 
+        role="log" 
+        aria-live="polite" 
+        aria-labelledby="chat-title"
+        aria-label="Chat messages"
+      >
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-12">
             <div className="text-4xl mb-2">👋</div>
@@ -194,22 +203,25 @@ export default function Chat({
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Type a message... 😊"
-              className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200"
+              aria-label="Type your message"
+              aria-describedby="message-help"
+              className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 focus-visible:outline-none"
               maxLength={200}
             />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true">
               {newMessage.length}/200
             </div>
           </div>
           <button
             type="submit"
             disabled={!newMessage.trim()}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg"
+            aria-label="Send message"
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
           >
             📤 Send
           </button>
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+        <div id="message-help" className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
           Press Enter to send • Shift+Enter for new line
         </div>
       </form>

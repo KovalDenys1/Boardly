@@ -23,10 +23,10 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
     return (
       <div className="card p-4">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl">📜</span>
-          <h3 className="font-bold text-gray-900 dark:text-white">Roll History</h3>
+          <span className="text-lg sm:text-xl">📜</span>
+          <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">Roll History</h3>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-4">
           No rolls yet. Start playing to see history!
         </p>
       </div>
@@ -36,19 +36,19 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">📜</span>
-        <h3 className="font-bold text-gray-900 dark:text-white">Recent Rolls</h3>
+        <span className="text-lg sm:text-xl">📜</span>
+        <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">Recent Rolls</h3>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          ({entries.length} {entries.length === 1 ? 'roll' : 'rolls'})
+          ({entries.length})
         </span>
       </div>
 
-      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+      <div className="space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-2">
         {entries.map((entry) => (
           <div
             key={entry.id}
             className={`
-              p-3 rounded-lg transition-all
+              p-2 sm:p-3 rounded-lg transition-all
               ${
                 entry.isBot
                   ? 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800'
@@ -59,27 +59,27 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-lg">{entry.isBot ? '🤖' : '🎲'}</span>
-                <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                <span className="text-base sm:text-lg">{entry.isBot ? '🤖' : '🎲'}</span>
+                <span className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                   {entry.playerName}
                 </span>
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                Turn {entry.turnNumber} • Roll {entry.rollNumber}/3
+              <div className="text-xs text-gray-600 dark:text-gray-400 shrink-0">
+                T{entry.turnNumber} • R{entry.rollNumber}/3
               </div>
             </div>
 
             {/* Dice Display */}
             <div className="flex items-center gap-2">
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {entry.dice.map((die, index) => {
                   const isHeld = entry.held.includes(index)
                   return (
                     <div
                       key={index}
                       className={`
-                        w-8 h-8 rounded flex items-center justify-center
-                        text-sm font-bold transition-all
+                        w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center
+                        text-xs sm:text-sm font-bold transition-all
                         ${
                           isHeld
                             ? 'bg-yellow-400 dark:bg-yellow-500 text-gray-900 ring-2 ring-yellow-600 scale-105'
@@ -95,8 +95,8 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
 
               {/* Held indicator */}
               {entry.held.length > 0 && (
-                <div className="text-xs text-yellow-700 dark:text-yellow-400 font-medium">
-                  🔒 Held {entry.held.length}
+                <div className="text-xs text-yellow-700 dark:text-yellow-400 font-medium shrink-0">
+                  🔒 {entry.held.length}
                 </div>
               )}
             </div>

@@ -42,36 +42,36 @@ export default function GameBoard({
     <>
       {/* Game Status Bar */}
       <div className="card mb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <p className="text-sm opacity-90">Round</p>
-            <p className="text-3xl font-bold">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
+          <div className="p-2 sm:p-0">
+            <p className="text-xs sm:text-sm opacity-90">Round</p>
+            <p className="text-2xl sm:text-3xl font-bold">
               {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1} / 13
             </p>
           </div>
-          <div>
-            <p className="text-sm opacity-90">Current Player</p>
-            <p className="text-lg font-bold truncate">
+          <div className="p-2 sm:p-0">
+            <p className="text-xs sm:text-sm opacity-90">Current Player</p>
+            <p className="text-base sm:text-lg font-bold truncate">
               {gameEngine.getCurrentPlayer()?.name || 'Player'}
             </p>
           </div>
-          <div>
-            <p className="text-sm opacity-90">Your Score</p>
-            <p className="text-3xl font-bold">
+          <div className="p-2 sm:p-0">
+            <p className="text-xs sm:text-sm opacity-90">Your Score</p>
+            <p className="text-2xl sm:text-3xl font-bold">
               {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
             </p>
           </div>
-          <div>
-            <p className="text-sm opacity-90">Time Left</p>
+          <div className="p-2 sm:p-0">
+            <p className="text-xs sm:text-sm opacity-90">Time Left</p>
             <div className="flex items-center justify-center gap-2">
-              <div className={`text-3xl font-bold ${
+              <div className={`text-2xl sm:text-3xl font-bold ${
                 timeLeft <= 10 ? 'text-red-300 animate-pulse' :
                 timeLeft <= 30 ? 'text-yellow-300' : ''
               }`}>
                 {timeLeft}s
               </div>
               {timeLeft <= 10 && (
-                <span className="text-2xl animate-bounce">⏰</span>
+                <span className="text-xl sm:text-2xl animate-bounce">⏰</span>
               )}
             </div>
           </div>

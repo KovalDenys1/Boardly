@@ -53,7 +53,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
   return (
     <div className="card animate-fade-in">
-      <h2 className="text-2xl font-bold mb-4 text-center">👥 Players</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">👥 Players</h2>
       <div className="space-y-2">
         {sortedPlayers.map((player, index) => {
           const isCurrentTurn = index === currentTurn
@@ -67,7 +67,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             <div
               key={player.id}
               className={`
-                p-4 rounded-lg border-2 transition-all duration-200
+                p-3 sm:p-4 rounded-lg border-2 transition-all duration-200
                 ${isCurrentTurn 
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg scale-105 animate-pulse' 
                   : 'border-gray-200 dark:border-gray-700'
@@ -77,10 +77,10 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
               `}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   {/* Position Badge */}
                   <div className={`
-                    w-8 h-8 rounded-full flex items-center justify-center font-bold text-white
+                    w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-white text-sm sm:text-base shrink-0
                     ${index === 0 ? 'bg-yellow-500' : ''}
                     ${index === 1 ? 'bg-gray-400' : ''}
                     ${index === 2 ? 'bg-orange-600' : ''}
@@ -90,29 +90,29 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                   </div>
 
                   {/* Player Info */}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-lg">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-base sm:text-lg truncate">
                         {playerName}
                       </span>
                       {isBot && (
-                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full shrink-0">
                           AI
                         </span>
                       )}
                       {isCurrentUser && !isBot && (
-                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full shrink-0">
                           You
                         </span>
                       )}
                       {isCurrentTurn && (
-                        <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full animate-bounce-in">
+                        <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full animate-bounce-in shrink-0">
                           🎲 Turn
                         </span>
                       )}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Score: <span className={`font-bold text-lg ${
+                      Score: <span className={`font-bold text-base sm:text-lg ${
                         animatingScores[player.id] 
                           ? 'text-green-600 dark:text-green-400 animate-pulse scale-110 inline-block' 
                           : ''

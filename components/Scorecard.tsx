@@ -153,14 +153,16 @@ const Scorecard = React.memo(function Scorecard({
         key={category}
         onClick={() => (state !== 'filled' && state !== 'disabled') && !isLoading && onSelectCategory(category)}
         disabled={state === 'filled' || state === 'disabled' || isLoading}
-        className={`scorecard-row group relative ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+        aria-label={`${categoryLabels[category]}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
+        aria-disabled={state === 'filled' || state === 'disabled'}
+        className={`scorecard-row group relative ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none`}
       >
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm md:text-base">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="font-medium text-sm md:text-base shrink-0">
             {categoryLabels[category]}
           </span>
           {state !== 'filled' && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 hidden md:inline">
+            <span className="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline truncate">
               {categoryDescriptions[category]}
             </span>
           )}
