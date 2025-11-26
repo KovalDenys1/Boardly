@@ -8,6 +8,9 @@ import { apiLogger } from '@/lib/logger'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
+// In-memory lock to prevent concurrent bot turns for the same game
+const botTurnLocks = new Map<string, boolean>()
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { gameId: string } }
@@ -24,6 +27,19 @@ export async function POST(
       gameId: params.gameId,
       botUserId
     })
+
+    // Check if bot turn is already in progress for this game
+    const lockKey = `${params.gameId}:${botUserId}`
+    if (botTurnLocks.get(lockKey)) {
+      log.warn('Bot turn already in progress, ignoring duplicate request')
+      return NextResponse.json({ 
+        error: 'Bot turn already in progress',
+        message: 'Another bot turn request is being processed'
+      }, { status: 409 })
+    }
+
+    // Acquire lock
+    botTurnLocks.set(lockKey, true)
 
     // Load game state
     const game = await prisma.game.findUnique({
@@ -70,7 +86,27 @@ export async function POST(
 
     log.info('Verified it\'s bot\'s turn, executing...')
 
-    // Execute bot's turn
+    const socketUrl = getServerSocketUrl()
+    
+    // Helper function to broadcast bot actions in real-time
+    const broadcastBotAction = async (event: any) => {
+      try {
+        await fetch(`${socketUrl}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            room: `lobby:${lobbyCode}`,
+            event: 'bot-action',
+            data: event,
+          }),
+          signal: AbortSignal.timeout(3000),
+        })
+      } catch (error) {
+        log.warn('Failed to broadcast bot action', { error })
+      }
+    }
+
+    // Execute bot's turn with visual feedback
     await BotMoveExecutor.executeBotTurn(
       gameEngine,
       botUserId,
@@ -115,49 +151,37 @@ export async function POST(
           })
         )
         log.info('Player scores updated')
-      }
+        
+        // Broadcast state update after each move
+        const currentState = gameEngine.getState()
+        try {
+          await fetch(`${socketUrl}/api/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              room: `lobby:${lobbyCode}`,
+              event: 'game-update',
+              data: {
+                action: 'state-change',
+                payload: currentState,
+              },
+            }),
+            signal: AbortSignal.timeout(3000),
+          })
+        } catch (error) {
+          log.warn('Failed to broadcast move update', { error })
+        }
+      },
+      broadcastBotAction // Pass the callback for bot actions
     )
 
     log.info('Bot turn execution completed')
 
-    // Notify all clients via Socket.IO
-    const finalState = gameEngine.getState()
-    const socketUrl = getServerSocketUrl()
-    
-    log.info('Sending Socket.IO notification', { socketUrl, lobbyCode })
-    
-    try {
-      const socketResponse = await fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: `lobby:${lobbyCode}`,
-          event: 'game-update',
-          data: {
-            action: 'state-change',
-            payload: finalState,
-          },
-        }),
-        signal: AbortSignal.timeout(5000), // 5 second timeout
-      })
+    // Release lock
+    botTurnLocks.delete(lockKey)
 
-      if (socketResponse.ok) {
-        log.info('Socket.IO notification sent successfully')
-      } else {
-        const errorText = await socketResponse.text()
-        log.error('Socket.IO notification failed', undefined, { error: errorText })
-        // Don't throw error - bot turn was successful, notification is secondary
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          log.error('Socket.IO notification timeout')
-        } else {
-          log.error('Error sending Socket.IO notification', error)
-        }
-      }
-      // Don't throw - bot turn completed successfully, notification failure is non-critical
-    }
+    // Final notification removed - already sent after each move
+    const finalState = gameEngine.getState()
 
     return NextResponse.json({ 
       success: true,
@@ -168,6 +192,18 @@ export async function POST(
   } catch (error) {
     const log = apiLogger('POST /api/game/[gameId]/bot-turn')
     log.error('Bot turn execution failed', error as Error)
+    
+    // Release lock on error
+    try {
+      const body = await request.json()
+      if (body.botUserId) {
+        const lockKey = `${params.gameId}:${body.botUserId}`
+        botTurnLocks.delete(lockKey)
+      }
+    } catch {
+      // Ignore JSON parse errors in error handler
+    }
+    
     return NextResponse.json({ 
       error: 'Failed to execute bot turn',
       details: error instanceof Error ? error.message : 'Unknown error'

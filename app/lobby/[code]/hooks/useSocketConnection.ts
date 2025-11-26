@@ -15,6 +15,7 @@ interface UseSocketConnectionProps {
   onLobbyUpdate: (data: any) => void
   onPlayerJoined: (data: any) => void
   onGameStarted: (data: any) => void
+  onBotAction?: (event: any) => void
 }
 
 export function useSocketConnection({
@@ -29,11 +30,14 @@ export function useSocketConnection({
   onLobbyUpdate,
   onPlayerJoined,
   onGameStarted,
+  onBotAction,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
+    let isMounted = true // Prevent state updates after unmount
+    
     if (!code) {
       clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
       return
@@ -88,6 +92,7 @@ export function useSocketConnection({
     })
 
     newSocket.on('connect', () => {
+      if (!isMounted) return
       clientLogger.log('✅ Socket connected to lobby:', code)
       setIsConnected(true)
       
@@ -96,30 +101,43 @@ export function useSocketConnection({
     })
 
     newSocket.on('disconnect', (reason) => {
-      clientLogger.log('❌ Socket disconnected:', reason)
+      if (!isMounted) return
+      // Only log real disconnects, not cleanup disconnects
+      if (reason !== 'io client disconnect') {
+        clientLogger.log('❌ Socket disconnected:', reason)
+      }
       setIsConnected(false)
     })
 
     newSocket.on('connect_error', (error) => {
-      clientLogger.error('Socket connection error:', error.message)
+      if (!isMounted) return
+      clientLogger.error('🔴 Socket connection error:', error.message)
       setIsConnected(false)
       
       if (error.message.includes('timeout')) {
-        clientLogger.warn('Socket connection timeout - retrying...')
+        clientLogger.warn('⏳ Socket connection timeout - retrying...')
       }
     })
-
+    
     newSocket.on('game-update', onGameUpdate)
     newSocket.on('chat-message', onChatMessage)
     newSocket.on('player-typing', onPlayerTyping)
     newSocket.on('lobby-update', onLobbyUpdate)
     newSocket.on('player-joined', onPlayerJoined)
     newSocket.on('game-started', onGameStarted)
+    if (onBotAction) {
+      newSocket.on('bot-action', onBotAction)
+    }
 
-    setSocket(newSocket)
+    if (isMounted) {
+      setSocket(newSocket)
+    }
 
     return () => {
+      isMounted = false
       clientLogger.log('🔌 Cleaning up socket connection')
+      
+      // Remove all listeners first
       newSocket.off('connect')
       newSocket.off('disconnect')
       newSocket.off('connect_error')
@@ -129,10 +147,18 @@ export function useSocketConnection({
       newSocket.off('lobby-update')
       newSocket.off('player-joined')
       newSocket.off('game-started')
-      newSocket.close()
+      newSocket.off('bot-action')
+      
+      // Gracefully disconnect only if connected
+      if (newSocket.connected) {
+        newSocket.disconnect()
+      } else {
+        // Force close if not connected yet (prevents WebSocket error)
+        newSocket.close()
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted])
+  }, [code, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onBotAction])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
     if (!socket) return

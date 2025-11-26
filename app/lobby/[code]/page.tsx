@@ -184,6 +184,42 @@ function LobbyPageContent() {
     toast.success('🎮 Game started!')
   }, [toast])
 
+  const onBotAction = useCallback((event: any) => {
+    clientLogger.log('🤖 Received bot-action:', event)
+    
+    const botName = event.botName || 'Bot'
+    
+    // Add bot action to roll history
+    if (event.type === 'roll' && event.data?.dice && gameEngine) {
+      const currentRound = gameEngine.getRound()
+      const playerCount = game?.players?.length || 1
+      const turnNumber = Math.floor(currentRound / playerCount) + 1
+      
+      setRollHistory(prev => [...prev, {
+        id: `bot-${Date.now()}-${Math.random()}`,
+        playerName: botName,
+        dice: event.data.dice,
+        rollNumber: event.data.rollNumber || 1,
+        turnNumber: turnNumber,
+        held: event.data.held || [],
+        isBot: true,
+        timestamp: Date.now(),
+      }])
+    }
+    
+    // Only show toast for final scoring action - skip thinking/hold/roll toasts
+    if (event.type === 'score') {
+      toast.success(event.message)
+      soundManager.play('score')
+    } else if (event.type === 'roll') {
+      // Play sound but no toast
+      soundManager.play('diceRoll')
+    }
+    
+    // Log all actions to console for debugging
+    clientLogger.log(`🤖 ${event.message}`)
+  }, [toast, setRollHistory, gameEngine, game?.players?.length])
+
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, emitWhenConnected } = useSocketConnection({
     code,
@@ -197,6 +233,7 @@ function LobbyPageContent() {
     onLobbyUpdate,
     onPlayerJoined,
     onGameStarted,
+    onBotAction,
   })
 
   // Lobby actions hook - after socket is initialized
@@ -268,6 +305,7 @@ function LobbyPageContent() {
     isMoveInProgress,
     isRolling,
     isScoring,
+    held, // Local held state for dice locking
   } = useGameActions({
     game,
     gameEngine,
@@ -463,6 +501,7 @@ function LobbyPageContent() {
                   isRolling={isRolling}
                   isScoring={isScoring}
                   celebrationEvent={celebrationEvent}
+                  held={held}
                   getCurrentUserId={getCurrentUserId}
                   onRollDice={handleRollDice}
                   onToggleHold={handleToggleHold}

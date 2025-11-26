@@ -11,6 +11,7 @@ import { clientLogger } from './client-logger'
 
 export interface BotActionEvent {
   type: 'thinking' | 'roll' | 'hold' | 'score'
+  botName?: string
   data?: {
     dice?: number[]
     held?: number[]
@@ -55,7 +56,8 @@ export class BotMoveExecutor {
     // Emit thinking event
     onBotAction?.({
       type: 'thinking',
-      message: 'Bot is thinking...',
+      botName: botPlayer.name,
+      message: `${botPlayer.name} is thinking...`,
     })
     await this.delay(800)
 
@@ -63,33 +65,36 @@ export class BotMoveExecutor {
     await this.delay(500)
     onBotAction?.({
       type: 'roll',
+      botName: botPlayer.name,
       data: { rollNumber: 1 },
-      message: 'Bot is rolling dice...',
+      message: `${botPlayer.name} is rolling dice...`,
     })
     
     const rollMove: Move = {
       playerId: botUserId,
       type: 'roll',
-      data: {},
+      data: { held: [false, false, false, false, false] }, // Initial roll - no dice held
       timestamp: new Date(),
     }
     await onMove(rollMove)
     clientLogger.log('🤖 Bot rolled dice (roll 1)')
-
+    
     // Show result
     let currentDice = gameEngine.getDice()
+    let currentHeld = gameEngine.getHeld()
     onBotAction?.({
       type: 'roll',
+      botName: botPlayer.name,
       data: { 
         dice: currentDice,
-        rollNumber: 1
+        rollNumber: 1,
+        held: currentHeld.map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1) // Convert to indices
       },
-      message: `Bot rolled: ${currentDice.join(', ')}`,
+      message: `${botPlayer.name} rolled: ${currentDice.join(', ')}`,
     })
     await this.delay(1000)
 
     // Get updated state after roll
-    let currentHeld = gameEngine.getHeld()
     let rollsLeft = gameEngine.getRollsLeft()
 
     // Roll up to 2 more times if needed
@@ -99,7 +104,8 @@ export class BotMoveExecutor {
         clientLogger.log('🤖 Bot decided to stop rolling and score')
         onBotAction?.({
           type: 'thinking',
-          message: 'Bot is satisfied with this roll!',
+          botName: botPlayer.name,
+          message: `${botPlayer.name} is satisfied with this roll!`,
         })
         await this.delay(800)
         break
@@ -108,7 +114,8 @@ export class BotMoveExecutor {
       // Decide which dice to hold
       onBotAction?.({
         type: 'thinking',
-        message: 'Bot is deciding which dice to hold...',
+        botName: botPlayer.name,
+        message: `${botPlayer.name} is deciding which dice to hold...`,
       })
       await this.delay(800)
       
@@ -124,13 +131,14 @@ export class BotMoveExecutor {
       // Show hold decision
       onBotAction?.({
         type: 'hold',
+        botName: botPlayer.name,
         data: {
           dice: currentDice,
           held: diceToHold,
         },
         message: diceToHold.length > 0 
-          ? `Bot is holding ${diceToHold.length} ${diceToHold.length === 1 ? 'die' : 'dice'}`
-          : 'Bot is not holding any dice',
+          ? `${botPlayer.name} is holding ${diceToHold.length} ${diceToHold.length === 1 ? 'die' : 'dice'}`
+          : `${botPlayer.name} is not holding any dice`,
       })
       await this.delay(1000)
 
@@ -148,18 +156,22 @@ export class BotMoveExecutor {
         }
       }
 
-      // Roll again
+      // Update held state for next roll
+      currentHeld = gameEngine.getHeld()
+
+      // Roll again with current held state
       onBotAction?.({
         type: 'roll',
+        botName: botPlayer.name,
         data: { rollNumber: rollNum },
-        message: `Bot is rolling again (roll ${rollNum})...`,
+        message: `${botPlayer.name} is rolling again (roll ${rollNum})...`,
       })
       await this.delay(1000)
       
       const nextRollMove: Move = {
         playerId: botUserId,
         type: 'roll',
-        data: {},
+        data: { held: currentHeld }, // Send held array with roll
         timestamp: new Date(),
       }
       await onMove(nextRollMove)
@@ -167,24 +179,27 @@ export class BotMoveExecutor {
 
       // Update state
       currentDice = gameEngine.getDice()
+      currentHeld = gameEngine.getHeld()
       onBotAction?.({
         type: 'roll',
+        botName: botPlayer.name,
         data: { 
           dice: currentDice,
-          rollNumber: rollNum
+          rollNumber: rollNum,
+          held: currentHeld.map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1) // Convert to indices
         },
-        message: `Bot rolled: ${currentDice.join(', ')}`,
+        message: `${botPlayer.name} rolled: ${currentDice.join(', ')}`,
       })
       await this.delay(1000)
       
-      currentHeld = gameEngine.getHeld()
       rollsLeft = gameEngine.getRollsLeft()
     }
 
     // Select category to score
     onBotAction?.({
       type: 'thinking',
-      message: 'Bot is choosing a category...',
+      botName: botPlayer.name,
+      message: `${botPlayer.name} is choosing a category...`,
     })
     await this.delay(1200) // Final decision time
     
@@ -204,11 +219,12 @@ export class BotMoveExecutor {
     // Show category selection
     onBotAction?.({
       type: 'score',
+      botName: botPlayer.name,
       data: {
         category,
         score,
       },
-      message: `Bot selected category: ${category}`,
+      message: `${botPlayer.name} selected ${category} for ${score} points`,
     })
     await this.delay(1500)
 

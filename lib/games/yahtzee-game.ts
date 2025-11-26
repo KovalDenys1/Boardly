@@ -33,6 +33,14 @@ export class YahtzeeGame extends GameEngine {
         const rollPlayerIndex = this.state.players.findIndex(p => p.id === move.playerId)
         if (rollPlayerIndex !== this.state.currentPlayerIndex) return false
         
+        // Validate held array if provided (atomic roll)
+        if (move.data.held !== undefined) {
+          const { held } = move.data
+          if (!Array.isArray(held) || held.length !== 5) {
+            return false
+          }
+        }
+        
         return gameData.rollsLeft > 0 && this.state.status === 'playing'
 
       case 'hold':
@@ -79,9 +87,20 @@ export class YahtzeeGame extends GameEngine {
 
     switch (move.type) {
       case 'roll':
+        // Use held array from move data if provided (atomic roll)
+        // Otherwise use current held state (backward compatibility)
+        const heldState = move.data.held !== undefined && Array.isArray(move.data.held)
+          ? move.data.held 
+          : gameData.held
+        
+        // Update held state from move if provided
+        if (move.data.held !== undefined && Array.isArray(move.data.held)) {
+          gameData.held = [...move.data.held]
+        }
+        
         // Roll unheld dice - create new array to ensure React detects change
         gameData.dice = gameData.dice.map((die, index) =>
-          gameData.held[index] ? die : Math.floor(Math.random() * 6) + 1
+          heldState[index] ? die : Math.floor(Math.random() * 6) + 1
         )
         gameData.rollsLeft--
         break

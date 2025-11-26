@@ -77,8 +77,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
 
-    // Add players to the game
-    for (const player of waitingGame.players) {
+    // Add players to the game - sort so bots go last
+    const sortedPlayers = [...waitingGame.players].sort((a, b) => {
+      const aIsBot = a.user.isBot ? 1 : 0
+      const bIsBot = b.user.isBot ? 1 : 0
+      return aIsBot - bIsBot // Non-bots first, bots last
+    })
+    
+    for (const player of sortedPlayers) {
       gameEngine.addPlayer({
         id: player.userId,
         name: player.user.name || 'Unknown',
@@ -87,8 +93,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Shuffle players before starting to randomize turn order
-    gameEngine.shufflePlayers()
+    // Don't shuffle - players are already in correct order (human first, bot last)
 
     // Start the game
     const gameStarted = gameEngine.startGame()

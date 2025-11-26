@@ -12,7 +12,8 @@ interface UseBotTurnProps {
 
 export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurnProps) {
   const botTurnInProgress = useRef(false)
-  const lastProcessedTurn = useRef<string | null>(null)
+  const lastBotPlayerId = useRef<string | null>(null)
+  const lastPlayerIndex = useRef<number | null>(null)
 
   const triggerBotTurn = useCallback(async (botUserId: string, gameId: string) => {
     if (botTurnInProgress.current) {
@@ -20,14 +21,7 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
       return
     }
 
-    const turnKey = `${gameId}-${botUserId}-${gameEngine?.getState().currentPlayerIndex}`
-    if (lastProcessedTurn.current === turnKey) {
-      clientLogger.log('🤖 Bot turn already processed for this state, skipping...')
-      return
-    }
-
     botTurnInProgress.current = true
-    lastProcessedTurn.current = turnKey
 
     clientLogger.log('🤖 Triggering bot turn for:', botUserId)
 
@@ -40,6 +34,17 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
 
       if (!response.ok) {
         const error = await response.json()
+        
+        // Don't show error toast or log for expected race conditions:
+        // - 409: Bot turn already in progress (lock prevented duplicate)
+        // - "Not bot's turn": Race condition timing issue
+        if (response.status === 409 || error.error === "Not bot's turn") {
+          clientLogger.log('🤖 Bot turn request skipped (expected race condition):', { status: response.status, error: error.error })
+          return // Silent return, no error thrown
+        }
+        
+        clientLogger.error('🤖 Bot turn API error:', { status: response.status, error })
+        toast.error('Bot failed to make a move')
         throw new Error(error.error || 'Bot turn failed')
       }
 
@@ -47,12 +52,10 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
       clientLogger.log('🤖 Bot turn completed:', data)
     } catch (error) {
       clientLogger.error('🤖 Bot turn error:', error)
-      toast.error('Bot failed to make a move')
-      lastProcessedTurn.current = null // Allow retry
     } finally {
       botTurnInProgress.current = false
     }
-  }, [gameEngine, code])
+  }, [code])
 
   // Monitor for bot turns
   useEffect(() => {
@@ -60,8 +63,26 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
       return
     }
 
+    const gameState = gameEngine.getState()
+    
+    // Don't trigger if game is finished
+    if (gameState.status !== 'playing') {
+      return
+    }
+    
     const currentPlayer = gameEngine.getCurrentPlayer()
     if (!currentPlayer) {
+      return
+    }
+
+    // Check if it's a new turn - player index changed OR it's a different bot
+    const currentPlayerIndex = gameState.currentPlayerIndex
+    const isSameTurn = 
+      lastPlayerIndex.current === currentPlayerIndex && 
+      lastBotPlayerId.current === currentPlayer.id
+
+    if (isSameTurn) {
+      // Same turn as before, don't trigger again
       return
     }
 
@@ -79,12 +100,31 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
     const isBot = currentGamePlayer.user?.isBot === true
 
     if (isBot) {
+      // Check that bot has rolls available (new turn)
+      const rollsLeft = gameEngine.getRollsLeft()
+      
+      // Only trigger if it's the START of a new turn (all 3 rolls available)
+      if (rollsLeft !== 3) {
+        clientLogger.log('🤖 Bot turn already in progress (rollsLeft:', rollsLeft, '), skipping trigger')
+        // DO NOT update tracking - wait for the turn to complete
+        return
+      }
+      
       clientLogger.log('🤖 Bot turn detected, triggering bot move...')
+      
+      // Update tracking variables before triggering
+      lastBotPlayerId.current = currentPlayer.id
+      lastPlayerIndex.current = currentPlayerIndex
+      
       // Small delay to allow UI to update
       const timer = setTimeout(() => {
         triggerBotTurn(currentPlayer.id, game.id)
       }, 1000)
       return () => clearTimeout(timer)
+    } else {
+      // Not a bot turn, reset tracking
+      lastBotPlayerId.current = null
+      lastPlayerIndex.current = currentPlayerIndex
     }
   }, [isGameStarted, gameEngine, game?.id, game?.players, triggerBotTurn])
 

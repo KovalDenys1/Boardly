@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { YahtzeeCategory } from '@/lib/yahtzee'
@@ -47,6 +47,26 @@ export function useGameActions(props: UseGameActionsProps) {
   const [isMoveInProgress, setIsMoveInProgress] = useState(false)
   const [isRolling, setIsRolling] = useState(false)
   const [isScoring, setIsScoring] = useState(false)
+  
+  // Local held state - purely client-side between rolls
+  const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
+
+  // Sync held state when game state changes
+  useEffect(() => {
+    if (!gameEngine) return
+    
+    const serverHeld = gameEngine.getHeld()
+    const rollsLeft = gameEngine.getRollsLeft()
+    
+    // Reset held state at the start of a new turn (rollsLeft === 3)
+    if (rollsLeft === 3) {
+      setHeld([false, false, false, false, false])
+    }
+    // Sync with server state when it's not our turn
+    else if (!isMyTurn()) {
+      setHeld(serverHeld)
+    }
+  }, [gameEngine, isMyTurn])
 
   const handleRollDice = useCallback(async () => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -69,10 +89,11 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsMoveInProgress(true)
     setIsRolling(true)
 
+    // Send atomic roll with current held state
     const move: Move = {
       playerId: getCurrentUserId() || '',
       type: 'roll',
-      data: {},
+      data: { held }, // Include held array in roll move
       timestamp: new Date(),
     }
 
@@ -100,6 +121,9 @@ export function useGameActions(props: UseGameActionsProps) {
         newEngine = new YahtzeeGame(gameEngine.getState().id)
         newEngine.restoreState(data.game.state)
         setGameEngine(newEngine)
+        
+        // Update local held state from server (source of truth)
+        setHeld(newEngine.getHeld())
 
         const currentPlayer = newEngine.getCurrentPlayer()
         const rollNumber = 3 - newEngine.getRollsLeft()
@@ -117,7 +141,19 @@ export function useGameActions(props: UseGameActionsProps) {
 
         const celebration = detectPatternOnRoll(newEngine.getDice())
         if (celebration) {
-          setCelebrationEvent(celebration)
+          // Check if the category is still available before celebrating
+          const scorecard = newEngine.getScorecard(getCurrentUserId() || '')
+          const categoryMap: Record<string, YahtzeeCategory> = {
+            'yahtzee': 'yahtzee',
+            'largeStraight': 'largeStraight',
+            'fullHouse': 'fullHouse'
+          }
+          const category = categoryMap[celebration.type]
+          
+          // Only show celebration if category is available (undefined in scorecard)
+          if (!category || !scorecard || scorecard[category] === undefined) {
+            setCelebrationEvent(celebration)
+          }
         }
       }
       
@@ -136,61 +172,31 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, getCurrentUserName, code, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, getCurrentUserName, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected])
 
-  const handleToggleHold = useCallback(async (diceIndex: number) => {
+  const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
+    
     if (!isMyTurn()) {
       toast.error('🚫 It\'s not your turn!')
       return
     }
 
-    try {
-      const newHeld = [...gameEngine.getHeld()]
-      newHeld[diceIndex] = !newHeld[diceIndex]
-
-      const move: Move = {
-        playerId: getCurrentUserId() || '',
-        type: 'hold',
-        data: { held: newHeld },
-        timestamp: new Date(),
-      }
-
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (isGuest && guestId) {
-        headers['X-Guest-Id'] = guestId
-      }
-
-      const res = await fetch(`/api/game/${game.id}/state`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ move }),
-      })
-
-      if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Failed to toggle hold')
-      }
-
-      const data = await res.json()
-      const newEngine = new YahtzeeGame(gameEngine.getState().id)
-      newEngine.restoreState(data.game.state)
-      setGameEngine(newEngine)
-
-      soundManager.play('click')
-
-      emitWhenConnected('game-action', {
-        lobbyCode: code,
-        action: 'state-change',
-        payload: {
-          state: data.game.state,
-        },
-      })
-    } catch (error: any) {
-      toast.error('Failed to toggle hold')
-      clientLogger.error('Failed to toggle hold:', error)
+    // Don't allow holds while rolling or scoring
+    if (isRolling || isScoring) {
+      clientLogger.log('Cannot hold dice while move in progress')
+      return
     }
-  }, [gameEngine, game, isMyTurn, getCurrentUserId, isGuest, guestId, code, setGameEngine, emitWhenConnected])
+
+    // Toggle held state locally - instant feedback, no HTTP request
+    setHeld(prevHeld => {
+      const newHeld = [...prevHeld]
+      newHeld[diceIndex] = !newHeld[diceIndex]
+      return newHeld
+    })
+    
+    soundManager.play('click')
+  }, [gameEngine, game, isMyTurn, isRolling, isScoring])
 
   const handleScore = useCallback(async (category: YahtzeeCategory) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -236,6 +242,9 @@ export function useGameActions(props: UseGameActionsProps) {
       const newEngine = new YahtzeeGame(gameEngine.getState().id)
       newEngine.restoreState(data.game.state)
       setGameEngine(newEngine)
+      
+      // Reset local held state for next turn
+      setHeld([false, false, false, false, false])
 
       soundManager.play('score')
 
@@ -277,5 +286,6 @@ export function useGameActions(props: UseGameActionsProps) {
     isMoveInProgress,
     isRolling,
     isScoring,
+    held, // Export local held state for UI
   }
 }

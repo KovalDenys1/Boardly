@@ -14,6 +14,7 @@ interface GameBoardProps {
   isRolling: boolean
   isScoring: boolean
   celebrationEvent: CelebrationEvent | null
+  held: boolean[] // Local held state from useGameActions
   getCurrentUserId: () => string | undefined
   onRollDice: () => void
   onToggleHold: (index: number) => void
@@ -30,6 +31,7 @@ export default function GameBoard({
   isRolling,
   isScoring,
   celebrationEvent,
+  held,
   getCurrentUserId,
   onRollDice,
   onToggleHold,
@@ -81,7 +83,7 @@ export default function GameBoard({
         <div className="lg:col-span-1">
           <DiceGroup
             dice={gameEngine.getDice()}
-            held={gameEngine.getHeld()}
+            held={isMyTurn ? held : gameEngine.getHeld()}
             onToggleHold={onToggleHold}
             disabled={isMoveInProgress || gameEngine.getRollsLeft() >= 3 || !isMyTurn}
           />
