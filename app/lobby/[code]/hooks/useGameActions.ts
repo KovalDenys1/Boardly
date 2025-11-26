@@ -64,11 +64,12 @@ export function useGameActions(props: UseGameActionsProps) {
     if (rollsLeft === 3) {
       setHeld([false, false, false, false, false])
     }
-    // Sync with server state when it's not our turn
+    // Always sync with server state when it's not our turn
+    // This ensures we see the correct held dice during bot turns
     else if (!isMyTurn()) {
       setHeld(serverHeld)
     }
-  }, [gameEngine, isMyTurn])
+  }, [gameEngine?.getState(), isMyTurn])
 
   const handleRollDice = useCallback(async () => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return

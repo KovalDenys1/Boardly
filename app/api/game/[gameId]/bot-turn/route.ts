@@ -15,6 +15,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { gameId: string } }
 ) {
+  const log = apiLogger('POST /api/game/[gameId]/bot-turn')
+  let lockKey: string | null = null
+  
   try {
     const { botUserId, lobbyCode } = await request.json()
 
@@ -22,14 +25,13 @@ export async function POST(
       return NextResponse.json({ error: 'Bot user ID required' }, { status: 400 })
     }
 
-    const log = apiLogger('POST /api/game/[gameId]/bot-turn')
     log.info('Bot turn endpoint called', {
       gameId: params.gameId,
       botUserId
     })
 
     // Check if bot turn is already in progress for this game
-    const lockKey = `${params.gameId}:${botUserId}`
+    lockKey = `${params.gameId}:${botUserId}`
     if (botTurnLocks.get(lockKey)) {
       log.warn('Bot turn already in progress, ignoring duplicate request')
       return NextResponse.json({ 
@@ -190,18 +192,11 @@ export async function POST(
     })
 
   } catch (error) {
-    const log = apiLogger('POST /api/game/[gameId]/bot-turn')
     log.error('Bot turn execution failed', error as Error)
     
     // Release lock on error
-    try {
-      const body = await request.json()
-      if (body.botUserId) {
-        const lockKey = `${params.gameId}:${body.botUserId}`
-        botTurnLocks.delete(lockKey)
-      }
-    } catch {
-      // Ignore JSON parse errors in error handler
+    if (lockKey) {
+      botTurnLocks.delete(lockKey)
     }
     
     return NextResponse.json({ 

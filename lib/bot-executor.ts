@@ -128,6 +128,9 @@ export class BotMoveExecutor {
 
       clientLogger.log(`🤖 Bot holding dice at indices: ${diceToHold}`)
 
+      // Build the new held array based on bot decision
+      const newHeld = currentDice.map((_, index) => diceToHold.includes(index))
+
       // Show hold decision
       onBotAction?.({
         type: 'hold',
@@ -142,22 +145,17 @@ export class BotMoveExecutor {
       })
       await this.delay(1000)
 
-      // Apply holds
-      for (let i = 0; i < currentHeld.length; i++) {
-        const shouldHold = diceToHold.includes(i)
-        if (currentHeld[i] !== shouldHold) {
-          const holdMove: Move = {
-            playerId: botUserId,
-            type: 'hold',
-            data: { diceIndex: i },
-            timestamp: new Date(),
-          }
-          await onMove(holdMove)
-        }
+      // Apply all holds at once using the held array format
+      const holdMove: Move = {
+        playerId: botUserId,
+        type: 'hold',
+        data: { held: newHeld },
+        timestamp: new Date(),
       }
+      await onMove(holdMove)
 
       // Update held state for next roll
-      currentHeld = gameEngine.getHeld()
+      currentHeld = newHeld
 
       // Roll again with current held state
       onBotAction?.({
