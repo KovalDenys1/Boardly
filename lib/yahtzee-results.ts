@@ -128,7 +128,7 @@ function detectAchievements(scorecard: YahtzeeScorecard, totalScore: number, upp
  */
 export function analyzeResults(
   players: Array<{ id: string; name: string; score: number }>,
-  getScorecard: (id: string) => YahtzeeScorecard | null
+  getScorecard: (id: string) => YahtzeeScorecard
 ): PlayerResults[] {
   const results: PlayerResults[] = []
   
@@ -136,7 +136,10 @@ export function analyzeResults(
   for (const player of players) {
     const scorecard = getScorecard(player.id)
     
-    if (!scorecard) {
+    // Check if scorecard is empty (shouldn't happen in finished game)
+    const isEmptyScorecard = Object.keys(scorecard).length === 0
+    
+    if (isEmptyScorecard) {
       // Fallback for missing scorecard (shouldn't happen in finished game)
       results.push({
         playerId: player.id,

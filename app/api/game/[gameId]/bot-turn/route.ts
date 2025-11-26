@@ -115,63 +115,74 @@ export async function POST(
       async (botMove: Move) => {
         log.info('Bot making move', { moveType: botMove.type, data: botMove.data })
         
-        // Make the bot's move
-        const moveSuccess = gameEngine.makeMove(botMove)
-        log.info('Move result', { success: moveSuccess })
-        
-        if (!moveSuccess) {
-          log.error('Move validation failed')
-          return
-        }
-
-        // Save to database
-        log.info('Saving bot move to database...')
-        await prisma.game.update({
-          where: { id: params.gameId },
-          data: {
-            state: JSON.stringify(gameEngine.getState()),
-            status: gameEngine.getState().status,
-            currentTurn: gameEngine.getState().currentPlayerIndex,
-            updatedAt: new Date(),
-          },
-        })
-        log.info('Database updated successfully')
-
-        // Update player scores
-        await Promise.all(
-          gameEngine.getPlayers().map(async (player: any) => {
-            const dbPlayer = game.players.find((p: any) => p.userId === player.id)
-            if (dbPlayer) {
-              await prisma.player.update({
-                where: { id: dbPlayer.id },
-                data: {
-                  score: player.score || 0,
-                  scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
-                },
-              })
-            }
-          })
-        )
-        log.info('Player scores updated')
-        
-        // Broadcast state update after each move
-        const currentState = gameEngine.getState()
         try {
-          await fetch(`${socketUrl}/api/notify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              room: `lobby:${lobbyCode}`,
-              event: 'game-update',
-              data: {
-                action: 'state-change',
-                payload: currentState,
-              },
-            }),
-            signal: AbortSignal.timeout(3000),
+          // Make the bot's move
+          const moveSuccess = gameEngine.makeMove(botMove)
+          log.info('Move result', { success: moveSuccess })
+          
+          if (!moveSuccess) {
+            log.error('Move validation failed', undefined, { 
+              move: botMove, 
+              gameState: gameEngine.getState() 
+            })
+            throw new Error('Move validation failed')
+          }
+
+          // Save to database
+          log.info('Saving bot move to database...')
+          await prisma.game.update({
+            where: { id: params.gameId },
+            data: {
+              state: JSON.stringify(gameEngine.getState()),
+              status: gameEngine.getState().status,
+              currentTurn: gameEngine.getState().currentPlayerIndex,
+              updatedAt: new Date(),
+            },
           })
+          log.info('Database updated successfully')
+
+          // Update player scores
+          await Promise.all(
+            gameEngine.getPlayers().map(async (player: any) => {
+              const dbPlayer = game.players.find((p: any) => p.userId === player.id)
+              if (dbPlayer) {
+                await prisma.player.update({
+                  where: { id: dbPlayer.id },
+                  data: {
+                    score: player.score || 0,
+                    scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
+                  },
+                })
+              }
+            })
+          )
+          log.info('Player scores updated')
+          
+          // Broadcast state update after each move
+          const currentState = gameEngine.getState()
+          try {
+            await fetch(`${socketUrl}/api/notify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                room: `lobby:${lobbyCode}`,
+                event: 'game-update',
+                data: {
+                  action: 'state-change',
+                  payload: currentState,
+                },
+              }),
+              signal: AbortSignal.timeout(3000),
+            })
+          } catch (error) {
+            log.warn('Failed to broadcast move update', { error })
+          }
         } catch (error) {
-          log.warn('Failed to broadcast move update', { error })
+          log.error('Error processing bot move', error as Error, { 
+            moveType: botMove.type,
+            botUserId 
+          })
+          throw error // Re-throw to stop bot turn execution
         }
       },
       broadcastBotAction // Pass the callback for bot actions
@@ -192,7 +203,12 @@ export async function POST(
     })
 
   } catch (error) {
-    log.error('Bot turn execution failed', error as Error)
+    log.error('Bot turn execution failed', error as Error, {
+      gameId: params.gameId,
+      lockKey,
+      errorStack: error instanceof Error ? error.stack : undefined,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    })
     
     // Release lock on error
     if (lockKey) {

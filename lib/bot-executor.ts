@@ -33,33 +33,34 @@ export class BotMoveExecutor {
     onMove: (move: Move) => Promise<void>,
     onBotAction?: (event: BotActionEvent) => void
   ): Promise<void> {
-    clientLogger.log(`🤖 [BOT-TURN] ============================================`)
-    clientLogger.log(`🤖 [BOT-TURN] Starting turn for bot: ${botUserId}`)
-    clientLogger.log(`🤖 [BOT-TURN] Current game state:`, JSON.stringify(gameEngine.getState(), null, 2))
+    try {
+      clientLogger.log(`🤖 [BOT-TURN] ============================================`)
+      clientLogger.log(`🤖 [BOT-TURN] Starting turn for bot: ${botUserId}`)
+      clientLogger.log(`🤖 [BOT-TURN] Current game state:`, JSON.stringify(gameEngine.getState(), null, 2))
 
-    const gameState = gameEngine.getState()
-    const botPlayer = gameEngine.getPlayers().find(p => p.id === botUserId)
+      const gameState = gameEngine.getState()
+      const botPlayer = gameEngine.getPlayers().find(p => p.id === botUserId)
 
-    if (!botPlayer) {
-      clientLogger.error('Bot player not found in game', {
-        botUserId,
-        availablePlayers: gameEngine.getPlayers().map(p => ({ id: p.id, name: p.name }))
+      if (!botPlayer) {
+        clientLogger.error('Bot player not found in game', {
+          botUserId,
+          availablePlayers: gameEngine.getPlayers().map(p => ({ id: p.id, name: p.name }))
+        })
+        throw new Error(`Bot player ${botUserId} not found in game`)
+      }
+      
+      clientLogger.log(`🤖 [BOT-TURN] Bot player found: ${botPlayer.name}`)
+
+      // Get bot's scorecard (will return empty object if not initialized yet)
+      const botScorecard = gameEngine.getScorecard(botUserId)
+
+      // Emit thinking event
+      onBotAction?.({
+        type: 'thinking',
+        botName: botPlayer.name,
+        message: `${botPlayer.name} is thinking...`,
       })
-      return
-    }
-    
-    clientLogger.log(`🤖 [BOT-TURN] Bot player found: ${botPlayer.name}`)
-
-    // Get bot's scorecard
-    const botScorecard = gameEngine.getScorecard(botUserId) || {}
-
-    // Emit thinking event
-    onBotAction?.({
-      type: 'thinking',
-      botName: botPlayer.name,
-      message: `${botPlayer.name} is thinking...`,
-    })
-    await this.delay(800)
+      await this.delay(800)
 
     // Initial roll (always roll first)
     await this.delay(500)
@@ -238,6 +239,10 @@ export class BotMoveExecutor {
     clientLogger.log('🤖 [BOT-TURN] Score move submitted successfully')
     clientLogger.log('🤖 [BOT-TURN] Bot turn completed!')
     clientLogger.log(`🤖 [BOT-TURN] ============================================`)
+    } catch (error) {
+      clientLogger.error('🤖 [BOT-TURN] Error during bot turn execution:', error)
+      throw error // Re-throw to propagate to caller
+    }
   }
 
   /**

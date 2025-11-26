@@ -231,9 +231,12 @@ export class YahtzeeGame extends GameEngine {
     return move.type === 'score';
   }
 
-  getScorecard(playerId: string): YahtzeeScorecard | null {
+  getScorecard(playerId: string): YahtzeeScorecard {
     const playerIndex = this.state.players.findIndex(p => p.id === playerId)
-    if (playerIndex === -1) return null
+    if (playerIndex === -1) {
+      // Return empty scorecard if player not found
+      return {}
+    }
     
     const gameData = this.state.data as YahtzeeGameData
     // Return empty object if scorecard doesn't exist yet
