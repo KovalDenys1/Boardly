@@ -189,7 +189,7 @@ function LobbyPageContent() {
     
     const botName = event.botName || 'Bot'
     
-    // Add bot action to roll history
+    // Add bot action to roll history ONLY if dice are present (after roll, not before)
     if (event.type === 'roll' && event.data?.dice && gameEngine) {
       const currentRound = gameEngine.getRound()
       const playerCount = game?.players?.length || 1
@@ -205,15 +205,15 @@ function LobbyPageContent() {
         isBot: true,
         timestamp: Date.now(),
       }])
+      
+      // Play sound ONLY after roll completes (when dice data is present)
+      soundManager.play('diceRoll')
     }
     
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
       toast.success(event.message)
       soundManager.play('score')
-    } else if (event.type === 'roll') {
-      // Play sound but no toast
-      soundManager.play('diceRoll')
     }
     
     // Log all actions to console for debugging
