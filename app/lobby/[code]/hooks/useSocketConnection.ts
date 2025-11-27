@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
@@ -34,6 +34,26 @@ export function useSocketConnection({
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+
+  // Use refs to store callbacks so they don't trigger socket reconnection
+  const onGameUpdateRef = useRef(onGameUpdate)
+  const onChatMessageRef = useRef(onChatMessage)
+  const onPlayerTypingRef = useRef(onPlayerTyping)
+  const onLobbyUpdateRef = useRef(onLobbyUpdate)
+  const onPlayerJoinedRef = useRef(onPlayerJoined)
+  const onGameStartedRef = useRef(onGameStarted)
+  const onBotActionRef = useRef(onBotAction)
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onGameUpdateRef.current = onGameUpdate
+    onChatMessageRef.current = onChatMessage
+    onPlayerTypingRef.current = onPlayerTyping
+    onLobbyUpdateRef.current = onLobbyUpdate
+    onPlayerJoinedRef.current = onPlayerJoined
+    onGameStartedRef.current = onGameStarted
+    onBotActionRef.current = onBotAction
+  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onBotAction])
 
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
@@ -119,14 +139,14 @@ export function useSocketConnection({
       }
     })
     
-    newSocket.on('game-update', onGameUpdate)
-    newSocket.on('chat-message', onChatMessage)
-    newSocket.on('player-typing', onPlayerTyping)
-    newSocket.on('lobby-update', onLobbyUpdate)
-    newSocket.on('player-joined', onPlayerJoined)
-    newSocket.on('game-started', onGameStarted)
-    if (onBotAction) {
-      newSocket.on('bot-action', onBotAction)
+    newSocket.on('game-update', (data) => onGameUpdateRef.current(data))
+    newSocket.on('chat-message', (data) => onChatMessageRef.current(data))
+    newSocket.on('player-typing', (data) => onPlayerTypingRef.current(data))
+    newSocket.on('lobby-update', (data) => onLobbyUpdateRef.current(data))
+    newSocket.on('player-joined', (data) => onPlayerJoinedRef.current(data))
+    newSocket.on('game-started', (data) => onGameStartedRef.current(data))
+    if (onBotActionRef.current) {
+      newSocket.on('bot-action', (data) => onBotActionRef.current?.(data))
     }
 
     if (isMounted) {
@@ -157,8 +177,7 @@ export function useSocketConnection({
         newSocket.close()
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onBotAction])
+  }, [code, isGuest, guestId, guestName, session?.user?.id])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
     if (!socket) return

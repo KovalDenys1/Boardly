@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { clientLogger } from '@/lib/client-logger'
 
 interface UseGameTimerProps {
-  isMyTurn: () => boolean
+  isMyTurn: boolean
   gameState: any
   onTimeout: () => void
 }
@@ -12,12 +12,19 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
   const [timerActive, setTimerActive] = useState<boolean>(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [lastPlayerIndex, setLastPlayerIndex] = useState<number>(-1)
+  
+  // Use ref to avoid recreating timer on every onTimeout change
+  const onTimeoutRef = useRef(onTimeout)
+  
+  useEffect(() => {
+    onTimeoutRef.current = onTimeout
+  }, [onTimeout])
 
   const handleTimeOut = useCallback(() => {
     if (timerActive) {
-      onTimeout()
+      onTimeoutRef.current()
     }
-  }, [timerActive, onTimeout])
+  }, [timerActive])
 
   // Track initial load
   useEffect(() => {
@@ -31,7 +38,6 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
   useEffect(() => {
     if (!gameState) return
 
-    const myTurn = isMyTurn()
     const currentPlayerIndex = gameState.currentPlayerIndex
 
     // Detect if turn actually changed
@@ -40,7 +46,7 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
       setLastPlayerIndex(currentPlayerIndex)
     }
 
-    if (myTurn) {
+    if (isMyTurn) {
       setTimerActive(true)
       
       // Only reset timer if turn changed

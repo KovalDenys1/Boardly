@@ -15,9 +15,9 @@ interface UseGameActionsProps {
   setGameEngine: (engine: YahtzeeGame | null) => void
   isGuest: boolean
   guestId: string
-  getCurrentUserId: () => string | undefined
-  getCurrentUserName: () => string
-  isMyTurn: () => boolean
+  userId: string | undefined
+  username: string
+  isMyTurn: boolean
   emitWhenConnected: (event: string, data: Record<string, unknown>) => void
   code: string
   setRollHistory: React.Dispatch<React.SetStateAction<RollHistoryEntry[]>>
@@ -34,8 +34,8 @@ export function useGameActions(props: UseGameActionsProps) {
     setGameEngine,
     isGuest,
     guestId,
-    getCurrentUserId,
-    getCurrentUserName,
+    userId,
+    username,
     isMyTurn,
     emitWhenConnected,
     code,
@@ -66,10 +66,10 @@ export function useGameActions(props: UseGameActionsProps) {
     }
     // Always sync with server state when it's not our turn
     // This ensures we see the correct held dice during bot turns
-    else if (!isMyTurn()) {
+    else if (!isMyTurn) {
       setHeld(serverHeld)
     }
-  }, [gameEngine?.getState(), isMyTurn])
+  }, [gameEngine, isMyTurn])
 
   const handleRollDice = useCallback(async () => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -79,7 +79,7 @@ export function useGameActions(props: UseGameActionsProps) {
       return
     }
 
-    if (!isMyTurn()) {
+    if (!isMyTurn) {
       toast.error('🚫 It\'s not your turn to roll the dice!')
       return
     }
@@ -94,7 +94,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
     // Send atomic roll with current held state
     const move: Move = {
-      playerId: getCurrentUserId() || '',
+      playerId: userId || '',
       type: 'roll',
       data: { held }, // Include held array in roll move
       timestamp: new Date(),
@@ -133,7 +133,7 @@ export function useGameActions(props: UseGameActionsProps) {
         const newEntry: RollHistoryEntry = {
           id: `${Date.now()}_${Math.random()}`,
           turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
-          playerName: currentPlayer?.name || getCurrentUserName() || 'You',
+          playerName: currentPlayer?.name || username || 'You',
           rollNumber: rollNumber,
           dice: newEngine.getDice(),
           held: newEngine.getHeld().map((isHeld, idx) => isHeld ? idx : -1).filter(idx => idx !== -1),
@@ -145,7 +145,7 @@ export function useGameActions(props: UseGameActionsProps) {
         const celebration = detectPatternOnRoll(newEngine.getDice())
         if (celebration) {
           // Check if the category is still available before celebrating
-          const scorecard = newEngine.getScorecard(getCurrentUserId() || '')
+          const scorecard = newEngine.getScorecard(userId || '')
           const categoryMap: Record<string, YahtzeeCategory> = {
             'yahtzee': 'yahtzee',
             'largeStraight': 'largeStraight',
@@ -176,12 +176,12 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, getCurrentUserName, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
     
-    if (!isMyTurn()) {
+    if (!isMyTurn) {
       toast.error('🚫 It\'s not your turn!')
       return
     }
@@ -210,7 +210,7 @@ export function useGameActions(props: UseGameActionsProps) {
       return
     }
 
-    if (!isMyTurn()) {
+    if (!isMyTurn) {
       toast.error('🚫 It\'s not your turn!')
       return
     }
@@ -219,7 +219,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsScoring(true)
 
     const move: Move = {
-      playerId: getCurrentUserId() || '',
+      playerId: userId || '',
       type: 'score',
       data: { category },
       timestamp: new Date(),
@@ -291,7 +291,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, getCurrentUserId, isGuest, guestId, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
 
   return {
     handleRollDice,

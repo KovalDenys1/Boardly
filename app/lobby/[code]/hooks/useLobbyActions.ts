@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
@@ -30,8 +30,8 @@ interface UseLobbyActionsProps {
   isGuest: boolean
   guestId: string
   guestName: string
-  getCurrentUserName: () => string
-  getCurrentUserId: () => string | undefined
+  userId: string | undefined
+  username: string
   setError: (error: string) => void
   setLoading: (loading: boolean) => void
 }
@@ -53,14 +53,17 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     isGuest,
     guestId,
     guestName,
-    getCurrentUserName,
-    getCurrentUserId,
+    userId,
+    username,
     setError,
     setLoading,
   } = props
 
   const [password, setPassword] = useState('')
   const [previousGameState, setPreviousGameState] = useState<any>(null)
+  
+  // Use ref to avoid circular dependencies
+  const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
 
   const loadLobby = useCallback(async () => {
     try {
@@ -107,7 +110,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setLoading(false)
     }
-  }, [code, isGuest, guestId, guestName, setLobby, setGame, setGameEngine, setError, setLoading])
+  // Only depend on primitive values, use props directly
+  }, [code, isGuest, guestId, guestName])
+  
+  // Update ref when loadLobby changes
+  useEffect(() => {
+    loadLobbyRef.current = loadLobby
+  }, [loadLobby])
 
   const addBotToLobby = useCallback(async (options?: { auto?: boolean }) => {
     try {
@@ -127,7 +136,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         throw new Error(data.error || 'Failed to add bot')
       }
 
-      await loadLobby()
+      // Call via ref to avoid circular dependency
+      if (loadLobbyRef.current) {
+        await loadLobbyRef.current()
+      }
       const successMessage = options?.auto
         ? '🤖 Added an AI opponent so you can start playing!'
         : '🤖 Bot added to lobby!'
@@ -142,7 +154,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       toast.error(err.message || 'Failed to add bot')
       return false
     }
-  }, [code, loadLobby])
+  }, [code])
 
   const announceBotJoined = useCallback(() => {
     socket?.emit('player-joined')
@@ -182,15 +194,19 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       setGame(data.game)
-      await loadLobby()
+      
+      // Call via ref to avoid circular dependency
+      if (loadLobbyRef.current) {
+        await loadLobbyRef.current()
+      }
       
       const emitPlayerJoined = () => {
         if (socket && socket.connected) {
           clientLogger.log('📡 Emitting player-joined event')
           socket.emit('player-joined', {
             lobbyCode: code,
-            username: getCurrentUserName(),
-            userId: getCurrentUserId(),
+            username: username,
+            userId: userId,
           })
         } else if (socket) {
           clientLogger.log('⏳ Waiting for socket connection to emit player-joined...')
@@ -198,8 +214,8 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
             clientLogger.log('📡 Socket connected, emitting player-joined event')
             socket.emit('player-joined', {
               lobbyCode: code,
-              username: getCurrentUserName(),
-              userId: getCurrentUserId(),
+              username: username,
+              userId: userId,
             })
           })
         }
@@ -211,7 +227,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         id: Date.now().toString() + '_join',
         userId: 'system',
         username: 'System',
-        message: `${getCurrentUserName() || 'A player'} joined the lobby`,
+        message: `${username || 'A player'} joined the lobby`,
         timestamp: Date.now(),
         type: 'system'
       }
@@ -219,7 +235,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: any) {
       setError(err.message)
     }
-  }, [code, password, isGuest, guestId, guestName, socket, getCurrentUserName, getCurrentUserId, setGame, loadLobby, setChatMessages, setError])
+  }, [code, password, isGuest, guestId, guestName, socket, username, userId, setGame, setChatMessages, setError])
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
@@ -287,13 +303,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       setChatMessages(prev => [...prev, gameStartMessage])
       
-      await loadLobby()
+      // Call via ref to avoid circular dependency
+      if (loadLobbyRef.current) {
+        await loadLobbyRef.current()
+      }
       soundManager.play('gameStart')
     } catch (error: any) {
       toast.error(error.message || 'Failed to start game')
       clientLogger.error('Failed to start game:', error)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, loadLobby])
+  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages])
 
   return {
     loadLobby,

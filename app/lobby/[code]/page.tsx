@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { useToast } from '@/contexts/ToastContext'
 import toast from 'react-hot-toast'
 import PlayerList from '@/components/PlayerList'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -37,7 +36,6 @@ function LobbyPageContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-  const toast = useToast()
   const code = params.code as string
   
   const isGuest = searchParams.get('guest') === 'true'
@@ -145,11 +143,12 @@ function LobbyPageContent() {
   }, [chatMinimized])
 
   const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
-    if (data.userId !== getCurrentUserId()) {
+    const currentUserId = isGuest ? guestId : session?.user?.id
+    if (data.userId !== currentUserId) {
       setSomeoneTyping(true)
       setTimeout(() => setSomeoneTyping(false), 3000)
     }
-  }, [getCurrentUserId])
+  }, [isGuest, guestId, session?.user?.id])
 
   const onLobbyUpdate = useCallback((data: LobbyUpdatePayload) => {
     clientLogger.log('📡 Received lobby-update:', data)
@@ -167,11 +166,12 @@ function LobbyPageContent() {
     }
     
     // Show notification
-    if (data.username && data.userId !== getCurrentUserId()) {
+    const currentUserId = isGuest ? guestId : session?.user?.id
+    if (data.username && data.userId !== currentUserId) {
       toast.success(`${data.username} joined the lobby`)
       soundManager.play('playerJoin')
     }
-  }, [getCurrentUserId, toast])
+  }, [isGuest, guestId, session?.user?.id])
 
   const onGameStarted = useCallback((data: GameStartedPayload) => {
     clientLogger.log('📡 Game started:', data)
@@ -182,7 +182,7 @@ function LobbyPageContent() {
     
     soundManager.play('gameStart')
     toast.success('🎮 Game started!')
-  }, [toast])
+  }, [])
 
   const onBotAction = useCallback((event: any) => {
     clientLogger.log('🤖 Received bot-action:', event)
@@ -218,7 +218,7 @@ function LobbyPageContent() {
     
     // Log all actions to console for debugging
     clientLogger.log(`🤖 ${event.message}`)
-  }, [toast, setRollHistory, gameEngine, game?.players?.length])
+  }, [gameEngine, game?.players?.length])
 
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, emitWhenConnected } = useSocketConnection({
@@ -235,6 +235,10 @@ function LobbyPageContent() {
     onGameStarted,
     onBotAction,
   })
+
+  // Calculate once to avoid calling functions repeatedly
+  const userId = getCurrentUserId()
+  const username = getCurrentUserName()
 
   // Lobby actions hook - after socket is initialized
   const {
@@ -260,8 +264,8 @@ function LobbyPageContent() {
     isGuest,
     guestId,
     guestName,
-    getCurrentUserName,
-    getCurrentUserId,
+    userId,
+    username,
     setError,
     setLoading,
   })
@@ -269,11 +273,11 @@ function LobbyPageContent() {
   // Update ref with loadLobby function
   React.useEffect(() => {
     loadLobbyRef.current = loadLobby
-  }, [loadLobby])
+  })
 
   // Game timer hook
   const { timeLeft, timerActive } = useGameTimer({
-    isMyTurn,
+    isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState(),
     onTimeout: async () => {
       if (!isMyTurn() || !gameEngine) return
@@ -312,9 +316,9 @@ function LobbyPageContent() {
     setGameEngine,
     isGuest,
     guestId,
-    getCurrentUserId,
-    getCurrentUserName,
-    isMyTurn,
+    userId,
+    username,
+    isMyTurn: isMyTurn(),
     emitWhenConnected,
     code,
     setRollHistory,
@@ -341,8 +345,11 @@ function LobbyPageContent() {
     }
     if (isGuest && !guestName) return
     
-    loadLobby()
-  }, [status, isGuest, guestName, loadLobby, code, router])
+    // Call via ref to avoid dependency on loadLobby function
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+  }, [status, isGuest, guestName, code, router])
 
   // Handle bot overlay progression
   useEffect(() => {
@@ -396,14 +403,6 @@ function LobbyPageContent() {
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
-
-  // Bot turn hook - triggers bot moves automatically (must be after isGameStarted)
-  useBotTurn({
-    game,
-    gameEngine,
-    code,
-    isGameStarted,
-  })
 
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
