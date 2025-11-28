@@ -99,22 +99,39 @@ export default function LobbyListPage() {
   const triggerCleanup = async () => {
     try {
       // Silently cleanup inactive lobbies in background
-      await fetch('/api/lobby/cleanup', {
+      const res = await fetch('/api/lobby/cleanup', {
         method: 'POST',
       })
+      
+      if (!res.ok) {
+        clientLogger.warn('Cleanup returned non-ok status:', res.status)
+      }
     } catch (error) {
       // Ignore errors - cleanup is not critical for user experience
-      clientLogger.log('Background cleanup skipped:', error)
+      clientLogger.log('Background cleanup skipped (non-critical):', error)
     }
   }
 
   const loadLobbies = async () => {
     try {
       const res = await fetch('/api/lobby')
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
+      
       const data = await res.json()
+      
+      // Handle case where API returns error but with 200 status
+      if (data.error) {
+        clientLogger.warn('Lobbies loaded with error:', data.error)
+      }
+      
       setLobbies(data.lobbies || [])
     } catch (error) {
       clientLogger.error('Failed to load lobbies:', error)
+      // Set empty array to prevent UI from breaking
+      setLobbies([])
     } finally {
       setLoading(false)
     }

@@ -145,36 +145,52 @@ export async function GET(request: NextRequest) {
       where.gameType = gameType
     }
 
-    // Get active lobbies
-    const lobbies = await prisma.lobby.findMany({
-      where,
-      include: {
-        creator: {
-          select: {
-            username: true,
-            email: true,
-          },
-        },
-        games: {
-          where: { status: { in: ['waiting', 'playing'] } },
-          select: { 
-            id: true,
-            status: true,
-            _count: {
-              select: {
-                players: true
-              }
-            }
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    })
+    log.info('Fetching lobbies', { gameType, hasFilter: !!gameType })
 
+    // Get active lobbies with timeout protection
+    const lobbies = await Promise.race([
+      prisma.lobby.findMany({
+        where,
+        include: {
+          creator: {
+            select: {
+              username: true,
+              email: true,
+            },
+          },
+          games: {
+            where: { status: { in: ['waiting', 'playing'] } },
+            select: { 
+              id: true,
+              status: true,
+              _count: {
+                select: {
+                  players: true
+                }
+              }
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 5000)
+      )
+    ]) as any[]
+
+    log.info('Lobbies fetched successfully', { count: lobbies.length })
     return NextResponse.json({ lobbies })
   } catch (error) {
-    log.error('Get lobbies error', error as Error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    log.error('Get lobbies error', error as Error, { 
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorType: error instanceof Error ? error.constructor.name : typeof error
+    })
+    
+    // Return empty array instead of error to prevent UI from breaking
+    return NextResponse.json({ 
+      lobbies: [],
+      error: 'Failed to load lobbies. Please try again.',
+    }, { status: 200 }) // Changed to 200 with error message
   }
 }

@@ -104,21 +104,38 @@ export default function YahtzeeLobbiesPage() {
 
   const triggerCleanup = async () => {
     try {
-      await fetch('/api/lobby/cleanup', {
+      const res = await fetch('/api/lobby/cleanup', {
         method: 'POST',
       })
+      
+      if (!res.ok) {
+        clientLogger.warn('Cleanup returned non-ok status:', res.status)
+      }
     } catch (error) {
-      clientLogger.log('Background cleanup skipped:', error)
+      clientLogger.log('Background cleanup skipped (non-critical):', error)
     }
   }
 
   const loadLobbies = async () => {
     try {
       const res = await fetch('/api/lobby?gameType=yahtzee')
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
+      
       const data = await res.json()
+      
+      // Handle case where API returns error but with 200 status
+      if (data.error) {
+        clientLogger.warn('Yahtzee lobbies loaded with error:', data.error)
+      }
+      
       setLobbies(data.lobbies || [])
     } catch (error) {
       clientLogger.error('Failed to load Yahtzee lobbies:', error)
+      // Set empty array to prevent UI from breaking
+      setLobbies([])
     } finally {
       setLoading(false)
     }
