@@ -46,6 +46,7 @@ export interface GameStartedPayload {
   lobbyCode: string
   gameId: string
   game?: Game
+  firstPlayerName?: string
 }
 
 export interface LobbyUpdatePayload {

@@ -145,3 +145,65 @@ export function isGameFinished(scorecard: YahtzeeScorecard): boolean {
   
   return categories.every(cat => scorecard[cat] !== undefined)
 }
+
+// All Yahtzee categories in order
+export const ALL_CATEGORIES: YahtzeeCategory[] = [
+  'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
+  'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
+  'largeStraight', 'yahtzee', 'chance'
+]
+
+// Priority order for wasting categories when no points available
+const WASTE_PRIORITY: YahtzeeCategory[] = [
+  // Upper section first (lowest value first)
+  'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
+  // Lower section (least valuable first)
+  'threeOfKind', 'fourOfKind', 'smallStraight', 'fullHouse',
+  'largeStraight', 'chance', 'yahtzee'
+]
+
+/**
+ * Select the best available category to score when timer runs out
+ * Priority:
+ * 1. Categories that would score the most points with current dice
+ * 2. Upper section categories with 0 points (to minimize penalty)
+ * 3. Least valuable lower section categories
+ * 
+ * Examples:
+ * - Dice: [5,5,5,5,5] -> Chooses 'yahtzee' (50 points) if available
+ * - Dice: [1,2,3,4,5] -> Chooses 'largeStraight' (40 points) if available
+ * - Dice: [1,1,2,3,6] -> Chooses 'ones' (2 points) if available
+ * - Dice: [2,3,4,5,6] (no scoring options) -> Chooses 'ones' to waste (0 points)
+ */
+export function selectBestAvailableCategory(
+  dice: number[],
+  scorecard: YahtzeeScorecard
+): YahtzeeCategory {
+  // Get available categories
+  const availableCategories = ALL_CATEGORIES.filter(
+    cat => scorecard[cat] === undefined
+  )
+  
+  if (availableCategories.length === 0) {
+    return 'ones' // Fallback (shouldn't happen)
+  }
+  
+  // Calculate score for each available category
+  const categoryScores = availableCategories.map(cat => ({
+    category: cat,
+    score: calculateScore(dice, cat)
+  }))
+  
+  // Find best scoring category
+  const bestScoring = categoryScores.reduce((best, current) => 
+    current.score > best.score ? current : best
+  )
+  
+  // If we can score points, choose the best
+  if (bestScoring.score > 0) {
+    return bestScoring.category
+  }
+  
+  // No points available - waste least valuable category
+  return WASTE_PRIORITY.find(cat => availableCategories.includes(cat)) || availableCategories[0]
+}

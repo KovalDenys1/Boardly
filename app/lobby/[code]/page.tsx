@@ -18,6 +18,24 @@ import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
+import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
+
+// Category display names for UI
+const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
+  ones: 'Ones',
+  twos: 'Twos',
+  threes: 'Threes',
+  fours: 'Fours',
+  fives: 'Fives',
+  sixes: 'Sixes',
+  threeOfKind: 'Three of a Kind',
+  fourOfKind: 'Four of a Kind',
+  fullHouse: 'Full House',
+  smallStraight: 'Small Straight',
+  largeStraight: 'Large Straight',
+  yahtzee: 'Yahtzee',
+  chance: 'Chance'
+}
 
 // New modular imports
 import { useGuestMode } from './hooks/useGuestMode'
@@ -180,9 +198,15 @@ function LobbyPageContent() {
       loadLobbyRef.current()
     }
     
+    // Show toast for non-host players (host already saw it in handleStartGame)
+    const currentUserId = isGuest ? guestId : session?.user?.id
+    const isHost = lobby?.creatorId === currentUserId
+    if (!isHost && data.firstPlayerName) {
+      toast.success(`🎲 Game started! ${data.firstPlayerName} goes first!`)
+    }
+    
     soundManager.play('gameStart')
-    toast.success('🎮 Game started!')
-  }, [])
+  }, [isGuest, guestId, session?.user?.id, lobby?.creatorId])
 
   const onBotAction = useCallback((event: any) => {
     clientLogger.log('🤖 Received bot-action:', event)
@@ -275,28 +299,89 @@ function LobbyPageContent() {
     loadLobbyRef.current = loadLobby
   })
 
+  // Create refs for game actions to use in timer callback
+  const handleScoreRef = React.useRef<((category: any) => Promise<void>) | null>(null)
+  const handleRollDiceRef = React.useRef<(() => Promise<void>) | null>(null)
+
   // Game timer hook
   const { timeLeft, timerActive } = useGameTimer({
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState(),
     onTimeout: async () => {
-      if (!isMyTurn() || !gameEngine) return
+      if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
+        clientLogger.warn('⏰ Timer expired but conditions not met', {
+          isMyTurn: isMyTurn(),
+          hasGameEngine: !!gameEngine,
+          hasHandleScore: !!handleScoreRef.current
+        })
+        return
+      }
       
-      clientLogger.warn('⏰ Timer expired, auto-skipping turn')
-      toast.error('⏰ Time\'s up! Your turn was skipped.')
+      clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
       
-      // Auto-score in worst available category (0 points)
+      const rollsLeft = gameEngine.getRollsLeft()
       const currentPlayer = gameEngine.getCurrentPlayer()
-      if (currentPlayer) {
-        const scorecard = gameEngine.getScorecard(currentPlayer.id)
-        if (scorecard) {
-          const availableCategories = Object.keys(scorecard).filter(
-            key => scorecard[key as keyof typeof scorecard] === undefined
-          ) as any[]
-          if (availableCategories.length > 0) {
-            await handleScore(availableCategories[0])
-          }
+      
+      if (!currentPlayer) {
+        clientLogger.error('⏰ No current player found')
+        return
+      }
+      
+      // If player hasn't rolled yet (rollsLeft === 3), we MUST roll first
+      // This is a Yahtzee rule - you can't score without rolling
+      if (rollsLeft === 3) {
+        if (!handleRollDiceRef.current) {
+          clientLogger.error('⏰ Player hasn\'t rolled but handleRollDice not available')
+          toast.error('⏰ Time\'s up! Please roll the dice first.')
+          return
         }
+        
+        clientLogger.log('⏰ Player hasn\'t rolled - auto-rolling once before scoring')
+        try {
+          // Roll the dice once
+          await handleRollDiceRef.current()
+          // Small delay to let state update propagate
+          await new Promise(resolve => setTimeout(resolve, 300))
+        } catch (error) {
+          clientLogger.error('⏰ Failed to auto-roll:', error)
+          toast.error('Failed to auto-roll. Please roll manually.')
+          return
+        }
+      }
+      
+      // Get final state after potential roll
+      const finalDice = gameEngine.getDice()
+      const scorecard = gameEngine.getScorecard(currentPlayer.id)
+      
+      if (!scorecard) {
+        clientLogger.error('⏰ No scorecard found')
+        return
+      }
+      
+      // Use smart category selection
+      const bestCategory = selectBestAvailableCategory(finalDice, scorecard)
+      const score = calculateScore(finalDice, bestCategory)
+      
+      clientLogger.log('⏰ Auto-scoring:', { 
+        category: bestCategory, 
+        score, 
+        dice: finalDice,
+        rollsUsed: 3 - gameEngine.getRollsLeft()
+      })
+      
+      const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
+      const diceDisplay = finalDice.join(', ')
+      
+      toast.error(
+        `⏰ Time's up! Auto-scored ${displayName} [${diceDisplay}] = ${score} pts`,
+        { duration: 5000 }
+      )
+      
+      try {
+        await handleScoreRef.current(bestCategory)
+      } catch (error) {
+        clientLogger.error('⏰ Failed to auto-score:', error)
+        toast.error('Failed to auto-score. Please select a category manually.')
       }
     },
   })
@@ -327,6 +412,12 @@ function LobbyPageContent() {
     celebrate,
     fireworks,
   })
+
+  // Update refs for timer
+  React.useEffect(() => {
+    handleScoreRef.current = handleScore
+    handleRollDiceRef.current = handleRollDice
+  }, [handleScore, handleRollDice])
 
   // Bot turn automation hook
   const { triggerBotTurn } = useBotTurn({

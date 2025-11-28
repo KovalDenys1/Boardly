@@ -54,10 +54,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
     }
 
-    // Get players from the waiting game
-    const waitingGame = lobby.games.find(g => g.status === 'waiting')
+    // Get or create waiting game
+    let waitingGame = lobby.games.find(g => g.status === 'waiting')
+    
+    // If no waiting game exists, check for finished game and create new waiting game
     if (!waitingGame) {
-      return NextResponse.json({ error: 'No waiting game found in lobby' }, { status: 404 })
+      const finishedGame = lobby.games.find(g => g.status === 'finished')
+      if (finishedGame) {
+        const log = apiLogger('POST /api/game/create')
+        log.info('Creating new waiting game from finished game', { 
+          finishedGameId: finishedGame.id, 
+          playerCount: finishedGame.players?.length || 0 
+        })
+        
+        // Create new waiting game with same players
+        waitingGame = await prisma.game.create({
+          data: {
+            lobbyId: lobbyId,
+            status: 'waiting',
+            state: JSON.stringify({}),
+            players: {
+              create: finishedGame.players.map((p, index) => ({
+                userId: p.userId,
+                score: 0,
+                position: index, // Preserve player order
+              })),
+            },
+          },
+          include: {
+            players: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        })
+      } else {
+        return NextResponse.json({ error: 'No game found in lobby' }, { status: 404 })
+      }
     }
 
     // Create game instance based on type
@@ -219,6 +253,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const log = apiLogger('POST /api/game/create')
     log.error('Create game error', error as Error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Detailed error:', error)
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 })
   }
 }

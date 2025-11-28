@@ -85,7 +85,8 @@ export default function GameBoard({
             dice={gameEngine.getDice()}
             held={isMyTurn ? held : gameEngine.getHeld()}
             onToggleHold={onToggleHold}
-            disabled={isMoveInProgress || gameEngine.getRollsLeft() >= 3 || !isMyTurn}
+            disabled={!isMyTurn || isMoveInProgress || gameEngine.getRollsLeft() === 3}
+            isMyTurn={isMyTurn}
           />
 
           {/* Roll Button */}

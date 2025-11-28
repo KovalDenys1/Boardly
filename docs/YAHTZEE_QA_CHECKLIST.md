@@ -52,7 +52,7 @@
 
 ### 2. Multiplayer Game (2 Players)
 - [x] Create lobby with 2 players
-- [x] Player 1 takes turn - тут 1ый игрок начал ходить, ему на 2ой бросок выпал фуллхаус, но игрок не может выбрать никакую категорию, у другого игрока запустилась игра, но не показывает обновления и таймер стоит на месте.
+- [x] Player 1 takes turn - Fixed: Player 1 started turn, got full house on 2nd roll but couldn't select any category. Other player's game started but didn't show updates and timer was stuck.
 - [ ] Player 2 sees updated state
 - [ ] Turns alternate correctly
 - [ ] Both players can complete game

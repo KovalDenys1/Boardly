@@ -262,7 +262,8 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.error || 'Failed to start game')
+        clientLogger.error('Failed to start game - server response:', error)
+        throw new Error(error.error || error.details || 'Failed to start game')
       }
 
       const data = await res.json()
@@ -277,10 +278,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setRollHistory([])
       setCelebrationEvent(null)
       
+      const firstPlayerName = data.game.players[0]?.name || 'Player 1'
+      
       // Emit game-started event to all clients
       socket?.emit('game-started', {
         lobbyCode: code,
         game: data.game,
+        firstPlayerName: firstPlayerName,
       })
       
       // Also emit state change
@@ -290,7 +294,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         payload: data.game.state,
       })
 
-      const firstPlayerName = data.game.players[0]?.name || 'Player 1'
       toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
 
       const gameStartMessage = {
@@ -307,7 +310,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       if (loadLobbyRef.current) {
         await loadLobbyRef.current()
       }
-      soundManager.play('gameStart')
+      // Sound will play automatically via socket event handler
     } catch (error: any) {
       toast.error(error.message || 'Failed to start game')
       clientLogger.error('Failed to start game:', error)

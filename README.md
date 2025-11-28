@@ -1,367 +1,426 @@
-# 🎮 Boardly - Multiplayer Board Games Platform
+# 🎮 Boardly - Real-Time Multiplayer Board Games Platform
 
-> A real-time multiplayer platform for playing classic board games with friends online
+> Play classic board games with friends online in real-time
 
-**Boardly** is a web-based multiplayer gaming platform where you can enjoy various board games with friends in real-time. Play Yahtzee, Chess, and more games with real-time synchronization and AI opponents.
+**Boardly** is a modern web-based multiplayer gaming platform where you can enjoy classic board games with friends in real-time. Built with Next.js, TypeScript, and Socket.IO for seamless multiplayer experiences.
 
-🌐 **Live Demo**: [boardly.online](https://boardly.online)
+🌐 **[Play Now at boardly.online](https://boardly.online)** 🎮
 
-## 🚀 Quick Start for Developers
+![Boardly Homepage](https://i.imgur.com/qgTmUWd.png)
+*Beautiful gradient UI with real-time multiplayer capabilities*
 
-**New to the project?** Start here:
-- 📖 [QUICKSTART.md](QUICKSTART.md) - Get up and running in 5 minutes
-- 🛠 [DEV_SETUP.md](DEV_SETUP.md) - Detailed development guide
-- ✨ [POLISH_CHECKLIST.md](POLISH_CHECKLIST.md) - Project polish checklist
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black.svg)](https://nextjs.org/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4.7-green.svg)](https://socket.io/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.0-2D3748.svg)](https://www.prisma.io/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+## 🎯 Current Status
+
+**Stage**: ✅ **Live in Production**  
+**Website**: [boardly.online](https://boardly.online)  
+**Available Games**: Yahtzee (fully implemented)  
+**In Development**: Chess  
+**Planned**: Guess the Spy, Uno, and more casual multiplayer games
+
+---
+
+## 🚀 Try It Now!
+
+Visit **[boardly.online](https://boardly.online)** to:
+- 🎮 Play Yahtzee online with friends
+- 👻 Quick start as a guest (no signup required)
+- 🔐 Sign in with Google, GitHub, or Email
+- 🤖 Practice against AI opponents
+- 💬 Chat with other players in real-time
+
+**No installation needed** - just open the link and start playing!
+
+### 🏆 What Makes Boardly Special?
+
+- **True Real-Time Experience** - Powered by Socket.IO for instant synchronization
+- **Smart AI Opponents** - Probability-based bot that makes intelligent decisions
+- **No Account Required** - Guest mode lets you play immediately
+- **Production-Grade Stack** - Next.js, TypeScript, PostgreSQL, deployed on Vercel + Render
+- **Beautiful UI** - Modern gradient design with smooth animations and dark mode
+- **Intelligent Auto-Play** - Timer fallbacks ensure games never stall
+
+---
+
+## ✨ Key Features
+
+### 🎲 Games
+- **Yahtzee** - Classic dice game with full rules implementation
+  - Real-time multiplayer (2-4 players)
+  - Smart AI opponents with probability-based decision making
+  - Auto-scoring with intelligent category selection
+  - Turn timer with visual countdown (60s)
+  - Celebration animations for special rolls (Yahtzee, Full House, Straights)
+  - Roll history tracking
+
+### 🔐 Authentication & Users
+- **Multiple Access Options**
+  - Email/password registration with email verification (Resend)
+  - Guest mode - play instantly without signup
+  - OAuth login via Google & GitHub
+  - Profile customization (username, avatar)
+- **Session Management** - Secure JWT-based authentication with NextAuth.js
+
+### 🎮 Gameplay Features
+- **Lobby System**
+  - Create private/public lobbies with unique codes
+  - Password protection for private games
+  - Easy invite links for friends
+  - Real-time player list updates
+- **In-Game Features**
+  - Real-time chat with typing indicators
+  - Turn timer with visual warnings (last 10 seconds)
+  - Automatic turn progression
+  - Live score updates
+  - Sound effects and celebrations
+  - Bot opponent automation
+
+### 💻 Technical Features
+- **Dual-Server Architecture** - Next.js (HTTP/API) + standalone Socket.IO server
+- **Real-Time Sync** - Instant game state updates via WebSockets
+- **Responsive Design** - Optimized for desktop, tablet, and mobile
+- **Rate Limiting** - Built-in API protection
+- **Error Tracking** - Sentry integration (optional)
+- **Dark Mode** - System-aware theme switching
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js** 18 or higher
+- **PostgreSQL** database (or [Supabase](https://supabase.com/) account)
+- **npm** or **yarn** package manager
+
+### Installation
 
 ```bash
-# Clone and setup
-git clone <your-repo-url>
+# 1. Clone the repository
+git clone https://github.com/KovalDenys1/Boardly.git
 cd Boardly
+
+# 2. Install dependencies
 npm install
 
-# Start development (both servers)
-npm run dev:all
+# 3. Setup environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
 
-# Or separately:
-npm run socket:dev  # Terminal 1
-npm run dev         # Terminal 2
+# 4. Initialize database
+npx prisma db push
+
+# 5. Start development servers (both at once)
+npm run dev:all
 ```
 
-## 🚀 Project Status
+Visit **http://localhost:3000** to see the app!
 
-**Current Stage**: Production Ready  
-**Available Games**: Yahtzee, Chess  
-**Planned Games**: Guess the Spy, and more casual multiplayer games
-
-## ✨ Features
-
-### Games
-- 🎲 **Yahtzee** - Classic dice game with real-time multiplayer
-- ♟️ **Chess** - Strategic board game with full rule implementation
-- 🤖 **AI Opponents** - Practice against intelligent bots
-
-### Platform Features
-- 🔐 **Authentication System** - Email/password registration and login with email verification
-- 👤 **User Profiles** - Customizable usernames and profile management
-- 👻 **Guest Access** - Play without creating an account
-- 💬 **In-game Chat** - Communicate with other players during games
-- 👥 **Lobby System** - Create or join game rooms with unique codes
-- 🔗 **Invite Links** - Share lobby codes to invite friends
-- ⏱️ **Turn Timer** - Time limits with visual indicators
-- 🏆 **Automatic Scoring** - Real-time score calculation
-- 📱 **Responsive Design** - Optimized for desktop and mobile
-- 🔊 **Sound Effects** - Interactive audio feedback
-
-## 🛠 Tech Stack
-
-- **Framework**: [Next.js 14](https://nextjs.org/) with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Real-time**: [Socket.IO](https://socket.io/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
-- **Auth**: [NextAuth.js](https://next-auth.js.org/)
-- **Email**: [Resend](https://resend.com/)
-- **Hosting**: 
-  - Frontend: [Vercel](https://vercel.com/)
-  - WebSocket: [Render](https://render.com/)
-  - Database: Any PostgreSQL provider (e.g., Render, Railway, Supabase)
-
-## 🚀 Deployment
-
-### Quick Deploy
-
-1. **Database Setup (PostgreSQL)**:
-   ```bash
-   # Set DATABASE_URL in .env
-   npm install
-   npx prisma migrate deploy
-   ```
-
-2. **WebSocket Server (Render)**:
-   - Deploy `socket-server.ts` as a Node.js service
-   - Set environment variables (DATABASE_URL, JWT_SECRET, etc.)
-   - Use provided `render.yaml` for configuration
-
-3. **Frontend (Vercel)**:
-   - Connect your GitHub repository to Vercel
-   - Set environment variables
-   - Deploy automatically on push
-
-## 🏃 Local Development
-
-**Start the Next.js development server:**
+### Separate Terminal Setup (Alternative)
 ```bash
+# Terminal 1 - Socket.IO server (port 3001)
+npm run socket:dev
+
+# Terminal 2 - Next.js app (port 3000)
 npm run dev
 ```
 
-**Start the Socket.IO server (in a separate terminal):**
-```bash
-npm run socket:dev
-```
+### Environment Variables
 
+Create `.env.local` with the following required variables:
 
-## 🎯 Roadmap
-
-### Immediate Focus
-- 🎨 **UI/UX Improvements** - Enhanced visual design and user experience
-- 🕵️ **Guess the Spy Game** - Social deduction party game
-- 🎲 **Additional Casual Games** - More lightweight games suitable for online play
-
-### Future Plans
-- 📊 **Player Statistics** - Track wins, games played, and achievements
-- 🏆 **Leaderboards** - Global and friend rankings
-- 🌐 **Internationalization** - Multi-language support
-- 🎮 **More Game Modes** - Variations and tournament modes
-- 📱 **Progressive Web App** - Installable mobile experience
-- 🤝 **Community Contributions** - Open platform for developers to add their own games
-
-## 📋 Prerequisites
-
-Before running this project, ensure you have:
-
-- **Node.js** 18 or higher
-- **PostgreSQL** database (or Supabase account)
-- **npm** or **yarn** package manager
-
-## 🚀 Getting Started
-
-### 1. Clone and Install
-
-```bash
-git clone https://github.com/KovalDenys1/Boardly.git
-cd Boardly
-npm install
-```
-
-### 2. Environment Configuration
-
-**📝 See detailed setup guide:** [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md)
-
-**Quick setup:**
-```bash
-cp .env.example .env.local
-# Edit .env.local with your credentials
-```
-
-**Required variables:**
 ```env
-# Database
+# Database (PostgreSQL)
 DATABASE_URL="postgresql://username:password@host:port/database"
 
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-min-32-characters"
 NEXTAUTH_URL="http://localhost:3000"
+JWT_SECRET="your-jwt-secret-min-32-characters"
 
-# Email (if using email features)
-EMAIL_SERVER="smtp://username:password@smtp.example.com:587"
-EMAIL_FROM="noreply@example.com"
+# Socket.IO Server
+NEXT_PUBLIC_SOCKET_URL="http://localhost:3001"
+CORS_ORIGIN="http://localhost:3000"
+
+# Optional: Email (Resend)
+RESEND_API_KEY="re_your_api_key"
+EMAIL_FROM="noreply@yourdomain.com"
+
+# OAuth Providers (Production Ready)
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+GITHUB_CLIENT_ID="your_github_client_id"
+GITHUB_CLIENT_SECRET="your_github_client_secret"
+
+# Optional: Error Tracking
+NEXT_PUBLIC_SENTRY_DSN="your_sentry_dsn"
+SENTRY_AUTH_TOKEN="your_sentry_auth_token"
 ```
 
-**Generate a secure secret:**
+**Generate secure secrets:**
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### 3. Database Setup
+## 🛠 Tech Stack
 
-Run Prisma migrations to create the database schema:
+### Core Technologies
+- **[Next.js 14.2](https://nextjs.org/)** - React framework with App Router
+- **[TypeScript 5.0](https://www.typescriptlang.org/)** - Type-safe development
+- **[Socket.IO 4.7](https://socket.io/)** - Real-time bidirectional communication
+- **[PostgreSQL](https://www.postgresql.org/)** - Primary database
+- **[Prisma 5.0](https://www.prisma.io/)** - Type-safe ORM
 
-```bash
-npx prisma db push
+### Frontend
+- **[Tailwind CSS 3.4](https://tailwindcss.com/)** - Utility-first styling
+- **[React Hot Toast](https://react-hot-toast.com/)** - Toast notifications
+- **[Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)** - Celebration animations
+
+### Backend & Services
+- **[NextAuth.js 4.24](https://next-auth.js.org/)** - Authentication (Email + OAuth)
+- **[Resend](https://resend.com/)** - Transactional emails (email verification)
+- **[Sentry](https://sentry.io/)** - Error tracking and monitoring
+- **[Bcrypt](https://www.npmjs.com/package/bcrypt)** - Password hashing
+
+### Deployment (Production Setup)
+- **Frontend**: [Vercel](https://vercel.com/) → boardly.online
+- **Socket.IO Server**: [Render](https://render.com/) Web Service
+- **Database**: [Supabase](https://supabase.com/) PostgreSQL
+- **Email Service**: [Resend](https://resend.com/)
+- **Error Tracking**: [Sentry](https://sentry.io/)
+
+## 🏗 Architecture
+
+### Dual-Server Design
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Client                               │
+│  Next.js Frontend (React + TypeScript + Tailwind)           │
+└────────────┬─────────────────────────────┬──────────────────┘
+             │ HTTP/API                    │ WebSocket
+             │                             │
+    ┌────────▼────────┐          ┌────────▼──────────┐
+    │   Next.js App   │          │  Socket.IO Server  │
+    │   (port 3000)   │          │   (port 3001)      │
+    │                 │          │                    │
+    │ • API Routes    │          │ • Real-time events │
+    │ • SSR/SSG       │◄────────►│ • Room management  │
+    │ • Auth          │  Notify  │ • Broadcasting     │
+    └────────┬────────┘          └────────┬───────────┘
+             │                            │
+             └──────────┬─────────────────┘
+                        │
+                 ┌──────▼────────┐
+                 │   PostgreSQL  │
+                 │   Database    │
+                 │               │
+                 │ • Users       │
+                 │ • Lobbies     │
+                 │ • Games       │
+                 │ • Players     │
+                 └───────────────┘
 ```
 
-To view your database in Prisma Studio:
-```bash
-npx prisma studio
+### Game State Flow
+```
+Client Action → API Route → Database Update → Socket Notification → 
+Socket Server Broadcast → All Clients in Room → UI Update
 ```
 
-### 4. Run Development Server
-
-Start the development server with Socket.IO support:
-
-```bash
-npm run dev
-```
-
-The application will be available at **http://localhost:3000**
-
-## 🎮 How to Play Yahtzee
-
-1. **Create an Account** or play as a guest at `/auth/register`
-2. **Create a Lobby** - Set game name, optional password, and maximum players
-3. **Invite Friends** - Share the unique lobby code or copy the invite link
-4. **Start the Game** - Lobby owner can start when 2+ players have joined
-5. **Play Your Turn**:
-   - Roll the dice (up to 3 rolls per turn)
-   - Click on dice to hold/unhold them between rolls
-   - Select a scoring category from the scorecard
-   - Complete your turn within 60 seconds
-6. **Win the Game** - Player with the highest total score when all categories are filled wins!
-
-## 🔐 Authentication Options
-
-The platform currently supports:
-- **Email/Password** - Traditional registration and login
-- **Guest Access** - Quick play without account creation
-
-_OAuth providers (Google, GitHub) may be added in future versions._
+### Key Design Patterns
+- **Game Engine Pattern** - Abstract base class (`GameEngine`) for all games
+- **Custom Hooks Architecture** - Modular logic separation:
+  - `useLobbyActions` - Lobby management (create, join, start)
+  - `useGameActions` - Game moves (roll, hold, score)
+  - `useSocketConnection` - WebSocket event handling
+  - `useGameTimer` - Turn timer management
+  - `useBotTurn` - AI opponent automation
+- **Optimistic Updates** - Immediate UI feedback with server sync
+- **Guest Session Handling** - Header-based authentication (`X-Guest-Id`, `X-Guest-Name`)
 
 ## 📁 Project Structure
 
 ```
 Boardly/
-├── app/                      # Next.js App Router
-│   ├── api/                  # API Routes
-│   │   ├── auth/             # Authentication endpoints
-│   │   ├── lobby/            # Lobby management
-│   │   ├── game/             # Game state management
-│   │   └── user/             # User profile endpoints
-│   ├── auth/                 # Authentication pages
-│   ├── games/                # Games directory and lobbies
-│   ├── lobby/                # Lobby pages
-│   ├── profile/              # User profile page
-│   └── page.tsx              # Landing page
-├── components/               # Reusable React components
-│   ├── Chat.tsx              # In-game chat
-│   ├── Dice.tsx              # Single dice component
-│   ├── DiceGroup.tsx         # Dice group with roll logic
-│   ├── Scorecard.tsx         # Yahtzee scorecard
-│   ├── PlayerList.tsx        # Player list display
-│   └── Header.tsx            # Application header
-├── contexts/                 # React Context providers
-│   └── ToastContext.tsx      # Toast notification system
-├── hooks/                    # Custom React hooks
-│   └── useConfetti.ts        # Confetti animation hook
-├── lib/                      # Utility functions and logic
-│   ├── auth.ts               # Authentication helpers
-│   ├── db.ts                 # Prisma database client
-│   ├── game-engine.ts        # Core game engine
-│   ├── lobby.ts              # Lobby management utilities
-│   ├── yahtzee.ts            # Yahtzee game logic
-│   ├── sounds.ts             # Sound effects manager
-│   ├── games/                # Individual game implementations
-│   └── validation/           # Input validation schemas
-├── prisma/
-│   ├── schema.prisma         # Database schema definition
-│   └── migrations/           # Database migrations
-├── public/
-│   └── sounds/               # Sound effect files
-├── types/                    # TypeScript type definitions
-├── socket-server.ts          # Standalone Socket.IO server
-└── package.json              # Project dependencies and scripts
+├── app/                            # Next.js App Router
+│   ├── api/                        # API Routes
+│   │   ├── auth/                   # Authentication endpoints
+│   │   ├── game/[gameId]/          # Game state management
+│   │   ├── lobby/[code]/           # Lobby management
+│   │   └── user/profile/           # User profile
+│   ├── lobby/[code]/               # Active game lobby
+│   │   ├── components/             # Lobby UI components
+│   │   └── hooks/                  # Custom hooks (6 modular files)
+│   └── games/yahtzee/lobbies/      # Yahtzee lobby browser
+├── components/                     # Reusable React components
+│   ├── Dice.tsx, DiceGroup.tsx     # Dice components
+│   ├── Scorecard.tsx               # Yahtzee scorecard
+│   ├── Chat.tsx                    # In-game chat
+│   └── YahtzeeResults.tsx          # Game over screen
+├── lib/                            # Core logic
+│   ├── game-engine.ts              # Abstract game engine
+│   ├── games/yahtzee-game.ts       # Yahtzee implementation
+│   ├── yahtzee.ts                  # Game rules & scoring
+│   ├── yahtzee-bot.ts              # AI opponent logic
+│   ├── rate-limit.ts               # API rate limiting
+│   └── socket-url.ts               # Socket URL helpers
+├── prisma/schema.prisma            # Database schema
+├── socket-server.ts                # Standalone Socket.IO server
+└── package.json                    # Dependencies and scripts
 ```
 
-## 🚀 Deployment
+## 🎮 How to Play
 
-This project deploys to **Vercel** (frontend) with **PostgreSQL** database and **Render** (Socket.IO server).
+### Getting Started
+1. **Sign Up** or **Play as Guest** at `/auth/register`
+2. **Create a Lobby** - Set game name, password (optional), max players
+3. **Invite Friends** - Share the unique lobby code or copy invite link
+4. **Start Game** - Lobby creator can start when 2+ players joined
 
-### Deploy to Vercel
+### Yahtzee Gameplay
+1. **Roll Dice** - Up to 3 rolls per turn
+2. **Hold Dice** - Click dice between rolls to keep them
+3. **Score** - Choose a category after rolling (rollsLeft < 3)
+4. **Turn Timer** - Complete your turn within 60 seconds
+5. **Win** - Highest total score when all categories are filled!
+
+### Special Features
+- **Auto-Roll** - If timer expires before rolling, dice roll automatically
+- **Auto-Score** - If timer expires, best available category selected automatically
+- **Celebrations** - Yahtzee (50 points), Straights, Full House trigger animations
+- **Bot Opponents** - AI automatically added if starting with <2 players
+
+## 🚢 Deployment
+
+**🎉 Live Production**: [boardly.online](https://boardly.online)
+
+This project is currently deployed and running in production:
+- **Frontend**: Vercel → [boardly.online](https://boardly.online)
+- **Socket.IO Server**: Render (Node.js Web Service)
+- **Database**: PostgreSQL on Supabase
+- **Email**: Resend (transactional emails)
+- **Error Tracking**: Sentry (configured and active)
+- **OAuth Providers**: Google & GitHub (fully configured)
+
+### Deploy Your Own Instance
+
+#### Frontend (Vercel)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KovalDenys1/Boardly)
 
-**Manual deployment:**
-
 1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com/) and sign in
-3. Click **"Add New Project"**
-4. Import your `Boardly` repository
-5. Add environment variables (see below)
-6. Click **"Deploy"**
+2. Go to [vercel.com](https://vercel.com/) and connect repository
+3. Add environment variables (see `.env.example`)
+4. Deploy!
 
-**Required Environment Variables:**
-```bash
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
-NEXTAUTH_SECRET=your-secret-key
-NEXTAUTH_URL=https://your-project.vercel.app
-NEXT_PUBLIC_SOCKET_URL=https://your-project.vercel.app
-```
+#### Socket.IO Server (Render)
 
-**Optional (OAuth):**
-```bash
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
+1. Create a new **Web Service** on [Render](https://render.com/)
+2. Connect your repository
+3. Build Command: `npm install`
+4. Start Command: `node socket-server.ts`
+5. Add environment variables
+6. Deploy!
 
-📖 **Detailed deployment guide:** See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
+See `render.yaml` for configuration details.
 
-### Setup Supabase Database
+### Database Setup (Supabase)
 
-1. Create a project at [Supabase](https://supabase.com/)
-2. Get your PostgreSQL connection string from **Settings** → **Database**
-3. Use the connection string in your `DATABASE_URL` environment variable
+1. Create project at [supabase.com](https://supabase.com/)
+2. Get PostgreSQL connection string from **Settings** → **Database**
+3. Set as `DATABASE_URL` environment variable
 4. Run migrations: `npx prisma db push`
 
-📖 **Database migration guide:** See [MIGRATE_QUICK_START.md](MIGRATE_QUICK_START.md)
+## 📚 Available Scripts
 
+```bash
+npm run dev            # Start Next.js dev server (port 3000)
+npm run socket:dev     # Start Socket.IO server (port 3001)
+npm run dev:all        # Start both servers concurrently
 
-## 📚 API Overview
+npm run build          # Build production Next.js app
+npm start              # Start production Next.js server
 
-The application provides REST API endpoints for game and user management:
-
-### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/guest` - Create guest session
-- `POST /api/auth/verify-email` - Email verification
-- `POST /api/auth/forgot-password` - Password reset request
-- `POST /api/auth/reset-password` - Reset password with token
-
-### Lobby Management
-- `GET /api/lobby` - List all active lobbies
-- `POST /api/lobby` - Create a new game lobby
-- `GET /api/lobby/[code]` - Get specific lobby details
-- `POST /api/lobby/[code]` - Join a lobby
-- `POST /api/lobby/[code]/leave` - Leave a lobby
-
-### Game
-- `GET /api/game/[gameId]/state` - Retrieve current game state
-- `POST /api/game/create` - Create a new game session
-
-### User
-- `GET /api/user/profile` - Get user profile information
-- `PATCH /api/user/profile` - Update user profile (username, etc.)
-
-### WebSocket Events (Socket.IO)
-Real-time events are handled through Socket.IO for immediate game updates, chat messages, and player actions.
+npm run lint           # Run ESLint
+npm run db:push        # Push Prisma schema to database
+npm run db:studio      # Open Prisma Studio GUI
+npm run db:generate    # Regenerate Prisma Client
+```
 
 ## 🤝 Contributing
 
-This project welcomes contributions! Whether you want to:
+Contributions are welcome! Whether you want to:
 - 🎮 Add a new game
 - 🐛 Fix bugs
 - 🎨 Improve UI/UX
 - 📝 Enhance documentation
-- ✨ Suggest new features
+- ✨ Suggest features
 
-Feel free to open an issue or submit a pull request!
-
-### Contributing Guidelines
-
+**How to contribute:**
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Make your changes and commit: `git commit -m 'Add some feature'`
-4. Push to your branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request with a clear description
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -m 'Add feature'`
+4. Push to branch: `git push origin feature/your-feature`
+5. Open a Pull Request
 
 ### Adding a New Game
 
-Interested in adding your own game? Check out the existing game implementations in `lib/games/` for reference. Each game should:
-- Implement core game logic as a separate module
-- Define game state types
-- Create corresponding Socket.IO event handlers
-- Add UI components for the game board/interface
+Check out `lib/games/yahtzee-game.ts` for reference. Each game should:
+1. Extend `GameEngine` base class
+2. Implement `validateMove()`, `processMove()`, `getInitialGameData()`
+3. Add game type to Prisma schema
+4. Create lobby UI and game board components
+5. Handle game-specific socket events
 
-## 🎓 Learning Resources
+See `.github/copilot-instructions.md` for detailed development guidelines.
 
-This project uses several modern web technologies. If you're learning, here are helpful resources:
+## 📖 Documentation
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Socket.IO Documentation](https://socket.io/docs/)
-- [Prisma Guides](https://www.prisma.io/docs/)
-- [Tailwind CSS Docs](https://tailwindcss.com/docs)
+All project documentation is centralized in the `/docs` folder:
+
+- **[README.md](README.md)** (You are here) - Project overview and getting started guide
+- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Contribution guidelines and development setup
+- **[docs/TODO.md](docs/TODO.md)** - Development roadmap and feature planning
+- **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Version history and recent updates
+- **[docs/YAHTZEE_QA_CHECKLIST.md](docs/YAHTZEE_QA_CHECKLIST.md)** - QA testing checklist for Yahtzee
+- **[.github/copilot-instructions.md](.github/copilot-instructions.md)** - AI agent development instructions
+
+## 🎯 Roadmap
+
+### ✅ Completed (Live in Production)
+- Yahtzee multiplayer game
+- Real-time Socket.IO communication
+- Authentication (Email, Google, GitHub OAuth)
+- Guest mode
+- AI opponents
+- Turn timer with auto-scoring
+- In-game chat
+- Sound effects and celebrations
+
+### 🔄 In Progress
+- ♟️ Chess implementation
+- 📧 Email notifications
+- 📊 Analytics integration
+
+### 📋 Next Up
+- 🕵️ Guess the Spy social deduction game
+- 🎴 Uno card game
+- 🏆 Leaderboards and achievements
+- 💰 Premium subscriptions (Stripe)
+- 📱 Progressive Web App (PWA)
+
+### 🎯 Future
+- 🌐 Internationalization (i18n)
+- 👥 Friend system
+- 🎮 More games (Connect Four, Battleship, Codenames)
+- 🏅 Tournament mode
+- 📈 Advanced statistics dashboard
+- 🎮 Custom game creator
+- 🤝 Spectator mode
+- 🔊 Voice chat integration
+- 🎪 Tournament system
 
 ## 📄 License
 
@@ -371,27 +430,48 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Denys Koval**  
 - GitHub: [@KovalDenys1](https://github.com/KovalDenys1)
+- Email: d3natsv@gmail.com
 
-This project serves as both a learning journey and a portfolio piece, demonstrating real-time web application development with modern technologies.
+This project serves as both a learning journey and portfolio piece, demonstrating real-time web application development with modern technologies.
 
 ## 🙏 Acknowledgments
 
-Special thanks to the amazing open-source projects that make this possible:
+Special thanks to the amazing open-source projects:
 
-- [Next.js](https://nextjs.org/) - The React framework for production
-- [Socket.IO](https://socket.io/) - Real-time bidirectional event-based communication
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [Next.js](https://nextjs.org/) - The React framework
+- [Socket.IO](https://socket.io/) - Real-time communication
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
 - [Prisma](https://www.prisma.io/) - Next-generation ORM
-- [NextAuth.js](https://next-auth.js.org/) - Authentication for Next.js
-- [Supabase](https://supabase.com/) - Open source Firebase alternative
-- [Vercel](https://vercel.com/) - Platform for frontend frameworks and static sites
+- [NextAuth.js](https://next-auth.js.org/) - Authentication
+- [Supabase](https://supabase.com/) - PostgreSQL hosting
+- [Vercel](https://vercel.com/) - Deployment platform
 
 Built with ❤️ and lots of coffee ☕
 
 ---
 
-⭐ **Star this repository** if you find it interesting or useful!
+## 🌟 Production Features
 
-💬 **Questions or suggestions?** Feel free to open an issue!
+This project is live at [boardly.online](https://boardly.online) with:
+- ✅ Real-time multiplayer with WebSocket connections (Socket.IO on Render)
+- ✅ Multiple authentication methods (Email, Google, GitHub, Guest)
+- ✅ Email verification system (Resend)
+- ✅ AI opponents with probability-based decision making
+- ✅ Responsive design for desktop, tablet, and mobile
+- ✅ Automatic turn timer with intelligent fallback actions
+- ✅ Sound effects and celebration animations
+- ✅ Real-time chat with typing indicators
+- ✅ Error tracking and monitoring (Sentry)
+- ✅ PostgreSQL database (Supabase) with Prisma ORM
+- ✅ Rate limiting and API protection
+- ✅ HTTPS and secure connections
 
-🎮 **Want to play?** [Visit the live demo](#) _(coming soon)_
+---
+
+⭐ **[Play Now at boardly.online](https://boardly.online)** ⭐
+
+**Star this repository** if you find it interesting or useful!
+
+💬 **Questions?** Open an issue or reach out!
+
+🎮 **Want to contribute?** PRs are welcome!

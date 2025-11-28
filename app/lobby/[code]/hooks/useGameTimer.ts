@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { clientLogger } from '@/lib/client-logger'
 
 interface UseGameTimerProps {
@@ -15,16 +15,11 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
   
   // Use ref to avoid recreating timer on every onTimeout change
   const onTimeoutRef = useRef(onTimeout)
+  const timeoutCalledRef = useRef(false)
   
   useEffect(() => {
     onTimeoutRef.current = onTimeout
   }, [onTimeout])
-
-  const handleTimeOut = useCallback(() => {
-    if (timerActive) {
-      onTimeoutRef.current()
-    }
-  }, [timerActive])
 
   // Track initial load
   useEffect(() => {
@@ -44,6 +39,8 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
     const turnChanged = currentPlayerIndex !== lastPlayerIndex
     if (turnChanged) {
       setLastPlayerIndex(currentPlayerIndex)
+      // Reset timeout flag when turn changes
+      timeoutCalledRef.current = false
     }
 
     if (isMyTurn) {
@@ -62,6 +59,8 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
       }
     } else {
       setTimerActive(false)
+      // Reset timeout flag when it's not my turn
+      timeoutCalledRef.current = false
     }
   }, [gameState, isMyTurn, lastPlayerIndex, isInitialLoad])
 
@@ -69,19 +68,27 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
   useEffect(() => {
     if (timerActive && timeLeft > 0) {
       const interval = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clientLogger.warn('⏰ Timer expired, calling handleTimeOut')
-            handleTimeOut()
-            return 0
-          }
-          return prev - 1
-        })
+        setTimeLeft(prev => prev <= 1 ? 0 : prev - 1)
       }, 1000)
 
       return () => clearInterval(interval)
     }
-  }, [timerActive, timeLeft, handleTimeOut])
+  }, [timerActive, timeLeft])
+
+  // Handle timeout separately in useEffect to avoid state updates during render
+  useEffect(() => {
+    if (timerActive && timeLeft === 0 && !timeoutCalledRef.current) {
+      clientLogger.warn('⏰ Timer expired, calling onTimeout')
+      timeoutCalledRef.current = true
+      
+      // Use setTimeout to defer the callback to next tick
+      const timeoutId = setTimeout(() => {
+        onTimeoutRef.current()
+      }, 0)
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [timerActive, timeLeft])
 
   return { timeLeft, timerActive }
 }
