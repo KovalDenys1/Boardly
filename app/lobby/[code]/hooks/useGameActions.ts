@@ -104,9 +104,12 @@ export function useGameActions(props: UseGameActionsProps) {
     
     // Update UI immediately (don't wait for server)
     const tempState = { ...optimisticEngine.getState() }
-    if (tempState.data.dice) {
-      tempState.data.dice = optimisticDice
-      tempState.data.rollsLeft = (tempState.data.rollsLeft || 3) - 1
+    if (tempState.data && typeof tempState.data === 'object') {
+      const gameData = tempState.data as any
+      if (gameData.dice) {
+        gameData.dice = optimisticDice
+        gameData.rollsLeft = (gameData.rollsLeft || 3) - 1
+      }
     }
     optimisticEngine.restoreState(tempState)
     setGameEngine(optimisticEngine)
