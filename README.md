@@ -380,12 +380,25 @@ See `.github/copilot-instructions.md` for detailed development guidelines.
 
 All project documentation is centralized in the `/docs` folder:
 
+### Core Documentation
 - **[README.md](README.md)** (You are here) - Project overview and getting started guide
+- **[docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)** - Complete project structure and organization guide
 - **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Contribution guidelines and development setup
 - **[docs/TODO.md](docs/TODO.md)** - Development roadmap and feature planning
 - **[docs/CHANGELOG.md](docs/CHANGELOG.md)** - Version history and recent updates
 - **[docs/YAHTZEE_QA_CHECKLIST.md](docs/YAHTZEE_QA_CHECKLIST.md)** - QA testing checklist for Yahtzee
 - **[.github/copilot-instructions.md](.github/copilot-instructions.md)** - AI agent development instructions
+
+### Community Standards
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines and behavior expectations
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[LICENSE](LICENSE)** - MIT License
+
+### Issue & PR Templates
+- **Bug Reports** - Structured bug reporting with environment details
+- **Feature Requests** - Guided feature proposal submissions
+- **Game Requests** - Specific template for suggesting new games
+- **Pull Request Template** - Comprehensive PR checklist
 
 ## 🎯 Roadmap
 

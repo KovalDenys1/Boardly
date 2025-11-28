@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discord Community
+    url: https://discord.gg/boardly
+    about: Join our Discord server for discussions and support
+  - name: 🌐 Live Site
+    url: https://boardly.online
+    about: Visit the live Boardly platform
+  - name: 📖 Documentation
+    url: https://github.com/KovalDenys1/Boardly/tree/main/docs
+    about: Read the project documentation
+  - name: 🔒 Security Issue
+    url: https://github.com/KovalDenys1/Boardly/security/advisories/new
+    about: Report a security vulnerability (private)
