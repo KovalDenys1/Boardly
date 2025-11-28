@@ -430,7 +430,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Denys Koval**  
 - GitHub: [@KovalDenys1](https://github.com/KovalDenys1)
-- Email: d3natsv@gmail.com
+- Email: kovaldenys@icloud.com
 
 This project serves as both a learning journey and portfolio piece, demonstrating real-time web application development with modern technologies.
 
@@ -446,7 +446,7 @@ Special thanks to the amazing open-source projects:
 - [Supabase](https://supabase.com/) - PostgreSQL hosting
 - [Vercel](https://vercel.com/) - Deployment platform
 
-Built with ❤️ and lots of coffee ☕
+Built with ❤️ and lots of cacao ☕
 
 ---
 
