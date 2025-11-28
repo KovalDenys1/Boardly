@@ -43,18 +43,42 @@ export async function POST(
     // Acquire lock
     botTurnLocks.set(lockKey, true)
 
-    // Load game state
-    const game = await prisma.game.findUnique({
-      where: { id: params.gameId },
-      include: {
-        players: {
-          include: {
-            user: true,
+    // Load game state with retry on connection errors
+    let game
+    try {
+      game = await prisma.game.findUnique({
+        where: { id: params.gameId },
+        include: {
+          players: {
+            include: {
+              user: true,
+            },
           },
+          lobby: true,
         },
-        lobby: true,
-      },
-    })
+      }).catch(async (fetchError) => {
+        // Retry once on connection error (serverless cold start issue)
+        log.warn('Initial game fetch failed, retrying...', { error: fetchError.code })
+        await new Promise(resolve => setTimeout(resolve, 300))
+        return prisma.game.findUnique({
+          where: { id: params.gameId },
+          include: {
+            players: {
+              include: {
+                user: true,
+              },
+            },
+            lobby: true,
+          },
+        })
+      })
+    } catch (error) {
+      log.error('Failed to load game after retry', error as Error)
+      return NextResponse.json({ 
+        error: 'Database connection error. Please try again.',
+        code: 'DB_CONNECTION_FAILED'
+      }, { status: 503 })
+    }
 
     if (!game) {
       log.error('Game not found', undefined, { gameId: params.gameId })
@@ -128,34 +152,70 @@ export async function POST(
             throw new Error('Move validation failed')
           }
 
-          // Save to database
+          // Save to database with retry logic
           log.info('Saving bot move to database...')
-          await prisma.game.update({
-            where: { id: params.gameId },
-            data: {
-              state: JSON.stringify(gameEngine.getState()),
-              status: gameEngine.getState().status,
-              currentTurn: gameEngine.getState().currentPlayerIndex,
-              updatedAt: new Date(),
-            },
-          })
-          log.info('Database updated successfully')
+          try {
+            await prisma.game.update({
+              where: { id: params.gameId },
+              data: {
+                state: JSON.stringify(gameEngine.getState()),
+                status: gameEngine.getState().status,
+                currentTurn: gameEngine.getState().currentPlayerIndex,
+                updatedAt: new Date(),
+              },
+            }).catch(async (dbError) => {
+              // Retry once on connection error (common on serverless cold starts)
+              log.warn('Database update failed, retrying...', { error: dbError.message })
+              await new Promise(resolve => setTimeout(resolve, 200))
+              return prisma.game.update({
+                where: { id: params.gameId },
+                data: {
+                  state: JSON.stringify(gameEngine.getState()),
+                  status: gameEngine.getState().status,
+                  currentTurn: gameEngine.getState().currentPlayerIndex,
+                  updatedAt: new Date(),
+                },
+              })
+            })
+            log.info('Database updated successfully')
+          } catch (dbError) {
+            log.error('Critical: Failed to save game state after retry', dbError as Error)
+            throw new Error('Database connection failed. Please try again.')
+          }
 
-          // Update player scores
-          await Promise.all(
-            gameEngine.getPlayers().map(async (player: any) => {
-              const dbPlayer = game.players.find((p: any) => p.userId === player.id)
-              if (dbPlayer) {
+          // Update player scores - do this sequentially to avoid connection issues
+          // Vercel serverless + Supabase pooler can have timeout issues with parallel queries
+          for (const player of gameEngine.getPlayers()) {
+            const dbPlayer = game.players.find((p: any) => p.userId === player.id)
+            if (dbPlayer) {
+              try {
                 await prisma.player.update({
                   where: { id: dbPlayer.id },
                   data: {
                     score: player.score || 0,
                     scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
                   },
+                }).catch(async (retryError) => {
+                  // Retry once on connection error
+                  log.warn('Player update failed, retrying...', { playerId: dbPlayer.id })
+                  await new Promise(resolve => setTimeout(resolve, 100))
+                  return prisma.player.update({
+                    where: { id: dbPlayer.id },
+                    data: {
+                      score: player.score || 0,
+                      scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
+                    },
+                  })
                 })
+              } catch (playerUpdateError) {
+                log.error('Failed to update player score', playerUpdateError as Error, { 
+                  playerId: dbPlayer.id,
+                  userId: player.id 
+                })
+                // Continue with other players even if one fails
               }
-            })
-          )
+            }
+          }
           log.info('Player scores updated')
           
           // Broadcast state update after each move
