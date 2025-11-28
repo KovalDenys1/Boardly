@@ -43,34 +43,46 @@ export async function POST(
     // Acquire lock
     botTurnLocks.set(lockKey, true)
 
-    // Load game state with retry on connection errors
+    // Load game state with retry on connection errors - optimized query
     let game
     try {
-      game = await prisma.game.findUnique({
+      const optimizedQuery = {
         where: { id: params.gameId },
-        include: {
+        select: {
+          id: true,
+          state: true,
+          status: true,
+          currentTurn: true,
           players: {
-            include: {
-              user: true,
+            select: {
+              id: true,
+              userId: true,
+              score: true,
+              scorecard: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  isBot: true,
+                },
+              },
             },
           },
-          lobby: true,
+          lobby: {
+            select: {
+              id: true,
+              code: true,
+              gameType: true,
+            },
+          },
         },
-      }).catch(async (fetchError) => {
+      }
+      
+      game = await prisma.game.findUnique(optimizedQuery).catch(async (fetchError) => {
         // Retry once on connection error (serverless cold start issue)
         log.warn('Initial game fetch failed, retrying...', { error: fetchError.code })
         await new Promise(resolve => setTimeout(resolve, 300))
-        return prisma.game.findUnique({
-          where: { id: params.gameId },
-          include: {
-            players: {
-              include: {
-                user: true,
-              },
-            },
-            lobby: true,
-          },
-        })
+        return prisma.game.findUnique(optimizedQuery)
       })
     } catch (error) {
       log.error('Failed to load game after retry', error as Error)
@@ -116,20 +128,19 @@ export async function POST(
     
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: any) => {
-      try {
-        await fetch(`${socketUrl}/api/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            room: `lobby:${lobbyCode}`,
-            event: 'bot-action',
-            data: event,
-          }),
-          signal: AbortSignal.timeout(3000),
-        })
-      } catch (error) {
+      // Fire-and-forget pattern - don't wait for Socket.IO
+      fetch(`${socketUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room: `lobby:${lobbyCode}`,
+          event: 'bot-action',
+          data: event,
+        }),
+        signal: AbortSignal.timeout(1000), // Reduced from 3s to 1s
+      }).catch(error => {
         log.warn('Failed to broadcast bot action', { error })
-      }
+      })
     }
 
     // Execute bot's turn with visual feedback
@@ -218,25 +229,23 @@ export async function POST(
           }
           log.info('Player scores updated')
           
-          // Broadcast state update after each move
+          // Broadcast state update after each move - fire-and-forget
           const currentState = gameEngine.getState()
-          try {
-            await fetch(`${socketUrl}/api/notify`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                room: `lobby:${lobbyCode}`,
-                event: 'game-update',
-                data: {
-                  action: 'state-change',
-                  payload: currentState,
-                },
-              }),
-              signal: AbortSignal.timeout(3000),
-            })
-          } catch (error) {
+          fetch(`${socketUrl}/api/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              room: `lobby:${lobbyCode}`,
+              event: 'game-update',
+              data: {
+                action: 'state-change',
+                payload: currentState,
+              },
+            }),
+            signal: AbortSignal.timeout(1000), // Reduced from 3s to 1s
+          }).catch(error => {
             log.warn('Failed to broadcast move update', { error })
-          }
+          })
         } catch (error) {
           log.error('Error processing bot move', error as Error, { 
             moveType: botMove.type,

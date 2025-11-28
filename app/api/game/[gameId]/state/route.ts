@@ -27,16 +27,34 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid move data' }, { status: 400 })
     }
 
-    // Get game from database
+    // Get game from database - optimize by selecting only needed fields
     const game = await prisma.game.findUnique({
       where: { id: params.gameId },
-      include: {
+      select: {
+        id: true,
+        state: true,
+        status: true,
+        currentTurn: true,
         players: {
-          include: {
-            user: true,
+          select: {
+            id: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                isBot: true,
+              },
+            },
           },
         },
-        lobby: true,
+        lobby: {
+          select: {
+            id: true,
+            code: true,
+            gameType: true,
+          },
+        },
       },
     })
 

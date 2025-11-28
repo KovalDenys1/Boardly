@@ -60,10 +60,10 @@ export class BotMoveExecutor {
         botName: botPlayer.name,
         message: `${botPlayer.name} is thinking...`,
       })
-      await this.delay(800)
+      await this.delay(300) // Reduced from 800ms for faster gameplay
 
     // Initial roll (always roll first)
-    await this.delay(500)
+    await this.delay(200) // Reduced from 500ms for faster gameplay
     onBotAction?.({
       type: 'roll',
       botName: botPlayer.name,
@@ -93,7 +93,7 @@ export class BotMoveExecutor {
       },
       message: `${botPlayer.name} rolled: ${currentDice.join(', ')}`,
     })
-    await this.delay(1000)
+    await this.delay(400) // Reduced from 1000ms for faster gameplay
 
     // Get updated state after roll
     let rollsLeft = gameEngine.getRollsLeft()
@@ -108,7 +108,7 @@ export class BotMoveExecutor {
           botName: botPlayer.name,
           message: `${botPlayer.name} is satisfied with this roll!`,
         })
-        await this.delay(800)
+        await this.delay(300) // Reduced from 800ms for faster gameplay
         break
       }
 
@@ -118,7 +118,7 @@ export class BotMoveExecutor {
         botName: botPlayer.name,
         message: `${botPlayer.name} is deciding which dice to hold...`,
       })
-      await this.delay(800)
+      await this.delay(300) // Reduced from 800ms for faster gameplay
       
       const diceToHold = YahtzeeBot.decideDiceToHold(
         currentDice,
@@ -144,7 +144,7 @@ export class BotMoveExecutor {
           ? `${botPlayer.name} is holding ${diceToHold.length} ${diceToHold.length === 1 ? 'die' : 'dice'}`
           : `${botPlayer.name} is not holding any dice`,
       })
-      await this.delay(1000)
+      await this.delay(400) // Reduced from 1000ms for faster gameplay
 
       // Apply all holds at once using the held array format
       const holdMove: Move = {
@@ -165,7 +165,7 @@ export class BotMoveExecutor {
         data: { rollNumber: rollNum },
         message: `${botPlayer.name} is rolling again (roll ${rollNum})...`,
       })
-      await this.delay(1000)
+      await this.delay(400) // Reduced from 1000ms for faster gameplay
       
       const nextRollMove: Move = {
         playerId: botUserId,
@@ -189,7 +189,7 @@ export class BotMoveExecutor {
         },
         message: `${botPlayer.name} rolled: ${currentDice.join(', ')}`,
       })
-      await this.delay(1000)
+      await this.delay(400) // Reduced from 1000ms for faster gameplay
       
       rollsLeft = gameEngine.getRollsLeft()
     }
@@ -200,7 +200,7 @@ export class BotMoveExecutor {
       botName: botPlayer.name,
       message: `${botPlayer.name} is choosing a category...`,
     })
-    await this.delay(1200) // Final decision time
+    await this.delay(500) // Reduced from 1200ms for faster gameplay
     
     clientLogger.log('🤖 [BOT-TURN] Bot analyzing best category to score...', {
       dice: currentDice,
@@ -225,7 +225,7 @@ export class BotMoveExecutor {
       },
       message: `${botPlayer.name} selected ${category} for ${score} points`,
     })
-    await this.delay(1500)
+    await this.delay(600) // Reduced from 1500ms for faster gameplay
 
     const scoreMove: Move = {
       playerId: botUserId,

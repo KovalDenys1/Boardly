@@ -92,6 +92,28 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsMoveInProgress(true)
     setIsRolling(true)
 
+    // OPTIMISTIC UPDATE: Roll dice immediately client-side
+    const optimisticDice = gameEngine.getDice().map((value, idx) => {
+      if (held[idx]) return value // Keep held dice
+      return Math.floor(Math.random() * 6) + 1 // Roll non-held dice
+    })
+    
+    // Create temporary optimistic state
+    const optimisticEngine = new YahtzeeGame(gameEngine.getState().id)
+    optimisticEngine.restoreState(gameEngine.getState())
+    
+    // Update UI immediately (don't wait for server)
+    const tempState = { ...optimisticEngine.getState() }
+    if (tempState.data.dice) {
+      tempState.data.dice = optimisticDice
+      tempState.data.rollsLeft = (tempState.data.rollsLeft || 3) - 1
+    }
+    optimisticEngine.restoreState(tempState)
+    setGameEngine(optimisticEngine)
+    
+    // Play sound immediately for instant feedback
+    soundManager.play('diceRoll')
+
     // Send atomic roll with current held state
     const move: Move = {
       playerId: userId || '',
@@ -119,6 +141,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
       const data = await res.json()
       
+      // Replace optimistic update with real server data
       let newEngine: YahtzeeGame | null = null
       if (gameEngine) {
         newEngine = new YahtzeeGame(gameEngine.getState().id)
@@ -161,7 +184,7 @@ export function useGameActions(props: UseGameActionsProps) {
         }
       }
       
-      soundManager.play('diceRoll')
+      // Sound already played optimistically, no need to play again
       
       emitWhenConnected('game-action', {
         lobbyCode: code,
