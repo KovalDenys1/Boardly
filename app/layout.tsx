@@ -31,20 +31,13 @@ export const metadata: Metadata = {
     title: 'Boardly - Play Board Games Online with Friends',
     description: 'Play popular board games online with friends in real-time. Join Yahtzee and more multiplayer games. Free, no download required.',
     siteName: 'Boardly',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Boardly - Online Board Games',
-      },
-    ],
+    // Images are auto-generated from opengraph-image.tsx
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Boardly - Play Board Games Online with Friends',
     description: 'Play popular board games online with friends in real-time. Free, no download required.',
-    images: ['/og-image.png'],
+    // Images are auto-generated from twitter-image.tsx
     creator: '@boardly',
   },
   robots: {
