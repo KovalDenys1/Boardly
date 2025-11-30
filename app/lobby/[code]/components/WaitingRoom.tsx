@@ -25,7 +25,7 @@ export default function WaitingRoom({
   const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
 
   return (
-    <>
+    <div className="space-y-4">
       {/* Player List */}
       {game?.players && game.players.length > 0 && (
         <PlayerList
@@ -45,6 +45,7 @@ export default function WaitingRoom({
         />
       )}
 
+      {/* Ready to Play Card */}
       <div className="card text-center animate-scale-in">
         <div className="mb-6">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
@@ -114,6 +115,6 @@ export default function WaitingRoom({
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 }
