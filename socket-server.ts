@@ -406,5 +406,6 @@ io.on('connection', (socket) => {
 })
 
 server.listen(port, hostname, () => {
-  logger.info(`Socket.IO server ready`, { url: `http://${hostname}:${port}` })
+  const displayUrl = hostname === '0.0.0.0' ? 'localhost' : hostname
+  logger.info(`Socket.IO server ready`, { url: `http://${displayUrl}:${port}` })
 })
