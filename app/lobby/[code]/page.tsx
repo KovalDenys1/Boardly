@@ -75,7 +75,7 @@ function LobbyPageContent() {
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
-  const [chatMinimized, setChatMinimized] = useState(false)
+  const [chatMinimized, setChatMinimized] = useState(true) // Чат свёрнут по умолчанию
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
 
@@ -534,18 +534,21 @@ function LobbyPageContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="mb-6">
-        <LobbyInfo
-          lobby={lobby}
-          soundEnabled={soundEnabled}
-          onSoundToggle={() => {
-            soundManager.toggle()
-            setSoundEnabled(soundManager.isEnabled())
-            toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
-          }}
-          onLeave={handleLeaveLobby}
-        />
-      </div>
+      {/* Показываем информацию о лобби только если игра не началась */}
+      {!isGameStarted && (
+        <div className="mb-6">
+          <LobbyInfo
+            lobby={lobby}
+            soundEnabled={soundEnabled}
+            onSoundToggle={() => {
+              soundManager.toggle()
+              setSoundEnabled(soundManager.isEnabled())
+              toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
+            }}
+            onLeave={handleLeaveLobby}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Main Game Area - 3 columns */}
