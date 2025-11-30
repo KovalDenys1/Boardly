@@ -552,99 +552,98 @@ function LobbyPageContent() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Main Game Area - 3 columns */}
-        <div className="lg:col-span-3 space-y-4">
-          {!isInGame ? (
-            <JoinPrompt
-              lobby={lobby}
-              password={password}
-              setPassword={setPassword}
-              error={error}
-              onJoin={handleJoinLobby}
-            />
-          ) : (
-            <>
-              {/* Game States */}
-              {!isGameStarted ? (
-                <WaitingRoom
-                  game={game}
-                  lobby={lobby}
-                  gameEngine={gameEngine}
-                  canStartGame={canStartGame}
-                  startingGame={startingGame}
-                  onStartGame={handleStartGame}
-                  onAddBot={handleAddBot}
-                  getCurrentUserId={getCurrentUserId}
-                />
-              ) : gameEngine?.isGameFinished() ? (
-                <YahtzeeResults
-                  results={analyzeResults(
-                    gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
-                    (id) => gameEngine.getScorecard(id)
-                  )}
-                  currentUserId={getCurrentUserId() || null}
-                  canStartGame={!!canStartGame}
-                  onPlayAgain={handleStartGame}
-                  onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
-                />
-              ) : gameEngine ? (
-                <GameBoard
-                  gameEngine={gameEngine}
-                  game={game}
-                  isMyTurn={isMyTurn()}
-                  timeLeft={timeLeft}
-                  isMoveInProgress={isMoveInProgress}
-                  isRolling={isRolling}
-                  isScoring={isScoring}
-                  celebrationEvent={celebrationEvent}
-                  held={held}
-                  getCurrentUserId={getCurrentUserId}
-                  onRollDice={handleRollDice}
-                  onToggleHold={handleToggleHold}
-                  onScore={handleScore}
-                  onCelebrationComplete={() => setCelebrationEvent(null)}
-                />
-              ) : null}
-            </>
-          )}
-        </div>
+      {!isInGame ? (
+        <JoinPrompt
+          lobby={lobby}
+          password={password}
+          setPassword={setPassword}
+          error={error}
+          onJoin={handleJoinLobby}
+        />
+      ) : !isGameStarted ? (
+        // Waiting Room - Centered Layout
+        <WaitingRoom
+          game={game}
+          lobby={lobby}
+          gameEngine={gameEngine}
+          canStartGame={canStartGame}
+          startingGame={startingGame}
+          onStartGame={handleStartGame}
+          onAddBot={handleAddBot}
+          getCurrentUserId={getCurrentUserId}
+        />
+      ) : (
+        // Game Started - Grid Layout
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Main Game Area - 3 columns */}
+          <div className="lg:col-span-3 space-y-4">
+            {gameEngine?.isGameFinished() ? (
+              <YahtzeeResults
+                results={analyzeResults(
+                  gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
+                  (id) => gameEngine.getScorecard(id)
+                )}
+                currentUserId={getCurrentUserId() || null}
+                canStartGame={!!canStartGame}
+                onPlayAgain={handleStartGame}
+                onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+              />
+            ) : gameEngine ? (
+              <GameBoard
+                gameEngine={gameEngine}
+                game={game}
+                isMyTurn={isMyTurn()}
+                timeLeft={timeLeft}
+                isMoveInProgress={isMoveInProgress}
+                isRolling={isRolling}
+                isScoring={isScoring}
+                celebrationEvent={celebrationEvent}
+                held={held}
+                getCurrentUserId={getCurrentUserId}
+                onRollDice={handleRollDice}
+                onToggleHold={handleToggleHold}
+                onScore={handleScore}
+                onCelebrationComplete={() => setCelebrationEvent(null)}
+              />
+            ) : null}
+          </div>
 
-        {/* Sidebar - 1 column */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Roll History */}
-          {isGameStarted && rollHistory.length > 0 && (
-            <RollHistory
-              entries={rollHistory}
-            />
-          )}
+          {/* Sidebar - 1 column */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Roll History */}
+            {isGameStarted && rollHistory.length > 0 && (
+              <RollHistory
+                entries={rollHistory}
+              />
+            )}
 
-          {/* Chat */}
-          {isInGame && (
-            <Chat
-              messages={chatMessages}
-              onSendMessage={(message) => {
-                emitWhenConnected('send-chat-message', {
-                  lobbyCode: code,
-                  message,
-                  userId: getCurrentUserId(),
-                  username: getCurrentUserName(),
-                })
-              }}
-              currentUserId={getCurrentUserId()}
-              isMinimized={chatMinimized}
-              onToggleMinimize={() => {
-                setChatMinimized(!chatMinimized)
-                if (chatMinimized) {
-                  setUnreadMessageCount(0)
-                }
-              }}
-              unreadCount={unreadMessageCount}
-              someoneTyping={someoneTyping}
-            />
-          )}
+            {/* Chat */}
+            {isInGame && (
+              <Chat
+                messages={chatMessages}
+                onSendMessage={(message) => {
+                  emitWhenConnected('send-chat-message', {
+                    lobbyCode: code,
+                    message,
+                    userId: getCurrentUserId(),
+                    username: getCurrentUserName(),
+                  })
+                }}
+                currentUserId={getCurrentUserId()}
+                isMinimized={chatMinimized}
+                onToggleMinimize={() => {
+                  setChatMinimized(!chatMinimized)
+                  if (chatMinimized) {
+                    setUnreadMessageCount(0)
+                  }
+                }}
+                unreadCount={unreadMessageCount}
+                someoneTyping={someoneTyping}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Bot Move Overlay */}
       {showingBotOverlay && botMoveSteps.length > 0 && (
