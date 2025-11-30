@@ -66,6 +66,9 @@ module.exports = withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG || "boardly-v6",
   project: process.env.SENTRY_PROJECT || "javascript-nextjs",
 
+  // Auth token for uploading source maps (optional - set SENTRY_AUTH_TOKEN in .env.local)
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
 
@@ -83,6 +86,9 @@ module.exports = withSentryConfig(nextConfig, {
 
   // Automatically tree-shake Sentry logger statements to reduce bundle size
   disableLogger: true,
+  
+  // Disable telemetry to reduce noise in logs
+  telemetry: false,
 
   // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
   // See the following for more information:
