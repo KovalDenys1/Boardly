@@ -1,4 +1,5 @@
 import PlayerList from '@/components/PlayerList'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
 
 interface WaitingRoomProps {
@@ -6,6 +7,7 @@ interface WaitingRoomProps {
   lobby: any
   gameEngine: any
   canStartGame: boolean
+  startingGame: boolean
   onStartGame: () => void
   onAddBot: () => void
   getCurrentUserId: () => string | undefined
@@ -16,6 +18,7 @@ export default function WaitingRoom({
   lobby,
   gameEngine,
   canStartGame,
+  startingGame,
   onStartGame,
   onAddBot,
   getCurrentUserId,
@@ -23,6 +26,47 @@ export default function WaitingRoom({
   const playerCount = game?.players?.length || 0
   const hasBot = game?.players?.some((p: any) => p.user?.isBot)
   const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
+
+  // Show loading overlay when starting game
+  if (startingGame) {
+    return (
+      <div className="space-y-4">
+        {/* Player List - keep visible during loading */}
+        {game?.players && game.players.length > 0 && (
+          <PlayerList
+            players={game.players.map((p: any) => ({
+              id: p.id,
+              userId: p.userId,
+              user: {
+                username: p.user.username,
+                email: p.user.email,
+              },
+              score: 0,
+              position: p.position || game.players.indexOf(p),
+              isReady: true,
+            }))}
+            currentTurn={-1}
+            currentUserId={getCurrentUserId() || undefined}
+          />
+        )}
+
+        {/* Loading Card */}
+        <div className="card text-center animate-scale-in">
+          <div className="flex flex-col items-center justify-center py-12">
+            <LoadingSpinner size="lg" />
+            <h3 className="text-2xl font-bold mt-6 mb-2">Starting Game...</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              {playerCount === 1 ? '🤖 Adding bot player...' : '🎲 Preparing the dice...'}
+            </p>
+            <div className="mt-6 flex items-center gap-2 text-sm text-gray-500">
+              <div className="animate-pulse">⏳</div>
+              <span>This will only take a moment</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">

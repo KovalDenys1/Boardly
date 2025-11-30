@@ -69,6 +69,7 @@ function LobbyPageContent() {
   const [game, setGame] = useState<Game | null>(null)
   const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
   const [loading, setLoading] = useState(true)
+  const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { celebrate, fireworks } = useConfetti()
@@ -292,6 +293,7 @@ function LobbyPageContent() {
     username,
     setError,
     setLoading,
+    setStartingGame,
   })
 
   // Update ref with loadLobby function
@@ -570,6 +572,7 @@ function LobbyPageContent() {
                   lobby={lobby}
                   gameEngine={gameEngine}
                   canStartGame={canStartGame}
+                  startingGame={startingGame}
                   onStartGame={handleStartGame}
                   onAddBot={handleAddBot}
                   getCurrentUserId={getCurrentUserId}

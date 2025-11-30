@@ -34,6 +34,7 @@ interface UseLobbyActionsProps {
   username: string
   setError: (error: string) => void
   setLoading: (loading: boolean) => void
+  setStartingGame: (starting: boolean) => void
 }
 
 export function useLobbyActions(props: UseLobbyActionsProps) {
@@ -57,6 +58,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     username,
     setError,
     setLoading,
+    setStartingGame,
   } = props
 
   const [password, setPassword] = useState('')
@@ -242,12 +244,18 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     if (!game) return
 
     try {
+      setStartingGame(true)
+      
       if ((game?.players?.length || 0) < 2) {
+        toast.loading('Adding bot player...', { id: 'add-bot' })
         const botAdded = await addBotToLobby({ auto: true })
+        toast.dismiss('add-bot')
         if (botAdded) {
           announceBotJoined()
         }
       }
+
+      toast.loading('Starting game...', { id: 'start-game' })
 
       const res = await fetch('/api/game/create', {
         method: 'POST',
@@ -296,6 +304,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
 
       toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
+      toast.dismiss('start-game')
 
       const gameStartMessage = {
         id: Date.now().toString() + '_gamestart',
@@ -313,10 +322,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       // Sound will play automatically via socket event handler
     } catch (error: any) {
+      toast.dismiss('start-game')
+      toast.dismiss('add-bot')
       toast.error(error.message || 'Failed to start game')
       clientLogger.error('Failed to start game:', error)
+    } finally {
+      setStartingGame(false)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages])
+  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame])
 
   return {
     loadLobby,
