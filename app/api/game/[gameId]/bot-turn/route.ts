@@ -176,6 +176,7 @@ export async function POST(
                 state: JSON.stringify(gameEngine.getState()),
                 status: gameEngine.getState().status,
                 currentTurn: gameEngine.getState().currentPlayerIndex,
+                lastMoveAt: new Date(),
                 updatedAt: new Date(),
               },
             }).catch(async (dbError) => {
@@ -188,6 +189,7 @@ export async function POST(
                   state: JSON.stringify(gameEngine.getState()),
                   status: gameEngine.getState().status,
                   currentTurn: gameEngine.getState().currentPlayerIndex,
+                  lastMoveAt: new Date(),
                   updatedAt: new Date(),
                 },
               })
