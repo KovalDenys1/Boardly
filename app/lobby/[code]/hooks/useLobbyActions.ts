@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
+import { getAuthHeaders } from '@/lib/socket-url'
 import toast from 'react-hot-toast'
 import type { Socket } from 'socket.io-client'
 
@@ -62,21 +63,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   } = props
 
   const [password, setPassword] = useState('')
-  const [previousGameState, setPreviousGameState] = useState<any>(null)
   
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
 
   const loadLobby = useCallback(async () => {
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (isGuest && guestId && guestName) {
-        headers['X-Guest-Id'] = guestId
-        headers['X-Guest-Name'] = guestName
-      }
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
       
       const res = await fetch(`/api/lobby/${code}`, { headers })
       const data = await res.json()
@@ -99,8 +92,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
             const engine = new YahtzeeGame(activeGame.id)
             engine.restoreState(parsedState)
             setGameEngine(engine)
-            
-            setPreviousGameState(parsedState)
           } catch (parseError) {
             clientLogger.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
@@ -339,6 +330,5 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     handleStartGame,
     password,
     setPassword,
-    previousGameState,
   }
 }

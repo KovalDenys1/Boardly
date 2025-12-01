@@ -86,7 +86,6 @@ function LobbyPageContent() {
   const [currentBotStepIndex, setCurrentBotStepIndex] = useState(0)
   const [botPlayerName, setBotPlayerName] = useState('')
   const [showingBotOverlay, setShowingBotOverlay] = useState(false)
-  const [previousGameState, setPreviousGameState] = useState<Record<string, unknown> | null>(null)
 
   // Roll history and celebrations - with localStorage persistence
   const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>(() => {
@@ -180,8 +179,6 @@ function LobbyPageContent() {
         }
         
         // Note: Bot move detection handled by bot-visualization.ts
-        
-        setPreviousGameState(parsedState)
       } catch (e) {
         clientLogger.error('Failed to parse game state:', e)
       }
@@ -197,11 +194,21 @@ function LobbyPageContent() {
     }
   }, [chatMinimized])
 
+  const typingTimeoutRef = React.useRef<NodeJS.Timeout>()
+  
   const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.userId !== currentUserId) {
       setSomeoneTyping(true)
-      setTimeout(() => setSomeoneTyping(false), 3000)
+      
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        setSomeoneTyping(false)
+      }, 3000)
     }
   }, [isGuest, guestId, session?.user?.id])
 
@@ -449,6 +456,7 @@ function LobbyPageContent() {
     setGameEngine,
     isGuest,
     guestId,
+    guestName,
     userId,
     username,
     isMyTurn: isMyTurn(),
@@ -492,21 +500,23 @@ function LobbyPageContent() {
 
   // Handle bot overlay progression
   useEffect(() => {
-    if (showingBotOverlay && botMoveSteps.length > 0) {
-      if (currentBotStepIndex < botMoveSteps.length - 1) {
-        const timer = setTimeout(() => {
-          setCurrentBotStepIndex(prev => prev + 1)
-        }, 2000)
-        return () => clearTimeout(timer)
-      } else {
-        const timer = setTimeout(() => {
-          setShowingBotOverlay(false)
-          setBotMoveSteps([])
-          setCurrentBotStepIndex(0)
-        }, 2500)
-        return () => clearTimeout(timer)
-      }
+    if (!showingBotOverlay || botMoveSteps.length === 0) return
+
+    let timer: NodeJS.Timeout
+    
+    if (currentBotStepIndex < botMoveSteps.length - 1) {
+      timer = setTimeout(() => {
+        setCurrentBotStepIndex(prev => prev + 1)
+      }, 2000)
+    } else {
+      timer = setTimeout(() => {
+        setShowingBotOverlay(false)
+        setBotMoveSteps([])
+        setCurrentBotStepIndex(0)
+      }, 2500)
     }
+    
+    return () => clearTimeout(timer)
   }, [showingBotOverlay, currentBotStepIndex, botMoveSteps])
 
   // Handle celebration detection on game updates
@@ -522,6 +532,15 @@ function LobbyPageContent() {
       }
     }
   }, [gameEngine, game])
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const handleLeaveLobby = () => {
     if (socket) {

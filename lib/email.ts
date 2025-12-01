@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { logger } from './logger'
 
 // Only initialize Resend if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -7,14 +8,14 @@ const FROM_EMAIL = process.env.EMAIL_FROM || 'Boardly <onboarding@resend.dev>'
 
 export async function sendVerificationEmail(email: string, token: string) {
   if (!resend) {
-    console.warn('RESEND_API_KEY not configured. Skipping email send.')
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
   const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
 
   try {
-    await resend!.emails.send({
+    await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Verify your email - Boardly',
@@ -51,21 +52,21 @@ export async function sendVerificationEmail(email: string, token: string) {
     })
     return { success: true }
   } catch (error) {
-    console.error('Failed to send verification email:', error)
-    return { success: false, error }
+    logger.error('Failed to send verification email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 
 export async function sendPasswordResetEmail(email: string, token: string) {
   if (!resend) {
-    console.warn('RESEND_API_KEY not configured. Skipping email send.')
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
 
   try {
-    await resend!.emails.send({
+    await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Reset your password - Boardly',
@@ -102,22 +103,22 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     })
     return { success: true }
   } catch (error) {
-    console.error('Failed to send password reset email:', error)
-    return { success: false, error }
+    logger.error('Failed to send password reset email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
 
-export async function sendWelcomeEmail(email: string, username: string) {
+export async function sendWelcomeEmail(email: string, name: string) {
   if (!resend) {
-    console.warn('RESEND_API_KEY not configured. Skipping email send.')
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
     return { success: false, error: 'Email service not configured' }
   }
 
   try {
-    await resend!.emails.send({
+    await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
-      subject: 'Welcome to Boardly! 🎉',
+      subject: 'Welcome to Boardly! 🎲',
       html: `
         <!DOCTYPE html>
         <html>
@@ -131,7 +132,7 @@ export async function sendWelcomeEmail(email: string, username: string) {
               <h1 style="color: white; margin: 0; font-size: 28px;">🎲 Boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-top: 0;">Welcome, ${username}! 🎉</h2>
+              <h2 style="color: #333; margin-top: 0;">Welcome, ${name}! 🎉</h2>
               <p>Your email has been verified successfully. You're all set to start playing!</p>
               <h3 style="color: #667eea;">What's next?</h3>
               <ul style="color: #666;">
@@ -156,7 +157,7 @@ export async function sendWelcomeEmail(email: string, username: string) {
     })
     return { success: true }
   } catch (error) {
-    console.error('Failed to send welcome email:', error)
-    return { success: false, error }
+    logger.error('Failed to send welcome email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }

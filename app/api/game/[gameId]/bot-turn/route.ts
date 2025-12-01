@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
-import { getServerSocketUrl } from '@/lib/socket-url'
+import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
@@ -127,24 +127,11 @@ export async function POST(
     }
 
     log.info('Verified it\'s bot\'s turn, executing...')
-
-    const socketUrl = getServerSocketUrl()
     
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: any) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: `lobby:${lobbyCode}`,
-          event: 'bot-action',
-          data: event,
-        }),
-        signal: AbortSignal.timeout(1000), // Reduced from 3s to 1s
-      }).catch(error => {
-        log.warn('Failed to broadcast bot action', { error })
-      })
+      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event)
     }
 
     // Execute bot's turn with visual feedback
@@ -237,21 +224,14 @@ export async function POST(
           
           // Broadcast state update after each move - fire-and-forget
           const currentState = gameEngine.getState()
-          fetch(`${socketUrl}/api/notify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              room: `lobby:${lobbyCode}`,
-              event: 'game-update',
-              data: {
-                action: 'state-change',
-                payload: currentState,
-              },
-            }),
-            signal: AbortSignal.timeout(1000), // Reduced from 3s to 1s
-          }).catch(error => {
-            log.warn('Failed to broadcast move update', { error })
-          })
+          await notifySocket(
+            `lobby:${lobbyCode}`,
+            'game-update',
+            {
+              action: 'state-change',
+              payload: currentState,
+            }
+          )
         } catch (error) {
           log.error('Error processing bot move', error as Error, { 
             moveType: botMove.type,

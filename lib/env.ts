@@ -5,6 +5,8 @@ import { z } from 'zod'
  * 
  * Validates that all required environment variables are set on startup.
  * This prevents runtime errors due to missing configuration.
+ * 
+ * Note: Uses console.* instead of logger because this runs before logger initialization
  */
 
 // Define the schema for environment variables

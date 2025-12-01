@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { headers } from 'next/headers'
+import { logger } from './logger'
 
 /**
  * CSRF Protection utility for Next.js API routes
@@ -51,7 +52,7 @@ export function verifyCsrfToken(request: NextRequest): boolean {
     if (process.env.NODE_ENV === 'development') {
       return true
     }
-    console.warn('CSRF check failed: No origin or referer header')
+    logger.warn('CSRF check failed: No origin or referer header')
     return false
   }
 
@@ -66,7 +67,7 @@ export function verifyCsrfToken(request: NextRequest): boolean {
   })
 
   if (!isAllowed) {
-    console.warn(`CSRF check failed: Origin ${requestOrigin} not in allowed list`)
+    logger.warn(`CSRF check failed: Origin ${requestOrigin} not in allowed list`)
   }
 
   return isAllowed

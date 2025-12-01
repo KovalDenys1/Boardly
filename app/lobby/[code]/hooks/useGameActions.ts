@@ -4,6 +4,7 @@ import { Move } from '@/lib/game-engine'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
+import { getAuthHeaders } from '@/lib/socket-url'
 import toast from 'react-hot-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
@@ -15,6 +16,7 @@ interface UseGameActionsProps {
   setGameEngine: (engine: YahtzeeGame | null) => void
   isGuest: boolean
   guestId: string
+  guestName: string
   userId: string | undefined
   username: string
   isMyTurn: boolean
@@ -34,6 +36,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setGameEngine,
     isGuest,
     guestId,
+    guestName,
     userId,
     username,
     isMyTurn,
@@ -109,10 +112,7 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (isGuest && guestId) {
-        headers['X-Guest-Id'] = guestId
-      }
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
       
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
@@ -191,7 +191,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -249,11 +249,8 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (isGuest && guestId) {
-        headers['X-Guest-Id'] = guestId
-      }
-
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers,
@@ -329,7 +326,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
 
   return {
     handleRollDice,
