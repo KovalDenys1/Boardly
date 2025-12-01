@@ -21,69 +21,71 @@ interface RollHistoryProps {
 export default function RollHistory({ entries, compact = false }: RollHistoryProps) {
   if (entries.length === 0) {
     return (
-      <div className="card p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 h-full flex flex-col">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg sm:text-xl">📜</span>
-          <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">Roll History</h3>
+          <span className="text-xl">📜</span>
+          <h3 className="font-bold text-base text-gray-900 dark:text-white">Roll History</h3>
         </div>
-        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-          No rolls yet. Start playing to see history!
-        </p>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            No rolls yet
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="card p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg sm:text-xl">📜</span>
-        <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white">Recent Rolls</h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          ({entries.length})
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 h-full flex flex-col">
+      <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+        <span className="text-xl">📜</span>
+        <h3 className="font-bold text-base text-gray-900 dark:text-white">Recent Rolls</h3>
+        <span className="text-xs px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-400">
+          {entries.length}
         </span>
       </div>
 
-      <div className="space-y-2 max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-2">
+      <div className="space-y-2 overflow-y-auto pr-1 flex-1">
         {entries.map((entry) => (
           <div
             key={entry.id}
             className={`
-              p-2 sm:p-3 rounded-lg transition-all
+              p-2.5 rounded-xl transition-all shadow-sm border-2
               ${
                 entry.isBot
-                  ? 'bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800'
-                  : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                  ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-purple-200 dark:border-purple-700'
+                  : 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-700'
               }
             `}
           >
             {/* Header */}
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg">{entry.isBot ? '🤖' : '🎲'}</span>
-                <span className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm">{entry.isBot ? '🤖' : '🎲'}</span>
+                <span className="font-bold text-xs text-gray-900 dark:text-white truncate">
                   {entry.playerName}
                 </span>
               </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 shrink-0">
-                T{entry.turnNumber} • R{entry.rollNumber}/3
+              <div className="text-xs px-1.5 py-0.5 bg-white/50 dark:bg-gray-900/50 rounded-full text-gray-700 dark:text-gray-300 shrink-0">
+                T{entry.turnNumber} • R{entry.rollNumber}
               </div>
             </div>
 
             {/* Dice Display */}
             <div className="flex items-center gap-2">
-              <div className="flex gap-1 flex-wrap">
+              <div className="flex gap-1 flex-wrap flex-1">
                 {entry.dice.map((die, index) => {
                   const isHeld = entry.held.includes(index)
                   return (
                     <div
                       key={index}
                       className={`
-                        w-7 h-7 sm:w-8 sm:h-8 rounded flex items-center justify-center
-                        text-xs sm:text-sm font-bold transition-all
+                        w-6 h-6 rounded-md flex items-center justify-center
+                        text-xs font-bold transition-all shadow-sm
                         ${
                           isHeld
-                            ? 'bg-yellow-400 dark:bg-yellow-500 text-gray-900 ring-2 ring-yellow-600 scale-105'
-                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600'
+                            ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-gray-900 ring-2 ring-yellow-600'
+                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-600'
                         }
                       `}
                     >
@@ -95,8 +97,9 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
 
               {/* Held indicator */}
               {entry.held.length > 0 && (
-                <div className="text-xs text-yellow-700 dark:text-yellow-400 font-medium shrink-0">
-                  🔒 {entry.held.length}
+                <div className="text-xs px-1.5 py-0.5 bg-yellow-500/20 dark:bg-yellow-500/30 rounded-lg text-yellow-800 dark:text-yellow-300 font-bold shrink-0 flex items-center gap-0.5">
+                  <span>🔒</span>
+                  <span>{entry.held.length}</span>
                 </div>
               )}
             </div>

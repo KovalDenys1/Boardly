@@ -158,7 +158,8 @@ export function useGameActions(props: UseGameActionsProps) {
           const categoryMap: Record<string, YahtzeeCategory> = {
             'yahtzee': 'yahtzee',
             'largeStraight': 'largeStraight',
-            'fullHouse': 'fullHouse'
+            'fullHouse': 'fullHouse',
+            'perfectRoll': 'fourOfKind' // Map perfectRoll (4 of a kind) to fourOfKind category
           }
           const category = categoryMap[celebration.type]
           
@@ -166,6 +167,11 @@ export function useGameActions(props: UseGameActionsProps) {
           if (!category || !scorecard || scorecard[category] === undefined) {
             setCelebrationEvent(celebration)
             celebrate() // Trigger confetti animation
+            
+            // Auto-clear celebration after 4 seconds
+            setTimeout(() => {
+              setCelebrationEvent(null)
+            }, 4000)
           }
         }
       }
@@ -270,11 +276,22 @@ export function useGameActions(props: UseGameActionsProps) {
       // Calculate score for celebration detection
       const scoredValue = calculateScore(gameEngine.getDice(), category)
       
+      // Get the NEW scorecard (after scoring) to verify category is now filled
+      const newScorecard = newEngine.getScorecard(userId || '')
+      
       // Check if this score deserves a celebration
-      const celebration = detectCelebration(gameEngine.getDice(), category, scoredValue)
-      if (celebration) {
-        setCelebrationEvent(celebration)
-        celebrate() // Trigger confetti for good scores
+      // Only celebrate if we just filled this category (it should now be defined in scorecard)
+      if (newScorecard && newScorecard[category] !== undefined) {
+        const celebration = detectCelebration(gameEngine.getDice(), category, scoredValue)
+        if (celebration) {
+          setCelebrationEvent(celebration)
+          celebrate() // Trigger confetti for good scores
+          
+          // Auto-clear celebration after 4 seconds
+          setTimeout(() => {
+            setCelebrationEvent(null)
+          }, 4000)
+        }
       }
 
       soundManager.play('score')

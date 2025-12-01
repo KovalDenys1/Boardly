@@ -108,16 +108,20 @@ export async function POST(
 
     // Verify it's the bot's turn
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
-    const currentPlayer = game.players[currentPlayerIndex]
+    const gamePlayers = gameEngine.getPlayers() // Use game engine's player order (sorted)
+    const currentPlayer = gamePlayers[currentPlayerIndex]
+    
+    // Find corresponding database player
+    const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
 
-    if (!currentPlayer || currentPlayer.userId !== botUserId) {
+    if (!dbCurrentPlayer || dbCurrentPlayer.userId !== botUserId) {
       log.warn('Not bot\'s turn', {
-        currentPlayer: currentPlayer?.userId,
+        currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
         expectedBot: botUserId
       })
       return NextResponse.json({ 
         error: 'Not bot\'s turn',
-        currentPlayer: currentPlayer?.userId,
+        currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
         expectedBot: botUserId
       }, { status: 400 })
     }
@@ -172,6 +176,7 @@ export async function POST(
                 state: JSON.stringify(gameEngine.getState()),
                 status: gameEngine.getState().status,
                 currentTurn: gameEngine.getState().currentPlayerIndex,
+                lastMoveAt: new Date(),
                 updatedAt: new Date(),
               },
             }).catch(async (dbError) => {
@@ -184,6 +189,7 @@ export async function POST(
                   state: JSON.stringify(gameEngine.getState()),
                   status: gameEngine.getState().status,
                   currentTurn: gameEngine.getState().currentPlayerIndex,
+                  lastMoveAt: new Date(),
                   updatedAt: new Date(),
                 },
               })

@@ -200,11 +200,15 @@ export async function POST(request: NextRequest) {
 
     // Check if first player is a bot and trigger bot turn
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
-    const currentPlayer = game.players[currentPlayerIndex]
+    const gamePlayers = gameEngine.getPlayers() // Use game engine's sorted players
+    const currentPlayer = gamePlayers[currentPlayerIndex]
     
-    if (currentPlayer && BotMoveExecutor.isBot(currentPlayer)) {
+    // Find the corresponding database player
+    const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
+    
+    if (dbCurrentPlayer && BotMoveExecutor.isBot(dbCurrentPlayer)) {
       const log = apiLogger('POST /api/game/create')
-      log.info('First player is a bot, triggering bot turn...', { botUserId: currentPlayer.userId })
+      log.info('First player is a bot, triggering bot turn...', { botUserId: dbCurrentPlayer.userId })
       
       // Trigger bot turn via separate HTTP request (fire and forget)
       const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
@@ -219,7 +223,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          botUserId: currentPlayer.userId,
+          botUserId: dbCurrentPlayer.userId,
           lobbyCode: lobby.code,
         }),
         signal: controller.signal,

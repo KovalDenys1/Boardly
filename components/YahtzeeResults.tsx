@@ -25,19 +25,20 @@ export default function YahtzeeResults({
   const isWinner = winner.playerId === currentUserId
   
   return (
-    <div className="card text-center animate-scale-in max-w-4xl mx-auto">
-      {/* Header Section */}
-      <div className="mb-6">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in shadow-2xl">
-          <span className="text-6xl">🏆</span>
+    <div className="fixed inset-0 top-20 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="card text-center animate-scale-in max-w-4xl mx-auto my-4">
+        {/* Header Section */}
+        <div className="mb-6">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in shadow-2xl">
+            <span className="text-6xl">🏆</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+            Game Over!
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
+            13 rounds completed • {results.length} {results.length === 1 ? 'player' : 'players'}
+          </p>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
-          Game Over!
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
-          13 rounds completed • {results.length} {results.length === 1 ? 'player' : 'players'}
-        </p>
-      </div>
       
       {/* Winner Spotlight */}
       <div className="mb-8 p-4 sm:p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl border-4 border-yellow-400 dark:border-yellow-600 shadow-xl">
@@ -192,6 +193,7 @@ export default function YahtzeeResults({
           <span className="text-xl">↩️</span>
           <span>Back to Lobbies</span>
         </button>
+      </div>
       </div>
     </div>
   )

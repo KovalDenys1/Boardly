@@ -6,7 +6,12 @@ import Header from '@/components/Header'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.boardly.online'),
@@ -87,9 +92,21 @@ export default function RootLayout({
     }
   }
 
+  const isProduction = process.env.NODE_ENV === 'production'
+
   return (
     <html lang="en">
       <head>
+        {/* Preconnect to external domains */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {isProduction && (
+          <>
+            <link rel="preconnect" href="https://vitals.vercel-insights.com" />
+            <link rel="preconnect" href="https://va.vercel-scripts.com" />
+          </>
+        )}
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -100,8 +117,12 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
         </Providers>
-        <SpeedInsights />
-        <Analytics />
+        {isProduction && (
+          <>
+            <SpeedInsights />
+            <Analytics />
+          </>
+        )}
       </body>
     </html>
   )

@@ -108,6 +108,7 @@ model Game {
   state     String   @db.Text // JSON string with game state
   status    String   @default("waiting") // waiting, playing, finished
   currentTurn Int    @default(0)
+  lastMoveAt DateTime @default(now()) // Track when last move was made for timer
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   players   Player[]

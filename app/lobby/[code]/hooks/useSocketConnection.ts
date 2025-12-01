@@ -177,6 +177,8 @@ export function useSocketConnection({
         newSocket.close()
       }
     }
+  // session?.user?.id is accessed directly in the effect, no need to add session itself
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, isGuest, guestId, guestName, session?.user?.id])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {

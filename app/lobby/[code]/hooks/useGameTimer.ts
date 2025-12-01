@@ -46,15 +46,31 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
     if (isMyTurn) {
       setTimerActive(true)
       
-      // Only reset timer if turn changed
-      if (turnChanged) {
+      // Calculate remaining time from lastMoveAt if available
+      const lastMoveAt = gameState.lastMoveAt
+      if (lastMoveAt && typeof lastMoveAt === 'number') {
+        const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
+        const remainingTime = Math.max(0, 60 - elapsedSeconds)
+        
         if (isInitialLoad) {
-          clientLogger.log('🔄 Initial load - my turn, starting timer at 60s')
-          setTimeLeft(60)
+          clientLogger.log('🔄 Initial load - my turn, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
+          setTimeLeft(remainingTime)
           setIsInitialLoad(false)
-        } else {
-          clientLogger.log('🔄 Turn changed to me, resetting timer to 60s')
-          setTimeLeft(60)
+        } else if (turnChanged) {
+          clientLogger.log('🔄 Turn changed to me, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
+          setTimeLeft(remainingTime)
+        }
+      } else {
+        // Fallback to 60s if no lastMoveAt (shouldn't happen after migration)
+        if (turnChanged) {
+          if (isInitialLoad) {
+            clientLogger.log('🔄 Initial load - my turn, starting timer at 60s (no lastMoveAt)')
+            setTimeLeft(60)
+            setIsInitialLoad(false)
+          } else {
+            clientLogger.log('🔄 Turn changed to me, resetting timer to 60s (no lastMoveAt)')
+            setTimeLeft(60)
+          }
         }
       }
     } else {

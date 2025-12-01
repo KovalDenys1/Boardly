@@ -57,11 +57,15 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
       aria-pressed={held}
       className={`
-        relative w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 rounded-xl shadow-lg transition-all duration-200
-        ${held ? 'bg-blue-500 border-4 border-blue-600 scale-95' : 'bg-white border-4 border-gray-800 hover:scale-105 active:scale-95'}
+        relative w-16 h-16 md:w-20 md:h-20 rounded-xl shadow-lg transition-all duration-200
+        ${held 
+          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 border-4 border-yellow-600 scale-95 ring-4 ring-yellow-300' 
+          : 'bg-white dark:bg-gray-100 border-4 border-gray-800 dark:border-gray-700 hover:scale-105 hover:shadow-xl active:scale-95'
+        }
         ${isRolling ? 'animate-shake-roll' : ''}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none
+        transform-gpu
       `}
       key={animationKey}
     >
@@ -69,15 +73,15 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       {getDotPositions(value).map((position, index) => (
         <div
           key={`${position}-${index}`}
-          className={`absolute w-3 h-3 md:w-4 md:h-4 rounded-full ${
-            held ? 'bg-white' : 'bg-gray-800'
+          className={`absolute w-3 h-3 md:w-4 md:h-4 rounded-full shadow-md ${
+            held ? 'bg-gray-900' : 'bg-gray-900 dark:bg-gray-800'
           } ${dotClasses[position]}`}
         />
       ))}
       
       {/* Held indicator */}
       {held && (
-        <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+        <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white text-base font-bold shadow-lg border-2 border-white">
           🔒
         </div>
       )}

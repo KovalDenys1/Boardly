@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import toast from 'react-hot-toast'
 import PlayerList from '@/components/PlayerList'
+import Scorecard from '@/components/Scorecard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { soundManager } from '@/lib/sounds'
@@ -69,13 +70,14 @@ function LobbyPageContent() {
   const [game, setGame] = useState<Game | null>(null)
   const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
   const [loading, setLoading] = useState(true)
+  const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { celebrate, fireworks } = useConfetti()
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
-  const [chatMinimized, setChatMinimized] = useState(false)
+  const [chatMinimized, setChatMinimized] = useState(true) // Чат свёрнут по умолчанию
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
 
@@ -86,9 +88,44 @@ function LobbyPageContent() {
   const [showingBotOverlay, setShowingBotOverlay] = useState(false)
   const [previousGameState, setPreviousGameState] = useState<Record<string, unknown> | null>(null)
 
-  // Roll history and celebrations
-  const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>([])
+  // Roll history and celebrations - with localStorage persistence
+  const [rollHistory, setRollHistory] = useState<RollHistoryEntry[]>(() => {
+    // Load from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`rollHistory_${code}`)
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (e) {
+          clientLogger.error('Failed to parse saved roll history:', e)
+        }
+      }
+    }
+    return []
+  })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
+
+  // Selected player for viewing their scorecard
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+
+  // Persist roll history to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && rollHistory.length > 0) {
+      localStorage.setItem(`rollHistory_${code}`, JSON.stringify(rollHistory))
+    }
+  }, [rollHistory, code])
+
+  // Clear roll history from localStorage when game finishes
+  useEffect(() => {
+    if (gameEngine?.isGameFinished() && typeof window !== 'undefined') {
+      localStorage.removeItem(`rollHistory_${code}`)
+    }
+  }, [gameEngine, code])
+
+  // Sync soundEnabled state with soundManager on mount
+  useEffect(() => {
+    setSoundEnabled(soundManager.isEnabled())
+  }, [])
 
   // Helper functions
   const getCurrentUserId = useCallback(() => {
@@ -292,6 +329,7 @@ function LobbyPageContent() {
     username,
     setError,
     setLoading,
+    setStartingGame,
   })
 
   // Update ref with loadLobby function
@@ -370,12 +408,22 @@ function LobbyPageContent() {
       })
       
       const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
-      const diceDisplay = finalDice.join(', ')
       
-      toast.error(
-        `⏰ Time's up! Auto-scored ${displayName} [${diceDisplay}] = ${score} pts`,
-        { duration: 5000 }
-      )
+      // Show friendly toast message without dice array
+      if (score === 0) {
+        toast.error(
+          `⏰ Time's up! Scored 0 points in ${displayName}`,
+          { duration: 4000 }
+        )
+      } else {
+        toast(
+          `⏰ Time's up! Scored ${score} points in ${displayName}`,
+          { 
+            duration: 4000,
+            icon: '⏱️',
+          }
+        )
+      }
       
       try {
         await handleScoreRef.current(bestCategory)
@@ -534,111 +582,267 @@ function LobbyPageContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="mb-6">
-        <LobbyInfo
+      {/* Показываем информацию о лобби только если игра не началась */}
+      {!isGameStarted && (
+        <div className="mb-6">
+          <LobbyInfo
+            lobby={lobby}
+            soundEnabled={soundEnabled}
+            onSoundToggle={() => {
+              soundManager.toggle()
+              setSoundEnabled(soundManager.isEnabled())
+              toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
+            }}
+            onLeave={handleLeaveLobby}
+          />
+        </div>
+      )}
+
+      {!isInGame ? (
+        <JoinPrompt
           lobby={lobby}
-          soundEnabled={soundEnabled}
-          onSoundToggle={() => {
-            soundManager.toggle()
-            setSoundEnabled(soundManager.isEnabled())
-            toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
-          }}
-          onLeave={handleLeaveLobby}
+          password={password}
+          setPassword={setPassword}
+          error={error}
+          onJoin={handleJoinLobby}
         />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* Main Game Area - 3 columns */}
-        <div className="lg:col-span-3 space-y-4">
-          {!isInGame ? (
-            <JoinPrompt
-              lobby={lobby}
-              password={password}
-              setPassword={setPassword}
-              error={error}
-              onJoin={handleJoinLobby}
+      ) : !isGameStarted ? (
+        // Waiting Room - Centered Layout
+        <WaitingRoom
+          game={game}
+          lobby={lobby}
+          gameEngine={gameEngine}
+          canStartGame={canStartGame}
+          startingGame={startingGame}
+          onStartGame={handleStartGame}
+          onAddBot={handleAddBot}
+          getCurrentUserId={getCurrentUserId}
+        />
+      ) : (
+        // Game Started - ABSOLUTE NO SCROLL - Fixed viewport
+        <div className="fixed inset-0 top-20 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
+          {gameEngine?.isGameFinished() ? (
+            <YahtzeeResults
+              results={analyzeResults(
+                gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
+                (id) => gameEngine.getScorecard(id)
+              )}
+              currentUserId={getCurrentUserId() || null}
+              canStartGame={!!canStartGame}
+              onPlayAgain={handleStartGame}
+              onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
-          ) : (
+          ) : gameEngine ? (
             <>
-              {/* Game States */}
-              {!isGameStarted ? (
-                <WaitingRoom
-                  game={game}
-                  lobby={lobby}
-                  gameEngine={gameEngine}
-                  canStartGame={canStartGame}
-                  onStartGame={handleStartGame}
-                  onAddBot={handleAddBot}
-                  getCurrentUserId={getCurrentUserId}
-                />
-              ) : gameEngine?.isGameFinished() ? (
-                <YahtzeeResults
-                  results={analyzeResults(
-                    gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
-                    (id) => gameEngine.getScorecard(id)
+              {/* Top Status Bar - Without Timer */}
+              <div className="flex-shrink-0 mb-4 px-4">
+                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-xl px-5 py-3 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🎯</span>
+                        <div>
+                          <div className="text-xs opacity-75">Round</div>
+                          <div className="text-lg font-bold leading-none">
+                            {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1}/13
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-8 w-px bg-white/30"></div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">👤</span>
+                        <div>
+                          <div className="text-xs opacity-75">Turn</div>
+                          <div className="text-lg font-bold leading-none truncate max-w-[150px]">
+                            {gameEngine.getCurrentPlayer()?.name || 'Player'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-8 w-px bg-white/30"></div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🏆</span>
+                        <div>
+                          <div className="text-xs opacity-75">Your Score</div>
+                          <div className="text-lg font-bold leading-none">
+                            {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          const newState = soundManager.toggle()
+                          setSoundEnabled(newState)
+                          toast.success(newState ? '🔊 Sound enabled' : '🔇 Sound disabled', {
+                            duration: 2000,
+                            position: 'top-center',
+                          })
+                        }}
+                        aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-lg font-medium flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+                      >
+                        <span className="text-xl">{soundEnabled ? '🔊' : '🔇'}</span>
+                        <span className="hidden sm:inline text-sm">Sound</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to leave the game?')) {
+                            handleLeaveLobby()
+                          }
+                        }}
+                        aria-label="Leave game"
+                        className="px-4 py-2 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-sm flex items-center gap-2 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      >
+                        <span className="text-lg">🚪</span>
+                        <span>Leave</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Game Area - More spacing between columns */}
+              <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 overflow-hidden">
+                {/* Left: Dice Controls - 3 columns, Fixed Height */}
+                <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+                  <GameBoard
+                    gameEngine={gameEngine}
+                    game={game}
+                    isMyTurn={isMyTurn()}
+                    timeLeft={timeLeft}
+                    isMoveInProgress={isMoveInProgress}
+                    isRolling={isRolling}
+                    isScoring={isScoring}
+                    celebrationEvent={celebrationEvent}
+                    held={held}
+                    getCurrentUserId={getCurrentUserId}
+                    onRollDice={handleRollDice}
+                    onToggleHold={handleToggleHold}
+                    onScore={handleScore}
+                    onCelebrationComplete={() => setCelebrationEvent(null)}
+                  />
+                </div>
+
+                {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
+                <div className="lg:col-span-6 h-full overflow-hidden">
+                  {(() => {
+                    // Show selected player's scorecard or current player's scorecard
+                    const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
+                    const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
+                    const isViewingOtherPlayer = selectedPlayerId && selectedPlayerId !== getCurrentUserId()
+                    
+                    if (!scorecard) return null
+                    
+                    return (
+                      <div className="h-full flex flex-col">
+                        {/* Header showing whose scorecard is being viewed */}
+                        {isViewingOtherPlayer && (
+                          <div className="flex-shrink-0 mb-2 px-4">
+                            <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl px-4 py-2 border-2 border-purple-300 dark:border-purple-600 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">👁️</span>
+                                <span className="font-bold text-sm text-purple-900 dark:text-purple-200">
+                                  Viewing: {(() => {
+                                    const dbPlayer = game?.players?.find((p: any) => p.userId === selectedPlayerId)
+                                    if (!dbPlayer) return 'Player'
+                                    const name = (dbPlayer as any).user?.name || (dbPlayer as any).user?.username
+                                    return name || 'Player'
+                                  })()}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => setSelectedPlayerId(null)}
+                                className="text-xs px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                              >
+                                Back to My Cards
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex-1 min-h-0">
+                          <Scorecard
+                            scorecard={scorecard}
+                            currentDice={gameEngine.getDice()}
+                            onSelectCategory={handleScore}
+                            canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
+                            isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+                            isLoading={isScoring}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+
+                {/* Right: Players & History - 3 columns, Internal Scroll Only */}
+                <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
+                  {/* Players List - Fixed Height */}
+                  <div className="flex-shrink-0 max-h-[40%] overflow-y-auto">
+                    <PlayerList
+                      players={game?.players?.map((p: any) => {
+                        // Find the player's actual position in the game engine
+                        const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
+                        const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
+                        
+                        return {
+                          id: p.id,
+                          userId: p.userId,
+                          user: p.user,
+                          score: enginePlayer?.score || 0,
+                          position: actualPosition, // Use position from game engine, not DB
+                          isReady: true,
+                        }
+                      }) || []}
+                      currentTurn={gameEngine.getState().currentPlayerIndex}
+                      currentUserId={getCurrentUserId()}
+                      onPlayerClick={(userId) => {
+                        // Toggle selection: if clicking same player, deselect; otherwise select
+                        setSelectedPlayerId(prev => prev === userId ? null : userId)
+                      }}
+                      selectedPlayerId={selectedPlayerId || undefined}
+                    />
+                  </div>
+
+                  {/* Roll History - Takes remaining space with internal scroll */}
+                  {rollHistory.length > 0 && (
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <RollHistory entries={rollHistory} />
+                    </div>
                   )}
-                  currentUserId={getCurrentUserId() || null}
-                  canStartGame={!!canStartGame}
-                  onPlayAgain={handleStartGame}
-                  onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+                </div>
+              </div>
+
+              {/* Chat - Minimized Button */}
+              {isInGame && (
+                <Chat
+                  messages={chatMessages}
+                  onSendMessage={(message) => {
+                    emitWhenConnected('send-chat-message', {
+                      lobbyCode: code,
+                      message,
+                      userId: getCurrentUserId(),
+                      username: getCurrentUserName(),
+                    })
+                  }}
+                  currentUserId={getCurrentUserId()}
+                  isMinimized={chatMinimized}
+                  onToggleMinimize={() => {
+                    setChatMinimized(!chatMinimized)
+                    if (chatMinimized) {
+                      setUnreadMessageCount(0)
+                    }
+                  }}
+                  unreadCount={unreadMessageCount}
+                  someoneTyping={someoneTyping}
                 />
-              ) : gameEngine ? (
-                <GameBoard
-                  gameEngine={gameEngine}
-                  game={game}
-                  isMyTurn={isMyTurn()}
-                  timeLeft={timeLeft}
-                  isMoveInProgress={isMoveInProgress}
-                  isRolling={isRolling}
-                  isScoring={isScoring}
-                  celebrationEvent={celebrationEvent}
-                  held={held}
-                  getCurrentUserId={getCurrentUserId}
-                  onRollDice={handleRollDice}
-                  onToggleHold={handleToggleHold}
-                  onScore={handleScore}
-                  onCelebrationComplete={() => setCelebrationEvent(null)}
-                />
-              ) : null}
+              )}
             </>
-          )}
+          ) : null}
         </div>
-
-        {/* Sidebar - 1 column */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Roll History */}
-          {isGameStarted && rollHistory.length > 0 && (
-            <RollHistory
-              entries={rollHistory}
-            />
-          )}
-
-          {/* Chat */}
-          {isInGame && (
-            <Chat
-              messages={chatMessages}
-              onSendMessage={(message) => {
-                emitWhenConnected('send-chat-message', {
-                  lobbyCode: code,
-                  message,
-                  userId: getCurrentUserId(),
-                  username: getCurrentUserName(),
-                })
-              }}
-              currentUserId={getCurrentUserId()}
-              isMinimized={chatMinimized}
-              onToggleMinimize={() => {
-                setChatMinimized(!chatMinimized)
-                if (chatMinimized) {
-                  setUnreadMessageCount(0)
-                }
-              }}
-              unreadCount={unreadMessageCount}
-              someoneTyping={someoneTyping}
-            />
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Bot Move Overlay */}
       {showingBotOverlay && botMoveSteps.length > 0 && (

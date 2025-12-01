@@ -21,6 +21,7 @@ export interface GameState<TGameData = unknown> {
   status: 'waiting' | 'playing' | 'finished';
   winner?: string;
   data: TGameData; // Game-specific state
+  lastMoveAt?: number; // Timestamp of last move for timer calculation
   createdAt: Date;
   updatedAt: Date;
 }
@@ -130,6 +131,7 @@ export abstract class GameEngine {
 
   private nextPlayer(): void {
     this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % this.state.players.length;
+    this.state.lastMoveAt = Date.now(); // Track when turn changed
   }
 
   getState(): GameState {

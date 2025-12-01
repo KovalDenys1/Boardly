@@ -91,27 +91,27 @@ function getCategoryState(
 // Styling configuration for each category state
 const stateStyles: Record<CategoryState, { container: string; score: string; icon: string | null }> = {
   'high-value': {
-    container: 'border-2 border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 cursor-pointer shadow-md transition-all duration-200',
-    score: 'text-green-600 dark:text-green-400 font-bold text-xl',
+    container: 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 border-l-4 border-green-500 cursor-pointer transform hover:scale-[1.02] transition-all duration-200',
+    score: 'text-green-600 dark:text-green-400 font-bold text-base',
     icon: '⭐'
   },
   'low-value': {
-    container: 'border-2 border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/10 hover:bg-blue-100 dark:hover:bg-blue-900/20 cursor-pointer transition-all duration-200',
-    score: 'text-blue-600 dark:text-blue-400 font-semibold text-lg',
+    container: 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 hover:from-blue-100 hover:to-cyan-100 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20 border-l-4 border-blue-400 cursor-pointer transform hover:scale-[1.02] transition-all duration-200',
+    score: 'text-blue-600 dark:text-blue-400 font-semibold',
     icon: null
   },
   'sacrifice': {
-    container: 'border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/10 hover:bg-gray-100 dark:hover:bg-gray-900/20 cursor-pointer transition-all duration-200',
-    score: 'text-gray-600 dark:text-gray-400 font-semibold text-lg',
+    container: 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/10 dark:to-slate-900/10 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-900/20 dark:hover:to-slate-900/20 border-l-4 border-gray-400 cursor-pointer transform hover:scale-[1.02] transition-all duration-200',
+    score: 'text-gray-600 dark:text-gray-400 font-semibold',
     icon: null
   },
   'filled': {
-    container: 'bg-gray-100 dark:bg-gray-800 cursor-default opacity-80',
-    score: 'text-green-600 dark:text-green-400 font-bold text-lg',
+    container: 'bg-gradient-to-r from-gray-100 to-slate-100 dark:from-gray-800 dark:to-slate-800 border-l-4 border-gray-300 dark:border-gray-600 cursor-default opacity-80',
+    score: 'text-green-600 dark:text-green-400 font-bold',
     icon: '✓'
   },
   'disabled': {
-    container: 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed opacity-40',
+    container: 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed opacity-40',
     score: 'text-gray-400',
     icon: null
   }
@@ -155,20 +155,14 @@ const Scorecard = React.memo(function Scorecard({
         disabled={state === 'filled' || state === 'disabled' || isLoading}
         aria-label={`${categoryLabels[category]}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
         aria-disabled={state === 'filled' || state === 'disabled'}
-        className={`scorecard-row group relative ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none`}
+        className={`group relative w-full px-4 py-2.5 flex items-center justify-between rounded-xl transition-all ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none shadow-md hover:shadow-lg`}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="font-medium text-sm md:text-base shrink-0">
-            {categoryLabels[category]}
-          </span>
-          {state !== 'filled' && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 hidden lg:inline truncate">
-              {categoryDescriptions[category]}
-            </span>
-          )}
-        </div>
+        <span className="font-semibold text-sm flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-base shrink-0">{categoryLabels[category].split(' ')[0]}</span>
+          <span className="truncate">{categoryLabels[category].split(' ').slice(1).join(' ')}</span>
+        </span>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 shrink-0 ml-3">
           {isLoading ? (
             <svg className="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -176,21 +170,20 @@ const Scorecard = React.memo(function Scorecard({
             </svg>
           ) : state === 'filled' ? (
             <>
-              <span className={styles.score}>{filledScore}</span>
-              <span className="text-lg">{styles.icon}</span>
+              <span className="text-sm opacity-75">{styles.icon}</span>
+              <span className={`${styles.score} text-lg font-bold`}>{filledScore}</span>
             </>
           ) : state !== 'disabled' && potentialScore !== null ? (
             <>
-              {styles.icon && <span className="text-xl animate-pulse">{styles.icon}</span>}
-              <span className={`${styles.score} group-hover:scale-110 transition-transform`}>
-                {state === 'sacrifice' ? '0' : `+${potentialScore}`}
+              <span className={`${styles.score} group-hover:scale-110 transition-all text-lg font-bold`}>
+                +{potentialScore}
               </span>
               {category === 'yahtzee' && potentialScore === 50 && (
                 <span className="text-xl animate-bounce">🎯</span>
               )}
             </>
           ) : (
-            <span className={styles.score}>—</span>
+            <span className={`${styles.score} text-base opacity-50`}>—</span>
           )}
         </div>
       </button>
@@ -203,73 +196,103 @@ const Scorecard = React.memo(function Scorecard({
   const total = upperTotal + bonus + lowerTotal
 
   return (
-    <div className={`card animate-fade-in ${
+    <div className={`h-full flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${
       !isCurrentPlayer ? 'opacity-90' : ''
     }`}>
-      {/* Viewing Overlay for Other Players */}
+      {/* Header - only if view-only */}
       {!isCurrentPlayer && (
-        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">👀</span>
-            <div>
-              <p className="font-bold text-yellow-700 dark:text-yellow-300">View Only Mode</p>
-              <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                You are viewing another player's scorecard. Switch to yours to make selections.
-              </p>
-            </div>
-          </div>
+        <div className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 border-b border-yellow-300 dark:border-yellow-600">
+          <p className="text-xs text-yellow-800 dark:text-yellow-300 font-medium flex items-center gap-2">
+            <span className="text-sm">👀</span>
+            View Only
+          </p>
         </div>
       )}
 
-      {/* Upper Section */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2 text-blue-600 dark:text-blue-400">
-          Upper Section
-        </h3>
-        <div className="border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          {upperSection.map(renderCategory)}
-          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 border-t-2 border-gray-200 dark:border-gray-600">
-            <span className="font-semibold">Subtotal</span>
-            <span className="font-bold">{upperTotal}</span>
-          </div>
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border-t border-gray-200 dark:border-gray-600">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold">
-                Bonus {upperTotal >= 63 ? '✓' : ''}
-              </span>
-              <span className={`font-bold ${bonus > 0 ? 'text-green-600 dark:text-green-400' : ''}`}>
-                {bonus > 0 ? `+${bonus}` : `${upperTotal}/63`}
-              </span>
+      {/* TWO COLUMN LAYOUT - ADAPTIVE WITH SCROLL */}
+      <div className="flex-1 overflow-hidden p-4 sm:p-5">
+        <div className="h-full grid grid-cols-2 gap-3 sm:gap-5">
+          {/* LEFT COLUMN: Upper Section */}
+          <div className="flex flex-col min-h-0">
+            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+              <span className="text-lg sm:text-xl">🎯</span>
+              <h3 className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400">
+                Upper Section
+              </h3>
             </div>
-            {bonus === 0 && (
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    upperTotal >= 50 ? 'bg-green-500' : upperTotal >= 30 ? 'bg-yellow-500' : 'bg-blue-500'
-                  }`}
-                  style={{ width: `${Math.min(100, (upperTotal / 63) * 100)}%` }}
-                />
+            
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Categories with scroll */}
+              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly">
+                {upperSection.map(renderCategory)}
               </div>
-            )}
+              
+              {/* Subtotal & Bonus - at bottom */}
+              <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 flex-shrink-0">
+                <div className="flex justify-between items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <span className="font-semibold text-xs text-gray-700 dark:text-gray-300">Subtotal</span>
+                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">{upperTotal}</span>
+                </div>
+                
+                <div className="p-2 sm:p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-xl border-2 border-yellow-300 dark:border-yellow-700 h-[72px]">
+                  <div className="flex justify-between items-center mb-1 sm:mb-2">
+                    <span className="font-bold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 text-yellow-800 dark:text-yellow-300">
+                      <span className="text-sm sm:text-base">🎁</span>
+                      Bonus {upperTotal >= 63 && <span className="text-green-500">✓</span>}
+                    </span>
+                    <span className={`font-bold text-sm sm:text-base ${bonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {bonus > 0 ? `+${bonus}` : `${upperTotal}/63`}
+                    </span>
+                  </div>
+                  {bonus === 0 && (
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 sm:h-2 overflow-hidden shadow-inner">
+                      <div 
+                        className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 shadow-sm ${
+                          upperTotal >= 50 ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 
+                          upperTotal >= 30 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 
+                          'bg-gradient-to-r from-blue-400 to-cyan-500'
+                        }`}
+                        style={{ width: `${Math.min(100, (upperTotal / 63) * 100)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Lower Section */}
+          <div className="flex flex-col min-h-0">
+            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+              <span className="text-lg sm:text-xl">🎲</span>
+              <h3 className="text-xs sm:text-sm font-bold text-purple-600 dark:text-purple-400">
+                Lower Section
+              </h3>
+            </div>
+            
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Categories with scroll */}
+              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly">
+                {lowerSection.map(renderCategory)}
+              </div>
+              
+              {/* Empty space to align with Bonus */}
+              <div className="mt-2 sm:mt-3 flex-shrink-0 h-[72px]">
+                {/* Empty space matching Bonus height */}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Lower Section */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2 text-purple-600 dark:text-purple-400">
-          Lower Section
-        </h3>
-        <div className="border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          {lowerSection.map(renderCategory)}
-        </div>
-      </div>
-
-      {/* Total */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-lg shadow-lg">
+      {/* Fixed Total at Bottom */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white px-4 sm:px-5 py-2.5 sm:py-3 shadow-lg">
         <div className="flex justify-between items-center">
-          <span className="text-xl font-bold">🏆 Total Score</span>
-          <span className="text-3xl font-bold">{total}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl">🏆</span>
+            <span className="text-sm sm:text-base font-bold">Grand Total</span>
+          </div>
+          <span className="text-2xl sm:text-3xl font-bold tracking-tight">{total}</span>
         </div>
       </div>
     </div>

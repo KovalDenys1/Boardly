@@ -33,6 +33,7 @@ export default function Chat({
   const [newMessage, setNewMessage] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const chatRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -41,6 +42,22 @@ export default function Chat({
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Close chat when clicking outside
+  useEffect(() => {
+    if (isMinimized) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (chatRef.current && !chatRef.current.contains(event.target as Node)) {
+        onToggleMinimize?.()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMinimized, onToggleMinimize])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value)
@@ -77,7 +94,7 @@ export default function Chat({
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-50 animate-bounce-in">
+      <div className="fixed bottom-6 right-6 z-50 animate-bounce-in">
         <button
           onClick={onToggleMinimize}
           aria-label={`Open chat. ${unreadCount > 0 ? `${unreadCount} unread messages` : 'No unread messages'}`}
@@ -95,7 +112,10 @@ export default function Chat({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md lg:max-w-lg h-[70vh] max-h-[600px] sm:h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col animate-slide-up">
+    <div 
+      ref={chatRef}
+      className="fixed bottom-6 right-6 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md lg:max-w-lg h-[70vh] max-h-[600px] sm:h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col animate-slide-up"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl">
         <div className="flex items-center gap-3">

@@ -6,6 +6,7 @@ interface Player {
   id: string
   userId: string
   user: {
+    name?: string | null
     username: string | null
     email: string | null
     isBot?: boolean
@@ -19,10 +20,18 @@ interface PlayerListProps {
   players: Player[]
   currentTurn: number
   currentUserId?: string
+  onPlayerClick?: (userId: string) => void
+  selectedPlayerId?: string
 }
 
-const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId }: PlayerListProps) {
-  const sortedPlayers = [...players].sort((a, b) => a.position - b.position)
+const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, selectedPlayerId }: PlayerListProps) {
+  // Sort by score (descending), then by position (ascending) if scores are equal
+  const sortedPlayers = [...players].sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score // Higher score first
+    }
+    return a.position - b.position // If scores equal, use original position
+  })
   const [prevScores, setPrevScores] = useState<Record<string, number>>({})
   const [animatingScores, setAnimatingScores] = useState<Record<string, boolean>>({})
 
@@ -52,74 +61,88 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
   }, [players.map(p => p.score).join(',')]) // Track score changes
 
   return (
-    <div className="card animate-fade-in">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">👥 Players</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in">
+      <h2 className="text-base font-bold mb-3 flex items-center gap-2">
+        <span className="text-xl">👥</span>
+        <span>Players</span>
+        {onPlayerClick && (
+          <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">
+            Click to view cards
+          </span>
+        )}
+      </h2>
       <div className="space-y-2">
         {sortedPlayers.map((player, index) => {
-          const isCurrentTurn = index === currentTurn
+          // Use player.position (actual game index) instead of sorted index
+          const isCurrentTurn = player.position === currentTurn
           const isCurrentUser = player.userId === currentUserId
+          const isSelected = selectedPlayerId === player.userId
           const isBot = player.user.isBot === true
           const playerName = isBot 
             ? '🤖 AI Bot' 
-            : player.user.username || player.user.email || 'Player'
+            : player.user.name || player.user.username || player.user.email || 'Player'
 
           return (
-            <div
+            <button
               key={player.id}
+              onClick={() => onPlayerClick?.(player.userId)}
               className={`
-                p-3 sm:p-4 rounded-lg border-2 transition-all duration-200
+                w-full text-left p-2.5 rounded-xl transition-all duration-200 shadow-sm
                 ${isCurrentTurn 
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg scale-105 animate-pulse' 
-                  : 'border-gray-200 dark:border-gray-700'
+                  ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md transform scale-[1.02]' 
+                  : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent'
                 }
-                ${isCurrentUser ? 'ring-2 ring-green-500' : ''}
-                ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20' : ''}
+                ${isCurrentUser ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-800' : ''}
+                ${isSelected ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-gray-800' : ''}
+                ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30' : ''}
+                ${onPlayerClick ? 'cursor-pointer hover:scale-[1.03] hover:shadow-lg' : ''}
               `}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  {/* Position Badge */}
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  {/* Position Badge - Shows current rank by score */}
                   <div className={`
-                    w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-white text-sm sm:text-base shrink-0
-                    ${index === 0 ? 'bg-yellow-500' : ''}
-                    ${index === 1 ? 'bg-gray-400' : ''}
-                    ${index === 2 ? 'bg-orange-600' : ''}
-                    ${index >= 3 ? 'bg-gray-500' : ''}
+                    w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-md
+                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
+                    ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
+                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
+                    ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
                   `}>
-                    {index + 1}
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                   </div>
 
                   {/* Player Info */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-base sm:text-lg truncate">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                      <span className="font-bold text-xs truncate">
                         {playerName}
                       </span>
                       {isBot && (
-                        <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full shrink-0">
+                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded-full shrink-0 shadow-sm">
                           AI
                         </span>
                       )}
                       {isCurrentUser && !isBot && (
-                        <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full shrink-0">
+                        <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 py-0.5 rounded-full shrink-0 shadow-sm">
                           You
                         </span>
                       )}
                       {isCurrentTurn && (
-                        <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full animate-bounce-in shrink-0">
-                          🎲 Turn
+                        <span className="text-sm animate-bounce shrink-0">
+                          🎲
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Score: <span className={`font-bold text-base sm:text-lg ${
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Score:</span>
+                      <span className={`font-bold text-sm ${
                         animatingScores[player.id] 
-                          ? 'text-green-600 dark:text-green-400 animate-pulse scale-110 inline-block' 
-                          : ''
+                          ? 'text-green-600 dark:text-green-400 animate-pulse' 
+                          : 'text-gray-900 dark:text-white'
                       }`}>
                         {player.score}
                         {animatingScores[player.id] && (
-                          <span className="ml-1 text-green-500 animate-bounce-in">✨</span>
+                          <span className="ml-1 text-green-500 text-xs">✨</span>
                         )}
                       </span>
                     </div>
@@ -128,12 +151,12 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
                 {/* Ready Status */}
                 {player.isReady && (
-                  <div className="text-green-500 font-bold">
+                  <div className="text-green-500 font-bold text-base ml-2">
                     ✓
                   </div>
                 )}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
