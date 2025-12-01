@@ -105,7 +105,7 @@ export default function WaitingRoom({
                 const isBot = p.user?.isBot === true
                 const playerName = isBot 
                   ? '🤖 AI Bot' 
-                  : p.user.username || p.user.email || 'Player'
+                  : p.user.name || p.user.username || p.user.email || 'Player'
                 const isCurrentUser = p.userId === getCurrentUserId()
 
                 return (

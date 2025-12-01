@@ -243,9 +243,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .scorecard-row {
-  @apply flex justify-between items-center p-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors;
+  @apply flex justify-between items-center p-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors rounded;
 }
 
 .scorecard-row.filled {
   @apply cursor-default bg-gray-100 dark:bg-gray-800;
+}
+
+/* Compact card for game UI */
+.card-compact {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 text-gray-900 dark:text-gray-100 transition-all duration-200 hover:shadow-xl;
 }

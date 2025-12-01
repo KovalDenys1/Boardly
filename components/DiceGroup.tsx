@@ -14,10 +14,9 @@ interface DiceGroupProps {
 
 const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disabled = false, isRolling = false, isMyTurn = false }: DiceGroupProps) {
   return (
-    <div className="card">
-      <h2 className="text-2xl font-bold mb-4 text-center">🎲 Dice</h2>
-      
-      <div className="flex flex-wrap gap-3 justify-center mb-4">
+    <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
+      {/* Dice Grid - Optimized for visibility */}
+      <div className="flex flex-wrap gap-4 justify-center items-center">
         {dice.map((value, index) => (
           <Dice
             key={`die-${index}`}
@@ -30,13 +29,23 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
         ))}
       </div>
 
-      <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+      {/* Helpful hint - compact */}
+      <div className="text-center">
         {!isMyTurn ? (
-          <p>Wait for your turn...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 justify-center">
+            <span>⏳</span>
+            <span>Wait for your turn...</span>
+          </p>
         ) : disabled ? (
-          <p>Roll dice first to hold them</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 justify-center">
+            <span>🎲</span>
+            <span>Roll dice first</span>
+          </p>
         ) : (
-          <p>Click dice to hold them before rolling</p>
+          <p className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2 justify-center">
+            <span>👆</span>
+            <span>Click dice to hold/release</span>
+          </p>
         )}
       </div>
     </div>
