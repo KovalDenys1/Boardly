@@ -1,0 +1,341 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "all": "All",
+    "or": "or"
+  },
+  "header": {
+    "home": "Home",
+    "games": "Games",
+    "lobbies": "Lobbies",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "menu": "Menu"
+  },
+  "home": {
+    "title": "Play Board Games Online with Friends",
+    "subtitle": "Real-time multiplayer gaming platform. Create lobbies, invite friends, and start playing instantly!",
+    "welcomeBack": "Welcome back, {{name}}!",
+    "signUpFree": "Sign Up Free",
+    "createLobby": "Create Lobby",
+    "joinLobby": "Join Lobby",
+    "browseGames": "Browse Games",
+    "features": {
+      "title": "Why Choose Boardly?",
+      "realTime": {
+        "title": "Real-Time Gameplay",
+        "description": "Experience smooth, lag-free gaming with WebSocket technology"
+      },
+      "noDownload": {
+        "title": "No Download Required",
+        "description": "Play directly in your browser - no installation needed"
+      },
+      "multiplayer": {
+        "title": "Multiplayer Fun",
+        "description": "Play with 2-8 friends in private or public lobbies"
+      },
+      "aiOpponents": {
+        "title": "AI Opponents",
+        "description": "Practice with smart bots when friends aren't available"
+      },
+      "freeToPlay": {
+        "title": "Free to Play",
+        "description": "All games are completely free, no hidden fees"
+      },
+      "responsive": {
+        "title": "Mobile Friendly",
+        "description": "Optimized for all devices - desktop, tablet, and mobile"
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Create or Join",
+        "description": "Start a new lobby or join existing one with a code"
+      },
+      "step2": {
+        "title": "Invite Friends",
+        "description": "Share the lobby code with your friends"
+      },
+      "step3": {
+        "title": "Play Together",
+        "description": "Enjoy real-time gameplay with your friends"
+      }
+    }
+  },
+  "games": {
+    "title": "Available Games",
+    "subtitle": "Choose your favorite game to play",
+    "players": "players",
+    "difficulty": "Difficulty",
+    "available": "Available",
+    "comingSoon": "Coming Soon",
+    "playNow": "Play Now",
+    "viewLobbies": "View Lobbies",
+    "yahtzee": {
+      "name": "Yahtzee",
+      "description": "Classic dice game with strategic scoring. Roll five dice to make combinations and score big!",
+      "difficulty": "Easy"
+    },
+    "spy": {
+      "name": "Guess the Spy",
+      "description": "Social deduction game where one player is the spy. Find them before time runs out!",
+      "difficulty": "Medium"
+    },
+    "chess": {
+      "name": "Chess",
+      "description": "The timeless strategy game. Checkmate your opponent in this classic board game.",
+      "difficulty": "Hard"
+    }
+  },
+  "lobby": {
+    "title": "Game Lobbies",
+    "createNew": "Create New Lobby",
+    "joinCode": "Join with Code",
+    "activeLobbies": "Active Lobbies",
+    "noLobbies": "No active lobbies",
+    "players": "Players",
+    "status": {
+      "waiting": "Waiting",
+      "playing": "In Progress",
+      "finished": "Finished"
+    },
+    "create": {
+      "title": "Create Lobby",
+      "lobbyName": "Lobby Name",
+      "gameType": "Game Type",
+      "maxPlayers": "Max Players",
+      "password": "Password (Optional)",
+      "passwordPlaceholder": "Leave empty for public lobby",
+      "create": "Create Lobby"
+    },
+    "join": {
+      "title": "Join Lobby",
+      "enterCode": "Enter Lobby Code",
+      "codePlaceholder": "Enter 6-character code",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password",
+      "join": "Join Lobby",
+      "invalidCode": "Invalid lobby code",
+      "lobbyFull": "Lobby is full",
+      "incorrectPassword": "Incorrect password"
+    },
+    "game": {
+      "waitingForPlayers": "Waiting for players...",
+      "startGame": "Start Game",
+      "leaveGame": "Leave Game",
+      "addBot": "Add Bot",
+      "currentTurn": "Current Turn",
+      "yourTurn": "Your Turn!",
+      "score": "Score",
+      "round": "Round",
+      "gameOver": "Game Over!",
+      "winner": "Winner",
+      "playAgain": "Play Again",
+      "soundEnabled": "Sound enabled",
+      "soundDisabled": "Sound disabled"
+    },
+    "chat": {
+      "title": "Lobby Chat",
+      "open": "Chat",
+      "placeholder": "Type a message... 😊",
+      "send": "Send",
+      "typing": "Someone is typing...",
+      "clear": "Clear chat",
+      "minimize": "Minimize chat",
+      "noMessages": "No messages yet",
+      "startConversation": "Start the conversation!",
+      "you": "You",
+      "messageCount": "{{count}} total messages",
+      "unread": "{{count}} unread",
+      "openChat": "Open chat. {{unread}}",
+      "noUnread": "No unread messages",
+      "sendHelp": "Press Enter to send • Shift+Enter for new line",
+      "maxLength": "{{current}}/{{max}}"
+    }
+  },
+  "yahtzee": {
+    "categories": {
+      "ones": "Ones",
+      "twos": "Twos",
+      "threes": "Threes",
+      "fours": "Fours",
+      "fives": "Fives",
+      "sixes": "Sixes",
+      "threeOfKind": "Three of a Kind",
+      "fourOfKind": "Four of a Kind",
+      "fullHouse": "Full House",
+      "smallStraight": "Small Straight",
+      "largeStraight": "Large Straight",
+      "yahtzee": "Yahtzee",
+      "chance": "Chance",
+      "bonus": "Bonus",
+      "upperTotal": "Upper Total",
+      "lowerTotal": "Lower Total",
+      "grandTotal": "Grand Total"
+    },
+    "actions": {
+      "roll": "Roll Dice",
+      "hold": "Hold",
+      "score": "Score",
+      "rollsLeft": "Rolls Left"
+    },
+    "messages": {
+      "yourTurn": "Your turn!",
+      "waiting": "Waiting for {player}...",
+      "rolled": "{player} rolled the dice",
+      "scored": "{player} scored {score} points in {category}",
+      "gameOver": "Game Over! {winner} wins with {score} points!",
+      "noRollsLeft": "No rolls left! Choose a category to score.",
+      "selectCategory": "Select a category to score",
+      "autoScored": "Time's up! Scored {score} points in {category}",
+      "celebrations": {
+        "yahtzee": "🎉 YAHTZEE! All five dice match!",
+        "largeStraight": "🎯 Large Straight! Five in a row!",
+        "fullHouse": "🏠 Full House! Three of a kind + pair!",
+        "fourOfKind": "💎 Four of a Kind! Four matching dice!"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Login to Boardly",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "submit": "Login",
+      "withGoogle": "Login with Google",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "register": "Register now",
+      "success": "Logged in successfully!",
+      "error": "Invalid credentials"
+    },
+    "register": {
+      "title": "Create Account",
+      "username": "Username",
+      "usernamePlaceholder": "Choose a username",
+      "usernameHint": "Auto-suggested from email. You can change it.",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Choose a strong password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "submit": "Register",
+      "creating": "Creating account...",
+      "withGoogle": "Continue with Google",
+      "withGitHub": "Continue with GitHub",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Login",
+      "success": "Account created successfully! Welcome aboard! 🎉",
+      "error": "Registration failed",
+      "passwordMismatch": "Passwords do not match",
+      "fixFields": "Please fix the highlighted fields",
+      "loginFailed": "Registration successful but login failed. Please login manually.",
+      "oauthError": "Failed to sign in",
+      "inviteBanner": "You have been invited to a game!",
+      "inviteSubtitle": "Register to join the lobby"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password?",
+      "subtitle": "Enter your email and we'll send you a link to reset your password",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "submit": "Send Reset Link",
+      "sending": "Sending...",
+      "backToLogin": "Back to Login",
+      "success": "Reset link sent! Check your email.",
+      "error": "Failed to send reset email",
+      "checkEmail": "Check Your Email",
+      "emailSent": "If an account exists with {{email}}, you will receive password reset instructions.",
+      "checkSpam": "Didn't receive an email? Check your spam folder or try again.",
+      "sendAnother": "Send Another Email",
+      "remember": "Remember your password?",
+      "loginLink": "Login"
+    },
+    "resetPassword": {
+      "title": "Create New Password",
+      "password": "New Password",
+      "passwordPlaceholder": "Enter new password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm new password",
+      "submit": "Reset Password",
+      "success": "Password reset successful!",
+      "error": "Failed to reset password",
+      "invalidToken": "Invalid or expired reset link"
+    },
+    "verifyEmail": {
+      "title": "Verify Email",
+      "verifying": "Verifying your email...",
+      "success": "Email verified successfully!",
+      "error": "Verification failed",
+      "goToLogin": "Go to Login"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "username": "Username",
+    "email": "Email",
+    "memberSince": "Member Since",
+    "stats": {
+      "title": "Statistics",
+      "gamesPlayed": "Games Played",
+      "gamesWon": "Games Won",
+      "winRate": "Win Rate"
+    },
+    "settings": {
+      "title": "Settings",
+      "changePassword": "Change Password",
+      "notifications": "Notifications",
+      "language": "Language",
+      "theme": "Theme"
+    },
+    "edit": {
+      "title": "Edit Profile",
+      "save": "Save Changes",
+      "cancel": "Cancel"
+    }
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "subtitle": "The page you're looking for doesn't exist",
+    "backHome": "Back to Home",
+    "createLobby": "Create Lobby",
+    "viewGames": "View Games",
+    "funFact": "Did you know? The chances of rolling a Yahtzee on the first roll are 1 in 1,296!"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "You must be logged in to do that",
+    "forbidden": "You don't have permission to do that",
+    "notFound": "Resource not found",
+    "validation": "Invalid input",
+    "tooManyRequests": "Too many requests. Please try again later."
+  },
+  "toast": {
+    "copied": "Copied to clipboard!",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "error": "An error occurred",
+    "success": "Action completed successfully"
+  }
+}

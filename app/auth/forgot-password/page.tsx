@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
+import { showToast } from '@/lib/i18n-toast'
 
 export default function ForgotPasswordPage() {
-  const toast = useToast()
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -25,13 +26,13 @@ export default function ForgotPasswordPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || 'Failed to send reset email')
+        throw new Error(data?.error || t('auth.forgotPassword.error'))
       }
 
-      toast.success('Reset link sent! Check your email.')
+      showToast.success('auth.forgotPassword.success')
       setSent(true)
     } catch (err: any) {
-      toast.error(err.message || 'Failed to send reset email')
+      showToast.error(err.message || t('auth.forgotPassword.error'))
     } finally {
       setLoading(false)
     }
@@ -43,13 +44,13 @@ export default function ForgotPasswordPage() {
         <div className="card max-w-md w-full text-center">
           <div className="text-6xl mb-4">📧</div>
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-            Check Your Email
+            {t('auth.forgotPassword.checkEmail')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            If an account exists with <strong>{email}</strong>, you will receive password reset instructions.
+            {t('auth.forgotPassword.emailSent', { email })}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
-            Didn't receive an email? Check your spam folder or try again.
+            {t('auth.forgotPassword.checkSpam')}
           </p>
           <div className="space-y-3">
             <button
@@ -59,10 +60,10 @@ export default function ForgotPasswordPage() {
               }}
               className="btn btn-secondary w-full"
             >
-              Send Another Email
+              {t('auth.forgotPassword.sendAnother')}
             </button>
             <Link href="/auth/login" className="btn btn-primary w-full block">
-              Back to Login
+              {t('auth.forgotPassword.backToLogin')}
             </Link>
           </div>
         </div>
@@ -74,15 +75,15 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="card max-w-md w-full">
         <h1 className="text-3xl font-bold mb-2 text-center text-gray-900 dark:text-white">
-          Forgot Password?
+          {t('auth.forgotPassword.title')}
         </h1>
         <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
-          Enter your email and we'll send you a link to reset your password
+          {t('auth.forgotPassword.subtitle')}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">Email</label>
+            <label className="label">{t('auth.forgotPassword.email')}</label>
             <input
               type="email"
               required
@@ -90,7 +91,7 @@ export default function ForgotPasswordPage() {
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              placeholder={t('auth.forgotPassword.emailPlaceholder')}
               autoComplete="email"
             />
           </div>
@@ -103,21 +104,21 @@ export default function ForgotPasswordPage() {
             {loading ? (
               <>
                 <LoadingSpinner />
-                <span className="ml-2">Sending...</span>
+                <span className="ml-2">{t('auth.forgotPassword.sending')}</span>
               </>
             ) : (
-              'Send Reset Link'
+              t('auth.forgotPassword.submit')
             )}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Remember your password?{' '}
+          {t('auth.forgotPassword.remember')}{' '}
           <Link 
             href="/auth/login"
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >
-            Login
+            {t('auth.forgotPassword.loginLink')}
           </Link>
         </p>
       </div>

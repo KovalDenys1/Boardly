@@ -4,15 +4,16 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
+import { showToast } from '@/lib/i18n-toast'
 
 export default function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const toast = useToast()
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -32,8 +33,8 @@ export default function RegisterForm() {
 
     try {
       if (formData.password !== formData.confirmPassword) {
-        setFieldErrors({ confirmPassword: 'Passwords do not match' })
-        throw new Error('Passwords do not match')
+        setFieldErrors({ confirmPassword: t('auth.register.passwordMismatch') })
+        throw new Error(t('auth.register.passwordMismatch'))
       }
 
       const parsed = registerSchema.safeParse(formData)
@@ -44,7 +45,7 @@ export default function RegisterForm() {
           if (!errs[k]) errs[k] = i.message
         })
         setFieldErrors(errs)
-        throw new Error('Please fix the highlighted fields')
+        throw new Error(t('auth.register.fixFields'))
       }
 
       const res = await fetch('/api/auth/register', {
@@ -58,9 +59,9 @@ export default function RegisterForm() {
       if (!res.ok) {
         if (Array.isArray(data?.error)) {
           setFieldErrors(zodIssuesToFieldErrors(data.error))
-          throw new Error('Please fix the highlighted fields')
+          throw new Error(t('auth.register.fixFields'))
         }
-        throw new Error(data?.error || 'Registration failed')
+        throw new Error(data?.error || t('auth.register.error'))
       }
 
       // Auto-login after registration
@@ -71,16 +72,16 @@ export default function RegisterForm() {
       })
 
       if (loginResult?.error) {
-        toast.error('Registration successful but login failed. Please login manually.')
+        showToast.error('auth.register.loginFailed')
         router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`)
       } else {
-        toast.success('Account created successfully! Welcome aboard! 🎉')
+        showToast.success('auth.register.success')
         router.push(returnUrl)
         router.refresh()
       }
     } catch (err: any) {
       setError(err.message)
-      toast.error(err.message || 'Registration failed')
+      showToast.error(err.message || t('auth.register.error'))
     } finally {
       setLoading(false)
     }
@@ -102,7 +103,7 @@ export default function RegisterForm() {
       await signIn(provider, { callbackUrl: returnUrl })
     } catch (err: any) {
       setError(err.message)
-      toast.error(`Failed to sign in with ${provider}`)
+      showToast.error('auth.register.oauthError')
       setLoading(false)
     }
   }
@@ -117,10 +118,10 @@ export default function RegisterForm() {
               <span className="text-3xl">🎮</span>
               <div>
                 <p className="font-semibold text-green-700 dark:text-green-300">
-                  You have been invited to a game!
+                  {t('auth.register.inviteBanner')}
                 </p>
                 <p className="text-sm text-green-600 dark:text-green-400">
-                  Register to join the lobby
+                  {t('auth.register.inviteSubtitle')}
                 </p>
               </div>
             </div>
@@ -128,12 +129,12 @@ export default function RegisterForm() {
         )}
         
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
-          Register
+          {t('auth.register.title')}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">Email</label>
+            <label className="label">{t('auth.register.email')}</label>
             <input
               type="email"
               required
@@ -141,7 +142,7 @@ export default function RegisterForm() {
               className="input"
               value={formData.email}
               onChange={(e) => handleEmailChange(e.target.value)}
-              placeholder="your@email.com"
+              placeholder={t('auth.register.emailPlaceholder')}
               autoComplete="email"
             />
             {fieldErrors.email && (
@@ -150,7 +151,7 @@ export default function RegisterForm() {
           </div>
 
           <div>
-            <label className="label">Username</label>
+            <label className="label">{t('auth.register.username')}</label>
             <input
               type="text"
               required
@@ -158,13 +159,13 @@ export default function RegisterForm() {
               className="input"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              placeholder="your_username"
+              placeholder={t('auth.register.usernamePlaceholder')}
               autoComplete="username"
               minLength={3}
               maxLength={20}
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Auto-suggested from email. You can change it.
+              {t('auth.register.usernameHint')}
             </p>
             {fieldErrors.username && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.username}</p>
@@ -175,7 +176,7 @@ export default function RegisterForm() {
             <PasswordInput
               value={formData.password}
               onChange={(value) => setFormData({ ...formData, password: value })}
-              placeholder="Create a strong password"
+              placeholder={t('auth.register.passwordPlaceholder')}
               autoComplete="new-password"
             />
             {fieldErrors.password && (
@@ -187,9 +188,9 @@ export default function RegisterForm() {
             <PasswordInput
               value={formData.confirmPassword}
               onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
-              placeholder="Confirm your password"
+              placeholder={t('auth.register.confirmPasswordPlaceholder')}
               autoComplete="new-password"
-              label="Confirm Password"
+              label={t('auth.register.confirmPassword')}
             />
             {fieldErrors.confirmPassword && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
@@ -210,17 +211,17 @@ export default function RegisterForm() {
             {loading ? (
               <>
                 <LoadingSpinner />
-                <span className="ml-2">Creating account...</span>
+                <span className="ml-2">{t('auth.register.creating')}</span>
               </>
             ) : (
-              'Register'
+              t('auth.register.submit')
             )}
           </button>
         </form>
 
         <div className="my-6 flex items-center gap-4">
           <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">OR</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.or')}</span>
           <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
         </div>
 
@@ -236,7 +237,7 @@ export default function RegisterForm() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Continue with Google
+            {t('auth.register.withGoogle')}
           </button>
 
           <button
@@ -247,12 +248,12 @@ export default function RegisterForm() {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
-            Continue with GitHub
+            {t('auth.register.withGitHub')}
           </button>
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Already have an account?{' '}
+          {t('auth.register.haveAccount')}{' '}
           <Link 
             href={`/auth/login${returnUrl !== '/' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"

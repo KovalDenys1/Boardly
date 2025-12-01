@@ -1,4 +1,6 @@
+'use client'
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface ChatMessage {
   id: string
@@ -30,6 +32,7 @@ export default function Chat({
   unreadCount = 0,
   someoneTyping = false
 }: ChatProps) {
+  const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -93,16 +96,20 @@ export default function Chat({
   }
 
   if (isMinimized) {
+    const ariaLabel = unreadCount > 0 
+      ? t('chat.openChat', { unread: t('chat.unread', { count: unreadCount }) })
+      : t('chat.openChat', { unread: t('chat.noUnread') })
+    
     return (
       <div className="fixed bottom-6 right-6 z-50 animate-bounce-in">
         <button
           onClick={onToggleMinimize}
-          aria-label={`Open chat. ${unreadCount > 0 ? `${unreadCount} unread messages` : 'No unread messages'}`}
+          aria-label={ariaLabel}
           className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform transition-all duration-200 hover:scale-105 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
         >
-          💬 Chat
+          💬 {t('chat.open')}
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse" aria-label={`${unreadCount} unread`}>
+            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse" aria-label={t('chat.unread', { count: unreadCount })}>
               {unreadCount}
             </span>
           )}
@@ -120,25 +127,25 @@ export default function Chat({
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" aria-hidden="true"></div>
-          <h3 className="font-bold text-lg" id="chat-title">💬 Lobby Chat</h3>
-          <span className="text-sm bg-blue-400/30 px-2 py-1 rounded-full" aria-label={`${messages.length} total messages`}>
+          <h3 className="font-bold text-lg" id="chat-title">💬 {t('chat.title')}</h3>
+          <span className="text-sm bg-blue-400/30 px-2 py-1 rounded-full" aria-label={t('chat.messageCount', { count: messages.length })}>
             {messages.length}
           </span>
         </div>
         <div className="flex items-center gap-1" role="group" aria-label="Chat controls">
           <button
             onClick={onClearChat}
-            aria-label="Clear chat messages"
+            aria-label={t('chat.clear')}
             className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-            title="Clear chat"
+            title={t('chat.clear')}
           >
             🗑️
           </button>
           <button
             onClick={onToggleMinimize}
-            aria-label="Minimize chat"
+            aria-label={t('chat.minimize')}
             className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-            title="Minimize chat"
+            title={t('chat.minimize')}
           >
             ➖
           </button>
@@ -156,8 +163,8 @@ export default function Chat({
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400 py-12">
             <div className="text-4xl mb-2">👋</div>
-            <p className="font-medium">No messages yet</p>
-            <p className="text-sm">Start the conversation!</p>
+            <p className="font-medium">{t('chat.noMessages')}</p>
+            <p className="text-sm">{t('chat.startConversation')}</p>
           </div>
         ) : (
           messages.map((msg, index) => (
@@ -181,7 +188,7 @@ export default function Chat({
                   <div className={`font-semibold text-xs mb-1 ${
                     msg.userId === currentUserId ? 'text-blue-100' : 'text-gray-600 dark:text-gray-400'
                   }`}>
-                    {msg.userId === currentUserId ? 'You' : msg.username}
+                    {msg.userId === currentUserId ? t('chat.you') : msg.username}
                   </div>
                 )}
                 <div className="break-words leading-relaxed">{msg.message}</div>
@@ -207,7 +214,7 @@ export default function Chat({
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
               <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
-            <span className="text-sm">Someone is typing...</span>
+            <span className="text-sm">{t('chat.typing')}</span>
           </div>
         </div>
       )}
@@ -222,14 +229,14 @@ export default function Chat({
               value={newMessage}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder="Type a message... 😊"
+              placeholder={t('chat.placeholder')}
               aria-label="Type your message"
               aria-describedby="message-help"
               className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 focus-visible:outline-none"
               maxLength={200}
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true">
-              {newMessage.length}/200
+              {t('chat.maxLength', { current: newMessage.length, max: 200 })}
             </div>
           </div>
           <button
@@ -238,11 +245,11 @@ export default function Chat({
             aria-label="Send message"
             className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
           >
-            📤 Send
+            📤 {t('chat.send')}
           </button>
         </div>
         <div id="message-help" className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-          Press Enter to send • Shift+Enter for new line
+          {t('chat.sendHelp')}
         </div>
       </form>
     </div>

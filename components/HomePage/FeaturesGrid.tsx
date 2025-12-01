@@ -1,28 +1,32 @@
-// Server Component - no interactivity needed
+'use client'
+import { useTranslation } from 'react-i18next'
+
 export default function FeaturesGrid() {
+  const { t } = useTranslation()
+  
   const features = [
     {
-      emoji: '🎲',
-      title: 'Multiple Games',
-      description: 'Yahtzee, Guess the Spy, and many more games coming soon!',
+      emoji: '⚡',
+      titleKey: 'home.features.realTime.title',
+      descriptionKey: 'home.features.realTime.description',
       delay: '0s'
     },
     {
-      emoji: '💬',
-      title: 'Live Chat',
-      description: 'Chat with friends in real-time while playing your favorite games',
+      emoji: '📥',
+      titleKey: 'home.features.noDownload.title',
+      descriptionKey: 'home.features.noDownload.description',
       delay: '0.1s'
     },
     {
-      emoji: '⚡',
-      title: 'Real-Time Play',
-      description: 'Instant updates with Socket.IO for seamless multiplayer experience',
+      emoji: '👥',
+      titleKey: 'home.features.multiplayer.title',
+      descriptionKey: 'home.features.multiplayer.description',
       delay: '0.2s'
     },
     {
-      emoji: '🔐',
-      title: 'Private Lobbies',
-      description: 'Create password-protected lobbies for you and your friends',
+      emoji: '🤖',
+      titleKey: 'home.features.aiOpponents.title',
+      descriptionKey: 'home.features.aiOpponents.description',
       delay: '0.3s'
     }
   ]
@@ -36,8 +40,8 @@ export default function FeaturesGrid() {
           style={{ animationDelay: feature.delay }}
         >
           <div className="text-4xl mb-4">{feature.emoji}</div>
-          <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-          <p className="text-white/80 text-sm">{feature.description}</p>
+          <h3 className="text-xl font-bold mb-2">{t(feature.titleKey)}</h3>
+          <p className="text-white/80 text-sm">{t(feature.descriptionKey)}</p>
         </div>
       ))}
     </div>
