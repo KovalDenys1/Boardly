@@ -50,7 +50,7 @@ export function ConnectionStatus({
               </p>
               {reconnectAttempt > 0 && (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
-                  {t('connection.attempt', { count: reconnectAttempt }, `Attempt ${reconnectAttempt}`)}
+                  {t('connection.attempt', `Attempt ${reconnectAttempt}`)}
                 </p>
               )}
             </div>

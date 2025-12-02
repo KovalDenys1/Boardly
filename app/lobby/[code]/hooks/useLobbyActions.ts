@@ -3,6 +3,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
+import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import toast from 'react-hot-toast'
 import type { Socket } from 'socket.io-client'
 
@@ -217,6 +218,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       
       emitPlayerJoined()
       
+      // Track lobby join
+      trackLobbyJoined({
+        lobbyCode: code,
+        gameType: lobby?.gameType || 'yahtzee',
+        isPrivate: !!lobby?.password,
+      })
+      
       const joinMessage = {
         id: Date.now().toString() + '_join',
         userId: 'system',
@@ -271,6 +279,19 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const engine = new YahtzeeGame(data.game.id)
       engine.restoreState(data.game.state)
       setGameEngine(engine)
+      
+      // Track game start
+      const players = data.game.players || []
+      const botCount = players.filter((p: any) => p.user?.isBot).length
+      trackGameStarted({
+        lobbyCode: code,
+        gameType: lobby?.gameType || 'yahtzee',
+        isPrivate: !!lobby?.password,
+        maxPlayers: lobby?.maxPlayers || 4,
+        playerCount: players.length,
+        hasBot: botCount > 0,
+        botCount,
+      })
       
       setTimerActive(true)
       setTimeLeft(60)

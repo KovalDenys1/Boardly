@@ -9,6 +9,7 @@ import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
+import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -61,8 +62,25 @@ export default function RegisterForm() {
           setFieldErrors(zodIssuesToFieldErrors(data.error))
           throw new Error(t('auth.register.fixFields'))
         }
+        
+        trackError({
+          errorType: 'auth',
+          errorMessage: data?.error || 'Registration failed',
+          component: 'RegisterForm',
+          severity: 'medium',
+        })
+        
         throw new Error(data?.error || t('auth.register.error'))
       }
+
+      // Track successful registration
+      trackAuth({
+        event: 'register',
+        method: 'email',
+        success: true,
+        userId: formData.email,
+      })
+      trackFunnelStep('register')
 
       // Auto-login after registration
       const loginResult = await signIn('credentials', {

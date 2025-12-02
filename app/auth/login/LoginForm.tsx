@@ -9,6 +9,7 @@ import { loginSchema } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
+import { trackAuth, trackError } from '@/lib/analytics'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -52,8 +53,31 @@ export default function LoginForm() {
       if (result?.error) {
         setError(t('auth.login.error'))
         showToast.error('auth.login.error')
+        
+        // Track failed login
+        trackAuth({
+          event: 'login',
+          method: 'email',
+          success: false,
+          userId: undefined,
+        })
+        trackError({
+          errorType: 'auth',
+          errorMessage: 'Login failed',
+          component: 'LoginForm',
+          severity: 'low',
+        })
       } else {
         showToast.success('auth.login.success')
+        
+        // Track successful login
+        trackAuth({
+          event: 'login',
+          method: 'email',
+          success: true,
+          userId: formData.email, // Will be replaced with actual userId by session
+        })
+        
         router.push(returnUrl)
         router.refresh()
       }
@@ -68,10 +92,26 @@ export default function LoginForm() {
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
     try {
+      // Track OAuth attempt
+      trackAuth({
+        event: 'login',
+        method: provider === 'google' ? 'google' : 'email', // Type-safe provider
+        success: true, // We track attempt here, actual success is on callback
+        userId: undefined,
+      })
+      
       await signIn(provider, { callbackUrl: returnUrl })
     } catch (err: any) {
       setError(err.message)
       showToast.error('errors.generic', `Failed to sign in with ${provider}`)
+      
+      trackError({
+        errorType: 'auth',
+        errorMessage: `OAuth ${provider} failed: ${err.message}`,
+        component: 'LoginForm',
+        severity: 'medium',
+      })
+      
       setLoading(false)
     }
   }

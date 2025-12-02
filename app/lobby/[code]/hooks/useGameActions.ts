@@ -8,7 +8,8 @@ import { getAuthHeaders } from '@/lib/socket-url'
 import toast from 'react-hot-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
-import { Game } from '@/types/game'
+import { Game, GamePlayer } from '@/types/game'
+import { trackPlayerAction, trackGameCompleted } from '@/lib/analytics'
 
 interface UseGameActionsProps {
   game: Game | null
@@ -178,6 +179,20 @@ export function useGameActions(props: UseGameActionsProps) {
       
       // Sound already played optimistically, no need to play again
       
+      // Track player action
+      if (newEngine) {
+        trackPlayerAction({
+          actionType: 'roll',
+          gameType: 'yahtzee',
+          playerCount: game.players.length,
+          isBot: false,
+          metadata: {
+            rollNumber: 3 - newEngine.getRollsLeft() + 1,
+            diceHeld: held.filter(Boolean).length,
+          },
+        })
+      }
+      
       emitWhenConnected('game-action', {
         lobbyCode: code,
         action: 'state-change',
@@ -292,6 +307,18 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       soundManager.play('score')
+      
+      // Track score action
+      trackPlayerAction({
+        actionType: 'score',
+        gameType: 'yahtzee',
+        playerCount: game.players.length,
+        isBot: false,
+        metadata: {
+          category,
+          score: scoredValue,
+        },
+      })
 
       emitWhenConnected('game-action', {
         lobbyCode: code,
@@ -304,6 +331,26 @@ export function useGameActions(props: UseGameActionsProps) {
       if (newEngine.isGameFinished()) {
         setTimerActive(false)
         const winner = newEngine.checkWinCondition()
+        
+        // Track game completion
+        const startTime = game.createdAt ? new Date(game.createdAt).getTime() : Date.now()
+        const endTime = Date.now()
+        const durationMinutes = Math.round((endTime - startTime) / 60000)
+        
+        const winnerPlayer = winner?.id ? game.players.find((p: any) => p.userId === winner.id) : null
+        
+        trackGameCompleted({
+          gameType: 'yahtzee',
+          playerCount: game.players.length,
+          duration: durationMinutes,
+          winner: winner?.name || 'Unknown',
+          wasBot: winnerPlayer?.isBot || false,
+          finalScores: game.players.map((p: GamePlayer) => ({
+            playerName: p.name,
+            score: p.score,
+          })),
+        })
+        
         if (winner) {
           soundManager.play('win')
           fireworks()
