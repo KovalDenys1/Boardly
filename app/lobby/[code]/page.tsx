@@ -9,6 +9,7 @@ import PlayerList from '@/components/PlayerList'
 import Scorecard from '@/components/Scorecard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
+import ConnectionStatus from '@/components/ConnectionStatus'
 import { soundManager } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import { createBotMoveVisualization, detectBotMove, findFilledCategory } from '@/lib/bot-visualization'
@@ -289,7 +290,7 @@ function LobbyPageContent() {
   }, [gameEngine, game?.players?.length])
 
   // Socket connection hook - must be before useLobbyActions
-  const { socket, isConnected, emitWhenConnected } = useSocketConnection({
+  const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
     code,
     session,
     isGuest,
@@ -871,6 +872,13 @@ function LobbyPageContent() {
           botName={botPlayerName}
         />
       )}
+
+      {/* Connection Status Indicator */}
+      <ConnectionStatus
+        isConnected={isConnected}
+        isReconnecting={isReconnecting}
+        reconnectAttempt={reconnectAttempt}
+      />
     </div>
   )
 }

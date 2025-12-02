@@ -18,6 +18,12 @@
     "all": "All",
     "or": "or"
   },
+  "connection": {
+    "reconnecting": "Reconnecting...",
+    "attempt": "Attempt {{count}}",
+    "disconnected": "Connection lost",
+    "checkNetwork": "Please check your network connection"
+  },
   "header": {
     "home": "Home",
     "games": "Games",
@@ -211,7 +217,35 @@
         "fullHouse": "🏠 Full House! Three of a kind + pair!",
         "fourOfKind": "💎 Four of a Kind! Four matching dice!"
       }
+    },
+    "results": {
+      "gameOver": "Game Over!",
+      "roundsCompleted": "{{count}} rounds completed",
+      "players": "{{count}} player",
+      "players_plural": "{{count}} players",
+      "youWon": "🎊 You Won! 🎊",
+      "playerWins": "🏆 {{player}} Wins! 🏆",
+      "points": "{{count}} points",
+      "upperSection": "Upper Section",
+      "lowerSection": "Lower Section",
+      "finalStandings": "Final Standings",
+      "you": "(You)",
+      "bonus": "(+{{count}} bonus)",
+      "upper": "Upper:",
+      "lower": "Lower:",
+      "playAgain": "Play Again",
+      "backToLobbies": "Back to Lobbies"
+    },
+    "bot": {
+      "thinking": "🤖 Bot is thinking...",
+      "rolling": "Rolling dice...",
+      "holding": "Holding dice...",
+      "scoring": "Choosing category..."
     }
+  },
+  "chat": {
+    "openChat": "Open chat",
+    "unread": "unread"
   },
   "auth": {
     "login": {

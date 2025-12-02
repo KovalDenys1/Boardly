@@ -41,6 +41,7 @@
 | Nov 29 | Payments research | Choose provider (Stripe), pricing model | 📋 TODO |
 | Nov 30 | Analytics | Integrate PostHog/Plausible, define KPIs | 📋 TODO |
 | Dec 1 | Chess: Design | Rules, state diagram, data model | 🔄 IN PROGRESS |
+| Dec 2 | I18N Completion | Complete i18n for all components | ✅ DONE |
 | Dec 2 | Chess: Backend | Game engine, move validation | 📋 TODO |
 | Dec 3 | Chess: Frontend | Board UI, drag-and-drop | 📋 TODO |
 | Dec 4 | Chess: AI | Basic computer opponent | 📋 TODO |

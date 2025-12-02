@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Player {
   id: string
@@ -25,6 +26,7 @@ interface PlayerListProps {
 }
 
 const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, selectedPlayerId }: PlayerListProps) {
+  const { t } = useTranslation()
   // Sort by score (descending), then by position (ascending) if scores are equal
   const sortedPlayers = [...players].sort((a, b) => {
     if (b.score !== a.score) {
@@ -64,10 +66,10 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in">
       <h2 className="text-base font-bold mb-3 flex items-center gap-2">
         <span className="text-xl">👥</span>
-        <span>Players</span>
+        <span>{t('lobby.players.title', 'Players')}</span>
         {onPlayerClick && (
           <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">
-            Click to view cards
+            {t('lobby.players.clickToView', 'Click to view cards')}
           </span>
         )}
       </h2>

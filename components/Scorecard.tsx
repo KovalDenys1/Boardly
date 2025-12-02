@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { YahtzeeScorecard, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 
 interface ScorecardProps {
@@ -125,6 +126,7 @@ const Scorecard = React.memo(function Scorecard({
   isCurrentPlayer,
   isLoading = false
 }: ScorecardProps) {
+  const { t } = useTranslation()
   const upperSection: YahtzeeCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
   const lowerSection: YahtzeeCategory[] = [
     'threeOfKind',

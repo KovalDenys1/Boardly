@@ -97,8 +97,8 @@ export default function Chat({
 
   if (isMinimized) {
     const ariaLabel = unreadCount > 0 
-      ? t('chat.openChat', { unread: t('chat.unread', { count: unreadCount }) })
-      : t('chat.openChat', { unread: t('chat.noUnread') })
+      ? `${t('chat.openChat')} (${unreadCount} ${t('chat.unread', { count: unreadCount })})`
+      : t('chat.openChat')
     
     return (
       <div className="fixed bottom-6 right-6 z-50 animate-bounce-in">

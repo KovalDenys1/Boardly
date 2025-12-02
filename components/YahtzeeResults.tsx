@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { PlayerResults } from '@/lib/yahtzee-results'
+import { useTranslation } from 'react-i18next'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
@@ -17,6 +18,7 @@ export default function YahtzeeResults({
   onPlayAgain,
   onBackToLobby
 }: YahtzeeResultsProps) {
+  const { t } = useTranslation()
   if (results.length === 0) {
     return null
   }
@@ -33,10 +35,10 @@ export default function YahtzeeResults({
             <span className="text-6xl">🏆</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
-            Game Over!
+            {t('yahtzee.results.gameOver')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
-            13 rounds completed • {results.length} {results.length === 1 ? 'player' : 'players'}
+            {t('yahtzee.results.roundsCompleted', { count: 13 })} • {results.length} {t('yahtzee.results.players', { count: results.length })}
           </p>
         </div>
       
@@ -44,17 +46,17 @@ export default function YahtzeeResults({
       <div className="mb-8 p-4 sm:p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl border-4 border-yellow-400 dark:border-yellow-600 shadow-xl">
         <div className="text-center mb-4">
           <p className="text-2xl sm:text-3xl font-bold mb-2">
-            {isWinner ? '🎊 You Won! 🎊' : `🏆 ${winner.playerName} Wins! 🏆`}
+            {isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
           </p>
           <p className="text-4xl sm:text-5xl font-bold text-yellow-600 dark:text-yellow-400">
-            {winner.totalScore} points
+            {t('yahtzee.results.points', { count: winner.totalScore })}
           </p>
         </div>
         
         {/* Winner's score breakdown */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
           <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Upper Section</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('yahtzee.results.upperSection')}</p>
             <p className="text-xl sm:text-2xl font-bold">
               {winner.upperSectionScore}
               {winner.bonusAchieved && (
@@ -65,7 +67,7 @@ export default function YahtzeeResults({
             </p>
           </div>
           <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">Lower Section</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('yahtzee.results.lowerSection')}</p>
             <p className="text-xl sm:text-2xl font-bold">{winner.lowerSectionScore}</p>
           </div>
         </div>
@@ -88,7 +90,7 @@ export default function YahtzeeResults({
       
       {/* Final Standings */}
       <div className="mb-6">
-        <h3 className="text-xl sm:text-2xl font-bold mb-4">Final Standings</h3>
+        <h3 className="text-xl sm:text-2xl font-bold mb-4">{t('yahtzee.results.finalStandings')}</h3>
         <div className="space-y-3">
           {results.map((player) => {
             const isCurrentUser = player.playerId === currentUserId

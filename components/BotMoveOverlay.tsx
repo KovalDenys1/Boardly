@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 
 interface BotMoveStep {
@@ -44,6 +45,7 @@ export default function BotMoveOverlay({
   botName,
   onComplete,
 }: BotMoveOverlayProps) {
+  const { t } = useTranslation()
   const [visible, setVisible] = useState(true)
 
   const currentStep = steps[currentStepIndex]
