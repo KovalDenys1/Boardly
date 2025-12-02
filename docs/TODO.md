@@ -39,9 +39,12 @@
 | Nov 28 | Documentation | README, CONTRIBUTING, structure cleanup | ✅ DONE |
 | **Phase 2: Growth (Nov 29 - Dec 7)** |
 | Nov 29 | Payments research | Choose provider (Stripe), pricing model | 📋 TODO |
-| Nov 30 | Analytics | Integrate PostHog/Plausible, define KPIs | 📋 TODO |
+| Nov 30 | Analytics | Integrate PostHog/Plausible, define KPIs | ✅ DONE |
 | Dec 1 | Chess: Design | Rules, state diagram, data model | 🔄 IN PROGRESS |
 | Dec 2 | I18N Completion | Complete i18n for all components | ✅ DONE |
+| Dec 2 | Unit Testing | Comprehensive test coverage | ✅ DONE |
+| Dec 2 | WebSocket Reconnection | Exponential backoff + UI indicators | ✅ DONE |
+| Dec 2 | Analytics Integration | Track all key user events | ✅ DONE |
 | Dec 2 | Chess: Backend | Game engine, move validation | 📋 TODO |
 | Dec 3 | Chess: Frontend | Board UI, drag-and-drop | 📋 TODO |
 | Dec 4 | Chess: AI | Basic computer opponent | 📋 TODO |
@@ -127,7 +130,7 @@
 - ✅ Resend transactional emails
 - ✅ Sentry error tracking
 - ✅ OAuth (Google + GitHub)
-- 📋 Analytics (PostHog/Plausible)
+- ✅ Analytics (Vercel Analytics) with comprehensive event tracking
 - 📋 Stripe payments
 
 ### Q1 2026
@@ -184,8 +187,8 @@
 ## 🐛 Known Issues & Tech Debt
 
 ### High Priority
-- [ ] Add comprehensive test coverage (unit + integration)
-- [ ] Implement WebSocket reconnection with state recovery
+- [x] Add comprehensive test coverage (unit + integration) - **DONE: 74 tests passing, core game logic covered**
+- [x] Implement WebSocket reconnection with state recovery - **DONE: Exponential backoff + UI indicators**
 - [ ] Add database connection pooling monitoring
 - [ ] Optimize Socket.IO room management for scale
 
