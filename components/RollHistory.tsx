@@ -45,12 +45,12 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
         </span>
       </div>
 
-      <div className="space-y-2 overflow-y-auto pr-1 flex-1">
-        {entries.map((entry) => (
+      <div className="space-y-2 overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
+        {[...entries].reverse().map((entry) => (
           <div
             key={entry.id}
             className={`
-              p-2.5 rounded-xl transition-all shadow-sm border-2
+              p-2.5 rounded-xl transition-all shadow-sm border-2 snap-start
               ${
                 entry.isBot
                   ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-purple-200 dark:border-purple-700'

@@ -63,8 +63,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
   }, [players.map(p => p.score).join(',')]) // Track score changes
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in">
-      <h2 className="text-base font-bold mb-3 flex items-center gap-2">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-full flex flex-col">
+      <h2 className="text-base font-bold mb-3 flex items-center gap-2 flex-shrink-0">
         <span className="text-xl">👥</span>
         <span>{t('lobby.players.title', 'Players')}</span>
         {onPlayerClick && (
@@ -73,7 +73,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
           </span>
         )}
       </h2>
-      <div className="space-y-2">
+      <div className="space-y-2 overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
         {sortedPlayers.map((player, index) => {
           // Use player.position (actual game index) instead of sorted index
           const isCurrentTurn = player.position === currentTurn
@@ -89,15 +89,15 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
               key={player.id}
               onClick={() => onPlayerClick?.(player.userId)}
               className={`
-                w-full text-left p-2.5 rounded-xl transition-all duration-200 shadow-sm
+                w-full text-left p-2.5 rounded-xl transition-all duration-200 shadow-sm snap-start
                 ${isCurrentTurn 
-                  ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md transform scale-[1.02]' 
+                  ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md' 
                   : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent'
                 }
-                ${isCurrentUser ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-800' : ''}
-                ${isSelected ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-gray-800' : ''}
+                ${isCurrentUser ? 'border-2 !border-green-500 dark:!border-green-400' : ''}
+                ${isSelected ? 'border-2 !border-purple-500 dark:!border-purple-400' : ''}
                 ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30' : ''}
-                ${onPlayerClick ? 'cursor-pointer hover:scale-[1.03] hover:shadow-lg' : ''}
+                ${onPlayerClick ? 'cursor-pointer hover:shadow-lg' : ''}
               `}
             >
               <div className="flex items-center justify-between">

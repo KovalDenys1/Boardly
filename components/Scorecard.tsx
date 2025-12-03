@@ -11,6 +11,11 @@ interface ScorecardProps {
   canSelectCategory: boolean
   isCurrentPlayer: boolean
   isLoading?: boolean
+  playerName?: string
+  onBackToMyCards?: () => void
+  showBackButton?: boolean
+  onGoToCurrentTurn?: () => void
+  showCurrentTurnButton?: boolean
 }
 
 const categoryLabels: Record<YahtzeeCategory, string> = {
@@ -124,7 +129,12 @@ const Scorecard = React.memo(function Scorecard({
   onSelectCategory, 
   canSelectCategory,
   isCurrentPlayer,
-  isLoading = false
+  isLoading = false,
+  playerName,
+  onBackToMyCards,
+  showBackButton = false,
+  onGoToCurrentTurn,
+  showCurrentTurnButton = false
 }: ScorecardProps) {
   const { t } = useTranslation()
   const upperSection: YahtzeeCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
@@ -157,10 +167,10 @@ const Scorecard = React.memo(function Scorecard({
         disabled={state === 'filled' || state === 'disabled' || isLoading}
         aria-label={`${categoryLabels[category]}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
         aria-disabled={state === 'filled' || state === 'disabled'}
-        className={`group relative w-full px-4 py-2.5 flex items-center justify-between rounded-xl transition-all ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none shadow-md hover:shadow-lg`}
+        className={`group relative w-full px-3 py-1.5 flex items-center justify-between rounded-xl transition-all ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none shadow-md hover:shadow-lg`}
       >
-        <span className="font-semibold text-sm flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-base shrink-0">{categoryLabels[category].split(' ')[0]}</span>
+        <span className="font-semibold text-xs flex items-center gap-1.5 flex-1 min-w-0">
+          <span className="text-sm shrink-0">{categoryLabels[category].split(' ')[0]}</span>
           <span className="truncate">{categoryLabels[category].split(' ').slice(1).join(' ')}</span>
         </span>
         
@@ -172,12 +182,12 @@ const Scorecard = React.memo(function Scorecard({
             </svg>
           ) : state === 'filled' ? (
             <>
-              <span className="text-sm opacity-75">{styles.icon}</span>
-              <span className={`${styles.score} text-lg font-bold`}>{filledScore}</span>
+              <span className="text-xs opacity-75">{styles.icon}</span>
+              <span className={`${styles.score} text-base font-bold`}>{filledScore}</span>
             </>
           ) : state !== 'disabled' && potentialScore !== null ? (
             <>
-              <span className={`${styles.score} group-hover:scale-110 transition-all text-lg font-bold`}>
+              <span className={`${styles.score} group-hover:scale-110 transition-all text-base font-bold`}>
                 +{potentialScore}
               </span>
               {category === 'yahtzee' && potentialScore === 50 && (
@@ -201,100 +211,72 @@ const Scorecard = React.memo(function Scorecard({
     <div className={`h-full flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${
       !isCurrentPlayer ? 'opacity-90' : ''
     }`}>
-      {/* Header - only if view-only */}
-      {!isCurrentPlayer && (
-        <div className="flex-shrink-0 px-4 py-2 bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-900/30 dark:to-amber-900/30 border-b border-yellow-300 dark:border-yellow-600">
-          <p className="text-xs text-yellow-800 dark:text-yellow-300 font-medium flex items-center gap-2">
-            <span className="text-sm">👀</span>
-            View Only
-          </p>
-        </div>
-      )}
-
       {/* TWO COLUMN LAYOUT - ADAPTIVE WITH SCROLL */}
-      <div className="flex-1 overflow-hidden p-4 sm:p-5">
-        <div className="h-full grid grid-cols-2 gap-3 sm:gap-5">
+      <div className="flex-1 overflow-hidden p-3 sm:p-4">
+        <div className="h-full grid grid-cols-2 gap-2 sm:gap-4">
           {/* LEFT COLUMN: Upper Section */}
           <div className="flex flex-col min-h-0">
-            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-              <span className="text-lg sm:text-xl">🎯</span>
-              <h3 className="text-xs sm:text-sm font-bold text-blue-600 dark:text-blue-400">
-                Upper Section
-              </h3>
+            <div className="flex items-center justify-between mb-1.5 flex-shrink-0 gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base sm:text-lg">🎯</span>
+                <h3 className="text-[10px] sm:text-xs font-bold text-blue-600 dark:text-blue-400">
+                  Upper Section
+                </h3>
+              </div>
+              {/* Bonus inline */}
+              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                <span className="text-[10px]">🎁</span>
+                <span className="text-[9px] font-semibold text-yellow-800 dark:text-yellow-300">
+                  {bonus > 0 ? `+${bonus}` : `${upperTotal}/63`}
+                </span>
+                {bonus > 0 && <span className="text-xs text-green-500">✓</span>}
+              </div>
             </div>
             
             <div className="flex-1 flex flex-col min-h-0">
-              {/* Categories with scroll */}
-              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly">
+              {/* Categories - full height */}
+              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly space-y-1">
                 {upperSection.map(renderCategory)}
-              </div>
-              
-              {/* Subtotal & Bonus - at bottom */}
-              <div className="mt-2 sm:mt-3 space-y-1.5 sm:space-y-2 flex-shrink-0">
-                <div className="flex justify-between items-center px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                  <span className="font-semibold text-xs text-gray-700 dark:text-gray-300">Subtotal</span>
-                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">{upperTotal}</span>
-                </div>
-                
-                <div className="p-2 sm:p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-xl border-2 border-yellow-300 dark:border-yellow-700 h-[72px]">
-                  <div className="flex justify-between items-center mb-1 sm:mb-2">
-                    <span className="font-bold text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5 text-yellow-800 dark:text-yellow-300">
-                      <span className="text-sm sm:text-base">🎁</span>
-                      Bonus {upperTotal >= 63 && <span className="text-green-500">✓</span>}
-                    </span>
-                    <span className={`font-bold text-sm sm:text-base ${bonus > 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                      {bonus > 0 ? `+${bonus}` : `${upperTotal}/63`}
-                    </span>
-                  </div>
-                  {bonus === 0 && (
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 sm:h-2 overflow-hidden shadow-inner">
-                      <div 
-                        className={`h-1.5 sm:h-2 rounded-full transition-all duration-500 shadow-sm ${
-                          upperTotal >= 50 ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 
-                          upperTotal >= 30 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 
-                          'bg-gradient-to-r from-blue-400 to-cyan-500'
-                        }`}
-                        style={{ width: `${Math.min(100, (upperTotal / 63) * 100)}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN: Lower Section */}
           <div className="flex flex-col min-h-0">
-            <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-              <span className="text-lg sm:text-xl">🎲</span>
-              <h3 className="text-xs sm:text-sm font-bold text-purple-600 dark:text-purple-400">
-                Lower Section
-              </h3>
+            <div className="flex items-center justify-between mb-1.5 flex-shrink-0 gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base sm:text-lg">🎲</span>
+                <h3 className="text-[10px] sm:text-xs font-bold text-purple-600 dark:text-purple-400">
+                  Lower Section
+                </h3>
+              </div>
+              {/* Back to My Cards button */}
+              {showBackButton && onBackToMyCards && (
+                <button
+                  onClick={onBackToMyCards}
+                  className="text-[9px] px-2 py-0.5 bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors font-semibold"
+                >
+                  ← My Cards
+                </button>
+              )}
+              {/* Current Turn button */}
+              {showCurrentTurnButton && onGoToCurrentTurn && (
+                <button
+                  onClick={onGoToCurrentTurn}
+                  className="text-[9px] px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-semibold"
+                >
+                  Current Turn →
+                </button>
+              )}
             </div>
             
             <div className="flex-1 flex flex-col min-h-0">
-              {/* Categories with scroll */}
-              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly">
+              {/* Categories - full height */}
+              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly space-y-1">
                 {lowerSection.map(renderCategory)}
-              </div>
-              
-              {/* Empty space to align with Bonus */}
-              <div className="mt-2 sm:mt-3 flex-shrink-0 h-[72px]">
-                {/* Empty space matching Bonus height */}
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Fixed Total at Bottom */}
-      <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white px-4 sm:px-5 py-2.5 sm:py-3 shadow-lg">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-xl sm:text-2xl">🏆</span>
-            <span className="text-sm sm:text-base font-bold">Grand Total</span>
-          </div>
-          <span className="text-2xl sm:text-3xl font-bold tracking-tight">{total}</span>
         </div>
       </div>
     </div>
