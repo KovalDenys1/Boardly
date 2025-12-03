@@ -122,6 +122,11 @@
       "playing": "In Progress",
       "finished": "Finished"
     },
+    "players": {
+      "title": "Players",
+      "clickToView": "Click to view cards",
+      "fullList": "All Players"
+    },
     "create": {
       "title": "Create Lobby",
       "lobbyName": "Lobby Name",

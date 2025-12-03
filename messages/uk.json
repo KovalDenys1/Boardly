@@ -122,6 +122,11 @@
       "playing": "В процесі",
       "finished": "Завершено"
     },
+    "players": {
+      "title": "Гравці",
+      "clickToView": "Картки гравців",
+      "fullList": "Всі гравці"
+    },
     "create": {
       "title": "Створити лобі",
       "lobbyName": "Назва лобі",
