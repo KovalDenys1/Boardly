@@ -1,6 +1,11 @@
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { YahtzeeGame, YahtzeeGameData } from '@/lib/games/yahtzee-game'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { Player } from '@/lib/game-engine'
+
+// Helper to get typed game data
+const getGameData = (game: YahtzeeGame): YahtzeeGameData => {
+  return game.getState().data as YahtzeeGameData
+}
 
 describe('YahtzeeGame', () => {
   let game: YahtzeeGame
@@ -29,10 +34,10 @@ describe('YahtzeeGame', () => {
       testPlayers.forEach(player => game.addPlayer(player))
       game.startGame()
       
-      const state = game.getState()
-      expect(state.data.scores).toHaveLength(2)
-      expect(state.data.scores[0]).toEqual({})
-      expect(state.data.scores[1]).toEqual({})
+      const data = getGameData(game)
+      expect(data.scores).toHaveLength(2)
+      expect(data.scores[0]).toEqual({})
+      expect(data.scores[1]).toEqual({})
     })
   })
 
@@ -54,8 +59,8 @@ describe('YahtzeeGame', () => {
     })
 
     it('should not allow roll if no rolls left', () => {
-      const state = game.getState()
-      state.data.rollsLeft = 0
+      const data = getGameData(game)
+      data.rollsLeft = 0
       
       const move = {
         playerId: 'player1',
@@ -106,8 +111,8 @@ describe('YahtzeeGame', () => {
       testPlayers.forEach(player => game.addPlayer(player))
       game.startGame()
       // Simulate one roll
-      const state = game.getState()
-      state.data.rollsLeft = 2
+      const data = getGameData(game)
+      data.rollsLeft = 2
     })
 
     it('should allow holding dice after rolling', () => {
@@ -122,8 +127,8 @@ describe('YahtzeeGame', () => {
     })
 
     it('should not allow holding before first roll', () => {
-      const state = game.getState()
-      state.data.rollsLeft = 3 // No rolls yet
+      const data = getGameData(game)
+      data.rollsLeft = 3 // No rolls yet
       
       const move = {
         playerId: 'player1',
@@ -163,9 +168,9 @@ describe('YahtzeeGame', () => {
       testPlayers.forEach(player => game.addPlayer(player))
       game.startGame()
       // Simulate at least one roll
-      const state = game.getState()
-      state.data.rollsLeft = 2
-      state.data.dice = [1, 1, 1, 2, 3]
+      const data = getGameData(game)
+      data.rollsLeft = 2
+      data.dice = [1, 1, 1, 2, 3]
     })
 
     it('should allow scoring after rolling', () => {
@@ -180,8 +185,8 @@ describe('YahtzeeGame', () => {
     })
 
     it('should not allow scoring before rolling', () => {
-      const state = game.getState()
-      state.data.rollsLeft = 3
+      const data = getGameData(game)
+      data.rollsLeft = 3
       
       const move = {
         playerId: 'player1',
@@ -194,8 +199,8 @@ describe('YahtzeeGame', () => {
     })
 
     it('should not allow scoring in already filled category', () => {
-      const state = game.getState()
-      state.data.scores[0] = { ones: 5 }
+      const data = getGameData(game)
+      data.scores[0] = { ones: 5 }
       
       const move = {
         playerId: 'player1',
@@ -234,11 +239,11 @@ describe('YahtzeeGame', () => {
       }
       
       game.processMove(move)
-      const state = game.getState()
+      const data = getGameData(game)
       
-      expect(state.data.dice).toHaveLength(5)
-      expect(state.data.rollsLeft).toBe(2)
-      state.data.dice.forEach((die: number) => {
+      expect(data.dice).toHaveLength(5)
+      expect(data.rollsLeft).toBe(2)
+      data.dice.forEach((die: number) => {
         expect(die).toBeGreaterThanOrEqual(1)
         expect(die).toBeLessThanOrEqual(6)
       })
@@ -253,11 +258,11 @@ describe('YahtzeeGame', () => {
         timestamp: new Date()
       })
       
-      const state = game.getState()
-      const firstDice = [...state.data.dice]
+      const data = getGameData(game)
+      const firstDice = [...data.dice]
       
       // Hold first and third dice
-      state.data.held = [true, false, true, false, false]
+      data.held = [true, false, true, false, false]
       
       // Second roll
       game.processMove({
@@ -267,10 +272,10 @@ describe('YahtzeeGame', () => {
         timestamp: new Date()
       })
       
-      const newState = game.getState()
-      expect(newState.data.dice[0]).toBe(firstDice[0]) // held
-      expect(newState.data.dice[2]).toBe(firstDice[2]) // held
-      expect(newState.data.rollsLeft).toBe(1)
+      const newData = getGameData(game)
+      expect(newData.dice[0]).toBe(firstDice[0]) // held
+      expect(newData.dice[2]).toBe(firstDice[2]) // held
+      expect(newData.rollsLeft).toBe(1)
     })
 
     it('should support atomic roll with held array', () => {
@@ -282,9 +287,9 @@ describe('YahtzeeGame', () => {
       }
       
       game.processMove(move)
-      const state = game.getState()
+      const data = getGameData(game)
       
-      expect(state.data.held).toEqual([true, false, true, false, false])
+      expect(data.held).toEqual([true, false, true, false, false])
     })
   })
 
@@ -309,8 +314,8 @@ describe('YahtzeeGame', () => {
         timestamp: new Date()
       })
       
-      let state = game.getState()
-      expect(state.data.held[0]).toBe(true)
+      let data = getGameData(game)
+      expect(data.held[0]).toBe(true)
       
       // Toggle again
       game.processMove({
@@ -320,8 +325,8 @@ describe('YahtzeeGame', () => {
         timestamp: new Date()
       })
       
-      state = game.getState()
-      expect(state.data.held[0]).toBe(false)
+      data = getGameData(game)
+      expect(data.held[0]).toBe(false)
     })
 
     it('should set entire held array', () => {
@@ -332,8 +337,8 @@ describe('YahtzeeGame', () => {
         timestamp: new Date()
       })
       
-      const state = game.getState()
-      expect(state.data.held).toEqual([true, false, true, false, true])
+      const data = getGameData(game)
+      expect(data.held).toEqual([true, false, true, false, true])
     })
   })
 
@@ -341,9 +346,9 @@ describe('YahtzeeGame', () => {
     beforeEach(() => {
       testPlayers.forEach(player => game.addPlayer(player))
       game.startGame()
-      const state = game.getState()
-      state.data.rollsLeft = 2
-      state.data.dice = [1, 1, 1, 2, 3]
+      const data = getGameData(game)
+      data.rollsLeft = 2
+      data.dice = [1, 1, 1, 2, 3]
     })
 
     it('should score and advance to next player', () => {
@@ -354,15 +359,15 @@ describe('YahtzeeGame', () => {
         timestamp: new Date()
       })
       
-      const state = game.getState()
-      expect(state.data.scores[0].ones).toBe(3)
+      const data = getGameData(game)
+      expect(data.scores[0].ones).toBe(3)
       // Note: currentPlayerIndex is advanced by makeMove(), not processMove()
-      expect(state.data.rollsLeft).toBe(3)
-      expect(state.data.held).toEqual([false, false, false, false, false])
+      expect(data.rollsLeft).toBe(3)
+      expect(data.held).toEqual([false, false, false, false, false])
     })
 
     it('should detect game over when all categories filled', () => {
-      const state = game.getState()
+      const data = getGameData(game)
       
       // Fill almost all categories for both players
       const almostFullScorecard = {
@@ -381,8 +386,8 @@ describe('YahtzeeGame', () => {
         // chance is missing
       }
       
-      state.data.scores[0] = { ...almostFullScorecard }
-      state.data.scores[1] = { ...almostFullScorecard, chance: 15 }
+      data.scores[0] = { ...almostFullScorecard }
+      data.scores[1] = { ...almostFullScorecard, chance: 15 }
       
       game.processMove({
         playerId: 'player1',
