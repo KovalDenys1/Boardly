@@ -27,60 +27,154 @@ export default function YahtzeeResults({
   const isWinner = winner.playerId === currentUserId
   
   return (
-    <div className="fixed inset-0 top-20 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="card text-center animate-scale-in max-w-4xl mx-auto my-4">
+    <div
+      className="fixed inset-0 top-20 overflow-y-auto bg-gray-50 dark:bg-gray-900"
+      style={{ padding: `clamp(12px, 1.2vw, 20px)` }}
+    >
+      <div
+        className="card text-center animate-scale-in max-w-4xl mx-auto"
+        style={{ marginTop: `clamp(12px, 1.2vh, 20px)`, marginBottom: `clamp(12px, 1.2vh, 20px)` }}
+      >
         {/* Header Section */}
-        <div className="mb-6">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 animate-bounce-in shadow-2xl">
-            <span className="text-6xl">🏆</span>
+        <div style={{ marginBottom: `clamp(20px, 2vh, 32px)` }}>
+          <div
+            className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 animate-bounce-in shadow-2xl"
+            style={{
+              width: `clamp(80px, 8vw, 120px)`,
+              height: `clamp(80px, 8vw, 120px)`,
+              marginBottom: `clamp(12px, 1.2vh, 20px)`,
+            }}
+          >
+            <span style={{ fontSize: `clamp(48px, 5vw, 72px)` }}>🏆</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">
+          <h2
+            className="font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent"
+            style={{
+              fontSize: `clamp(24px, 2.5vw, 40px)`,
+              marginBottom: `clamp(6px, 0.6vh, 10px)`,
+            }}
+          >
             {t('yahtzee.results.gameOver')}
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 text-base sm:text-lg">
+          <p
+            className="text-gray-600 dark:text-gray-400"
+            style={{ fontSize: `clamp(13px, 1.3vw, 20px)` }}
+          >
             {t('yahtzee.results.roundsCompleted', { count: 13 })} • {results.length} {t('yahtzee.results.players', { count: results.length })}
           </p>
         </div>
       
       {/* Winner Spotlight */}
-      <div className="mb-8 p-4 sm:p-6 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl border-4 border-yellow-400 dark:border-yellow-600 shadow-xl">
-        <div className="text-center mb-4">
-          <p className="text-2xl sm:text-3xl font-bold mb-2">
+      <div
+        className="bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 rounded-xl border-yellow-400 dark:border-yellow-600 shadow-xl"
+        style={{
+          marginBottom: `clamp(24px, 2.5vh, 40px)`,
+          padding: `clamp(16px, 1.6vh, 28px)`,
+          borderWidth: `clamp(3px, 0.3vw, 5px)`,
+        }}
+      >
+        <div
+          className="text-center"
+          style={{ marginBottom: `clamp(12px, 1.2vh, 20px)` }}
+        >
+          <p
+            className="font-bold"
+            style={{
+              fontSize: `clamp(20px, 2vw, 32px)`,
+              marginBottom: `clamp(6px, 0.6vh, 10px)`,
+            }}
+          >
             {isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
           </p>
-          <p className="text-4xl sm:text-5xl font-bold text-yellow-600 dark:text-yellow-400">
+          <p
+            className="font-bold text-yellow-600 dark:text-yellow-400"
+            style={{ fontSize: `clamp(32px, 3.5vw, 56px)` }}
+          >
             {t('yahtzee.results.points', { count: winner.totalScore })}
           </p>
         </div>
         
         {/* Winner's score breakdown */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
-          <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('yahtzee.results.upperSection')}</p>
-            <p className="text-xl sm:text-2xl font-bold">
+        <div
+          className="grid grid-cols-2"
+          style={{
+            gap: `clamp(10px, 1vw, 20px)`,
+            marginTop: `clamp(12px, 1.2vh, 20px)`,
+          }}
+        >
+          <div
+            className="bg-white/50 dark:bg-gray-800/50 rounded-lg"
+            style={{ padding: `clamp(10px, 1vh, 16px)` }}
+          >
+            <p
+              className="text-gray-600 dark:text-gray-400"
+              style={{
+                fontSize: `clamp(10px, 0.9vw, 14px)`,
+                marginBottom: `clamp(3px, 0.3vh, 5px)`,
+              }}
+            >
+              {t('yahtzee.results.upperSection')}
+            </p>
+            <p
+              className="font-bold"
+              style={{ fontSize: `clamp(16px, 1.6vw, 28px)` }}
+            >
               {winner.upperSectionScore}
               {winner.bonusAchieved && (
-                <span className="text-green-600 dark:text-green-400 text-base sm:text-lg ml-2">
+                <span
+                  className="text-green-600 dark:text-green-400"
+                  style={{
+                    fontSize: `clamp(13px, 1.3vw, 20px)`,
+                    marginLeft: `clamp(6px, 0.6vw, 10px)`,
+                  }}
+                >
                   +{winner.bonusPoints}
                 </span>
               )}
             </p>
           </div>
-          <div className="bg-white/50 dark:bg-gray-800/50 p-3 rounded-lg">
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('yahtzee.results.lowerSection')}</p>
-            <p className="text-xl sm:text-2xl font-bold">{winner.lowerSectionScore}</p>
+          <div
+            className="bg-white/50 dark:bg-gray-800/50 rounded-lg"
+            style={{ padding: `clamp(10px, 1vh, 16px)` }}
+          >
+            <p
+              className="text-gray-600 dark:text-gray-400"
+              style={{
+                fontSize: `clamp(10px, 0.9vw, 14px)`,
+                marginBottom: `clamp(3px, 0.3vh, 5px)`,
+              }}
+            >
+              {t('yahtzee.results.lowerSection')}
+            </p>
+            <p
+              className="font-bold"
+              style={{ fontSize: `clamp(16px, 1.6vw, 28px)` }}
+            >
+              {winner.lowerSectionScore}
+            </p>
           </div>
         </div>
         
         {/* Winner's achievements */}
         {winner.achievements.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2 justify-center">
+          <div
+            className="flex flex-wrap justify-center"
+            style={{
+              marginTop: `clamp(12px, 1.2vh, 20px)`,
+              gap: `clamp(6px, 0.6vw, 10px)`,
+            }}
+          >
             {winner.achievements.map((achievement, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs sm:text-sm font-semibold shadow-sm"
+                className="inline-flex items-center bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full font-semibold shadow-sm"
+                style={{
+                  gap: `clamp(3px, 0.3vw, 5px)`,
+                  padding: `clamp(5px, 0.5vh, 8px) clamp(10px, 1vw, 16px)`,
+                  fontSize: `clamp(10px, 0.9vw, 14px)`,
+                }}
               >
-                <span className="text-base sm:text-lg">{achievement.icon}</span>
+                <span style={{ fontSize: `clamp(13px, 1.3vw, 20px)` }}>{achievement.icon}</span>
                 <span>{achievement.label}</span>
               </span>
             ))}
@@ -89,35 +183,68 @@ export default function YahtzeeResults({
       </div>
       
       {/* Final Standings */}
-      <div className="mb-6">
-        <h3 className="text-xl sm:text-2xl font-bold mb-4">{t('yahtzee.results.finalStandings')}</h3>
-        <div className="space-y-3">
+      <div style={{ marginBottom: `clamp(20px, 2vh, 32px)` }}>
+        <h3
+          className="font-bold"
+          style={{
+            fontSize: `clamp(18px, 1.8vw, 28px)`,
+            marginBottom: `clamp(12px, 1.2vh, 20px)`,
+          }}
+        >
+          {t('yahtzee.results.finalStandings')}
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
           {results.map((player) => {
             const isCurrentUser = player.playerId === currentUserId
             
             return (
               <div
                 key={player.playerId}
-                className={`
-                  p-3 sm:p-4 rounded-xl transition-all duration-300 border-2 text-left
-                  ${player.rank === 0 ? 'bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border-yellow-500 shadow-lg scale-[1.02]' : ''}
-                  ${player.rank === 1 ? 'bg-gradient-to-r from-gray-300/20 to-gray-400/20 border-gray-400' : ''}
-                  ${player.rank === 2 ? 'bg-gradient-to-r from-orange-300/20 to-orange-400/20 border-orange-400' : ''}
-                  ${player.rank > 2 ? 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : ''}
-                  ${isCurrentUser ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900' : ''}
-                `}
+                className={`rounded-xl transition-all duration-300 text-left ${
+                  player.rank === 0 ? 'bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border-yellow-500 shadow-lg scale-[1.02]' : ''
+                } ${
+                  player.rank === 1 ? 'bg-gradient-to-r from-gray-300/20 to-gray-400/20 border-gray-400' : ''
+                } ${
+                  player.rank === 2 ? 'bg-gradient-to-r from-orange-300/20 to-orange-400/20 border-orange-400' : ''
+                } ${
+                  player.rank > 2 ? 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : ''
+                } ${
+                  isCurrentUser ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900' : ''
+                }`}
+                style={{
+                  padding: `clamp(10px, 1vh, 20px)`,
+                  borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
+                }}
               >
                 {/* Player header */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-2xl sm:text-3xl font-bold">
+                <div
+                  className="flex items-center justify-between"
+                  style={{ marginBottom: `clamp(6px, 0.6vh, 10px)` }}
+                >
+                  <div
+                    className="flex items-center"
+                    style={{ gap: `clamp(6px, 0.6vw, 16px)` }}
+                  >
+                    <span
+                      className="font-bold"
+                      style={{ fontSize: `clamp(20px, 2vw, 36px)` }}
+                    >
                       {player.rank === 0 ? '🥇' : player.rank === 1 ? '🥈' : player.rank === 2 ? '🥉' : `#${player.rank + 1}`}
                     </span>
                     <div>
-                      <p className="text-base sm:text-xl font-bold flex items-center gap-2">
+                      <p
+                        className="font-bold flex items-center"
+                        style={{
+                          fontSize: `clamp(13px, 1.3vw, 24px)`,
+                          gap: `clamp(6px, 0.6vw, 10px)`,
+                        }}
+                      >
                         <span className="truncate max-w-[150px] sm:max-w-none">{player.playerName}</span>
                         {isCurrentUser && (
-                          <span className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-normal">
+                          <span
+                            className="text-blue-600 dark:text-blue-400 font-normal"
+                            style={{ fontSize: `clamp(10px, 0.9vw, 14px)` }}
+                          >
                             (You)
                           </span>
                         )}
@@ -125,13 +252,30 @@ export default function YahtzeeResults({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl sm:text-3xl font-bold">{player.totalScore}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">points</p>
+                    <p
+                      className="font-bold"
+                      style={{ fontSize: `clamp(20px, 2vw, 36px)` }}
+                    >
+                      {player.totalScore}
+                    </p>
+                    <p
+                      className="text-gray-500 dark:text-gray-400"
+                      style={{ fontSize: `clamp(10px, 0.9vw, 12px)` }}
+                    >
+                      points
+                    </p>
                   </div>
                 </div>
                 
                 {/* Score breakdown */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2 text-xs sm:text-sm mb-2">
+                <div
+                  className="grid grid-cols-1 sm:grid-cols-2"
+                  style={{
+                    gap: `clamp(3px, 0.3vh, 10px)`,
+                    marginBottom: `clamp(6px, 0.6vh, 10px)`,
+                    fontSize: `clamp(10px, 0.9vw, 14px)`,
+                  }}
+                >
                   <div className="text-gray-600 dark:text-gray-400">
                     <span className="font-medium">Upper:</span>{' '}
                     <span className="font-semibold text-gray-900 dark:text-gray-100">
@@ -153,11 +297,22 @@ export default function YahtzeeResults({
                 
                 {/* Achievements */}
                 {player.achievements.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div
+                    className="flex flex-wrap"
+                    style={{
+                      gap: `clamp(3px, 0.3vw, 5px)`,
+                      marginTop: `clamp(6px, 0.6vh, 10px)`,
+                    }}
+                  >
                     {player.achievements.map((achievement, idx) => (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-semibold"
+                        className="inline-flex items-center bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded font-semibold"
+                        style={{
+                          gap: `clamp(3px, 0.3vw, 5px)`,
+                          padding: `clamp(2px, 0.2vh, 3px) clamp(6px, 0.6vw, 10px)`,
+                          fontSize: `clamp(10px, 0.9vw, 12px)`,
+                        }}
                       >
                         <span>{achievement.icon}</span>
                         <span className="hidden sm:inline">{achievement.label}</span>
@@ -172,27 +327,49 @@ export default function YahtzeeResults({
       </div>
       
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-8">
+      <div
+        className="flex flex-col sm:flex-row justify-center"
+        style={{
+          gap: `clamp(10px, 1vw, 20px)`,
+          marginTop: `clamp(24px, 2.5vh, 40px)`,
+        }}
+      >
         <div className="flex flex-col items-center">
           <button
             onClick={onPlayAgain}
             disabled={!canStartGame}
-            className="btn btn-success text-base sm:text-lg px-6 sm:px-8 py-3 flex items-center gap-2 justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-success flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              fontSize: `clamp(13px, 1.3vw, 20px)`,
+              padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 40px)`,
+              gap: `clamp(6px, 0.6vw, 10px)`,
+            }}
           >
-            <span className="text-xl">🔄</span>
+            <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>🔄</span>
             <span>Play Again</span>
           </button>
           {!canStartGame && (
-            <p className="text-xs text-gray-500 mt-2 text-center">
+            <p
+              className="text-gray-500 text-center"
+              style={{
+                fontSize: `clamp(10px, 0.9vw, 12px)`,
+                marginTop: `clamp(6px, 0.6vh, 10px)`,
+              }}
+            >
               Only the lobby host can start the next round.
             </p>
           )}
         </div>
         <button
           onClick={onBackToLobby}
-          className="btn btn-secondary text-base sm:text-lg px-6 sm:px-8 py-3 flex items-center gap-2 justify-center hover:scale-105 transition-transform"
+          className="btn btn-secondary flex items-center justify-center hover:scale-105 transition-transform"
+          style={{
+            fontSize: `clamp(13px, 1.3vw, 20px)`,
+            padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 40px)`,
+            gap: `clamp(6px, 0.6vw, 10px)`,
+          }}
         >
-          <span className="text-xl">↩️</span>
+          <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>↩️</span>
           <span>Back to Lobbies</span>
         </button>
       </div>

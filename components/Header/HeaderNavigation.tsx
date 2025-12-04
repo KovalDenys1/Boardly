@@ -15,14 +15,15 @@ export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
   const isActive = (path: string) => pathname === path
 
   return (
-    <div className="hidden md:flex ml-10 space-x-4">
+    <div className="hidden md:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(10px, 1vw, 20px)' }}>
       <button
         onClick={() => router.push('/')}
-        className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+        className={`rounded-lg font-medium transition-colors ${
           isActive('/')
             ? 'bg-white/20 text-white'
             : 'text-white/80 hover:bg-white/10 hover:text-white'
         }`}
+        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
       >
         🏠 {t('header.home', 'Home')}
       </button>
@@ -30,11 +31,12 @@ export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
       {isAuthenticated && (
         <button
           onClick={() => router.push('/games')}
-          className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+          className={`rounded-lg font-medium transition-colors ${
             pathname?.startsWith('/games')
               ? 'bg-white/20 text-white'
               : 'text-white/80 hover:bg-white/10 hover:text-white'
           }`}
+          style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
         >
           🎮 {t('header.games', 'Games')}
         </button>
@@ -42,11 +44,12 @@ export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
       
       <button
         onClick={() => router.push('/lobby')}
-        className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+        className={`rounded-lg font-medium transition-colors ${
           pathname?.startsWith('/lobby')
             ? 'bg-white/20 text-white'
             : 'text-white/80 hover:bg-white/10 hover:text-white'
         }`}
+        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
       >
         🎯 {t('header.lobbies', 'Lobbies')}
       </button>

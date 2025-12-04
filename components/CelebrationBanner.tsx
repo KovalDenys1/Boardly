@@ -55,20 +55,38 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
       `}
     >
       <div
-        className={`
-          bg-gradient-to-r ${getColorClasses()}
-          text-white rounded-2xl shadow-2xl px-8 py-4
-          border-4 flex items-center gap-4
-          animate-scale-pulse
-        `}
+        className="bg-gradient-to-r text-white rounded-2xl shadow-2xl flex items-center animate-scale-pulse"
+        style={{
+          padding: `clamp(12px, 1.2vh, 20px) clamp(24px, 2.4vw, 40px)`,
+          gap: `clamp(12px, 1.2vw, 20px)`,
+          borderWidth: `clamp(3px, 0.3vw, 5px)`,
+        }}
       >
         {/* Emoji */}
-        <div className="text-5xl animate-bounce">{event.emoji}</div>
+        <div
+          style={{
+            fontSize: `clamp(32px, 3.5vw, 56px)`,
+          }}
+          className="animate-bounce"
+        >
+          {event.emoji}
+        </div>
 
         {/* Content */}
         <div>
-          <h3 className="text-2xl font-bold drop-shadow-lg">{event.title}</h3>
-          <p className="text-lg">
+          <h3
+            className="font-bold drop-shadow-lg"
+            style={{
+              fontSize: `clamp(18px, 1.8vw, 28px)`,
+            }}
+          >
+            {event.title}
+          </h3>
+          <p
+            style={{
+              fontSize: `clamp(14px, 1.4vw, 20px)`,
+            }}
+          >
             {event.category && (
               <span className="font-semibold">{getCategoryDisplayName(event.category)} • </span>
             )}

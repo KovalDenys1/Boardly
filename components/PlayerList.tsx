@@ -108,50 +108,50 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
               `}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(8px, 0.8vw, 14px)' }}>
                   {/* Position Badge - Shows current rank by score */}
                   <div className={`
-                    w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-md
+                    rounded-full flex items-center justify-center font-bold text-white shrink-0 shadow-md
                     ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
                     ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
                     ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
-                  `}>
+                  `} style={{ width: 'clamp(24px, 2.5vw, 32px)', height: 'clamp(24px, 2.5vw, 32px)', fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                   </div>
 
                   {/* Player Info */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <span className="font-bold text-xs truncate">
+                    <div className="flex items-center flex-wrap" style={{ gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(2px, 0.2vh, 4px)' }}>
+                      <span className="font-bold truncate" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
                         {playerName}
                       </span>
                       {isBot && (
-                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded-full shrink-0 shadow-sm">
+                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(5px, 0.5vw, 9px)' }}>
                           AI
                         </span>
                       )}
                       {isCurrentUser && !isBot && (
-                        <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 py-0.5 rounded-full shrink-0 shadow-sm">
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(5px, 0.5vw, 9px)' }}>
                           You
                         </span>
                       )}
                       {isCurrentTurn && (
-                        <span className="text-sm animate-bounce shrink-0">
+                        <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>
                           🎲
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Score:</span>
-                      <span className={`font-bold text-sm ${
+                    <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
+                      <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>Score:</span>
+                      <span className={`font-bold ${
                         animatingScores[player.id] 
                           ? 'text-green-600 dark:text-green-400 animate-pulse' 
                           : 'text-gray-900 dark:text-white'
-                      }`}>
+                      }`} style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>
                         {player.score}
                         {animatingScores[player.id] && (
-                          <span className="ml-1 text-green-500 text-xs">✨</span>
+                          <span className="text-green-500" style={{ marginLeft: 'clamp(3px, 0.3vw, 6px)', fontSize: 'clamp(10px, 0.8vw, 13px)' }}>✨</span>
                         )}
                       </span>
                     </div>
