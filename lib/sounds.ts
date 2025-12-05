@@ -58,21 +58,26 @@ class SoundManager {
     }
 
     Object.entries(soundFiles).forEach(([key, path]) => {
-      const audio = new Audio(path)
-      audio.preload = 'auto' // Preload fully for instant playback
-      audio.volume = 0.7 // Set default volume to 70%
-      
-      // Add error handler to prevent console errors
-      audio.addEventListener('error', (e) => {
-        console.warn(`Failed to load sound: ${path}`, e)
-      })
-      
-      // Clean up playing state when sound ends
-      audio.addEventListener('ended', () => {
-        this.playingSounds.delete(key)
-      })
-      
-      this.sounds.set(key, audio)
+      try {
+        const audio = new Audio(path)
+        audio.preload = 'metadata' // Changed from 'auto' to reduce cache issues
+        audio.volume = 0.7 // Set default volume to 70%
+        
+        // Add error handler to prevent console errors
+        audio.addEventListener('error', (e) => {
+          console.debug(`Sound not available: ${path}`) // Changed to debug level
+          this.sounds.delete(key) // Remove failed sound from map
+        })
+        
+        // Clean up playing state when sound ends
+        audio.addEventListener('ended', () => {
+          this.playingSounds.delete(key)
+        })
+        
+        this.sounds.set(key, audio)
+      } catch (error) {
+        console.debug(`Failed to initialize sound: ${path}`)
+      }
     })
     
     this.initialized = true

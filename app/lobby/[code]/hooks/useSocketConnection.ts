@@ -107,9 +107,10 @@ export function useSocketConnection({
     const newSocket = io(url, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10, // Try 10 times before giving up
-      reconnectionDelay: 1000, // Initial delay
+      reconnectionAttempts: 15, // Increased from 10 for cold starts
+      reconnectionDelay: 2000, // Increased initial delay for server wake-up
       reconnectionDelayMax: 30000, // Max 30 seconds between attempts
+      timeout: 20000, // 20 seconds connection timeout for cold starts
       auth: {
         token: token,
         isGuest: isGuest,
@@ -168,15 +169,18 @@ export function useSocketConnection({
 
     newSocket.on('connect_error', (error) => {
       if (!isMounted) return
-      clientLogger.error('🔴 Socket connection error:', error.message)
-      setIsConnected(false)
       
-      if (error.message.includes('timeout')) {
-        clientLogger.warn('⏳ Socket connection timeout - retrying...')
+      // Reduce console noise for cold start connection issues
+      if (error.message.includes('timeout') || error.message.includes('closed')) {
+        clientLogger.log('⏳ Server warming up, retrying connection...')
       } else if (error.message.includes('Authentication failed')) {
         clientLogger.error('🔐 Authentication failed - check token')
         setIsReconnecting(false) // Don't retry if auth failed
+      } else {
+        clientLogger.warn('🔴 Socket connection error:', error.message)
       }
+      
+      setIsConnected(false)
     })
     
     newSocket.on('game-update', (data) => onGameUpdateRef.current(data))
