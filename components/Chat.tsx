@@ -136,16 +136,16 @@ export default function Chat({
       : t('chat.openChat')
     
     return (
-      <div className="fixed z-50 bottom-4 right-4">
+      <div className="fixed z-50" style={{ bottom: '20px', right: '20px' }}>
         <button
           onClick={onToggleMinimize}
           aria-label={ariaLabel}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-xl flex items-center gap-2 px-4 py-3 min-h-[44px] transform transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-xl flex items-center gap-2 px-4 py-3 transform transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
         >
           <span className="text-xl">💬</span>
-          <span className="font-semibold text-sm sm:text-base">{t('chat.open')}</span>
+          <span className="font-semibold">{t('chat.open')}</span>
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[1.25rem] text-center animate-pulse" aria-label={t('chat.unread', { count: unreadCount })}>
+            <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center animate-pulse" aria-label={t('chat.unread', { count: unreadCount })}>
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -163,10 +163,10 @@ export default function Chat({
           : 'fixed z-50 rounded-2xl'
       }`}
       style={fullScreen ? {} : {
-        bottom: '1rem',
-        right: '1rem',
-        width: 'min(26rem, calc(100vw - 2rem))',
-        height: 'min(37.5rem, calc(100vh - 6rem))'
+        bottom: '20px',
+        right: '20px',
+        width: 'min(420px, calc(100vw - 40px))',
+        height: 'min(600px, calc(100vh - 100px))'
       }}
     >
       {/* Header */}

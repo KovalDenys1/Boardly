@@ -167,35 +167,36 @@ const Scorecard = React.memo(function Scorecard({
         disabled={state === 'filled' || state === 'disabled' || isLoading}
         aria-label={`${categoryLabels[category]}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
         aria-disabled={state === 'filled' || state === 'disabled'}
-        className={`group relative w-full flex items-center justify-between transition-all ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none shadow-md hover:shadow-lg px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl`}
+        className={`group relative w-full flex items-center justify-between transition-all ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none shadow-md hover:shadow-lg`}
+        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', borderRadius: 'clamp(10px, 1vw, 16px)' }}
       >
-        <span className="font-semibold flex items-center flex-1 min-w-0 text-xs sm:text-sm gap-1.5 sm:gap-2">
-          <span className="shrink-0 text-sm sm:text-base">{categoryLabels[category].split(' ')[0]}</span>
+        <span className="font-semibold flex items-center flex-1 min-w-0" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)', gap: 'clamp(4px, 0.4vw, 8px)' }}>
+          <span className="shrink-0" style={{ fontSize: 'clamp(12px, 0.95vw, 16px)' }}>{categoryLabels[category].split(' ')[0]}</span>
           <span className="truncate">{categoryLabels[category].split(' ').slice(1).join(' ')}</span>
         </span>
         
-        <div className="flex items-center shrink-0 gap-2 ml-3">
+        <div className="flex items-center shrink-0" style={{ gap: 'clamp(8px, 0.8vw, 14px)', marginLeft: 'clamp(10px, 1vw, 16px)' }}>
           {isLoading ? (
-            <svg className="animate-spin text-gray-400 w-4 h-4 sm:w-5 sm:h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style={{ width: 'clamp(14px, 1.2vw, 20px)', height: 'clamp(14px, 1.2vw, 20px)' }}>
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           ) : state === 'filled' ? (
             <>
-              <span className="opacity-75 text-xs sm:text-sm">{styles.icon}</span>
-              <span className={`${styles.score} font-bold text-sm sm:text-base`}>{filledScore}</span>
+              <span className="opacity-75" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>{styles.icon}</span>
+              <span className={`${styles.score} font-bold`} style={{ fontSize: 'clamp(14px, 1.1vw, 18px)' }}>{filledScore}</span>
             </>
           ) : state !== 'disabled' && potentialScore !== null ? (
             <>
-              <span className={`${styles.score} group-hover:scale-110 transition-all font-bold text-sm sm:text-base`}>
+              <span className={`${styles.score} group-hover:scale-110 transition-all font-bold`} style={{ fontSize: 'clamp(14px, 1.1vw, 18px)' }}>
                 +{potentialScore}
               </span>
               {category === 'yahtzee' && potentialScore === 50 && (
-                <span className="animate-bounce text-lg sm:text-xl">🎯</span>
+                <span className="animate-bounce" style={{ fontSize: 'clamp(16px, 1.3vw, 24px)' }}>🎯</span>
               )}
             </>
           ) : (
-            <span className={`${styles.score} opacity-50 text-sm sm:text-base`}>—</span>
+            <span className={`${styles.score} opacity-50`} style={{ fontSize: 'clamp(14px, 1.1vw, 18px)' }}>—</span>
           )}
         </div>
       </button>
@@ -208,34 +209,34 @@ const Scorecard = React.memo(function Scorecard({
   const total = upperTotal + bonus + lowerTotal
 
   return (
-    <div className={`h-full flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${
+    <div className={`h-full flex flex-col bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${
       !isCurrentPlayer ? 'opacity-90' : ''
-    }`}>
+    }`} style={{ borderRadius: 'clamp(12px, 1.2vw, 24px)' }}>
       {/* TWO COLUMN LAYOUT - ADAPTIVE WITH SCROLL - Single column on mobile */}
-      <div className="flex-1 overflow-hidden p-3 sm:p-4 lg:p-5">
-        <div className="h-full grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5 min-h-0">
+      <div className="flex-1 overflow-hidden" style={{ padding: 'clamp(10px, 1vw, 20px)' }}>
+        <div className="h-full grid grid-cols-1 sm:grid-cols-2 scorecard-columns" style={{ gap: 'clamp(8px, 0.8vw, 20px)' }}>
           {/* LEFT COLUMN: Upper Section */}
           <div className="flex flex-col min-h-0">
-            <div className="flex items-center justify-between flex-shrink-0 mb-2 gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🎯</span>
-                <h3 className="font-bold text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
+            <div className="flex items-center justify-between flex-shrink-0" style={{ marginBottom: 'clamp(6px, 0.6vh, 10px)', gap: 'clamp(6px, 0.6vw, 12px)' }}>
+              <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
+                <span style={{ fontSize: 'clamp(14px, 1.1vw, 20px)' }}>🎯</span>
+                <h3 className="font-bold text-blue-600 dark:text-blue-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
                   Upper Section
                 </h3>
               </div>
               {/* Bonus inline */}
-              <div className="flex items-center bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700 gap-1.5 px-2 py-1">
-                <span className="text-xs">🎁</span>
-                <span className="font-semibold text-yellow-800 dark:text-yellow-300 text-xs">
+              <div className="flex items-center bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700" style={{ gap: 'clamp(3px, 0.3vw, 6px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(5px, 0.5vw, 9px)' }}>
+                <span style={{ fontSize: 'clamp(9px, 0.7vw, 12px)' }}>🎁</span>
+                <span className="font-semibold text-yellow-800 dark:text-yellow-300" style={{ fontSize: 'clamp(9px, 0.7vw, 11px)' }}>
                   {bonus > 0 ? `+${bonus}` : `${upperTotal}/63`}
                 </span>
-                {bonus > 0 && <span className="text-green-500 text-sm">✓</span>}
+                {bonus > 0 && <span className="text-green-500" style={{ fontSize: 'clamp(10px, 0.8vw, 14px)' }}>✓</span>}
               </div>
             </div>
             
             <div className="flex-1 flex flex-col min-h-0">
               {/* Categories - full height */}
-              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly gap-1.5">
+              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
                 {upperSection.map(renderCategory)}
               </div>
             </div>
@@ -243,10 +244,10 @@ const Scorecard = React.memo(function Scorecard({
 
           {/* RIGHT COLUMN: Lower Section */}
           <div className="flex flex-col min-h-0">
-            <div className="flex items-center justify-between flex-shrink-0 mb-2 gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🎲</span>
-                <h3 className="font-bold text-purple-600 dark:text-purple-400 text-xs sm:text-sm">
+            <div className="flex items-center justify-between flex-shrink-0" style={{ marginBottom: 'clamp(6px, 0.6vh, 10px)', gap: 'clamp(6px, 0.6vw, 12px)' }}>
+              <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
+                <span style={{ fontSize: 'clamp(14px, 1.1vw, 20px)' }}>🎲</span>
+                <h3 className="font-bold text-purple-600 dark:text-purple-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
                   Lower Section
                 </h3>
               </div>
@@ -254,7 +255,8 @@ const Scorecard = React.memo(function Scorecard({
               {showBackButton && onBackToMyCards && (
                 <button
                   onClick={onBackToMyCards}
-                  className="bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors font-semibold text-xs px-2 py-1"
+                  className="bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors font-semibold"
+                  style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(6px, 0.6vw, 10px)' }}
                 >
                   ← My Cards
                 </button>
@@ -263,7 +265,8 @@ const Scorecard = React.memo(function Scorecard({
               {showCurrentTurnButton && onGoToCurrentTurn && (
                 <button
                   onClick={onGoToCurrentTurn}
-                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-semibold text-xs px-2 py-1"
+                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-semibold"
+                  style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(6px, 0.6vw, 10px)' }}
                 >
                   Current Turn →
                 </button>
@@ -272,7 +275,7 @@ const Scorecard = React.memo(function Scorecard({
             
             <div className="flex-1 flex flex-col min-h-0">
               {/* Categories - full height */}
-              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly gap-1.5">
+              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
                 {lowerSection.map(renderCategory)}
               </div>
             </div>
