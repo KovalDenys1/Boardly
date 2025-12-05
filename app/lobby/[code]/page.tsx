@@ -50,6 +50,8 @@ import LobbyInfo from './components/LobbyInfo'
 import GameBoard from './components/GameBoard'
 import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
+import MobileTabs, { TabId } from './components/MobileTabs'
+import MobileTabPanel from './components/MobileTabPanel'
 
 function LobbyPageContent() {
   const router = useRouter()
@@ -104,6 +106,9 @@ function LobbyPageContent() {
     return []
   })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
+  
+  // Mobile tabs state
+  const [mobileActiveTab, setMobileActiveTab] = useState<TabId>('game')
 
   // Selected player for viewing their scorecard
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
@@ -681,10 +686,70 @@ function LobbyPageContent() {
             />
           ) : gameEngine ? (
             <>
-              {/* Top Status Bar - Compact (20% smaller) */}
-              <div className="flex-shrink-0 mb-3 px-4">
-                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-xl px-4 py-2 shadow-lg">
-                  <div className="flex items-center justify-between">
+              {/* Top Status Bar - Responsive */}
+              <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
+                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-xl px-2 sm:px-4 py-2 shadow-lg">
+                  {/* Mobile: Compact 2-row layout */}
+                  <div className="md:hidden">
+                    {/* Row 1: Game Info */}
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/20">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <span className="text-base">🎯</span>
+                          <span className="text-sm font-bold">
+                            R {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1}/13
+                          </span>
+                        </div>
+                        <div className="h-4 w-px bg-white/30"></div>
+                        <div className="flex items-center gap-1 max-w-[120px]">
+                          <span className="text-base">👤</span>
+                          <span className="text-sm font-bold truncate">
+                            {gameEngine.getCurrentPlayer()?.name || 'Player'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-base">🏆</span>
+                        <span className="text-sm font-bold">
+                          {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Row 2: Actions */}
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          const newState = soundManager.toggle()
+                          setSoundEnabled(newState)
+                          toast.success(newState ? '🔊 Sound enabled' : '🔇 Sound disabled', {
+                            duration: 2000,
+                            position: 'top-center',
+                          })
+                        }}
+                        aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+                        className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+                      >
+                        <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to leave the game?')) {
+                            handleLeaveLobby()
+                          }
+                        }}
+                        aria-label="Leave game"
+                        className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                      >
+                        <span className="text-base">🚪</span>
+                        <span>Leave</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop/Tablet: Original layout */}
+                  <div className="hidden md:flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
@@ -752,41 +817,146 @@ function LobbyPageContent() {
               </div>
 
               {/* Main Game Area - More spacing between columns */}
-              <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 overflow-hidden">
-                {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-                  <GameBoard
-                    gameEngine={gameEngine}
-                    game={game}
-                    isMyTurn={isMyTurn()}
-                    timeLeft={timeLeft}
-                    isMoveInProgress={isMoveInProgress}
-                    isRolling={isRolling}
-                    isScoring={isScoring}
-                    celebrationEvent={celebrationEvent}
-                    held={held}
-                    getCurrentUserId={getCurrentUserId}
-                    onRollDice={handleRollDice}
-                    onToggleHold={handleToggleHold}
-                    onScore={handleScore}
-                    onCelebrationComplete={() => setCelebrationEvent(null)}
-                  />
+              <div className="flex-1 min-h-0 relative">
+                {/* Desktop: Grid Layout */}
+                <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
+                  {/* Left: Dice Controls - 3 columns, Fixed Height */}
+                  <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+                    <GameBoard
+                      gameEngine={gameEngine}
+                      game={game}
+                      isMyTurn={isMyTurn()}
+                      timeLeft={timeLeft}
+                      isMoveInProgress={isMoveInProgress}
+                      isRolling={isRolling}
+                      isScoring={isScoring}
+                      celebrationEvent={celebrationEvent}
+                      held={held}
+                      getCurrentUserId={getCurrentUserId}
+                      onRollDice={handleRollDice}
+                      onToggleHold={handleToggleHold}
+                      onScore={handleScore}
+                      onCelebrationComplete={() => setCelebrationEvent(null)}
+                    />
+                  </div>
+
+                  {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
+                  <div className="lg:col-span-6 h-full overflow-hidden">
+                    {(() => {
+                      // Show selected player's scorecard or current player's scorecard
+                      const currentUserId = getCurrentUserId()
+                      const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
+                      const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
+                      const isViewingOtherPlayer = viewingPlayerId !== currentUserId
+                      
+                      if (!scorecard) return null
+                      
+                      return (
+                        <div className="h-full flex flex-col">
+                          <div className="flex-1 min-h-0">
+                            <Scorecard
+                              scorecard={scorecard}
+                              currentDice={gameEngine.getDice()}
+                              onSelectCategory={handleScore}
+                              canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
+                              isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+                              isLoading={isScoring}
+                              playerName={(() => {
+                                const dbPlayer = game?.players?.find((p: any) => p.userId === viewingPlayerId)
+                                if (!dbPlayer) return undefined
+                                return (dbPlayer as any).user?.name || (dbPlayer as any).user?.username || 'Player'
+                              })()}
+                              onBackToMyCards={isViewingOtherPlayer ? () => {
+                                // Set to current user's ID instead of null
+                                setSelectedPlayerId(currentUserId || null)
+                              } : undefined}
+                              showBackButton={isViewingOtherPlayer}
+                              onGoToCurrentTurn={() => {
+                                // Go back to viewing current player's turn
+                                setSelectedPlayerId(null)
+                              }}
+                              showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Right: Players & History - 3 columns, Internal Scroll Only */}
+                  <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
+                    {/* Players List - Shows 1 player with scroll for more */}
+                    <div className="flex-shrink-0" style={{ height: '140px' }}>
+                      <PlayerList
+                        players={game?.players?.map((p: any) => {
+                          // Find the player's actual position in the game engine
+                          const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
+                          const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
+                          
+                          return {
+                            id: p.id,
+                            userId: p.userId,
+                            user: p.user,
+                            score: enginePlayer?.score || 0,
+                            position: actualPosition, // Use position from game engine, not DB
+                            isReady: true,
+                          }
+                        }) || []}
+                        currentTurn={gameEngine.getState().currentPlayerIndex}
+                        currentUserId={getCurrentUserId()}
+                        onPlayerClick={(userId) => {
+                          // Toggle selection: if clicking same player, deselect; otherwise select
+                          setSelectedPlayerId(prev => prev === userId ? null : userId)
+                        }}
+                        selectedPlayerId={selectedPlayerId || undefined}
+                      />
+                    </div>
+
+                    {/* Roll History - Shows 2 recent rolls */}
+                    {rollHistory.length > 0 && (
+                      <div className="flex-1 min-h-0 overflow-hidden">
+                        <RollHistory entries={rollHistory} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                <div className="lg:col-span-6 h-full overflow-hidden">
-                  {(() => {
-                    // Show selected player's scorecard or current player's scorecard
-                    const currentUserId = getCurrentUserId()
-                    const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
-                    const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
-                    const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-                    
-                    if (!scorecard) return null
-                    
-                    return (
-                      <div className="h-full flex flex-col">
-                        <div className="flex-1 min-h-0">
+                {/* Mobile: Tabbed Layout */}
+                <div className="md:hidden h-full relative">
+                  {/* Game Tab */}
+                  <MobileTabPanel id="game" activeTab={mobileActiveTab}>
+                    <div className="p-4 space-y-4">
+                      <GameBoard
+                        gameEngine={gameEngine}
+                        game={game}
+                        isMyTurn={isMyTurn()}
+                        timeLeft={timeLeft}
+                        isMoveInProgress={isMoveInProgress}
+                        isRolling={isRolling}
+                        isScoring={isScoring}
+                        celebrationEvent={celebrationEvent}
+                        held={held}
+                        getCurrentUserId={getCurrentUserId}
+                        onRollDice={handleRollDice}
+                        onToggleHold={handleToggleHold}
+                        onScore={handleScore}
+                        onCelebrationComplete={() => setCelebrationEvent(null)}
+                      />
+                    </div>
+                  </MobileTabPanel>
+
+                  {/* Scorecard Tab */}
+                  <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
+                    <div className="p-4">
+                      {(() => {
+                        const currentUserId = getCurrentUserId()
+                        const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
+                        const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
+                        const isViewingOtherPlayer = viewingPlayerId !== currentUserId
+                        
+                        if (!scorecard) return null
+                        
+                        return (
                           <Scorecard
                             scorecard={scorecard}
                             currentDice={gameEngine.getDice()}
@@ -800,84 +970,124 @@ function LobbyPageContent() {
                               return (dbPlayer as any).user?.name || (dbPlayer as any).user?.username || 'Player'
                             })()}
                             onBackToMyCards={isViewingOtherPlayer ? () => {
-                              // Set to current user's ID instead of null
                               setSelectedPlayerId(currentUserId || null)
                             } : undefined}
                             showBackButton={isViewingOtherPlayer}
                             onGoToCurrentTurn={() => {
-                              // Go back to viewing current player's turn
                               setSelectedPlayerId(null)
                             }}
                             showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
                           />
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </div>
-
-                {/* Right: Players & History - 3 columns, Internal Scroll Only */}
-                <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
-                  {/* Players List - Shows 1 player with scroll for more */}
-                  <div className="flex-shrink-0" style={{ height: '140px' }}>
-                    <PlayerList
-                      players={game?.players?.map((p: any) => {
-                        // Find the player's actual position in the game engine
-                        const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
-                        const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-                        
-                        return {
-                          id: p.id,
-                          userId: p.userId,
-                          user: p.user,
-                          score: enginePlayer?.score || 0,
-                          position: actualPosition, // Use position from game engine, not DB
-                          isReady: true,
-                        }
-                      }) || []}
-                      currentTurn={gameEngine.getState().currentPlayerIndex}
-                      currentUserId={getCurrentUserId()}
-                      onPlayerClick={(userId) => {
-                        // Toggle selection: if clicking same player, deselect; otherwise select
-                        setSelectedPlayerId(prev => prev === userId ? null : userId)
-                      }}
-                      selectedPlayerId={selectedPlayerId || undefined}
-                    />
-                  </div>
-
-                  {/* Roll History - Shows 2 recent rolls */}
-                  {rollHistory.length > 0 && (
-                    <div className="flex-1 min-h-0 overflow-hidden">
-                      <RollHistory entries={rollHistory} />
+                        )
+                      })()}
                     </div>
-                  )}
+                  </MobileTabPanel>
+
+                  {/* Players Tab */}
+                  <MobileTabPanel id="players" activeTab={mobileActiveTab}>
+                    <div className="p-4 space-y-4">
+                      <PlayerList
+                        players={game?.players?.map((p: any) => {
+                          const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
+                          const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
+                          
+                          return {
+                            id: p.id,
+                            userId: p.userId,
+                            user: p.user,
+                            score: enginePlayer?.score || 0,
+                            position: actualPosition,
+                            isReady: true,
+                          }
+                        }) || []}
+                        currentTurn={gameEngine.getState().currentPlayerIndex}
+                        currentUserId={getCurrentUserId()}
+                        onPlayerClick={(userId) => {
+                          setSelectedPlayerId(prev => prev === userId ? null : userId)
+                          // Switch to scorecard tab when clicking player
+                          setMobileActiveTab('scorecard')
+                        }}
+                        selectedPlayerId={selectedPlayerId || undefined}
+                      />
+                      
+                      {rollHistory.length > 0 && (
+                        <div className="mt-4">
+                          <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Roll History</h3>
+                          <RollHistory entries={rollHistory} />
+                        </div>
+                      )}
+                    </div>
+                  </MobileTabPanel>
+
+                  {/* Chat Tab */}
+                  <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
+                    <div className="h-full">
+                      <Chat
+                        messages={chatMessages}
+                        onSendMessage={(message) => {
+                          emitWhenConnected('send-chat-message', {
+                            lobbyCode: code,
+                            message,
+                            userId: getCurrentUserId(),
+                            username: getCurrentUserName(),
+                          })
+                        }}
+                        currentUserId={getCurrentUserId()}
+                        isMinimized={false}
+                        onToggleMinimize={() => {}}
+                        unreadCount={0}
+                        someoneTyping={someoneTyping}
+                        fullScreen={true}
+                      />
+                    </div>
+                  </MobileTabPanel>
                 </div>
               </div>
 
-              {/* Chat - Minimized Button */}
-              {isInGame && (
-                <Chat
-                  messages={chatMessages}
-                  onSendMessage={(message) => {
-                    emitWhenConnected('send-chat-message', {
-                      lobbyCode: code,
-                      message,
-                      userId: getCurrentUserId(),
-                      username: getCurrentUserName(),
-                    })
-                  }}
-                  currentUserId={getCurrentUserId()}
-                  isMinimized={chatMinimized}
-                  onToggleMinimize={() => {
-                    setChatMinimized(!chatMinimized)
-                    if (chatMinimized) {
-                      setUnreadMessageCount(0)
-                    }
-                  }}
-                  unreadCount={unreadMessageCount}
-                  someoneTyping={someoneTyping}
-                />
-              )}
+              {/* Desktop Chat - Minimized Button */}
+              <div className="hidden md:block">
+                {isInGame && (
+                  <Chat
+                    messages={chatMessages}
+                    onSendMessage={(message) => {
+                      emitWhenConnected('send-chat-message', {
+                        lobbyCode: code,
+                        message,
+                        userId: getCurrentUserId(),
+                        username: getCurrentUserName(),
+                      })
+                    }}
+                    currentUserId={getCurrentUserId()}
+                    isMinimized={chatMinimized}
+                    onToggleMinimize={() => {
+                      setChatMinimized(!chatMinimized)
+                      if (chatMinimized) {
+                        setUnreadMessageCount(0)
+                      }
+                    }}
+                    unreadCount={unreadMessageCount}
+                    someoneTyping={someoneTyping}
+                  />
+                )}
+              </div>
+
+              {/* Mobile Bottom Navigation */}
+              <MobileTabs
+                activeTab={mobileActiveTab}
+                onTabChange={(tab) => {
+                  setMobileActiveTab(tab)
+                  if (tab === 'chat') {
+                    setUnreadMessageCount(0)
+                  }
+                }}
+                tabs={[
+                  { id: 'game', label: 'Game', icon: '🎲' },
+                  { id: 'scorecard', label: 'Score', icon: '📊' },
+                  { id: 'players', label: 'Players', icon: '👥' },
+                  { id: 'chat', label: 'Chat', icon: '💬', badge: unreadMessageCount },
+                ]}
+                unreadChatCount={unreadMessageCount}
+              />
             </>
           ) : null}
         </div>

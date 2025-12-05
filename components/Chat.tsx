@@ -20,6 +20,7 @@ interface ChatProps {
   onClearChat?: () => void
   unreadCount?: number
   someoneTyping?: boolean
+  fullScreen?: boolean // New prop for mobile full-screen mode
 }
 
 export default function Chat({
@@ -30,7 +31,8 @@ export default function Chat({
   onToggleMinimize,
   onClearChat,
   unreadCount = 0,
-  someoneTyping = false
+  someoneTyping = false,
+  fullScreen = false
 }: ChatProps) {
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
@@ -122,8 +124,12 @@ export default function Chat({
   return (
     <div 
       ref={chatRef}
-      className="fixed bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col animate-slide-up"
-      style={{
+      className={`bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-slide-up ${
+        fullScreen 
+          ? 'fixed inset-0 z-40 rounded-none' 
+          : 'fixed z-50'
+      }`}
+      style={fullScreen ? {} : {
         bottom: 'clamp(16px, 2vh, 32px)',
         right: 'clamp(16px, 2vw, 32px)',
         width: 'min(500px, calc(100vw - 2rem))',
@@ -132,7 +138,13 @@ export default function Chat({
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl" style={{ padding: 'clamp(12px, 1.2vh, 20px)', borderTopLeftRadius: 'clamp(16px, 1.6vw, 24px)', borderTopRightRadius: 'clamp(16px, 1.6vw, 24px)' }}>
+      <div className={`flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white ${
+        fullScreen ? 'rounded-none' : 'rounded-t-2xl'
+      }`} style={{ 
+        padding: 'clamp(12px, 1.2vh, 20px)', 
+        borderTopLeftRadius: fullScreen ? '0' : 'clamp(16px, 1.6vw, 24px)', 
+        borderTopRightRadius: fullScreen ? '0' : 'clamp(16px, 1.6vw, 24px)' 
+      }}>
         <div className="flex items-center" style={{ gap: 'clamp(10px, 1vw, 16px)' }}>
           <div className="bg-green-400 rounded-full animate-pulse" aria-hidden="true" style={{ width: 'clamp(10px, 1vw, 14px)', height: 'clamp(10px, 1vw, 14px)' }}></div>
           <h3 className="font-bold" id="chat-title" style={{ fontSize: 'clamp(16px, 1.2vw, 20px)' }}>💬 {t('chat.title')}</h3>
