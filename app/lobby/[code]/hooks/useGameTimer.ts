@@ -41,10 +41,6 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
       setLastPlayerIndex(currentPlayerIndex)
       // Reset timeout flag when turn changes
       timeoutCalledRef.current = false
-    }
-
-    if (isMyTurn) {
-      setTimerActive(true)
       
       // Calculate remaining time from lastMoveAt if available
       const lastMoveAt = gameState.lastMoveAt
@@ -53,28 +49,34 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
         const remainingTime = Math.max(0, 60 - elapsedSeconds)
         
         if (isInitialLoad) {
-          clientLogger.log('🔄 Initial load - my turn, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
+          clientLogger.log('🔄 Initial load - turn changed, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
           setTimeLeft(remainingTime)
           setIsInitialLoad(false)
-        } else if (turnChanged) {
-          clientLogger.log('🔄 Turn changed to me, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
+        } else {
+          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
           setTimeLeft(remainingTime)
         }
       } else {
-        // Fallback to 60s if no lastMoveAt (shouldn't happen after migration)
-        if (turnChanged) {
-          if (isInitialLoad) {
-            clientLogger.log('🔄 Initial load - my turn, starting timer at 60s (no lastMoveAt)')
-            setTimeLeft(60)
-            setIsInitialLoad(false)
-          } else {
-            clientLogger.log('🔄 Turn changed to me, resetting timer to 60s (no lastMoveAt)')
-            setTimeLeft(60)
-          }
+        // Fallback to 60s if no lastMoveAt
+        if (isInitialLoad) {
+          clientLogger.log('🔄 Initial load - turn changed, starting timer at 60s (no lastMoveAt)')
+          setTimeLeft(60)
+          setIsInitialLoad(false)
+        } else {
+          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), resetting timer to 60s (no lastMoveAt)')
+          setTimeLeft(60)
         }
       }
+    }
+
+    // Activate timer only when it's my turn
+    if (isMyTurn) {
+      setTimerActive(true)
+      // Reset timeout flag when it's not my turn
+      timeoutCalledRef.current = false
     } else {
-      setTimerActive(false)
+      // Keep timer active for bot turns (visual countdown)
+      setTimerActive(true)
       // Reset timeout flag when it's not my turn
       timeoutCalledRef.current = false
     }

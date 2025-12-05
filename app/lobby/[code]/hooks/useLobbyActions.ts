@@ -2,6 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
+import { getAuthHeaders } from '@/lib/socket-url'
+import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import toast from 'react-hot-toast'
 import type { Socket } from 'socket.io-client'
 
@@ -62,21 +64,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   } = props
 
   const [password, setPassword] = useState('')
-  const [previousGameState, setPreviousGameState] = useState<any>(null)
   
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
 
   const loadLobby = useCallback(async () => {
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-      
-      if (isGuest && guestId && guestName) {
-        headers['X-Guest-Id'] = guestId
-        headers['X-Guest-Name'] = guestName
-      }
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
       
       const res = await fetch(`/api/lobby/${code}`, { headers })
       const data = await res.json()
@@ -99,8 +93,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
             const engine = new YahtzeeGame(activeGame.id)
             engine.restoreState(parsedState)
             setGameEngine(engine)
-            
-            setPreviousGameState(parsedState)
           } catch (parseError) {
             clientLogger.error('Failed to parse game state:', parseError)
             setError('Game state is corrupted. Please start a new game.')
@@ -226,6 +218,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       
       emitPlayerJoined()
       
+      // Track lobby join
+      trackLobbyJoined({
+        lobbyCode: code,
+        gameType: lobby?.gameType || 'yahtzee',
+        isPrivate: !!lobby?.password,
+      })
+      
       const joinMessage = {
         id: Date.now().toString() + '_join',
         userId: 'system',
@@ -238,7 +237,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: any) {
       setError(err.message)
     }
-  }, [code, password, isGuest, guestId, guestName, socket, username, userId, setGame, setChatMessages, setError])
+  }, [code, password, isGuest, guestId, guestName, socket, username, userId, setGame, setChatMessages, setError, lobby?.gameType, lobby?.password])
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
@@ -280,6 +279,19 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const engine = new YahtzeeGame(data.game.id)
       engine.restoreState(data.game.state)
       setGameEngine(engine)
+      
+      // Track game start
+      const players = data.game.players || []
+      const botCount = players.filter((p: any) => p.user?.isBot).length
+      trackGameStarted({
+        lobbyCode: code,
+        gameType: lobby?.gameType || 'yahtzee',
+        isPrivate: !!lobby?.password,
+        maxPlayers: lobby?.maxPlayers || 4,
+        playerCount: players.length,
+        hasBot: botCount > 0,
+        botCount,
+      })
       
       setTimerActive(true)
       setTimeLeft(60)
@@ -339,6 +351,5 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     handleStartGame,
     password,
     setPassword,
-    previousGameState,
   }
 }

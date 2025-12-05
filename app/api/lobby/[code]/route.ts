@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
-import { getServerSocketUrl } from '@/lib/socket-url'
+import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 
 export async function GET(
@@ -176,41 +176,21 @@ export async function POST(
     }
 
     // Notify all clients via WebSocket that a player joined
-    try {
-      const socketUrl = getServerSocketUrl()
-      await fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: `lobby:${params.code}`,
-          event: 'player-joined',
-          data: {
-            username: user.username,
-            userId: user.id,
-          },
-        }),
-      }).catch(err => {
-        const log = apiLogger('POST /api/lobby/[code]')
-        log.error('Failed to notify socket server', err)
-      })
+    await notifySocket(
+      `lobby:${params.code}`,
+      'player-joined',
+      {
+        username: user.username,
+        userId: user.id,
+      }
+    )
 
-      // Also send lobby-update event
-      await fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: `lobby:${params.code}`,
-          event: 'lobby-update',
-          data: { lobbyCode: params.code },
-        }),
-      }).catch(err => {
-        const log = apiLogger('POST /api/lobby/[code]')
-        log.error('Failed to notify socket server', err)
-      })
-    } catch (error) {
-      const log = apiLogger('POST /api/lobby/[code]')
-      log.error('Error sending WebSocket notification', error as Error)
-    }
+    // Also send lobby-update event
+    await notifySocket(
+      `lobby:${params.code}`,
+      'lobby-update',
+      { lobbyCode: params.code }
+    )
 
     return NextResponse.json({ game, player })
   } catch (error) {

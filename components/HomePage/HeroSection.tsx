@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 
 interface HeroSectionProps {
   isLoggedIn: boolean
@@ -10,6 +11,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSectionProps) {
   const router = useRouter()
+  const { t } = useTranslation()
   const displayName = userName || userEmail?.split('@')[0]
 
   return (
@@ -23,11 +25,11 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
           Boardly
         </h1>
         <p className="text-xl md:text-2xl text-white/90 mb-4 max-w-2xl mx-auto">
-          Play classic board games with friends in real-time
+          {t('home.subtitle')}
         </p>
         {isLoggedIn && displayName && (
           <p className="text-lg text-white/80">
-            Welcome back, <span className="font-bold">{displayName}</span>! 👋
+            {t('home.welcomeBack', { name: displayName })} 👋
           </p>
         )}
       </div>
@@ -40,7 +42,7 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
             className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
           >
             <span className="text-2xl">🎮</span>
-            <span>Browse Games</span>
+            <span>{t('home.browseGames')}</span>
           </button>
         ) : (
           <>
@@ -49,14 +51,14 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
               className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
             >
               <span className="text-2xl">🔐</span>
-              <span>Login</span>
+              <span>{t('header.login')}</span>
             </button>
             <button
               onClick={() => router.push('/auth/register')}
               className="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
             >
               <span className="text-2xl">🎯</span>
-              <span>Sign Up Free</span>
+              <span>{t('home.signUpFree', 'Sign Up Free')}</span>
             </button>
           </>
         )}
@@ -64,3 +66,4 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
     </>
   )
 }
+

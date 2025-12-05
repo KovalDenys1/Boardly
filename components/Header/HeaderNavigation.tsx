@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 
 interface HeaderNavigationProps {
   isAuthenticated: boolean
@@ -9,34 +10,50 @@ interface HeaderNavigationProps {
 export function HeaderNavigation({ isAuthenticated }: HeaderNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useTranslation()
 
   const isActive = (path: string) => pathname === path
 
   return (
-    <div className="hidden md:flex ml-10 space-x-4">
+    <div className="hidden md:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(10px, 1vw, 20px)' }}>
       <button
         onClick={() => router.push('/')}
-        className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+        className={`rounded-lg font-medium transition-colors ${
           isActive('/')
-            ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            ? 'bg-white/20 text-white'
+            : 'text-white/80 hover:bg-white/10 hover:text-white'
         }`}
+        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
       >
-        🏠 Home
+        🏠 {t('header.home', 'Home')}
       </button>
       
       {isAuthenticated && (
         <button
           onClick={() => router.push('/games')}
-          className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+          className={`rounded-lg font-medium transition-colors ${
             pathname?.startsWith('/games')
-              ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              ? 'bg-white/20 text-white'
+              : 'text-white/80 hover:bg-white/10 hover:text-white'
           }`}
+          style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
         >
-          🎮 Games
+          🎮 {t('header.games', 'Games')}
         </button>
       )}
+      
+      <button
+        onClick={() => router.push('/lobby')}
+        className={`rounded-lg font-medium transition-colors ${
+          pathname?.startsWith('/lobby')
+            ? 'bg-white/20 text-white'
+            : 'text-white/80 hover:bg-white/10 hover:text-white'
+        }`}
+        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+      >
+        🎯 {t('header.lobbies', 'Lobbies')}
+      </button>
     </div>
   )
 }
+

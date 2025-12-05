@@ -3,77 +3,59 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface Game {
   id: string
-  name: string
+  nameKey: string
   emoji: string
-  description: string
+  descriptionKey: string
   players: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  difficultyKey: string
   status: 'available' | 'coming-soon'
   route?: string
   color: string
 }
 
-const games: Game[] = [
-  {
-    id: 'yahtzee',
-    name: 'Yahtzee',
-    emoji: '🎲',
-    description: 'Classic dice game with strategic scoring. Roll five dice to make combinations and score big!',
-    players: '2-8 players',
-    difficulty: 'Easy',
-    status: 'available',
-    route: '/games/yahtzee/lobbies',
-    color: 'from-blue-500 to-purple-600'
-  },
-  {
-    id: 'spy',
-    name: 'Guess the Spy',
-    emoji: '🕵️',
-    description: 'Social deduction game where one player is the spy. Find them before time runs out!',
-    players: '3-10 players',
-    difficulty: 'Medium',
-    status: 'coming-soon',
-    color: 'from-red-500 to-pink-600'
-  },
-  {
-    id: 'checkers',
-    name: 'Checkers',
-    emoji: '⚫',
-    description: 'Classic strategy game. Jump over opponent pieces to win!',
-    players: '2 players',
-    difficulty: 'Easy',
-    status: 'coming-soon',
-    color: 'from-orange-500 to-red-600'
-  },
-  {
-    id: 'poker',
-    name: 'Poker',
-    emoji: '🃏',
-    description: 'Texas Hold\'em poker with friends. Bet, bluff, and win big!',
-    players: '2-10 players',
-    difficulty: 'Medium',
-    status: 'coming-soon',
-    color: 'from-green-600 to-emerald-700'
-  },
-  {
-    id: 'uno',
-    name: 'UNO',
-    emoji: '🎴',
-    description: 'Fast-paced card game. Match colors and numbers to be the first to empty your hand!',
-    players: '2-10 players',
-    difficulty: 'Easy',
-    status: 'coming-soon',
-    color: 'from-yellow-500 to-orange-500'
-  },
-]
-
 export default function GamesPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
+  
+  const games: Game[] = [
+    {
+      id: 'yahtzee',
+      nameKey: 'games.yahtzee.name',
+      emoji: '🎲',
+      descriptionKey: 'games.yahtzee.description',
+      players: '2-8',
+      difficultyKey: 'games.yahtzee.difficulty',
+      status: 'available',
+      route: '/games/yahtzee/lobbies',
+      color: 'from-blue-500 to-purple-600'
+    },
+    {
+      id: 'spy',
+      nameKey: 'games.spy.name',
+      emoji: '🕵️',
+      descriptionKey: 'games.spy.description',
+      players: '3-10',
+      difficultyKey: 'games.spy.difficulty',
+      status: 'coming-soon',
+      color: 'from-red-500 to-pink-600'
+    },
+    {
+      id: 'chess',
+      nameKey: 'games.chess.name',
+      emoji: '♟️',
+      descriptionKey: 'games.chess.description',
+      players: '2',
+      difficultyKey: 'games.chess.difficulty',
+      status: 'coming-soon',
+      color: 'from-gray-700 to-gray-900'
+    },
+  ]
 
   // Handle authentication redirect in useEffect to avoid hydration issues
   useEffect(() => {
@@ -114,10 +96,10 @@ export default function GamesPage() {
             <span className="text-5xl">🎮</span>
           </div>
           <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
-            Choose Your Game
+            {t('games.title')}
           </h1>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            Select a game to start playing with friends
+            {t('games.subtitle')}
           </p>
         </div>
 
@@ -131,7 +113,7 @@ export default function GamesPage() {
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            All Games
+            {t('common.filter')} - {t('common.all', 'All')}
           </button>
           <button
             onClick={() => setSelectedFilter('available')}
@@ -141,7 +123,7 @@ export default function GamesPage() {
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            Available Now
+            {t('games.available')}
           </button>
           <button
             onClick={() => setSelectedFilter('coming-soon')}
@@ -151,7 +133,7 @@ export default function GamesPage() {
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
-            Coming Soon
+            {t('games.comingSoon')}
           </button>
         </div>
 
@@ -172,12 +154,12 @@ export default function GamesPage() {
               {/* Status Badge */}
               {game.status === 'coming-soon' && (
                 <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                  Coming Soon
+                  {t('games.comingSoon')}
                 </div>
               )}
               {game.status === 'available' && (
                 <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
-                  Available
+                  {t('games.available')}
                 </div>
               )}
 
@@ -190,24 +172,19 @@ export default function GamesPage() {
               </div>
 
               {/* Game Info */}
-              <h3 className="text-2xl font-bold mb-2">{game.name}</h3>
-              <p className="text-white/80 text-sm mb-4 min-h-[60px]">{game.description}</p>
+              <h3 className="text-2xl font-bold mb-2">{t(game.nameKey)}</h3>
+              <p className="text-white/80 text-sm mb-4 min-h-[60px]">{t(game.descriptionKey)}</p>
 
               {/* Game Details */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-white/60">👥</span>
-                  <span className="text-white/90">{game.players}</span>
+                  <span className="text-white/90">{game.players} {t('games.players')}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-white/60">⚡</span>
-                  <span className={`
-                    px-2 py-1 rounded-full text-xs font-semibold
-                    ${game.difficulty === 'Easy' ? 'bg-green-500/30 text-green-200' : ''}
-                    ${game.difficulty === 'Medium' ? 'bg-yellow-500/30 text-yellow-200' : ''}
-                    ${game.difficulty === 'Hard' ? 'bg-red-500/30 text-red-200' : ''}
-                  `}>
-                    {game.difficulty}
+                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200">
+                    {t('games.difficulty')}: {t(game.difficultyKey)}
                   </span>
                 </div>
               </div>
@@ -215,7 +192,7 @@ export default function GamesPage() {
               {/* Play Button */}
               {game.status === 'available' && (
                 <button className="w-full mt-6 px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl">
-                  Play Now →
+                  {t('games.playNow')} →
                 </button>
               )}
             </div>

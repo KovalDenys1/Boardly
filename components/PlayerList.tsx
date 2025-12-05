@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import Modal from './Modal'
 
 interface Player {
   id: string
@@ -25,6 +27,9 @@ interface PlayerListProps {
 }
 
 const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, selectedPlayerId }: PlayerListProps) {
+  const { t } = useTranslation()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  
   // Sort by score (descending), then by position (ascending) if scores are equal
   const sortedPlayers = [...players].sort((a, b) => {
     if (b.score !== a.score) {
@@ -61,17 +66,21 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
   }, [players.map(p => p.score).join(',')]) // Track score changes
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in">
-      <h2 className="text-base font-bold mb-3 flex items-center gap-2">
-        <span className="text-xl">👥</span>
-        <span>Players</span>
-        {onPlayerClick && (
-          <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">
-            Click to view cards
-          </span>
-        )}
-      </h2>
-      <div className="space-y-2">
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-full flex flex-col">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="text-base font-bold mb-3 flex items-center gap-2 flex-shrink-0 w-full text-left hover:opacity-70 transition-opacity cursor-pointer"
+        >
+          <span className="text-xl">👥</span>
+          <span>{t('lobby.players.title', 'Players')}</span>
+          {onPlayerClick && (
+            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">
+              {t('lobby.players.clickToView', 'Click to view cards')}
+            </span>
+          )}
+        </button>
+      <div className="space-y-2 overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
         {sortedPlayers.map((player, index) => {
           // Use player.position (actual game index) instead of sorted index
           const isCurrentTurn = player.position === currentTurn
@@ -87,62 +96,62 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
               key={player.id}
               onClick={() => onPlayerClick?.(player.userId)}
               className={`
-                w-full text-left p-2.5 rounded-xl transition-all duration-200 shadow-sm
+                w-full text-left p-2.5 rounded-xl transition-all duration-200 shadow-sm snap-start
                 ${isCurrentTurn 
-                  ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md transform scale-[1.02]' 
+                  ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md' 
                   : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent'
                 }
-                ${isCurrentUser ? 'ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-800' : ''}
-                ${isSelected ? 'ring-2 ring-purple-500 ring-offset-2 dark:ring-offset-gray-800' : ''}
+                ${isCurrentUser ? 'border-2 !border-green-500 dark:!border-green-400' : ''}
+                ${isSelected ? 'border-2 !border-purple-500 dark:!border-purple-400' : ''}
                 ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30' : ''}
-                ${onPlayerClick ? 'cursor-pointer hover:scale-[1.03] hover:shadow-lg' : ''}
+                ${onPlayerClick ? 'cursor-pointer hover:shadow-lg' : ''}
               `}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(8px, 0.8vw, 14px)' }}>
                   {/* Position Badge - Shows current rank by score */}
                   <div className={`
-                    w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-md
+                    rounded-full flex items-center justify-center font-bold text-white shrink-0 shadow-md
                     ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
                     ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
                     ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
-                  `}>
+                  `} style={{ width: 'clamp(24px, 2.5vw, 32px)', height: 'clamp(24px, 2.5vw, 32px)', fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                   </div>
 
                   {/* Player Info */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <span className="font-bold text-xs truncate">
+                    <div className="flex items-center flex-wrap" style={{ gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(2px, 0.2vh, 4px)' }}>
+                      <span className="font-bold truncate" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
                         {playerName}
                       </span>
                       {isBot && (
-                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded-full shrink-0 shadow-sm">
+                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(5px, 0.5vw, 9px)' }}>
                           AI
                         </span>
                       )}
                       {isCurrentUser && !isBot && (
-                        <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-1.5 py-0.5 rounded-full shrink-0 shadow-sm">
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(5px, 0.5vw, 9px)' }}>
                           You
                         </span>
                       )}
                       {isCurrentTurn && (
-                        <span className="text-sm animate-bounce shrink-0">
+                        <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>
                           🎲
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Score:</span>
-                      <span className={`font-bold text-sm ${
+                    <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
+                      <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>Score:</span>
+                      <span className={`font-bold ${
                         animatingScores[player.id] 
                           ? 'text-green-600 dark:text-green-400 animate-pulse' 
                           : 'text-gray-900 dark:text-white'
-                      }`}>
+                      }`} style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>
                         {player.score}
                         {animatingScores[player.id] && (
-                          <span className="ml-1 text-green-500 text-xs">✨</span>
+                          <span className="text-green-500" style={{ marginLeft: 'clamp(3px, 0.3vw, 6px)', fontSize: 'clamp(10px, 0.8vw, 13px)' }}>✨</span>
                         )}
                       </span>
                     </div>
@@ -161,6 +170,119 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
         })}
       </div>
     </div>
+
+    {/* Full Players List Modal */}
+    <Modal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      title={t('lobby.players.fullList', 'All Players')}
+      maxWidth="2xl"
+    >
+      <div className="space-y-3">
+        {sortedPlayers.map((player, index) => {
+          const isCurrentTurn = player.position === currentTurn
+          const isCurrentUser = player.userId === currentUserId
+          const isSelected = selectedPlayerId === player.userId
+          const isBot = player.user.isBot === true
+          const playerName = isBot 
+            ? '🤖 AI Bot' 
+            : player.user.name || player.user.username || player.user.email || 'Player'
+
+          return (
+            <div
+              key={player.id}
+              className={`
+                p-4 rounded-xl transition-all shadow-md border-2
+                ${isCurrentTurn 
+                  ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-blue-400 dark:border-blue-500' 
+                  : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                }
+                ${isCurrentUser ? '!border-green-500 dark:!border-green-400' : ''}
+                ${isSelected ? '!border-purple-500 dark:!border-purple-400' : ''}
+                ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30' : ''}
+              `}
+            >
+              <div className="flex items-center justify-between gap-4">
+                {/* Left: Position & Player Info */}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  {/* Position Badge */}
+                  <div className={`
+                    w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg shrink-0 shadow-lg
+                    ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
+                    ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
+                    ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
+                    ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
+                  `}>
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                  </div>
+
+                  {/* Player Details */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="font-bold text-base truncate">
+                        {playerName}
+                      </span>
+                      {isBot && (
+                        <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          AI Bot
+                        </span>
+                      )}
+                      {isCurrentUser && !isBot && (
+                        <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          You
+                        </span>
+                      )}
+                      {isCurrentTurn && (
+                        <span className="text-lg animate-bounce shrink-0">
+                          🎲
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-1.5">
+                        <span>Position:</span>
+                        <span className="font-semibold">{player.position + 1}</span>
+                      </div>
+                      {player.isReady && (
+                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                          <span>✓</span>
+                          <span className="font-semibold">Ready</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Score & Action */}
+                <div className="flex items-center gap-4">
+                  {/* Score Display */}
+                  <div className="text-right">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Score</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {player.score}
+                    </div>
+                  </div>
+
+                  {/* View Cards Button */}
+                  {onPlayerClick && (
+                    <button
+                      onClick={() => {
+                        onPlayerClick(player.userId)
+                        setIsModalOpen(false)
+                      }}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                    >
+                      View Cards
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Modal>
+  </>
   )
 })
 

@@ -14,6 +14,8 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './lib/db'
 import { socketLogger, logger } from './lib/logger'
 import { validateEnv, printEnvInfo } from './lib/env'
+import { socketMonitor } from './lib/socket-monitoring'
+import { dbMonitor } from './lib/db-monitoring'
 
 // Validate environment variables on startup
 try {
@@ -225,6 +227,9 @@ if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
 
 io.on('connection', (socket) => {
   logger.info('Client connected', { socketId: socket.id })
+  
+  // Track connection in monitor
+  socketMonitor.onConnect(socket.id)
 
   socket.on('join-lobby', async (lobbyCode: string) => {
     // Rate limiting
@@ -232,6 +237,9 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Too many requests' })
       return
     }
+    
+    // Track event
+    socketMonitor.trackEvent('join-lobby')
     
     // Basic validation
     if (!lobbyCode || typeof lobbyCode !== 'string' || lobbyCode.length > 20) {
@@ -277,24 +285,29 @@ io.on('connection', (socket) => {
   })
 
   socket.on('leave-lobby', (lobbyCode: string) => {
+    socketMonitor.trackEvent('leave-lobby')
     socket.leave(`lobby:${lobbyCode}`)
     socketLogger('leave-lobby').debug('Socket left lobby', { socketId: socket.id, lobbyCode })
   })
 
   socket.on('join-lobby-list', () => {
+    socketMonitor.trackEvent('join-lobby-list')
     socket.join('lobby-list')
     socketLogger('join-lobby-list').debug('Socket joined lobby-list', { socketId: socket.id })
   })
 
   socket.on('leave-lobby-list', () => {
+    socketMonitor.trackEvent('leave-lobby-list')
     socket.leave('lobby-list')
     socketLogger('leave-lobby-list').debug('Socket left lobby-list', { socketId: socket.id })
   })
 
   socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
+    socketMonitor.trackEvent('game-action')
+    
     // Rate limiting
     if (!checkRateLimit(socket.id)) {
-      socket.emit('error', { message: 'Too many actions. Please slow down.' })
+      socket.emit('error', { message: 'Too many requests' })
       return
     }
     
@@ -326,13 +339,15 @@ io.on('connection', (socket) => {
   })
 
   socket.on('lobby-created', () => {
+    socketMonitor.trackEvent('lobby-created')
     socketLogger('lobby-created').info('New lobby created, notifying lobby list')
     io.to('lobby-list').emit('lobby-list-update')
   })
 
   socket.on('player-joined', (data: { lobbyCode: string; username?: string; userId?: string }) => {
-    socketLogger('player-joined').info('Player joined lobby, notifying lobby list and lobby members', { 
-      lobbyCode: data?.lobbyCode,
+    socketMonitor.trackEvent('player-joined')
+    socketLogger('player-joined').info('Player joined lobby, notifying all players', { 
+      lobbyCode: data?.lobbyCode, 
       username: data?.username 
     })
     
@@ -354,6 +369,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('game-started', (data: { lobbyCode: string; game?: any }) => {
+    socketMonitor.trackEvent('game-started')
     socketLogger('game-started').info('Game started, notifying all players', { 
       lobbyCode: data?.lobbyCode 
     })
@@ -371,6 +387,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('send-chat-message', (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
+    socketMonitor.trackEvent('send-chat-message')
+    
     if (!data?.lobbyCode || !data?.message) {
       logger.warn('Invalid chat message data', { socketId: socket.id })
       return
@@ -387,6 +405,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('player-typing', (data: { lobbyCode: string; userId: string; username: string }) => {
+    socketMonitor.trackEvent('player-typing')
     if (!data?.lobbyCode) return
     
     // Broadcast typing indicator to other clients (not sender)
@@ -398,11 +417,43 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', (reason) => {
     logger.info('Client disconnected', { socketId: socket.id, reason })
+    
+    // Track disconnection in monitor
+    socketMonitor.onDisconnect(socket.id)
   })
 
   socket.on('error', (error) => {
     logger.error('Socket error', error, { socketId: socket.id })
   })
+})
+
+// Initialize monitoring
+socketMonitor.initialize(io, 30000) // Log metrics every 30 seconds
+dbMonitor.initialize(60000) // Log DB metrics every 60 seconds
+
+// Add health endpoint with monitoring data
+server.on('request', (req, res) => {
+  const url = parse(req.url || '/')
+  
+  if (url.pathname === '/metrics') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    
+    const socketMetrics = socketMonitor.getMetrics()
+    const dbMetrics = dbMonitor.getMetrics()
+    const socketHealth = socketMonitor.isHealthy()
+    
+    res.end(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      socket: socketMetrics,
+      database: dbMetrics,
+      health: {
+        socket: socketHealth,
+      },
+      lobbies: socketMonitor.getLobbies(),
+    }, null, 2))
+    return
+  }
 })
 
 server.listen(port, hostname, () => {

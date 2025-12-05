@@ -2,17 +2,30 @@
 
 ## Project Status
 
-**Stage**: Production Ready  
-**Available Games**: Yahtzee (fully implemented)  
+**Stage**: ✅ Production Live at [boardly.online](https://boardly.online)  
+**Available Games**: Yahtzee (fully implemented with AI bots)  
 **In Development**: Chess  
-**Planned**: Guess the Spy, and more casual multiplayer games
+**Planned**: Guess the Spy, Uno, and more casual multiplayer games
 
 ## Architecture Overview
 
 **Dual-Server Real-Time Architecture**: Next.js frontend (port 3000) + standalone Socket.IO server (port 3001)
-- Frontend handles HTTP/API routes via Next.js App Router
-- Socket server (`socket-server.ts`) manages WebSocket connections, room broadcasting, and real-time state sync
-- Communication: Frontend → API routes → Database + Socket notification → Socket server broadcasts to rooms
+
+```
+┌─────────────┐     HTTP/API      ┌──────────────┐     WebSocket    ┌──────────────┐
+│   Client    │ ──────────────────>│  Next.js     │<─────────────────>│  Socket.IO   │
+│  (Browser)  │<──────────────────│  (port 3000) │                   │  (port 3001) │
+└─────────────┘                   └──────────────┘                   └──────────────┘
+                                          │                                   │
+                                          v                                   v
+                                   ┌──────────────────────────────────────────┐
+                                   │      PostgreSQL (Supabase/Prisma)       │
+                                   └──────────────────────────────────────────┘
+```
+
+- **Next.js**: Handles HTTP/API routes, SSR, static pages via App Router
+- **Socket.IO Server**: Manages WebSocket connections, room broadcasting, real-time state sync
+- **Communication Pattern**: Client → API Route → DB Update → POST `/api/notify` → Socket Server → Broadcast to Room
 
 **Game State Flow**:
 ```
@@ -69,11 +82,13 @@ Modular hooks split complex lobby logic (`app/lobby/[code]/hooks/`):
 
 ### Running Locally
 ```bash
-npm run dev:all          # Both servers (uses concurrently)
+npm run dev:all          # Both servers (uses concurrently) - RECOMMENDED
 # OR separate terminals:
-npm run socket:dev       # Terminal 1 (Socket.IO on :3001)
-npm run dev              # Terminal 2 (Next.js on :3000)
+npm run socket:dev       # Terminal 1: Socket.IO on :3001
+npm run dev              # Terminal 2: Next.js on :3000
 ```
+
+**Critical**: Both servers must run simultaneously for real-time features to work.
 
 ### Database Changes
 ```bash
@@ -83,12 +98,25 @@ npm run db:generate      # Regenerate Prisma Client (after schema changes)
 npm run db:studio        # GUI for database inspection
 ```
 
+### Testing
+```bash
+npm test                 # Run all tests (74 tests, ~1.2s)
+npm run test:watch       # Watch mode for TDD
+npm run test:coverage    # Generate coverage report (17.8% overall, 96% GameEngine)
+```
+
+**Test Coverage** (Dec 2024):
+- Game logic: `lib/game-engine.ts` (96%), `lib/yahtzee.ts` (80%), `lib/games/yahtzee-game.ts` (80%)
+- Focus: Unit tests for business logic (not API routes - too complex to mock Edge Runtime)
+- See: `docs/TESTING_COMPLETE.md` for detailed breakdown
+
 ### Adding a New Game
 1. Create game class in `lib/games/your-game.ts` extending `GameEngine`
-2. Implement required methods: `validateMove`, `processMove`, `getInitialGameData`
+2. Implement required methods: `validateMove`, `processMove`, `getInitialGameData`, `checkWinCondition`
 3. Add game type to `gameType` enum in `prisma/schema.prisma`
 4. Create lobby UI in `app/games/your-game/lobbies/`
 5. Handle game-specific rendering in `app/lobby/[code]/components/GameBoard.tsx`
+6. Write unit tests in `__tests__/lib/games/your-game.test.ts`
 
 ## Key Conventions
 
@@ -115,6 +143,30 @@ Use `clientLogger` from `lib/client-logger.ts` (not `console.log`)
 - Automatically disabled in production
 - Consistent format across app
 - `clientLogger.log()`, `clientLogger.warn()`, `clientLogger.error()`
+
+### Internationalization (i18n)
+**System**: `react-i18next` with client-side language detection (English, Ukrainian)
+- **Components**: Use `useTranslation()` hook: `const { t } = useTranslation(); t('key.path')`
+- **Toast notifications**: Use `showToast` from `lib/i18n-toast.ts` instead of `toast` directly
+  - `showToast.success('toast.saved')`, `showToast.error('errors.network')`
+- **Translation files**: `messages/en.json`, `messages/uk.json` - flat structure with dot notation
+- **Adding keys**: Add to both files with same structure, use descriptive keys
+- **Language switcher**: `components/LanguageSwitcher.tsx` handles UI
+- **Storage**: Language preference saved in localStorage
+
+**Example**:
+```tsx
+// ❌ Don't use toast directly
+toast.success('Saved!')
+
+// ✅ Use localized toast
+showToast.success('toast.saved')
+
+// ✅ With parameters
+showToast.error('errors.invalidMove', undefined, { player: name })
+```
+
+See: `docs/I18N_GUIDE.md` for complete guide
 
 ### Socket Event Naming
 - **Client → Server**: `join-lobby`, `send-chat-message`, `game-action`, `player-joined`
@@ -232,12 +284,49 @@ const [lobbies, activeGamesCount] = await Promise.all([
 - Image optimization: Use Next.js `<Image>` component with proper sizing
 - Code splitting: Automatic per-route in Next.js App Router
 
-### Testing Strategy
-Tests are planned for future implementation. Key areas for testing:
-- Game engine logic (`lib/game-engine.ts`, `lib/games/*.ts`)
-- Bot AI decision making (`lib/yahtzee-bot.ts`)
-- API routes (integration tests with test database)
-- Socket event flows (mock Socket.IO connections)
+## Testing Patterns
+
+### Unit Tests (Current Focus)
+- **Location**: `__tests__/lib/` and `__tests__/lib/games/`
+- **Framework**: Jest with ts-jest
+- **Coverage**: 96% on `GameEngine`, 80%+ on game-specific logic
+- **Run**: `npm test` (74 tests, ~1.2s execution)
+
+**Pattern Example** (`__tests__/lib/games/yahtzee-game.test.ts`):
+```typescript
+describe('YahtzeeGame', () => {
+  let game: YahtzeeGame
+  beforeEach(() => {
+    game = new YahtzeeGame('test-id')
+    // Add players and setup state
+  })
+
+  it('should validate move correctly', () => {
+    const move = { playerId: 'p1', type: 'roll', data: {} }
+    expect(game.validateMove(move)).toBe(true)
+  })
+})
+```
+
+**Testing Strategy**:
+- ✅ **Test**: Game logic, state management, move validation
+- ❌ **Skip**: API routes (Edge Runtime mocking too complex), UI components (focus on logic)
+- **Future**: Integration tests with supertest for API routes + test database
+
+### Mocking Patterns
+```typescript
+// Mock Prisma client
+jest.mock('@/lib/db', () => ({
+  prisma: {
+    game: { findUnique: jest.fn(), update: jest.fn() },
+    player: { create: jest.fn() }
+  }
+}))
+
+// Mock game engine methods
+const mockValidateMove = jest.spyOn(game, 'validateMove')
+mockValidateMove.mockReturnValue(true)
+```
 
 ## File References
 - Architecture: `socket-server.ts`, `app/lobby/[code]/page.tsx`

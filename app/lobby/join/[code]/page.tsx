@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 
 export default function LobbyInvitePage() {
   const router = useRouter()
@@ -63,8 +64,23 @@ export default function LobbyInvitePage() {
       const data = await response.json()
       
       if (!response.ok) {
+        trackError({
+          errorType: 'auth',
+          errorMessage: data.error || 'Guest join failed',
+          component: 'LobbyInvitePage',
+          severity: 'medium',
+        })
         throw new Error(data.error || 'Failed to join lobby')
       }
+      
+      // Track successful guest join
+      trackAuth({
+        event: 'login',
+        method: 'guest',
+        success: true,
+        userId: guestId,
+      })
+      trackFunnelStep('guest-join')
       
       // Redirect to lobby as guest
       router.push(`/lobby/${code}?guest=true`)

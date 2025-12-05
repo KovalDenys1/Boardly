@@ -1,4 +1,6 @@
+'use client'
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface ChatMessage {
   id: string
@@ -18,6 +20,7 @@ interface ChatProps {
   onClearChat?: () => void
   unreadCount?: number
   someoneTyping?: boolean
+  fullScreen?: boolean
 }
 
 export default function Chat({
@@ -28,24 +31,52 @@ export default function Chat({
   onToggleMinimize,
   onClearChat,
   unreadCount = 0,
-  someoneTyping = false
+  someoneTyping = false,
+  fullScreen = false
 }: ChatProps) {
+  const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // Check scroll position to show/hide scroll button
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    const container = messagesContainerRef.current
+    if (!container) return
 
-  // Close chat when clicking outside
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100
+      setShowScrollButton(isScrolledUp)
+    }
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
   useEffect(() => {
-    if (isMinimized) return
+    if (!showScrollButton) {
+      scrollToBottom()
+    }
+  }, [messages, showScrollButton])
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (!isMinimized && !fullScreen) {
+      inputRef.current?.focus()
+    }
+  }, [isMinimized, fullScreen])
+
+  // Close chat when clicking outside (only for desktop floating mode)
+  useEffect(() => {
+    if (isMinimized || fullScreen) return
 
     const handleClickOutside = (event: MouseEvent) => {
       if (chatRef.current && !chatRef.current.contains(event.target as Node)) {
@@ -57,7 +88,7 @@ export default function Chat({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [isMinimized, onToggleMinimize])
+  }, [isMinimized, onToggleMinimize, fullScreen])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value)
@@ -80,30 +111,42 @@ export default function Chat({
   }
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const clearChat = () => {
-    // This would need to be passed as a prop or handled differently
-    // For now, just show a message
-    alert('Chat clearing not implemented yet')
+    const date = new Date(timestamp)
+    const now = new Date()
+    const isToday = date.toDateString() === now.toDateString()
+    
+    if (isToday) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } else {
+      return date.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
   }
 
   if (isMinimized) {
+    const ariaLabel = unreadCount > 0 
+      ? `${t('chat.openChat')} (${unreadCount} ${t('chat.unread', { count: unreadCount })})`
+      : t('chat.openChat')
+    
     return (
-      <div className="fixed bottom-6 right-6 z-50 animate-bounce-in">
+      <div className="fixed z-50" style={{ bottom: '20px', right: '20px' }}>
         <button
           onClick={onToggleMinimize}
-          aria-label={`Open chat. ${unreadCount > 0 ? `${unreadCount} unread messages` : 'No unread messages'}`}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform transition-all duration-200 hover:scale-105 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+          aria-label={ariaLabel}
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-xl flex items-center gap-2 px-4 py-3 transform transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
         >
-          💬 Chat
+          <span className="text-xl">💬</span>
+          <span className="font-semibold">{t('chat.open')}</span>
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse" aria-label={`${unreadCount} unread`}>
-              {unreadCount}
+            <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center animate-pulse" aria-label={t('chat.unread', { count: unreadCount })}>
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </button>
@@ -114,135 +157,197 @@ export default function Chat({
   return (
     <div 
       ref={chatRef}
-      className="fixed bottom-6 right-6 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md lg:max-w-lg h-[70vh] max-h-[600px] sm:h-[500px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 flex flex-col animate-slide-up"
+      className={`bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col ${
+        fullScreen 
+          ? 'h-full rounded-none' 
+          : 'fixed z-50 rounded-2xl'
+      }`}
+      style={fullScreen ? {} : {
+        bottom: '20px',
+        right: '20px',
+        width: 'min(420px, calc(100vw - 40px))',
+        height: 'min(600px, calc(100vh - 100px))'
+      }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-2xl">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" aria-hidden="true"></div>
-          <h3 className="font-bold text-lg" id="chat-title">💬 Lobby Chat</h3>
-          <span className="text-sm bg-blue-400/30 px-2 py-1 rounded-full" aria-label={`${messages.length} total messages`}>
-            {messages.length}
-          </span>
+      <div className={`flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 ${
+        fullScreen ? 'rounded-none' : 'rounded-t-2xl'
+      }`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse flex-shrink-0" aria-hidden="true" />
+          <h3 className="font-bold text-lg truncate" id="chat-title">
+            💬 {t('chat.title')}
+          </h3>
+          {messages.length > 0 && (
+            <span className="bg-white/20 rounded-full text-xs font-semibold px-2 py-0.5 flex-shrink-0" aria-label={t('chat.messageCount', { count: messages.length })}>
+              {messages.length}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-1" role="group" aria-label="Chat controls">
-          <button
-            onClick={onClearChat}
-            aria-label="Clear chat messages"
-            className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-            title="Clear chat"
-          >
-            🗑️
-          </button>
-          <button
-            onClick={onToggleMinimize}
-            aria-label="Minimize chat"
-            className="hover:bg-blue-400/30 p-2 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-            title="Minimize chat"
-          >
-            ➖
-          </button>
-        </div>
+        {!fullScreen && (
+          <div className="flex items-center gap-1" role="group" aria-label="Chat controls">
+            {onClearChat && messages.length > 0 && (
+              <button
+                onClick={onClearChat}
+                aria-label={t('chat.clear')}
+                className="hover:bg-white/20 rounded-lg transition-colors p-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                title={t('chat.clear')}
+              >
+                <span className="text-lg">🗑️</span>
+              </button>
+            )}
+            <button
+              onClick={onToggleMinimize}
+              aria-label={t('chat.minimize')}
+              className="hover:bg-white/20 rounded-lg transition-colors p-2 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+              title={t('chat.minimize')}
+            >
+              <span className="text-lg">➖</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Messages */}
       <div 
-        className="flex-1 overflow-y-auto p-4 space-y-3" 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-2.5 scroll-smooth bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-800 relative"
         role="log" 
         aria-live="polite" 
         aria-labelledby="chat-title"
-        aria-label="Chat messages"
+        aria-label={t('chat.title')}
       >
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-            <div className="text-4xl mb-2">👋</div>
-            <p className="font-medium">No messages yet</p>
-            <p className="text-sm">Start the conversation!</p>
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 px-4">
+            <div className="text-6xl mb-4 animate-bounce">👋</div>
+            <p className="font-semibold text-lg mb-2">{t('chat.noMessages')}</p>
+            <p className="text-sm opacity-75">{t('chat.startConversation')}</p>
           </div>
         ) : (
-          messages.map((msg, index) => (
-            <div
-              key={msg.id}
-              className={`flex flex-col animate-fade-in ${
-                msg.userId === currentUserId ? 'items-end' : 'items-start'
-              }`}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
-                  msg.type === 'system'
-                    ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-600 dark:text-gray-300 italic text-center mx-auto'
-                    : msg.userId === currentUserId
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                    : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-900 dark:text-gray-100'
-                }`}
-              >
-                {msg.type !== 'system' && (
-                  <div className={`font-semibold text-xs mb-1 ${
-                    msg.userId === currentUserId ? 'text-blue-100' : 'text-gray-600 dark:text-gray-400'
+          <>
+            {messages.map((msg, index) => {
+              const isCurrentUser = msg.userId === currentUserId
+              const showAvatar = msg.type !== 'system' && (index === 0 || messages[index - 1].userId !== msg.userId)
+              
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex gap-2 ${
+                    isCurrentUser ? 'flex-row-reverse' : 'flex-row'
+                  } animate-[slideIn_0.2s_ease-out]`}
+                >
+                  {/* Avatar */}
+                  {msg.type !== 'system' && (
+                    <div className={`flex-shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ${
+                        isCurrentUser 
+                          ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+                          : 'bg-gradient-to-br from-gray-500 to-gray-600'
+                      }`}>
+                        {(isCurrentUser ? 'You' : msg.username).charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Message bubble */}
+                  <div className={`flex flex-col ${
+                    msg.type === 'system' ? 'items-center mx-auto' : (isCurrentUser ? 'items-end' : 'items-start')
                   }`}>
-                    {msg.userId === currentUserId ? 'You' : msg.username}
+                    {msg.type !== 'system' && showAvatar && !isCurrentUser && (
+                      <div className="font-semibold text-xs text-gray-600 dark:text-gray-400 mb-1 px-1">
+                        {msg.username}
+                      </div>
+                    )}
+                    
+                    <div
+                      className={`max-w-[280px] sm:max-w-xs rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md ${
+                        msg.type === 'system'
+                          ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 italic text-center text-xs'
+                          : isCurrentUser
+                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md'
+                          : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md border border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      <div className="break-words text-sm leading-relaxed whitespace-pre-wrap">
+                        {msg.message}
+                      </div>
+                      {msg.type !== 'system' && (
+                        <div className={`text-[10px] mt-1.5 flex items-center gap-1 ${
+                          isCurrentUser ? 'text-blue-100 justify-end' : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          <span>{formatTime(msg.timestamp)}</span>
+                          {isCurrentUser && <span className="opacity-75">✓</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-                <div className="break-words leading-relaxed">{msg.message}</div>
-                <div className={`text-xs mt-2 ${
-                  msg.userId === currentUserId ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                  {formatTime(msg.timestamp)}
                 </div>
-              </div>
-            </div>
-          ))
+              )
+            })}
+            <div ref={messagesEndRef} />
+          </>
         )}
         
-        <div ref={messagesEndRef} />
+        {/* Scroll to bottom button */}
+        {showScrollButton && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-4 right-4 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full p-3 shadow-lg hover:shadow-xl transition-all transform hover:scale-110 active:scale-95 border border-gray-200 dark:border-gray-600 focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none animate-[bounce-in_0.3s_ease-out]"
+            aria-label="Scroll to bottom"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      {/* Typing indicator - moved to bottom */}
+      {/* Typing indicator */}
       {someoneTyping && (
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 animate-fade-in">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        <div className="px-4 py-2.5 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50 animate-[fade-in_0.3s_ease-out]">
+          <div className="flex items-center gap-2.5 text-gray-500 dark:text-gray-400">
+            <div className="flex gap-1">
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-bounce" />
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+              <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
             </div>
-            <span className="text-sm">Someone is typing...</span>
+            <span className="text-sm font-medium">{t('chat.typing')}</span>
           </div>
         </div>
       )}
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
-        <div className="flex gap-3">
+      <form onSubmit={handleSubmit} className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 ${
+        fullScreen ? 'rounded-none' : 'rounded-b-2xl'
+      }`}>
+        <div className="flex gap-2.5">
           <div className="flex-1 relative">
             <input
               ref={inputRef}
               type="text"
               value={newMessage}
               onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message... 😊"
-              aria-label="Type your message"
-              aria-describedby="message-help"
-              className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-all duration-200 focus-visible:outline-none"
+              onKeyDown={handleKeyPress}
+              placeholder={t('chat.placeholder')}
+              aria-label={t('chat.placeholder')}
+              className="w-full px-4 py-3 pr-14 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm transition-all focus-visible:outline-none placeholder:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
               maxLength={200}
             />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 font-medium pointer-events-none" aria-hidden="true">
               {newMessage.length}/200
             </div>
           </div>
           <button
             type="submit"
             disabled={!newMessage.trim()}
-            aria-label="Send message"
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-lg focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+            aria-label={t('chat.send')}
+            className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-xl font-semibold text-sm transition-all transform hover:scale-105 active:scale-95 disabled:hover:scale-100 disabled:cursor-not-allowed disabled:opacity-50 shadow-md hover:shadow-lg focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none whitespace-nowrap min-w-[60px]"
           >
-            📤 Send
+            📤
           </button>
         </div>
-        <div id="message-help" className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-          Press Enter to send • Shift+Enter for new line
+        <div className="text-center text-[10px] text-gray-400 dark:text-gray-500 mt-2">
+          {t('chat.sendHelp')}
         </div>
       </form>
     </div>

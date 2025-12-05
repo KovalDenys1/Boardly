@@ -34,6 +34,9 @@ export function useSocketConnection({
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const [isReconnecting, setIsReconnecting] = useState(false)
+  const hasConnectedOnceRef = useRef(false)
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -94,11 +97,19 @@ export function useSocketConnection({
       return
     }
     
+    // Exponential backoff calculation: min(1000 * 2^attempt, 30000)
+    const calculateBackoff = (attempt: number) => {
+      const baseDelay = 1000 // 1 second
+      const maxDelay = 30000 // 30 seconds
+      return Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
+    }
+
     const newSocket = io(url, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 10, // Try 10 times before giving up
+      reconnectionDelay: 1000, // Initial delay
+      reconnectionDelayMax: 30000, // Max 30 seconds between attempts
       auth: {
         token: token,
         isGuest: isGuest,
@@ -115,6 +126,9 @@ export function useSocketConnection({
       if (!isMounted) return
       clientLogger.log('✅ Socket connected to lobby:', code)
       setIsConnected(true)
+      setIsReconnecting(false)
+      setReconnectAttempt(0) // Reset counter on successful connection
+      hasConnectedOnceRef.current = true // Mark that we've connected at least once
       
       // Join lobby room (server expects string, not object)
       newSocket.emit('join-lobby', code)
@@ -122,11 +136,34 @@ export function useSocketConnection({
 
     newSocket.on('disconnect', (reason) => {
       if (!isMounted) return
-      // Only log real disconnects, not cleanup disconnects
-      if (reason !== 'io client disconnect') {
-        clientLogger.log('❌ Socket disconnected:', reason)
-      }
       setIsConnected(false)
+      
+      // Only show reconnecting if we've connected before
+      // This prevents showing "reconnecting" on initial page load
+      if (reason !== 'io client disconnect' && hasConnectedOnceRef.current) {
+        clientLogger.log('❌ Socket disconnected:', reason)
+        setIsReconnecting(true)
+      }
+    })
+
+    newSocket.on('reconnect_attempt', (attempt) => {
+      if (!isMounted) return
+      setReconnectAttempt(attempt)
+      const backoff = calculateBackoff(attempt - 1)
+      clientLogger.log(`🔄 Reconnection attempt #${attempt} (waiting ${backoff}ms)`)
+    })
+
+    newSocket.on('reconnect_failed', () => {
+      if (!isMounted) return
+      clientLogger.error('❌ Failed to reconnect after maximum attempts')
+      setIsReconnecting(false)
+    })
+
+    newSocket.on('reconnect', (attempt) => {
+      if (!isMounted) return
+      clientLogger.log(`✅ Reconnected successfully after ${attempt} attempts`)
+      setIsReconnecting(false)
+      setReconnectAttempt(0)
     })
 
     newSocket.on('connect_error', (error) => {
@@ -136,6 +173,9 @@ export function useSocketConnection({
       
       if (error.message.includes('timeout')) {
         clientLogger.warn('⏳ Socket connection timeout - retrying...')
+      } else if (error.message.includes('Authentication failed')) {
+        clientLogger.error('🔐 Authentication failed - check token')
+        setIsReconnecting(false) // Don't retry if auth failed
       }
     })
     
@@ -161,6 +201,9 @@ export function useSocketConnection({
       newSocket.off('connect')
       newSocket.off('disconnect')
       newSocket.off('connect_error')
+      newSocket.off('reconnect_attempt')
+      newSocket.off('reconnect_failed')
+      newSocket.off('reconnect')
       newSocket.off('game-update')
       newSocket.off('chat-message')
       newSocket.off('player-typing')
@@ -172,7 +215,7 @@ export function useSocketConnection({
       // Gracefully disconnect only if connected
       if (newSocket.connected) {
         newSocket.disconnect()
-      } else {
+      } else if (typeof newSocket.close === 'function') {
         // Force close if not connected yet (prevents WebSocket error)
         newSocket.close()
       }
@@ -193,5 +236,11 @@ export function useSocketConnection({
     }
   }, [socket, isConnected])
 
-  return { socket, isConnected, emitWhenConnected }
+  return { 
+    socket, 
+    isConnected, 
+    isReconnecting,
+    reconnectAttempt,
+    emitWhenConnected 
+  }
 }

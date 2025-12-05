@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { logger } from './logger'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -31,7 +32,7 @@ if (process.env.NODE_ENV === 'production') {
           retries++
           // Exponential backoff: 100ms, then 300ms
           await new Promise(resolve => setTimeout(resolve, retries * 200))
-          console.warn(`[Prisma] Connection error, retry ${retries}/${MAX_RETRIES}`, error.code)
+          logger.warn(`[Prisma] Connection error, retry ${retries}/${MAX_RETRIES}`, { errorCode: error.code })
           continue
         }
         throw error

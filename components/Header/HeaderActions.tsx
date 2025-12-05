@@ -2,6 +2,7 @@
 
 import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -11,6 +12,7 @@ interface HeaderActionsProps {
 
 export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderActionsProps) {
   const router = useRouter()
+  const { t } = useTranslation()
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -22,15 +24,15 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
       <div className="hidden md:flex gap-2">
         <button
           onClick={() => router.push('/auth/login')}
-          className="px-4 py-2 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
         >
-          Login
+          {t('header.login', 'Login')}
         </button>
         <button
           onClick={() => router.push('/auth/register')}
-          className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 rounded-lg font-medium bg-white text-purple-600 hover:bg-white/90 transition-colors shadow-sm"
         >
-          Sign Up
+          {t('header.register', 'Register')}
         </button>
       </div>
     )
@@ -39,26 +41,29 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
   return (
     <div className="hidden md:flex items-center gap-4">
       <div className="text-right">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <p className="text-sm font-medium text-white">
           {userName || userEmail}
         </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          {userEmail}
-        </p>
+        {userName && userEmail && (
+          <p className="text-xs text-white/70">
+            {userEmail}
+          </p>
+        )}
       </div>
       <button
         onClick={() => router.push('/profile')}
-        className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold hover:scale-110 transition-transform"
-        title="Go to Profile"
+        className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-purple-600 font-bold hover:scale-110 transition-transform shadow-sm"
+        title={t('header.profile', 'Profile')}
       >
         {userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?'}
       </button>
       <button
         onClick={handleSignOut}
-        className="px-4 py-2 rounded-lg font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
       >
-        🚪 Logout
+        🚪 {t('header.logout', 'Logout')}
       </button>
     </div>
   )
 }
+

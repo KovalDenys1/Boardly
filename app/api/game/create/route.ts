@@ -6,7 +6,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { BotMoveExecutor } from '@/lib/bot-executor'
-import { getServerSocketUrl } from '@/lib/socket-url'
+import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 
 const limiter = rateLimit(rateLimitPresets.game)
@@ -159,44 +159,26 @@ export async function POST(request: NextRequest) {
     })
 
     // Notify all clients via WebSocket that game started
-    try {
-      const socketUrl = getServerSocketUrl()
-      await fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: `lobby:${lobby.code}`,
-          event: 'game-started',
-          data: {
-            lobbyCode: lobby.code,
-            gameId: game.id,
-          },
-        }),
-      }).catch(err => {
-        const log = apiLogger('POST /api/game/create')
-        log.error('Failed to notify socket server', err)
-      })
+    const log = apiLogger('POST /api/game/create')
+    
+    await notifySocket(
+      `lobby:${lobby.code}`,
+      'game-started',
+      {
+        lobbyCode: lobby.code,
+        gameId: game.id,
+      }
+    )
 
-      // Also send game state update
-      await fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          room: `lobby:${lobby.code}`,
-          event: 'game-update',
-          data: {
-            action: 'state-change',
-            payload: { state: gameEngine.getState() },
-          },
-        }),
-      }).catch(err => {
-        const log = apiLogger('POST /api/game/create')
-        log.error('Failed to notify socket server', err)
-      })
-    } catch (error) {
-      const log = apiLogger('POST /api/game/create')
-      log.error('Error sending WebSocket notification', error as Error)
-    }
+    // Also send game state update
+    await notifySocket(
+      `lobby:${lobby.code}`,
+      'game-update',
+      {
+        action: 'state-change',
+        payload: { state: gameEngine.getState() },
+      }
+    )
 
     // Check if first player is a bot and trigger bot turn
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
@@ -257,7 +239,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const log = apiLogger('POST /api/game/create')
     log.error('Create game error', error as Error)
-    console.error('Detailed error:', error)
     return NextResponse.json({ 
       error: 'Internal server error', 
       details: error instanceof Error ? error.message : 'Unknown error' 

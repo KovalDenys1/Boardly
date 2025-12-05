@@ -4,10 +4,12 @@ import { Move } from '@/lib/game-engine'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
+import { getAuthHeaders } from '@/lib/socket-url'
 import toast from 'react-hot-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
-import { Game } from '@/types/game'
+import { Game, GamePlayer } from '@/types/game'
+import { trackPlayerAction, trackGameCompleted } from '@/lib/analytics'
 
 interface UseGameActionsProps {
   game: Game | null
@@ -15,6 +17,7 @@ interface UseGameActionsProps {
   setGameEngine: (engine: YahtzeeGame | null) => void
   isGuest: boolean
   guestId: string
+  guestName: string
   userId: string | undefined
   username: string
   isMyTurn: boolean
@@ -34,6 +37,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setGameEngine,
     isGuest,
     guestId,
+    guestName,
     userId,
     username,
     isMyTurn,
@@ -109,10 +113,7 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (isGuest && guestId) {
-        headers['X-Guest-Id'] = guestId
-      }
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
       
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
@@ -178,6 +179,20 @@ export function useGameActions(props: UseGameActionsProps) {
       
       // Sound already played optimistically, no need to play again
       
+      // Track player action
+      if (newEngine) {
+        trackPlayerAction({
+          actionType: 'roll',
+          gameType: 'yahtzee',
+          playerCount: game.players.length,
+          isBot: false,
+          metadata: {
+            rollNumber: 3 - newEngine.getRollsLeft() + 1,
+            diceHeld: held.filter(Boolean).length,
+          },
+        })
+      }
+      
       emitWhenConnected('game-action', {
         lobbyCode: code,
         action: 'state-change',
@@ -191,7 +206,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -249,11 +264,8 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' }
-      if (isGuest && guestId) {
-        headers['X-Guest-Id'] = guestId
-      }
-
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers,
@@ -295,6 +307,18 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       soundManager.play('score')
+      
+      // Track score action
+      trackPlayerAction({
+        actionType: 'score',
+        gameType: 'yahtzee',
+        playerCount: game.players.length,
+        isBot: false,
+        metadata: {
+          category,
+          score: scoredValue,
+        },
+      })
 
       emitWhenConnected('game-action', {
         lobbyCode: code,
@@ -307,6 +331,26 @@ export function useGameActions(props: UseGameActionsProps) {
       if (newEngine.isGameFinished()) {
         setTimerActive(false)
         const winner = newEngine.checkWinCondition()
+        
+        // Track game completion
+        const startTime = game.createdAt ? new Date(game.createdAt).getTime() : Date.now()
+        const endTime = Date.now()
+        const durationMinutes = Math.round((endTime - startTime) / 60000)
+        
+        const winnerPlayer = winner?.id ? game.players.find((p: any) => p.userId === winner.id) : null
+        
+        trackGameCompleted({
+          gameType: 'yahtzee',
+          playerCount: game.players.length,
+          duration: durationMinutes,
+          winner: winner?.name || 'Unknown',
+          wasBot: winnerPlayer?.isBot || false,
+          finalScores: game.players.map((p: GamePlayer) => ({
+            playerName: p.name,
+            score: p.score,
+          })),
+        })
+        
         if (winner) {
           soundManager.play('win')
           fireworks()
@@ -329,7 +373,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
 
   return {
     handleRollDice,

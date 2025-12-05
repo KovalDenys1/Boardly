@@ -57,7 +57,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
       aria-pressed={held}
       className={`
-        relative w-16 h-16 md:w-20 md:h-20 rounded-xl shadow-lg transition-all duration-200
+        relative w-14 h-14 md:w-16 md:h-16 max-w-[64px] max-h-[64px] rounded-xl shadow-lg transition-all duration-200
         ${held 
           ? 'bg-gradient-to-br from-yellow-400 to-amber-500 border-4 border-yellow-600 scale-95 ring-4 ring-yellow-300' 
           : 'bg-white dark:bg-gray-100 border-4 border-gray-800 dark:border-gray-700 hover:scale-105 hover:shadow-xl active:scale-95'
@@ -73,7 +73,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       {getDotPositions(value).map((position, index) => (
         <div
           key={`${position}-${index}`}
-          className={`absolute w-3 h-3 md:w-4 md:h-4 rounded-full shadow-md ${
+          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-md ${
             held ? 'bg-gray-900' : 'bg-gray-900 dark:bg-gray-800'
           } ${dotClasses[position]}`}
         />

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 
 export default function Error({
   error,
@@ -14,7 +15,7 @@ export default function Error({
 
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Error boundary caught:', error)
+    clientLogger.error('Error boundary caught:', error)
   }, [error])
 
   return (
