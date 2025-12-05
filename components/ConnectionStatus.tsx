@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { useEffect, useState } from 'react'
 
 interface ConnectionStatusProps {
   isConnected: boolean
@@ -12,6 +13,30 @@ export function ConnectionStatus({
   reconnectAttempt,
 }: ConnectionStatusProps) {
   const { t } = useTranslation()
+  const [hasConnectedBefore, setHasConnectedBefore] = useState(false)
+  const [showDisconnected, setShowDisconnected] = useState(false)
+
+  // Track if we've successfully connected at least once
+  useEffect(() => {
+    if (isConnected) {
+      setHasConnectedBefore(true)
+      setShowDisconnected(false)
+    }
+  }, [isConnected])
+
+  // Only show disconnected message if we've connected before
+  // and we're not currently trying to reconnect
+  useEffect(() => {
+    if (!isConnected && !isReconnecting && hasConnectedBefore) {
+      // Add a small delay to avoid flashing the error on page load
+      const timer = setTimeout(() => {
+        setShowDisconnected(true)
+      }, 2000)
+      return () => clearTimeout(timer)
+    } else {
+      setShowDisconnected(false)
+    }
+  }, [isConnected, isReconnecting, hasConnectedBefore])
 
   if (isConnected) {
     return null // Don't show anything when connected
@@ -58,6 +83,12 @@ export function ConnectionStatus({
         </div>
       </div>
     )
+  }
+
+  // Only show disconnected message if we've been connected before
+  // This prevents showing the error on initial page load
+  if (!showDisconnected) {
+    return null
   }
 
   // Disconnected (not trying to reconnect)

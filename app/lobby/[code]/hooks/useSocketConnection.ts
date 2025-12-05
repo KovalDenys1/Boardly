@@ -36,6 +36,7 @@ export function useSocketConnection({
   const [isConnected, setIsConnected] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [isReconnecting, setIsReconnecting] = useState(false)
+  const hasConnectedOnceRef = useRef(false)
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -127,6 +128,7 @@ export function useSocketConnection({
       setIsConnected(true)
       setIsReconnecting(false)
       setReconnectAttempt(0) // Reset counter on successful connection
+      hasConnectedOnceRef.current = true // Mark that we've connected at least once
       
       // Join lobby room (server expects string, not object)
       newSocket.emit('join-lobby', code)
@@ -134,12 +136,14 @@ export function useSocketConnection({
 
     newSocket.on('disconnect', (reason) => {
       if (!isMounted) return
-      // Only log real disconnects, not cleanup disconnects
-      if (reason !== 'io client disconnect') {
+      setIsConnected(false)
+      
+      // Only show reconnecting if we've connected before
+      // This prevents showing "reconnecting" on initial page load
+      if (reason !== 'io client disconnect' && hasConnectedOnceRef.current) {
         clientLogger.log('❌ Socket disconnected:', reason)
         setIsReconnecting(true)
       }
-      setIsConnected(false)
     })
 
     newSocket.on('reconnect_attempt', (attempt) => {
