@@ -14,9 +14,9 @@ interface DiceGroupProps {
 
 const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disabled = false, isRolling = false, isMyTurn = false }: DiceGroupProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-2 sm:gap-4 p-2 sm:p-4">
+    <div className="flex flex-col items-center justify-center h-full gap-3 sm:gap-4 p-3 sm:p-4">
       {/* Dice Grid - Optimized for visibility */}
-      <div className="flex flex-wrap gap-2 sm:gap-4 justify-center items-center max-w-full">
+      <div className="flex flex-wrap gap-3 sm:gap-4 justify-center items-center">
         {dice.map((value, index) => (
           <Dice
             key={`die-${index}`}
@@ -32,18 +32,18 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
       {/* Helpful hint - compact */}
       <div className="text-center px-2">
         {!isMyTurn ? (
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 sm:gap-2 justify-center">
-            <span className="text-sm sm:text-base">⏳</span>
+          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 justify-center">
+            <span className="text-base">⏳</span>
             <span>Wait for your turn...</span>
           </p>
         ) : disabled ? (
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 sm:gap-2 justify-center">
-            <span className="text-sm sm:text-base">🎲</span>
+          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 justify-center">
+            <span className="text-base">🎲</span>
             <span>Roll dice first</span>
           </p>
         ) : (
-          <p className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 sm:gap-2 justify-center">
-            <span className="text-sm sm:text-base">👆</span>
+          <p className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-2 justify-center">
+            <span className="text-base">👆</span>
             <span>Click dice to hold/release</span>
           </p>
         )}

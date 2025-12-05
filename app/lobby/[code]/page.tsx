@@ -677,8 +677,8 @@ function LobbyPageContent() {
           getCurrentUserId={getCurrentUserId}
         />
       ) : (
-        // Game Started - ABSOLUTE NO SCROLL - Fixed viewport
-        <div className="fixed inset-0 top-20 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
+        // Game Started - Flexible Layout without fixed positioning
+        <div className="flex flex-col min-h-[calc(100vh-8rem)] max-h-[calc(100vh-8rem)] overflow-hidden bg-gray-50 dark:bg-gray-900">
           {gameEngine?.isGameFinished() ? (
             <YahtzeeResults
               results={analyzeResults(
@@ -693,7 +693,7 @@ function LobbyPageContent() {
           ) : gameEngine ? (
             <>
               {/* Top Status Bar - Responsive */}
-              <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
+              <div className="flex-shrink-0 px-2 sm:px-4 pb-3">
                 <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-xl px-2 sm:px-4 py-2 shadow-lg">
                   {/* Mobile: Compact 2-row layout */}
                   <div className="md:hidden">
@@ -822,12 +822,12 @@ function LobbyPageContent() {
                 </div>
               </div>
 
-              {/* Main Game Area - More spacing between columns */}
-              <div className="flex-1 min-h-0 relative">
+              {/* Main Game Area - Flexible grid with natural overflow */}
+              <div className="flex-1 min-h-0 px-2 sm:px-4 pb-4">
                 {/* Desktop: Grid Layout */}
-                <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
-                  {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                  <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+                <div className="hidden md:grid md:grid-cols-12 lg:grid-cols-12 gap-3 lg:gap-4 h-full">
+                  {/* Left: Dice Controls - Flexible width */}
+                  <div className="md:col-span-12 lg:col-span-3 flex flex-col min-h-0">
                     <GameBoard
                       gameEngine={gameEngine}
                       game={game}
@@ -846,8 +846,8 @@ function LobbyPageContent() {
                     />
                   </div>
 
-                  {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-6 h-full overflow-hidden">
+                  {/* Center: Scorecard - Flexible width with internal scroll */}
+                  <div className="md:col-span-12 lg:col-span-6 flex flex-col min-h-0">
                     {(() => {
                       // Show selected player's scorecard or current player's scorecard
                       const currentUserId = getCurrentUserId()
@@ -858,9 +858,8 @@ function LobbyPageContent() {
                       if (!scorecard) return null
                       
                       return (
-                        <div className="h-full flex flex-col">
-                          <div className="flex-1 min-h-0">
-                            <Scorecard
+                        <div className="flex flex-col min-h-0 h-full">
+                          <Scorecard
                               scorecard={scorecard}
                               currentDice={gameEngine.getDice()}
                               onSelectCategory={handleScore}
@@ -883,7 +882,6 @@ function LobbyPageContent() {
                               }}
                               showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
                             />
-                          </div>
                         </div>
                       )
                     })()}
@@ -892,7 +890,7 @@ function LobbyPageContent() {
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
                   <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
                     {/* Players List - Shows 1 player with scroll for more */}
-                    <div className="flex-shrink-0" style={{ height: '140px' }}>
+                    <div className="flex-shrink-0 max-h-[40%]">
                       <PlayerList
                         players={game?.players?.map((p: any) => {
                           // Find the player's actual position in the game engine
