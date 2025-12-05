@@ -237,7 +237,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: any) {
       setError(err.message)
     }
-  }, [code, password, isGuest, guestId, guestName, socket, username, userId, setGame, setChatMessages, setError])
+  }, [code, password, isGuest, guestId, guestName, socket, username, userId, setGame, setChatMessages, setError, lobby?.gameType, lobby?.password])
 
   const handleStartGame = useCallback(async () => {
     if (!game) return

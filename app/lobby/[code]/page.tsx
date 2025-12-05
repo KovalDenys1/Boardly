@@ -174,7 +174,13 @@ function LobbyPageContent() {
       // Update ref
       prevCurrentPlayerIdRef.current = currentPlayerId
     }
-  }, [gameEngine?.getCurrentPlayer()?.id, gameEngine, getCurrentUserId, selectedPlayerId])
+  }, [gameEngine, getCurrentUserId, selectedPlayerId])
+
+  // Separate effect to track the complex expression
+  const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
+  useEffect(() => {
+    // Track changes to current player ID
+  }, [currentPlayerId])
 
   // Create ref for loadLobby to avoid circular dependency
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)

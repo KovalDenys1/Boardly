@@ -3,7 +3,25 @@ import { useSocketConnection } from '@/app/lobby/[code]/hooks/useSocketConnectio
 import { Socket } from 'socket.io-client'
 
 // Mock socket.io-client
-const mockSocket = {
+type MockSocket = {
+  on: jest.Mock
+  off: jest.Mock
+  emit: jest.Mock
+  once: jest.Mock
+  connected: boolean
+  disconnect: jest.Mock
+  connect: jest.Mock
+  close: jest.Mock
+  io: {
+    opts: {
+      reconnection: boolean
+      reconnectionAttempts: number
+      reconnectionDelay: number
+    }
+  }
+}
+
+const mockSocket: MockSocket = {
   on: jest.fn(),
   off: jest.fn(),
   emit: jest.fn(),
@@ -19,7 +37,7 @@ const mockSocket = {
       reconnectionDelay: 1000,
     },
   },
-} as unknown as Socket
+}
 
 jest.mock('socket.io-client', () => ({
   io: jest.fn(() => mockSocket),
@@ -78,8 +96,8 @@ describe('useSocketConnection', () => {
 
       // Simulate connection event
       const connectHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'connect'
-      )?.[1]
+        (call: any[]) => call[0] === 'connect'
+      )?.[1] as (() => void) | undefined
       
       act(() => {
         connectHandler?.()
@@ -143,8 +161,8 @@ describe('useSocketConnection', () => {
       renderHook(() => useSocketConnection(defaultProps))
 
       const gameUpdateHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'game-update'
-      )?.[1]
+        (call: any[]) => call[0] === 'game-update'
+      )?.[1] as ((data: any) => void) | undefined
 
       const gameData = { action: 'roll-dice', payload: {} }
       act(() => {
@@ -158,8 +176,8 @@ describe('useSocketConnection', () => {
       renderHook(() => useSocketConnection(defaultProps))
 
       const chatHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'chat-message'
-      )?.[1]
+        (call: any[]) => call[0] === 'chat-message'
+      )?.[1] as ((data: any) => void) | undefined
 
       const message = { id: '1', message: 'Hello', username: 'Test' }
       act(() => {
@@ -175,8 +193,8 @@ describe('useSocketConnection', () => {
       const { result } = renderHook(() => useSocketConnection(defaultProps))
 
       const disconnectHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'disconnect'
-      )?.[1]
+        (call: any[]) => call[0] === 'disconnect'
+      )?.[1] as ((reason: string) => void) | undefined
 
       act(() => {
         mockSocket.connected = false
@@ -191,8 +209,8 @@ describe('useSocketConnection', () => {
       renderHook(() => useSocketConnection(defaultProps))
 
       const connectHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'connect'
-      )?.[1]
+        (call: any[]) => call[0] === 'connect'
+      )?.[1] as (() => void) | undefined
 
       act(() => {
         mockSocket.connected = true
@@ -232,8 +250,8 @@ describe('useSocketConnection', () => {
       })
 
       const connectHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'connect'
-      )?.[1]
+        (call: any[]) => call[0] === 'connect'
+      )?.[1] as (() => void) | undefined
       
       act(() => {
         connectHandler?.()
@@ -259,11 +277,12 @@ describe('useSocketConnection', () => {
       })
 
       // Mock once to execute callback immediately (simulate connect event handler)
-      mockSocket.once.mockImplementation((event, callback) => {
+      mockSocket.once.mockImplementation((event: string, callback: () => void) => {
         if (event === 'connect') {
           // Store the callback to call it later
           setTimeout(() => callback(), 0)
         }
+        return mockSocket as any
       })
 
       act(() => {
@@ -291,8 +310,8 @@ describe('useSocketConnection', () => {
       )
 
       const botActionHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'bot-action'
-      )?.[1]
+        (call: any[]) => call[0] === 'bot-action'
+      )?.[1] as ((data: any) => void) | undefined
 
       const botData = { action: 'roll', botId: 'bot-1' }
       act(() => {
@@ -306,7 +325,7 @@ describe('useSocketConnection', () => {
       renderHook(() => useSocketConnection(defaultProps))
 
       const botActionHandler = mockSocket.on.mock.calls.find(
-        (call) => call[0] === 'bot-action'
+        (call: any[]) => call[0] === 'bot-action'
       )
 
       expect(botActionHandler).toBeUndefined()

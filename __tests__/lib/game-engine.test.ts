@@ -22,12 +22,14 @@ class TestGame extends GameEngine {
 
   processMove(move: Move): void {
     if (move.type === 'increment') {
-      this.state.data.value = (this.state.data.value || 0) + 1
+      const data = this.state.data as { round: number; value: number }
+      data.value = (data.value || 0) + 1
     }
   }
 
   checkWinCondition(): Player | null {
-    if (this.state.data.value >= 10) {
+    const data = this.state.data as { round: number; value: number }
+    if (data.value >= 10) {
       return this.state.players[0] || null
     }
     return null
@@ -173,7 +175,8 @@ describe('GameEngine', () => {
       
       // Value should be 10 now
       const state = game.getState()
-      expect(state.data.value).toBe(10)
+      const data = state.data as { round: number; value: number }
+      expect(data.value).toBe(10)
       
       // checkWinCondition should be called automatically in makeMove
       // So game should be finished
