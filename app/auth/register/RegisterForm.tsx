@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
+import UsernameInput from '@/components/UsernameInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
@@ -24,6 +25,7 @@ export default function RegisterForm() {
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string; confirmPassword?: string }>({})
   const [loading, setLoading] = useState(false)
+  const [usernameAvailable, setUsernameAvailable] = useState(false)
   const returnUrl = searchParams.get('returnUrl') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,16 +107,6 @@ export default function RegisterForm() {
     }
   }
 
-  // Auto-suggest username from email
-  const handleEmailChange = (email: string) => {
-    setFormData({ ...formData, email })
-    
-    if (!formData.username || formData.username === formData.email.split('@')[0]) {
-      const suggestedUsername = email.split('@')[0]
-      setFormData({ ...formData, email, username: suggestedUsername })
-    }
-  }
-
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
     try {
@@ -159,7 +151,7 @@ export default function RegisterForm() {
               disabled={loading}
               className="input"
               value={formData.email}
-              onChange={(e) => handleEmailChange(e.target.value)}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder={t('auth.register.emailPlaceholder')}
               autoComplete="email"
             />
@@ -169,25 +161,14 @@ export default function RegisterForm() {
           </div>
 
           <div>
-            <label className="label">{t('auth.register.username')}</label>
-            <input
-              type="text"
-              required
-              disabled={loading}
-              className="input"
+            <UsernameInput
               value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              placeholder={t('auth.register.usernamePlaceholder')}
-              autoComplete="username"
-              minLength={3}
-              maxLength={20}
+              onChange={(username) => setFormData({ ...formData, username })}
+              error={fieldErrors.username}
+              disabled={loading}
+              required={true}
+              onAvailabilityChange={setUsernameAvailable}
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t('auth.register.usernameHint')}
-            </p>
-            {fieldErrors.username && (
-              <p className="mt-1 text-sm text-red-600">{fieldErrors.username}</p>
-            )}
           </div>
 
           <div>
@@ -196,6 +177,8 @@ export default function RegisterForm() {
               onChange={(value) => setFormData({ ...formData, password: value })}
               placeholder={t('auth.register.passwordPlaceholder')}
               autoComplete="new-password"
+              showStrength={true}
+              required={true}
             />
             {fieldErrors.password && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>

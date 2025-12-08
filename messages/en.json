@@ -16,7 +16,9 @@
     "filter": "Filter",
     "sort": "Sort",
     "all": "All",
-    "or": "or"
+    "or": "or",
+    "deleting": "Deleting...",
+    "goHome": "Go to Home"
   },
   "connection": {
     "reconnecting": "Reconnecting...",
@@ -261,6 +263,8 @@
       "passwordPlaceholder": "Enter your password",
       "submit": "Login",
       "withGoogle": "Login with Google",
+      "withGitHub": "Continue with GitHub",
+      "withDiscord": "Continue with Discord",
       "forgotPassword": "Forgot password?",
       "noAccount": "Don't have an account?",
       "register": "Register now",
@@ -271,7 +275,7 @@
       "title": "Create Account",
       "username": "Username",
       "usernamePlaceholder": "Choose a username",
-      "usernameHint": "Auto-suggested from email. You can change it.",
+      "usernameHint": "3-20 characters. Letters, numbers, and underscores only.",
       "email": "Email",
       "emailPlaceholder": "Enter your email",
       "password": "Password",
@@ -282,6 +286,7 @@
       "creating": "Creating account...",
       "withGoogle": "Continue with Google",
       "withGitHub": "Continue with GitHub",
+      "withDiscord": "Continue with Discord",
       "haveAccount": "Already have an account?",
       "loginLink": "Login",
       "success": "Account created successfully! Welcome aboard! 🎉",
@@ -327,6 +332,29 @@
       "success": "Email verified successfully!",
       "error": "Verification failed",
       "goToLogin": "Go to Login"
+    },
+    "password": {
+      "veryWeak": "Very Weak",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong",
+      "strength": "Password strength",
+      "requirements": "Password requirements",
+      "requirement": {
+        "length": "At least 8 characters",
+        "case": "Upper & lowercase letters",
+        "number": "At least one number",
+        "special": "At least one special character (!@#$%^&*)"
+      }
+    },
+    "username": {
+      "checking": "Checking availability...",
+      "available": "Username is available!",
+      "taken": "Username is already taken",
+      "tooLong": "Username must be at most 20 characters",
+      "invalidChars": "Username can only contain letters, numbers, and underscores",
+      "suggestions": "Try these available usernames"
     }
   },
   "profile": {
@@ -368,13 +396,31 @@
     "forbidden": "You don't have permission to do that",
     "notFound": "Resource not found",
     "validation": "Invalid input",
-    "tooManyRequests": "Too many requests. Please try again later."
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "confirmDelete": "Please type DELETE to confirm",
+    "tokenExpired": "Deletion token has expired. Please request a new one.",
+    "invalidToken": "Invalid or missing token"
   },
   "toast": {
     "copied": "Copied to clipboard!",
     "saved": "Saved successfully",
     "deleted": "Deleted successfully",
     "error": "An error occurred",
-    "success": "Action completed successfully"
+    "success": "Action completed successfully",
+    "accountDeleted": "Account deleted successfully"
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "confirmation": "This action cannot be undone. All your data will be permanently deleted.",
+    "willBeDeleted": "What will be deleted:",
+    "profileData": "Your profile and personal information",
+    "gameHistory": "All game history and statistics",
+    "friends": "Friend connections and requests",
+    "achievements": "All achievements and progress",
+    "typeDelete": "Type DELETE to confirm:",
+    "confirmDelete": "Delete My Account Forever",
+    "error": "Deletion Failed",
+    "success": "Account Deleted",
+    "successMessage": "Your account has been deleted. Redirecting to home..."
   }
 }

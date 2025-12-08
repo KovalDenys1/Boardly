@@ -30,6 +30,9 @@ i18n
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },
+    react: {
+      useSuspense: false, // Disable suspense to avoid hydration issues
+    },
   })
 
 export default i18n

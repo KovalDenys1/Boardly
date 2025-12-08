@@ -2,12 +2,14 @@ import { NextAuthOptions } from 'next-auth'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
+import DiscordProvider from 'next-auth/providers/discord'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import { comparePassword } from './auth'
 import { apiLogger } from './logger'
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     // Include providers only when configured to avoid build-time errors
     ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
@@ -23,6 +25,14 @@ export const authOptions: NextAuthOptions = {
           GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
+    ...(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
+      ? [
+          DiscordProvider({
+            clientId: process.env.DISCORD_CLIENT_ID,
+            clientSecret: process.env.DISCORD_CLIENT_SECRET,
           }),
         ]
       : []),
@@ -66,40 +76,83 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/login',
+    error: '/auth/error-oauth',
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Handle OAuth sign-ins (Google, GitHub)
+      // Handle OAuth sign-ins (Google, GitHub, Discord)
       if (account?.provider && account.provider !== 'credentials') {
         try {
-          // Check if user already exists by email
+          // Check if there's already an account with this provider + providerAccountId
+          const existingAccount = await prisma.account.findUnique({
+            where: {
+              provider_providerAccountId: {
+                provider: account.provider,
+                providerAccountId: account.providerAccountId
+              }
+            },
+            include: { user: true }
+          })
+
+          if (existingAccount) {
+            // Account already exists - allow sign in
+            // Auto-verify email if not already verified
+            if (!existingAccount.user.emailVerified) {
+              await prisma.user.update({
+                where: { id: existingAccount.userId },
+                data: { emailVerified: new Date() }
+              })
+              
+              const log = apiLogger('OAuth signIn')
+              log.info('Auto-verified existing OAuth user', { userId: existingAccount.userId })
+            }
+            return true
+          }
+
+          // New OAuth account - check if user exists by email
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! },
           })
 
-          if (!existingUser) {
-            // Create new user from OAuth profile
-            const newUser = await prisma.user.create({
+          if (existingUser) {
+            // User exists with this email - link account to them
+            // This is safe because OAuth provider verified the email
+            await prisma.account.create({
               data: {
-                email: user.email!,
-                name: user.name,
-                image: user.image,
-                username: user.email!.split('@')[0],
-                emailVerified: new Date(),
-              },
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: account.session_state,
+              }
             })
-            
-            // Update user object with database ID
-            user.id = newUser.id
+
+            // Auto-verify email
+            if (!existingUser.emailVerified) {
+              await prisma.user.update({
+                where: { id: existingUser.id },
+                data: { emailVerified: new Date() }
+              })
+            }
             
             const log = apiLogger('OAuth signIn')
-            log.info('Created new OAuth user', { userId: newUser.id, email: newUser.email })
-          } else {
-            // Use existing user ID
-            user.id = existingUser.id
-            const log = apiLogger('OAuth signIn')
-            log.info('OAuth user already exists', { userId: existingUser.id, email: existingUser.email })
+            log.info('Linked OAuth account to existing user by email', { 
+              userId: existingUser.id, 
+              provider: account.provider,
+              email: user.email 
+            })
+            return true
           }
+
+          // New user - PrismaAdapter will create user and account
+          // Email will be verified in linkAccount event
+          
         } catch (error) {
           console.error('Error in signIn callback:', error)
           return false
@@ -107,38 +160,85 @@ export const authOptions: NextAuthOptions = {
       }
       return true
     },
-    async jwt({ token, user }) {
-      // On sign in, add user id to token
+    async jwt({ token, user, trigger }) {
+      // On sign in, add user data to token
       if (user) {
         token.id = user.id
         token.email = user.email
         token.name = user.name
         token.picture = user.image
+        token.emailVerified = user.emailVerified
       }
       
-      // Ensure we have user ID from database
+      // Ensure we have user data from database
       if (!token.id && token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            emailVerified: true
+          }
         })
         if (dbUser) {
           token.id = dbUser.id
           token.name = dbUser.username || dbUser.name
+          token.emailVerified = dbUser.emailVerified
+        }
+      }
+      
+      // Refresh emailVerified status on update trigger
+      if (trigger === 'update' && token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { emailVerified: true }
+        })
+        if (dbUser) {
+          token.emailVerified = dbUser.emailVerified
         }
       }
       
       return token
     },
     async session({ session, token }) {
-      // Add user id to session
+      // Add user data to session
       if (token && session.user) {
         session.user.id = token.id as string
         session.user.email = token.email as string
         session.user.name = token.name as string
         session.user.image = token.picture as string
+        session.user.emailVerified = token.emailVerified as Date | null
       }
       return session
     },
+  },
+  events: {
+    async createUser({ user }) {
+      // Auto-verify email for new OAuth users
+      // Note: This event fires BEFORE accounts are linked by PrismaAdapter
+      // We'll verify in signIn callback instead when we can check account type
+      const log = apiLogger('OAuth createUser')
+      log.info('New user created', { userId: user.id, email: user.email })
+    },
+    async linkAccount({ user, account }) {
+      // Auto-verify email when OAuth account is linked
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { 
+          emailVerified: new Date(),
+          username: user.name?.replace(/\s+/g, '_').toLowerCase() || user.email?.split('@')[0] || 'user'
+        }
+      })
+      
+      const log = apiLogger('OAuth linkAccount')
+      log.info('Account linked and email auto-verified', { 
+        userId: user.id, 
+        email: user.email,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId 
+      })
+    }
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
   debug: process.env.NODE_ENV === 'development',

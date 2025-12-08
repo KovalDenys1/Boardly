@@ -254,6 +254,10 @@ input:focus, select:focus, textarea:focus {
   @apply bg-gray-900 hover:bg-gray-800 text-white border-gray-900;
 }
 
+.oauth-btn-discord {
+  @apply bg-[#5865F2] hover:bg-[#4752C4] text-white border-[#5865F2];
+}
+
 .scorecard-row {
   @apply flex justify-between items-center p-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors rounded;
 }
