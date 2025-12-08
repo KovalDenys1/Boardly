@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import toast from 'react-hot-toast'
+import LoadingSpinner from '@/components/LoadingSpinner'
 
-export default function LinkAccountPage() {
+function LinkAccountContent() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -186,5 +187,13 @@ export default function LinkAccountPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LinkAccountPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
+      <LinkAccountContent />
+    </Suspense>
   )
 }

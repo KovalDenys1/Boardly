@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useTranslation } from 'react-i18next'
 import { showToast } from '@/lib/i18n-toast'
 
-export default function DeleteAccountPage() {
+function DeleteAccountContent() {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -180,5 +180,13 @@ export default function DeleteAccountPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function DeleteAccountPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
+      <DeleteAccountContent />
+    </Suspense>
   )
 }
