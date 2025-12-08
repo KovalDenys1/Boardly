@@ -127,6 +127,17 @@ function LobbyPageContent() {
     }
   }, [gameEngine, code])
 
+  // Track if this is initial page load to prevent sounds during hydration
+  const isInitialLoadRef = React.useRef(true)
+  
+  // Mark initial load as complete after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isInitialLoadRef.current = false
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [])
+
   // Sync soundEnabled state with soundManager on mount
   useEffect(() => {
     setSoundEnabled(soundManager.isEnabled())
@@ -266,11 +277,13 @@ function LobbyPageContent() {
       loadLobbyRef.current()
     }
     
-    // Show notification
+    // Show notification and play sound only after initial load
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
       toast.success(`${data.username} joined the lobby`)
-      soundManager.play('playerJoin')
+      if (!isInitialLoadRef.current) {
+        soundManager.play('playerJoin')
+      }
     }
   }, [isGuest, guestId, session?.user?.id])
 
@@ -288,7 +301,10 @@ function LobbyPageContent() {
       toast.success(`🎲 Game started! ${data.firstPlayerName} goes first!`)
     }
     
-    soundManager.play('gameStart')
+    // Only play sound if not initial load
+    if (!isInitialLoadRef.current) {
+      soundManager.play('gameStart')
+    }
   }, [isGuest, guestId, session?.user?.id, lobby?.creatorId])
 
   const onBotAction = useCallback((event: any) => {
@@ -313,14 +329,19 @@ function LobbyPageContent() {
         timestamp: Date.now(),
       }])
       
-      // Play sound ONLY after roll completes (when dice data is present)
-      soundManager.play('diceRoll')
+      // Play sound ONLY after roll completes AND not during initial load
+      if (!isInitialLoadRef.current) {
+        soundManager.play('diceRoll')
+      }
     }
     
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
       toast.success(event.message)
-      soundManager.play('score')
+      // Play sound only if not initial load
+      if (!isInitialLoadRef.current) {
+        soundManager.play('score')
+      }
     }
     
     // Log all actions to console for debugging
