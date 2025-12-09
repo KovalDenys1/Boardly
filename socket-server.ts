@@ -93,11 +93,12 @@ const io = new SocketIOServer(server, {
   cors: {
     origin: allowedOrigins,
   },
-  pingTimeout: 60000, // How long to wait for pong before disconnect (60s)
-  pingInterval: 25000, // How often to send ping (25s)
-  transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling
-  allowUpgrades: true, // Allow transport upgrades
-  upgradeTimeout: 10000, // Timeout for transport upgrade
+  pingTimeout: 120000, // Збільшено до 120s для Render free tier
+  pingInterval: 25000,
+  connectTimeout: 90000, // Додано timeout для підключення
+  transports: ['polling', 'websocket'], // Спочатку polling (надійніший для Render), потім upgrade до WebSocket
+  allowUpgrades: true,
+  upgradeTimeout: 30000, // Збільшено timeout для upgrade
   maxHttpBufferSize: 1e6, // 1MB max buffer
   connectTimeout: 45000, // Connection timeout
 })

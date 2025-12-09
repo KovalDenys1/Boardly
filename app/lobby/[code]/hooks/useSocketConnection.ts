@@ -105,11 +105,14 @@ export function useSocketConnection({
     }
 
     const newSocket = io(url, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // Спочатку polling (надійніший для Render), потім WebSocket
       reconnection: true,
-      reconnectionAttempts: 10, // Try 10 times before giving up
-      reconnectionDelay: 1000, // Initial delay
-      reconnectionDelayMax: 30000, // Max 30 seconds between attempts
+      reconnectionAttempts: 15, // Збільшено до 15 для Render free tier
+      reconnectionDelay: 2000, // Збільшено до 2s
+      reconnectionDelayMax: 60000, // Збільшено до 60s для Render cold starts
+      timeout: 90000, // Збільшено timeout до 90s
+      upgrade: true, // Дозволити upgrade з polling до WebSocket
+      rememberUpgrade: true, // Запам'ятати успішний upgrade
       auth: {
         token: token,
         isGuest: isGuest,
