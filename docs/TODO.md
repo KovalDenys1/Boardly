@@ -32,9 +32,13 @@
 - ✅ Socket.IO reliability improvements for Render free tier
 - ✅ Abandoned games cleanup cron job
 - ✅ Lobby improvements (filters, search, sorting, stats UI)
+- ✅ Stuck games auto-abandon fix (when humans leave with bots)
 
 ### 🚧 In Progress
-- 🔄 Lobby improvements testing and deployment - December 9, 2025
+- 🎉 **Deployed to Production** - December 9, 2025
+  - Lobby filters and search
+  - Game history
+  - Stuck games fix
 
 ## 📅 Development Timeline
 
