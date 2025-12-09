@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -51,6 +51,26 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Get current user
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, username: true, isBot: true }
+    })
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    if (currentUser.isBot) {
+      return NextResponse.json(
+        { error: 'Bots cannot send friend requests' },
+        { status: 400 }
+      )
+    }
+
     // Find user by friend code
     const targetUser = await findUserByFriendCode(cleanCode)
     
@@ -62,7 +82,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if trying to add yourself
-    if (targetUser.id === session.user.id) {
+    if (targetUser.id === currentUser.id) {
       return NextResponse.json(
         { error: 'You cannot add yourself as a friend' },
         { status: 400 }
@@ -73,8 +93,8 @@ export async function POST(req: NextRequest) {
     const existingFriendship = await prisma.friendship.findFirst({
       where: {
         OR: [
-          { user1Id: session.user.id, user2Id: targetUser.id },
-          { user1Id: targetUser.id, user2Id: session.user.id }
+          { user1Id: currentUser.id, user2Id: targetUser.id },
+          { user1Id: targetUser.id, user2Id: currentUser.id }
         ]
       }
     })
@@ -90,8 +110,8 @@ export async function POST(req: NextRequest) {
     const pendingRequest = await prisma.friendRequest.findFirst({
       where: {
         OR: [
-          { senderId: session.user.id, receiverId: targetUser.id },
-          { senderId: targetUser.id, receiverId: session.user.id }
+          { senderId: currentUser.id, receiverId: targetUser.id },
+          { senderId: targetUser.id, receiverId: currentUser.id }
         ],
         status: 'pending'
       }
@@ -107,7 +127,7 @@ export async function POST(req: NextRequest) {
     // Create friend request
     const friendRequest = await prisma.friendRequest.create({
       data: {
-        senderId: session.user.id,
+        senderId: currentUser.id,
         receiverId: targetUser.id,
         message: message || null,
         status: 'pending'
@@ -125,7 +145,7 @@ export async function POST(req: NextRequest) {
     })
 
     log.info('Friend request sent via friend code', {
-      senderId: session.user.id,
+      senderId: currentUser.id,
       receiverId: targetUser.id,
       friendCode: cleanCode
     })

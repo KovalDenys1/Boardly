@@ -134,15 +134,25 @@ export default function Friends() {
 
   const loadRequests = useCallback(async () => {
     try {
-      const res = await fetch('/api/friends/request')
-      if (!res.ok) throw new Error('Failed to load requests')
+      // Fetch both received and sent requests in parallel
+      const [receivedRes, sentRes] = await Promise.all([
+        fetch('/api/friends/request?type=received'),
+        fetch('/api/friends/request?type=sent')
+      ])
       
-      const data = await res.json()
-      setReceivedRequests(data.receivedRequests || [])
-      setSentRequests(data.sentRequests || [])
+      if (!receivedRes.ok || !sentRes.ok) {
+        throw new Error('Failed to load requests')
+      }
+      
+      const receivedData = await receivedRes.json()
+      const sentData = await sentRes.json()
+      
+      setReceivedRequests(receivedData.requests || [])
+      setSentRequests(sentData.requests || [])
+      
       clientLogger.log('Friend requests loaded', {
-        received: data.receivedRequests?.length,
-        sent: data.sentRequests?.length
+        received: receivedData.requests?.length || 0,
+        sent: sentData.requests?.length || 0
       })
     } catch (error) {
       clientLogger.error('Error loading requests:', error)
