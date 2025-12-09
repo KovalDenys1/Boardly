@@ -330,8 +330,9 @@ function LobbyPageContent() {
       }])
       
       // Play sound ONLY after roll completes AND not during initial load
+      // Use force option to ensure sound plays even if previous roll sound is still playing
       if (!isInitialLoadRef.current) {
-        soundManager.play('diceRoll')
+        soundManager.play('diceRoll', { force: true })
       }
     }
     

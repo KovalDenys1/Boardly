@@ -30,36 +30,60 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
   if (!event || !visible) return null
 
   // Different colors for different celebration types
-  const getColorClasses = () => {
+  const getGradientStyle = () => {
     switch (event.type) {
       case 'yahtzee':
-        return 'from-yellow-400 via-orange-500 to-red-500 border-yellow-500'
+        return {
+          backgroundImage: 'linear-gradient(to right, #FBBF24, #F97316, #EF4444)',
+          borderColor: '#FBBF24',
+        }
       case 'largeStraight':
-        return 'from-blue-400 via-purple-500 to-pink-500 border-purple-500'
+        return {
+          backgroundImage: 'linear-gradient(to right, #60A5FA, #A855F7, #EC4899)',
+          borderColor: '#A855F7',
+        }
       case 'fullHouse':
-        return 'from-green-400 via-teal-500 to-cyan-500 border-green-500'
+        return {
+          backgroundImage: 'linear-gradient(to right, #4ADE80, #14B8A6, #06B6D4)',
+          borderColor: '#4ADE80',
+        }
       case 'highScore':
-        return 'from-indigo-400 via-purple-500 to-pink-500 border-indigo-500'
+        return {
+          backgroundImage: 'linear-gradient(to right, #818CF8, #A855F7, #EC4899)',
+          borderColor: '#818CF8',
+        }
       case 'perfectRoll':
-        return 'from-amber-400 via-yellow-500 to-orange-500 border-amber-500'
+        return {
+          backgroundImage: 'linear-gradient(to right, #FBBF24, #EAB308, #F97316)',
+          borderColor: '#FBBF24',
+        }
       default:
-        return 'from-blue-500 via-purple-600 to-pink-500 border-blue-500'
+        return {
+          backgroundImage: 'linear-gradient(to right, #3B82F6, #9333EA, #EC4899)',
+          borderColor: '#3B82F6',
+        }
     }
   }
+
+  const gradientStyle = getGradientStyle()
 
   return (
     <div
       className={`
         fixed top-20 left-1/2 transform -translate-x-1/2 z-50
-        ${visible ? 'animate-bounce-in' : 'animate-fade-out'}
+        ${visible ? 'animate-bounce-in opacity-100' : 'animate-fade-out opacity-0'}
       `}
     >
       <div
-        className="bg-gradient-to-r text-white rounded-2xl shadow-2xl flex items-center animate-scale-pulse"
+        className="text-white rounded-2xl shadow-2xl flex items-center border-solid backdrop-blur-sm"
         style={{
+          ...gradientStyle,
           padding: `clamp(12px, 1.2vh, 20px) clamp(24px, 2.4vw, 40px)`,
           gap: `clamp(12px, 1.2vw, 20px)`,
           borderWidth: `clamp(3px, 0.3vw, 5px)`,
+          borderStyle: 'solid',
+          animation: visible ? 'scale-pulse 0.8s ease-in-out infinite' : 'none',
+          opacity: 1,
         }}
       >
         {/* Emoji */}
