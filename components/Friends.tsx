@@ -317,7 +317,7 @@ export default function Friends() {
   }
 
   const handleRemoveFriend = async (friendshipId: string, username: string | null) => {
-    if (!confirm(t('friends.confirmRemove', { username: username || 'this friend' }))) {
+    if (!confirm(t('profile.friends.confirmRemove', { username: username || 'this friend' }))) {
       return
     }
 
@@ -366,26 +366,26 @@ export default function Friends() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🎯</span>
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                  {t('friends.myFriendCode')}
+                  {t('profile.friends.myFriendCode')}
                 </h3>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={copyFriendCode}
                   className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
-                  title={t('friends.copyCode')}
+                  title={t('profile.friends.copyCode')}
                 >
                   <span className="flex items-center gap-1.5">
-                    📋 {t('friends.copyCode')}
+                    📋 {t('profile.friends.copyCode')}
                   </span>
                 </button>
                 <button
                   onClick={copyProfileLink}
                   className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
-                  title={t('friends.copyLink')}
+                  title={t('profile.friends.copyLink')}
                 >
                   <span className="flex items-center gap-1.5">
-                    🔗 {t('friends.copyLink')}
+                    🔗 {t('profile.friends.copyLink')}
                   </span>
                 </button>
               </div>
@@ -399,7 +399,7 @@ export default function Friends() {
             
             <p className="text-xs text-center text-gray-600 dark:text-gray-400 mt-3 flex items-center justify-center gap-1">
               <span>✨</span>
-              {t('friends.shareCodeHint')}
+              {t('profile.friends.shareCodeHint')}
             </p>
           </div>
         </div>
@@ -420,7 +420,7 @@ export default function Friends() {
             >
               <span className="flex items-center justify-center gap-2">
                 <span className="text-lg">👥</span>
-                <span className="hidden sm:inline">{t('friends.tabs.friends')}</span>
+                <span className="hidden sm:inline">{t('profile.friends.tabs.friends')}</span>
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                   activeTab === 'friends'
                     ? 'bg-white/20 text-white'
@@ -441,7 +441,7 @@ export default function Friends() {
             >
               <span className="flex items-center justify-center gap-2">
                 <span className="text-lg">📬</span>
-                <span className="hidden sm:inline">{t('friends.tabs.requests')}</span>
+                <span className="hidden sm:inline">{t('profile.friends.tabs.requests')}</span>
                 {receivedRequests.length > 0 && (
                   <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full animate-pulse shadow-lg">
                     {receivedRequests.length}
@@ -460,7 +460,7 @@ export default function Friends() {
             >
               <span className="flex items-center justify-center gap-2">
                 <span className="text-lg">📤</span>
-                <span className="hidden sm:inline">{t('friends.tabs.sent')}</span>
+                <span className="hidden sm:inline">{t('profile.friends.tabs.sent')}</span>
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                   activeTab === 'sent'
                     ? 'bg-white/20 text-white'
@@ -479,7 +479,7 @@ export default function Friends() {
           >
             <span className="flex items-center gap-2">
               <span className="text-lg">➕</span>
-              <span className="hidden sm:inline">{t('friends.addFriend')}</span>
+              <span className="hidden sm:inline">{t('profile.friends.addFriend')}</span>
             </span>
           </button>
         </div>
@@ -494,10 +494,10 @@ export default function Friends() {
                 <span className="text-5xl">👥</span>
               </div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                {t('friends.noFriends')}
+                {t('profile.friends.noFriends')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {t('friends.noFriendsDescription')}
+                {t('profile.friends.noFriendsDescription')}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
@@ -505,7 +505,7 @@ export default function Friends() {
               >
                 <span className="flex items-center gap-2">
                   <span>➕</span>
-                  {t('friends.addFirstFriend')}
+                  {t('profile.friends.addFirstFriend')}
                 </span>
               </button>
             </div>
@@ -590,7 +590,7 @@ export default function Friends() {
                         <button
                           onClick={() => handleRemoveFriend(friend.friendshipId, friend.username)}
                           className="flex-shrink-0 ml-4 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                          title={t('friends.remove')}
+                          title={t('profile.friends.remove')}
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -614,10 +614,10 @@ export default function Friends() {
                 <span className="text-5xl">📬</span>
               </div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                {t('friends.noRequests')}
+                {t('profile.friends.noRequests')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                {t('friends.noRequestsDescription')}
+                {t('profile.friends.noRequestsDescription')}
               </p>
             </div>
           ) : (
@@ -667,7 +667,7 @@ export default function Friends() {
                       >
                         <span className="flex items-center justify-center gap-2">
                           <span>✓</span>
-                          {t('friends.accept')}
+                          {t('profile.friends.accept')}
                         </span>
                       </button>
                       <button
@@ -676,7 +676,7 @@ export default function Friends() {
                       >
                         <span className="flex items-center justify-center gap-2">
                           <span>✗</span>
-                          {t('friends.reject')}
+                          {t('profile.friends.reject')}
                         </span>
                       </button>
                     </div>
@@ -697,10 +697,10 @@ export default function Friends() {
                 <span className="text-5xl">📤</span>
               </div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                {t('friends.noSentRequests')}
+                {t('profile.friends.noSentRequests')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                {t('friends.noSentRequestsDescription')}
+                {t('profile.friends.noSentRequestsDescription')}
               </p>
             </div>
           ) : (
@@ -733,7 +733,7 @@ export default function Friends() {
 
                       <span className="flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full flex items-center gap-1.5 shadow-sm">
                         <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                        {t('friends.pending')}
+                        {t('profile.friends.pending')}
                       </span>
                     </div>
                   </div>
@@ -752,10 +752,10 @@ export default function Friends() {
             <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-6 rounded-t-2xl">
               <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                 <span>👋</span>
-                {t('friends.addFriend')}
+                {t('profile.friends.addFriend')}
               </h3>
               <p className="text-blue-100 text-sm mt-2">
-                {t('friends.addFriendDescription')}
+                {t('profile.friends.addFriendDescription')}
               </p>
             </div>
 
@@ -773,7 +773,7 @@ export default function Friends() {
                 >
                   <span className="flex items-center justify-center gap-2">
                     <span className="text-lg">📧</span>
-                    {t('friends.byUsername')}
+                    {t('profile.friends.byUsername')}
                   </span>
                 </button>
                 <button
@@ -787,7 +787,7 @@ export default function Friends() {
                 >
                   <span className="flex items-center justify-center gap-2">
                     <span className="text-lg">🔢</span>
-                    {t('friends.byFriendCode')}
+                    {t('profile.friends.byFriendCode')}
                   </span>
                 </button>
               </div>
@@ -797,13 +797,13 @@ export default function Friends() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <span>👤</span>
-                      {t('friends.username')}
+                      {t('profile.friends.username')}
                     </label>
                     <input
                       type="text"
                       value={searchUsername}
                       onChange={(e) => setSearchUsername(e.target.value)}
-                      placeholder={t('friends.usernamePlaceholder')}
+                      placeholder={t('profile.friends.usernamePlaceholder')}
                       className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       required
                     />
@@ -811,20 +811,20 @@ export default function Friends() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <span>💬</span>
-                      {t('friends.message')} 
+                      {t('profile.friends.message')} 
                       <span className="text-xs font-normal text-gray-500">({t('common.optional')})</span>
                     </label>
                     <textarea
                       value={requestMessage}
                       onChange={(e) => setRequestMessage(e.target.value)}
-                      placeholder={t('friends.messagePlaceholder')}
+                      placeholder={t('profile.friends.messagePlaceholder')}
                       rows={3}
                       className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       maxLength={200}
                     />
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('friends.messageHint')}
+                        {t('profile.friends.messageHint')}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                         {requestMessage.length}/200
@@ -845,7 +845,7 @@ export default function Friends() {
                       ) : (
                         <span className="flex items-center justify-center gap-2">
                           <span>📨</span>
-                          {t('friends.sendRequest')}
+                          {t('profile.friends.sendRequest')}
                         </span>
                       )}
                     </button>
@@ -869,7 +869,7 @@ export default function Friends() {
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <span>🔑</span>
-                      {t('friends.friendCode')}
+                      {t('profile.friends.friendCode')}
                     </label>
                     <input
                       type="text"
@@ -881,26 +881,26 @@ export default function Friends() {
                       maxLength={8}
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                      {t('friends.friendCodeHint')}
+                      {t('profile.friends.friendCodeHint')}
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <span>💬</span>
-                      {t('friends.message')} 
+                      {t('profile.friends.message')} 
                       <span className="text-xs font-normal text-gray-500">({t('common.optional')})</span>
                     </label>
                     <textarea
                       value={requestMessage}
                       onChange={(e) => setRequestMessage(e.target.value)}
-                      placeholder={t('friends.messagePlaceholder')}
+                      placeholder={t('profile.friends.messagePlaceholder')}
                       rows={3}
                       className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       maxLength={200}
                     />
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('friends.messageHint')}
+                        {t('profile.friends.messageHint')}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
                         {requestMessage.length}/200
@@ -921,7 +921,7 @@ export default function Friends() {
                       ) : (
                         <span className="flex items-center justify-center gap-2">
                           <span>📨</span>
-                          {t('friends.sendRequest')}
+                          {t('profile.friends.sendRequest')}
                         </span>
                       )}
                     </button>
