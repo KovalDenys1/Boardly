@@ -12,21 +12,25 @@ function LinkAccountContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [linking, setLinking] = useState(false)
-  const [showMergeConfirm, setShowMergeConfirm] = useState(false)
-  const [mergeData, setMergeData] = useState<any>(null)
-  const [merging, setMerging] = useState(false)
+  const [showWarning, setShowWarning] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
   const provider = searchParams?.get('provider')
-  const error = searchParams?.get('error')
-  const providerAccountId = searchParams?.get('providerAccountId')
-  const conflictEmail = searchParams?.get('conflictEmail')
+  const linked = searchParams?.get('linked')
 
   const handleLinkAccount = useCallback(async () => {
     if (!provider) return
 
     try {
-      // Trigger OAuth sign-in which will link the account
+      // Show warning before linking that OAuth email may differ
+      if (!confirmed) {
+        setShowWarning(true)
+        return
+      }
+
+      // Trigger OAuth sign-in which will link the account via PrismaAdapter
+      // PrismaAdapter will link even if OAuth email differs from user's email
       const result = await signIn(provider, {
-        callbackUrl: `/auth/link?provider=${provider}`,
+        callbackUrl: `/profile?linked=${provider}`,
         redirect: true,
       })
     } catch (error) {
@@ -34,7 +38,7 @@ function LinkAccountContent() {
       toast.error('Failed to link account')
       router.push('/profile')
     }
-  }, [provider, router])
+  }, [provider, router, confirmed])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -48,50 +52,25 @@ function LinkAccountContent() {
       return
     }
 
-    // Check if there was an OAuth account linking error
-    if (error === 'OAuthAccountNotLinked' && providerAccountId) {
-      setShowMergeConfirm(true)
-      setMergeData({ provider, providerAccountId, conflictEmail })
+    // If user just linked successfully, show success and redirect
+    if (linked === provider) {
+      toast.success(`🎉 ${getProviderName()} account linked successfully!`)
+      setTimeout(() => router.push('/profile'), 2000)
       return
     }
 
-    if (status === 'authenticated' && !linking && !showMergeConfirm) {
+    // Auto-trigger linking if not already linking and not showing warning
+    if (status === 'authenticated' && !linking && !showWarning) {
       setLinking(true)
       handleLinkAccount()
     }
-  }, [status, provider, linking, error, providerAccountId, conflictEmail, showMergeConfirm, router, handleLinkAccount])
+  }, [status, provider, linking, showWarning, linked, router, handleLinkAccount])
 
-  const handleMergeAccounts = async () => {
-    if (!mergeData) return
-
-    setMerging(true)
-    try {
-      const res = await fetch('/api/user/merge-accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: mergeData.provider,
-          providerAccountId: mergeData.providerAccountId,
-          confirmed: true
-        })
-      })
-
-      const data = await res.json()
-
-      if (res.ok) {
-        toast.success('🎉 Accounts merged successfully!')
-        router.push('/profile?linked=true')
-      } else {
-        toast.error(data.error || 'Failed to merge accounts')
-        router.push('/profile')
-      }
-    } catch (error) {
-      console.error('Merge error:', error)
-      toast.error('Failed to merge accounts')
-      router.push('/profile')
-    } finally {
-      setMerging(false)
-    }
+  const handleConfirmLink = () => {
+    setConfirmed(true)
+    setShowWarning(false)
+    setLinking(true)
+    handleLinkAccount()
   }
 
   const getProviderName = () => {
@@ -112,20 +91,24 @@ function LinkAccountContent() {
     }
   }
 
-  if (showMergeConfirm) {
+  // Show warning about different email before linking
+  if (showWarning) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full">
           <div className="text-center mb-6">
             <div className="text-6xl mb-4">{getProviderIcon()}</div>
             <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
-              Merge Accounts?
+              Link {getProviderName()} Account?
             </h1>
           </div>
 
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4 mb-6">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              ⚠️ This {getProviderName()} account ({conflictEmail || 'unknown email'}) is already registered as a separate account.
+          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-400 dark:border-blue-600 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+              ℹ️ You're about to link your {getProviderName()} account to this profile.
+            </p>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>Note:</strong> Your {getProviderName()} email may be different from your current account email ({session?.user?.email}). This is okay - you'll be able to sign in with either email after linking.
             </p>
           </div>
 
@@ -134,32 +117,23 @@ function LinkAccountContent() {
               <strong>What will happen:</strong>
             </p>
             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-disc list-inside">
-              <li>Your current account will remain active</li>
-              <li>The {getProviderName()} account will be linked to your current profile</li>
-              <li>You'll be able to sign in with either account</li>
-              <li>All game history from both accounts will be merged</li>
+              <li>Your {getProviderName()} account will be linked to this profile</li>
+              <li>You can sign in using {getProviderName()} in the future</li>
+              <li>Your current email and password login will still work</li>
+              <li>All your game data remains on this account</li>
             </ul>
           </div>
 
           <div className="flex gap-3">
             <button
-              onClick={handleMergeAccounts}
-              disabled={merging}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              onClick={handleConfirmLink}
+              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
             >
-              {merging ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Merging...
-                </>
-              ) : (
-                '✓ Merge Accounts'
-              )}
+              ✓ Continue to {getProviderName()}
             </button>
             <button
               onClick={() => router.push('/profile')}
-              disabled={merging}
-              className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
             >
               Cancel
             </button>
@@ -169,6 +143,7 @@ function LinkAccountContent() {
     )
   }
 
+  // Show loading state while linking
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
