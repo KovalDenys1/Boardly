@@ -83,12 +83,8 @@ export const authOptions: NextAuthOptions = {
       // Handle OAuth sign-ins (Google, GitHub, Discord)
       if (account?.provider && account.provider !== 'credentials') {
         try {
-          // Check if this is a manual linking scenario (from /auth/link page)
-          // Cookie "pendingOAuthLink" is set by /api/user/link-oauth-manual
-          // This allows linking OAuth with different email to existing user
-          
-          // NOTE: NextAuth callbacks don't have access to request/cookies directly
-          // So we need to handle this differently - check in events.linkAccount instead
+          // Manual linking handled in events.linkAccount callback
+          // Here we just validate and allow/deny the sign-in
           
           // Check if there's already an account with this provider + providerAccountId
           const existingAccount = await prisma.account.findUnique({
@@ -234,6 +230,124 @@ export const authOptions: NextAuthOptions = {
         // @ts-ignore - profile.email may exist depending on provider
         oauthEmail: profile?.email || 'unknown'
       })
+    },
+    async signIn({ user, account, profile, isNewUser }) {
+      // Phase 2: Handle manual OAuth linking with different email
+      // This event fires AFTER successful OAuth authentication
+      // Check if there's a pending link request in cookies
+      
+      if (!account || account.provider === 'credentials') {
+        return // Skip for credentials login
+      }
+
+      try {
+        // Import cookies dynamically to avoid Edge runtime issues
+        const { cookies } = await import('next/headers')
+        const cookieStore = cookies()
+        const pendingLinkCookie = cookieStore.get('pendingOAuthLink')
+
+        if (!pendingLinkCookie?.value) {
+          return // No pending link, normal OAuth flow
+        }
+
+        const pendingLink = JSON.parse(pendingLinkCookie.value)
+        const { userId, provider, timestamp } = pendingLink
+
+        // Validate cookie is for this OAuth provider
+        if (provider !== account.provider) {
+          const log = apiLogger('OAuth Manual Link')
+          log.warn('Provider mismatch in pending link', {
+            expected: provider,
+            actual: account.provider
+          })
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // Check cookie expiry (10 minutes)
+        const expiryTime = 10 * 60 * 1000
+        if (Date.now() - timestamp > expiryTime) {
+          const log = apiLogger('OAuth Manual Link')
+          log.warn('Pending link cookie expired')
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // Get the target user
+        const targetUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            accounts: {
+              where: { provider: account.provider },
+              select: { id: true }
+            }
+          }
+        })
+
+        if (!targetUser) {
+          const log = apiLogger('OAuth Manual Link')
+          log.error('Target user not found for pending link', undefined, { userId })
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // Check if already linked
+        if (targetUser.accounts.length > 0) {
+          const log = apiLogger('OAuth Manual Link')
+          log.warn('Provider already linked to target user', {
+            userId: targetUser.id,
+            provider: account.provider
+          })
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // SUCCESS: Manually create Account record linking OAuth to existing user
+        // This bypasses NextAuth's "create new user" behavior when emails differ
+        await prisma.account.create({
+          data: {
+            userId: targetUser.id, // Link to EXISTING user
+            type: account.type,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            refresh_token: account.refresh_token,
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            token_type: account.token_type,
+            scope: account.scope,
+            id_token: account.id_token,
+            session_state: account.session_state as string | null | undefined,
+          }
+        })
+
+        // Delete the temporary user that NextAuth created (if new user)
+        if (isNewUser && user.id !== targetUser.id) {
+          await prisma.user.delete({
+            where: { id: user.id }
+          }).catch(() => {
+            // Ignore if user doesn't exist or has constraints
+          })
+        }
+
+        // Clean up cookie
+        cookieStore.delete('pendingOAuthLink')
+
+        const log = apiLogger('OAuth Manual Link')
+        log.info('Successfully linked OAuth account with different email', {
+          targetUserId: targetUser.id,
+          targetEmail: targetUser.email,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          // @ts-ignore - profile.email may exist
+          oauthEmail: profile?.email || 'unknown'
+        })
+
+      } catch (error) {
+        const log = apiLogger('OAuth Manual Link')
+        log.error('Error in manual OAuth linking', error instanceof Error ? error : new Error(String(error)))
+      }
     }
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
