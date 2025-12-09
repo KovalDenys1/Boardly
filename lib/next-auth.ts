@@ -115,39 +115,18 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (existingUser) {
-            // User exists with this email - link account to them
-            // This is safe because OAuth provider verified the email
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                refresh_token: account.refresh_token,
-                access_token: account.access_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-                session_state: account.session_state,
-              }
-            })
-
-            // Auto-verify email
-            if (!existingUser.emailVerified) {
-              await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { emailVerified: new Date() }
-              })
-            }
-            
+            // User exists with this email - DO NOT auto-link for security
+            // Instead, redirect to error page where user can explicitly choose to merge
             const log = apiLogger('OAuth signIn')
-            log.info('Linked OAuth account to existing user by email', { 
-              userId: existingUser.id, 
+            log.warn('OAuth sign-in attempted with email of existing user', { 
+              existingUserId: existingUser.id,
               provider: account.provider,
               email: user.email 
             })
-            return true
+            
+            // Return false to prevent sign-in - NextAuth will redirect to error page
+            // with query params: error=OAuthAccountNotLinked
+            return false
           }
 
           // New user - PrismaAdapter will create user and account

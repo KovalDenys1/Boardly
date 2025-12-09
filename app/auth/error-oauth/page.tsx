@@ -17,11 +17,15 @@ function OAuthErrorContent() {
   const provider = searchParams?.get('provider') || 'unknown'
 
   useEffect(() => {
-    // If not OAuthAccountNotLinked error, redirect to login
+    // Only handle OAuthAccountNotLinked error
     if (error !== 'OAuthAccountNotLinked') {
-      router.replace('/auth/login')
+      // For other errors, show generic error message
+      if (error) {
+        toast.error('Authentication error. Please try again.')
+      }
+      // Don't auto-redirect - let user see the error
     }
-  }, [error, router])
+  }, [error])
 
   const getProviderName = () => {
     switch (provider) {
@@ -48,10 +52,21 @@ function OAuthErrorContent() {
 
   const handleSignInWithProvider = async () => {
     setMerging(true)
-    // Sign out current session and sign in with the OAuth provider
-    await signIn(provider, {
-      callbackUrl: '/profile'
-    })
+    try {
+      // Sign in with the OAuth provider
+      // If successful and email matches, user will be prompted to merge accounts
+      await signIn(provider, {
+        callbackUrl: '/profile'
+      })
+    } catch (error) {
+      console.error('Sign in error:', error)
+      toast.error('Failed to sign in. Please try again.')
+      setMerging(false)
+    }
+  }
+
+  const handleSignInDifferent = () => {
+    router.push('/auth/login')
   }
 
   if (status === 'loading') {
@@ -68,18 +83,48 @@ function OAuthErrorContent() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">{getProviderIcon()}</div>
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-            Account Already Exists
+            Email Already Registered
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            This {getProviderName()} account is already registered. Please sign in with {getProviderName()}.
+            An account with this email already exists. You can either:
           </p>
-          <button
-            onClick={handleSignInWithProvider}
-            disabled={merging}
-            className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
-          >
-            {merging ? 'Redirecting...' : `Sign in with ${getProviderName()}`}
-          </button>
+          
+          <div className="space-y-3 mb-6 text-left">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                1️⃣ Sign in with {getProviderName()}
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                If this is your {getProviderName()} account, sign in to access your profile
+              </p>
+            </div>
+            
+            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+              <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                2️⃣ Sign in with your existing account
+              </p>
+              <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                Then link {getProviderName()} from your profile settings
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={handleSignInWithProvider}
+              disabled={merging}
+              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+            >
+              {merging ? 'Redirecting...' : `Sign in with ${getProviderName()}`}
+            </button>
+            
+            <button
+              onClick={handleSignInDifferent}
+              className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
+            >
+              Sign in with Email/Password
+            </button>
+          </div>
         </div>
       </div>
     )
