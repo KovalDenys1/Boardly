@@ -52,7 +52,9 @@
       "send": "Invite {{count}} friend",
       "send_other": "Invite {{count}} friends",
       "sent": "Invited {{count}} friend!",
-      "sent_other": "Invited {{count}} friends!"
+      "sent_other": "Invited {{count}} friends!",
+      "linkCopied": "Lobby link copied! Send it to {{count}} friend",
+      "linkCopied_other": "Lobby link copied! Send it to {{count}} friends"
     },
     "filters": {
       "title": "Filters",

@@ -52,6 +52,8 @@ import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
+import FriendsListModal from '@/components/FriendsListModal'
+import { showToast } from '@/lib/i18n-toast'
 
 function LobbyPageContent() {
   const router = useRouter()
@@ -112,6 +114,9 @@ function LobbyPageContent() {
 
   // Selected player for viewing their scorecard
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+
+  // Friends invite modal state
+  const [showFriendsModal, setShowFriendsModal] = useState(false)
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
@@ -593,6 +598,33 @@ function LobbyPageContent() {
     await addBotToLobby()
   }
 
+  const handleInviteFriends = useCallback(async (friendIds: string[]) => {
+    if (!lobby || friendIds.length === 0) return
+
+    clientLogger.log('Inviting friends to lobby', { friendIds, lobbyCode: code })
+
+    try {
+      // Create lobby join link
+      const lobbyUrl = `${window.location.origin}/lobby/join/${code}`
+      
+      // TODO: Implement invitation system (e.g., notifications, direct messages, etc.)
+      // For now, just copy the link to clipboard and show toast
+      
+      await navigator.clipboard.writeText(lobbyUrl)
+      showToast.success('lobby.invite.linkCopied', undefined, { 
+        count: friendIds.length 
+      })
+      
+      clientLogger.log('Lobby link copied for friends', { url: lobbyUrl, friendCount: friendIds.length })
+      
+      // Close modal
+      setShowFriendsModal(false)
+    } catch (error) {
+      clientLogger.error('Failed to invite friends', { error })
+      showToast.error('errors.general')
+    }
+  }, [lobby, code])
+
   const canStartGame = lobby?.creatorId === session?.user?.id || 
     (isGuest && lobby?.creatorId === guestId)
   const isInGame = game?.players?.some((p: any) => 
@@ -674,6 +706,7 @@ function LobbyPageContent() {
           startingGame={startingGame}
           onStartGame={handleStartGame}
           onAddBot={handleAddBot}
+          onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
           getCurrentUserId={getCurrentUserId}
         />
       ) : (
@@ -1114,6 +1147,16 @@ function LobbyPageContent() {
         isReconnecting={isReconnecting}
         reconnectAttempt={reconnectAttempt}
       />
+
+      {/* Friends Invite Modal */}
+      {!isGuest && (
+        <FriendsListModal
+          isOpen={showFriendsModal}
+          onClose={() => setShowFriendsModal(false)}
+          onInvite={handleInviteFriends}
+          lobbyCode={code}
+        />
+      )}
     </div>
   )
 }

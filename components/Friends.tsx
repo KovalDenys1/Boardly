@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import { useTranslation } from 'react-i18next'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
+import { io, Socket } from 'socket.io-client'
+import { getBrowserSocketUrl } from '@/lib/socket-url'
 
 interface Friend {
   id: string
@@ -43,6 +46,7 @@ type TabType = 'friends' | 'requests' | 'sent'
 
 export default function Friends() {
   const { t } = useTranslation()
+  const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState<TabType>('friends')
   const [friends, setFriends] = useState<Friend[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -52,6 +56,64 @@ export default function Friends() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addLoading, setAddLoading] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
+  const [socket, setSocket] = useState<Socket | null>(null)
+
+  // Setup Socket.IO for online status
+  useEffect(() => {
+    if (!session?.user?.id) {
+      clientLogger.warn('No session available for online status')
+      return
+    }
+
+    const socketUrl = getBrowserSocketUrl()
+    const token = session.user.id
+    
+    clientLogger.log('🔌 Connecting socket for online status', { socketUrl })
+
+    const newSocket = io(socketUrl, {
+      auth: { token, isGuest: false },
+      transports: ['polling', 'websocket'],
+    })
+
+    newSocket.on('connect', () => {
+      clientLogger.log('✅ Connected to socket for online status')
+    })
+
+    newSocket.on('online-users', (data: { userIds: string[] }) => {
+      setOnlineUsers(new Set(data.userIds))
+      clientLogger.log('👥 Online users received', { count: data.userIds.length })
+    })
+
+    newSocket.on('user-online', (data: { userId: string }) => {
+      setOnlineUsers(prev => new Set(prev).add(data.userId))
+      clientLogger.log('🟢 User came online', { userId: data.userId })
+    })
+
+    newSocket.on('user-offline', (data: { userId: string }) => {
+      setOnlineUsers(prev => {
+        const next = new Set(prev)
+        next.delete(data.userId)
+        return next
+      })
+      clientLogger.log('⚫ User went offline', { userId: data.userId })
+    })
+
+    newSocket.on('disconnect', () => {
+      clientLogger.log('🔌 Disconnected from socket')
+    })
+
+    newSocket.on('connect_error', (error) => {
+      clientLogger.error('❌ Socket connection error', { error: error.message })
+    })
+
+    setSocket(newSocket)
+
+    return () => {
+      clientLogger.log('🧹 Cleaning up socket connection')
+      newSocket.close()
+    }
+  }, [session?.user?.id])
 
   const loadFriends = useCallback(async () => {
     try {
@@ -282,8 +344,14 @@ export default function Friends() {
                 className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                    {friend.username?.[0]?.toUpperCase() || '?'}
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                      {friend.username?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    {/* Online Status Indicator */}
+                    {onlineUsers.has(friend.id) && (
+                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                    )}
                   </div>
                   <div>
                     <div className="font-medium text-gray-900 dark:text-gray-100">
