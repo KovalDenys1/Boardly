@@ -79,7 +79,7 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error-oauth',
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, email, credentials }) {
       // Handle OAuth sign-ins (Google, GitHub, Discord)
       if (account?.provider && account.provider !== 'credentials') {
         try {
@@ -115,8 +115,13 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (existingUser) {
-            // User exists with this email - DO NOT auto-link for security
-            // Instead, redirect to error page where user can explicitly choose to merge
+            // IMPORTANT: Check if this is account linking scenario
+            // If user is trying to link from profile page, the callbackUrl will contain 'link'
+            // In this case, we should allow linking even if email is different
+            // NextAuth doesn't provide session in signIn callback, so we check the account creation
+            
+            // For now, block new OAuth signins with existing email (security)
+            // User must use profile page to explicitly link accounts
             const log = apiLogger('OAuth signIn')
             log.warn('OAuth sign-in attempted with email of existing user', { 
               existingUserId: existingUser.id,

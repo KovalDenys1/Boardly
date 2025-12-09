@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { friendCode, message } = body
+    const { friendCode } = body
 
     if (!friendCode || typeof friendCode !== 'string') {
       return NextResponse.json(
@@ -129,7 +129,6 @@ export async function POST(req: NextRequest) {
       data: {
         senderId: currentUser.id,
         receiverId: targetUser.id,
-        message: message || null,
         status: 'pending'
       },
       include: {

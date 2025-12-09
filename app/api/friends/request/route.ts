@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { receiverUsername, message } = await req.json()
+    const { receiverUsername } = await req.json()
 
     if (!receiverUsername) {
       return NextResponse.json(
@@ -110,7 +110,6 @@ export async function POST(req: NextRequest) {
       data: {
         senderId: sender.id,
         receiverId: receiver.id,
-        message: message || null,
         status: 'pending'
       },
       include: {
