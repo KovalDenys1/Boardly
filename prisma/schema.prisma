@@ -12,15 +12,10 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   username      String?   @unique
-  friendCode    String?   @unique // Short numeric code for adding friends (e.g., "1234567")
+  friendCode    String?   @unique // Short numeric code for adding friends (e.g., "12345")
   passwordHash  String?
   image         String?
-  name          String?
-  bio           String?   @db.Text // User profile bio
-  avatar        String?   // Avatar URL or identifier (avatar-1, avatar-2, etc.)
   isBot         Boolean   @default(false) // Flag for AI bot players
-  botDifficulty String?   // For future: easy, medium, hard
-  preferences   String?   @db.Text // JSON: { language, notifications, theme, etc. }
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   
@@ -28,8 +23,6 @@ model User {
   sessions      Session[]
   lobbies       Lobby[]   @relation("LobbyCreator")
   players       Player[]
-  statistics    UserStatistics?
-  achievements  UserAchievement[]
   
   // Friend system
   sentFriendRequests     FriendRequest[] @relation("SentRequests")
@@ -168,89 +161,6 @@ model Player {
   @@index([userId])
 }
 
-// User statistics across all games
-model UserStatistics {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Overall stats
-  totalGames        Int      @default(0)
-  totalWins         Int      @default(0)
-  totalLosses       Int      @default(0)
-  winRate           Float    @default(0) // Calculated as totalWins / totalGames
-  
-  // Game-specific stats (JSON)
-  yahtzeeStats      String?  @db.Text // { games, wins, highScore, avgScore, perfectGames, etc. }
-  chessStats        String?  @db.Text // { games, wins, draws, rating, etc. }
-  guessTheSpyStats  String?  @db.Text // { games, wins, correctGuesses, etc. }
-  
-  // Engagement
-  lastPlayedAt      DateTime?
-  totalPlayTime     Int      @default(0) // Total minutes played
-  longestStreak     Int      @default(0) // Longest daily play streak
-  currentStreak     Int      @default(0) // Current daily play streak
-  
-  updatedAt         DateTime @default(now()) @updatedAt
-  
-  @@index([userId])
-  @@index([winRate])
-  @@index([totalGames])
-}
-
-// Achievement system
-model Achievement {
-  id          String   @id @default(cuid())
-  code        String   @unique // e.g., "yahtzee_first_win", "chess_master"
-  name        String   // Display name
-  description String   @db.Text
-  gameType    String?  // null for global achievements, or specific game
-  category    String   // "milestone", "skill", "social", "special"
-  iconUrl     String?  // URL to achievement icon
-  requirement String   @db.Text // JSON: { type: "wins", count: 10, game: "yahtzee" }
-  points      Int      @default(10) // Achievement points
-  rarity      String   @default("common") // common, rare, epic, legendary
-  createdAt   DateTime @default(now())
-  
-  userAchievements UserAchievement[]
-  
-  @@index([gameType])
-  @@index([category])
-}
-
-// User's unlocked achievements
-model UserAchievement {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  achievementId String
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  unlockedAt    DateTime @default(now())
-  progress      Int      @default(0) // For progressive achievements
-  
-  @@unique([userId, achievementId])
-  @@index([userId])
-  @@index([achievementId])
-  @@index([unlockedAt])
-}
-
-// Game history for detailed stats
-model GameHistory {
-  id          String   @id @default(cuid())
-  gameId      String
-  gameType    String   // yahtzee, chess, guessTheSpy, etc.
-  playerCount Int
-  duration    Int?     // Game duration in seconds
-  winner      String?  // User ID or "draw"
-  players     String   @db.Text // JSON array of player data with scores
-  finalState  String?  @db.Text // Final game state for review
-  createdAt   DateTime @default(now())
-  
-  @@index([gameType])
-  @@index([winner])
-  @@index([createdAt])
-}
-
 // Friend request system
 model FriendRequest {
   id         String   @id @default(cuid())
@@ -259,7 +169,6 @@ model FriendRequest {
   receiverId String
   receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
   status     String   @default("pending") // pending, accepted, rejected, cancelled
-  message    String?  @db.Text // Optional message with friend request
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   

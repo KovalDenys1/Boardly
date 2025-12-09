@@ -89,40 +89,7 @@ export async function POST(request: NextRequest) {
         data: { creatorId: currentUserId }
       })
 
-      // 4. Move statistics if exists
-      const sourceStats = await tx.userStatistics.findUnique({
-        where: { userId: sourceUserId }
-      })
-      
-      if (sourceStats) {
-        const currentStats = await tx.userStatistics.findUnique({
-          where: { userId: currentUserId }
-        })
-
-        if (currentStats) {
-          // Merge statistics
-          await tx.userStatistics.update({
-            where: { userId: currentUserId },
-            data: {
-              totalGames: currentStats.totalGames + sourceStats.totalGames,
-              totalWins: currentStats.totalWins + sourceStats.totalWins,
-            }
-          })
-          
-          // Delete source stats
-          await tx.userStatistics.delete({
-            where: { userId: sourceUserId }
-          })
-        } else {
-          // Just move stats to current user
-          await tx.userStatistics.update({
-            where: { userId: sourceUserId },
-            data: { userId: currentUserId }
-          })
-        }
-      }
-
-      // 5. Delete the source user (cascade will handle remaining relations)
+      // 4. Delete the source user (cascade will handle remaining relations)
       await tx.user.delete({
         where: { id: sourceUserId }
       })

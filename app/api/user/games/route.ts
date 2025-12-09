@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
                 select: {
                   id: true,
                   username: true,
-                  avatar: true,
+                  
                   isBot: true,
                 },
               },
@@ -126,7 +126,6 @@ export async function GET(request: NextRequest) {
         players: game.players.map((player) => ({
           id: player.id,
           username: player.user.username,
-          avatar: player.user.avatar,
           isBot: player.user.isBot,
           score: player.score,
           finalScore: player.finalScore,

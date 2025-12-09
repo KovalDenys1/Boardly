@@ -40,30 +40,18 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            avatar: true,
+            image: true,
             email: true,
-            statistics: {
-              select: {
-                totalGames: true,
-                totalWins: true,
-                winRate: true
-              }
-            }
+            isBot: true,
           }
         },
         user2: {
           select: {
             id: true,
             username: true,
-            avatar: true,
+            image: true,
             email: true,
-            statistics: {
-              select: {
-                totalGames: true,
-                totalWins: true,
-                winRate: true
-              }
-            }
+            isBot: true,
           }
         }
       },

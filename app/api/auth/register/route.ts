@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
         email,
         username,
         passwordHash,
-        name: username,
         // emailVerified will be set when user clicks verification link
       },
     })

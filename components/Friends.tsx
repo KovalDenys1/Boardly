@@ -657,14 +657,6 @@ export default function Friends() {
                       </div>
                     </div>
 
-                    {request.message && (
-                      <div className="mb-4 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-green-200 dark:border-green-800">
-                        <p className="text-sm text-gray-700 dark:text-gray-300 italic">
-                          💬 "{request.message}"
-                        </p>
-                      </div>
-                    )}
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAcceptRequest(request.id)}

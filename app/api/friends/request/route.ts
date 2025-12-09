@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            avatar: true,
+            
             email: true
           }
         },
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            avatar: true,
+            
             email: true
           }
         }
@@ -196,7 +196,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            avatar: true,
+            
             email: true
           }
         },
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            avatar: true,
+            
             email: true
           }
         }

@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
             id: true,
             username: true,
             email: true,
-            avatar: true
+            image: true
           }
         }
       }

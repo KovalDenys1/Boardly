@@ -31,7 +31,6 @@ async function analyzeDatabaseBehavior() {
           code: true
         }
       },
-      statistics: true
     }
   })
 
@@ -39,7 +38,7 @@ async function analyzeDatabaseBehavior() {
 
   for (const user of users) {
     console.log('─────────────────────────────────────────────────────────')
-    console.log(`👤 User: ${user.username || user.name || 'No name'}`)
+    console.log(`👤 User: ${user.username || 'No name'}`)
     console.log(`   ID: ${user.id}`)
     console.log(`   Email: ${user.email}`)
     console.log(`   Verified: ${user.emailVerified ? '✅' : '❌'}`)
@@ -59,11 +58,6 @@ async function analyzeDatabaseBehavior() {
     console.log(`\n   🎮 Game Activity:`)
     console.log(`      Players: ${user.players.length}`)
     console.log(`      Lobbies Created: ${user.lobbies.length}`)
-    
-    if (user.statistics) {
-      console.log(`      Total Games: ${user.statistics.totalGames}`)
-      console.log(`      Total Wins: ${user.statistics.totalWins}`)
-    }
     
     console.log()
   }
@@ -191,8 +185,7 @@ async function analyzeDatabaseBehavior() {
   console.log('  1. OAuth email already taken → Error page')
   console.log('  2. Unlinking last account → Blocked')
   console.log('  3. Merge duplicate players → De-duplicated')
-  console.log('  4. Merge statistics → Summed correctly')
-  console.log('  5. Orphaned sessions → Cleaned up')
+  console.log('  4. Orphaned sessions → Cleaned up')
   console.log('')
 
   console.log('═══════════════════════════════════════════════════════════')

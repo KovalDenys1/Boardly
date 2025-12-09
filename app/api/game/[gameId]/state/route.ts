@@ -42,7 +42,6 @@ export async function POST(
             user: {
               select: {
                 id: true,
-                name: true,
                 isBot: true,
               },
             },
@@ -157,7 +156,7 @@ export async function POST(
         state: gameEngine.getState(),
         players: updatedGame.players.map((p: any) => ({
           id: p.userId,
-          name: p.user.name || 'Unknown',
+          name: p.user.username || 'Unknown',
           score: p.score,
           isBot: p.user.isBot || false,
         })),

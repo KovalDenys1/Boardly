@@ -73,16 +73,6 @@ export async function POST(req: NextRequest) {
       where: { userId: user.id }
     })
 
-    // Delete user statistics
-    await prisma.userStatistics.deleteMany({
-      where: { userId: user.id }
-    })
-
-    // Delete user achievements
-    await prisma.userAchievement.deleteMany({
-      where: { userId: user.id }
-    })
-
     // Delete friend requests (sent and received)
     await prisma.friendRequest.deleteMany({
       where: {

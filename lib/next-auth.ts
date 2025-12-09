@@ -151,7 +151,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.email = user.email
-        token.name = user.name
+        token.name = (user as any).username || user.email?.split('@')[0] || 'user'
         token.picture = user.image
         token.emailVerified = user.emailVerified
       }
@@ -163,13 +163,12 @@ export const authOptions: NextAuthOptions = {
           select: {
             id: true,
             username: true,
-            name: true,
             emailVerified: true
           }
         })
         if (dbUser) {
           token.id = dbUser.id
-          token.name = dbUser.username || dbUser.name
+          token.name = dbUser.username
           token.emailVerified = dbUser.emailVerified
         }
       }
@@ -217,7 +216,7 @@ export const authOptions: NextAuthOptions = {
         data: { 
           emailVerified: new Date(),
           // Only set username if user doesn't have one yet
-          username: user.name?.replace(/\s+/g, '_').toLowerCase() || user.email?.split('@')[0] || 'user'
+          username: (user as any).username || user.email?.split('@')[0] || 'user'
         }
       })
       
