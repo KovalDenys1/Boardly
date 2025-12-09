@@ -18,7 +18,10 @@
     "postinstall": "prisma generate",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "cleanup:abandoned-games": "tsx scripts/cleanup-abandoned-games.ts",
+    "find-stuck-games": "tsx scripts/find-stuck-games.ts",
+    "fix-stuck-games": "tsx scripts/find-stuck-games.ts --fix"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

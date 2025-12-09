@@ -1,0 +1,17 @@
+name: Keep Socket Server Alive
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Socket Server
+        run: |
+          echo "Pinging socket server..."
+          curl -f -s -o /dev/null -w "%{http_code}" https://boardly-websocket.onrender.com/health || echo "Failed to ping"
+          echo "Ping completed"

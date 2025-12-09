@@ -11,6 +11,7 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
+    "previous": "Previous",
     "submit": "Submit",
     "search": "Search",
     "filter": "Filter",
@@ -19,6 +20,61 @@
     "or": "or",
     "deleting": "Deleting...",
     "goHome": "Go to Home"
+  },
+  "lobby": {
+    "title": "Game Lobbies",
+    "subtitle": "Join an existing lobby or create your own!",
+    "quickJoin": "Quick Join",
+    "quickJoinDescription": "Have a lobby code? Enter it below to join instantly!",
+    "enterCode": "Enter 6-digit code (e.g., ABC123)",
+    "join": "Join",
+    "createLobby": "Create Lobby",
+    "createDescription": "Start your own game and invite friends!",
+    "getStarted": "Get Started",
+    "activeLobbies": "Active Lobbies",
+    "lobbiesCount": "{{count}} lobby available",
+    "lobbiesCount_other": "{{count}} lobbies available",
+    "noLobbies": "No Active Lobbies",
+    "noLobbiesDescription": "Be the first to create one and start playing!",
+    "createFirst": "Create First Lobby",
+    "refresh": "Refresh",
+    "joinGame": "Join Game",
+    "maxPlayers": "Max {{count}} players",
+    "playing": "Playing ({{count}})",
+    "waiting": "Waiting",
+    "backToGames": "Back to Games",
+    "filters": {
+      "title": "Filters",
+      "gameType": "Game Type",
+      "status": "Status",
+      "playerCount": "Player Count",
+      "minPlayers": "Min Players",
+      "maxPlayers": "Max Players",
+      "search": "Search by code or name",
+      "searchPlaceholder": "Type to search...",
+      "showFilters": "Show Filters",
+      "hideFilters": "Hide Filters",
+      "clearAll": "Clear All"
+    },
+    "sort": {
+      "title": "Sort By",
+      "createdAt": "Creation Date",
+      "playerCount": "Player Count",
+      "name": "Name",
+      "asc": "Ascending",
+      "desc": "Descending"
+    },
+    "stats": {
+      "total": "Total Lobbies",
+      "waiting": "Waiting for Players",
+      "playing": "Currently Playing",
+      "players": "Total Players"
+    },
+    "status": {
+      "all": "All Lobbies",
+      "waiting": "Waiting",
+      "playing": "Playing"
+    }
   },
   "connection": {
     "reconnecting": "Reconnecting...",
@@ -379,6 +435,20 @@
       "title": "Edit Profile",
       "save": "Save Changes",
       "cancel": "Cancel"
+    },
+    "gameHistory": {
+      "title": "Game History",
+      "status": "Status",
+      "gameType": "Game Type",
+      "allStatuses": "All Statuses",
+      "allGames": "All Games",
+      "finished": "Finished",
+      "playing": "Playing",
+      "abandoned": "Abandoned",
+      "cancelled": "Cancelled",
+      "waiting": "Waiting",
+      "noGames": "No games found",
+      "showing": "Showing {{start}}-{{end}} of {{total}} games"
     }
   },
   "notFound": {
@@ -399,7 +469,8 @@
     "tooManyRequests": "Too many requests. Please try again later.",
     "confirmDelete": "Please type DELETE to confirm",
     "tokenExpired": "Deletion token has expired. Please request a new one.",
-    "invalidToken": "Invalid or missing token"
+    "invalidToken": "Invalid or missing token",
+    "failedToLoad": "Failed to load data. Please try again."
   },
   "toast": {
     "copied": "Copied to clipboard!",

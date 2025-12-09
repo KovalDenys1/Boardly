@@ -117,16 +117,34 @@ model Game {
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id])
   state     String   @db.Text // JSON string with game state
-  status    String   @default("waiting") // waiting, playing, finished
+  status    GameStatus   @default(waiting)
+  gameType  GameType     @default(yahtzee)
+  abandonedAt DateTime?
   currentTurn Int    @default(0)
   lastMoveAt DateTime @default(now()) // Track when last move was made for timer
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   players   Player[]
-  
   @@index([lobbyId])
   @@index([status])
   @@index([createdAt])
+}
+
+
+enum GameStatus {
+  waiting
+  playing
+  finished
+  abandoned
+  cancelled
+}
+
+enum GameType {
+  yahtzee
+  chess
+  guess_the_spy
+  uno
+  other
 }
 
 model Player {
