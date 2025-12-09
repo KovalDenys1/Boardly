@@ -49,6 +49,17 @@
     "playing": "Грає ({{count}})",
     "waiting": "Очікування",
     "backToGames": "Назад до ігор",
+    "invite": {
+      "title": "Запросити друзів",
+      "description": "Виберіть друзів для запрошення до цього лобі",
+      "noFriends": "У вас ще немає друзів",
+      "addFriendsFirst": "Спочатку додайте друзів у своєму профілі",
+      "selectFriends": "Будь ласка, виберіть хоча б одного друга",
+      "send": "Запросити {{count}} друга",
+      "send_other": "Запросити {{count}} друзів",
+      "sent": "Запрошено {{count}} друга!",
+      "sent_other": "Запрошено {{count}} друзів!"
+    },
     "filters": {
       "title": "Фільтри",
       "gameType": "Тип гри",
@@ -458,6 +469,42 @@
       "scorecard": "Таблиця очок",
       "category": "Категорія",
       "total": "Всього"
+    },
+    "friends": {
+      "title": "Друзі",
+      "tabs": {
+        "friends": "Друзі",
+        "requests": "Запити",
+        "sent": "Надіслані"
+      },
+      "addFriend": "Додати друга",
+      "noFriends": "Поки немає друзів",
+      "addFirstFriend": "Додайте свого першого друга",
+      "noRequests": "Немає запитів у друзі",
+      "noSentRequests": "Немає надісланих запитів",
+      "username": "Ім'я користувача",
+      "usernamePlaceholder": "Введіть ім'я друга",
+      "message": "Повідомлення",
+      "messagePlaceholder": "Скажіть привіт... (необов'язково)",
+      "sendRequest": "Надіслати запит",
+      "requestSent": "Запит у друзі надіслано!",
+      "requestAccepted": "Запит у друзі прийнято!",
+      "requestRejected": "Запит у друзі відхилено",
+      "friendRemoved": "Друга видалено",
+      "accept": "Прийняти",
+      "reject": "Відхилити",
+      "remove": "Видалити",
+      "pending": "Очікує",
+      "friendsSince": "Друзі з {{date}}",
+      "sentOn": "Надіслано {{date}}",
+      "games": "ігор",
+      "wins": "перемог",
+      "winRate": "% перемог",
+      "confirmRemove": "Ви впевнені, що хочете видалити {{username}} зі списку друзів?",
+      "errors": {
+        "loadFailed": "Не вдалося завантажити друзів",
+        "usernameRequired": "Ім'я користувача обов'язкове"
+      }
     }
   },
   "notFound": {
