@@ -95,12 +95,11 @@ const io = new SocketIOServer(server, {
   },
   pingTimeout: 120000, // Збільшено до 120s для Render free tier
   pingInterval: 25000,
-  connectTimeout: 90000, // Додано timeout для підключення
+  connectTimeout: 90000, // Збільшено timeout для підключення
   transports: ['polling', 'websocket'], // Спочатку polling (надійніший для Render), потім upgrade до WebSocket
   allowUpgrades: true,
   upgradeTimeout: 30000, // Збільшено timeout для upgrade
   maxHttpBufferSize: 1e6, // 1MB max buffer
-  connectTimeout: 45000, // Connection timeout
 })
 
 // Rate limiting for socket events

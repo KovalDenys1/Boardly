@@ -27,6 +27,61 @@
     "disconnected": "З'єднання втрачено",
     "checkNetwork": "Будь ласка, перевірте підключення до мережі"
   },
+  "lobby": {
+    "title": "Ігрові лобі",
+    "subtitle": "Приєднайтеся до існуючого лобі або створіть власне!",
+    "quickJoin": "Швидке приєднання",
+    "quickJoinDescription": "Є код лобі? Введіть його нижче, щоб приєднатися миттєво!",
+    "enterCode": "Введіть 6-значний код (наприклад, ABC123)",
+    "join": "Приєднатися",
+    "createLobby": "Створити лобі",
+    "createDescription": "Почніть власну гру та запросіть друзів!",
+    "getStarted": "Почати",
+    "activeLobbies": "Активні лобі",
+    "lobbiesCount": "{{count}} доступне лобі",
+    "lobbiesCount_other": "{{count}} доступних лобі",
+    "noLobbies": "Немає активних лобі",
+    "noLobbiesDescription": "Будьте першими, хто створить лобі та почне грати!",
+    "createFirst": "Створити перше лобі",
+    "refresh": "Оновити",
+    "joinGame": "Приєднатися до гри",
+    "maxPlayers": "Макс {{count}} гравців",
+    "playing": "Грає ({{count}})",
+    "waiting": "Очікування",
+    "backToGames": "Назад до ігор",
+    "filters": {
+      "title": "Фільтри",
+      "gameType": "Тип гри",
+      "status": "Статус",
+      "playerCount": "Кількість гравців",
+      "minPlayers": "Мін. гравців",
+      "maxPlayers": "Макс. гравців",
+      "search": "Пошук за кодом або назвою",
+      "searchPlaceholder": "Введіть для пошуку...",
+      "showFilters": "Показати фільтри",
+      "hideFilters": "Сховати фільтри",
+      "clearAll": "Очистити все"
+    },
+    "sort": {
+      "title": "Сортувати за",
+      "createdAt": "Датою створення",
+      "playerCount": "Кількістю гравців",
+      "name": "Назвою",
+      "asc": "За зростанням",
+      "desc": "За спаданням"
+    },
+    "stats": {
+      "total": "Всього лобі",
+      "waiting": "Очікують гравців",
+      "playing": "Зараз грають",
+      "players": "Всього гравців"
+    },
+    "status": {
+      "all": "Всі лобі",
+      "waiting": "Очікування",
+      "playing": "Грає"
+    }
+  },
   "header": {
     "home": "Головна",
     "games": "Ігри",

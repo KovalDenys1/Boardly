@@ -2,7 +2,7 @@
 
 > Goal: Build a production-ready multiplayer board games platform with monetization enabled
 
-## 🎯 Current Status (December 8, 2025)
+## 🎯 Current Status (December 9, 2025)
 
 **✅ LIVE IN PRODUCTION**: [boardly.online](https://boardly.online)
 
@@ -28,6 +28,13 @@
 - ✅ Socket.IO and database monitoring
 - ✅ Performance optimizations (code splitting, caching)
 - ✅ SEO with Open Graph images
+- ✅ Game History feature with filters and pagination
+- ✅ Socket.IO reliability improvements for Render free tier
+- ✅ Abandoned games cleanup cron job
+- ✅ Lobby improvements (filters, search, sorting, stats UI)
+
+### 🚧 In Progress
+- 🔄 Lobby improvements testing and deployment - December 9, 2025
 
 ## 📅 Development Timeline
 
@@ -51,7 +58,7 @@
 | Dec 10 | Spy: Frontend | Lobby UI, voting system | 📋 TODO |
 | Dec 11 | Spy: Polish | Animations, role reveals | 📋 TODO |
 | Dec 12 | Spy: Testing | Multiplayer QA with 3-10 players | 📋 TODO |
-| Dec 13 | Lobby improvements | Filters, search, game history | 📋 TODO |
+| Dec 13 | Lobby improvements | Filters, search, game history | ✅ DONE |
 | Dec 14 | Social features | Friends list, chat upgrades | 📋 TODO |
 | **Phase 3: Monetization (Dec 15-21)** |
 | Dec 15 | Monetization UX | Design premium features, pricing tiers | 📋 TODO |

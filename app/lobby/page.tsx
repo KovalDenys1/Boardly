@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
+import LobbyFilters, { LobbyFilterOptions } from '@/components/LobbyFilters'
+import LobbyStats from '@/components/LobbyStats'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
@@ -29,12 +31,71 @@ interface Lobby {
   }[]
 }
 
+interface LobbyListResponse {
+  lobbies: Lobby[]
+  stats: {
+    totalLobbies: number
+    waitingLobbies: number
+    playingLobbies: number
+    totalPlayers: number
+  }
+}
+
 export default function LobbyListPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { data: session } = useSession()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
+  const [stats, setStats] = useState({
+    totalLobbies: 0,
+    waitingLobbies: 0,
+    playingLobbies: 0,
+    totalPlayers: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
+  const [filters, setFilters] = useState<LobbyFilterOptions>({
+    status: 'all',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  })
+
+  const loadLobbies = useCallback(async () => {
+    try {
+      // Build query string
+      const params = new URLSearchParams()
+      if (filters.gameType) params.append('gameType', filters.gameType)
+      if (filters.status && filters.status !== 'all') params.append('status', filters.status)
+      if (filters.search) params.append('search', filters.search)
+      if (filters.minPlayers) params.append('minPlayers', filters.minPlayers.toString())
+      if (filters.maxPlayers) params.append('maxPlayers', filters.maxPlayers.toString())
+      if (filters.sortBy) params.append('sortBy', filters.sortBy)
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+
+      const res = await fetch(`/api/lobby?${params.toString()}`)
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
+      
+      const data: LobbyListResponse = await res.json()
+      
+      // Handle case where API returns error but with 200 status
+      if ('error' in data) {
+        clientLogger.warn('Lobbies loaded with error:', (data as any).error)
+      }
+      
+      setLobbies(data.lobbies || [])
+      setStats(data.stats || { totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
+    } catch (error) {
+      clientLogger.error('Failed to load lobbies:', error)
+      // Set empty array to prevent UI from breaking
+      setLobbies([])
+      setStats({ totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
 
   useEffect(() => {
     loadLobbies()
@@ -93,8 +154,7 @@ export default function LobbyListPage() {
         socket = null as any
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadLobbies, session?.user])
 
   const triggerCleanup = async () => {
     try {
@@ -112,31 +172,6 @@ export default function LobbyListPage() {
     }
   }
 
-  const loadLobbies = async () => {
-    try {
-      const res = await fetch('/api/lobby')
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-      }
-      
-      const data = await res.json()
-      
-      // Handle case where API returns error but with 200 status
-      if (data.error) {
-        clientLogger.warn('Lobbies loaded with error:', data.error)
-      }
-      
-      setLobbies(data.lobbies || [])
-    } catch (error) {
-      clientLogger.error('Failed to load lobbies:', error)
-      // Set empty array to prevent UI from breaking
-      setLobbies([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleJoinByCode = () => {
     if (joinCode) {
       router.push(`/lobby/${joinCode.toUpperCase()}`)
@@ -149,28 +184,40 @@ export default function LobbyListPage() {
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">🎮 Game Lobbies</h1>
-            <p className="text-gray-600 dark:text-gray-400">Join an existing lobby or create your own!</p>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              🎮 {t('lobby.title')}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">{t('lobby.subtitle')}</p>
           </div>
           <button
             onClick={() => router.push('/games')}
             className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
           >
-            ← Back to Games
+            ← {t('lobby.backToGames')}
           </button>
         </div>
+
+        {/* Stats */}
+        <LobbyStats
+          totalLobbies={stats.totalLobbies}
+          waitingLobbies={stats.waitingLobbies}
+          playingLobbies={stats.playingLobbies}
+          totalPlayers={stats.totalPlayers}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Quick Join Card */}
           <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">🔍 Quick Join</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              🔍 {t('lobby.quickJoin')}
+            </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Have a lobby code? Enter it below to join instantly!
+              {t('lobby.quickJoinDescription')}
             </p>
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Enter 6-digit code (e.g., ABC123)"
+                placeholder={t('lobby.enterCode')}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-lg"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
@@ -182,7 +229,7 @@ export default function LobbyListPage() {
                 disabled={!joinCode || joinCode.length !== 6}
                 className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
               >
-                Join
+                {t('lobby.join')}
               </button>
             </div>
           </div>
@@ -191,10 +238,10 @@ export default function LobbyListPage() {
           <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white hover:shadow-xl transition-all hover:scale-105 cursor-pointer"
                onClick={() => router.push('/lobby/create')}>
             <div className="text-5xl mb-4">✨</div>
-            <h2 className="text-2xl font-bold mb-2">Create Lobby</h2>
-            <p className="text-white/80 mb-4">Start your own game and invite friends!</p>
+            <h2 className="text-2xl font-bold mb-2">{t('lobby.createLobby')}</h2>
+            <p className="text-white/80 mb-4">{t('lobby.createDescription')}</p>
             <div className="flex items-center text-white/90 font-semibold">
-              <span>Get Started</span>
+              <span>{t('lobby.getStarted')}</span>
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -202,19 +249,24 @@ export default function LobbyListPage() {
           </div>
         </div>
 
+        {/* Filters */}
+        <LobbyFilters filters={filters} onFiltersChange={setFilters} />
+
         {/* Active Lobbies */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Active Lobbies</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {t('lobby.activeLobbies')}
+              </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {lobbies.length} {lobbies.length === 1 ? 'lobby' : 'lobbies'} available
+                {t('lobby.lobbiesCount', { count: lobbies.length })}
               </p>
             </div>
             <button
               onClick={loadLobbies}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title="Refresh"
+              title={t('lobby.refresh')}
             >
               <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -233,13 +285,17 @@ export default function LobbyListPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
                 <span className="text-5xl">🎲</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No Active Lobbies</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">Be the first to create one and start playing!</p>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                {t('lobby.noLobbies')}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {t('lobby.noLobbiesDescription')}
+              </p>
               <button
                 onClick={() => router.push('/lobby/create')}
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105"
               >
-                Create First Lobby
+                {t('lobby.createFirst')}
               </button>
             </div>
           ) : (
@@ -275,18 +331,18 @@ export default function LobbyListPage() {
                         lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
                       }`}></div>
                       {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
-                        `Playing (${lobby.games[0]._count.players})`
+                        t('lobby.playing', { count: lobby.games[0]._count.players })
                       ) : (
-                        'Waiting'
+                        t('lobby.waiting')
                       )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">
-                      👥 Max {lobby.maxPlayers} players
+                      👥 {t('lobby.maxPlayers', { count: lobby.maxPlayers })}
                     </span>
                     <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                      Join Game
+                      {t('lobby.joinGame')}
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
