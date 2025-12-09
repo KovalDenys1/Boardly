@@ -338,7 +338,22 @@ export default function Friends() {
               </button>
             </div>
           ) : (
-            friends.map((friend) => (
+            // Sort friends: online first, then by username
+            [...friends]
+              .sort((a, b) => {
+                const aOnline = onlineUsers.has(a.id)
+                const bOnline = onlineUsers.has(b.id)
+                
+                // Online friends first
+                if (aOnline && !bOnline) return -1
+                if (!aOnline && bOnline) return 1
+                
+                // If both online or both offline, sort alphabetically
+                const aName = a.username || a.email
+                const bName = b.username || b.email
+                return aName.localeCompare(bName)
+              })
+              .map((friend) => (
               <div
                 key={friend.friendshipId}
                 className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow"
