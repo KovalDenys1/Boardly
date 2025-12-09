@@ -10,7 +10,32 @@
   outline: none;
   border: none;
   display: inline-block;
+  min-width: 100px;
+  text-align: center;
 }
+
+/* Provider-specific colors */
+.btn-social-google {
+  background: #4285F4;
+}
+.btn-social-google:hover {
+  background: #357ae8;
+}
+
+.btn-social-github {
+  background: #24292e;
+}
+.btn-social-github:hover {
+  background: #1a1e21;
+}
+
+.btn-social-discord {
+  background: #5865F2;
+}
+.btn-social-discord:hover {
+  background: #4752C4;
+}
+
 .btn-social-unlink {
   font-size: 1rem;
   padding: 0.5rem 1.25rem;
@@ -22,6 +47,8 @@
   transition: background 0.2s, color 0.2s;
   outline: none;
   display: inline-block;
+  min-width: 100px;
+  text-align: center;
 }
 .btn-social-unlink:hover {
   background: #ffe5e5;

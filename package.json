@@ -21,7 +21,8 @@
     "test:coverage": "jest --coverage",
     "cleanup:abandoned-games": "tsx scripts/cleanup-abandoned-games.ts",
     "find-stuck-games": "tsx scripts/find-stuck-games.ts",
-    "fix-stuck-games": "tsx scripts/find-stuck-games.ts --fix"
+    "fix-stuck-games": "tsx scripts/find-stuck-games.ts --fix",
+    "clear-all-data": "tsx scripts/clear-all-data.ts"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

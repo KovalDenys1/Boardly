@@ -286,8 +286,8 @@ export default function ProfilePage() {
           {activeTab === 'profile' && (
             <div>
 
-          {/* Email Verification Banner */}
-          {session?.user?.email && !session?.user?.emailVerified && (
+          {/* Email Verification Banner - Only show for email/password accounts */}
+          {session?.user?.email && !session?.user?.emailVerified && !linkedAccounts.google && !linkedAccounts.github && !linkedAccounts.discord && (
             <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">⚠️</span>
@@ -407,7 +407,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=google')}
-                      className="btn-social bg-blue-600 hover:bg-blue-700"
+                      className="btn-social btn-social-google"
                     >
                       Connect
                     </button>
@@ -437,7 +437,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=github')}
-                      className="btn-social bg-gray-800 hover:bg-gray-900"
+                      className="btn-social btn-social-github"
                     >
                       Connect
                     </button>
@@ -467,7 +467,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=discord')}
-                      className="btn-social bg-[#5865F2] hover:bg-[#4752C4]"
+                      className="btn-social btn-social-discord"
                     >
                       Connect
                     </button>

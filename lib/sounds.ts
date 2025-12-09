@@ -175,7 +175,7 @@ class SoundManager {
 // Lazy singleton initialization to avoid SSR issues
 let soundManagerInstance: SoundManager | null = null
 
-export const soundManager = {
+export const sounds = {
   get instance(): SoundManager {
     if (typeof window === 'undefined') {
       // Return a dummy instance on server
@@ -221,3 +221,6 @@ export const soundManager = {
     return this.instance.hasUserInteracted()
   },
 }
+
+// Deprecated: Use 'sounds' instead
+export const soundManager = sounds
