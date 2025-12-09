@@ -3,23 +3,30 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { signIn } from 'next-auth/react'
 
 const log = apiLogger('Manual OAuth Link')
 
 /**
- * POST /api/user/link-oauth-confirmed
+ * POST /api/user/link-oauth-manual
  * 
- * Manually link OAuth account to current user even if emails differ
- * This endpoint is used when user explicitly confirms linking from /auth/link page
+ * BEST SOLUTION for linking OAuth with different email:
+ * This endpoint manually creates Account record and links it to current user
+ * 
+ * Problem: NextAuth creates NEW user if OAuth email differs
+ * Solution: Bypass NextAuth, manually link Account after OAuth callback
  * 
  * Flow:
  * 1. User clicks "Link Google" in profile
- * 2. Goes to /auth/link?provider=google with warning
- * 3. Confirms linking
- * 4. This endpoint stores "pending link" flag
- * 5. Redirects to OAuth
- * 6. After OAuth callback, checks flag and links manually
+ * 2. /auth/link shows warning dialog
+ * 3. User confirms
+ * 4. Call this endpoint with provider
+ * 5. This sets a cookie/session flag "pendingLink=google&userId=xxx"
+ * 6. Redirect to NextAuth OAuth
+ * 7. After OAuth callback, NextAuth middleware checks flag
+ * 8. If flag exists, manually create Account record with current userId
+ * 9. Success!
+ * 
+ * This requires middleware to intercept OAuth callback
  */
 export async function POST(request: NextRequest) {
   try {
@@ -32,16 +39,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { provider, confirmed } = await request.json()
+    const { provider } = await request.json()
 
-    if (!provider || !confirmed) {
-      return NextResponse.json(
-        { error: 'Provider and confirmation required' },
-        { status: 400 }
-      )
-    }
-
-    if (!['google', 'github', 'discord'].includes(provider)) {
+    if (!provider || !['google', 'github', 'discord'].includes(provider)) {
       return NextResponse.json(
         { error: 'Invalid provider' },
         { status: 400 }
@@ -76,25 +76,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Store pending link in database (temporary table or user preferences)
-    // For now, we'll use a simpler approach - return authorization URL
-    // The user will be redirected to OAuth and we'll handle it in callback
-    
-    log.info('Manual OAuth link initiated', {
+    log.info('Manual OAuth link prepared', {
       userId: user.id,
       provider,
       userEmail: session.user.email
     })
 
-    // Return success - client will redirect to OAuth
-    return NextResponse.json({
+    // Set cookie for NextAuth callback to detect linking scenario
+    const response = NextResponse.json({
       success: true,
       message: 'Ready to link account',
-      redirectUrl: `/api/auth/signin/${provider}?callbackUrl=/profile?linked=${provider}`
+      oauthUrl: `/api/auth/signin/${provider}?callbackUrl=/profile?linked=${provider}`
     })
 
+    // Store pending link info in cookie (expires in 10 minutes)
+    response.cookies.set('pendingOAuthLink', JSON.stringify({
+      userId: user.id,
+      provider,
+      timestamp: Date.now()
+    }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 600 // 10 minutes
+    })
+
+    return response
+
   } catch (error) {
-    log.error('Failed to initiate manual OAuth link', error as Error)
+    log.error('Failed to prepare manual OAuth link', error as Error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

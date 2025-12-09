@@ -83,6 +83,13 @@ export const authOptions: NextAuthOptions = {
       // Handle OAuth sign-ins (Google, GitHub, Discord)
       if (account?.provider && account.provider !== 'credentials') {
         try {
+          // Check if this is a manual linking scenario (from /auth/link page)
+          // Cookie "pendingOAuthLink" is set by /api/user/link-oauth-manual
+          // This allows linking OAuth with different email to existing user
+          
+          // NOTE: NextAuth callbacks don't have access to request/cookies directly
+          // So we need to handle this differently - check in events.linkAccount instead
+          
           // Check if there's already an account with this provider + providerAccountId
           const existingAccount = await prisma.account.findUnique({
             where: {
@@ -116,13 +123,8 @@ export const authOptions: NextAuthOptions = {
 
           if (existingUserByEmail) {
             // User with this email exists
-            // IMPORTANT: We allow PrismaAdapter to create new user
-            // But in real scenario for account linking from profile,
-            // user should use /auth/link page which will show warning first
-            
             // Block if this looks like a NEW signin (not linking scenario)
-            // We can't reliably detect linking here without session
-            // So we block by default for security
+            // For linking, user should use /auth/link page which sets cookie
             const log = apiLogger('OAuth signIn')
             log.warn('OAuth sign-in blocked - email already exists', { 
               existingUserId: existingUserByEmail.id,
@@ -133,8 +135,8 @@ export const authOptions: NextAuthOptions = {
           }
 
           // New user with new email - allow PrismaAdapter to create
-          // This handles the case where OAuth email differs from primary email
-          // PrismaAdapter will create new user and link account
+          // IMPORTANT: If OAuth email differs from primary, this creates SEPARATE user
+          // To link to existing user, use /auth/link page workflow
           const log = apiLogger('OAuth signIn')
           log.info('New OAuth user will be created', {
             provider: account.provider,
