@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
 
     // Remove spaces and validate format
     const cleanCode = friendCode.replace(/\s/g, '')
-    if (!/^\d{7}$/.test(cleanCode)) {
+    if (!/^\d{5}$/.test(cleanCode)) {
       return NextResponse.json(
-        { error: 'Invalid friend code format. Must be 7 digits.' },
+        { error: 'Invalid friend code format. Must be 5 digits.' },
         { status: 400 }
       )
     }

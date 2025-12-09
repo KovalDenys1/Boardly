@@ -1,16 +1,16 @@
 import { prisma } from './db'
 
 /**
- * Generate a unique 7-digit friend code for a user
- * Format: 1234567 (easy to read and share)
+ * Generate a unique 5-digit friend code for a user
+ * Format: 12345 (easy to read and share)
  */
 export async function generateUniqueFriendCode(): Promise<string> {
   let attempts = 0
   const maxAttempts = 10
 
   while (attempts < maxAttempts) {
-    // Generate 7-digit code (1000000 - 9999999)
-    const code = Math.floor(1000000 + Math.random() * 9000000).toString()
+    // Generate 5-digit code (10000 - 99999)
+    const code = Math.floor(10000 + Math.random() * 90000).toString()
 
     // Check if code already exists
     const existing = await prisma.user.findUnique({
@@ -26,7 +26,7 @@ export async function generateUniqueFriendCode(): Promise<string> {
   }
 
   // Fallback: use timestamp-based code if all random attempts fail
-  return Date.now().toString().slice(-7)
+  return Date.now().toString().slice(-5)
 }
 
 /**

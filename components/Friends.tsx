@@ -218,7 +218,7 @@ export default function Friends() {
     e.preventDefault()
     
     const cleanCode = friendCode.replace(/\s/g, '')
-    if (!cleanCode || !/^\d{7}$/.test(cleanCode)) {
+    if (!cleanCode || !/^\d{5}$/.test(cleanCode)) {
       showToast.error('friends.errors.invalidFriendCode')
       return
     }
@@ -701,10 +701,10 @@ export default function Friends() {
                     type="text"
                     value={friendCode}
                     onChange={(e) => setFriendCode(e.target.value)}
-                    placeholder="1234567"
+                    placeholder="12345"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-center text-lg tracking-wider"
                     required
-                    maxLength={10}
+                    maxLength={8}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {t('friends.friendCodeHint')}

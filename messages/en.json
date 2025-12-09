@@ -27,7 +27,7 @@
     "subtitle": "Join an existing lobby or create your own!",
     "quickJoin": "Quick Join",
     "quickJoinDescription": "Have a lobby code? Enter it below to join instantly!",
-    "enterCode": "Enter 6-digit code (e.g., ABC123)",
+    "enterCode": "Enter 4-digit code (e.g., AB12)",
     "join": "Join",
     "createLobby": "Create Lobby",
     "createDescription": "Start your own game and invite friends!",
@@ -508,7 +508,7 @@
       "friendCode": "Friend Code",
       "byUsername": "By Username",
       "byFriendCode": "By Friend Code",
-      "friendCodeHint": "Enter 7-digit friend code",
+      "friendCodeHint": "Enter 5-digit friend code",
       "shareCodeHint": "Share this code with friends to connect!",
       "copyCode": "Copy Code",
       "copyLink": "Copy Profile Link",
@@ -517,7 +517,7 @@
       "errors": {
         "loadFailed": "Failed to load friends",
         "usernameRequired": "Username is required",
-        "invalidFriendCode": "Invalid friend code. Must be 7 digits."
+        "invalidFriendCode": "Invalid friend code. Must be 5 digits."
       }
     }
   },
