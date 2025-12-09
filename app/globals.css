@@ -1,3 +1,32 @@
+/* Social connect buttons unified style */
+.btn-social {
+  font-size: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  color: #fff;
+  font-weight: 500;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  outline: none;
+  border: none;
+  display: inline-block;
+}
+.btn-social-unlink {
+  font-size: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  color: #e53e3e;
+  background: #fff;
+  font-weight: 500;
+  border: none;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+  display: inline-block;
+}
+.btn-social-unlink:hover {
+  background: #ffe5e5;
+  color: #c53030;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import UsernameInput from '@/components/UsernameInput'
+import GameHistory from '@/components/GameHistory'
 
 interface LinkedAccount {
   provider: string
@@ -18,9 +20,13 @@ interface LinkedAccounts {
   discord?: LinkedAccount
 }
 
+type TabType = 'profile' | 'history' | 'settings'
+
 export default function ProfilePage() {
+  const { t } = useTranslation()
   const { data: session, update, status } = useSession()
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState(true)
@@ -228,17 +234,57 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-      <div className="max-w-2xl mx-auto pt-20">
+      <div className="max-w-4xl mx-auto pt-20">
         <div className="card animate-scale-in">
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
               <span className="text-4xl">👤</span>
             </div>
-            <h1 className="text-3xl font-bold mb-2">Profile Settings</h1>
+            <h1 className="text-3xl font-bold mb-2">{t('profile.title')}</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Manage your account settings
             </p>
           </div>
+
+          {/* Tabs Navigation */}
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex gap-4">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'profile'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                👤 {t('profile.title')}
+              </button>
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'history'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                🎮 {t('profile.gameHistory.title')}
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'settings'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                ⚙️ {t('profile.settings.title')}
+              </button>
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'profile' && (
+            <div>
 
           {/* Email Verification Banner */}
           {session?.user?.email && !session?.user?.emailVerified && (
@@ -353,7 +399,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => handleUnlinkAccount('google')}
-                      className="text-sm px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="btn-social-unlink"
                     >
                       Unlink
                     </button>
@@ -361,7 +407,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=google')}
-                      className="text-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                      className="btn-social bg-blue-600 hover:bg-blue-700"
                     >
                       Connect
                     </button>
@@ -383,7 +429,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => handleUnlinkAccount('github')}
-                      className="text-sm px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="btn-social-unlink"
                     >
                       Unlink
                     </button>
@@ -391,7 +437,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=github')}
-                      className="text-sm px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg transition-colors font-medium"
+                      className="btn-social bg-gray-800 hover:bg-gray-900"
                     >
                       Connect
                     </button>
@@ -413,7 +459,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => handleUnlinkAccount('discord')}
-                      className="text-sm px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="btn-social-unlink"
                     >
                       Unlink
                     </button>
@@ -421,7 +467,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=discord')}
-                      className="text-sm px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-lg transition-colors font-medium"
+                      className="btn-social bg-[#5865F2] hover:bg-[#4752C4]"
                     >
                       Connect
                     </button>
@@ -475,6 +521,25 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+          </div>
+          )}
+
+          {/* Game History Tab */}
+          {activeTab === 'history' && (
+            <div>
+              <GameHistory />
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">{t('profile.settings.title')}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Settings coming soon: language, theme, notifications, and more.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

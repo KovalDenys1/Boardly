@@ -11,6 +11,7 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
+    "previous": "Previous",
     "submit": "Submit",
     "search": "Search",
     "filter": "Filter",
@@ -379,6 +380,20 @@
       "title": "Edit Profile",
       "save": "Save Changes",
       "cancel": "Cancel"
+    },
+    "gameHistory": {
+      "title": "Game History",
+      "status": "Status",
+      "gameType": "Game Type",
+      "allStatuses": "All Statuses",
+      "allGames": "All Games",
+      "finished": "Finished",
+      "playing": "Playing",
+      "abandoned": "Abandoned",
+      "cancelled": "Cancelled",
+      "waiting": "Waiting",
+      "noGames": "No games found",
+      "showing": "Showing {{start}}-{{end}} of {{total}} games"
     }
   },
   "notFound": {
@@ -399,7 +414,8 @@
     "tooManyRequests": "Too many requests. Please try again later.",
     "confirmDelete": "Please type DELETE to confirm",
     "tokenExpired": "Deletion token has expired. Please request a new one.",
-    "invalidToken": "Invalid or missing token"
+    "invalidToken": "Invalid or missing token",
+    "failedToLoad": "Failed to load data. Please try again."
   },
   "toast": {
     "copied": "Copied to clipboard!",
