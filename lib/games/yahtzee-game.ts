@@ -144,7 +144,7 @@ export class YahtzeeGame extends GameEngine {
         gameData.dice = rollDice(5)
         gameData.held = [false, false, false, false, false]
         gameData.rollsLeft = 3
-        gameData.round++
+        // Don't increment round - game ends when all players finish all 13 categories
         
         // Note: currentPlayerIndex is advanced by GameEngine.makeMove() after processMove
         break

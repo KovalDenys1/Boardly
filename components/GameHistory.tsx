@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from './LoadingSpinner'
+import GameResultsModal from './GameResultsModal'
 
 interface Player {
   id: string
@@ -48,6 +49,7 @@ export default function GameHistory() {
   const [offset, setOffset] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   
   const limit = 20
 
@@ -166,6 +168,12 @@ export default function GameHistory() {
 
   return (
     <div className="space-y-6">
+      {/* Game Results Modal */}
+      <GameResultsModal
+        gameId={selectedGameId}
+        onClose={() => setSelectedGameId(null)}
+      />
+
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
         <div>
@@ -218,9 +226,10 @@ export default function GameHistory() {
       ) : (
         <div className="space-y-4">
           {games.map((game) => (
-            <div
+            <button
               key={game.id}
-              className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+              onClick={() => setSelectedGameId(game.id)}
+              className="w-full text-left p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer"
             >
               <div className="flex justify-between items-start mb-3">
                 <div>
@@ -264,7 +273,12 @@ export default function GameHistory() {
                   </div>
                 ))}
               </div>
-            </div>
+              
+              {/* Click hint */}
+              <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                {t('profile.gameHistory.clickToView')} →
+              </div>
+            </button>
           ))}
         </div>
       )}
