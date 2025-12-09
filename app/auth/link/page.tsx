@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
@@ -19,6 +19,22 @@ function LinkAccountContent() {
   const error = searchParams?.get('error')
   const providerAccountId = searchParams?.get('providerAccountId')
   const conflictEmail = searchParams?.get('conflictEmail')
+
+  const handleLinkAccount = useCallback(async () => {
+    if (!provider) return
+
+    try {
+      // Trigger OAuth sign-in which will link the account
+      const result = await signIn(provider, {
+        callbackUrl: `/auth/link?provider=${provider}`,
+        redirect: true,
+      })
+    } catch (error) {
+      console.error('Link account error:', error)
+      toast.error('Failed to link account')
+      router.push('/profile')
+    }
+  }, [provider, router])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -43,23 +59,7 @@ function LinkAccountContent() {
       setLinking(true)
       handleLinkAccount()
     }
-  }, [status, provider, linking, error, providerAccountId])
-
-  const handleLinkAccount = async () => {
-    if (!provider) return
-
-    try {
-      // Trigger OAuth sign-in which will link the account
-      const result = await signIn(provider, {
-        callbackUrl: `/auth/link?provider=${provider}`,
-        redirect: true,
-      })
-    } catch (error) {
-      console.error('Link account error:', error)
-      toast.error('Failed to link account')
-      router.push('/profile')
-    }
-  }
+  }, [status, provider, linking, error, providerAccountId, conflictEmail, showMergeConfirm, router, handleLinkAccount])
 
   const handleMergeAccounts = async () => {
     if (!mergeData) return

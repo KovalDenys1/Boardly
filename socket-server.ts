@@ -102,6 +102,45 @@ const io = new SocketIOServer(server, {
   maxHttpBufferSize: 1e6, // 1MB max buffer
 })
 
+// Online users tracking: userId -> Set of socketIds
+const onlineUsers = new Map<string, Set<string>>()
+
+// Helper functions for online status
+function markUserOnline(userId: string, socketId: string) {
+  if (!onlineUsers.has(userId)) {
+    onlineUsers.set(userId, new Set())
+  }
+  onlineUsers.get(userId)!.add(socketId)
+  
+  // Broadcast to friends that user is online
+  io.emit('user-online', { userId })
+  logger.info('User marked online', { userId, socketId, totalOnline: onlineUsers.size })
+}
+
+function markUserOffline(userId: string, socketId: string) {
+  const userSockets = onlineUsers.get(userId)
+  if (userSockets) {
+    userSockets.delete(socketId)
+    
+    // If no more sockets for this user, remove from online list
+    if (userSockets.size === 0) {
+      onlineUsers.delete(userId)
+      
+      // Broadcast to friends that user is offline
+      io.emit('user-offline', { userId })
+      logger.info('User marked offline', { userId, socketId, totalOnline: onlineUsers.size })
+    }
+  }
+}
+
+function getOnlineUserIds(): string[] {
+  return Array.from(onlineUsers.keys())
+}
+
+function isUserOnline(userId: string): boolean {
+  return onlineUsers.has(userId)
+}
+
 // Rate limiting for socket events
 const socketRateLimits = new Map<string, { count: number; resetTime: number }>()
 const MAX_EVENTS_PER_SECOND = 10
@@ -230,6 +269,15 @@ io.on('connection', (socket) => {
   
   // Track connection in monitor
   socketMonitor.onConnect(socket.id)
+  
+  // Mark user as online if authenticated
+  const userId = socket.data.user?.id
+  if (userId && !socket.data.user?.isGuest) {
+    markUserOnline(userId, socket.id)
+  }
+  
+  // Send online users list to newly connected user
+  socket.emit('online-users', { userIds: getOnlineUserIds() })
 
   socket.on('join-lobby', async (lobbyCode: string) => {
     // Rate limiting
@@ -420,6 +468,12 @@ io.on('connection', (socket) => {
     
     // Track disconnection in monitor
     socketMonitor.onDisconnect(socket.id)
+    
+    // Mark user as offline if authenticated
+    const userId = socket.data.user?.id
+    if (userId && !socket.data.user?.isGuest) {
+      markUserOffline(userId, socket.id)
+    }
   })
 
   socket.on('error', (error) => {

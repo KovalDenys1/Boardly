@@ -9,6 +9,7 @@ interface WaitingRoomProps {
   startingGame: boolean
   onStartGame: () => void
   onAddBot: () => void
+  onInviteFriends?: () => void
   getCurrentUserId: () => string | undefined
 }
 
@@ -20,6 +21,7 @@ export default function WaitingRoom({
   startingGame,
   onStartGame,
   onAddBot,
+  onInviteFriends,
   getCurrentUserId,
 }: WaitingRoomProps) {
   const playerCount = game?.players?.length || 0
@@ -307,6 +309,31 @@ export default function WaitingRoom({
               >
                 <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>🤖</span>
                 Add Bot Player
+                {canAddMorePlayers && (
+                  <span style={{ marginLeft: `clamp(6px, 0.6vw, 10px)`, fontSize: `clamp(11px, 1vw, 14px)`, opacity: 0.75 }}>
+                    ({playerCount}/{lobby?.maxPlayers || 4})
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Invite Friends Button */}
+            {onInviteFriends && canAddMorePlayers && (
+              <button
+                onClick={() => {
+                  soundManager.play('click')
+                  onInviteFriends()
+                }}
+                disabled={!canAddMorePlayers}
+                className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  fontSize: `clamp(14px, 1.4vw, 20px)`,
+                  padding: `clamp(10px, 1vh, 16px) clamp(24px, 2.4vw, 40px)`,
+                }}
+                title={!canAddMorePlayers ? 'Lobby is full' : 'Invite your friends to join'}
+              >
+                <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>👥</span>
+                Invite Friends
                 {canAddMorePlayers && (
                   <span style={{ marginLeft: `clamp(6px, 0.6vw, 10px)`, fontSize: `clamp(11px, 1vw, 14px)`, opacity: 0.75 }}>
                     ({playerCount}/{lobby?.maxPlayers || 4})

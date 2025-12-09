@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
+import Friends from '@/components/Friends'
 
 interface LinkedAccount {
   provider: string
@@ -20,7 +21,7 @@ interface LinkedAccounts {
   discord?: LinkedAccount
 }
 
-type TabType = 'profile' | 'history' | 'settings'
+type TabType = 'profile' | 'friends' | 'history' | 'settings'
 
 export default function ProfilePage() {
   const { t } = useTranslation()
@@ -258,6 +259,16 @@ export default function ProfilePage() {
                 }`}
               >
                 👤 {t('profile.title')}
+              </button>
+              <button
+                onClick={() => setActiveTab('friends')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  activeTab === 'friends'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+              >
+                👥 {t('profile.friends.title')}
               </button>
               <button
                 onClick={() => setActiveTab('history')}
@@ -522,6 +533,13 @@ export default function ProfilePage() {
             )}
           </div>
           </div>
+          )}
+
+          {/* Friends Tab */}
+          {activeTab === 'friends' && (
+            <div>
+              <Friends />
+            </div>
           )}
 
           {/* Game History Tab */}
