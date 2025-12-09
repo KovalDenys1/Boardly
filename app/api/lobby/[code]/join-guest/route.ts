@@ -62,7 +62,6 @@ export async function POST(
         data: {
           id: guestId,
           username: guestName,
-          name: guestName,
           isBot: false,
         },
       })

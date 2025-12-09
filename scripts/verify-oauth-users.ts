@@ -48,7 +48,7 @@ async function verifyOAuthUsers() {
       data: { 
         emailVerified: new Date(),
         // Set username if missing
-        username: user.username || user.name?.replace(/\s+/g, '_').toLowerCase() || user.email?.split('@')[0] || 'user'
+        username: user.username?.replace(/\s+/g, '_').toLowerCase() || user.email?.split('@')[0] || 'user'
       }
     })
     

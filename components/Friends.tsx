@@ -58,7 +58,6 @@ export default function Friends() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addByCode, setAddByCode] = useState(false)
   const [addLoading, setAddLoading] = useState(false)
-  const [requestMessage, setRequestMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const [socket, setSocket] = useState<Socket | null>(null)
 
@@ -134,15 +133,25 @@ export default function Friends() {
 
   const loadRequests = useCallback(async () => {
     try {
-      const res = await fetch('/api/friends/request')
-      if (!res.ok) throw new Error('Failed to load requests')
+      // Fetch both received and sent requests in parallel
+      const [receivedRes, sentRes] = await Promise.all([
+        fetch('/api/friends/request?type=received'),
+        fetch('/api/friends/request?type=sent')
+      ])
       
-      const data = await res.json()
-      setReceivedRequests(data.receivedRequests || [])
-      setSentRequests(data.sentRequests || [])
+      if (!receivedRes.ok || !sentRes.ok) {
+        throw new Error('Failed to load requests')
+      }
+      
+      const receivedData = await receivedRes.json()
+      const sentData = await sentRes.json()
+      
+      setReceivedRequests(receivedData.requests || [])
+      setSentRequests(sentData.requests || [])
+      
       clientLogger.log('Friend requests loaded', {
-        received: data.receivedRequests?.length,
-        sent: data.sentRequests?.length
+        received: receivedData.requests?.length || 0,
+        sent: sentData.requests?.length || 0
       })
     } catch (error) {
       clientLogger.error('Error loading requests:', error)
@@ -190,8 +199,7 @@ export default function Friends() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          receiverUsername: searchUsername.trim(),
-          message: requestMessage.trim() || null
+          receiverUsername: searchUsername.trim()
         })
       })
 
@@ -203,7 +211,6 @@ export default function Friends() {
 
       showToast.success('friends.requestSent')
       setSearchUsername('')
-      setRequestMessage('')
       setShowAddModal(false)
       await loadRequests()
     } catch (error: any) {
@@ -229,8 +236,7 @@ export default function Friends() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          friendCode: cleanCode,
-          message: requestMessage.trim() || null
+          friendCode: cleanCode
         })
       })
 
@@ -242,7 +248,6 @@ export default function Friends() {
 
       showToast.success('friends.requestSent')
       setFriendCode('')
-      setRequestMessage('')
       setShowAddModal(false)
       await loadRequests()
     } catch (error: any) {
@@ -652,14 +657,6 @@ export default function Friends() {
                       </div>
                     </div>
 
-                    {request.message && (
-                      <div className="mb-4 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-green-200 dark:border-green-800">
-                        <p className="text-sm text-gray-700 dark:text-gray-300 italic">
-                          💬 "{request.message}"
-                        </p>
-                      </div>
-                    )}
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAcceptRequest(request.id)}
@@ -808,30 +805,7 @@ export default function Friends() {
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                      <span>💬</span>
-                      {t('profile.friends.message')} 
-                      <span className="text-xs font-normal text-gray-500">({t('common.optional')})</span>
-                    </label>
-                    <textarea
-                      value={requestMessage}
-                      onChange={(e) => setRequestMessage(e.target.value)}
-                      placeholder={t('profile.friends.messagePlaceholder')}
-                      rows={3}
-                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      maxLength={200}
-                    />
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('profile.friends.messageHint')}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        {requestMessage.length}/200
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
                       disabled={addLoading}
@@ -854,7 +828,6 @@ export default function Friends() {
                       onClick={() => {
                         setShowAddModal(false)
                         setSearchUsername('')
-                        setRequestMessage('')
                         setFriendCode('')
                         setAddByCode(false)
                       }}
@@ -884,30 +857,7 @@ export default function Friends() {
                       {t('profile.friends.friendCodeHint')}
                     </p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                      <span>💬</span>
-                      {t('profile.friends.message')} 
-                      <span className="text-xs font-normal text-gray-500">({t('common.optional')})</span>
-                    </label>
-                    <textarea
-                      value={requestMessage}
-                      onChange={(e) => setRequestMessage(e.target.value)}
-                      placeholder={t('profile.friends.messagePlaceholder')}
-                      rows={3}
-                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      maxLength={200}
-                    />
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {t('profile.friends.messageHint')}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        {requestMessage.length}/200
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex gap-3 pt-4">
                     <button
                       type="submit"
                       disabled={addLoading}
@@ -930,7 +880,6 @@ export default function Friends() {
                       onClick={() => {
                         setShowAddModal(false)
                         setSearchUsername('')
-                        setRequestMessage('')
                         setFriendCode('')
                         setAddByCode(false)
                       }}

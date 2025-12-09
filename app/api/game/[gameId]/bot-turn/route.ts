@@ -62,7 +62,6 @@ export async function POST(
               user: {
                 select: {
                   id: true,
-                  name: true,
                   isBot: true,
                 },
               },

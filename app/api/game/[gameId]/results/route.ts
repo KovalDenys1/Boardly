@@ -32,7 +32,7 @@ export async function GET(
               select: {
                 id: true,
                 username: true,
-                avatar: true,
+                
                 isBot: true
               }
             }
@@ -44,7 +44,7 @@ export async function GET(
         lobby: {
           select: {
             code: true,
-            name: true
+            name: true,
           }
         }
       }
@@ -82,7 +82,6 @@ export async function GET(
       players: game.players.map(player => ({
         id: player.user.id,
         username: player.user.username,
-        avatar: player.user.avatar,
         isBot: player.user.isBot,
         score: player.score,
         finalScore: player.finalScore,

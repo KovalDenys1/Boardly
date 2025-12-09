@@ -62,7 +62,7 @@ export async function findUserByFriendCode(friendCode: string) {
       id: true,
       username: true,
       email: true,
-      avatar: true,
+      
       friendCode: true
     }
   })

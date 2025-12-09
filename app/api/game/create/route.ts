@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     for (const player of sortedPlayers) {
       gameEngine.addPlayer({
         id: player.userId,
-        name: player.user.name || 'Unknown',
+        name: player.user.username || 'Unknown',
         score: player.score,
         isActive: true,
       })
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
         state: gameEngine.getState(),
         players: game.players.map(p => ({
           id: p.userId,
-          name: p.user.name || 'Unknown',
+          name: p.user.username || 'Unknown',
           score: p.score,
         })),
       }

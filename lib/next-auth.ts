@@ -79,10 +79,13 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error-oauth',
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, email, credentials }) {
       // Handle OAuth sign-ins (Google, GitHub, Discord)
       if (account?.provider && account.provider !== 'credentials') {
         try {
+          // Manual linking handled in events.linkAccount callback
+          // Here we just validate and allow/deny the sign-in
+          
           // Check if there's already an account with this provider + providerAccountId
           const existingAccount = await prisma.account.findUnique({
             where: {
@@ -109,49 +112,32 @@ export const authOptions: NextAuthOptions = {
             return true
           }
 
-          // New OAuth account - check if user exists by email
-          const existingUser = await prisma.user.findUnique({
+          // New OAuth account - check if user with this email already exists
+          const existingUserByEmail = await prisma.user.findUnique({
             where: { email: user.email! },
           })
 
-          if (existingUser) {
-            // User exists with this email - link account to them
-            // This is safe because OAuth provider verified the email
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                refresh_token: account.refresh_token,
-                access_token: account.access_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-                session_state: account.session_state,
-              }
-            })
-
-            // Auto-verify email
-            if (!existingUser.emailVerified) {
-              await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { emailVerified: new Date() }
-              })
-            }
-            
+          if (existingUserByEmail) {
+            // User with this email exists
+            // Block if this looks like a NEW signin (not linking scenario)
+            // For linking, user should use /auth/link page which sets cookie
             const log = apiLogger('OAuth signIn')
-            log.info('Linked OAuth account to existing user by email', { 
-              userId: existingUser.id, 
+            log.warn('OAuth sign-in blocked - email already exists', { 
+              existingUserId: existingUserByEmail.id,
               provider: account.provider,
               email: user.email 
             })
-            return true
+            return false
           }
 
-          // New user - PrismaAdapter will create user and account
-          // Email will be verified in linkAccount event
+          // New user with new email - allow PrismaAdapter to create
+          // IMPORTANT: If OAuth email differs from primary, this creates SEPARATE user
+          // To link to existing user, use /auth/link page workflow
+          const log = apiLogger('OAuth signIn')
+          log.info('New OAuth user will be created', {
+            provider: account.provider,
+            email: user.email
+          })
           
         } catch (error) {
           console.error('Error in signIn callback:', error)
@@ -165,7 +151,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.email = user.email
-        token.name = user.name
+        token.name = (user as any).username || user.email?.split('@')[0] || 'user'
         token.picture = user.image
         token.emailVerified = user.emailVerified
       }
@@ -177,13 +163,12 @@ export const authOptions: NextAuthOptions = {
           select: {
             id: true,
             username: true,
-            name: true,
             emailVerified: true
           }
         })
         if (dbUser) {
           token.id = dbUser.id
-          token.name = dbUser.username || dbUser.name
+          token.name = dbUser.username
           token.emailVerified = dbUser.emailVerified
         }
       }
@@ -221,23 +206,147 @@ export const authOptions: NextAuthOptions = {
       const log = apiLogger('OAuth createUser')
       log.info('New user created', { userId: user.id, email: user.email })
     },
-    async linkAccount({ user, account }) {
+    async linkAccount({ user, account, profile }) {
       // Auto-verify email when OAuth account is linked
+      // This event fires when PrismaAdapter successfully links an OAuth account
+      // Important: This works even if OAuth email differs from user's primary email
+      
       await prisma.user.update({
         where: { id: user.id },
         data: { 
           emailVerified: new Date(),
-          username: user.name?.replace(/\s+/g, '_').toLowerCase() || user.email?.split('@')[0] || 'user'
+          // Only set username if user doesn't have one yet
+          username: (user as any).username || user.email?.split('@')[0] || 'user'
         }
       })
       
       const log = apiLogger('OAuth linkAccount')
-      log.info('Account linked and email auto-verified', { 
+      log.info('OAuth account linked successfully', { 
         userId: user.id, 
-        email: user.email,
+        userEmail: user.email,
         provider: account.provider,
-        providerAccountId: account.providerAccountId 
+        providerAccountId: account.providerAccountId,
+        // @ts-ignore - profile.email may exist depending on provider
+        oauthEmail: profile?.email || 'unknown'
       })
+    },
+    async signIn({ user, account, profile, isNewUser }) {
+      // Phase 2: Handle manual OAuth linking with different email
+      // This event fires AFTER successful OAuth authentication
+      // Check if there's a pending link request in cookies
+      
+      if (!account || account.provider === 'credentials') {
+        return // Skip for credentials login
+      }
+
+      try {
+        // Import cookies dynamically to avoid Edge runtime issues
+        const { cookies } = await import('next/headers')
+        const cookieStore = cookies()
+        const pendingLinkCookie = cookieStore.get('pendingOAuthLink')
+
+        if (!pendingLinkCookie?.value) {
+          return // No pending link, normal OAuth flow
+        }
+
+        const pendingLink = JSON.parse(pendingLinkCookie.value)
+        const { userId, provider, timestamp } = pendingLink
+
+        // Validate cookie is for this OAuth provider
+        if (provider !== account.provider) {
+          const log = apiLogger('OAuth Manual Link')
+          log.warn('Provider mismatch in pending link', {
+            expected: provider,
+            actual: account.provider
+          })
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // Check cookie expiry (10 minutes)
+        const expiryTime = 10 * 60 * 1000
+        if (Date.now() - timestamp > expiryTime) {
+          const log = apiLogger('OAuth Manual Link')
+          log.warn('Pending link cookie expired')
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // Get the target user
+        const targetUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: {
+            id: true,
+            email: true,
+            accounts: {
+              where: { provider: account.provider },
+              select: { id: true }
+            }
+          }
+        })
+
+        if (!targetUser) {
+          const log = apiLogger('OAuth Manual Link')
+          log.error('Target user not found for pending link', undefined, { userId })
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // Check if already linked
+        if (targetUser.accounts.length > 0) {
+          const log = apiLogger('OAuth Manual Link')
+          log.warn('Provider already linked to target user', {
+            userId: targetUser.id,
+            provider: account.provider
+          })
+          cookieStore.delete('pendingOAuthLink')
+          return
+        }
+
+        // SUCCESS: Manually create Account record linking OAuth to existing user
+        // This bypasses NextAuth's "create new user" behavior when emails differ
+        await prisma.account.create({
+          data: {
+            userId: targetUser.id, // Link to EXISTING user
+            type: account.type,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            refresh_token: account.refresh_token,
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            token_type: account.token_type,
+            scope: account.scope,
+            id_token: account.id_token,
+            session_state: account.session_state as string | null | undefined,
+          }
+        })
+
+        // Delete the temporary user that NextAuth created (if new user)
+        if (isNewUser && user.id !== targetUser.id) {
+          await prisma.user.delete({
+            where: { id: user.id }
+          }).catch(() => {
+            // Ignore if user doesn't exist or has constraints
+          })
+        }
+
+        // Clean up cookie
+        cookieStore.delete('pendingOAuthLink')
+
+        const log = apiLogger('OAuth Manual Link')
+        log.info('Successfully linked OAuth account with different email', {
+          targetUserId: targetUser.id,
+          targetEmail: targetUser.email,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          // @ts-ignore - profile.email may exist
+          oauthEmail: profile?.email || 'unknown'
+        })
+
+      } catch (error) {
+        const log = apiLogger('OAuth Manual Link')
+        log.error('Error in manual OAuth linking', error instanceof Error ? error : new Error(String(error)))
+      }
     }
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET,
