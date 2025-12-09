@@ -21,7 +21,7 @@ function OAuthErrorContent() {
     if (error !== 'OAuthAccountNotLinked') {
       router.replace('/auth/login')
     }
-  }, [error])
+  }, [error, router])
 
   const getProviderName = () => {
     switch (provider) {

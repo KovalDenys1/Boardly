@@ -66,7 +66,7 @@ export default function PasswordInput({
       color: strengthLevels[score].color,
       percentage: (score / 3) * 100,
     }
-  }, [value])
+  }, [value, t])
 
   return (
     <div>

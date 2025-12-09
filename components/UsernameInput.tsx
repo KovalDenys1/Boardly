@@ -37,6 +37,36 @@ export default function UsernameInput({
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [validationError, setValidationError] = useState<string>('')
 
+  const checkUsername = useCallback(async (username: string) => {
+    try {
+      const response = await fetch(`/api/user/check-username?username=${encodeURIComponent(username)}`)
+      const data: UsernameCheckResult = await response.json()
+
+      if (response.ok) {
+        if (data.error) {
+          setStatus('invalid')
+          setValidationError(data.error)
+          setSuggestions([])
+          onAvailabilityChange?.(false)
+        } else if (data.available) {
+          setStatus('available')
+          setSuggestions([])
+          onAvailabilityChange?.(true)
+        } else {
+          setStatus('taken')
+          setSuggestions(data.suggestions || [])
+          onAvailabilityChange?.(false)
+        }
+      } else {
+        setStatus('idle')
+        clientLogger.error('Username check failed:', data)
+      }
+    } catch (error) {
+      clientLogger.error('Username check error:', error)
+      setStatus('idle')
+    }
+  }, [onAvailabilityChange])
+
   // Debounced username check
   useEffect(() => {
     // If username matches current username, it's valid
@@ -81,37 +111,7 @@ export default function UsernameInput({
     }, 500)
 
     return () => clearTimeout(timeoutId)
-  }, [value, t, onAvailabilityChange])
-
-  const checkUsername = async (username: string) => {
-    try {
-      const response = await fetch(`/api/user/check-username?username=${encodeURIComponent(username)}`)
-      const data: UsernameCheckResult = await response.json()
-
-      if (response.ok) {
-        if (data.error) {
-          setStatus('invalid')
-          setValidationError(data.error)
-          setSuggestions([])
-          onAvailabilityChange?.(false)
-        } else if (data.available) {
-          setStatus('available')
-          setSuggestions([])
-          onAvailabilityChange?.(true)
-        } else {
-          setStatus('taken')
-          setSuggestions(data.suggestions || [])
-          onAvailabilityChange?.(false)
-        }
-      } else {
-        setStatus('idle')
-        clientLogger.error('Username check failed:', data)
-      }
-    } catch (error) {
-      clientLogger.error('Username check error:', error)
-      setStatus('idle')
-    }
-  }
+  }, [value, currentUsername, checkUsername, t, onAvailabilityChange])
 
   const handleSuggestionClick = (suggestion: string) => {
     onChange(suggestion)
