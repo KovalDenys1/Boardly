@@ -53,7 +53,10 @@ export default function Friends() {
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [searchUsername, setSearchUsername] = useState('')
+  const [friendCode, setFriendCode] = useState('')
+  const [myFriendCode, setMyFriendCode] = useState<string>('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [addByCode, setAddByCode] = useState(false)
   const [addLoading, setAddLoading] = useState(false)
   const [requestMessage, setRequestMessage] = useState('')
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
@@ -150,11 +153,28 @@ export default function Friends() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
-      await Promise.all([loadFriends(), loadRequests()])
+      await Promise.all([
+        loadFriends(), 
+        loadRequests(),
+        loadMyFriendCode()
+      ])
       setLoading(false)
     }
     loadData()
   }, [loadFriends, loadRequests])
+
+  const loadMyFriendCode = async () => {
+    try {
+      const res = await fetch('/api/user/friend-code')
+      if (!res.ok) throw new Error('Failed to load friend code')
+      
+      const data = await res.json()
+      setMyFriendCode(data.friendCode || '')
+      clientLogger.log('My friend code loaded', { code: data.friendCode })
+    } catch (error) {
+      clientLogger.error('Error loading friend code:', error)
+    }
+  }
 
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -191,6 +211,70 @@ export default function Friends() {
       showToast.error('errors.generic', undefined, { message: error.message })
     } finally {
       setAddLoading(false)
+    }
+  }
+
+  const handleSendRequestByCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const cleanCode = friendCode.replace(/\s/g, '')
+    if (!cleanCode || !/^\d{7}$/.test(cleanCode)) {
+      showToast.error('friends.errors.invalidFriendCode')
+      return
+    }
+
+    setAddLoading(true)
+    try {
+      const res = await fetch('/api/friends/add-by-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          friendCode: cleanCode,
+          message: requestMessage.trim() || null
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send request')
+      }
+
+      showToast.success('friends.requestSent')
+      setFriendCode('')
+      setRequestMessage('')
+      setShowAddModal(false)
+      await loadRequests()
+    } catch (error: any) {
+      clientLogger.error('Error sending request by code:', error)
+      showToast.error('errors.generic', undefined, { message: error.message })
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
+  const copyFriendCode = async () => {
+    if (!myFriendCode) return
+    
+    try {
+      await navigator.clipboard.writeText(myFriendCode)
+      showToast.success('friends.friendCodeCopied')
+    } catch (error) {
+      clientLogger.error('Error copying friend code:', error)
+      showToast.error('errors.generic')
+    }
+  }
+
+  const copyProfileLink = async () => {
+    if (!myFriendCode) return
+    
+    try {
+      const profileUrl = `${window.location.origin}/add-friend/${myFriendCode}`
+      await navigator.clipboard.writeText(profileUrl)
+      showToast.success('friends.profileLinkCopied')
+    } catch (error) {
+      clientLogger.error('Error copying profile link:', error)
+      showToast.error('errors.generic')
     }
   }
 
@@ -274,6 +358,39 @@ export default function Friends() {
 
   return (
     <div className="space-y-6">
+      {/* My Friend Code Section */}
+      {myFriendCode && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            {t('friends.myFriendCode')}
+          </h3>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg p-3 border-2 border-blue-300 dark:border-blue-600">
+              <div className="text-2xl font-mono font-bold text-center tracking-wider text-blue-600 dark:text-blue-400">
+                {myFriendCode}
+              </div>
+            </div>
+            <button
+              onClick={copyFriendCode}
+              className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+              title={t('friends.copyCode')}
+            >
+              📋
+            </button>
+            <button
+              onClick={copyProfileLink}
+              className="p-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+              title={t('friends.copyLink')}
+            >
+              🔗
+            </button>
+          </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+            {t('friends.shareCodeHint')}
+          </p>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
         <button
@@ -493,57 +610,146 @@ export default function Friends() {
             <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
               {t('friends.addFriend')}
             </h3>
-            <form onSubmit={handleSendRequest} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('friends.username')}
-                </label>
-                <input
-                  type="text"
-                  value={searchUsername}
-                  onChange={(e) => setSearchUsername(e.target.value)}
-                  placeholder={t('friends.usernamePlaceholder')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  {t('friends.message')} ({t('common.optional')})
-                </label>
-                <textarea
-                  value={requestMessage}
-                  onChange={(e) => setRequestMessage(e.target.value)}
-                  placeholder={t('friends.messagePlaceholder')}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
-                  maxLength={200}
-                />
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {requestMessage.length}/200
+
+            {/* Toggle between username and friend code */}
+            <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setAddByCode(false)}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  !addByCode
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                📧 {t('friends.byUsername')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddByCode(true)}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  addByCode
+                    ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                🔢 {t('friends.byFriendCode')}
+              </button>
+            </div>
+
+            {!addByCode ? (
+              <form onSubmit={handleSendRequest} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('friends.username')}
+                  </label>
+                  <input
+                    type="text"
+                    value={searchUsername}
+                    onChange={(e) => setSearchUsername(e.target.value)}
+                    placeholder={t('friends.usernamePlaceholder')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                  />
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={addLoading}
-                  className="flex-1 btn btn-primary disabled:opacity-50"
-                >
-                  {addLoading ? t('common.loading') : t('friends.sendRequest')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setSearchUsername('')
-                    setRequestMessage('')
-                  }}
-                  className="flex-1 btn btn-secondary"
-                >
-                  {t('common.cancel')}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('friends.message')} ({t('common.optional')})
+                  </label>
+                  <textarea
+                    value={requestMessage}
+                    onChange={(e) => setRequestMessage(e.target.value)}
+                    placeholder={t('friends.messagePlaceholder')}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
+                    maxLength={200}
+                  />
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {requestMessage.length}/200
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={addLoading}
+                    className="flex-1 btn btn-primary disabled:opacity-50"
+                  >
+                    {addLoading ? t('common.loading') : t('friends.sendRequest')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddModal(false)
+                      setSearchUsername('')
+                      setRequestMessage('')
+                      setFriendCode('')
+                      setAddByCode(false)
+                    }}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSendRequestByCode} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('friends.friendCode')}
+                  </label>
+                  <input
+                    type="text"
+                    value={friendCode}
+                    onChange={(e) => setFriendCode(e.target.value)}
+                    placeholder="1234567"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-center text-lg tracking-wider"
+                    required
+                    maxLength={10}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {t('friends.friendCodeHint')}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('friends.message')} ({t('common.optional')})
+                  </label>
+                  <textarea
+                    value={requestMessage}
+                    onChange={(e) => setRequestMessage(e.target.value)}
+                    placeholder={t('friends.messagePlaceholder')}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
+                    maxLength={200}
+                  />
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {requestMessage.length}/200
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={addLoading}
+                    className="flex-1 btn btn-primary disabled:opacity-50"
+                  >
+                    {addLoading ? t('common.loading') : t('friends.sendRequest')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddModal(false)
+                      setSearchUsername('')
+                      setRequestMessage('')
+                      setFriendCode('')
+                      setAddByCode(false)
+                    }}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

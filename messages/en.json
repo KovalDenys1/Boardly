@@ -19,7 +19,8 @@
     "all": "All",
     "or": "or",
     "deleting": "Deleting...",
-    "goHome": "Go to Home"
+    "goHome": "Go to Home",
+    "optional": "optional"
   },
   "lobby": {
     "title": "Game Lobbies",
@@ -503,9 +504,20 @@
       "wins": "wins",
       "winRate": "win rate",
       "confirmRemove": "Are you sure you want to remove {{username}} from your friends?",
+      "myFriendCode": "My Friend Code",
+      "friendCode": "Friend Code",
+      "byUsername": "By Username",
+      "byFriendCode": "By Friend Code",
+      "friendCodeHint": "Enter 7-digit friend code",
+      "shareCodeHint": "Share this code with friends to connect!",
+      "copyCode": "Copy Code",
+      "copyLink": "Copy Profile Link",
+      "friendCodeCopied": "Friend code copied to clipboard!",
+      "profileLinkCopied": "Profile link copied! Share it with friends.",
       "errors": {
         "loadFailed": "Failed to load friends",
-        "usernameRequired": "Username is required"
+        "usernameRequired": "Username is required",
+        "invalidFriendCode": "Invalid friend code. Must be 7 digits."
       }
     }
   },
