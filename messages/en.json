@@ -88,7 +88,9 @@
       "all": "All Lobbies",
       "waiting": "Waiting",
       "playing": "Playing"
-    }
+    },
+    "leftLobby": "You left the lobby",
+    "gameAbandoned": "Game ended - not enough players remaining"
   },
   "connection": {
     "reconnecting": "Reconnecting...",
@@ -321,8 +323,12 @@
     }
   },
   "chat": {
+    "open": "Chat",
+    "title": "Game Chat",
     "openChat": "Open chat",
-    "unread": "unread"
+    "unread": "unread",
+    "messageCount": "{{count}} messages",
+    "clear": "Clear chat"
   },
   "auth": {
     "login": {

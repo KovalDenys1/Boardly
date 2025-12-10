@@ -98,7 +98,8 @@ export default function ProfilePage() {
     }
 
     // Check if username is same as current
-    if (username === session?.user?.name) {
+    const currentUsername = (session?.user as any)?.username || session?.user?.name
+    if (username === currentUsername) {
       toast.error('This is already your username')
       return
     }
@@ -127,14 +128,15 @@ export default function ProfilePage() {
 
       // Update session with new username
       await update({
-        ...session,
         user: {
-          ...session?.user,
-          name: username,
+          username: username,
         },
       })
 
       toast.success('✅ Profile updated successfully!')
+      
+      // Reload page to reflect changes everywhere
+      window.location.reload()
     } catch (error: any) {
       toast.error(error.message || 'Failed to update profile')
     } finally {

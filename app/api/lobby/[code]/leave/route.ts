@@ -137,8 +137,32 @@ export async function POST(
       })
     }
 
-    // If only 1 human player remains in a playing game, they probably want to continue with bots
-    // So we don't automatically end the game
+    // If only 1 player remains in total (regardless of bot status), end the game
+    // A game needs at least 2 players to continue
+    if (remainingPlayers === 1) {
+      await prisma.game.update({
+        where: { id: activeGame.id },
+        data: { 
+          status: 'abandoned',
+          abandonedAt: new Date() as any
+        }
+      })
+
+      // Deactivate the lobby
+      await prisma.lobby.update({
+        where: { id: lobby.id },
+        data: { isActive: false }
+      })
+
+      return NextResponse.json({
+        message: 'You left the lobby',
+        gameEnded: true,
+        gameAbandoned: true,
+        lobbyDeactivated: true
+      })
+    }
+
+    // If multiple players remain (human or bot), continue the game
     return NextResponse.json({
       message: 'You left the lobby',
       gameEnded: false,
