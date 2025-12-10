@@ -96,7 +96,8 @@
     "reconnecting": "Reconnecting...",
     "attempt": "Attempt {{count}}",
     "disconnected": "Connection lost",
-    "checkNetwork": "Please check your network connection"
+    "checkNetwork": "Please check your network connection",
+    "coldStart": "Server is waking up... This may take up to a minute."
   },
   "header": {
     "home": "Home",

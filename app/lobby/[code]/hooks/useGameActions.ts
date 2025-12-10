@@ -337,7 +337,10 @@ export function useGameActions(props: UseGameActionsProps) {
         const endTime = Date.now()
         const durationMinutes = Math.round((endTime - startTime) / 60000)
         
-        const winnerPlayer = winner?.id ? game.players.find((p: any) => p.userId === winner.id) : null
+        // Safety check: ensure game.players exists and is an array
+        const winnerPlayer = winner?.id && Array.isArray(game.players) 
+          ? game.players.find((p: any) => p.userId === winner.id) 
+          : null
         
         trackGameCompleted({
           gameType: 'yahtzee',

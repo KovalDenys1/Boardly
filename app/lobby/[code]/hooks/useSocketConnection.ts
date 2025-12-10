@@ -105,14 +105,19 @@ export function useSocketConnection({
     }
 
     const newSocket = io(url, {
-      transports: ['polling', 'websocket'], // Спочатку polling (надійніший для Render), потім WebSocket
+      // Оптимізовано для Render free tier (холодні старти можуть займати до 60s)
+      transports: ['polling', 'websocket'], // Polling → WebSocket для стабільності
       reconnection: true,
-      reconnectionAttempts: 15, // Збільшено до 15 для Render free tier
-      reconnectionDelay: 2000, // Збільшено до 2s
-      reconnectionDelayMax: 60000, // Збільшено до 60s для Render cold starts
-      timeout: 90000, // Збільшено timeout до 90s
-      upgrade: true, // Дозволити upgrade з polling до WebSocket
+      reconnectionAttempts: 20, // Збільшено для холодних стартів Render
+      reconnectionDelay: 3000, // 3 секунди початкова затримка
+      reconnectionDelayMax: 120000, // До 2 хвилин між спробами (холодний старт)
+      timeout: 120000, // 2 хвилини - важливо для холодного старту Render
+      upgrade: true, // Auto-upgrade polling → websocket
       rememberUpgrade: true, // Запам'ятати успішний upgrade
+      autoConnect: true, // Автоматичне підключення
+      forceNew: false, // Використовувати існуюче з'єднання якщо можливо
+      multiplex: true, // Multiplexing для ефективності
+      path: '/socket.io/', // Явний шлях
       auth: {
         token: token,
         isGuest: isGuest,

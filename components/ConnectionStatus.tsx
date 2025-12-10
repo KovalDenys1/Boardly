@@ -43,9 +43,12 @@ export function ConnectionStatus({
   }
 
   if (isReconnecting) {
+    // Show helpful message for slow connections (likely cold start)
+    const isSlowConnection = reconnectAttempt >= 3
+    
     return (
       <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-3 shadow-lg">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-3 shadow-lg max-w-sm">
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <svg
@@ -76,6 +79,11 @@ export function ConnectionStatus({
               {reconnectAttempt > 0 && (
                 <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
                   {t('connection.attempt', `Attempt ${reconnectAttempt}`)}
+                </p>
+              )}
+              {isSlowConnection && (
+                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 border-t border-yellow-200 dark:border-yellow-700 pt-1">
+                  ⏳ {t('connection.coldStart', 'Server is waking up... This may take up to a minute.')}
                 </p>
               )}
             </div>

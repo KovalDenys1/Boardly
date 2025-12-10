@@ -19,11 +19,14 @@ if (typeof window === 'undefined') {
  * standalone socket server is discovered without extra env setup.
  */
 export function getBrowserSocketUrl(): string {
+  // Явний URL з змінних середовища має найвищий пріоритет
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+    console.log('🔌 Using explicit Socket URL from env:', process.env.NEXT_PUBLIC_SOCKET_URL)
     return process.env.NEXT_PUBLIC_SOCKET_URL
   }
 
   if (typeof window === 'undefined') {
+    console.log('🔌 SSR mode: Using default local socket URL')
     return DEFAULT_LOCAL_SOCKET_URL
   }
 
@@ -38,11 +41,16 @@ export function getBrowserSocketUrl(): string {
   const isDevPort = numericPort === 3000 || numericPort === 5173
 
   if (isLocalHostname || isDevPort) {
-    return `${protocol}//${hostname}:3001`
+    const localUrl = `${protocol}//${hostname}:3001`
+    console.log('🔌 Local development detected, using:', localUrl)
+    return localUrl
   }
 
+  // Production: Socket.IO на тому ж домені що і додаток
   const derivedPort = port ? `:${port}` : ''
-  return `${protocol}//${hostname}${derivedPort}`
+  const productionUrl = `${protocol}//${hostname}${derivedPort}`
+  console.log('🔌 Production mode, using same origin:', productionUrl)
+  return productionUrl
 }
 
 /**

@@ -222,12 +222,13 @@ function LobbyPageContent() {
           }))
           
           // Sync roll history from game state
-          if (parsedState.data?.lastRoll && game?.players) {
+          if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
             const lastRoll = parsedState.data.lastRoll
             // Use 'any' type because actual player object from DB includes 'user' relation
             const player = game.players.find((p: any) => p.id === lastRoll.playerId) as any
             
-            if (player?.user?.username) {
+            // Safety check: ensure player exists and has required data
+            if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
               const playerCount = game.players.length
               const currentRound = parsedState.data.round || 1
               const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
@@ -696,8 +697,11 @@ function LobbyPageContent() {
     }
   }, [lobby, code])
 
-  const canStartGame = lobby?.creatorId === session?.user?.id || 
+  const isCreator = lobby?.creatorId === session?.user?.id || 
     (isGuest && lobby?.creatorId === guestId)
+  const playerCount = game?.players?.length || 0
+  // Can start game if user is creator (single player games are allowed - bot will be auto-added)
+  const canStartGame = isCreator
   const isInGame = game?.players?.some((p: any) => 
     p.userId === getCurrentUserId() || 
     (isGuest && p.userId === guestId)
