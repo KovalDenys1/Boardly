@@ -170,6 +170,14 @@ export default function Friends() {
       setLoading(false)
     }
     loadData()
+
+    // Auto-refresh every 30 seconds to sync friends list
+    const refreshInterval = setInterval(() => {
+      loadFriends()
+      loadRequests()
+    }, 30000)
+
+    return () => clearInterval(refreshInterval)
   }, [loadFriends, loadRequests])
 
   const loadMyFriendCode = async () => {

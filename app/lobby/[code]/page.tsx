@@ -220,6 +220,39 @@ function LobbyPageContent() {
             ...prevGame,
             state: JSON.stringify(parsedState),
           }))
+          
+          // Sync roll history from game state
+          if (parsedState.data?.lastRoll && game?.players) {
+            const lastRoll = parsedState.data.lastRoll
+            // Use 'any' type because actual player object from DB includes 'user' relation
+            const player = game.players.find((p: any) => p.id === lastRoll.playerId) as any
+            
+            if (player?.user?.username) {
+              const playerCount = game.players.length
+              const currentRound = parsedState.data.round || 1
+              const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+              
+              // Check if this roll is already in history (by timestamp)
+              setRollHistory(prev => {
+                const exists = prev.some(entry => 
+                  Math.abs(entry.timestamp - lastRoll.timestamp) < 1000 // Within 1 second
+                )
+                
+                if (exists) return prev
+                
+                return [...prev, {
+                  id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
+                  playerName: player.user.username,
+                  dice: lastRoll.dice,
+                  rollNumber: lastRoll.rollNumber,
+                  turnNumber: turnNumber,
+                  held: lastRoll.held,
+                  isBot: player.user.isBot || false,
+                  timestamp: lastRoll.timestamp,
+                }]
+              })
+            }
+          }
         }
         
         // Note: Bot move detection handled by bot-visualization.ts
@@ -229,7 +262,7 @@ function LobbyPageContent() {
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id])
+  }, [game?.id, game?.players])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -586,12 +619,50 @@ function LobbyPageContent() {
     }
   }, [])
 
-  const handleLeaveLobby = () => {
-    if (socket) {
-      socket.emit('leave-lobby', code)
-      socket.disconnect()
+  const handleLeaveLobby = async () => {
+    try {
+      // Call leave API
+      const res = await fetch(`/api/lobby/${code}/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        showToast.error('errors.unexpected')
+        clientLogger.error('Failed to leave lobby:', data.error)
+        return
+      }
+
+      // Disconnect socket
+      if (socket) {
+        socket.emit('leave-lobby', code)
+        socket.disconnect()
+      }
+
+      // Show appropriate message
+      if (data.gameAbandoned) {
+        showToast.info('lobby.gameAbandoned')
+      } else {
+        showToast.success('lobby.leftLobby')
+      }
+
+      // Redirect
+      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
+    } catch (error) {
+      clientLogger.error('Error leaving lobby:', error)
+      showToast.error('errors.unexpected')
+      
+      // Fallback: disconnect and redirect anyway
+      if (socket) {
+        socket.emit('leave-lobby', code)
+        socket.disconnect()
+      }
+      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
     }
-    router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
   }
 
   const handleAddBot = async () => {
