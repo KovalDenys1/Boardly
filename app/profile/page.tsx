@@ -236,61 +236,66 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-      <div className="max-w-4xl mx-auto pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-2 sm:p-4">
+      <div className="max-w-4xl mx-auto pt-16 sm:pt-20 pb-4">
         <div className="card animate-scale-in">
-          <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
-              <span className="text-4xl">👤</span>
+          {/* Header - Adaptive sizing */}
+          <div className="mb-4 sm:mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3 sm:mb-4">
+              <span className="text-3xl sm:text-4xl">👤</span>
             </div>
-            <h1 className="text-3xl font-bold mb-2">{t('profile.title')}</h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">{t('profile.title')}</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Manage your account settings
             </p>
           </div>
 
-          {/* Tabs Navigation */}
-          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex gap-4">
+          {/* Tabs Navigation - Mobile optimized with scroll */}
+          <div className="mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto">
+            <nav className="flex gap-2 sm:gap-4 min-w-max">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`px-4 py-2 font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'profile'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
-                👤 {t('profile.title')}
+                <span className="inline sm:hidden">👤</span>
+                <span className="hidden sm:inline">👤 {t('profile.title')}</span>
               </button>
               <button
                 onClick={() => setActiveTab('friends')}
-                className={`px-4 py-2 font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'friends'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
-                👥 {t('profile.friends.title')}
+                <span className="inline sm:hidden">👥</span>
+                <span className="hidden sm:inline">👥 {t('profile.friends.title')}</span>
               </button>
               <button
                 onClick={() => setActiveTab('history')}
-                className={`px-4 py-2 font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'history'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
-                🎮 {t('profile.gameHistory.title')}
+                <span className="inline sm:hidden">🎮</span>
+                <span className="hidden sm:inline">🎮 {t('profile.gameHistory.title')}</span>
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`px-4 py-2 font-medium transition-colors ${
+                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
                   activeTab === 'settings'
                     ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                 }`}
               >
-                ⚙️ {t('profile.settings.title')}
+                <span className="inline sm:hidden">⚙️</span>
+                <span className="hidden sm:inline">⚙️ {t('profile.settings.title')}</span>
               </button>
             </nav>
           </div>
@@ -301,21 +306,21 @@ export default function ProfilePage() {
 
           {/* Email Verification Banner - Only show for email/password accounts */}
           {session?.user?.email && !session?.user?.emailVerified && !linkedAccounts.google && !linkedAccounts.github && !linkedAccounts.discord && (
-            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">⚠️</span>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <span className="text-xl sm:text-2xl flex-shrink-0">⚠️</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1 text-sm sm:text-base">
                     Email Not Verified
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+                  <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 mb-3">
                     Please verify your email address to unlock all features. Unverified accounts may be automatically deleted after 7 days.
                   </p>
                   <button
                     type="button"
                     onClick={handleResendVerification}
                     disabled={showResendVerification}
-                    className="text-sm px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="text-xs sm:text-sm px-3 sm:px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors disabled:opacity-50 w-full sm:w-auto"
                   >
                     {showResendVerification ? 'Sending...' : '📧 Resend Verification Email'}
                   </button>
@@ -324,17 +329,17 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <form onSubmit={handleUpdateProfile} className="space-y-6">
+          <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-6">
             {/* Email (read-only) */}
             <div>
               <label className="block text-sm font-medium mb-2">
-                Email {session?.user?.emailVerified && <span className="text-green-600 dark:text-green-400">✓ Verified</span>}
+                Email {session?.user?.emailVerified && <span className="text-green-600 dark:text-green-400 text-xs sm:text-sm">✓ Verified</span>}
               </label>
               <input
                 type="email"
                 value={session?.user?.email || ''}
                 disabled
-                className="input bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+                className="input bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-sm sm:text-base"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Email cannot be changed
@@ -343,9 +348,6 @@ export default function ProfilePage() {
 
             {/* Username with availability check */}
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Display Name *
-              </label>
               <UsernameInput
                 value={username}
                 onChange={setUsername}
@@ -359,11 +361,11 @@ export default function ProfilePage() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
                 type="submit"
                 disabled={loading}
-                className="btn btn-primary flex-1"
+                className="btn btn-primary flex-1 text-sm sm:text-base"
               >
                 {loading ? (
                   <>
@@ -380,7 +382,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="btn btn-secondary"
+                className="btn btn-secondary text-sm sm:text-base"
               >
                 Cancel
               </button>
@@ -388,21 +390,21 @@ export default function ProfilePage() {
           </form>
 
           {/* Connected Accounts */}
-          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold mb-2">🔗 Connected Accounts</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold mb-2">🔗 Connected Accounts</h3>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
               Link your social accounts for quick login. You can use any linked account to sign in.
             </p>
             {loadingLinkedAccounts ? (
-              <div className="text-center py-4 text-gray-500">Loading...</div>
+              <div className="text-center py-4 text-gray-500 text-sm">Loading...</div>
             ) : (
               <div className="space-y-3">
                 {/* Google */}
-                <div className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🔵</span>
+                    <span className="text-xl sm:text-2xl flex-shrink-0">🔵</span>
                     <div>
-                      <div className="font-medium">Google</div>
+                      <div className="font-medium text-sm sm:text-base">Google</div>
                       {linkedAccounts.google && (
                         <div className="text-xs text-green-600 dark:text-green-400">✓ Connected</div>
                       )}
@@ -412,7 +414,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => handleUnlinkAccount('google')}
-                      className="btn-social-unlink"
+                      className="btn-social-unlink text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Unlink
                     </button>
@@ -420,7 +422,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=google')}
-                      className="btn-social btn-social-google"
+                      className="btn-social btn-social-google text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Connect
                     </button>
@@ -428,11 +430,11 @@ export default function ProfilePage() {
                 </div>
 
                 {/* GitHub */}
-                <div className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚫</span>
+                    <span className="text-xl sm:text-2xl flex-shrink-0">⚫</span>
                     <div>
-                      <div className="font-medium">GitHub</div>
+                      <div className="font-medium text-sm sm:text-base">GitHub</div>
                       {linkedAccounts.github && (
                         <div className="text-xs text-green-600 dark:text-green-400">✓ Connected</div>
                       )}
@@ -442,7 +444,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => handleUnlinkAccount('github')}
-                      className="btn-social-unlink"
+                      className="btn-social-unlink text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Unlink
                     </button>
@@ -450,7 +452,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=github')}
-                      className="btn-social btn-social-github"
+                      className="btn-social btn-social-github text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Connect
                     </button>
@@ -458,11 +460,11 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Discord */}
-                <div className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
+                <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">🟣</span>
+                    <span className="text-xl sm:text-2xl flex-shrink-0">🟣</span>
                     <div>
-                      <div className="font-medium">Discord</div>
+                      <div className="font-medium text-sm sm:text-base">Discord</div>
                       {linkedAccounts.discord && (
                         <div className="text-xs text-green-600 dark:text-green-400">✓ Connected</div>
                       )}
@@ -472,7 +474,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => handleUnlinkAccount('discord')}
-                      className="btn-social-unlink"
+                      className="btn-social-unlink text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Unlink
                     </button>
@@ -480,7 +482,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => router.push('/auth/link?provider=discord')}
-                      className="btn-social btn-social-discord"
+                      className="btn-social btn-social-discord text-xs sm:text-sm w-full sm:w-auto"
                     >
                       Connect
                     </button>
@@ -491,42 +493,42 @@ export default function ProfilePage() {
           </div>
 
           {/* Danger Zone */}
-          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400 mb-2">
               🚨 Danger Zone
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4">
               Once you delete your account, there is no going back. Please be certain.
             </p>
             {!showDeleteConfirm ? (
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                className="px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base w-full sm:w-auto"
               >
                 Delete Account
               </button>
             ) : (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-600 rounded-lg">
-                <p className="text-sm text-red-800 dark:text-red-200 mb-4 font-semibold">
+              <div className="p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-600 rounded-lg">
+                <p className="text-xs sm:text-sm text-red-800 dark:text-red-200 mb-3 sm:mb-4 font-semibold">
                   ⚠️ Are you absolutely sure? This action cannot be undone!
                 </p>
-                <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                  We'll send a confirmation email to <strong>{session?.user?.email}</strong>. Click the link in the email to permanently delete your account.
+                <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mb-3 sm:mb-4">
+                  We'll send a confirmation email to <strong className="break-all">{session?.user?.email}</strong>. Click the link in the email to permanently delete your account.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={handleRequestAccountDeletion}
                     disabled={deleteLoading}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    className="px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 text-xs sm:text-sm w-full sm:w-auto"
                   >
                     {deleteLoading ? 'Sending...' : '📧 Send Deletion Email'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    className="px-3 sm:px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors text-xs sm:text-sm w-full sm:w-auto"
                   >
                     Cancel
                   </button>
@@ -554,8 +556,8 @@ export default function ProfilePage() {
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div>
-              <h2 className="text-2xl font-bold mb-4">{t('profile.settings.title')}</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">{t('profile.settings.title')}</h2>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
                 Settings coming soon: language, theme, notifications, and more.
               </p>
             </div>

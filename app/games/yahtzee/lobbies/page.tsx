@@ -161,58 +161,58 @@ export default function YahtzeeLobbiesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-16 sm:pt-20">
         {/* Breadcrumbs */}
-        <div className="mb-6 flex items-center gap-2 text-white/80 text-sm">
+        <div className="mb-4 sm:mb-6 flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm overflow-x-auto">
           <button 
             onClick={() => router.push('/')}
-            className="hover:text-white transition-colors"
+            className="hover:text-white transition-colors whitespace-nowrap"
           >
-            🏠 Home
+            🏠 <span className="hidden xs:inline">Home</span>
           </button>
           <span>›</span>
           <button 
             onClick={() => router.push('/games')}
-            className="hover:text-white transition-colors"
+            className="hover:text-white transition-colors whitespace-nowrap"
           >
-            🎮 Games
+            🎮 <span className="hidden xs:inline">Games</span>
           </button>
           <span>›</span>
-          <span className="text-white font-semibold">🎲 Yahtzee Lobbies</span>
+          <span className="text-white font-semibold whitespace-nowrap">🎲 <span className="hidden xs:inline">Yahtzee Lobbies</span></span>
         </div>
 
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">🎲 Yahtzee Lobbies</h1>
-            <p className="text-xl text-white/90">
+        <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+          <div className="flex-1">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">🎲 Yahtzee Lobbies</h1>
+            <p className="text-sm sm:text-base lg:text-xl text-white/90">
               {isAuthenticated ? 'Join a game or create your own lobby!' : 'Browse lobbies and sign in when you want to host or join.'}
             </p>
           </div>
           <button
             onClick={() => router.push('/games')}
-            className="px-6 py-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 text-sm sm:text-base w-full sm:w-auto"
           >
             ← Back to Games
           </button>
         </div>
 
         {!isAuthenticated && (
-          <div className="mb-6 p-4 bg-white/10 border border-white/20 rounded-xl text-white/90">
-            <p className="font-semibold">Want to play?</p>
-            <p className="text-sm">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/10 border border-white/20 rounded-xl text-white/90">
+            <p className="font-semibold text-sm sm:text-base">Want to play?</p>
+            <p className="text-xs sm:text-sm mt-1">
               Sign in or create an account to host lobbies and join games. Guests can still receive invite links later.
             </p>
-            <div className="mt-3 flex gap-3">
+            <div className="mt-3 flex flex-col xs:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => router.push('/auth/login?returnUrl=/games/yahtzee/lobbies')}
-                className="px-4 py-2 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors"
+                className="px-4 py-2 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors text-sm sm:text-base"
               >
                 Sign In
               </button>
               <button
                 onClick={() => router.push('/auth/register?returnUrl=/games/yahtzee/lobbies')}
-                className="px-4 py-2 border border-white/40 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                className="px-4 py-2 border border-white/40 rounded-lg font-semibold hover:bg-white/10 transition-colors text-sm sm:text-base"
               >
                 Create Account
               </button>
@@ -221,10 +221,10 @@ export default function YahtzeeLobbiesPage() {
         )}
 
         {/* Action Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Create Lobby Card - Made bigger and more prominent */}
           <div
-            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-2xl p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-4 border-white/20"
+            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-2xl p-5 sm:p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-2 sm:border-4 border-white/20"
             onClick={() => {
               if (!isAuthenticated) {
                 router.push(`/auth/login?returnUrl=${encodeURIComponent('/lobby/create')}`)
@@ -233,33 +233,33 @@ export default function YahtzeeLobbiesPage() {
               router.push('/lobby/create')
             }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-6xl">✨</div>
-              <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="text-4xl sm:text-6xl">✨</div>
+              <div className="px-2 sm:px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
                 NEW GAME
               </div>
             </div>
-            <h2 className="text-3xl font-bold mb-3">Create New Lobby</h2>
-            <p className="text-white/90 mb-6 text-lg">Start your own Yahtzee game and invite friends to join!</p>
-            <div className="flex items-center text-white font-bold text-lg">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">Create New Lobby</h2>
+            <p className="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base lg:text-lg">Start your own Yahtzee game and invite friends to join!</p>
+            <div className="flex items-center text-white font-bold text-base sm:text-lg">
               <span>Create Now</span>
-              <svg className="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </div>
           </div>
 
           {/* Quick Join Card */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow border-2 border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-4">🔍 Quick Join</h2>
-            <p className="text-sm text-white/80 mb-6">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-5 sm:p-8 hover:shadow-xl transition-shadow border-2 border-white/20">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">🔍 Quick Join</h2>
+            <p className="text-xs sm:text-sm text-white/80 mb-4 sm:mb-6">
               Have a lobby code? Enter it below to join instantly!
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
               <input
                 type="text"
                 placeholder="Enter 6-digit code"
-                className="flex-1 px-4 py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 font-mono text-lg"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 font-mono text-base sm:text-lg"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 maxLength={6}
@@ -268,7 +268,7 @@ export default function YahtzeeLobbiesPage() {
               <button
                 onClick={handleJoinByCode}
                 disabled={!joinCode || joinCode.length !== 6 || !isAuthenticated}
-                className="px-8 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
+                className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg text-sm sm:text-base"
               >
                 Join
               </button>
@@ -282,20 +282,20 @@ export default function YahtzeeLobbiesPage() {
         </div>
 
         {/* Active Lobbies */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-white">Active Yahtzee Lobbies</h2>
-              <p className="text-sm text-white/80 mt-1">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">Active Yahtzee Lobbies</h2>
+              <p className="text-xs sm:text-sm text-white/80 mt-1">
                 {lobbies.length} {lobbies.length === 1 ? 'lobby' : 'lobbies'} available
               </p>
             </div>
             <button
               onClick={loadLobbies}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
               title="Refresh"
             >
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
@@ -308,65 +308,75 @@ export default function YahtzeeLobbiesPage() {
               ))}
             </div>
           ) : lobbies.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 mb-4">
-                <span className="text-5xl">🎲</span>
+            <div className="text-center py-12 sm:py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10 mb-4">
+                <span className="text-4xl sm:text-5xl">🎲</span>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">No Active Lobbies</h3>
-              <p className="text-white/80 mb-6">Be the first to create one and start playing!</p>
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">No Active Lobbies</h3>
+              <p className="text-sm sm:text-base text-white/80 mb-4 sm:mb-6 px-4">Be the first to create one and start playing!</p>
               <button
                 onClick={() => router.push('/lobby/create')}
-                className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105"
+                className="px-5 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105 text-sm sm:text-base"
               >
                 Create First Lobby
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {lobbies.map((lobby, index) => (
                 <div
                   key={lobby.id}
                   onClick={() => router.push(`/lobby/${lobby.code}`)}
-                  className="group bg-white/10 backdrop-blur-sm rounded-xl p-5 border-2 border-white/20 hover:border-white/60 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 animate-fade-in hover:bg-white/20"
+                  className="group bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-5 border-2 border-white/20 hover:border-white/60 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 animate-fade-in hover:bg-white/20"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-white mb-1 group-hover:text-yellow-300 transition-colors">
+                  <div className="flex items-start justify-between mb-3 gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base sm:text-lg text-white mb-1 group-hover:text-yellow-300 transition-colors truncate">
                         {lobby.name}
                       </h3>
-                      <div className="flex items-center gap-2 text-sm text-white/80">
-                        <span className="font-mono bg-white/20 text-white px-2 py-0.5 rounded font-bold">
+                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-white/80 flex-wrap">
+                        <span className="font-mono bg-white/20 text-white px-1.5 sm:px-2 py-0.5 rounded font-bold text-xs">
                           {lobby.code}
                         </span>
-                        <span>•</span>
+                        <span className="hidden xs:inline">•</span>
                         <span className="truncate">
                           👤 {lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'}
                         </span>
                       </div>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                    <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold flex items-center gap-1 sm:gap-1.5 flex-shrink-0 ${
                       lobby.games.length > 0 && lobby.games[0].status === 'playing'
                         ? 'bg-green-500/80 text-white'
                         : 'bg-yellow-500/80 text-white'
                     }`}>
-                      <div className={`w-2 h-2 rounded-full ${
+                      <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                         lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-white animate-pulse' : 'bg-white'
                       }`}></div>
-                      {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
-                        `Playing (${lobby.games[0]._count.players})`
-                      ) : (
-                        'Waiting'
-                      )}
+                      <span className="hidden xs:inline">
+                        {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
+                          `Playing (${lobby.games[0]._count.players})`
+                        ) : (
+                          'Waiting'
+                        )}
+                      </span>
+                      <span className="xs:hidden">
+                        {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
+                          lobby.games[0]._count.players
+                        ) : (
+                          '⏳'
+                        )}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-white/80">
                       👥 Max {lobby.maxPlayers} players
                     </span>
                     <span className="text-yellow-300 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                      Join Game
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span className="hidden xs:inline">Join Game</span>
+                      <span className="xs:hidden">Join</span>
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </span>
