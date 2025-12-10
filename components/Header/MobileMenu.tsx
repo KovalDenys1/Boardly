@@ -55,22 +55,22 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
         <div className="relative" style={{ width: 'clamp(24px, 2.5vw, 28px)', height: 'clamp(24px, 2.5vw, 28px)' }}>
           {/* Animated hamburger icon */}
           <span
-            className={`absolute left-0 h-0.5 bg-gray-700 dark:bg-gray-300 transition-all duration-300 ${
+            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${
               mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
             }`}
-            style={{ width: '100%' }}
+            style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none' }}
           />
           <span
-            className={`absolute left-0 top-1/2 h-0.5 bg-gray-700 dark:bg-gray-300 transition-all duration-300 ${
+            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${
               mobileMenuOpen ? 'opacity-0' : 'opacity-100'
             }`}
-            style={{ width: '100%' }}
+            style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)' }}
           />
           <span
-            className={`absolute left-0 h-0.5 bg-gray-700 dark:bg-gray-300 transition-all duration-300 ${
+            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${
               mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
             }`}
-            style={{ width: '100%' }}
+            style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none' }}
           />
         </div>
       </button>
