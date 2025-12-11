@@ -203,6 +203,15 @@ export async function GET(request: NextRequest) {
                 select: {
                   players: true
                 }
+              },
+              players: {
+                select: {
+                  user: {
+                    select: {
+                      isBot: true
+                    }
+                  }
+                }
               }
             },
           },
@@ -218,16 +227,27 @@ export async function GET(request: NextRequest) {
       )
     ]) as any[]
 
-    // Filter by player count if specified
-    let filteredLobbies = lobbies
-    if (minPlayers || maxPlayers) {
-      filteredLobbies = lobbies.filter(lobby => {
-        const playerCount = lobby.games[0]?._count?.players || 0
+    // Filter by player count if specified AND filter out games with only bots or no human players
+    let filteredLobbies = lobbies.filter(lobby => {
+      const game = lobby.games[0]
+      if (!game) return false
+      
+      // Count human (non-bot) players
+      const humanPlayerCount = game.players?.filter((p: any) => !p.user.isBot).length || 0
+      
+      // Exclude games with no human players (abandoned or bot-only games)
+      if (humanPlayerCount === 0) return false
+      
+      // Apply player count filters
+      if (minPlayers || maxPlayers) {
+        const playerCount = game._count?.players || 0
         const min = minPlayers ? parseInt(minPlayers) : 0
         const max = maxPlayers ? parseInt(maxPlayers) : Infinity
         return playerCount >= min && playerCount <= max
-      })
-    }
+      }
+      
+      return true
+    })
 
     // Sort by player count if requested (can't be done in SQL easily with nested count)
     if (sortBy === 'playerCount') {

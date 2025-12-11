@@ -96,6 +96,18 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    // Verify bot player exists and it's actually a bot
+    const botPlayer = game.players.find(p => p.userId === botUserId)
+    if (!botPlayer) {
+      log.error('Bot player not found in game', undefined, { botUserId, gameId: game.id })
+      return NextResponse.json({ error: 'Bot player not found' }, { status: 404 })
+    }
+
+    if (!botPlayer.user.isBot) {
+      log.error('Player is not a bot', undefined, { botUserId, gameId: game.id })
+      return NextResponse.json({ error: 'Player is not a bot' }, { status: 400 })
+    }
+
     log.info('Game found, processing bot turn', {
       gameId: game.id,
       statePreview: game.state?.substring(0, 100)
