@@ -52,6 +52,8 @@ import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
+import FriendsListModal from '@/components/FriendsListModal'
+import { showToast } from '@/lib/i18n-toast'
 
 function LobbyPageContent() {
   const router = useRouter()
@@ -112,6 +114,9 @@ function LobbyPageContent() {
 
   // Selected player for viewing their scorecard
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+
+  // Friends invite modal state
+  const [showFriendsModal, setShowFriendsModal] = useState(false)
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
@@ -215,6 +220,40 @@ function LobbyPageContent() {
             ...prevGame,
             state: JSON.stringify(parsedState),
           }))
+          
+          // Sync roll history from game state
+          if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
+            const lastRoll = parsedState.data.lastRoll
+            // Use 'any' type because actual player object from DB includes 'user' relation
+            const player = game.players.find((p: any) => p.id === lastRoll.playerId) as any
+            
+            // Safety check: ensure player exists and has required data
+            if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
+              const playerCount = game.players.length
+              const currentRound = parsedState.data.round || 1
+              const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+              
+              // Check if this roll is already in history (by timestamp)
+              setRollHistory(prev => {
+                const exists = prev.some(entry => 
+                  Math.abs(entry.timestamp - lastRoll.timestamp) < 1000 // Within 1 second
+                )
+                
+                if (exists) return prev
+                
+                return [...prev, {
+                  id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
+                  playerName: player.user.username,
+                  dice: lastRoll.dice,
+                  rollNumber: lastRoll.rollNumber,
+                  turnNumber: turnNumber,
+                  held: lastRoll.held,
+                  isBot: player.user.isBot || false,
+                  timestamp: lastRoll.timestamp,
+                }]
+              })
+            }
+          }
         }
         
         // Note: Bot move detection handled by bot-visualization.ts
@@ -224,7 +263,7 @@ function LobbyPageContent() {
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id])
+  }, [game?.id, game?.players])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -581,20 +620,88 @@ function LobbyPageContent() {
     }
   }, [])
 
-  const handleLeaveLobby = () => {
-    if (socket) {
-      socket.emit('leave-lobby', code)
-      socket.disconnect()
+  const handleLeaveLobby = async () => {
+    try {
+      // Call leave API
+      const res = await fetch(`/api/lobby/${code}/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        showToast.error('errors.unexpected')
+        clientLogger.error('Failed to leave lobby:', data.error)
+        return
+      }
+
+      // Disconnect socket
+      if (socket) {
+        socket.emit('leave-lobby', code)
+        socket.disconnect()
+      }
+
+      // Show appropriate message
+      if (data.gameAbandoned) {
+        showToast.info('lobby.gameAbandoned')
+      } else {
+        showToast.success('lobby.leftLobby')
+      }
+
+      // Redirect
+      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
+    } catch (error) {
+      clientLogger.error('Error leaving lobby:', error)
+      showToast.error('errors.unexpected')
+      
+      // Fallback: disconnect and redirect anyway
+      if (socket) {
+        socket.emit('leave-lobby', code)
+        socket.disconnect()
+      }
+      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
     }
-    router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
   }
 
   const handleAddBot = async () => {
     await addBotToLobby()
   }
 
-  const canStartGame = lobby?.creatorId === session?.user?.id || 
+  const handleInviteFriends = useCallback(async (friendIds: string[]) => {
+    if (!lobby || friendIds.length === 0) return
+
+    clientLogger.log('Inviting friends to lobby', { friendIds, lobbyCode: code })
+
+    try {
+      // Create lobby join link
+      const lobbyUrl = `${window.location.origin}/lobby/join/${code}`
+      
+      // TODO: Implement invitation system (e.g., notifications, direct messages, etc.)
+      // For now, just copy the link to clipboard and show toast
+      
+      await navigator.clipboard.writeText(lobbyUrl)
+      showToast.success('lobby.invite.linkCopied', undefined, { 
+        count: friendIds.length 
+      })
+      
+      clientLogger.log('Lobby link copied for friends', { url: lobbyUrl, friendCount: friendIds.length })
+      
+      // Close modal
+      setShowFriendsModal(false)
+    } catch (error) {
+      clientLogger.error('Failed to invite friends', { error })
+      showToast.error('errors.general')
+    }
+  }, [lobby, code])
+
+  const isCreator = lobby?.creatorId === session?.user?.id || 
     (isGuest && lobby?.creatorId === guestId)
+  const playerCount = game?.players?.length || 0
+  // Can start game if user is creator (single player games are allowed - bot will be auto-added)
+  const canStartGame = isCreator
   const isInGame = game?.players?.some((p: any) => 
     p.userId === getCurrentUserId() || 
     (isGuest && p.userId === guestId)
@@ -674,6 +781,7 @@ function LobbyPageContent() {
           startingGame={startingGame}
           onStartGame={handleStartGame}
           onAddBot={handleAddBot}
+          onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
           getCurrentUserId={getCurrentUserId}
         />
       ) : (
@@ -1114,6 +1222,16 @@ function LobbyPageContent() {
         isReconnecting={isReconnecting}
         reconnectAttempt={reconnectAttempt}
       />
+
+      {/* Friends Invite Modal */}
+      {!isGuest && (
+        <FriendsListModal
+          isOpen={showFriendsModal}
+          onClose={() => setShowFriendsModal(false)}
+          onInvite={handleInviteFriends}
+          lobbyCode={code}
+        />
+      )}
     </div>
   )
 }

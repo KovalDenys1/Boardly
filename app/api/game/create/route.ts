@@ -94,6 +94,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate minimum players
+    const playerCount = waitingGame.players?.length || 0
+    if (playerCount < 2) {
+      const log = apiLogger('POST /api/game/create')
+      log.warn('Attempted to start game with insufficient players', { 
+        playerCount, 
+        gameId: waitingGame.id 
+      })
+      return NextResponse.json({ 
+        error: 'At least 2 players are required to start the game',
+        details: 'Please add a bot or wait for another player to join' 
+      }, { status: 400 })
+    }
+
     // Create game instance based on type
     let gameEngine: any
     let gameConfig: GameConfig
@@ -121,7 +135,7 @@ export async function POST(request: NextRequest) {
     for (const player of sortedPlayers) {
       gameEngine.addPlayer({
         id: player.userId,
-        name: player.user.name || 'Unknown',
+        name: player.user.username || 'Unknown',
         score: player.score,
         isActive: true,
       })
@@ -231,7 +245,7 @@ export async function POST(request: NextRequest) {
         state: gameEngine.getState(),
         players: game.players.map(p => ({
           id: p.userId,
-          name: p.user.name || 'Unknown',
+          name: p.user.username || 'Unknown',
           score: p.score,
         })),
       }

@@ -12,11 +12,10 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   username      String?   @unique
+  friendCode    String?   @unique // Short numeric code for adding friends (e.g., "12345")
   passwordHash  String?
   image         String?
-  name          String?
   isBot         Boolean   @default(false) // Flag for AI bot players
-  botDifficulty String?   // For future: easy, medium, hard
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   
@@ -24,6 +23,12 @@ model User {
   sessions      Session[]
   lobbies       Lobby[]   @relation("LobbyCreator")
   players       Player[]
+  
+  // Friend system
+  sentFriendRequests     FriendRequest[] @relation("SentRequests")
+  receivedFriendRequests FriendRequest[] @relation("ReceivedRequests")
+  friendshipsInitiated   Friendship[]    @relation("FriendshipsInitiated")
+  friendshipsReceived    Friendship[]    @relation("FriendshipsReceived")
 }
 
 model Account {
@@ -106,31 +111,86 @@ model Game {
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id])
   state     String   @db.Text // JSON string with game state
-  status    String   @default("waiting") // waiting, playing, finished
+  status    GameStatus   @default(waiting)
+  gameType  GameType     @default(yahtzee)
+  abandonedAt DateTime?
   currentTurn Int    @default(0)
   lastMoveAt DateTime @default(now()) // Track when last move was made for timer
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   players   Player[]
-  
   @@index([lobbyId])
   @@index([status])
   @@index([createdAt])
 }
 
+
+enum GameStatus {
+  waiting
+  playing
+  finished
+  abandoned
+  cancelled
+}
+
+enum GameType {
+  yahtzee
+  chess
+  guess_the_spy
+  uno
+  other
+}
+
 model Player {
   id        String   @id @default(cuid())
   gameId    String
-  game      Game     @relation(fields: [gameId], references: [id])
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   score     Int      @default(0)
-  scorecard String?  @db.Text // JSON string with Yahtzee scorecard
+  finalScore Int?    // Final score after game ends
+  placement Int?     // Final placement (1st, 2nd, 3rd, 4th)
+  scorecard String?  @db.Text // JSON string with game-specific scorecard
   position  Int      // Player position in game (0, 1, 2, 3)
   isReady   Boolean  @default(false)
+  isWinner  Boolean  @default(false)
   createdAt DateTime @default(now())
   
   @@unique([gameId, userId])
   @@index([gameId])
   @@index([userId])
+}
+
+// Friend request system
+model FriendRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  sender     User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("pending") // pending, accepted, rejected, cancelled
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Friendship (accepted friend relationships)
+model Friendship {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user1     User     @relation("FriendshipsInitiated", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id   String
+  user2     User     @relation("FriendshipsReceived", fields: [user2Id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  // user1Id should always be less than user2Id to avoid duplicates
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([createdAt])
 }

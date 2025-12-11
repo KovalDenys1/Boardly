@@ -2,9 +2,27 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Providers from './providers'
-import Header from '@/components/Header'
+import dynamic from 'next/dynamic'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
+
+// Import Header without SSR to avoid hydration issues with i18n
+const Header = dynamic(() => import('@/components/Header'), {
+  ssr: false,
+  loading: () => (
+    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <div className="flex items-center gap-2 text-2xl font-bold text-white">
+              🎲 Boardly
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+  )
+})
 
 const inter = Inter({ 
   subsets: ['latin'],

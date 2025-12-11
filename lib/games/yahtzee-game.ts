@@ -7,6 +7,13 @@ export interface YahtzeeGameData {
   held: boolean[] // which dice are held
   rollsLeft: number
   scores: YahtzeeScorecard[]
+  lastRoll?: {
+    playerId: string
+    dice: number[]
+    rollNumber: number
+    held: boolean[]
+    timestamp: number
+  }
 }
 
 export class YahtzeeGame extends GameEngine {
@@ -103,6 +110,15 @@ export class YahtzeeGame extends GameEngine {
           heldState[index] ? die : Math.floor(Math.random() * 6) + 1
         )
         gameData.rollsLeft--
+        
+        // Store last roll info for history sync
+        gameData.lastRoll = {
+          playerId: move.playerId,
+          dice: [...gameData.dice],
+          rollNumber: 3 - gameData.rollsLeft,
+          held: [...gameData.held],
+          timestamp: Date.now()
+        }
         break
 
       case 'hold':
@@ -144,7 +160,7 @@ export class YahtzeeGame extends GameEngine {
         gameData.dice = rollDice(5)
         gameData.held = [false, false, false, false, false]
         gameData.rollsLeft = 3
-        gameData.round++
+        // Don't increment round - game ends when all players finish all 13 categories
         
         // Note: currentPlayerIndex is advanced by GameEngine.makeMove() after processMove
         break

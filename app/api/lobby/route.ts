@@ -135,17 +135,53 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get gameType filter from query params
     const { searchParams } = new URL(request.url)
+    
+    // Parse filters
     const gameType = searchParams.get('gameType')
+    const status = searchParams.get('status') // 'waiting', 'playing', 'all'
+    const search = searchParams.get('search') // Search by code or name
+    const minPlayers = searchParams.get('minPlayers')
+    const maxPlayers = searchParams.get('maxPlayers')
+    const sortBy = searchParams.get('sortBy') || 'createdAt' // 'createdAt', 'playerCount', 'name'
+    const sortOrder = searchParams.get('sortOrder') || 'desc' // 'asc', 'desc'
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     // Build where clause
     const where: any = { isActive: true }
+    
     if (gameType) {
       where.gameType = gameType
     }
 
-    log.info('Fetching lobbies', { gameType, hasFilter: !!gameType })
+    if (search) {
+      where.OR = [
+        { code: { contains: search.toUpperCase(), mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+
+    log.info('Fetching lobbies', { 
+      gameType, 
+      status, 
+      search, 
+      minPlayers, 
+      maxPlayers,
+      sortBy,
+      sortOrder,
+      limit 
+    })
+
+    // Get lobbies with game status filter
+    const gameStatusFilter: any = {}
+    if (status === 'waiting') {
+      gameStatusFilter.status = 'waiting'
+    } else if (status === 'playing') {
+      gameStatusFilter.status = 'playing'
+    } else {
+      // 'all' or no filter - include both waiting and playing
+      gameStatusFilter.status = { in: ['waiting', 'playing'] }
+    }
 
     // Get active lobbies with timeout protection
     const lobbies = await Promise.race([
@@ -159,7 +195,7 @@ export async function GET(request: NextRequest) {
             },
           },
           games: {
-            where: { status: { in: ['waiting', 'playing'] } },
+            where: gameStatusFilter,
             select: { 
               id: true,
               status: true,
@@ -171,16 +207,54 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
+        orderBy: 
+          sortBy === 'name' 
+            ? { name: sortOrder as 'asc' | 'desc' }
+            : { createdAt: sortOrder as 'asc' | 'desc' },
+        take: limit,
       }),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Database query timeout')), 5000)
       )
     ]) as any[]
 
-    log.info('Lobbies fetched successfully', { count: lobbies.length })
-    return NextResponse.json({ lobbies })
+    // Filter by player count if specified
+    let filteredLobbies = lobbies
+    if (minPlayers || maxPlayers) {
+      filteredLobbies = lobbies.filter(lobby => {
+        const playerCount = lobby.games[0]?._count?.players || 0
+        const min = minPlayers ? parseInt(minPlayers) : 0
+        const max = maxPlayers ? parseInt(maxPlayers) : Infinity
+        return playerCount >= min && playerCount <= max
+      })
+    }
+
+    // Sort by player count if requested (can't be done in SQL easily with nested count)
+    if (sortBy === 'playerCount') {
+      filteredLobbies.sort((a, b) => {
+        const countA = a.games[0]?._count?.players || 0
+        const countB = b.games[0]?._count?.players || 0
+        return sortOrder === 'asc' ? countA - countB : countB - countA
+      })
+    }
+
+    // Calculate statistics
+    const stats = {
+      totalLobbies: filteredLobbies.length,
+      waitingLobbies: filteredLobbies.filter(l => l.games[0]?.status === 'waiting').length,
+      playingLobbies: filteredLobbies.filter(l => l.games[0]?.status === 'playing').length,
+      totalPlayers: filteredLobbies.reduce((sum, l) => sum + (l.games[0]?._count?.players || 0), 0),
+    }
+
+    log.info('Lobbies fetched successfully', { 
+      count: filteredLobbies.length,
+      stats 
+    })
+    
+    return NextResponse.json({ 
+      lobbies: filteredLobbies,
+      stats 
+    })
   } catch (error) {
     log.error('Get lobbies error', error as Error, { 
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
@@ -190,7 +264,13 @@ export async function GET(request: NextRequest) {
     // Return empty array instead of error to prevent UI from breaking
     return NextResponse.json({ 
       lobbies: [],
+      stats: {
+        totalLobbies: 0,
+        waitingLobbies: 0,
+        playingLobbies: 0,
+        totalPlayers: 0,
+      },
       error: 'Failed to load lobbies. Please try again.',
-    }, { status: 200 }) // Changed to 200 with error message
+    }, { status: 200 })
   }
 }

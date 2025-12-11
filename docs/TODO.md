@@ -2,7 +2,7 @@
 
 > Goal: Build a production-ready multiplayer board games platform with monetization enabled
 
-## 🎯 Current Status (November 28, 2025)
+## 🎯 Current Status (December 9, 2025)
 
 **✅ LIVE IN PRODUCTION**: [boardly.online](https://boardly.online)
 
@@ -13,87 +13,100 @@
 - ✅ Guest mode for instant play
 - ✅ Smart AI opponents with probability-based decisions
 - ✅ Production infrastructure (Vercel + Render + Supabase)
-- ✅ Error tracking with Sentry
+- ✅ Error tracking with Sentry (optional, quota-saving)
 - ✅ Email service with Resend
-- ✅ Turn timer with auto-scoring
-- ✅ In-game chat system
-- ✅ Responsive UI with dark mode
+- ✅ Turn timer with auto-scoring and persistence
+- ✅ In-game chat system with scroll controls
+- ✅ Fully responsive mobile UI with tabs
 - ✅ Sound effects and celebrations
 - ✅ Project cleanup and English-only codebase
 - ✅ Comprehensive documentation
+- ✅ Internationalization (English/Ukrainian)
+- ✅ Unit testing (114 tests passing)
+- ✅ WebSocket reconnection with exponential backoff
+- ✅ Analytics integration (Vercel Analytics + Speed Insights)
+- ✅ Socket.IO and database monitoring
+- ✅ Performance optimizations (code splitting, caching)
+- ✅ SEO with Open Graph images
+- ✅ Game History feature with filters and pagination
+- ✅ Socket.IO reliability improvements for Render free tier
+- ✅ Abandoned games cleanup cron job
+- ✅ Lobby improvements (filters, search, sorting, stats UI)
+- ✅ Stuck games auto-abandon fix (when humans leave with bots)
+
+### 🚧 In Progress
+- 🎉 **Deployed to Production** - December 9, 2025
+  - Lobby filters and search
+  - Game history
+  - Stuck games fix
 
 ## 📅 Development Timeline
 
 | Date | Focus | Key Deliverables | Status |
 | --- | --- | --- | --- |
-| **Phase 1: Foundation (Nov 19-28)** |
-| Nov 19 | Inventory | Full audit of features, bugs, UX gaps | ✅ DONE |
-| Nov 20 | Infrastructure | CI for lint/test/build, PR quality gates | ✅ DONE |
-| Nov 21 | Backend stability | Lobby lifecycle, reconnect flows, monitoring | ✅ DONE |
-| Nov 22 | Client performance | Code-splitting, render optimization | ✅ DONE |
-| Nov 23 | UX polish | Loaders, tooltips, accessibility | ✅ DONE |
-| Nov 24 | Testing | Integration tests for critical flows | ⏸️ PARTIAL |
-| Nov 25 | Yahtzee balance | Scoring validation, gameplay fixes | ✅ DONE |
-| Nov 26 | Notifications | Email/web push setup | 🔄 IN PROGRESS |
-| Nov 27 | Auth hardening | Password recovery, rate limiting | ✅ DONE |
-| Nov 28 | Documentation | README, CONTRIBUTING, structure cleanup | ✅ DONE |
-| **Phase 2: Growth (Nov 29 - Dec 7)** |
-| Nov 29 | Payments research | Choose provider (Stripe), pricing model | 📋 TODO |
-| Nov 30 | Analytics | Integrate PostHog/Plausible, define KPIs | ✅ DONE |
-| Dec 1 | Chess: Design | Rules, state diagram, data model | 🔄 IN PROGRESS |
-| Dec 2 | I18N Completion | Complete i18n for all components | ✅ DONE |
-| Dec 2 | Unit Testing | Comprehensive test coverage | ✅ DONE |
-| Dec 2 | WebSocket Reconnection | Exponential backoff + UI indicators | ✅ DONE |
-| Dec 2 | Analytics Integration | Track all key user events | ✅ DONE |
-| Dec 2 | Chess: Backend | Game engine, move validation | 📋 TODO |
-| Dec 3 | Chess: Frontend | Board UI, drag-and-drop | 📋 TODO |
-| Dec 4 | Chess: AI | Basic computer opponent | 📋 TODO |
-| Dec 5 | Chess: Polish | Animations, sound effects | 📋 TODO |
-| Dec 6 | Chess: Testing | QA checklist, multiplayer tests | 📋 TODO |
-| Dec 7 | User feedback | Gather insights, prioritize backlog | 📋 TODO |
-| **Phase 3: Expansion (Dec 8-14)** |
-| Dec 8 | Spy: Design | Rules, UX flow, role assignment | 📋 PLANNED |
-| Dec 9 | Spy: Backend | DB schema, API routes | 📋 PLANNED |
-| Dec 10 | Spy: Frontend | Lobby UI, voting system | 📋 PLANNED |
-| Dec 11 | Spy: Polish | Animations, role reveals | 📋 PLANNED |
-| Dec 12 | Spy: Testing | Multiplayer QA with 3-10 players | 📋 PLANNED |
-| Dec 13 | Lobby improvements | Filters, search, game history | 📋 PLANNED |
-| Dec 14 | Social features | Friends list, chat upgrades | 📋 PLANNED |
-| **Phase 4: Monetization (Dec 15-21)** |
-| Dec 15 | Monetization UX | Design premium features, pricing tiers | 📋 PLANNED |
-| Dec 16 | Stripe integration | Checkout flow, webhooks | 📋 PLANNED |
-| Dec 17 | Billing | Receipts, subscription management | 📋 PLANNED |
-| Dec 18 | Premium features | Ad-free, custom themes, stats | 📋 PLANNED |
-| Dec 19 | Testing | Payment flows, role gating | 📋 PLANNED |
-| Dec 20 | Security review | Penetration testing, CSP | 📋 PLANNED |
-| Dec 21 | Observability | Logging, alerts, uptime monitoring | 📋 PLANNED |
-| **Phase 5: Launch (Dec 22-31)** |
-| Dec 22 | Marketing prep | Landing page, screenshots, copy | 📋 PLANNED |
-| Dec 23 | Community | Discord/Telegram setup | 📋 PLANNED |
-| Dec 24 | Support | FAQ, help documentation | 📋 PLANNED |
+| **Phase 1: Foundation (Nov 19-Dec 5)** |
+| Nov 19-24 | Core features | Lobby system, game engine, bot AI | ✅ DONE |
+| Nov 25 | Production prep | Polish checklist, security improvements | ✅ DONE |
+| Nov 26-27 | Bot automation | Bot turn logic, error handling | ✅ DONE |
+| Nov 28 | Infrastructure | Database optimization, Open Graph, Analytics | ✅ DONE |
+| Nov 30 | UX improvements | Timer persistence, waiting room, sound fixes | ✅ DONE |
+| Dec 1 | Major UX overhaul | Responsive UI, socket improvements | ✅ DONE |
+| Dec 2 | I18N & Testing | Multilingual support, comprehensive tests | ✅ DONE |
+| Dec 2 | Analytics | Vercel Analytics, WebSocket reconnection | ✅ DONE |
+| Dec 3 | Monitoring | Socket.IO monitoring, database monitoring | ✅ DONE |
+| Dec 4 | Testing | API tests for lobby, game-create, game-state | ✅ DONE |
+| Dec 5 | Mobile UX | Responsive tabs, chat improvements | ✅ DONE |
+| **Phase 2: Expansion (Dec 8-14)** |
+| Dec 8 | Spy: Design | Rules, UX flow, role assignment | 📋 TODO |
+| Dec 9 | Spy: Backend | DB schema, API routes, game engine | 📋 TODO |
+| Dec 10 | Spy: Frontend | Lobby UI, voting system | 📋 TODO |
+| Dec 11 | Spy: Polish | Animations, role reveals | 📋 TODO |
+| Dec 12 | Spy: Testing | Multiplayer QA with 3-10 players | 📋 TODO |
+| Dec 13 | Lobby improvements | Filters, search, game history | ✅ DONE |
+| Dec 14 | Social features | Friends list, chat upgrades | 📋 TODO |
+| **Phase 3: Monetization (Dec 15-21)** |
+| Dec 15 | Monetization UX | Design premium features, pricing tiers | 📋 TODO |
+| Dec 16 | Stripe integration | Checkout flow, webhooks | 📋 TODO |
+| Dec 17 | Billing | Receipts, subscription management | 📋 TODO |
+| Dec 18 | Premium features | Ad-free, custom themes, stats | 📋 TODO |
+| Dec 19 | Testing | Payment flows, role gating | 📋 TODO |
+| Dec 20 | Security review | Penetration testing, CSP | 📋 TODO |
+| Dec 21 | Observability | Logging, alerts, uptime monitoring | 📋 TODO |
+| **Phase 4: Launch (Dec 22-31)** |
+| Dec 22 | Marketing prep | Landing page, screenshots, copy | 📋 TODO |
+| Dec 23 | Community | Discord/Telegram setup | 📋 TODO |
+| Dec 24 | Support | FAQ, help documentation | 📋 TODO |
 | Dec 25 | Holiday break | Rest day | 🎄 |
-| Dec 26 | Mobile polish | PWA, responsive QA | 📋 PLANNED |
-| Dec 27 | Performance | Load testing, optimization | 📋 PLANNED |
-| Dec 28 | Final QA | End-to-end testing all games | 📋 PLANNED |
-| Dec 29 | Soft launch | Beta users, collect feedback | 📋 PLANNED |
-| Dec 30 | Bug fixes | Address critical issues | 📋 PLANNED |
-| Dec 31 | Public launch | New Year campaign! 🎉 | 📋 PLANNED |
+| Dec 26 | Mobile polish | PWA, responsive QA | 📋 TODO |
+| Dec 27 | Performance | Load testing, optimization | 📋 TODO |
+| Dec 28 | Final QA | End-to-end testing all games | 📋 TODO |
+| Dec 29 | Soft launch | Beta users, collect feedback | 📋 TODO |
+| Dec 30 | Bug fixes | Address critical issues | 📋 TODO |
+| Dec 31 | Public launch | New Year campaign! 🎉 | 📋 TODO |
+| **Phase 5: Post-Launch (Q1 2026)** |
+| Jan-Feb 2026 | Chess | Classical chess with AI opponent | 🔮 PLANNED |
+| Feb-Mar 2026 | Uno | Card game implementation | 🔮 PLANNED |
+| Mar 2026 | Tournaments | Competitive features | 🔮 PLANNED |
 
 ## 🎮 Game Development Status
 
-### ✅ Yahtzee (Complete)
-- **Status**: Live in production
+### ✅ Yahtzee (Complete - Production)
+- **Status**: Live at [boardly.online](https://boardly.online)
 - **Features**: 
-  - 2-4 player multiplayer
-  - AI opponents
+  - 2-4 player multiplayer with real-time sync
+  - AI opponents with probability-based decisions
   - Turn timer with auto-scoring
   - Sound effects and celebrations
-  - Real-time chat
-  - Roll history
-  - Mobile responsive
+  - Real-time chat with typing indicators
+  - Roll history tracking
+  - Fully responsive mobile UI
+  - Internationalized (EN/UK)
+  - Comprehensive test coverage (80%+)
 
-### 🔄 Chess (In Development)
-- **Target**: December 6, 2025
+### 🔮 Chess (Postponed to Q1 2026)
+- **Status**: Deferred to post-launch
+- **Reason**: Focus on monetization and second game (Spy)
+- **Planned for**: January-February 2026
 - **Features Planned**:
   - Classical chess rules
   - Move validation and checkmate detection
@@ -103,19 +116,21 @@
   - Piece animations
   - Draw offers and resignation
 
-### 📋 Guess the Spy (Planned)
-- **Target**: December 14, 2025
+### 📋 Guess the Spy (In Development - Next Priority)
+- **Target**: December 8-12, 2025
+- **Status**: Starting design phase today (Dec 8)
 - **Features Planned**:
   - 3-10 players
-  - Random role assignment
-  - Location database
-  - Question/answer rounds
-  - Voting system
-  - Score tracking
+  - Random role assignment (Spy vs Regular players)
+  - Location database with categories
+  - Question/answer rounds with timer
+  - Voting system to identify spy
+  - Score tracking across multiple rounds
   - Spy reveal animations
+  - Chat for questioning phase
 
-### 🎯 Future Games
-- Uno
+### 🎯 Future Games (Q1-Q2 2026)
+- Uno (Card game)
 - Connect Four
 - Battleship
 - Codenames
@@ -123,23 +138,27 @@
 
 ## 🚀 Infrastructure Roadmap
 
-### Q4 2025 (Current)
-- ✅ Vercel deployment for frontend
-- ✅ Render deployment for Socket.IO
-- ✅ Supabase PostgreSQL database
+### Q4 2025 (Current - December)
+- ✅ Vercel deployment for frontend (Next.js 14)
+- ✅ Render deployment for Socket.IO server
+- ✅ Supabase PostgreSQL database with connection pooling
 - ✅ Resend transactional emails
-- ✅ Sentry error tracking
+- ✅ Sentry error tracking (optional, quota-saving)
 - ✅ OAuth (Google + GitHub)
-- ✅ Analytics (Vercel Analytics) with comprehensive event tracking
-- 📋 Stripe payments
+- ✅ Vercel Analytics + Speed Insights
+- ✅ Socket.IO monitoring with health checks
+- ✅ Database query monitoring with Prisma middleware
+- 📋 Stripe payments (Dec 15-17)
+- 📋 Email notifications system (post-launch)
 
-### Q1 2026
+### Q1 2026 (Post-Launch)
 - 📋 Redis for caching and session management
-- 📋 CDN for static assets
-- 📋 Load balancing for Socket.IO
-- 📋 Database read replicas
-- 📋 Automated backups
-- 📋 CI/CD pipeline improvements
+- 📋 CDN for static assets (images, sounds)
+- 📋 Load balancing for Socket.IO (horizontal scaling)
+- 📋 Database read replicas for performance
+- 📋 Automated backups with point-in-time recovery
+- 📋 CI/CD pipeline improvements (automated testing)
+- 📋 PWA support for mobile installation
 
 ## 💰 Monetization Strategy
 
@@ -186,24 +205,84 @@
 
 ## 🐛 Known Issues & Tech Debt
 
-### High Priority
-- [x] Add comprehensive test coverage (unit + integration) - **DONE: 74 tests passing, core game logic covered**
-- [x] Implement WebSocket reconnection with state recovery - **DONE: Exponential backoff + UI indicators**
-- [x] Add database connection pooling monitoring - **DONE: Prisma middleware with query tracking**
-- [x] Optimize Socket.IO room management for scale - **DONE: Comprehensive monitoring with health checks**
-
-### Medium Priority
+### High Priority (Post-Launch)
 - [ ] Add game replay functionality
 - [ ] Implement player statistics tracking
 - [ ] Add friend system
 - [ ] Create admin dashboard
 - [ ] Add game history pagination
+- [ ] Email notifications for game invites
+- [ ] Web push notifications
 
-### Low Priority
-- [ ] Add dark/light theme toggle (currently system-based)
-- [ ] Implement custom avatars
-- [ ] Add sound effect volume controls
-- [ ] Create animated tutorials for games
+### Medium Priority (Q1 2026)
+- [ ] Implement spectator mode
+- [ ] Add tournament system
+- [ ] Create leaderboards
+- [ ] Add achievements/badges
+- [ ] Improve mobile PWA support
+- [ ] Add more language translations
+
+### Low Priority (Backlog)
+- [ ] Dark mode customization
+- [ ] Custom sound packs
+- [ ] Avatar customization
+- [ ] Player profiles with bio
+- [ ] Game room templates
+
+### ✅ Completed (Recent)
+- [x] Add comprehensive test coverage (unit + integration) - **DONE Dec 2-4**
+- [x] Implement WebSocket reconnection with state recovery - **DONE Dec 2**
+- [x] Add database connection pooling monitoring - **DONE Dec 3**
+- [x] Optimize Socket.IO room management for scale - **DONE Dec 3**
+- [x] Complete internationalization (EN/UK) - **DONE Dec 1**
+- [x] Add analytics tracking - **DONE Nov 30-Dec 2**
+- [x] Responsive mobile UI - **DONE Nov 30-Dec 5**
+
+---
+
+## 📝 Recent Activity Log (Nov 25 - Dec 5, 2025)
+
+### Week of Nov 25-30
+- **Nov 25**: Production readiness improvements, bot turn automation
+- **Nov 26-27**: Bot synchronization fixes, error handling improvements
+- **Nov 28**: Database optimization, Open Graph images, Vercel Analytics
+- **Nov 30**: Timer persistence, waiting room UX, sound system fixes
+
+### Week of Dec 1-5
+- **Dec 1**: Major UX/UI improvements, responsive design overhaul
+- **Dec 2**: 
+  - Multilingual support (i18n) with English/Ukrainian
+  - Comprehensive testing suite (114 tests)
+  - Analytics integration
+  - WebSocket reconnection with exponential backoff
+- **Dec 3**: 
+  - Socket.IO and database monitoring systems
+  - UI enhancements with custom scrollbars
+  - Player list modal
+- **Dec 4**: 
+  - API tests (lobby, game-create, game-state)
+  - Component responsiveness refactoring
+- **Dec 5**: 
+  - Mobile tabs implementation
+  - Chat improvements with scroll controls
+  - Connection status indicators
+
+### Current Focus (Dec 8-9)
+- **Dec 8 (TODAY)**: 
+  - User Profile enhancements (avatar, bio, stats preview)
+  - Registration/Login UX improvements
+  - Yahtzee minor fixes and polish
+- **Dec 9**: 
+  - Profile statistics page
+  - Password change functionality
+  - Account settings (email notifications, privacy)
+  - Continue Yahtzee improvements
+
+### Next Steps (Dec 10-12)
+- **Dec 10-11**: Start Guess the Spy game (design + backend)
+- **Dec 12**: Spy game frontend and testing
+- **Dec 13-14**: Lobby improvements and social features
+
 - [ ] Add accessibility improvements (screen readers)
 
 ## 📝 Notes

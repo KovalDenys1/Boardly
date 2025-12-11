@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface PasswordInputProps {
   value: string
@@ -30,6 +31,7 @@ export default function PasswordInput({
   required = false,
   autoComplete = 'current-password',
 }: PasswordInputProps) {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
 
   // Calculate password strength
@@ -47,27 +49,24 @@ export default function PasswordInput({
     // Character variety checks
     if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++ // Mixed case
     if (/\d/.test(value)) score++ // Numbers
-    if (/[^a-zA-Z0-9]/.test(value)) score++ // Special characters
 
-    // Cap at 4
-    score = Math.min(score, 4)
+    // Cap at 3 (removed special character requirement)
+    score = Math.min(score, 3)
 
-    const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong']
-    const colors = [
-      'bg-red-500',
-      'bg-orange-500',
-      'bg-yellow-500',
-      'bg-blue-500',
-      'bg-green-500',
+    const strengthLevels = [
+      { key: 'weak', label: t('auth.password.weak', 'Weak'), color: 'bg-red-500' },
+      { key: 'fair', label: t('auth.password.fair', 'Fair'), color: 'bg-yellow-500' },
+      { key: 'good', label: t('auth.password.good', 'Good'), color: 'bg-blue-500' },
+      { key: 'strong', label: t('auth.password.strong', 'Strong'), color: 'bg-green-500' },
     ]
 
     return {
       score,
-      label: labels[score],
-      color: colors[score],
-      percentage: (score / 4) * 100,
+      label: strengthLevels[score].label,
+      color: strengthLevels[score].color,
+      percentage: (score / 3) * 100,
     }
-  }, [value])
+  }, [value, t])
 
   return (
     <div>
@@ -103,45 +102,45 @@ export default function PasswordInput({
 
       {/* Password Strength Meter */}
       {showStrength && value && (
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              Password strength:
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              {t('auth.password.strength', 'Password strength')}:
             </span>
-            <span className={`text-xs font-semibold ${
-              strength.score === 0 ? 'text-red-600' :
-              strength.score === 1 ? 'text-orange-600' :
-              strength.score === 2 ? 'text-yellow-600' :
-              strength.score === 3 ? 'text-blue-600' :
-              'text-green-600'
+            <span className={`text-xs font-bold ${
+              strength.score === 0 ? 'text-red-600 dark:text-red-400' :
+              strength.score === 1 ? 'text-yellow-600 dark:text-yellow-400' :
+              strength.score === 2 ? 'text-blue-600 dark:text-blue-400' :
+              'text-green-600 dark:text-green-400'
             }`}>
               {strength.label}
             </span>
           </div>
-          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          
+          {/* Progress bar */}
+          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
             <div
-              className={`h-full ${strength.color} transition-all duration-300 ease-out`}
+              className={`h-full ${strength.color} transition-all duration-500 ease-out shadow-sm`}
               style={{ width: `${strength.percentage}%` }}
             />
           </div>
           
           {/* Password Requirements */}
-          <div className="mt-2 space-y-1">
+          <div className="mt-3 space-y-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              {t('auth.password.requirements', 'Password requirements')}:
+            </p>
             <PasswordRequirement
               met={value.length >= 8}
-              text="At least 8 characters"
+              text={t('auth.password.requirement.length', 'At least 8 characters')}
             />
             <PasswordRequirement
               met={/[a-z]/.test(value) && /[A-Z]/.test(value)}
-              text="Upper & lowercase letters"
+              text={t('auth.password.requirement.case', 'Upper & lowercase letters')}
             />
             <PasswordRequirement
               met={/\d/.test(value)}
-              text="At least one number"
-            />
-            <PasswordRequirement
-              met={/[^a-zA-Z0-9]/.test(value)}
-              text="At least one special character"
+              text={t('auth.password.requirement.number', 'At least one number')}
             />
           </div>
         </div>
@@ -158,15 +157,15 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
       ) : (
-        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
         </svg>
       )}
-      <span className={met ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'}>
+      <span className={met ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}>
         {text}
       </span>
     </div>

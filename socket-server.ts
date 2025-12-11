@@ -92,15 +92,58 @@ const allowedOrigins = process.env.CORS_ORIGIN
 const io = new SocketIOServer(server, {
   cors: {
     origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST'],
   },
-  pingTimeout: 60000, // How long to wait for pong before disconnect (60s)
-  pingInterval: 25000, // How often to send ping (25s)
-  transports: ['websocket', 'polling'], // Prefer WebSocket, fallback to polling
-  allowUpgrades: true, // Allow transport upgrades
-  upgradeTimeout: 10000, // Timeout for transport upgrade
-  maxHttpBufferSize: 1e6, // 1MB max buffer
-  connectTimeout: 45000, // Connection timeout
+  // Оптимізовано для Render free tier (можливі холодні старти)
+  pingTimeout: 120000, // 2 хвилини - час очікування відповіді від клієнта
+  pingInterval: 30000, // 30 секунд - інтервал ping повідомлень
+  connectTimeout: 120000, // 2 хвилини - timeout для першого підключення (холодний старт)
+  transports: ['polling', 'websocket'], // Polling надійніший при холодних стартах
+  allowUpgrades: true, // Дозволити upgrade polling → websocket після встановлення з'єднання
+  upgradeTimeout: 30000, // 30 секунд на upgrade
+  maxHttpBufferSize: 1e6, // 1MB - достатньо для ігрових даних
+  allowEIO3: true, // Підтримка старіших клієнтів
 })
+
+// Online users tracking: userId -> Set of socketIds
+const onlineUsers = new Map<string, Set<string>>()
+
+// Helper functions for online status
+function markUserOnline(userId: string, socketId: string) {
+  if (!onlineUsers.has(userId)) {
+    onlineUsers.set(userId, new Set())
+  }
+  onlineUsers.get(userId)!.add(socketId)
+  
+  // Broadcast to friends that user is online
+  io.emit('user-online', { userId })
+  logger.info('User marked online', { userId, socketId, totalOnline: onlineUsers.size })
+}
+
+function markUserOffline(userId: string, socketId: string) {
+  const userSockets = onlineUsers.get(userId)
+  if (userSockets) {
+    userSockets.delete(socketId)
+    
+    // If no more sockets for this user, remove from online list
+    if (userSockets.size === 0) {
+      onlineUsers.delete(userId)
+      
+      // Broadcast to friends that user is offline
+      io.emit('user-offline', { userId })
+      logger.info('User marked offline', { userId, socketId, totalOnline: onlineUsers.size })
+    }
+  }
+}
+
+function getOnlineUserIds(): string[] {
+  return Array.from(onlineUsers.keys())
+}
+
+function isUserOnline(userId: string): boolean {
+  return onlineUsers.has(userId)
+}
 
 // Rate limiting for socket events
 const socketRateLimits = new Map<string, { count: number; resetTime: number }>()
@@ -230,6 +273,15 @@ io.on('connection', (socket) => {
   
   // Track connection in monitor
   socketMonitor.onConnect(socket.id)
+  
+  // Mark user as online if authenticated
+  const userId = socket.data.user?.id
+  if (userId && !socket.data.user?.isGuest) {
+    markUserOnline(userId, socket.id)
+  }
+  
+  // Send online users list to newly connected user
+  socket.emit('online-users', { userIds: getOnlineUserIds() })
 
   socket.on('join-lobby', async (lobbyCode: string) => {
     // Rate limiting
@@ -420,6 +472,12 @@ io.on('connection', (socket) => {
     
     // Track disconnection in monitor
     socketMonitor.onDisconnect(socket.id)
+    
+    // Mark user as offline if authenticated
+    const userId = socket.data.user?.id
+    if (userId && !socket.data.user?.isGuest) {
+      markUserOffline(userId, socket.id)
+    }
   })
 
   socket.on('error', (error) => {

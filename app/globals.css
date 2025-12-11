@@ -1,3 +1,59 @@
+/* Social connect buttons unified style */
+.btn-social {
+  font-size: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  color: #fff;
+  font-weight: 500;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  outline: none;
+  border: none;
+  display: inline-block;
+  min-width: 100px;
+  text-align: center;
+}
+
+/* Provider-specific colors */
+.btn-social-google {
+  background: #4285F4;
+}
+.btn-social-google:hover {
+  background: #357ae8;
+}
+
+.btn-social-github {
+  background: #24292e;
+}
+.btn-social-github:hover {
+  background: #1a1e21;
+}
+
+.btn-social-discord {
+  background: #5865F2;
+}
+.btn-social-discord:hover {
+  background: #4752C4;
+}
+
+.btn-social-unlink {
+  font-size: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.5rem;
+  color: #e53e3e;
+  background: #fff;
+  font-weight: 500;
+  border: none;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+  display: inline-block;
+  min-width: 100px;
+  text-align: center;
+}
+.btn-social-unlink:hover {
+  background: #ffe5e5;
+  color: #c53030;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -252,6 +308,10 @@ input:focus, select:focus, textarea:focus {
 
 .oauth-btn-github {
   @apply bg-gray-900 hover:bg-gray-800 text-white border-gray-900;
+}
+
+.oauth-btn-discord {
+  @apply bg-[#5865F2] hover:bg-[#4752C4] text-white border-[#5865F2];
 }
 
 .scorecard-row {

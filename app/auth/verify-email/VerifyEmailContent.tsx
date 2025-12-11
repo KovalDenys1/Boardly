@@ -9,7 +9,7 @@ import { useToast } from '@/contexts/ToastContext'
 export default function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session } = useSession()
+  const { data: session, update } = useSession()
   const toast = useToast()
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -31,13 +31,17 @@ export default function VerifyEmailContent() {
       }
 
       toast.success('Email verified successfully! You can now play.')
+      
+      // Update session to reflect emailVerified status
+      await update()
+      
       setTimeout(() => router.push('/'), 2000)
     } catch (err: any) {
       toast.error(err.message || 'Verification failed')
     } finally {
       setLoading(false)
     }
-  }, [router, toast])
+  }, [router, toast, update])
 
   useEffect(() => {
     if (token) {
@@ -67,6 +71,9 @@ export default function VerifyEmailContent() {
 
       setSent(true)
       toast.success('Verification email sent! Check your inbox.')
+      
+      // Update session to refresh emailVerified status
+      await update()
     } catch (err: any) {
       toast.error(err.message || 'Failed to resend email')
     } finally {

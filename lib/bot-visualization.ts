@@ -79,7 +79,7 @@ export function detectBotMove(
   if (playerWhoMoved.user?.isBot || playerWhoMoved.userId?.startsWith('bot_')) {
     return {
       botId: playerWhoMoved.userId,
-      botName: playerWhoMoved.user?.username || playerWhoMoved.user?.name || 'Bot',
+      botName: playerWhoMoved.user?.username || 'Bot',
     }
   }
 
