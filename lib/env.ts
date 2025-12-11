@@ -38,7 +38,7 @@ const envSchema = z.object({
   
   // Server Configuration
   HOSTNAME: z.string().default('0.0.0.0'),
-  PORT: z.string().regex(/^\d+$/).transform(Number).default(3000),
+  PORT: z.string().regex(/^\d+$/).default('3000').transform(Number),
   
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional(),
