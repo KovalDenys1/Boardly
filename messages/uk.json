@@ -112,11 +112,39 @@
   },
   "lobby": {
     "title": "Ігрові лобі",
+    "subtitle": "Приєднайтесь до існуючого лобі або створіть власне!",
     "createNew": "Створити нове лобі",
     "joinCode": "Приєднатися за кодом",
     "activeLobbies": "Активні лобі",
     "noLobbies": "Немає активних лобі",
+    "createFirst": "Створити перше лобі",
+    "backToGames": "Назад до ігор",
+    "refresh": "Оновити",
+    "lobbiesAvailable": "Доступно {{count}} лобі",
+    "lobbiesAvailable_one": "Доступно {{count}} лобі",
+    "lobbiesAvailable_other": "Доступно {{count}} лобі",
     "players": "Гравців",
+    "stats": {
+      "total": "Всього лобі",
+      "waiting": "Очікують",
+      "playing": "Грають",
+      "players": "Гравців"
+    },
+    "quick": {
+      "join": "Швидкий вхід",
+      "description": "Є код лобі? Введіть його нижче для миттєвого приєднання!",
+      "placeholder": "Введіть 6-значний код (наприклад, ABC123)",
+      "button": "Приєднатися"
+    },
+    "filters": {
+      "title": "Фільтри",
+      "showFilters": "Показати фільтри",
+      "searchPlaceholder": "Пошук лобі..."
+    },
+    "noLobbiesDescription": {
+      "title": "Немає активних лобі",
+      "description": "Будьте першим, хто створить лобі і почне грати!"
+    },
     "status": {
       "waiting": "Очікування",
       "playing": "В процесі",

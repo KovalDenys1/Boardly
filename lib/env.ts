@@ -38,7 +38,7 @@ const envSchema = z.object({
   
   // Server Configuration
   HOSTNAME: z.string().default('0.0.0.0'),
-  PORT: z.string().regex(/^\d+$/).transform(Number).default('3000'),
+  PORT: z.string().regex(/^\d+$/).transform(Number).default(3000),
   
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional(),
@@ -88,7 +88,7 @@ export function validateEnv(): Env {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Environment validation failed:')
-      error.errors.forEach(err => {
+      error.issues.forEach(err => {
         console.error(`  - ${err.path.join('.')}: ${err.message}`)
       })
       throw new Error('Invalid environment configuration')

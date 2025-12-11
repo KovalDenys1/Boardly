@@ -703,7 +703,7 @@ function LobbyPageContent() {
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            R {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1}/13
+                            R {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
@@ -762,7 +762,7 @@ function LobbyPageContent() {
                         <div>
                           <div className="text-[10px] opacity-75 leading-tight">Round</div>
                           <div className="text-base font-bold leading-tight">
-                            {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1}/13
+                            {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
                           </div>
                         </div>
                       </div>
