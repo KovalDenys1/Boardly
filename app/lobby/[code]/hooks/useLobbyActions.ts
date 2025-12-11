@@ -268,7 +268,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         // Small delay to ensure state is updated
         await new Promise(resolve => setTimeout(resolve, 500))
       }
-      }
 
       const res = await fetch('/api/game/create', {
         method: 'POST',
