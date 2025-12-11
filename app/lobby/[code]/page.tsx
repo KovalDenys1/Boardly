@@ -366,6 +366,40 @@ function LobbyPageContent() {
     clientLogger.log(`🤖 ${event.message}`)
   }, [gameEngine, game?.players?.length])
 
+  const onGameAbandoned = useCallback((data: any) => {
+    clientLogger.log('📡 Game abandoned:', data)
+    
+    const reason = data.reason
+    if (reason === 'no_human_players') {
+      showToast.error('lobby.gameAbandoned')
+    } else if (reason === 'insufficient_players') {
+      showToast.error('lobby.gameAbandoned')
+    }
+    
+    // Refresh lobby data
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+    
+    // Navigate back to lobby list after a short delay
+    setTimeout(() => {
+      router.push('/games/yahtzee/lobbies')
+    }, 3000)
+  }, [router])
+
+  const onPlayerLeft = useCallback((data: any) => {
+    clientLogger.log('📡 Player left:', data)
+    
+    if (data.playerName) {
+      showToast.info('toast.playerLeft', undefined, { player: data.playerName })
+    }
+    
+    // Refresh lobby data
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+  }, [])
+
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
     code,
@@ -379,6 +413,8 @@ function LobbyPageContent() {
     onLobbyUpdate,
     onPlayerJoined,
     onGameStarted,
+    onGameAbandoned,
+    onPlayerLeft,
     onBotAction,
   })
 
