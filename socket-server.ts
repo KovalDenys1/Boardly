@@ -104,8 +104,6 @@ const io = new SocketIOServer(server, {
   upgradeTimeout: 30000, // 30 секунд на upgrade
   maxHttpBufferSize: 1e6, // 1MB - достатньо для ігрових даних
   allowEIO3: true, // Підтримка старіших клієнтів
-  upgradeTimeout: 30000, // Збільшено timeout для upgrade
-  maxHttpBufferSize: 1e6, // 1MB max buffer
 })
 
 // Online users tracking: userId -> Set of socketIds
