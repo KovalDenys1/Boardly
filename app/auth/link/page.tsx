@@ -40,6 +40,31 @@ function LinkAccountContent() {
     }
   }, [provider, router, confirmed])
 
+  const handleConfirmLink = () => {
+    setConfirmed(true)
+    setShowWarning(false)
+    setLinking(true)
+    handleLinkAccount()
+  }
+
+  const getProviderName = useCallback(() => {
+    switch (provider) {
+      case 'google': return 'Google'
+      case 'github': return 'GitHub'
+      case 'discord': return 'Discord'
+      default: return 'OAuth'
+    }
+  }, [provider])
+
+  const getProviderIcon = () => {
+    switch (provider) {
+      case 'google': return '🔵'
+      case 'github': return '⚫'
+      case 'discord': return '🟣'
+      default: return '🔗'
+    }
+  }
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace('/auth/login')
@@ -64,32 +89,7 @@ function LinkAccountContent() {
       setLinking(true)
       handleLinkAccount()
     }
-  }, [status, provider, linking, showWarning, linked, router, handleLinkAccount])
-
-  const handleConfirmLink = () => {
-    setConfirmed(true)
-    setShowWarning(false)
-    setLinking(true)
-    handleLinkAccount()
-  }
-
-  const getProviderName = () => {
-    switch (provider) {
-      case 'google': return 'Google'
-      case 'github': return 'GitHub'
-      case 'discord': return 'Discord'
-      default: return 'OAuth'
-    }
-  }
-
-  const getProviderIcon = () => {
-    switch (provider) {
-      case 'google': return '🔵'
-      case 'github': return '⚫'
-      case 'discord': return '🟣'
-      default: return '🔗'
-    }
-  }
+  }, [status, provider, linking, showWarning, linked, router, handleLinkAccount, getProviderName])
 
   // Show warning about different email before linking
   if (showWarning) {

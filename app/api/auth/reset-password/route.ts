@@ -8,8 +8,8 @@ import { apiLogger } from '@/lib/logger'
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Token is required'),
   password: z
-    .string({ required_error: 'Password is required' })
-    .min(8, 'Password must be at least 8 characters')
+    .string()
+    .min(8, 'Password is required and must be at least 8 characters')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/\d/, 'Password must contain at least one number')

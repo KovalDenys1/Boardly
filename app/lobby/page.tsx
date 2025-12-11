@@ -10,6 +10,7 @@ import LobbyStats from '@/components/LobbyStats'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import i18n from '@/i18n'
 
 let socket: Socket
 
@@ -42,7 +43,7 @@ interface LobbyListResponse {
 }
 
 export default function LobbyListPage() {
-  const { t } = useTranslation()
+  const { t, ready } = useTranslation()
   const router = useRouter()
   const { data: session } = useSession()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
@@ -176,6 +177,11 @@ export default function LobbyListPage() {
     if (joinCode) {
       router.push(`/lobby/${joinCode.toUpperCase()}`)
     }
+  }
+
+  // Wait for i18n to be ready before rendering
+  if (!ready || !i18n.isInitialized) {
+    return <LoadingSkeleton />
   }
 
   return (

@@ -388,6 +388,40 @@ function LobbyPageContent() {
     clientLogger.log(`🤖 ${event.message}`)
   }, [gameEngine, game?.players?.length])
 
+  const onGameAbandoned = useCallback((data: any) => {
+    clientLogger.log('📡 Game abandoned:', data)
+    
+    const reason = data.reason
+    if (reason === 'no_human_players') {
+      showToast.error('lobby.gameAbandoned')
+    } else if (reason === 'insufficient_players') {
+      showToast.error('lobby.gameAbandoned')
+    }
+    
+    // Refresh lobby data
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+    
+    // Navigate back to lobby list after a short delay
+    setTimeout(() => {
+      router.push('/games/yahtzee/lobbies')
+    }, 3000)
+  }, [router])
+
+  const onPlayerLeft = useCallback((data: any) => {
+    clientLogger.log('📡 Player left:', data)
+    
+    if (data.playerName) {
+      showToast.info('toast.playerLeft', undefined, { player: data.playerName })
+    }
+    
+    // Refresh lobby data
+    if (loadLobbyRef.current) {
+      loadLobbyRef.current()
+    }
+  }, [])
+
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
     code,
@@ -401,6 +435,8 @@ function LobbyPageContent() {
     onLobbyUpdate,
     onPlayerJoined,
     onGameStarted,
+    onGameAbandoned,
+    onPlayerLeft,
     onBotAction,
   })
 
@@ -833,7 +869,7 @@ function LobbyPageContent() {
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            R {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1}/13
+                            R {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
@@ -892,7 +928,7 @@ function LobbyPageContent() {
                         <div>
                           <div className="text-[10px] opacity-75 leading-tight">Round</div>
                           <div className="text-base font-bold leading-tight">
-                            {Math.floor(gameEngine.getRound() / (game?.players?.length || 1)) + 1}/13
+                            {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
                           </div>
                         </div>
                       </div>

@@ -371,7 +371,7 @@ io.on('connection', (socket) => {
     }
     
     // Validate action type
-    const validActions = ['state-change', 'player-left', 'player-joined', 'chat-message']
+    const validActions = ['state-change', 'player-left', 'player-joined', 'chat-message', 'game-abandoned']
     if (!validActions.includes(data.action)) {
       logger.warn('Invalid action type', { action: data.action, socketId: socket.id })
       return
@@ -385,7 +385,7 @@ io.on('connection', (socket) => {
     })
 
     // Notify lobby list page about changes
-    if (data.action === 'player-left' || data.action === 'state-change') {
+    if (data.action === 'player-left' || data.action === 'state-change' || data.action === 'game-abandoned') {
       io.to('lobby-list').emit('lobby-list-update')
     }
   })

@@ -30,11 +30,16 @@
     "enterCode": "Enter 4-digit code (e.g., AB12)",
     "join": "Join",
     "createLobby": "Create Lobby",
+    "createNew": "Create New Lobby",
     "createDescription": "Start your own game and invite friends!",
     "getStarted": "Get Started",
+    "joinCode": "Join with Code",
     "activeLobbies": "Active Lobbies",
     "lobbiesCount": "{{count}} lobby available",
     "lobbiesCount_other": "{{count}} lobbies available",
+    "lobbiesAvailable": "{{count}} lobbies available",
+    "lobbiesAvailable_one": "{{count}} lobby available",
+    "lobbiesAvailable_other": "{{count}} lobbies available",
     "noLobbies": "No Active Lobbies",
     "noLobbiesDescription": "Be the first to create one and start playing!",
     "createFirst": "Create First Lobby",
@@ -44,6 +49,9 @@
     "playing": "Playing ({{count}})",
     "waiting": "Waiting",
     "backToGames": "Back to Games",
+    "players": "Players",
+    "leftLobby": "You left the lobby",
+    "gameAbandoned": "Game ended - not enough players remaining",
     "invite": {
       "title": "Invite Friends",
       "description": "Select friends to invite to this lobby",
@@ -87,10 +95,77 @@
     "status": {
       "all": "All Lobbies",
       "waiting": "Waiting",
-      "playing": "Playing"
+      "playing": "Playing",
+      "finished": "Finished"
     },
-    "leftLobby": "You left the lobby",
-    "gameAbandoned": "Game ended - not enough players remaining"
+    "playersSection": {
+      "title": "Players",
+      "clickToView": "Click to view cards",
+      "fullList": "All Players"
+    },
+    "create": {
+      "title": "Create Lobby",
+      "lobbyName": "Lobby Name",
+      "gameType": "Game Type",
+      "maxPlayers": "Max Players",
+      "password": "Password (Optional)",
+      "passwordPlaceholder": "Leave empty for public lobby",
+      "create": "Create Lobby"
+    },
+    "joinSection": {
+      "title": "Join Lobby",
+      "enterCode": "Enter Lobby Code",
+      "codePlaceholder": "Enter 6-character code",
+      "password": "Password",
+      "passwordPlaceholder": "Enter password",
+      "join": "Join Lobby",
+      "invalidCode": "Invalid lobby code",
+      "lobbyFull": "Lobby is full",
+      "wrongPassword": "Wrong password"
+    },
+    "noLobbiesDescriptionSection": {
+      "title": "No Active Lobbies",
+      "description": "Be the first to create one and start playing!"
+    },
+    "quick": {
+      "join": "Quick Join",
+      "description": "Have a lobby code? Enter it below to join instantly!",
+      "placeholder": "Enter 6-digit code (e.g., ABC123)",
+      "button": "Join"
+    },
+    "game": {
+      "waitingForPlayers": "Waiting for players...",
+      "startGame": "Start Game",
+      "leaveGame": "Leave Game",
+      "addBot": "Add Bot",
+      "currentTurn": "Current Turn",
+      "yourTurn": "Your Turn!",
+      "score": "Score",
+      "round": "Round",
+      "gameOver": "Game Over!",
+      "winner": "Winner",
+      "playAgain": "Play Again",
+      "soundEnabled": "Sound enabled",
+      "soundDisabled": "Sound disabled"
+    },
+    "chat": {
+      "title": "Lobby Chat",
+      "open": "Chat",
+      "placeholder": "Type a message... 😊",
+      "send": "Send",
+      "typing": "Someone is typing...",
+      "clear": "Clear chat",
+      "minimize": "Minimize chat",
+      "noMessages": "No messages yet",
+      "startConversation": "Start the conversation!",
+      "you": "You",
+      "messageCount": "{{count}} total messages",
+      "unread": "{{count}} unread",
+      "openChat": "Open chat. {{unread}}",
+      "noUnread": "No unread messages",
+      "sendHelp": "Press Enter to send • Shift+Enter for new line",
+      "maxLength": "{{current}}/{{max}}"
+    }
   },
   "connection": {
     "reconnecting": "Reconnecting...",
@@ -183,77 +258,6 @@
       "name": "Chess",
       "description": "The timeless strategy game. Checkmate your opponent in this classic board game.",
       "difficulty": "Hard"
-    }
-  },
-  "lobby": {
-    "title": "Game Lobbies",
-    "createNew": "Create New Lobby",
-    "joinCode": "Join with Code",
-    "activeLobbies": "Active Lobbies",
-    "noLobbies": "No active lobbies",
-    "players": "Players",
-    "status": {
-      "waiting": "Waiting",
-      "playing": "In Progress",
-      "finished": "Finished"
-    },
-    "players": {
-      "title": "Players",
-      "clickToView": "Click to view cards",
-      "fullList": "All Players"
-    },
-    "create": {
-      "title": "Create Lobby",
-      "lobbyName": "Lobby Name",
-      "gameType": "Game Type",
-      "maxPlayers": "Max Players",
-      "password": "Password (Optional)",
-      "passwordPlaceholder": "Leave empty for public lobby",
-      "create": "Create Lobby"
-    },
-    "join": {
-      "title": "Join Lobby",
-      "enterCode": "Enter Lobby Code",
-      "codePlaceholder": "Enter 6-character code",
-      "password": "Password",
-      "passwordPlaceholder": "Enter password",
-      "join": "Join Lobby",
-      "invalidCode": "Invalid lobby code",
-      "lobbyFull": "Lobby is full",
-      "incorrectPassword": "Incorrect password"
-    },
-    "game": {
-      "waitingForPlayers": "Waiting for players...",
-      "startGame": "Start Game",
-      "leaveGame": "Leave Game",
-      "addBot": "Add Bot",
-      "currentTurn": "Current Turn",
-      "yourTurn": "Your Turn!",
-      "score": "Score",
-      "round": "Round",
-      "gameOver": "Game Over!",
-      "winner": "Winner",
-      "playAgain": "Play Again",
-      "soundEnabled": "Sound enabled",
-      "soundDisabled": "Sound disabled"
-    },
-    "chat": {
-      "title": "Lobby Chat",
-      "open": "Chat",
-      "placeholder": "Type a message... 😊",
-      "send": "Send",
-      "typing": "Someone is typing...",
-      "clear": "Clear chat",
-      "minimize": "Minimize chat",
-      "noMessages": "No messages yet",
-      "startConversation": "Start the conversation!",
-      "you": "You",
-      "messageCount": "{{count}} total messages",
-      "unread": "{{count}} unread",
-      "openChat": "Open chat. {{unread}}",
-      "noUnread": "No unread messages",
-      "sendHelp": "Press Enter to send • Shift+Enter for new line",
-      "maxLength": "{{current}}/{{max}}"
     }
   },
   "yahtzee": {
@@ -561,7 +565,8 @@
     "deleted": "Deleted successfully",
     "error": "An error occurred",
     "success": "Action completed successfully",
-    "accountDeleted": "Account deleted successfully"
+    "accountDeleted": "Account deleted successfully",
+    "playerLeft": "{{player}} left the game"
   },
   "deleteAccount": {
     "title": "Delete Account",

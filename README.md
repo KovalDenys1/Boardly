@@ -1,13 +1,8 @@
-# 🎮 Boardly - Real-Time Multiplayer Board Games Platform
+# 🎮 Boardly
 
-> Play classic board games with friends online in real-time
-
-**Boardly** is a modern web-based multiplayer gaming platform where you can enjoy classic board games with friends in real-time. Built with Next.js, TypeScript, and Socket.IO for seamless multiplayer experiences.
-
-🌐 **[Play Now at boardly.online](https://boardly.online)** 🎮
+**Boardly** is an open-source real-time multiplayer board games platform built with Next.js, TypeScript, and Socket.IO. This repository contains the complete source code for both the Next.js frontend and standalone Socket.IO server.
 
 ![Boardly Homepage](https://i.imgur.com/qgTmUWd.png)
-*Beautiful gradient UI with real-time multiplayer capabilities*
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black.svg)](https://nextjs.org/)
@@ -15,78 +10,56 @@
 [![Prisma](https://img.shields.io/badge/Prisma-5.0-2D3748.svg)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## 🎯 Current Status
+## 📋 Overview
 
-**Stage**: ✅ **Live in Production**  
-**Website**: [boardly.online](https://boardly.online)  
-**Available Games**: Yahtzee (fully implemented)  
-**In Development**: Chess  
-**Planned**: Guess the Spy, Uno, and more casual multiplayer games
+This project implements a dual-server architecture with real-time WebSocket communication for multiplayer gaming experiences. Currently features Yahtzee with AI opponents, turn-based gameplay, and comprehensive game state management.
 
----
-
-## 🚀 Try It Now!
-
-Visit **[boardly.online](https://boardly.online)** to:
-- 🎮 Play Yahtzee online with friends
-- 👻 Quick start as a guest (no signup required)
-- 🔐 Sign in with Google, GitHub, or Email
-- 🤖 Practice against AI opponents
-- 💬 Chat with other players in real-time
-
-**No installation needed** - just open the link and start playing!
-
-### 🏆 What Makes Boardly Special?
-
-- **True Real-Time Experience** - Powered by Socket.IO for instant synchronization
-- **Smart AI Opponents** - Probability-based bot that makes intelligent decisions
-- **No Account Required** - Guest mode lets you play immediately
-- **Production-Grade Stack** - Next.js, TypeScript, PostgreSQL, deployed on Vercel + Render
-- **Beautiful UI** - Modern gradient design with smooth animations and dark mode
-- **Intelligent Auto-Play** - Timer fallbacks ensure games never stall
+**Current Status:**
+- **Available Games**: Yahtzee (fully implemented)
+- **In Development**: Chess
+- **Planned**: Guess the Spy, Uno, and additional board games
 
 ---
 
-## ✨ Key Features
+## ✨ Features
 
-### 🎲 Games
-- **Yahtzee** - Classic dice game with full rules implementation
-  - Real-time multiplayer (2-4 players)
-  - Smart AI opponents with probability-based decision making
-  - Auto-scoring with intelligent category selection
-  - Turn timer with visual countdown (60s)
-  - Celebration animations for special rolls (Yahtzee, Full House, Straights)
+### 🎲 Game Implementation
+- **Yahtzee** - Complete implementation with standard rules
+  - Real-time multiplayer support (2-4 players)
+  - AI opponents with probability-based decision logic
+  - Automatic scoring and category selection
+  - Turn timer system (60 seconds per turn)
+  - Celebration effects for special combinations
   - Roll history tracking
 
-### 🔐 Authentication & Users
-- **Multiple Access Options**
-  - Email/password registration with email verification (Resend)
-  - Guest mode - play instantly without signup
-  - OAuth login via Google & GitHub
-  - Profile customization (username, avatar)
-- **Session Management** - Secure JWT-based authentication with NextAuth.js
+### 🔐 Authentication
+- Email/password registration with verification flow (Resend)
+- Guest mode for unauthenticated access
+- OAuth integration (Google, GitHub)
+- JWT-based session management (NextAuth.js)
+- Profile management (username, avatar)
 
-### 🎮 Gameplay Features
-- **Lobby System**
-  - Create private/public lobbies with unique codes
-  - Password protection for private games
-  - Easy invite links for friends
-  - Real-time player list updates
-- **In-Game Features**
+### 🎮 Multiplayer System
+- **Lobby Management**
+  - Public and private lobbies with unique codes
+  - Password protection support
+  - Shareable invite links
+  - Real-time player synchronization
+- **Game Features**
   - Real-time chat with typing indicators
-  - Turn timer with visual warnings (last 10 seconds)
-  - Automatic turn progression
+  - Turn timer with visual countdown
+  - Automatic turn advancement
   - Live score updates
-  - Sound effects and celebrations
-  - Bot opponent automation
+  - Bot automation for AI players
 
-### 💻 Technical Features
-- **Dual-Server Architecture** - Next.js (HTTP/API) + standalone Socket.IO server
-- **Real-Time Sync** - Instant game state updates via WebSockets
-- **Responsive Design** - Optimized for desktop, tablet, and mobile
-- **Rate Limiting** - Built-in API protection
-- **Error Tracking** - Sentry integration (optional)
-- **Dark Mode** - System-aware theme switching
+### 💻 Technical Implementation
+- Dual-server architecture (Next.js + Socket.IO)
+- WebSocket-based real-time synchronization
+- Internationalization support (English, Ukrainian)
+- Responsive design for multiple screen sizes
+- API rate limiting
+- Error tracking integration (Sentry)
+- Dark/light theme support
 
 ## 🚀 Quick Start
 
@@ -177,6 +150,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - **[Tailwind CSS 3.4](https://tailwindcss.com/)** - Utility-first styling
 - **[React Hot Toast](https://react-hot-toast.com/)** - Toast notifications
 - **[Canvas Confetti](https://www.npmjs.com/package/canvas-confetti)** - Celebration animations
+- **[react-i18next](https://react.i18next.com/)** - Internationalization (English, Ukrainian)
 
 ### Backend & Services
 - **[NextAuth.js 4.24](https://next-auth.js.org/)** - Authentication (Email + OAuth)
@@ -271,38 +245,38 @@ Boardly/
 └── package.json                    # Dependencies and scripts
 ```
 
-## 🎮 How to Play
+## 🎮 Gameplay
 
 ### Getting Started
-1. **Sign Up** or **Play as Guest** at `/auth/register`
-2. **Create a Lobby** - Set game name, password (optional), max players
-3. **Invite Friends** - Share the unique lobby code or copy invite link
-4. **Start Game** - Lobby creator can start when 2+ players joined
+1. Register an account or continue as guest
+2. Create a lobby with custom settings (name, password, player limit)
+3. Share lobby code or invite link with other players
+4. Start game when minimum 2 players have joined
 
-### Yahtzee Gameplay
-1. **Roll Dice** - Up to 3 rolls per turn
-2. **Hold Dice** - Click dice between rolls to keep them
-3. **Score** - Choose a category after rolling (rollsLeft < 3)
-4. **Turn Timer** - Complete your turn within 60 seconds
-5. **Win** - Highest total score when all categories are filled!
+### Yahtzee Rules
+1. Each turn allows up to 3 dice rolls
+2. Click dice between rolls to hold/release them
+3. Select a scoring category after rolling
+4. Turn timer enforces 60-second limit per turn
+5. Game ends when all players complete their scorecards
 
-### Special Features
-- **Auto-Roll** - If timer expires before rolling, dice roll automatically
-- **Auto-Score** - If timer expires, best available category selected automatically
-- **Celebrations** - Yahtzee (50 points), Straights, Full House trigger animations
-- **Bot Opponents** - AI automatically added if starting with <2 players
+### Automated Features
+- Auto-roll: Dice automatically rolled if timer expires before first roll
+- Auto-score: Best available category selected if timer expires
+- AI players: Bots added automatically for single-player games
 
 ## 🚢 Deployment
 
-**🎉 Live Production**: [boardly.online](https://boardly.online)
+### Live Demo
+A production instance is available at [boardly.online](https://boardly.online) for demonstration purposes.
 
-This project is currently deployed and running in production:
-- **Frontend**: Vercel → [boardly.online](https://boardly.online)
+### Production Stack
+- **Frontend**: Vercel
 - **Socket.IO Server**: Render (Node.js Web Service)
-- **Database**: PostgreSQL on Supabase
-- **Email**: Resend (transactional emails)
-- **Error Tracking**: Sentry (configured and active)
-- **OAuth Providers**: Google & GitHub (fully configured)
+- **Database**: PostgreSQL (Supabase)
+- **Email Service**: Resend
+- **Error Tracking**: Sentry
+- **OAuth Providers**: Google, GitHub
 
 ### Deploy Your Own Instance
 
@@ -351,14 +325,14 @@ npm run db:generate    # Regenerate Prisma Client
 
 ## 🤝 Contributing
 
-Contributions are welcome! Whether you want to:
-- 🎮 Add a new game
-- 🐛 Fix bugs
-- 🎨 Improve UI/UX
-- 📝 Enhance documentation
-- ✨ Suggest features
+Contributions are welcome. Common areas for improvement include:
+- Adding new games
+- Bug fixes and optimizations
+- UI/UX enhancements
+- Documentation improvements
+- Feature suggestions
 
-**How to contribute:**
+### Contribution Process
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
 3. Commit changes: `git commit -m 'Add feature'`
@@ -367,11 +341,13 @@ Contributions are welcome! Whether you want to:
 
 ### Adding a New Game
 
-Check out `lib/games/yahtzee-game.ts` for reference. Each game should:
+Reference implementation: `lib/games/yahtzee-game.ts`
+
+Requirements for new games:
 1. Extend `GameEngine` base class
-2. Implement `validateMove()`, `processMove()`, `getInitialGameData()`
+2. Implement required methods: `validateMove()`, `processMove()`, `getInitialGameData()`
 3. Add game type to Prisma schema
-4. Create lobby UI and game board components
+4. Create lobby and game board UI components
 5. Handle game-specific socket events
 
 See `.github/copilot-instructions.md` for detailed development guidelines.
@@ -411,6 +387,8 @@ All project documentation is centralized in the `/docs` folder:
 - Turn timer with auto-scoring
 - In-game chat
 - Sound effects and celebrations
+- Internationalization (English, Ukrainian)
+- Friend system with invite links
 
 ### 🔄 In Progress
 - ♟️ Chess implementation
@@ -423,10 +401,9 @@ All project documentation is centralized in the `/docs` folder:
 - 🏆 Leaderboards and achievements
 - 💰 Premium subscriptions (Stripe)
 - 📱 Progressive Web App (PWA)
+- 👥 Enhanced friend system
 
 ### 🎯 Future
-- 🌐 Internationalization (i18n)
-- 👥 Friend system
 - 🎮 More games (Connect Four, Battleship, Codenames)
 - 🏅 Tournament mode
 - 📈 Advanced statistics dashboard
@@ -445,46 +422,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - GitHub: [@KovalDenys1](https://github.com/KovalDenys1)
 - Email: kovaldenys@icloud.com
 
-This project serves as both a learning journey and portfolio piece, demonstrating real-time web application development with modern technologies.
-
 ## 🙏 Acknowledgments
 
-Special thanks to the amazing open-source projects:
+This project uses the following open-source technologies:
 
-- [Next.js](https://nextjs.org/) - The React framework
+- [Next.js](https://nextjs.org/) - React framework
 - [Socket.IO](https://socket.io/) - Real-time communication
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
-- [Prisma](https://www.prisma.io/) - Next-generation ORM
+- [Tailwind CSS](https://tailwindcss.com/) - CSS framework
+- [Prisma](https://www.prisma.io/) - Database ORM
 - [NextAuth.js](https://next-auth.js.org/) - Authentication
 - [Supabase](https://supabase.com/) - PostgreSQL hosting
 - [Vercel](https://vercel.com/) - Deployment platform
-
-Built with ❤️ and lots of cacao ☕
-
----
-
-## 🌟 Production Features
-
-This project is live at [boardly.online](https://boardly.online) with:
-- ✅ Real-time multiplayer with WebSocket connections (Socket.IO on Render)
-- ✅ Multiple authentication methods (Email, Google, GitHub, Guest)
-- ✅ Email verification system (Resend)
-- ✅ AI opponents with probability-based decision making
-- ✅ Responsive design for desktop, tablet, and mobile
-- ✅ Automatic turn timer with intelligent fallback actions
-- ✅ Sound effects and celebration animations
-- ✅ Real-time chat with typing indicators
-- ✅ Error tracking and monitoring (Sentry)
-- ✅ PostgreSQL database (Supabase) with Prisma ORM
-- ✅ Rate limiting and API protection
-- ✅ HTTPS and secure connections
-
----
-
-⭐ **[Play Now at boardly.online](https://boardly.online)** ⭐
-
-**Star this repository** if you find it interesting or useful!
-
-💬 **Questions?** Open an issue or reach out!
-
-🎮 **Want to contribute?** PRs are welcome!

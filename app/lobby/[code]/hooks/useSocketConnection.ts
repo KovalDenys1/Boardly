@@ -15,6 +15,8 @@ interface UseSocketConnectionProps {
   onLobbyUpdate: (data: any) => void
   onPlayerJoined: (data: any) => void
   onGameStarted: (data: any) => void
+  onGameAbandoned?: (data: any) => void
+  onPlayerLeft?: (data: any) => void
   onBotAction?: (event: any) => void
 }
 
@@ -30,6 +32,8 @@ export function useSocketConnection({
   onLobbyUpdate,
   onPlayerJoined,
   onGameStarted,
+  onGameAbandoned,
+  onPlayerLeft,
   onBotAction,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
@@ -45,6 +49,8 @@ export function useSocketConnection({
   const onLobbyUpdateRef = useRef(onLobbyUpdate)
   const onPlayerJoinedRef = useRef(onPlayerJoined)
   const onGameStartedRef = useRef(onGameStarted)
+  const onGameAbandonedRef = useRef(onGameAbandoned)
+  const onPlayerLeftRef = useRef(onPlayerLeft)
   const onBotActionRef = useRef(onBotAction)
 
   // Update refs when callbacks change
@@ -55,8 +61,10 @@ export function useSocketConnection({
     onLobbyUpdateRef.current = onLobbyUpdate
     onPlayerJoinedRef.current = onPlayerJoined
     onGameStartedRef.current = onGameStarted
+    onGameAbandonedRef.current = onGameAbandoned
+    onPlayerLeftRef.current = onPlayerLeft
     onBotActionRef.current = onBotAction
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onBotAction])
+  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction])
 
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
@@ -193,6 +201,12 @@ export function useSocketConnection({
     newSocket.on('lobby-update', (data) => onLobbyUpdateRef.current(data))
     newSocket.on('player-joined', (data) => onPlayerJoinedRef.current(data))
     newSocket.on('game-started', (data) => onGameStartedRef.current(data))
+    if (onGameAbandonedRef.current) {
+      newSocket.on('game-abandoned', (data) => onGameAbandonedRef.current?.(data))
+    }
+    if (onPlayerLeftRef.current) {
+      newSocket.on('player-left', (data) => onPlayerLeftRef.current?.(data))
+    }
     if (onBotActionRef.current) {
       newSocket.on('bot-action', (data) => onBotActionRef.current?.(data))
     }
@@ -218,6 +232,8 @@ export function useSocketConnection({
       newSocket.off('lobby-update')
       newSocket.off('player-joined')
       newSocket.off('game-started')
+      newSocket.off('game-abandoned')
+      newSocket.off('player-left')
       newSocket.off('bot-action')
       
       // Gracefully disconnect only if connected
