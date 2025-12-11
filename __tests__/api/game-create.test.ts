@@ -269,7 +269,7 @@ describe('POST /api/game/create', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toContain('Not enough players')
+    expect(data.error).toBe('At least 2 players are required to start the game')
   })
 
   it('should create new waiting game after finished game', async () => {

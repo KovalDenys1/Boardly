@@ -245,18 +245,29 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     try {
       setStartingGame(true)
       
-      // Check if bot needs to be added
-      const needsBot = (game?.players?.length || 0) < 2
-      
-      if (needsBot) {
-        toast.loading('Adding bot player...', { id: 'start-game' })
+      // Check if we need to add a bot first
+      if ((game?.players?.length || 0) < 2) {
+        toast.loading('Adding bot player...', { id: 'add-bot' })
         const botAdded = await addBotToLobby({ auto: true })
-        if (botAdded) {
-          announceBotJoined()
+        toast.dismiss('add-bot')
+        
+        if (!botAdded) {
+          setStartingGame(false)
+          toast.error('Failed to add bot player. Please try again.')
+          return
         }
-        toast.loading('Starting game...', { id: 'start-game' })
-      } else {
-        toast.loading('Starting game...', { id: 'start-game' })
+        
+        // Announce bot joined
+        announceBotJoined()
+        
+        // Wait for lobby to reload and get updated player list
+        if (loadLobbyRef.current) {
+          await loadLobbyRef.current()
+        }
+        
+        // Small delay to ensure state is updated
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
       }
 
       const res = await fetch('/api/game/create', {

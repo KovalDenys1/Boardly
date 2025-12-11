@@ -59,7 +59,7 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
 
   // Monitor for bot turns
   useEffect(() => {
-    if (!isGameStarted || !gameEngine || !game?.id || !game?.players) {
+    if (!isGameStarted || !gameEngine || !game?.id || !game?.players || !Array.isArray(game.players)) {
       return
     }
 
@@ -91,13 +91,13 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
       (p: any) => p.userId === currentPlayer.id
     )
 
-    if (!currentGamePlayer) {
-      clientLogger.warn('🤖 Current player not found in game.players')
+    if (!currentGamePlayer || !currentGamePlayer.user) {
+      clientLogger.warn('🤖 Current player not found in game.players or missing user data')
       return
     }
 
     // Check if current player is a bot
-    const isBot = currentGamePlayer.user?.isBot === true
+    const isBot = currentGamePlayer.user.isBot === true
 
     if (isBot) {
       // Check that bot has rolls available (new turn)

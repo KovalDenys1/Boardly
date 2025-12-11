@@ -158,7 +158,7 @@ export async function POST(
     // Initialize scores array in game state for this player
     try {
       const currentState = JSON.parse(game.state || '{}')
-      if (!currentState.scores) {
+      if (!currentState.scores || !Array.isArray(currentState.scores)) {
         currentState.scores = []
       }
       // Add empty scorecard for new player
@@ -173,6 +173,7 @@ export async function POST(
     } catch (error) {
       const log = apiLogger('POST /api/lobby/[code]')
       log.error('Error updating game state with new player scores', error as Error)
+      // Continue anyway - game state will be initialized on game start
     }
 
     // Notify all clients via WebSocket that a player joined

@@ -101,7 +101,22 @@ export async function POST(
       statePreview: game.state?.substring(0, 100)
     })
 
-    const gameState = JSON.parse(game.state)
+    // Parse game state with error handling
+    let gameState
+    try {
+      gameState = JSON.parse(game.state)
+      // Validate parsed state
+      if (!gameState || typeof gameState !== 'object' || !Array.isArray(gameState.players)) {
+        throw new Error('Invalid game state structure')
+      }
+    } catch (parseError) {
+      log.error('Failed to parse game state', parseError as Error)
+      return NextResponse.json({ 
+        error: 'Corrupted game state. Please restart the game.',
+        code: 'INVALID_STATE'
+      }, { status: 500 })
+    }
+    
     const gameEngine = new YahtzeeGame(game.id)
     gameEngine.restoreState(gameState)
 

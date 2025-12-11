@@ -92,14 +92,18 @@ const allowedOrigins = process.env.CORS_ORIGIN
 const io = new SocketIOServer(server, {
   cors: {
     origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST'],
   },
-  pingTimeout: 120000, // Збільшено до 120s для Render free tier
-  pingInterval: 25000,
-  connectTimeout: 90000, // Збільшено timeout для підключення
-  transports: ['polling', 'websocket'], // Спочатку polling (надійніший для Render), потім upgrade до WebSocket
-  allowUpgrades: true,
-  upgradeTimeout: 30000, // Збільшено timeout для upgrade
-  maxHttpBufferSize: 1e6, // 1MB max buffer
+  // Оптимізовано для Render free tier (можливі холодні старти)
+  pingTimeout: 120000, // 2 хвилини - час очікування відповіді від клієнта
+  pingInterval: 30000, // 30 секунд - інтервал ping повідомлень
+  connectTimeout: 120000, // 2 хвилини - timeout для першого підключення (холодний старт)
+  transports: ['polling', 'websocket'], // Polling надійніший при холодних стартах
+  allowUpgrades: true, // Дозволити upgrade polling → websocket після встановлення з'єднання
+  upgradeTimeout: 30000, // 30 секунд на upgrade
+  maxHttpBufferSize: 1e6, // 1MB - достатньо для ігрових даних
+  allowEIO3: true, // Підтримка старіших клієнтів
 })
 
 // Online users tracking: userId -> Set of socketIds
