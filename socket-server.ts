@@ -95,15 +95,15 @@ const io = new SocketIOServer(server, {
     credentials: true,
     methods: ['GET', 'POST'],
   },
-  // Оптимізовано для Render free tier (можливі холодні старти)
-  pingTimeout: 120000, // 2 хвилини - час очікування відповіді від клієнта
-  pingInterval: 30000, // 30 секунд - інтервал ping повідомлень
-  connectTimeout: 120000, // 2 хвилини - timeout для першого підключення (холодний старт)
-  transports: ['polling', 'websocket'], // Polling надійніший при холодних стартах
-  allowUpgrades: true, // Дозволити upgrade polling → websocket після встановлення з'єднання
-  upgradeTimeout: 30000, // 30 секунд на upgrade
-  maxHttpBufferSize: 1e6, // 1MB - достатньо для ігрових даних
-  allowEIO3: true, // Підтримка старіших клієнтів
+  // Optimized for Render free tier (possible cold starts)
+  pingTimeout: 120000, // 2 minutes - client response timeout
+  pingInterval: 30000, // 30 seconds - ping message interval
+  connectTimeout: 120000, // 2 minutes - initial connection timeout (cold start)
+  transports: ['polling', 'websocket'], // Polling is more reliable during cold starts
+  allowUpgrades: true, // Allow upgrade polling → websocket after connection established
+  upgradeTimeout: 30000, // 30 seconds for upgrade
+  maxHttpBufferSize: 1e6, // 1MB - sufficient for game data
+  allowEIO3: true, // Support for older clients
 })
 
 // Online users tracking: userId -> Set of socketIds

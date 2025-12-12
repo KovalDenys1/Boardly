@@ -82,7 +82,7 @@ function LobbyPageContent() {
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
-  const [chatMinimized, setChatMinimized] = useState(true) // Чат свёрнут по умолчанию
+  const [chatMinimized, setChatMinimized] = useState(true) // Chat minimized by default
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
 
@@ -804,7 +804,7 @@ function LobbyPageContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Показываем информацию о лобби только если игра не началась */}
+      {/* Show lobby info only if game hasn't started */}
       {!isGameStarted && (
         <div className="mb-6">
           <LobbyInfo

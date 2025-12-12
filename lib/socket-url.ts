@@ -19,7 +19,7 @@ if (typeof window === 'undefined') {
  * standalone socket server is discovered without extra env setup.
  */
 export function getBrowserSocketUrl(): string {
-  // Явний URL з змінних середовища має найвищий пріоритет
+  // Explicit URL from environment variables has highest priority
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {
     console.log('🔌 Using explicit Socket URL from env:', process.env.NEXT_PUBLIC_SOCKET_URL)
     return process.env.NEXT_PUBLIC_SOCKET_URL
@@ -46,7 +46,7 @@ export function getBrowserSocketUrl(): string {
     return localUrl
   }
 
-  // Production: Socket.IO на тому ж домені що і додаток
+  // Production: Socket.IO on the same domain as the app
   const derivedPort = port ? `:${port}` : ''
   const productionUrl = `${protocol}//${hostname}${derivedPort}`
   console.log('🔌 Production mode, using same origin:', productionUrl)
