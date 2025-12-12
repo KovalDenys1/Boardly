@@ -240,9 +240,8 @@ function LobbyPageContent() {
             
             // Safety check: ensure player exists and has required data
             if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
-              const playerCount = game.players.length
-              const currentRound = parsedState.data.round || 1
-              const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+              // Use game engine to get correct turn number for the player who made the roll
+              const turnNumber = newEngine.getRound()
               
               // Check if this roll is already in history (by timestamp)
               setRollHistory(prev => {
@@ -869,7 +868,7 @@ function LobbyPageContent() {
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            R {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
+                            R {gameEngine.getRound()}/13
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
@@ -928,7 +927,7 @@ function LobbyPageContent() {
                         <div>
                           <div className="text-[10px] opacity-75 leading-tight">Round</div>
                           <div className="text-base font-bold leading-tight">
-                            {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
+                            {gameEngine.getRound()}/13
                           </div>
                         </div>
                       </div>

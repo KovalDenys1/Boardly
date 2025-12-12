@@ -142,7 +142,7 @@ export function useGameActions(props: UseGameActionsProps) {
         const rollNumber = 3 - newEngine.getRollsLeft()
         const newEntry: RollHistoryEntry = {
           id: `${Date.now()}_${Math.random()}`,
-          turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
+          turnNumber: newEngine.getRound(),
           playerName: currentPlayer?.name || username || 'You',
           rollNumber: rollNumber,
           dice: newEngine.getDice(),
