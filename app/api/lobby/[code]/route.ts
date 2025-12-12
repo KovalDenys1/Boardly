@@ -68,14 +68,6 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
     const lobby = await prisma.lobby.findUnique({
       where: { code: params.code },
       include: {
@@ -96,7 +88,7 @@ export async function POST(
     }
 
     // Find or create active game
-    let game = lobby.games.find((g: any) => g.status === 'waiting')
+    let game = lobby.games.find((g) => g.status === 'waiting')
 
     if (!game) {
       // Create new game with initial Yahtzee state
@@ -181,8 +173,8 @@ export async function POST(
       `lobby:${params.code}`,
       'player-joined',
       {
-        username: user.username,
-        userId: user.id,
+        username: session.user.name || session.user.email || 'Player',
+        userId: session.user.id,
       }
     )
 

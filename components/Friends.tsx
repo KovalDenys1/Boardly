@@ -221,9 +221,10 @@ export default function Friends() {
       setSearchUsername('')
       setShowAddModal(false)
       await loadRequests()
-    } catch (error: any) {
-      clientLogger.error('Error sending request:', error)
-      showToast.error('errors.generic', undefined, { message: error.message })
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      clientLogger.error('Error sending request:', err)
+      showToast.error('errors.generic', undefined, { message: err.message })
     } finally {
       setAddLoading(false)
     }
@@ -258,9 +259,10 @@ export default function Friends() {
       setFriendCode('')
       setShowAddModal(false)
       await loadRequests()
-    } catch (error: any) {
-      clientLogger.error('Error sending request by code:', error)
-      showToast.error('errors.generic', undefined, { message: error.message })
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      clientLogger.error('Error sending request by code:', err)
+      showToast.error('errors.generic', undefined, { message: err.message })
     } finally {
       setAddLoading(false)
     }
@@ -304,9 +306,10 @@ export default function Friends() {
 
       showToast.success('friends.requestAccepted')
       await Promise.all([loadFriends(), loadRequests()])
-    } catch (error: any) {
-      clientLogger.error('Error accepting request:', error)
-      showToast.error('errors.generic', undefined, { message: error.message })
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      clientLogger.error('Error accepting request:', err)
+      showToast.error('errors.generic', undefined, { message: err.message })
     }
   }
 
@@ -323,9 +326,10 @@ export default function Friends() {
 
       showToast.success('friends.requestRejected')
       await loadRequests()
-    } catch (error: any) {
-      clientLogger.error('Error rejecting request:', error)
-      showToast.error('errors.generic', undefined, { message: error.message })
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      clientLogger.error('Error rejecting request:', err)
+      showToast.error('errors.generic', undefined, { message: err.message })
     }
   }
 
@@ -346,8 +350,9 @@ export default function Friends() {
 
       showToast.success('friends.friendRemoved')
       await loadFriends()
-    } catch (error: any) {
-      clientLogger.error('Error removing friend:', error)
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      clientLogger.error('Error removing friend:', err)
       showToast.error('errors.generic', undefined, { message: error.message })
     }
   }

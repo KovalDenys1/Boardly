@@ -24,9 +24,13 @@ if (process.env.NODE_ENV === 'production') {
     while (retries < MAX_RETRIES) {
       try {
         return await next(params)
-      } catch (error: any) {
+      } catch (error) {
+        // Type guard for Prisma errors with code property
+        const isPrismaError = error && typeof error === 'object' && 'code' in error
+        const errorCode = isPrismaError ? (error as { code: string }).code : null
+        
         // Retry on connection errors (P1001, P1002, P1008, P1017)
-        const isConnectionError = error.code && ['P1001', 'P1002', 'P1008', 'P1017'].includes(error.code)
+        const isConnectionError = errorCode && ['P1001', 'P1002', 'P1008', 'P1017'].includes(errorCode)
         
         if (isConnectionError && retries < MAX_RETRIES - 1) {
           retries++

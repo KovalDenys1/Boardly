@@ -14,25 +14,18 @@ export async function GET(req: NextRequest) {
     await limiter(req)
 
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
+    const userId = session.user.id
 
     // Get all friendships where user is either user1 or user2
     const friendships = await prisma.friendship.findMany({
       where: {
         OR: [
-          { user1Id: user.id },
-          { user2Id: user.id }
+          { user1Id: userId },
+          { user2Id: userId }
         ]
       },
       include: {
@@ -60,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     // Map to return the friend (not the current user)
     const friends = friendships.map(friendship => {
-      const friend = friendship.user1Id === user.id ? friendship.user2 : friendship.user1
+      const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
       return {
         ...friend,
         friendshipId: friendship.id,
@@ -68,7 +61,7 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    log.info('Friends list retrieved', { userId: user.id, count: friends.length })
+    log.info('Friends list retrieved', { userId, count: friends.length })
 
     return NextResponse.json({ friends })
 

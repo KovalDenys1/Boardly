@@ -17,6 +17,18 @@ import { validateEnv, printEnvInfo } from './lib/env'
 import { socketMonitor } from './lib/socket-monitoring'
 import { dbMonitor } from './lib/db-monitoring'
 
+// Socket event payload types
+interface GameActionPayload {
+  lobbyCode: string
+  action: string
+  payload: unknown
+}
+
+interface GameStartedPayload {
+  lobbyCode: string
+  game?: unknown
+}
+
 // Validate environment variables on startup
 try {
   validateEnv()
@@ -354,7 +366,7 @@ io.on('connection', (socket) => {
     socketLogger('leave-lobby-list').debug('Socket left lobby-list', { socketId: socket.id })
   })
 
-  socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
+  socket.on('game-action', (data: GameActionPayload) => {
     socketMonitor.trackEvent('game-action')
     
     // Rate limiting
@@ -420,7 +432,7 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('game-started', (data: { lobbyCode: string; game?: any }) => {
+  socket.on('game-started', (data: GameStartedPayload) => {
     socketMonitor.trackEvent('game-started')
     socketLogger('game-started').info('Game started, notifying all players', { 
       lobbyCode: data?.lobbyCode 

@@ -153,9 +153,10 @@ function CreateLobbyPage() {
       clientLogger.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
       // Redirect to the new lobby
       router.push(`/lobby/${data.lobby.code}`)
-    } catch (err: any) {
+    } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
-      setError(err.message)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

@@ -4,7 +4,12 @@ const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1', '0.0.0.0']
 
 // Import logger only for server-side use (notifySocket)
 // Client-side functions don't need it
-let logger: any = null
+type Logger = {
+  error: (message: string, error: Error, context?: Record<string, unknown>) => void
+  info: (message: string, context?: Record<string, unknown>) => void
+} | null
+
+let logger: Logger = null
 if (typeof window === 'undefined') {
   try {
     logger = require('./logger').logger

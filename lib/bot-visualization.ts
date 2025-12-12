@@ -58,8 +58,8 @@ export function createBotMoveVisualization(
  * Returns bot player info if it was a bot move, null otherwise
  */
 export function detectBotMove(
-  previousPlayers: any[],
-  currentPlayers: any[],
+  previousPlayers: BotPlayer[],
+  currentPlayers: BotPlayer[],
   previousCurrentPlayerIndex: number,
   currentCurrentPlayerIndex: number
 ): { botId: string; botName: string } | null {

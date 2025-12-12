@@ -61,14 +61,28 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    interface GamePlayer {
+      id: string
+      userId: string
+      user: {
+        id: string
+        isBot: boolean
+      }
+    }
+
     // Verify user is a player in this game
-    const playerRecord = game.players.find((p: any) => p.userId === userId)
+    const playerRecord = (game.players as GamePlayer[]).find((p) => p.userId === userId)
     if (!playerRecord) {
       return NextResponse.json({ error: 'Not a player in this game' }, { status: 403 })
     }
 
     // Recreate game engine from saved state
-    let gameState: any
+    interface ParsedGameState {
+      players?: unknown[]
+      [key: string]: unknown
+    }
+    
+    let gameState: ParsedGameState
     try {
       gameState = JSON.parse(game.state)
       
@@ -88,7 +102,7 @@ export async function POST(
       }, { status: 500 })
     }
     
-    let gameEngine: any
+    let gameEngine: YahtzeeGame
 
     switch (game.lobby.gameType) {
       case 'yahtzee':

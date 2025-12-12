@@ -216,16 +216,19 @@ function LobbyPageContent() {
           setGameEngine(newEngine)
           
           // Update game object with new state
-          setGame((prevGame: any) => ({
-            ...prevGame,
-            state: JSON.stringify(parsedState),
-          }))
+          setGame((prevGame) => {
+            if (!prevGame) return prevGame
+            return {
+              ...prevGame,
+              state: JSON.stringify(parsedState),
+            }
+          })
           
           // Sync roll history from game state
           if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
             const lastRoll = parsedState.data.lastRoll
-            // Use 'any' type because actual player object from DB includes 'user' relation
-            const player = game.players.find((p: any) => p.id === lastRoll.playerId) as any
+            // Find player with proper type checking
+            const player = game.players.find((p) => p.id === lastRoll.playerId)
             
             // Safety check: ensure player exists and has required data
             if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {

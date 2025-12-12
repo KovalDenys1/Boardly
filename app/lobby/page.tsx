@@ -108,6 +108,13 @@ export default function LobbyListPage() {
       loadLobbies()
     }, 5000)
 
+    return () => {
+      clearInterval(refreshInterval)
+    }
+  }, [])
+
+  // Socket connection effect
+  useEffect(() => {
     // Setup WebSocket for real-time updates
     if (!socket) {
       const url = getBrowserSocketUrl()

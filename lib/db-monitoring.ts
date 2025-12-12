@@ -71,8 +71,16 @@ class DatabaseMonitor {
    * Setup Prisma middleware to track queries
    */
   private setupPrismaMiddleware() {
+    interface PrismaMiddlewareParams {
+      model?: string
+      action: string
+      args: Record<string, unknown>
+      dataPath: string[]
+      runInTransaction: boolean
+    }
+    
     // @ts-ignore - Prisma middleware typing
-    prisma.$use(async (params: any, next: any) => {
+    prisma.$use(async (params: PrismaMiddlewareParams, next: (params: PrismaMiddlewareParams) => Promise<unknown>) => {
       const startTime = Date.now()
 
       try {

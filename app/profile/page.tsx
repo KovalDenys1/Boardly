@@ -137,8 +137,9 @@ export default function ProfilePage() {
       
       // Reload page to reflect changes everywhere
       window.location.reload()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -162,8 +163,9 @@ export default function ProfilePage() {
       
       // Refresh session to get updated emailVerified status
       await update()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to resend verification email')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification email'
+      toast.error(errorMessage)
     } finally {
       setShowResendVerification(false)
     }
@@ -185,8 +187,9 @@ export default function ProfilePage() {
 
       toast.success('📧 Deletion confirmation email sent! Check your inbox.')
       setShowDeleteConfirm(false)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to request account deletion')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to request account deletion'
+      toast.error(errorMessage)
     } finally {
       setDeleteLoading(false)
     }
@@ -218,8 +221,9 @@ export default function ProfilePage() {
       if (refreshRes.ok) {
         setLinkedAccounts(refreshData.linkedAccounts || {})
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to unlink account')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to unlink account'
+      toast.error(errorMessage)
     }
   }
 

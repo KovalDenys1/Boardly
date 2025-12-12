@@ -25,7 +25,9 @@ export function CustomPrismaAdapter(): Adapter {
       // This will work for same-email linking
       try {
         return await baseAdapter.linkAccount!(account)
-      } catch (error: any) {
+      } catch (error) {
+        // Type guard to check if error has message property
+        const errorMessage = error instanceof Error ? error.message : String(error)
         // If error is about user not found, it means OAuth email differs
         // In this case, we should have session data from signIn callback
         // But since we don't have access to it here, we rely on signIn callback
