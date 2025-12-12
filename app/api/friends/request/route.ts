@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     })
 
     log.info('Friend request sent', {
-      senderId: sender.id,
+      senderId: session.user.id,
       receiverId: receiver.id,
       requestId: friendRequest.id
     })

@@ -258,16 +258,16 @@ export default function YahtzeeLobbiesPage() {
             <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
               <input
                 type="text"
-                placeholder="Enter 6-digit code"
+                placeholder="Enter 4-digit code"
                 className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 font-mono text-base sm:text-lg"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                maxLength={6}
+                maxLength={4}
                 onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
               />
               <button
                 onClick={handleJoinByCode}
-                disabled={!joinCode || joinCode.length !== 6 || !isAuthenticated}
+                disabled={!joinCode || joinCode.length !== 4 || !isAuthenticated}
                 className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg text-sm sm:text-base"
               >
                 Join

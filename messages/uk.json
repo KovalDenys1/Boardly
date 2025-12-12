@@ -241,7 +241,7 @@
     "join": {
       "title": "Приєднатися до лобі",
       "enterCode": "Введіть код лобі",
-      "codePlaceholder": "Введіть 6-символьний код",
+      "codePlaceholder": "Введіть 4-символьний код",
       "password": "Пароль",
       "passwordPlaceholder": "Введіть пароль",
       "join": "Приєднатися",

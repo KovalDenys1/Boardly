@@ -77,12 +77,7 @@ export async function POST(
     }
 
     // Recreate game engine from saved state
-    interface ParsedGameState {
-      players?: unknown[]
-      [key: string]: unknown
-    }
-    
-    let gameState: ParsedGameState
+    let gameState: unknown
     try {
       gameState = JSON.parse(game.state)
       
@@ -91,7 +86,7 @@ export async function POST(
         throw new Error('Invalid game state structure')
       }
       
-      if (!Array.isArray(gameState.players)) {
+      if (!Array.isArray((gameState as Record<string, unknown>).players)) {
         throw new Error('Game state missing players array')
       }
     } catch (parseError) {
@@ -107,8 +102,8 @@ export async function POST(
     switch (game.lobby.gameType) {
       case 'yahtzee':
         gameEngine = new YahtzeeGame(game.id)
-        // Restore state
-        gameEngine.restoreState(gameState)
+        // Restore state (gameState is validated JSON from DB)
+        gameEngine.restoreState(gameState as any)
         break
       default:
         return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })

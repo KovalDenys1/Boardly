@@ -154,7 +154,6 @@ export default function LobbyListPage() {
     }
 
     return () => {
-      clearInterval(refreshInterval)
       if (socket && socket.connected) {
         clientLogger.log('🔌 Disconnecting socket from lobby list')
         socket.emit('leave-lobby-list')
@@ -234,12 +233,12 @@ export default function LobbyListPage() {
                 className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-lg"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                maxLength={6}
+                maxLength={4}
                 onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
               />
               <button
                 onClick={handleJoinByCode}
-                disabled={!joinCode || joinCode.length !== 6}
+                disabled={!joinCode || joinCode.length !== 4}
                 className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
               >
                 {t('lobby.join')}

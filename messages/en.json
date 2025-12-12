@@ -115,7 +115,7 @@
     "joinSection": {
       "title": "Join Lobby",
       "enterCode": "Enter Lobby Code",
-      "codePlaceholder": "Enter 6-character code",
+      "codePlaceholder": "Enter 4-character code",
       "password": "Password",
       "passwordPlaceholder": "Enter password",
       "join": "Join Lobby",
@@ -130,7 +130,7 @@
     "quick": {
       "join": "Quick Join",
       "description": "Have a lobby code? Enter it below to join instantly!",
-      "placeholder": "Enter 6-digit code (e.g., ABC123)",
+      "placeholder": "Enter 4-digit code (e.g., AB12)",
       "button": "Join"
     },
     "game": {

@@ -36,7 +36,7 @@ if (process.env.NODE_ENV === 'production') {
           retries++
           // Exponential backoff: 100ms, then 300ms
           await new Promise(resolve => setTimeout(resolve, retries * 200))
-          logger.warn(`[Prisma] Connection error, retry ${retries}/${MAX_RETRIES}`, { errorCode: error.code })
+          logger.warn(`[Prisma] Connection error, retry ${retries}/${MAX_RETRIES}`, { errorCode })
           continue
         }
         throw error

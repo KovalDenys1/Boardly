@@ -246,12 +246,12 @@ function LobbyPageContent() {
                 
                 return [...prev, {
                   id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
-                  playerName: player.user.username,
+                  playerName: player.user?.username || player.name || 'Unknown',
                   dice: lastRoll.dice,
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
                   held: lastRoll.held,
-                  isBot: player.user.isBot || false,
+                  isBot: player.user?.isBot || player.isBot || false,
                   timestamp: lastRoll.timestamp,
                 }]
               })
@@ -468,7 +468,7 @@ function LobbyPageContent() {
   // Game timer hook
   const { timeLeft, timerActive } = useGameTimer({
     isMyTurn: isMyTurn(),
-    gameState: gameEngine?.getState(),
+    gameState: gameEngine?.getState() || null,
     onTimeout: async () => {
       if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {

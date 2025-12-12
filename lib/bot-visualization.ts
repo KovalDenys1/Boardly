@@ -1,4 +1,21 @@
 import { YahtzeeCategory } from './yahtzee'
+import { clientLogger } from './client-logger'
+
+// Bot visualization types
+interface BotPlayer {
+  userId: string
+  user?: {
+    isBot?: boolean
+    username?: string
+  }
+}
+
+interface BotVisualizationStep {
+  dice?: number[]
+  heldDice?: number[]
+  category?: string
+  message?: string
+}
 
 export interface BotMoveStep {
   type: 'thinking' | 'roll' | 'hold' | 'score'

@@ -353,7 +353,7 @@ export default function Friends() {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error removing friend:', err)
-      showToast.error('errors.generic', undefined, { message: error.message })
+      showToast.error('errors.generic', undefined, { message: err.message })
     }
   }
 

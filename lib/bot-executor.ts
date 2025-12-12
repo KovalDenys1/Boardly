@@ -101,7 +101,7 @@ export class BotMoveExecutor {
     // Roll up to 2 more times if needed
     for (let rollNum = 2; rollNum <= 3 && rollsLeft > 0; rollNum++) {
       // Decide whether to roll again or score now
-      if (this.shouldStopRolling(currentDice, botScorecard)) {
+      if (this.shouldStopRolling(currentDice, botScorecard as Record<string, number>)) {
         clientLogger.log('🤖 Bot decided to stop rolling and score')
         onBotAction?.({
           type: 'thinking',
