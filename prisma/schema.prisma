@@ -194,3 +194,15 @@ model Friendship {
   @@index([user2Id])
   @@index([createdAt])
 }
+
+// Spy Game Locations
+model SpyLocation {
+  id       String   @id @default(cuid())
+  name     String   @unique // e.g., "Airport", "Hospital"
+  category String   // e.g., "Travel", "Public", "Entertainment"
+  roles    String[] // Array of possible roles at this location
+  isActive Boolean  @default(true)
+  
+  @@index([category])
+  @@index([isActive])
+}

@@ -111,7 +111,7 @@ export default function LobbyListPage() {
     return () => {
       clearInterval(refreshInterval)
     }
-  }, [])
+  }, [loadLobbies])
 
   // Socket connection effect
   useEffect(() => {

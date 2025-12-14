@@ -57,11 +57,11 @@
 | Dec 4 | Testing | API tests for lobby, game-create, game-state | ✅ DONE |
 | Dec 5 | Mobile UX | Responsive tabs, chat improvements | ✅ DONE |
 | **Phase 2: Expansion (Dec 8-14)** |
-| Dec 8 | Spy: Design | Rules, UX flow, role assignment | 📋 TODO |
-| Dec 9 | Spy: Backend | DB schema, API routes, game engine | 📋 TODO |
-| Dec 10 | Spy: Frontend | Lobby UI, voting system | 📋 TODO |
-| Dec 11 | Spy: Polish | Animations, role reveals | 📋 TODO |
-| Dec 12 | Spy: Testing | Multiplayer QA with 3-10 players | 📋 TODO |
+| Dec 8 | Spy: Design | Rules, UX flow, role assignment | ✅ DONE |
+| Dec 9 | Spy: Backend | DB schema, API routes, game engine | ✅ DONE |
+| Dec 10 | Spy: Frontend | Lobby UI, voting system | ✅ DONE |
+| Dec 11 | Spy: Polish | Animations, role reveals | ✅ DONE |
+| Dec 12 | Spy: Testing | Multiplayer QA with 3-10 players | ✅ DONE |
 | Dec 13 | Lobby improvements | Filters, search, game history | ✅ DONE |
 | Dec 14 | Social features | Friends list, chat upgrades | 📋 TODO |
 | **Phase 3: Monetization (Dec 15-21)** |
