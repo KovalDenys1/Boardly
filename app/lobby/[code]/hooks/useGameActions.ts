@@ -361,13 +361,13 @@ export function useGameActions(props: UseGameActionsProps) {
         }
       } else {
         const nextPlayer = newEngine.getCurrentPlayer()
+        // Play turn change sound once when turn changes
+        soundManager.play('turnChange')
+        
         // Only show "next turn" toast if it's NOT our turn now
         // (don't show to the player who just scored)
         if (nextPlayer && nextPlayer.id !== userId) {
-          soundManager.play('turnChange')
           toast(`${nextPlayer.name}'s turn!`, { icon: 'ℹ️' })
-        } else {
-          soundManager.play('turnChange')
         }
       }
     } catch (error: any) {

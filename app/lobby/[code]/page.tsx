@@ -183,9 +183,23 @@ function LobbyPageContent() {
 
   // Separate effect to track the complex expression
   const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
+  const prevPlayerIdRef = React.useRef<string | undefined>(undefined)
+  
   useEffect(() => {
-    // Track changes to current player ID
-  }, [currentPlayerId])
+    // Track changes to current player ID and play sound when turn changes
+    if (currentPlayerId && prevPlayerIdRef.current && currentPlayerId !== prevPlayerIdRef.current) {
+      const currentUserId = getCurrentUserId()
+      // Play sound for turn change
+      if (currentPlayerId === currentUserId) {
+        // It's now our turn - play turn change sound
+        soundManager.play('turnChange')
+      } else if (prevPlayerIdRef.current === currentUserId) {
+        // Turn moved away from us to another player - play turn change sound
+        soundManager.play('turnChange')
+      }
+    }
+    prevPlayerIdRef.current = currentPlayerId
+  }, [currentPlayerId, getCurrentUserId])
 
   // Create ref for loadLobby to avoid circular dependency
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
@@ -235,6 +249,7 @@ function LobbyPageContent() {
               const playerCount = game.players.length
               const currentRound = parsedState.data.round || 1
               const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+              const currentUserId = getCurrentUserId()
               
               // Check if this roll is already in history (by timestamp)
               setRollHistory(prev => {
@@ -243,6 +258,11 @@ function LobbyPageContent() {
                 )
                 
                 if (exists) return prev
+                
+                // Play dice roll sound for other players' rolls (not our own)
+                if (lastRoll.playerId !== currentUserId) {
+                  soundManager.play('diceRoll')
+                }
                 
                 return [...prev, {
                   id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
