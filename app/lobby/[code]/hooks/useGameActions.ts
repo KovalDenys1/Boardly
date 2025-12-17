@@ -164,8 +164,8 @@ export function useGameActions(props: UseGameActionsProps) {
           }
           const category = categoryMap[celebration.type]
           
-          // Only show celebration if category is available (undefined in scorecard)
-          if (!category || !scorecard || scorecard[category] === undefined) {
+          // Only show celebration if category exists AND is still available (undefined in scorecard)
+          if (category && scorecard && scorecard[category] === undefined) {
             setCelebrationEvent(celebration)
             celebrate() // Trigger confetti animation
             
