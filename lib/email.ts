@@ -143,7 +143,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
                 <li>Customize your profile</li>
               </ul>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXTAUTH_URL}/lobby" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${process.env.NEXTAUTH_URL}/games" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Start Playing
                 </a>
               </div>
