@@ -286,7 +286,7 @@ function LobbyPageContent() {
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players])
+  }, [game?.id, game?.players, getCurrentUserId])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])

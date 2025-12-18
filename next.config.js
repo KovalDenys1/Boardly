@@ -17,8 +17,13 @@ const nextConfig = {
   
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['react-hot-toast', 'next-auth'],
+    optimizePackageImports: ['react-hot-toast', 'next-auth', 'react-i18next'],
+    // Enable modern optimizations
+    optimisticClientCache: true,
   },
+  
+  // Output configuration for better caching
+  output: 'standalone',
   
   webpack: (config, { isServer }) => {
     config.externals.push({

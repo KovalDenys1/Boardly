@@ -63,8 +63,18 @@ export async function POST(
           id: guestId,
           username: guestName,
           isBot: false,
+          isGuest: true,
+          lastActiveAt: new Date(),
         },
       })
+    } else {
+      // Update lastActiveAt for existing guest
+      if (guestUser.isGuest) {
+        await prisma.user.update({
+          where: { id: guestId },
+          data: { lastActiveAt: new Date() },
+        })
+      }
     }
 
     // Check if guest is already in the lobby

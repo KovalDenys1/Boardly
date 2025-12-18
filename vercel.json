@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/cleanup-unverified",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-guests",
+      "schedule": "0 3 * * *"
     }
   ],
   "headers": [
