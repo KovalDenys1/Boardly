@@ -217,7 +217,7 @@ export default function SpyLobbiesPage() {
                 disabled={!isAuthenticated || creatingLobby}
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg text-sm sm:text-base"
               >
-                {creatingLobby ? t('lobby.creating') : t('lobby.create')}
+                {creatingLobby ? t('common.loading') : t('lobby.create.create')}
               </button>
               {!isAuthenticated && (
                 <p className="text-white/70 text-xs sm:text-sm mt-2">

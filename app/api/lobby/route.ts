@@ -12,8 +12,8 @@ const log = apiLogger('/api/lobby')
 const createLobbySchema = z.object({
   name: z.string().min(1).max(50),
   password: z.string().optional(),
-  maxPlayers: z.number().min(2).max(8).default(4),
-  gameType: z.enum(['yahtzee']).default('yahtzee'),
+  maxPlayers: z.number().min(2).max(10).default(6),
+  gameType: z.enum(['yahtzee', 'guess_the_spy']).default('yahtzee'),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -61,8 +61,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Create lobby with initial game and add creator as first player
-    // Initial state for Yahtzee
-    const initialState: any = {
+    // Build initial state depending on selected game type
+    let initialState: any
+    if (gameType === 'guess_the_spy') {
+      initialState = {
+        gameType: 'guess_the_spy',
+        players: [],
+        status: 'waiting',
+        currentRound: 0,
+        spyIndex: null,
+        location: null,
+        categories: [],
+        votes: {},
+      }
+    } else {
+      // Default to Yahtzee-compatible initial state
+      initialState = {
         gameType: 'yahtzee',
         players: [],
         currentPlayerIndex: 0,
@@ -73,7 +87,8 @@ export async function POST(request: NextRequest) {
           held: [false, false, false, false, false],
           rollsLeft: 3,
           scores: [{}],
-        }
+        },
+      }
     }
     
     const lobby = await prisma.lobby.create({
