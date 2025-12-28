@@ -1,3 +1,44 @@
+
+
+# Boardly – Copilot Instructions (2025 Update)
+
+## 2025: Scaling and Development
+
+- Project is in production: boardly.online, Yahtzee (AI bots), Chess in development, Guess the Spy, Uno and more planned.
+- Architecture: Next.js (API, SSR) + standalone Socket.IO server (real-time) + PostgreSQL (Supabase/Prisma).
+- Modular hooks, bot system, test coverage (96% for GameEngine core).
+- Supports both guest and authenticated users.
+
+### Key Recommendations
+
+1. **Adding New Games/Features**
+  - Use the GameEngine pattern (`lib/game-engine.ts`).
+  - For each game, create a separate class in `lib/games/`, implement `validateMove`, `processMove`, `getInitialGameData`.
+  - UI: separate components and pages for lobby and game board.
+  - All new texts must use i18n (react-i18next, showToast).
+  - Cover business logic with unit tests (`__tests__/lib/`).
+  - Update documentation and TODO.md.
+
+2. **Scaling Code and Infrastructure**
+  - Maintain modularity: business logic in classes and hooks, UI in components.
+  - Avoid code duplication, use abstractions.
+  - New real-time features should extend the socket server.
+  - Monitor performance: use debounces, rate limiting, DB indexes.
+
+3. **Scaling the Team**
+  - Follow code style, write comments, cover code with tests.
+  - Use pull request review, CI/CD.
+
+### Checklist for New Game/Feature
+
+1. Create a class in `lib/games/your-game.ts` extending GameEngine
+2. Implement methods: `validateMove`, `processMove`, `getInitialGameData`, `checkWinCondition`
+3. Add game type to enum in `prisma/schema.prisma`
+4. Create UI for lobby and game board
+5. Add keys to both messages/en.json and messages/uk.json
+6. Write unit tests for business logic
+7. Update documentation and TODO.md
+
 # Boardly - AI Agent Instructions
 
 ## Project Status

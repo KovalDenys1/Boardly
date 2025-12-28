@@ -41,7 +41,7 @@ export function getBrowserSocketUrl(): string {
   const isLocalHostname =
     LOCAL_HOSTNAMES.includes(normalizedHost) ||
     normalizedHost.endsWith('.local') ||
-    !hostname.includes('.') // machine names like "Denys"
+    !hostname.includes('.') // machine names without domain
 
   const isDevPort = numericPort === 3000 || numericPort === 5173
 
