@@ -61,14 +61,23 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    interface GamePlayer {
+      id: string
+      userId: string
+      user: {
+        id: string
+        isBot: boolean
+      }
+    }
+
     // Verify user is a player in this game
-    const playerRecord = game.players.find((p: any) => p.userId === userId)
+    const playerRecord = (game.players as GamePlayer[]).find((p) => p.userId === userId)
     if (!playerRecord) {
       return NextResponse.json({ error: 'Not a player in this game' }, { status: 403 })
     }
 
     // Recreate game engine from saved state
-    let gameState: any
+    let gameState: unknown
     try {
       gameState = JSON.parse(game.state)
       
@@ -77,7 +86,7 @@ export async function POST(
         throw new Error('Invalid game state structure')
       }
       
-      if (!Array.isArray(gameState.players)) {
+      if (!Array.isArray((gameState as Record<string, unknown>).players)) {
         throw new Error('Game state missing players array')
       }
     } catch (parseError) {
@@ -88,13 +97,13 @@ export async function POST(
       }, { status: 500 })
     }
     
-    let gameEngine: any
+    let gameEngine: YahtzeeGame
 
     switch (game.lobby.gameType) {
       case 'yahtzee':
         gameEngine = new YahtzeeGame(game.id)
-        // Restore state
-        gameEngine.restoreState(gameState)
+        // Restore state (gameState is validated JSON from DB)
+        gameEngine.restoreState(gameState as any)
         break
       default:
         return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })

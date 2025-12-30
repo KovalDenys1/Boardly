@@ -101,7 +101,7 @@ export class BotMoveExecutor {
     // Roll up to 2 more times if needed
     for (let rollNum = 2; rollNum <= 3 && rollsLeft > 0; rollNum++) {
       // Decide whether to roll again or score now
-      if (this.shouldStopRolling(currentDice, botScorecard)) {
+      if (this.shouldStopRolling(currentDice, botScorecard as Record<string, number>)) {
         clientLogger.log('🤖 Bot decided to stop rolling and score')
         onBotAction?.({
           type: 'thinking',
@@ -248,7 +248,7 @@ export class BotMoveExecutor {
   /**
    * Check if bot should stop rolling based on current dice
    */
-  private static shouldStopRolling(dice: number[], scorecard: any): boolean {
+  private static shouldStopRolling(dice: number[], scorecard: Record<string, number>): boolean {
     // Count dice values
     const counts = new Map<number, number>()
     dice.forEach(d => counts.set(d, (counts.get(d) || 0) + 1))
@@ -308,7 +308,15 @@ export class BotMoveExecutor {
   /**
    * Check if a player is a bot
    */
-  static isBot(player: any): boolean {
-    return player?.user?.isBot === true
+  static isBot(player: unknown): player is { user: { isBot: true } } {
+    return (
+      typeof player === 'object' &&
+      player !== null &&
+      'user' in player &&
+      typeof player.user === 'object' &&
+      player.user !== null &&
+      'isBot' in player.user &&
+      player.user.isBot === true
+    )
   }
 }

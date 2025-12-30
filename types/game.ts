@@ -17,6 +17,11 @@ export interface GamePlayer {
   score: number
   isBot: boolean
   userId: string
+  user?: {
+    id: string
+    username: string
+    isBot: boolean
+  }
 }
 
 // Full game object from database

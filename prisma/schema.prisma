@@ -16,6 +16,8 @@ model User {
   passwordHash  String?
   image         String?
   isBot         Boolean   @default(false) // Flag for AI bot players
+  isGuest       Boolean   @default(false) // Flag for guest (temporary) users
+  lastActiveAt  DateTime  @default(now()) // Track last activity for cleanup
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   
@@ -29,6 +31,8 @@ model User {
   receivedFriendRequests FriendRequest[] @relation("ReceivedRequests")
   friendshipsInitiated   Friendship[]    @relation("FriendshipsInitiated")
   friendshipsReceived    Friendship[]    @relation("FriendshipsReceived")
+  
+  @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
 }
 
 model Account {
@@ -193,4 +197,16 @@ model Friendship {
   @@index([user1Id])
   @@index([user2Id])
   @@index([createdAt])
+}
+
+// Spy Game Locations
+model SpyLocation {
+  id       String   @id @default(cuid())
+  name     String   @unique // e.g., "Airport", "Hospital"
+  category String   // e.g., "Travel", "Public", "Entertainment"
+  roles    String[] // Array of possible roles at this location
+  isActive Boolean  @default(true)
+  
+  @@index([category])
+  @@index([isActive])
 }

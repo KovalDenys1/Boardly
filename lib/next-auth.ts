@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
+// Use custom adapter to map `name` -> `username` and handle linking
+import { CustomPrismaAdapter } from './custom-prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
 import DiscordProvider from 'next-auth/providers/discord'
@@ -9,7 +10,7 @@ import { comparePassword } from './auth'
 import { apiLogger } from './logger'
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: CustomPrismaAdapter(),
   providers: [
     // Include providers only when configured to avoid build-time errors
     ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
@@ -118,16 +119,21 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (existingUserByEmail) {
-            // User with this email exists
-            // Block if this looks like a NEW signin (not linking scenario)
-            // For linking, user should use /auth/link page which sets cookie
+            // A user with this email already exists — allow sign-in and let
+            // PrismaAdapter link the OAuth account to the existing user.
+            // Also ensure emailVerified is set for convenience.
+            await prisma.user.update({
+              where: { id: existingUserByEmail.id },
+              data: { emailVerified: existingUserByEmail.emailVerified ?? new Date() }
+            })
+
             const log = apiLogger('OAuth signIn')
-            log.warn('OAuth sign-in blocked - email already exists', { 
+            log.info('OAuth sign-in allowed — email exists, will link to existing user', {
               existingUserId: existingUserByEmail.id,
               provider: account.provider,
-              email: user.email 
+              email: user.email
             })
-            return false
+            return true
           }
 
           // New user with new email - allow PrismaAdapter to create

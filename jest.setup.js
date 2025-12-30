@@ -8,7 +8,7 @@ global.TextDecoder = TextDecoder
 
 // Mock nanoid for lobby code generation
 jest.mock('nanoid', () => ({
-  customAlphabet: () => () => 'ABC123',
+  customAlphabet: () => () => 'AB12',
   nanoid: () => 'test-id-123',
 }))
 

@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { clientLogger } from '@/lib/client-logger'
 
+interface GameState {
+  currentPlayerIndex: number
+  lastMoveAt?: number
+  status?: string
+}
+
 interface UseGameTimerProps {
   isMyTurn: boolean
-  gameState: any
+  gameState: GameState | null
   onTimeout: () => void
 }
 

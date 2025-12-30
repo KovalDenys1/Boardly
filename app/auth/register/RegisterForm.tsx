@@ -99,9 +99,10 @@ export default function RegisterForm() {
         router.push(returnUrl)
         router.refresh()
       }
-    } catch (err: any) {
-      setError(err.message)
-      showToast.error(err.message || t('auth.register.error'))
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t('auth.register.error')
+      setError(errorMessage)
+      showToast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -111,8 +112,9 @@ export default function RegisterForm() {
     setLoading(true)
     try {
       await signIn(provider, { callbackUrl: returnUrl })
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'OAuth sign in failed'
+      setError(errorMessage)
       showToast.error('auth.register.oauthError')
       setLoading(false)
     }

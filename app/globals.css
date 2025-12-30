@@ -368,3 +368,134 @@ input:focus, select:focus, textarea:focus {
   scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
 }
 
+/* Spy Game Animations */
+
+/* Bounce-in animation for role reveal */
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Fade-in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+/* Scale-in animation */
+@keyframes scale-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out;
+}
+
+/* Pulse animation for timer */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(168, 85, 247, 0.8);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Shake animation for wrong vote */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(10px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.6s ease-in-out;
+}
+
+/* Slide-up animation for results */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out;
+}
+
+/* Glow text animation for spy */
+@keyframes glow-text {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5),
+                 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.8),
+                 0 0 40px rgba(239, 68, 68, 0.5);
+  }
+}
+
+.animate-glow-text {
+  animation: glow-text 2s ease-in-out infinite;
+}
+
+/* Timer warning (last 10 seconds) */
+@keyframes timer-warning {
+  0%, 100% {
+    color: rgb(239, 68, 68);
+    transform: scale(1);
+  }
+  50% {
+    color: rgb(248, 113, 113);
+    transform: scale(1.1);
+  }
+}
+
+.animate-timer-warning {
+  animation: timer-warning 0.5s ease-in-out infinite;
+}

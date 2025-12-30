@@ -42,7 +42,8 @@ export default function GamesPage() {
       descriptionKey: 'games.spy.description',
       players: '3-10',
       difficultyKey: 'games.spy.difficulty',
-      status: 'coming-soon',
+      status: 'available',
+      route: '/games/spy/lobbies',
       color: 'from-red-500 to-pink-600'
     },
     {

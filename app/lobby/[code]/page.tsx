@@ -194,9 +194,23 @@ function LobbyPageContent() {
 
   // Separate effect to track the complex expression
   const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
+  const prevPlayerIdRef = React.useRef<string | undefined>(undefined)
+  
   useEffect(() => {
-    // Track changes to current player ID
-  }, [currentPlayerId])
+    // Track changes to current player ID and play sound when turn changes
+    if (currentPlayerId && prevPlayerIdRef.current && currentPlayerId !== prevPlayerIdRef.current) {
+      const currentUserId = getCurrentUserId()
+      // Play sound for turn change
+      if (currentPlayerId === currentUserId) {
+        // It's now our turn - play turn change sound
+        soundManager.play('turnChange')
+      } else if (prevPlayerIdRef.current === currentUserId) {
+        // Turn moved away from us to another player - play turn change sound
+        soundManager.play('turnChange')
+      }
+    }
+    prevPlayerIdRef.current = currentPlayerId
+  }, [currentPlayerId, getCurrentUserId])
 
   // Create ref for loadLobby to avoid circular dependency
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
@@ -227,21 +241,26 @@ function LobbyPageContent() {
           setGameEngine(newEngine)
           
           // Update game object with new state
-          setGame((prevGame: any) => ({
-            ...prevGame,
-            state: JSON.stringify(parsedState),
-          }))
+          setGame((prevGame) => {
+            if (!prevGame) return prevGame
+            return {
+              ...prevGame,
+              state: JSON.stringify(parsedState),
+            }
+          })
           
           // Sync roll history from game state
           if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
             const lastRoll = parsedState.data.lastRoll
-            // Use 'any' type because actual player object from DB includes 'user' relation
-            const player = game.players.find((p: any) => p.id === lastRoll.playerId) as any
+            // Find player with proper type checking
+            const player = game.players.find((p) => p.id === lastRoll.playerId)
             
             // Safety check: ensure player exists and has required data
             if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
-              // Use game engine to get correct turn number for the player who made the roll
-              const turnNumber = newEngine.getRound()
+              const playerCount = game.players.length
+              const currentRound = parsedState.data.round || 1
+              const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+              const currentUserId = getCurrentUserId()
               
               // Check if this roll is already in history (by timestamp)
               setRollHistory(prev => {
@@ -251,14 +270,19 @@ function LobbyPageContent() {
                 
                 if (exists) return prev
                 
+                // Play dice roll sound for other players' rolls (not our own)
+                if (lastRoll.playerId !== currentUserId) {
+                  soundManager.play('diceRoll')
+                }
+                
                 return [...prev, {
                   id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
-                  playerName: player.user.username,
+                  playerName: player.user?.username || player.name || 'Unknown',
                   dice: lastRoll.dice,
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
                   held: lastRoll.held,
-                  isBot: player.user.isBot || false,
+                  isBot: player.user?.isBot || player.isBot || false,
                   timestamp: lastRoll.timestamp,
                 }]
               })
@@ -273,7 +297,7 @@ function LobbyPageContent() {
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players])
+  }, [game?.id, game?.players, getCurrentUserId])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -486,7 +510,7 @@ function LobbyPageContent() {
   // Game timer hook
   const { timeLeft, timerActive } = useGameTimer({
     isMyTurn: isMyTurn(),
-    gameState: gameEngine?.getState(),
+    gameState: gameEngine?.getState() || null,
     onTimeout: async () => {
       if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {

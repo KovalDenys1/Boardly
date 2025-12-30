@@ -7,7 +7,7 @@ import { io } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 
-type GameType = 'yahtzee'
+type GameType = 'yahtzee' | 'guess_the_spy'
 
 type GameInfo = {
   name: string
@@ -27,6 +27,14 @@ const GAME_INFO: Record<GameType, GameInfo> = {
     allowedPlayers: [2, 3, 4],
     defaultMaxPlayers: 4,
   },
+  guess_the_spy: {
+    name: 'Guess the Spy',
+    emoji: '🕵️‍♂️',
+    description: 'Find the spy among you! Most players know the location, but one is the spy. Can you spot them before time runs out?',
+    gradient: 'from-blue-600 via-cyan-500 to-green-400',
+    allowedPlayers: [3, 4, 5, 6, 7, 8],
+    defaultMaxPlayers: 6,
+  },
 }
 
 function CreateLobbyPage() {
@@ -34,29 +42,29 @@ function CreateLobbyPage() {
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   
-  const gameType = (searchParams.get('gameType') || 'yahtzee') as GameType
-  const gameInfo = GAME_INFO[gameType]
+  const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
+  const gameInfo = GAME_INFO[selectedGameType]
   
   const [formData, setFormData] = useState({
     name: '',
     password: '',
-    maxPlayers: 4, // Will be updated by useEffect
-    gameType: 'yahtzee' as GameType, // Will be updated by useEffect
+    maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
+    gameType: selectedGameType as GameType,
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   // Update formData when gameType changes from URL
   useEffect(() => {
-    clientLogger.log('🎮 Game type from URL:', gameType)
+    clientLogger.log('🎮 Game type selected:', selectedGameType)
     if (gameInfo) {
       setFormData(prev => ({
         ...prev,
         maxPlayers: gameInfo.defaultMaxPlayers,
-        gameType: gameType,
+        gameType: selectedGameType,
       }))
     }
-  }, [gameType, gameInfo])
+  }, [selectedGameType, gameInfo])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -72,7 +80,7 @@ function CreateLobbyPage() {
           <div className="text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-white mb-4">Game Not Found</h1>
           <p className="text-white/80 mb-6">
-            The game type &quot;{gameType}&quot; is not supported yet.
+            The game type &quot;{selectedGameType}&quot; is not supported yet.
           </p>
           <button
             onClick={() => router.push('/games')}
@@ -153,9 +161,10 @@ function CreateLobbyPage() {
       clientLogger.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
       // Redirect to the new lobby
       router.push(`/lobby/${data.lobby.code}`)
-    } catch (err: any) {
+    } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
-      setError(err.message)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -176,6 +185,23 @@ function CreateLobbyPage() {
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gameInfo.gradient} py-12 px-4`}>
       <div className="max-w-2xl mx-auto">
+        {/* Game Type Selector */}
+        <div className="mb-8 flex flex-col items-center">
+          <div className="mb-2 text-white font-semibold">Choose Game</div>
+          <div className="flex gap-4">
+            {Object.entries(GAME_INFO).map(([key, info]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedGameType(key as GameType)}
+                className={`flex flex-col items-center px-4 py-2 rounded-xl font-bold transition-all border-2 ${selectedGameType === key ? 'bg-white text-blue-600 border-blue-500 scale-105 shadow-lg' : 'bg-white/20 text-white border-transparent hover:bg-white/30'}`}
+              >
+                <span className="text-2xl mb-1">{info.emoji}</span>
+                <span>{info.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Breadcrumbs */}
         <div className="mb-6 flex items-center gap-2 text-white/80 text-sm">
           <button 
@@ -193,7 +219,7 @@ function CreateLobbyPage() {
           </button>
           <span>›</span>
           <button 
-            onClick={() => router.push(`/games/${gameType}/lobbies`)}
+            onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
             className="hover:text-white transition-colors"
           >
             {gameInfo.emoji} {gameInfo.name}
@@ -289,7 +315,7 @@ function CreateLobbyPage() {
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => router.push(`/games/${gameType}/lobbies`)}
+                onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
                 className="flex-1 px-6 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
               >
                 Cancel

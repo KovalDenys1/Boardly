@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     await limiter(req)
 
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -27,22 +27,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get sender
-    const sender = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true, username: true, isBot: true }
-    })
-
-    if (!sender) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    if (sender.isBot) {
-      return NextResponse.json(
-        { error: 'Bots cannot send friend requests' },
-        { status: 400 }
-      )
-    }
+    const senderId = session.user.id
 
     // Get receiver
     const receiver = await prisma.user.findUnique({
@@ -64,7 +49,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (sender.id === receiver.id) {
+    if (senderId === receiver.id) {
       return NextResponse.json(
         { error: 'Cannot send friend request to yourself' },
         { status: 400 }
@@ -75,8 +60,8 @@ export async function POST(req: NextRequest) {
     const existingFriendship = await prisma.friendship.findFirst({
       where: {
         OR: [
-          { user1Id: sender.id, user2Id: receiver.id },
-          { user1Id: receiver.id, user2Id: sender.id }
+          { user1Id: senderId, user2Id: receiver.id },
+          { user1Id: receiver.id, user2Id: senderId }
         ]
       }
     })
@@ -92,8 +77,8 @@ export async function POST(req: NextRequest) {
     const existingRequest = await prisma.friendRequest.findFirst({
       where: {
         OR: [
-          { senderId: sender.id, receiverId: receiver.id, status: 'pending' },
-          { senderId: receiver.id, receiverId: sender.id, status: 'pending' }
+          { senderId: senderId, receiverId: receiver.id, status: 'pending' },
+          { senderId: receiver.id, receiverId: senderId, status: 'pending' }
         ]
       }
     })
@@ -108,7 +93,7 @@ export async function POST(req: NextRequest) {
     // Create friend request
     const friendRequest = await prisma.friendRequest.create({
       data: {
-        senderId: sender.id,
+        senderId: senderId,
         receiverId: receiver.id,
         status: 'pending'
       },
@@ -133,7 +118,7 @@ export async function POST(req: NextRequest) {
     })
 
     log.info('Friend request sent', {
-      senderId: sender.id,
+      senderId: session.user.id,
       receiverId: receiver.id,
       requestId: friendRequest.id
     })

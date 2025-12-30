@@ -3,8 +3,20 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { clientLogger } from '@/lib/client-logger'
 import toast from 'react-hot-toast'
 
+interface GamePlayer {
+  userId: string
+  user?: {
+    isBot?: boolean
+  }
+}
+
+interface Game {
+  id: string
+  players?: GamePlayer[]
+}
+
 interface UseBotTurnProps {
-  game: any
+  game: Game | null
   gameEngine: YahtzeeGame | null
   code: string
   isGameStarted: boolean
@@ -88,7 +100,7 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
 
     // Find the current player in the game.players array
     const currentGamePlayer = game.players.find(
-      (p: any) => p.userId === currentPlayer.id
+      (p) => p.userId === currentPlayer.id
     )
 
     if (!currentGamePlayer || !currentGamePlayer.user) {

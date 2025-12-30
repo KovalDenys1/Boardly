@@ -4,8 +4,8 @@ import HeroSection from '@/components/HomePage/HeroSection'
 import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
 import HowItWorks from '@/components/HomePage/HowItWorks'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Use ISR for better performance - revalidate every 60 seconds
+export const revalidate = 60
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)

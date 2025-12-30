@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { sendWelcomeEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
@@ -25,6 +26,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token has expired' }, { status: 400 })
     }
 
+    // Get user details for welcome email
+    const user = await prisma.user.findUnique({
+      where: { id: verificationToken.userId },
+      select: { id: true, email: true, username: true },
+    })
+
     await prisma.user.update({
       where: { id: verificationToken.userId },
       data: { emailVerified: new Date() },
@@ -33,6 +40,15 @@ export async function POST(request: NextRequest) {
     await prisma.emailVerificationToken.delete({
       where: { token },
     })
+
+    // Send welcome email after successful verification
+    if (user?.email) {
+      await sendWelcomeEmail(user.email, user.username || 'Player')
+        .catch((error) => {
+          const log = apiLogger('POST /api/auth/verify-email')
+          log.warn('Failed to send welcome email (non-critical)', { error })
+        })
+    }
 
     return NextResponse.json({ message: 'Email verified successfully' })
   } catch (error) {

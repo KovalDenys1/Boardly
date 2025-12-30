@@ -36,8 +36,9 @@ export default function VerifyEmailContent() {
       await update()
       
       setTimeout(() => router.push('/'), 2000)
-    } catch (err: any) {
-      toast.error(err.message || 'Verification failed')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Verification failed'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -74,8 +75,9 @@ export default function VerifyEmailContent() {
       
       // Update session to refresh emailVerified status
       await update()
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to resend email')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resend email'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

@@ -1,4 +1,21 @@
 import { YahtzeeCategory } from './yahtzee'
+import { clientLogger } from './client-logger'
+
+// Bot visualization types
+interface BotPlayer {
+  userId: string
+  user?: {
+    isBot?: boolean
+    username?: string
+  }
+}
+
+interface BotVisualizationStep {
+  dice?: number[]
+  heldDice?: number[]
+  category?: string
+  message?: string
+}
 
 export interface BotMoveStep {
   type: 'thinking' | 'roll' | 'hold' | 'score'
@@ -58,8 +75,8 @@ export function createBotMoveVisualization(
  * Returns bot player info if it was a bot move, null otherwise
  */
 export function detectBotMove(
-  previousPlayers: any[],
-  currentPlayers: any[],
+  previousPlayers: BotPlayer[],
+  currentPlayers: BotPlayer[],
   previousCurrentPlayerIndex: number,
   currentCurrentPlayerIndex: number
 ): { botId: string; botName: string } | null {

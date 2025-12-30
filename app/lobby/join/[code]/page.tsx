@@ -84,8 +84,9 @@ export default function LobbyInvitePage() {
       
       // Redirect to lobby as guest
       router.push(`/lobby/${code}?guest=true`)
-    } catch (err: any) {
-      setError(err.message || 'Failed to join as guest')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to join as guest'
+      setError(errorMessage)
       setLoading(false)
     }
   }

@@ -3,25 +3,33 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 
-// Import Header without SSR to avoid hydration issues with i18n
-const Header = dynamic(() => import('@/components/Header'), {
-  ssr: false,
-  loading: () => (
-    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex items-center gap-2 text-2xl font-bold text-white">
-              🎲 Boardly
-            </div>
+// Header Skeleton with fixed dimensions to prevent CLS
+function HeaderSkeleton() {
+  return (
+    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50 h-16">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="flex justify-between items-center h-full">
+          <div className="flex items-center gap-2 text-2xl font-bold text-white">
+            🎲 Boardly
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-8 bg-white/20 rounded animate-pulse"></div>
+            <div className="w-24 h-10 bg-white/20 rounded-lg animate-pulse"></div>
           </div>
         </div>
       </nav>
     </header>
   )
+}
+
+// Import Header without SSR to avoid hydration issues with i18n
+const Header = dynamic(() => import('@/components/Header'), {
+  ssr: false,
+  loading: () => <HeaderSkeleton />
 })
 
 const inter = Inter({ 
@@ -132,7 +140,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
-          <Header />
+          <Suspense fallback={<HeaderSkeleton />}>
+            <Header />
+          </Suspense>
           <main>{children}</main>
         </Providers>
         {isProduction && (

@@ -17,6 +17,18 @@ import { validateEnv, printEnvInfo } from './lib/env'
 import { socketMonitor } from './lib/socket-monitoring'
 import { dbMonitor } from './lib/db-monitoring'
 
+// Socket event payload types
+interface GameActionPayload {
+  lobbyCode: string
+  action: string
+  payload: unknown
+}
+
+interface GameStartedPayload {
+  lobbyCode: string
+  game?: unknown
+}
+
 // Validate environment variables on startup
 try {
   validateEnv()
@@ -95,15 +107,15 @@ const io = new SocketIOServer(server, {
     credentials: true,
     methods: ['GET', 'POST'],
   },
-  // Optimized for Render free tier (possible cold starts)
-  pingTimeout: 120000, // 2 minutes - client response timeout
+  // Optimized for Render free tier (handles cold starts)
+  pingTimeout: 120000, // 2 minutes - wait time for client response
   pingInterval: 30000, // 30 seconds - ping message interval
-  connectTimeout: 120000, // 2 minutes - initial connection timeout (cold start)
+  connectTimeout: 120000, // 2 minutes - timeout for first connection (cold start)
   transports: ['polling', 'websocket'], // Polling is more reliable during cold starts
-  allowUpgrades: true, // Allow upgrade polling → websocket after connection established
+  allowUpgrades: true, // Allow upgrade from polling to websocket after connection
   upgradeTimeout: 30000, // 30 seconds for upgrade
   maxHttpBufferSize: 1e6, // 1MB - sufficient for game data
-  allowEIO3: true, // Support for older clients
+  allowEIO3: true, // Support older clients
 })
 
 // Online users tracking: userId -> Set of socketIds
@@ -354,7 +366,7 @@ io.on('connection', (socket) => {
     socketLogger('leave-lobby-list').debug('Socket left lobby-list', { socketId: socket.id })
   })
 
-  socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
+  socket.on('game-action', (data: GameActionPayload) => {
     socketMonitor.trackEvent('game-action')
     
     // Rate limiting
@@ -420,7 +432,7 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('game-started', (data: { lobbyCode: string; game?: any }) => {
+  socket.on('game-started', (data: GameStartedPayload) => {
     socketMonitor.trackEvent('game-started')
     socketLogger('game-started').info('Game started, notifying all players', { 
       lobbyCode: data?.lobbyCode 

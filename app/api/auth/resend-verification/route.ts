@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import crypto from 'crypto'
+import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
 
 const limiter = rateLimit(rateLimitPresets.auth)
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     })
 
-    const token = crypto.randomBytes(32).toString('hex')
+    const token = nanoid(32)
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
     await prisma.emailVerificationToken.create({
