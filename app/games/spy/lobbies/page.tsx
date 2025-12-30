@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
@@ -37,45 +37,7 @@ export default function SpyLobbiesPage() {
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
-  const [creatingLobby, setCreatingLobby] = useState(false)
   const isAuthenticated = status === 'authenticated'
-
-  const loadLobbies = useCallback(async () => {
-    try {
-      const res = await fetch('/api/lobby?gameType=guess_the_spy')
-      const data = await res.json()
-      setLobbies(data.lobbies || [])
-    } catch (error) {
-      clientLogger.error('Failed to load Spy lobbies:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const setupSocket = useCallback(() => {
-    if (socket?.connected) return
-
-    socket = io(getBrowserSocketUrl(), {
-      transports: ['websocket', 'polling'],
-    })
-
-    socket.on('connect', () => {
-      clientLogger.log('🔌 Connected to socket server')
-      socket.emit('join-lobby-list')
-    })
-
-    socket.on('disconnect', () => {
-      clientLogger.log('🔌 Disconnected from socket server')
-    })
-
-    socket.on('lobby-created', () => {
-      loadLobbies()
-    })
-
-    socket.on('lobby-updated', () => {
-      loadLobbies()
-    })
-  }, [loadLobbies])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -85,69 +47,111 @@ export default function SpyLobbiesPage() {
 
     if (status === 'authenticated') {
       loadLobbies()
+      triggerCleanup()
 
       // Auto-refresh lobbies every 5 seconds
       const refreshInterval = setInterval(() => {
         loadLobbies()
       }, 5000)
 
-      // Setup socket connection
-      setupSocket()
+      // Setup WebSocket for real-time updates
+      if (!socket) {
+        const url = getBrowserSocketUrl()
+        clientLogger.log('🔌 Connecting to Socket.IO for Spy lobby list:', url)
+        
+        // Get auth token - use userId for authenticated users
+        const token = session?.user?.id || null
+        
+        socket = io(url, {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 1000,
+          auth: {
+            token: token,
+            isGuest: false,
+          },
+          query: {
+            token: token,
+            isGuest: 'false',
+          },
+        })
+
+        socket.on('connect', () => {
+          clientLogger.log('✅ Socket connected for Spy lobby list')
+          socket.emit('join-lobby-list')
+        })
+
+        socket.on('lobby-list-update', () => {
+          clientLogger.log('📡 Spy lobby list update received')
+          loadLobbies()
+        })
+
+        socket.on('disconnect', () => {
+          clientLogger.log('❌ Socket disconnected from Spy lobby list')
+        })
+      }
 
       return () => {
         clearInterval(refreshInterval)
-        if (socket?.connected) {
+        if (socket && socket.connected) {
+          clientLogger.log('🔌 Disconnecting socket from Spy lobby list')
+          socket.emit('leave-lobby-list')
           socket.disconnect()
+          socket = null as any
         }
       }
     }
-  }, [status, setupSocket, loadLobbies])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, router])
 
-  const createLobby = async () => {
-    if (!isAuthenticated) {
-      showToast.error('errors.authRequired')
-      router.push('/auth/signin')
-      return
-    }
-
-    setCreatingLobby(true)
-
+  const triggerCleanup = async () => {
     try {
-      const res = await fetch('/api/lobby', {
+      const res = await fetch('/api/lobby/cleanup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameType: 'guess_the_spy',
-          maxPlayers: 10,
-          name: `Spy Game ${Date.now().toString().slice(-4)}`,
-        }),
       })
-
+      
       if (!res.ok) {
-        throw new Error('Failed to create lobby')
+        clientLogger.warn('Cleanup returned non-ok status:', res.status)
       }
-
-      const { lobby } = await res.json()
-      router.push(`/lobby/${lobby.code}`)
     } catch (error) {
-      clientLogger.error('Failed to create lobby:', error)
-      showToast.error('errors.generic')
-    } finally {
-      setCreatingLobby(false)
+      clientLogger.log('Background cleanup skipped (non-critical):', error)
     }
   }
 
-  const joinLobby = async (code: string) => {
-    if (!code) {
-      showToast.error('errors.invalidCode')
+  const loadLobbies = async () => {
+    try {
+      const res = await fetch('/api/lobby?gameType=guess_the_spy')
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
+      
+      const data = await res.json()
+      
+      // Handle case where API returns error but with 200 status
+      if (data.error) {
+        clientLogger.warn('Spy lobbies loaded with error:', data.error)
+      }
+      
+      setLobbies(data.lobbies || [])
+    } catch (error) {
+      clientLogger.error('Failed to load Spy lobbies:', error)
+      // Set empty array to prevent UI from breaking
+      setLobbies([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleJoinByCode = () => {
+    if (!isAuthenticated) {
+      router.push(`/auth/login?returnUrl=${encodeURIComponent('/games/spy/lobbies')}`)
       return
     }
-
-    router.push(`/lobby/${code.toUpperCase()}`)
-  }
-
-  const handleQuickJoin = (code: string) => {
-    joinLobby(code)
+    if (joinCode) {
+      router.push(`/lobby/${joinCode.toUpperCase()}`)
+    }
   }
 
   if (status === 'loading' || loading) {
@@ -197,152 +201,175 @@ export default function SpyLobbiesPage() {
         </div>
 
         {!isAuthenticated && (
-          <div className="mb-4 sm:mb-6 bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-xl p-3 sm:p-4">
-            <p className="text-white text-center text-sm sm:text-base">
-              ✨ <a href="/auth/login" className="font-semibold underline hover:text-white/80 transition-colors">Sign in</a> to create your own Spy game lobby!
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/10 border border-white/20 rounded-xl text-white/90">
+            <p className="font-semibold text-sm sm:text-base">Want to play?</p>
+            <p className="text-xs sm:text-sm mt-1">
+              Sign in or create an account to host lobbies and join games. Guests can still receive invite links later.
             </p>
+            <div className="mt-3 flex flex-col xs:flex-row gap-2 sm:gap-3">
+              <button
+                onClick={() => router.push('/auth/login?returnUrl=/games/spy/lobbies')}
+                className="px-4 py-2 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors text-sm sm:text-base"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => router.push('/auth/register?returnUrl=/games/spy/lobbies')}
+                className="px-4 py-2 border border-white/40 rounded-lg font-semibold hover:bg-white/10 transition-colors text-sm sm:text-base"
+              >
+                Create Account
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Create/Join Section */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Create Lobby */}
-            <div>
-              <h2 className="text-white text-lg sm:text-xl font-semibold mb-3">
-                {t('lobby.createNew')}
-              </h2>
-              <button
-                onClick={createLobby}
-                disabled={!isAuthenticated || creatingLobby}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg text-sm sm:text-base"
-              >
-                {creatingLobby ? t('common.loading') : t('lobby.create.create')}
-              </button>
-              {!isAuthenticated && (
-                <p className="text-white/70 text-xs sm:text-sm mt-2">
-                  {t('lobby.signInRequired')}
-                </p>
-              )}
-            </div>
-
-            {/* Join Lobby */}
-            <div>
-              <h2 className="text-white text-lg sm:text-xl font-semibold mb-3">
-                {t('lobby.joinWithCode')}
-              </h2>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder={t('lobby.enterCode')}
-                  maxLength={6}
-                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white/20 text-white placeholder-white/50 border border-white/30 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm sm:text-base"
-                />
-                <button
-                  onClick={() => joinLobby(joinCode)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg text-sm sm:text-base"
-                >
-                  {t('lobby.join')}
-                </button>
+        {/* Action Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          {/* Create Lobby Card - Made bigger and more prominent */}
+          <div
+            className="bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-2xl p-5 sm:p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-2 sm:border-4 border-white/20"
+            onClick={() => {
+              if (!isAuthenticated) {
+                router.push(`/auth/login?returnUrl=${encodeURIComponent('/lobby/create?gameType=guess_the_spy')}`)
+                return
+              }
+              router.push('/lobby/create?gameType=guess_the_spy')
+            }}
+          >
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="text-4xl sm:text-6xl">🕵️</div>
+              <div className="px-2 sm:px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
+                NEW GAME
               </div>
             </div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">Create New Lobby</h2>
+            <p className="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base lg:text-lg">Start your own Spy game and invite friends to join!</p>
+            <div className="flex items-center text-white font-bold text-base sm:text-lg">
+              <span>Create Now</span>
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
           </div>
-        </div>
 
-        {/* Game Rules */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 sm:p-6 mb-4 sm:mb-6\">
-          <h2 className="text-white text-xl sm:text-2xl font-semibold mb-4">{t('spy.rules.title')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white/80">
-            <div>
-              <h3 className="font-semibold text-white mb-2">{t('spy.rules.setup')}</h3>
-              <ul className="space-y-1 text-sm">
-                <li>• {t('spy.rules.players', { min: 3, max: 10 })}</li>
-                <li>• {t('spy.rules.randomSpy')}</li>
-                <li>• {t('spy.rules.regularsSeeLocation')}</li>
-                <li>• {t('spy.rules.spySeesCategories')}</li>
-              </ul>
+          {/* Quick Join Card */}
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-5 sm:p-8 hover:shadow-xl transition-shadow border-2 border-white/20">
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">🔍 Quick Join</h2>
+            <p className="text-xs sm:text-sm text-white/80 mb-4 sm:mb-6">
+              Have a lobby code? Enter it below to join instantly!
+            </p>
+            <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
+              <input
+                type="text"
+                placeholder="Enter 4-digit code"
+                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 font-mono text-base sm:text-lg"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                maxLength={4}
+                onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
+              />
+              <button
+                onClick={handleJoinByCode}
+                disabled={!joinCode || joinCode.length !== 4 || !isAuthenticated}
+                className="px-6 sm:px-8 py-2 sm:py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg text-sm sm:text-base"
+              >
+                Join
+              </button>
             </div>
-            <div>
-              <h3 className="font-semibold text-white mb-2">{t('spy.rules.gameplay')}</h3>
-              <ul className="space-y-1 text-sm">
-                <li>• {t('spy.rules.askQuestions')}</li>
-                <li>• {t('spy.rules.identifySpy')}</li>
-                <li>• {t('spy.rules.spyBlends')}</li>
-                <li>• {t('spy.rules.voting', { time: 5 })}</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-2">{t('spy.rules.winning')}</h3>
-              <ul className="space-y-1 text-sm">
-                <li>• {t('spy.rules.spyCaught', { points: 100 })}</li>
-                <li>• {t('spy.rules.innocentCaught', { points: 300 })}</li>
-                <li>• {t('spy.rules.bonusVotes', { points: 50 })}</li>
-                <li>• {t('spy.rules.rounds', { count: 3 })}</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-2">{t('spy.rules.tips')}</h3>
-              <ul className="space-y-1 text-sm">
-                <li>• {t('spy.rules.dontBeObvious')}</li>
-                <li>• {t('spy.rules.watchAnswers')}</li>
-                <li>• {t('spy.rules.spyStrategy')}</li>
-                <li>• {t('spy.rules.payAttention')}</li>
-              </ul>
-            </div>
+            {!isAuthenticated && (
+              <p className="text-xs text-white/70 mt-3">
+                Please sign in before joining a lobby. You can still explore active rooms below.
+              </p>
+            )}
           </div>
         </div>
 
         {/* Active Lobbies */}
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 sm:p-6\">\n          <h2 className="text-white text-xl sm:text-2xl font-semibold mb-4\">\n            {t('lobby.activeLobbies')} ({lobbies.length})\n          </h2>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-white/20">
+          <h2 className="text-white text-2xl font-bold mb-6 flex items-center justify-between">
+            <span>🎮 Active Lobbies</span>
+            <span className="text-lg font-normal text-white/80">({lobbies.length})</span>
+          </h2>
 
-          {lobbies.length === 0 ? (
-            <div className="text-center py-8 sm:py-12">
-              <p className="text-white/70 text-base sm:text-lg mb-4">
-                {t('lobby.noLobbies')}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white/10 rounded-xl p-6 animate-pulse">
+                  <div className="h-6 bg-white/20 rounded mb-4"></div>
+                  <div className="h-4 bg-white/20 rounded mb-3"></div>
+                  <div className="h-10 bg-white/20 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : lobbies.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">🎲</div>
+              <p className="text-white/70 text-lg mb-6">
+                No active lobbies right now. Be the first to start a game!
               </p>
+              {isAuthenticated && (
+                <button
+                  onClick={() => router.push('/lobby/create?gameType=guess_the_spy')}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-105"
+                >
+                  Create First Lobby
+                </button>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {lobbies.map((lobby) => {
                 const game = lobby.games[0]
                 const playerCount = game?._count?.players || 0
                 const isWaiting = game?.status === 'waiting'
                 const isPlaying = game?.status === 'playing'
+                const isFull = playerCount >= lobby.maxPlayers
 
                 return (
                   <div
                     key={lobby.id}
-                    className="bg-white/20 backdrop-blur-sm border border-white/20 rounded-xl p-4 hover:bg-white/30 hover:border-white/30 transition-all cursor-pointer group"
-                    onClick={() => handleQuickJoin(lobby.code)}
+                    className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-5 hover:from-white/30 hover:to-white/20 hover:border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:shadow-2xl"
+                    onClick={() => router.push(`/lobby/${lobby.code}`)}
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-white font-semibold text-base sm:text-lg truncate pr-2">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-white font-bold text-lg truncate pr-2 flex-1">
                         {lobby.name}
                       </h3>
-                      <span className="text-xs bg-purple-500/80 text-white px-2 py-1 rounded-lg font-mono">
+                      <span className="text-xs bg-purple-500 text-white px-3 py-1 rounded-full font-mono font-bold shadow-lg">
                         {lobby.code}
                       </span>
                     </div>
 
-                    <div className="text-white/70 text-xs sm:text-sm mb-3">
-                      {t('lobby.host')}: {lobby.creator.username || lobby.creator.email?.split('@')[0]}
+                    <div className="text-white/80 text-sm mb-4 flex items-center">
+                      <span className="mr-2">👤</span>
+                      <span className="truncate">
+                        Host: {lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'}
+                      </span>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                      <div className="text-white text-sm sm:text-base">
-                        👥 {playerCount}/{lobby.maxPlayers}
+                    <div className="flex justify-between items-center pt-3 border-t border-white/20">
+                      <div className="flex items-center text-white font-semibold">
+                        <span className="mr-2">👥</span>
+                        <span className={isFull ? 'text-yellow-300' : ''}>
+                          {playerCount}/{lobby.maxPlayers}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         {isWaiting && (
-                          <span className="text-xs bg-yellow-500/80 text-white px-2 py-1 rounded-lg">
-                            {t('lobby.waiting')}
+                          <span className="flex items-center text-xs bg-yellow-500 text-white px-3 py-1 rounded-full font-semibold shadow-md animate-pulse">
+                            <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-ping"></span>
+                            Waiting
                           </span>
                         )}
                         {isPlaying && (
-                          <span className="text-xs bg-green-500/80 text-white px-2 py-1 rounded-lg">
-                            {t('lobby.playing')}
+                          <span className="flex items-center text-xs bg-green-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
+                            <span className="w-2 h-2 bg-white rounded-full mr-1.5"></span>
+                            Playing
+                          </span>
+                        )}
+                        {isFull && (
+                          <span className="text-xs bg-red-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
+                            Full
                           </span>
                         )}
                       </div>
