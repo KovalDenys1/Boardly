@@ -209,8 +209,13 @@ io.use(async (socket, next) => {
     if (!token || token === 'null' || token === 'undefined' || token === '') {
       logger.warn('Socket connection rejected: No valid token provided', {
         token: token,
+        isGuest: isGuest,
         auth: socket.handshake.auth,
-        query: socket.handshake.query
+        query: socket.handshake.query,
+        headers: {
+          origin: socket.handshake.headers.origin,
+          userAgent: socket.handshake.headers['user-agent']
+        }
       })
       return next(new Error('Authentication required'))
     }
@@ -255,7 +260,8 @@ io.use(async (socket, next) => {
     if (!user) {
       logger.warn('Socket connection rejected: User not found in database', { 
         userId,
-        tokenPreview: String(token).substring(0, 20) + '...'
+        tokenPreview: String(token).substring(0, 20) + '...',
+        isGuest: isGuest
       })
       return next(new Error('User not found'))
     }

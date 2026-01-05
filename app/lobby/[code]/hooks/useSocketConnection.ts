@@ -41,6 +41,8 @@ export function useSocketConnection({
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const hasConnectedOnceRef = useRef(false)
+  const authFailedRef = useRef(false) // Track authentication failures
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -69,6 +71,12 @@ export function useSocketConnection({
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
     
+    // Clear any existing reconnect timeouts
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
+    
     if (!code) {
       clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
       return
@@ -77,6 +85,14 @@ export function useSocketConnection({
     // For authenticated users, wait for session to load
     if (!isGuest && !session?.user?.id) {
       clientLogger.log('⏳ Waiting for session to load before connecting socket...')
+      // Reset auth failed flag when waiting for session
+      authFailedRef.current = false
+      return
+    }
+
+    // Don't retry if authentication failed
+    if (authFailedRef.current) {
+      clientLogger.warn('⚠️ Skipping socket connection - authentication previously failed')
       return
     }
 
@@ -192,9 +208,22 @@ export function useSocketConnection({
       
       if (error.message.includes('timeout')) {
         clientLogger.warn('⏳ Socket connection timeout - retrying...')
-      } else if (error.message.includes('Authentication failed')) {
-        clientLogger.error('🔐 Authentication failed - check token')
-        setIsReconnecting(false) // Don't retry if auth failed
+      } else if (error.message.includes('Authentication failed') || error.message.includes('Authentication required')) {
+        clientLogger.error('🔐 Authentication failed - stopping reconnection attempts')
+        authFailedRef.current = true // Mark auth as failed
+        setIsReconnecting(false) // Stop showing reconnecting state
+        
+        // Stop any further reconnection attempts
+        if (newSocket) {
+          newSocket.removeAllListeners()
+          newSocket.close()
+        }
+        
+        // Set timeout to reset auth flag after 5 seconds (allow retry after page refresh/navigation)
+        reconnectTimeoutRef.current = setTimeout(() => {
+          clientLogger.log('🔄 Resetting authentication flag - retry allowed')
+          authFailedRef.current = false
+        }, 5000)
       }
     })
     
@@ -221,6 +250,12 @@ export function useSocketConnection({
     return () => {
       isMounted = false
       clientLogger.log('🔌 Cleaning up socket connection')
+      
+      // Clear reconnect timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
+      }
       
       // Remove all listeners first
       newSocket.off('connect')
