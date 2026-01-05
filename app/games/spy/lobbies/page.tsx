@@ -61,20 +61,22 @@ export default function SpyLobbiesPage() {
         
         // Get auth token - use userId for authenticated users
         const token = session?.user?.id || null
-        
+
+        const authPayload: Record<string, unknown> = {}
+        if (token) authPayload.token = token
+        authPayload.isGuest = false
+
+        const queryPayload: Record<string, string> = {}
+        if (token) queryPayload.token = String(token)
+        queryPayload.isGuest = 'false'
+
         socket = io(url, {
           transports: ['websocket', 'polling'],
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 1000,
-          auth: {
-            token: token,
-            isGuest: false,
-          },
-          query: {
-            token: token,
-            isGuest: 'false',
-          },
+          auth: authPayload,
+          query: queryPayload,
         })
 
         socket.on('connect', () => {

@@ -73,8 +73,17 @@ export default function Friends() {
     
     clientLogger.log('🔌 Connecting socket for online status', { socketUrl })
 
+    const authPayload: Record<string, unknown> = {}
+    if (token) authPayload.token = token
+    authPayload.isGuest = false
+
+    const queryPayload: Record<string, string> = {}
+    if (token) queryPayload.token = String(token)
+    queryPayload.isGuest = 'false'
+
     const newSocket = io(socketUrl, {
-      auth: { token, isGuest: false },
+      auth: authPayload,
+      query: queryPayload,
       transports: ['polling', 'websocket'],
     })
 

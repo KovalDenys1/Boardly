@@ -122,20 +122,22 @@ export default function LobbyListPage() {
       
       // Get auth token - use userId for authenticated users, null for guests
       const token = session?.user?.id || null
-      
+
+      const authPayload: Record<string, unknown> = {}
+      if (token) authPayload.token = token
+      if (!session?.user) authPayload.isGuest = true
+
+      const queryPayload: Record<string, string> = {}
+      if (token) queryPayload.token = String(token)
+      if (!session?.user) queryPayload.isGuest = 'true'
+
       socket = io(url, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
-        auth: {
-          token: token,
-          isGuest: !session?.user,
-        },
-        query: {
-          token: token,
-          isGuest: !session?.user ? 'true' : 'false',
-        },
+        auth: authPayload,
+        query: queryPayload,
       })
 
       socket.on('connect', () => {

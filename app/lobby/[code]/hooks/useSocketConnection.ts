@@ -128,6 +128,16 @@ export function useSocketConnection({
       return Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
     }
 
+    const authPayload: Record<string, unknown> = {}
+    if (token) authPayload.token = token
+    if (isGuest) authPayload.isGuest = true
+    if (isGuest && guestName) authPayload.guestName = guestName
+
+    const queryPayload: Record<string, string> = {}
+    if (token) queryPayload.token = String(token)
+    if (isGuest) queryPayload.isGuest = 'true'
+    if (isGuest && guestName) queryPayload.guestName = String(guestName)
+
     const newSocket = io(url, {
       // Оптимізовано для Render free tier (холодні старти можуть займати до 60s)
       transports: ['polling', 'websocket'], // Polling → WebSocket для стабільності
@@ -145,16 +155,8 @@ export function useSocketConnection({
       // Додаткові налаштування для стабільності
       closeOnBeforeunload: false, // Не закривати при перезавантаженні
       withCredentials: false, // Не потрібно для токен-авторизації
-      auth: {
-        token: token,
-        isGuest: isGuest,
-        guestName: isGuest ? guestName : undefined,
-      },
-      query: {
-        token: token || '',
-        isGuest: isGuest ? 'true' : 'false',
-        guestName: isGuest ? guestName : undefined,
-      },
+      auth: authPayload,
+      query: queryPayload,
     })
 
     newSocket.on('connect', () => {
