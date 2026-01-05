@@ -22,6 +22,10 @@
     "goHome": "Go to Home",
     "optional": "optional"
   },
+  "breadcrumbs": {
+    "home": "Home",
+    "games": "Games"
+  },
   "lobby": {
     "title": "Game Lobbies",
     "subtitle": "Join an existing lobby or create your own!",
@@ -252,7 +256,32 @@
     "spy": {
       "name": "Guess the Spy",
       "description": "Social deduction game where one player is the spy. Find them before time runs out!",
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "lobbies": {
+        "title": "Guess the Spy",
+        "subtitle": "Join a game or create your own lobby!",
+        "subtitleGuest": "Browse lobbies and sign in when you want to host or join.",
+        "backToGames": "Back to Games",
+        "wantToPlay": "Want to play?",
+        "wantToPlayDesc": "Sign in or create an account to host lobbies and join games. Guests can still receive invite links later.",
+        "signIn": "Sign In",
+        "createAccount": "Create Account",
+        "createNewLobby": "Create New Lobby",
+        "createDescription": "Start your own Spy game and invite friends to join!",
+        "createNow": "Create Now",
+        "quickJoin": "Quick Join",
+        "quickJoinDesc": "Have a lobby code? Enter it below to join instantly!",
+        "enterCode": "Enter 4-digit code",
+        "signInToJoin": "Please sign in before joining a lobby. You can still explore active rooms below.",
+        "activeLobbies": "Active Lobbies",
+        "noLobbiesTitle": "No active lobbies right now. Be the first to start a game!",
+        "createFirstLobby": "Create First Lobby",
+        "host": "Host",
+        "waiting": "Waiting",
+        "playing": "Playing",
+        "full": "Full",
+        "newGame": "NEW GAME"
+      }
     },
     "chess": {
       "name": "Chess",

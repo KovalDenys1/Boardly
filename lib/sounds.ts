@@ -58,21 +58,40 @@ class SoundManager {
     }
 
     Object.entries(soundFiles).forEach(([key, path]) => {
-      const audio = new Audio(path)
-      audio.preload = 'auto' // Preload fully for instant playback
-      audio.volume = 0.7 // Set default volume to 70%
-      
-      // Add error handler to prevent console errors
-      audio.addEventListener('error', (e) => {
-        console.warn(`Failed to load sound: ${path}`, e)
-      })
-      
-      // Clean up playing state when sound ends
-      audio.addEventListener('ended', () => {
-        this.playingSounds.delete(key)
-      })
-      
-      this.sounds.set(key, audio)
+      try {
+        const audio = new Audio()
+        audio.preload = 'none' // Changed from 'auto' to prevent cache issues in production
+        audio.volume = 0.7 // Set default volume to 70%
+        
+        // Set src after creating audio element to avoid immediate loading issues
+        audio.src = path
+        
+        // Enhanced error handler with retry logic
+        audio.addEventListener('error', (e) => {
+          // Silently handle cache errors (common in production)
+          const error = e.target as HTMLAudioElement
+          if (error.error?.code === 4) {
+            // MEDIA_ERR_SRC_NOT_SUPPORTED or cache error - try reloading
+            audio.load()
+          }
+          // Don't spam console with cache errors in production
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Failed to load sound: ${path}`, e)
+          }
+        })
+        
+        // Clean up playing state when sound ends
+        audio.addEventListener('ended', () => {
+          this.playingSounds.delete(key)
+        })
+        
+        this.sounds.set(key, audio)
+      } catch (error) {
+        // Fail silently for individual sounds - app should continue working
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`Failed to create audio for ${key}:`, error)
+        }
+      }
     })
     
     this.initialized = true
@@ -83,7 +102,9 @@ class SoundManager {
 
     const sound = this.sounds.get(soundName)
     if (!sound) {
-      console.warn(`Sound not found: ${soundName}`)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Sound not found: ${soundName}`)
+      }
       return
     }
 
@@ -93,6 +114,11 @@ class SoundManager {
     }
 
     try {
+      // Load sound if not loaded (lazy loading to prevent cache errors)
+      if (sound.readyState === 0) {
+        sound.load()
+      }
+      
       // Reset sound to beginning
       sound.currentTime = 0
       
@@ -116,15 +142,20 @@ class SoundManager {
           // Remove from playing set on error
           this.playingSounds.delete(soundName)
           
-          // Only warn if it's not a user interaction issue
-          if (err.name !== 'NotAllowedError' && err.name !== 'NotSupportedError') {
+          // Only warn if it's not a user interaction or cache issue
+          if (err.name !== 'NotAllowedError' && 
+              err.name !== 'NotSupportedError' && 
+              err.name !== 'AbortError' &&
+              process.env.NODE_ENV === 'development') {
             console.warn(`Sound play failed (${soundName}):`, err.message)
           }
         })
       }
     } catch (err) {
       this.playingSounds.delete(soundName)
-      console.warn(`Sound play exception (${soundName}):`, err)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Sound play exception (${soundName}):`, err)
+      }
     }
   }
 

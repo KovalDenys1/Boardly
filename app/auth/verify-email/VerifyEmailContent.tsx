@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -14,9 +14,21 @@ export default function VerifyEmailContent() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const token = searchParams.get('token')
+  
+  // Prevent duplicate verification requests
+  const verificationAttemptedRef = useRef(false)
+  const currentTokenRef = useRef<string | null>(null)
 
   const verifyEmail = useCallback(async (verificationToken: string) => {
+    // Prevent duplicate requests for the same token
+    if (verificationAttemptedRef.current && currentTokenRef.current === verificationToken) {
+      return
+    }
+    
+    verificationAttemptedRef.current = true
+    currentTokenRef.current = verificationToken
     setLoading(true)
+    
     try {
       const res = await fetch('/api/auth/verify-email', {
         method: 'POST',
@@ -39,13 +51,16 @@ export default function VerifyEmailContent() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed'
       toast.error(errorMessage)
+      // Reset on error to allow retry
+      verificationAttemptedRef.current = false
+      currentTokenRef.current = null
     } finally {
       setLoading(false)
     }
   }, [router, toast, update])
 
   useEffect(() => {
-    if (token) {
+    if (token && !verificationAttemptedRef.current) {
       verifyEmail(token)
     }
   }, [token, verifyEmail])

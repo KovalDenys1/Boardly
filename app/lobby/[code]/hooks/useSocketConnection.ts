@@ -119,13 +119,16 @@ export function useSocketConnection({
       reconnectionAttempts: 20, // Збільшено для холодних стартів Render
       reconnectionDelay: 3000, // 3 секунди початкова затримка
       reconnectionDelayMax: 120000, // До 2 хвилин між спробами (холодний старт)
-      timeout: 120000, // 2 хвилини - важливо для холодного старту Render
+      timeout: 180000, // 3 хвилини - важливо для холодного старту Render (було 2 хв)
       upgrade: true, // Auto-upgrade polling → websocket
       rememberUpgrade: true, // Запам'ятати успішний upgrade
       autoConnect: true, // Автоматичне підключення
       forceNew: false, // Використовувати існуюче з'єднання якщо можливо
       multiplex: true, // Multiplexing для ефективності
       path: '/socket.io/', // Явний шлях
+      // Додаткові налаштування для стабільності
+      closeOnBeforeunload: false, // Не закривати при перезавантаженні
+      withCredentials: false, // Не потрібно для токен-авторизації
       auth: {
         token: token,
         isGuest: isGuest,
