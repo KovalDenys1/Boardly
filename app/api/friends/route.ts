@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 
+// Force dynamic rendering (uses request.headers)
+export const dynamic = 'force-dynamic'
+
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends')
 

@@ -21,6 +21,7 @@ import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -37,6 +38,20 @@ const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   largeStraight: 'Large Straight',
   yahtzee: 'Yahtzee',
   chance: 'Chance'
+}
+
+// Database player type
+interface DBPlayer {
+  id: string
+  userId: string
+  score: number
+  placement?: number | null
+  user: {
+    id: string
+    username: string | null
+    name?: string | null
+    isBot?: boolean
+  }
 }
 
 // New modular imports
@@ -145,7 +160,7 @@ function LobbyPageContent() {
 
   const getCurrentUserName = useCallback(() => {
     if (isGuest) return guestName
-    return (session?.user as any)?.username || session?.user?.email || session?.user?.name || 'You'
+    return (session?.user as { username?: string })?.username || session?.user?.email || session?.user?.name || 'You'
   }, [isGuest, guestName, session?.user])
 
   const isMyTurn = useCallback(() => {
@@ -389,7 +404,7 @@ function LobbyPageContent() {
     clientLogger.log(`🤖 ${event.message}`)
   }, [gameEngine, game?.players?.length])
 
-  const onGameAbandoned = useCallback((data: any) => {
+  const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
     
     const reason = data.reason
@@ -410,11 +425,11 @@ function LobbyPageContent() {
     }, 3000)
   }, [router])
 
-  const onPlayerLeft = useCallback((data: any) => {
+  const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
     
-    if (data.playerName) {
-      showToast.info('toast.playerLeft', undefined, { player: data.playerName })
+    if (data.username) {
+      showToast.info('toast.playerLeft', undefined, { player: data.username })
     }
     
     // Refresh lobby data
@@ -761,7 +776,7 @@ function LobbyPageContent() {
   const playerCount = game?.players?.length || 0
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
-  const isInGame = game?.players?.some((p: any) => 
+  const isInGame = game?.players?.some(p => 
     p.userId === getCurrentUserId() || 
     (isGuest && p.userId === guestId)
   )
@@ -1035,9 +1050,9 @@ function LobbyPageContent() {
                               isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
                               isLoading={isScoring}
                               playerName={(() => {
-                                const dbPlayer = game?.players?.find((p: any) => p.userId === viewingPlayerId)
+                                const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
                                 if (!dbPlayer) return undefined
-                                return (dbPlayer as any).user?.name || (dbPlayer as any).user?.username || 'Player'
+                                return dbPlayer.user?.username || dbPlayer.name || 'Player'
                               })()}
                               onBackToMyCards={isViewingOtherPlayer ? () => {
                                 // Set to current user's ID instead of null
@@ -1061,7 +1076,7 @@ function LobbyPageContent() {
                     {/* Players List - Shows 1 player with scroll for more */}
                     <div className="flex-shrink-0" style={{ height: '140px' }}>
                       <PlayerList
-                        players={game?.players?.map((p: any) => {
+                        players={game?.players?.map(p => {
                           // Find the player's actual position in the game engine
                           const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
                           const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
@@ -1069,7 +1084,12 @@ function LobbyPageContent() {
                           return {
                             id: p.id,
                             userId: p.userId,
-                            user: p.user,
+                            user: {
+                              name: p.user?.username || null,
+                              username: p.user?.username || null,
+                              email: null,
+                              isBot: p.user?.isBot || false,
+                            },
                             score: enginePlayer?.score || 0,
                             position: actualPosition, // Use position from game engine, not DB
                             isReady: true,
@@ -1138,9 +1158,9 @@ function LobbyPageContent() {
                             isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
                             isLoading={isScoring}
                             playerName={(() => {
-                              const dbPlayer = game?.players?.find((p: any) => p.userId === viewingPlayerId)
+                              const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
                               if (!dbPlayer) return undefined
-                              return (dbPlayer as any).user?.name || (dbPlayer as any).user?.username || 'Player'
+                              return dbPlayer.user?.username || dbPlayer.name || 'Player'
                             })()}
                             onBackToMyCards={isViewingOtherPlayer ? () => {
                               setSelectedPlayerId(currentUserId || null)
@@ -1160,14 +1180,19 @@ function LobbyPageContent() {
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
                     <div className="p-4 space-y-4">
                       <PlayerList
-                        players={game?.players?.map((p: any) => {
+                        players={game?.players?.map(p => {
                           const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
                           const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
                           
                           return {
                             id: p.id,
                             userId: p.userId,
-                            user: p.user,
+                            user: {
+                              name: p.user?.username || null,
+                              username: p.user?.username || null,
+                              email: null,
+                              isBot: p.user?.isBot || false,
+                            },
                             score: enginePlayer?.score || 0,
                             position: actualPosition,
                             isReady: true,
@@ -1297,8 +1322,30 @@ function LobbyPageContent() {
 
 export default function LobbyPage() {
   return (
-    <Suspense fallback={<LoadingSpinner size="lg" />}>
-      <LobbyPageContent />
-    </Suspense>
+    <ErrorBoundary
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
+            <div className="text-red-500 text-6xl mb-4">🎲</div>
+            <h1 className="text-2xl font-bold text-white mb-4">
+              Game Error
+            </h1>
+            <p className="text-gray-400 mb-6">
+              Something went wrong with the game lobby. Please try again.
+            </p>
+            <button
+              onClick={() => window.location.href = '/games/yahtzee/lobbies'}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Back to Lobbies
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <Suspense fallback={<LoadingSpinner size="lg" />}>
+        <LobbyPageContent />
+      </Suspense>
+    </ErrorBoundary>
   )
 }

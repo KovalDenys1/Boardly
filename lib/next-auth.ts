@@ -157,7 +157,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.email = user.email
-        token.name = (user as any).username || user.email?.split('@')[0] || 'user'
+        token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         token.picture = user.image
         token.emailVerified = user.emailVerified
       }
@@ -222,7 +222,7 @@ export const authOptions: NextAuthOptions = {
         data: { 
           emailVerified: new Date(),
           // Only set username if user doesn't have one yet
-          username: (user as any).username || user.email?.split('@')[0] || 'user'
+          username: (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         }
       })
       

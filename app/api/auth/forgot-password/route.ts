@@ -14,10 +14,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email } = forgotPasswordSchema.parse(body)
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+    // Check if user exists. Wrap DB call so local/dev DB misconfiguration
+    // doesn't return 500 — instead log and return generic success.
+    let user
+    try {
+      user = await prisma.user.findUnique({ where: { email } })
+    } catch (dbError) {
+      const log = apiLogger('POST /api/auth/forgot-password')
+      log.warn('DB lookup failed during forgot-password; returning generic success to caller', {
+        email,
+        error: (dbError as Error).message,
+      })
+      return NextResponse.json({
+        message: 'If an account exists with that email, you will receive password reset instructions.',
+      })
+    }
 
     // Security: Always return success even if user doesn't exist
     // This prevents email enumeration attacks
@@ -52,11 +63,15 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       const log = apiLogger('POST /api/auth/forgot-password')
-      log.error('Failed to send password reset email', undefined, { error: result.error })
-      return NextResponse.json(
-        { error: 'Failed to send reset email. Please try again later.' },
-        { status: 500 }
-      )
+      // For local/dev environments the email provider may not be configured.
+      // Treat email send failures as non-fatal: log a warning and return
+      // the same generic response to the client to avoid email enumeration
+      // and to not block users during development.
+      log.warn('Password reset email not sent', { error: result.error })
+
+      return NextResponse.json({
+        message: 'If an account exists with that email, you will receive password reset instructions.',
+      })
     }
 
     return NextResponse.json({
