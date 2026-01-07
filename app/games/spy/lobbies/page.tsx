@@ -299,7 +299,7 @@ export default function SpyLobbiesPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white/10 rounded-xl p-6 animate-pulse">
+                <div key={i} className="bg-white/10 rounded-xl p-6">
                   <div className="h-6 bg-white/20 rounded mb-4"></div>
                   <div className="h-4 bg-white/20 rounded mb-3"></div>
                   <div className="h-10 bg-white/20 rounded"></div>
@@ -361,7 +361,7 @@ export default function SpyLobbiesPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {isWaiting && (
-                          <span className="flex items-center text-xs bg-yellow-500 text-white px-3 py-1 rounded-full font-semibold shadow-md animate-pulse">
+                          <span className="flex items-center text-xs bg-yellow-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
                             <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-ping"></span>
                             {t('games.spy.lobbies.waiting')}
                           </span>
