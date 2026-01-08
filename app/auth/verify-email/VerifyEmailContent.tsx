@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
+import { showToast } from '@/lib/i18n-toast'
 
 export default function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, update } = useSession()
-  const toast = useToast()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const token = searchParams.get('token')
@@ -18,6 +19,7 @@ export default function VerifyEmailContent() {
   // Prevent duplicate verification requests
   const verificationAttemptedRef = useRef(false)
   const currentTokenRef = useRef<string | null>(null)
+  const isVerifyingRef = useRef(false)
 
   const verifyEmail = useCallback(async (verificationToken: string) => {
     // Prevent duplicate requests for the same token
@@ -25,8 +27,14 @@ export default function VerifyEmailContent() {
       return
     }
     
+    // Prevent concurrent verification attempts
+    if (isVerifyingRef.current) {
+      return
+    }
+    
     verificationAttemptedRef.current = true
     currentTokenRef.current = verificationToken
+    isVerifyingRef.current = true
     setLoading(true)
     
     try {
@@ -42,22 +50,23 @@ export default function VerifyEmailContent() {
         throw new Error(data.error || 'Verification failed')
       }
 
-      toast.success('Email verified successfully! You can now play.')
+      showToast.success('auth.verifyEmail.successMessage', 'Email verified successfully! You can now play.')
       
       // Update session to reflect emailVerified status
       await update()
       
       setTimeout(() => router.push('/'), 2000)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Verification failed'
-      toast.error(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : t('auth.verifyEmail.error')
+      showToast.error('auth.verifyEmail.errorMessage', errorMessage)
       // Reset on error to allow retry
       verificationAttemptedRef.current = false
       currentTokenRef.current = null
+      isVerifyingRef.current = false
     } finally {
       setLoading(false)
     }
-  }, [router, toast, update])
+  }, [router, t, update])
 
   useEffect(() => {
     if (token && !verificationAttemptedRef.current) {
@@ -67,7 +76,7 @@ export default function VerifyEmailContent() {
 
   const resendVerification = async () => {
     if (!session?.user?.email) {
-      toast.error('Please log in to resend verification email')
+      showToast.error('auth.verifyEmail.loginRequired', 'Please log in to resend verification email')
       return
     }
 
@@ -86,13 +95,13 @@ export default function VerifyEmailContent() {
       }
 
       setSent(true)
-      toast.success('Verification email sent! Check your inbox.')
+      showToast.success('auth.verifyEmail.resendSuccess', 'Verification email sent! Check your inbox.')
       
       // Update session to refresh emailVerified status
       await update()
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to resend email'
-      toast.error(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : t('auth.verifyEmail.resendError')
+      showToast.error('auth.verifyEmail.resendError', errorMessage)
     } finally {
       setLoading(false)
     }
@@ -103,7 +112,7 @@ export default function VerifyEmailContent() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
         <div className="card max-w-md w-full text-center">
           <LoadingSpinner />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Verifying your email...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('auth.verifyEmail.verifying')}</p>
         </div>
       </div>
     )
@@ -117,16 +126,16 @@ export default function VerifyEmailContent() {
         </div>
 
         <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
-          Verify Your Email
+          {t('auth.verifyEmail.title')}
         </h1>
 
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
+          {t('auth.verifyEmail.description')}
         </p>
 
         {sent && (
           <div className="bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded mb-4">
-            ✓ Verification email sent! Check your inbox.
+            ✓ {t('auth.verifyEmail.emailSent')}
           </div>
         )}
 
@@ -139,12 +148,12 @@ export default function VerifyEmailContent() {
             {loading ? (
               <>
                 <LoadingSpinner />
-                <span className="ml-2">Sending...</span>
+                <span className="ml-2">{t('auth.verifyEmail.sending')}</span>
               </>
             ) : sent ? (
-              'Email Sent ✓'
+              t('auth.verifyEmail.sent')
             ) : (
-              'Resend Verification Email'
+              t('auth.verifyEmail.resendButton')
             )}
           </button>
 
@@ -152,7 +161,7 @@ export default function VerifyEmailContent() {
             onClick={() => router.push('/')}
             className="btn btn-secondary w-full"
           >
-            Back to Home
+            {t('auth.verifyEmail.backToHome')}
           </button>
         </div>
       </div>

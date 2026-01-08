@@ -491,11 +491,22 @@
       "invalidToken": "Invalid or expired reset link"
     },
     "verifyEmail": {
-      "title": "Verify Email",
+      "title": "Verify Your Email",
+      "description": "We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.",
       "verifying": "Verifying your email...",
       "success": "Email verified successfully!",
+      "successMessage": "Email verified successfully! You can now play.",
       "error": "Verification failed",
-      "goToLogin": "Go to Login"
+      "errorMessage": "Verification failed. Please try again.",
+      "goToLogin": "Go to Login",
+      "resendButton": "Resend Verification Email",
+      "sending": "Sending...",
+      "sent": "Email Sent ✓",
+      "emailSent": "Verification email sent! Check your inbox.",
+      "resendSuccess": "Verification email sent! Check your inbox.",
+      "resendError": "Failed to resend verification email",
+      "loginRequired": "Please log in to resend verification email",
+      "backToHome": "Back to Home"
     },
     "password": {
       "veryWeak": "Very Weak",

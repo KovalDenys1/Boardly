@@ -26,24 +26,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Token has expired' }, { status: 400 })
     }
 
-    // Get user details for welcome email
+    // Get user details for welcome email and check if already verified
     const user = await prisma.user.findUnique({
       where: { id: verificationToken.userId },
-      select: { id: true, email: true, username: true },
+      select: { id: true, email: true, username: true, emailVerified: true },
     })
 
-    await prisma.user.update({
-      where: { id: verificationToken.userId },
-      data: { emailVerified: new Date() },
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    // If already verified, return success (idempotent)
+    if (user.emailVerified) {
+      // Clean up token and return success
+      await prisma.emailVerificationToken.delete({
+        where: { token },
+      }).catch(() => {}) // Token might already be deleted
+      return NextResponse.json({ message: 'Email verified successfully' })
+    }
+
+    // Use transaction to ensure atomicity and prevent race conditions
+    await prisma.$transaction(async (tx) => {
+      // Update user email verification status
+      await tx.user.update({
+        where: { id: verificationToken.userId },
+        data: { emailVerified: new Date() },
+      })
+
+      // Delete the verification token
+      await tx.emailVerificationToken.delete({
+        where: { token },
+      })
     })
 
-    await prisma.emailVerificationToken.delete({
-      where: { token },
-    })
-
-    // Send welcome email after successful verification
-    if (user?.email) {
-      await sendWelcomeEmail(user.email, user.username || 'Player')
+    // Send welcome email after successful verification (non-blocking)
+    if (user.email) {
+      sendWelcomeEmail(user.email, user.username || 'Player')
         .catch((error) => {
           const log = apiLogger('POST /api/auth/verify-email')
           log.warn('Failed to send welcome email (non-critical)', { error })

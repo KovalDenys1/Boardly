@@ -26,7 +26,6 @@ export async function sendVerificationEmail(email: string, token: string, userna
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verify your email</title>
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -77,15 +76,13 @@ export async function sendPasswordResetEmail(email: string, token: string) {
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Reset your password</title>
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
               <h1 style="color: white; margin: 0; font-size: 28px;">🎲 Boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-              <h2 style="color: #333; margin-top: 0;">Reset Your Password</h2>
-              <p>We received a request to reset your password. Click the button below to create a new password.</p>
+              <p style="margin-top: 0;">We received a request to reset your password. Click the button below to create a new password.</p>
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${resetUrl}" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Reset Password
@@ -126,7 +123,6 @@ export async function sendWelcomeEmail(email: string, name: string) {
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Welcome to Boardly</title>
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -182,11 +178,10 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
           <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Confirm Account Deletion</title>
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">⚠️ Account Deletion</h1>
+              <h1 style="color: white; margin: 0; font-size: 28px;">⚠️ Boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #333; margin-top: 0;">Hi ${username},</h2>
