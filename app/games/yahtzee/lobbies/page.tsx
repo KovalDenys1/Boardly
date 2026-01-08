@@ -58,20 +58,22 @@ export default function YahtzeeLobbiesPage() {
         
         // Get auth token - use userId for authenticated users
         const token = session?.user?.id || null
-        
+
+        const authPayload: Record<string, unknown> = {}
+        if (token) authPayload.token = token
+        authPayload.isGuest = false
+
+        const queryPayload: Record<string, string> = {}
+        if (token) queryPayload.token = String(token)
+        queryPayload.isGuest = 'false'
+
         socket = io(url, {
           transports: ['websocket', 'polling'],
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 1000,
-          auth: {
-            token: token,
-            isGuest: false,
-          },
-          query: {
-            token: token,
-            isGuest: 'false',
-          },
+          auth: authPayload,
+          query: queryPayload,
         })
 
         socket.on('connect', () => {
@@ -304,7 +306,7 @@ export default function YahtzeeLobbiesPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-white/10 rounded-xl animate-pulse"></div>
+                <div key={i} className="h-32 bg-white/10 rounded-xl"></div>
               ))}
             </div>
           ) : lobbies.length === 0 ? (
@@ -351,7 +353,7 @@ export default function YahtzeeLobbiesPage() {
                         : 'bg-yellow-500/80 text-white'
                     }`}>
                       <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
-                        lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-white animate-pulse' : 'bg-white'
+                        lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-white' : 'bg-white'
                       }`}></div>
                       <span className="hidden xs:inline">
                         {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (

@@ -97,16 +97,46 @@ const server = createServer((req, res) => {
   res.end('Socket.IO server is running')
 })
 
+// Parse allowed origins from env into an array. Use ['*'] as fallback
+// but handle '*' safely by echoing the request origin when credentials are used.
 const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
-  : '*'
+  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
+  : ['*']
+
+const corsOptions = {
+  // Use a function to validate/echo origin. This avoids sending '*' with
+  // Access-Control-Allow-Credentials (which browsers forbid).
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow server-side requests or non-browser tools with no origin
+    if (!origin) return callback(null, true)
+
+    try {
+      // If wildcard is present allow and echo the requesting origin
+      if (allowedOrigins.includes('*')) return callback(null, true)
+
+      // Exact match allowed
+      if (allowedOrigins.includes(origin)) return callback(null, true)
+
+      // Also allow origin variants (some platforms include port or trailing slash)
+      try {
+        const parsed = new URL(origin).origin
+        if (allowedOrigins.includes(parsed)) return callback(null, true)
+      } catch (e) {
+        // ignore parse error
+      }
+
+      socketLogger('cors').warn('Blocked socket origin by CORS', { origin, allowedOrigins })
+      return callback(new Error('Not allowed by CORS'))
+    } catch (err) {
+      return callback(err as Error)
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST'],
+}
 
 const io = new SocketIOServer(server, {
-  cors: {
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST'],
-  },
+  cors: corsOptions,
   // Optimized for Render free tier (handles cold starts)
   pingTimeout: 120000, // 2 minutes - wait time for client response
   pingInterval: 30000, // 30 seconds - ping message interval
@@ -209,8 +239,13 @@ io.use(async (socket, next) => {
     if (!token || token === 'null' || token === 'undefined' || token === '') {
       logger.warn('Socket connection rejected: No valid token provided', {
         token: token,
+        isGuest: isGuest,
         auth: socket.handshake.auth,
-        query: socket.handshake.query
+        query: socket.handshake.query,
+        headers: {
+          origin: socket.handshake.headers.origin,
+          userAgent: socket.handshake.headers['user-agent']
+        }
       })
       return next(new Error('Authentication required'))
     }
@@ -255,7 +290,8 @@ io.use(async (socket, next) => {
     if (!user) {
       logger.warn('Socket connection rejected: User not found in database', { 
         userId,
-        tokenPreview: String(token).substring(0, 20) + '...'
+        tokenPreview: String(token).substring(0, 20) + '...',
+        isGuest: isGuest
       })
       return next(new Error('User not found'))
     }

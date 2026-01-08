@@ -21,6 +21,8 @@ import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useTranslation } from 'react-i18next'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -37,6 +39,20 @@ const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   largeStraight: 'Large Straight',
   yahtzee: 'Yahtzee',
   chance: 'Chance'
+}
+
+// Database player type
+interface DBPlayer {
+  id: string
+  userId: string
+  score: number
+  placement?: number | null
+  user: {
+    id: string
+    username: string | null
+    name?: string | null
+    isBot?: boolean
+  }
 }
 
 // New modular imports
@@ -79,6 +95,19 @@ function LobbyPageContent() {
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { celebrate, fireworks } = useConfetti()
+  const { t } = useTranslation()
+
+  const roundInfo = React.useMemo(() => {
+    if (!gameEngine) return { current: 1, total: 13 }
+    const players = gameEngine.getPlayers()
+    const filledCounts = players.map(p => {
+      const scorecard = gameEngine.getScorecard(p.id)
+      return scorecard ? Object.keys(scorecard).length : 0
+    })
+    const maxFilled = filledCounts.length ? Math.max(...filledCounts) : 0
+    const current = Math.min(13, maxFilled + 1)
+    return { current, total: 13 }
+  }, [gameEngine, game?.state])
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
@@ -156,7 +185,7 @@ function LobbyPageContent() {
 
   const getCurrentUserName = useCallback(() => {
     if (isGuest) return guestName
-    return (session?.user as any)?.username || session?.user?.email || session?.user?.name || 'You'
+    return (session?.user as { username?: string })?.username || session?.user?.email || session?.user?.name || 'You'
   }, [isGuest, guestName, session?.user])
 
   const isMyTurn = useCallback(() => {
@@ -411,7 +440,7 @@ function LobbyPageContent() {
     clientLogger.log(`🤖 ${event.message}`)
   }, [gameEngine, game?.players?.length])
 
-  const onGameAbandoned = useCallback((data: any) => {
+  const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
     
     const reason = data.reason
@@ -432,11 +461,11 @@ function LobbyPageContent() {
     }, 3000)
   }, [router])
 
-  const onPlayerLeft = useCallback((data: any) => {
+  const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
     
-    if (data.playerName) {
-      showToast.info('toast.playerLeft', undefined, { player: data.playerName })
+    if (data.username) {
+      showToast.info('toast.playerLeft', undefined, { player: data.username })
     }
     
     // Refresh lobby data
@@ -783,7 +812,7 @@ function LobbyPageContent() {
   const playerCount = game?.players?.length || 0
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
-  const isInGame = game?.players?.some((p: any) => 
+  const isInGame = game?.players?.some(p => 
     p.userId === getCurrentUserId() || 
     (isGuest && p.userId === guestId)
   )
@@ -892,14 +921,14 @@ function LobbyPageContent() {
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            R {gameEngine.getRound()}/13
+                            {t('yahtzee.ui.round')}: {roundInfo.current}/{roundInfo.total}
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
                         <div className="flex items-center gap-1 max-w-[120px]">
                           <span className="text-base">👤</span>
                           <span className="text-sm font-bold truncate">
-                            {gameEngine.getCurrentPlayer()?.name || 'Player'}
+                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
                           </span>
                         </div>
                       </div>
@@ -917,28 +946,28 @@ function LobbyPageContent() {
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          toast.success(newState ? '🔊 Sound enabled' : '🔇 Sound disabled', {
+                          toast.success(newState ? t('yahtzee.ui.soundOn') : t('yahtzee.ui.soundOff'), {
                             duration: 2000,
                             position: 'top-center',
                           })
                         }}
-                        aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+                        aria-label={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
                         className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+                        title={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
                       >
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Are you sure you want to leave the game?')) {
+                          if (confirm(t('yahtzee.ui.leaveConfirm'))) {
                             handleLeaveLobby()
                           }
                         }}
-                        aria-label="Leave game"
+                        aria-label={t('yahtzee.ui.leave')}
                         className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
-                        <span>Leave</span>
+                        <span>{t('yahtzee.ui.leave')}</span>
                       </button>
                     </div>
                   </div>
@@ -949,9 +978,9 @@ function LobbyPageContent() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">Round</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.round')}</div>
                           <div className="text-base font-bold leading-tight">
-                            {gameEngine.getRound()}/13
+                            {roundInfo.current}/{roundInfo.total}
                           </div>
                         </div>
                       </div>
@@ -959,9 +988,9 @@ function LobbyPageContent() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">👤</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">Turn</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.turn')}</div>
                           <div className="text-base font-bold leading-tight truncate max-w-[150px]">
-                            {gameEngine.getCurrentPlayer()?.name || 'Player'}
+                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
                           </div>
                         </div>
                       </div>
@@ -1057,9 +1086,9 @@ function LobbyPageContent() {
                               isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
                               isLoading={isScoring}
                               playerName={(() => {
-                                const dbPlayer = game?.players?.find((p: any) => p.userId === viewingPlayerId)
+                                const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
                                 if (!dbPlayer) return undefined
-                                return (dbPlayer as any).user?.name || (dbPlayer as any).user?.username || 'Player'
+                                return dbPlayer.user?.username || dbPlayer.name || 'Player'
                               })()}
                               onBackToMyCards={isViewingOtherPlayer ? () => {
                                 // Set to current user's ID instead of null
@@ -1080,10 +1109,10 @@ function LobbyPageContent() {
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
                   <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
-                    {/* Players List - Shows 1 player with scroll for more */}
-                    <div className="flex-shrink-0" style={{ height: '140px' }}>
+                    {/* Players List - 40% of space */}
+                    <div className="flex-1 min-h-0 overflow-hidden">
                       <PlayerList
-                        players={game?.players?.map((p: any) => {
+                        players={game?.players?.map(p => {
                           // Find the player's actual position in the game engine
                           const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
                           const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
@@ -1091,7 +1120,12 @@ function LobbyPageContent() {
                           return {
                             id: p.id,
                             userId: p.userId,
-                            user: p.user,
+                            user: {
+                              name: p.user?.username || null,
+                              username: p.user?.username || null,
+                              email: null,
+                              isBot: p.user?.isBot || false,
+                            },
                             score: enginePlayer?.score || 0,
                             position: actualPosition, // Use position from game engine, not DB
                             isReady: true,
@@ -1107,7 +1141,7 @@ function LobbyPageContent() {
                       />
                     </div>
 
-                    {/* Roll History - Shows 2 recent rolls */}
+                    {/* Roll History - 60% of space */}
                     {rollHistory.length > 0 && (
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <RollHistory entries={rollHistory} />
@@ -1160,9 +1194,9 @@ function LobbyPageContent() {
                             isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
                             isLoading={isScoring}
                             playerName={(() => {
-                              const dbPlayer = game?.players?.find((p: any) => p.userId === viewingPlayerId)
+                              const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
                               if (!dbPlayer) return undefined
-                              return (dbPlayer as any).user?.name || (dbPlayer as any).user?.username || 'Player'
+                              return dbPlayer.user?.username || dbPlayer.name || 'Player'
                             })()}
                             onBackToMyCards={isViewingOtherPlayer ? () => {
                               setSelectedPlayerId(currentUserId || null)
@@ -1182,14 +1216,19 @@ function LobbyPageContent() {
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
                     <div className="p-4 space-y-4">
                       <PlayerList
-                        players={game?.players?.map((p: any) => {
+                        players={game?.players?.map(p => {
                           const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
                           const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
                           
                           return {
                             id: p.id,
                             userId: p.userId,
-                            user: p.user,
+                            user: {
+                              name: p.user?.username || null,
+                              username: p.user?.username || null,
+                              email: null,
+                              isBot: p.user?.isBot || false,
+                            },
                             score: enginePlayer?.score || 0,
                             position: actualPosition,
                             isReady: true,
@@ -1319,8 +1358,30 @@ function LobbyPageContent() {
 
 export default function LobbyPage() {
   return (
-    <Suspense fallback={<LoadingSpinner size="lg" />}>
-      <LobbyPageContent />
-    </Suspense>
+    <ErrorBoundary
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
+            <div className="text-red-500 text-6xl mb-4">🎲</div>
+            <h1 className="text-2xl font-bold text-white mb-4">
+              Game Error
+            </h1>
+            <p className="text-gray-400 mb-6">
+              Something went wrong with the game lobby. Please try again.
+            </p>
+            <button
+              onClick={() => window.location.href = '/games/yahtzee/lobbies'}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Back to Lobbies
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <Suspense fallback={<LoadingSpinner size="lg" />}>
+        <LobbyPageContent />
+      </Suspense>
+    </ErrorBoundary>
   )
 }

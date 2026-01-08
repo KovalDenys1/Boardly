@@ -1,5 +1,6 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
+import { useTranslation } from 'react-i18next'
 
 interface WaitingRoomProps {
   game: any
@@ -24,6 +25,7 @@ export default function WaitingRoom({
   onInviteFriends,
   getCurrentUserId,
 }: WaitingRoomProps) {
+  const { t } = useTranslation()
   const playerCount = game?.players?.length || 0
   const hasBot = game?.players?.some((p: any) => p.user?.isBot)
   const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
@@ -47,13 +49,13 @@ export default function WaitingRoom({
                 marginBottom: `clamp(10px, 1vh, 16px)`,
               }}
             >
-              Starting Game...
+              {t('yahtzee.ui.startingGame')}
             </h3>
             <p
               className="text-gray-600 dark:text-gray-400"
               style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
             >
-              {playerCount === 1 ? '🤖 Adding bot player...' : '🎲 Preparing the dice...'}
+              {playerCount === 1 ? t('yahtzee.ui.addingBot') : t('yahtzee.ui.preparingDice')}
             </p>
             <div
               className="flex items-center text-gray-500"
@@ -64,7 +66,7 @@ export default function WaitingRoom({
               }}
             >
               <div className="animate-pulse">⏳</div>
-              <span>This will only take a moment</span>
+              <span>{t('yahtzee.ui.willTakeAMoment')}</span>
             </div>
           </div>
         </div>
@@ -95,7 +97,7 @@ export default function WaitingRoom({
               marginBottom: `clamp(10px, 1vh, 16px)`,
             }}
           >
-            Ready to Play Yahtzee?
+            {t('yahtzee.ui.readyToPlay')}
           </h2>
           <p
             className="text-gray-600 dark:text-gray-400"
@@ -104,7 +106,7 @@ export default function WaitingRoom({
               marginBottom: `clamp(12px, 1.2vh, 20px)`,
             }}
           >
-            Roll the dice, score big, and have fun!
+            {t('yahtzee.ui.rollTheDice')}
           </p>
         </div>
 
@@ -132,21 +134,21 @@ export default function WaitingRoom({
                 }`}
                 style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
               >
-                {playerCount} Player{playerCount !== 1 ? 's' : ''} in Lobby
+                {t('yahtzee.ui.playersInLobby', { count: playerCount })}
               </p>
               {playerCount < 2 ? (
                 <p
                   className="text-yellow-600 dark:text-yellow-400"
                   style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
                 >
-                  Add a bot or wait for others to join
+                  {t('yahtzee.ui.addBotOrWait')}
                 </p>
               ) : (
                 <p
                   className="text-green-600 dark:text-green-400"
                   style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
                 >
-                  ✅ Ready to start the game!
+                  {t('yahtzee.ui.readyToStart')}
                 </p>
               )}
             </div>
@@ -169,14 +171,14 @@ export default function WaitingRoom({
                 marginBottom: `clamp(12px, 1.2vh, 20px)`,
               }}
             >
-              Players in Lobby
+              {t('yahtzee.ui.playersInLobbyTitle')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
               {game.players.map((p: any, index: number) => {
                 const isBot = p.user?.isBot === true
                 const playerName = isBot 
-                  ? '🤖 AI Bot' 
-                  : p.user.name || p.user.username || p.user.email || 'Player'
+                  ? t('yahtzee.ui.aiBot')
+                  : p.user.name || p.user.username || p.user.email || t('yahtzee.ui.player')
                 const isCurrentUser = p.userId === getCurrentUserId()
 
                 return (
@@ -239,7 +241,7 @@ export default function WaitingRoom({
                               padding: `clamp(2px, 0.2vh, 3px) clamp(6px, 0.6vw, 10px)`,
                             }}
                           >
-                            You
+                            {t('yahtzee.ui.you')}
                           </span>
                         )}
                       </div>
@@ -275,7 +277,7 @@ export default function WaitingRoom({
               }}
             >
               <span style={{ fontSize: `clamp(20px, 2vw, 28px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>🎮</span>
-              Start Yahtzee Game
+              {t('yahtzee.ui.startYahtzeeGame')}
             </button>
             
             {playerCount === 1 && !hasBot && (
@@ -287,7 +289,7 @@ export default function WaitingRoom({
                   className="text-blue-700 dark:text-blue-300"
                   style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
                 >
-                  💡 <strong>Tip:</strong> A bot will be auto-added when you start if you're still alone
+                  💡 <strong>{t('yahtzee.ui.tip')}:</strong> {t('yahtzee.ui.botAutoAddTip')}
                 </p>
               </div>
             )}
@@ -305,10 +307,10 @@ export default function WaitingRoom({
                   fontSize: `clamp(14px, 1.4vw, 20px)`,
                   padding: `clamp(10px, 1vh, 16px) clamp(24px, 2.4vw, 40px)`,
                 }}
-                title={!canAddMorePlayers ? 'Lobby is full' : 'Add AI opponent'}
+                title={!canAddMorePlayers ? t('yahtzee.ui.lobbyFull') : t('yahtzee.ui.addAiOpponent')}
               >
                 <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>🤖</span>
-                Add Bot Player
+                {t('yahtzee.ui.addBotPlayer')}
                 {canAddMorePlayers && (
                   <span style={{ marginLeft: `clamp(6px, 0.6vw, 10px)`, fontSize: `clamp(11px, 1vw, 14px)`, opacity: 0.75 }}>
                     ({playerCount}/{lobby?.maxPlayers || 4})
@@ -330,10 +332,10 @@ export default function WaitingRoom({
                   fontSize: `clamp(14px, 1.4vw, 20px)`,
                   padding: `clamp(10px, 1vh, 16px) clamp(24px, 2.4vw, 40px)`,
                 }}
-                title={!canAddMorePlayers ? 'Lobby is full' : 'Invite your friends to join'}
+                title={!canAddMorePlayers ? t('yahtzee.ui.lobbyFull') : t('yahtzee.ui.inviteFriendsToJoin')}
               >
                 <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>👥</span>
-                Invite Friends
+                {t('yahtzee.ui.inviteFriends')}
                 {canAddMorePlayers && (
                   <span style={{ marginLeft: `clamp(6px, 0.6vw, 10px)`, fontSize: `clamp(11px, 1vw, 14px)`, opacity: 0.75 }}>
                     ({playerCount}/{lobby?.maxPlayers || 4})
@@ -365,14 +367,14 @@ export default function WaitingRoom({
                 className="text-blue-700 dark:text-blue-300 font-bold"
                 style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}
               >
-                Waiting for host to start...
+                {t('yahtzee.ui.waitingForHost')}
               </p>
             </div>
             <p
               className="text-blue-600 dark:text-blue-400"
               style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
             >
-              Host: <span className="font-semibold">{lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}</span>
+              {t('yahtzee.ui.host')}: <span className="font-semibold">{lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}</span>
             </p>
           </div>
         )}

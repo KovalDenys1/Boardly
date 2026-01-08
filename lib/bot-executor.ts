@@ -3,6 +3,7 @@ import { YahtzeeGame } from './games/yahtzee-game'
 import { Move } from './game-engine'
 import { YahtzeeCategory } from './yahtzee'
 import { clientLogger } from './client-logger'
+import { getCategoryDisplayName } from './celebrations'
 
 /**
  * Bot move executor for Yahtzee game
@@ -223,7 +224,7 @@ export class BotMoveExecutor {
         category,
         score,
       },
-      message: `${botPlayer.name} selected ${category} for ${score} points`,
+      message: `${botPlayer.name} selected ${getCategoryDisplayName(category)} • +${score} pts`,
     })
     await this.delay(600) // Reduced from 1500ms for faster gameplay
 

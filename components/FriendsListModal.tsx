@@ -45,8 +45,17 @@ export default function FriendsListModal({
     const socketUrl = getBrowserSocketUrl()
     const token = session.user.id
 
+    const authPayload: Record<string, unknown> = {}
+    if (token) authPayload.token = token
+    authPayload.isGuest = false
+
+    const queryPayload: Record<string, string> = {}
+    if (token) queryPayload.token = String(token)
+    queryPayload.isGuest = 'false'
+
     const newSocket = io(socketUrl, {
-      auth: { token, isGuest: false },
+      auth: authPayload,
+      query: queryPayload,
       transports: ['polling', 'websocket'],
     })
 

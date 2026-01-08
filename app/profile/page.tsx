@@ -98,7 +98,7 @@ export default function ProfilePage() {
     }
 
     // Check if username is same as current
-    const currentUsername = (session?.user as any)?.username || session?.user?.name
+    const currentUsername = (session?.user as { username?: string })?.username || session?.user?.name
     if (username === currentUsername) {
       toast.error('This is already your username')
       return

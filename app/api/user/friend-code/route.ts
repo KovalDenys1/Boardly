@@ -5,6 +5,8 @@ import { ensureUserHasFriendCode } from '@/lib/friend-code'
 import { apiLogger } from '@/lib/logger'
 
 export const runtime = 'nodejs'
+// Force dynamic rendering (uses headers)
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/user/friend-code

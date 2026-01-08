@@ -22,6 +22,10 @@
     "goHome": "Go to Home",
     "optional": "optional"
   },
+  "breadcrumbs": {
+    "home": "Home",
+    "games": "Games"
+  },
   "lobby": {
     "title": "Game Lobbies",
     "subtitle": "Join an existing lobby or create your own!",
@@ -101,7 +105,10 @@
     "playersSection": {
       "title": "Players",
       "clickToView": "Click to view cards",
-      "fullList": "All Players"
+      "fullList": "All Players",
+      "position": "Position",
+      "ready": "Ready",
+      "viewCards": "View Cards"
     },
     "create": {
       "title": "Create Lobby",
@@ -163,7 +170,7 @@
       "unread": "{{count}} unread",
       "openChat": "Open chat. {{unread}}",
       "noUnread": "No unread messages",
-      "sendHelp": "Press Enter to send • Shift+Enter for new line",
+      "sendHelp": "Press Enter to send",
       "maxLength": "{{current}}/{{max}}"
     }
   },
@@ -252,7 +259,32 @@
     "spy": {
       "name": "Guess the Spy",
       "description": "Social deduction game where one player is the spy. Find them before time runs out!",
-      "difficulty": "Medium"
+      "difficulty": "Medium",
+      "lobbies": {
+        "title": "Guess the Spy",
+        "subtitle": "Join a game or create your own lobby!",
+        "subtitleGuest": "Browse lobbies and sign in when you want to host or join.",
+        "backToGames": "Back to Games",
+        "wantToPlay": "Want to play?",
+        "wantToPlayDesc": "Sign in or create an account to host lobbies and join games. Guests can still receive invite links later.",
+        "signIn": "Sign In",
+        "createAccount": "Create Account",
+        "createNewLobby": "Create New Lobby",
+        "createDescription": "Start your own Spy game and invite friends to join!",
+        "createNow": "Create Now",
+        "quickJoin": "Quick Join",
+        "quickJoinDesc": "Have a lobby code? Enter it below to join instantly!",
+        "enterCode": "Enter 4-digit code",
+        "signInToJoin": "Please sign in before joining a lobby. You can still explore active rooms below.",
+        "activeLobbies": "Active Lobbies",
+        "noLobbiesTitle": "No active lobbies right now. Be the first to start a game!",
+        "createFirstLobby": "Create First Lobby",
+        "host": "Host",
+        "waiting": "Waiting",
+        "playing": "Playing",
+        "full": "Full",
+        "newGame": "NEW GAME"
+      }
     },
     "chess": {
       "name": "Chess",
@@ -278,13 +310,17 @@
       "bonus": "Bonus",
       "upperTotal": "Upper Total",
       "lowerTotal": "Lower Total",
-      "grandTotal": "Grand Total"
+      "grandTotal": "Grand Total",
+      "upperSection": "Upper Section",
+      "lowerSection": "Lower Section"
     },
     "actions": {
       "roll": "Roll Dice",
       "hold": "Hold",
       "score": "Score",
-      "rollsLeft": "Rolls Left"
+      "rollsLeft": "Rolls Left",
+      "myCards": "My Cards",
+      "currentTurn": "Current Turn"
     },
     "messages": {
       "yourTurn": "Your turn!",
@@ -325,6 +361,48 @@
       "rolling": "Rolling dice...",
       "holding": "Holding dice...",
       "scoring": "Choosing category..."
+    },
+    "ui": {
+      "yourTurn": "Your Turn",
+      "hurry": "Hurry!",
+      "waiting": "Waiting...",
+      "rollDice": "Roll",
+      "rolling": "Rolling...",
+      "rollsLeft": "{{count}}/3",
+      "timeLeft": "{{time}}s",
+      "startingGame": "Starting Game...",
+      "readyToPlay": "Ready to Play Yahtzee?",
+      "rollTheDice": "Roll the dice, score big, and have fun!",
+      "playersInLobby": "{{count}} Player in Lobby",
+      "playersInLobby_other": "{{count}} Players in Lobby",
+      "addBotOrWait": "Add a bot or wait for others to join",
+      "readyToStart": "✅ Ready to start the game!",
+      "playersInLobbyTitle": "Players in Lobby",
+      "preparingDice": "🎲 Preparing the dice...",
+      "addingBot": "🤖 Adding bot player...",
+      "willTakeAMoment": "This will only take a moment",
+      "aiBot": "🤖 AI Bot",
+      "player": "Player",
+      "you": "(You)",
+      "round": "Round",
+      "turn": "Turn",
+      "leave": "Leave",
+      "leaveConfirm": "Are you sure you want to leave the game?",
+      "soundOn": "🔊 Sound enabled",
+      "soundOff": "🔇 Sound disabled",
+      "enableSound": "Enable sound effects",
+      "disableSound": "Disable sound effects",
+      "playerFallback": "Player",
+      "startYahtzeeGame": "Start Yahtzee Game",
+      "addBotPlayer": "Add Bot Player",
+      "inviteFriends": "Invite Friends",
+      "lobbyFull": "Lobby is full",
+      "addAiOpponent": "Add AI opponent",
+      "inviteFriendsToJoin": "Invite your friends to join",
+      "botAutoAddTip": "A bot will be auto-added when you start if you're still alone",
+      "tip": "Tip",
+      "waitingForHost": "Waiting for host to start...",
+      "host": "Host"
     }
   },
   "chat": {
@@ -333,7 +411,12 @@
     "openChat": "Open chat",
     "unread": "unread",
     "messageCount": "{{count}} messages",
-    "clear": "Clear chat"
+    "clear": "Clear chat",
+    "placeholder": "Type a message... 😊",
+    "send": "Send",
+    "noMessages": "No messages yet",
+    "startConversation": "Start the conversation!",
+    "sendHelp": "Press Enter to send • Shift+Enter for new line"
   },
   "auth": {
     "login": {

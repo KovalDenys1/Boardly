@@ -29,43 +29,23 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
 
   if (!event || !visible) return null
 
-  // Different colors for different celebration types
-  const getGradientStyle = () => {
+  // Different colors for different celebration types - with opaque backgrounds
+  const getColorClasses = () => {
     switch (event.type) {
       case 'yahtzee':
-        return {
-          backgroundImage: 'linear-gradient(to right, #FBBF24, #F97316, #EF4444)',
-          borderColor: '#FBBF24',
-        }
+        return 'from-yellow-600 via-orange-600 to-red-600 border-yellow-400 bg-opacity-95'
       case 'largeStraight':
-        return {
-          backgroundImage: 'linear-gradient(to right, #60A5FA, #A855F7, #EC4899)',
-          borderColor: '#A855F7',
-        }
+        return 'from-blue-600 via-purple-600 to-pink-600 border-purple-400 bg-opacity-95'
       case 'fullHouse':
-        return {
-          backgroundImage: 'linear-gradient(to right, #4ADE80, #14B8A6, #06B6D4)',
-          borderColor: '#4ADE80',
-        }
+        return 'from-green-600 via-teal-600 to-cyan-600 border-green-400 bg-opacity-95'
       case 'highScore':
-        return {
-          backgroundImage: 'linear-gradient(to right, #818CF8, #A855F7, #EC4899)',
-          borderColor: '#818CF8',
-        }
+        return 'from-indigo-600 via-purple-600 to-pink-600 border-indigo-400 bg-opacity-95'
       case 'perfectRoll':
-        return {
-          backgroundImage: 'linear-gradient(to right, #FBBF24, #EAB308, #F97316)',
-          borderColor: '#FBBF24',
-        }
+        return 'from-amber-600 via-yellow-600 to-orange-600 border-amber-400 bg-opacity-95'
       default:
-        return {
-          backgroundImage: 'linear-gradient(to right, #3B82F6, #9333EA, #EC4899)',
-          borderColor: '#3B82F6',
-        }
+        return 'from-blue-600 via-purple-700 to-pink-600 border-blue-400 bg-opacity-95'
     }
   }
-
-  const gradientStyle = getGradientStyle()
 
   return (
     <div
@@ -75,15 +55,11 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
       `}
     >
       <div
-        className="text-white rounded-2xl shadow-2xl flex items-center border-solid backdrop-blur-sm"
+        className={`bg-gradient-to-r ${getColorClasses()} text-white rounded-2xl shadow-2xl flex items-center animate-scale-pulse border-2`}
         style={{
-          ...gradientStyle,
           padding: `clamp(12px, 1.2vh, 20px) clamp(24px, 2.4vw, 40px)`,
           gap: `clamp(12px, 1.2vw, 20px)`,
-          borderWidth: `clamp(3px, 0.3vw, 5px)`,
-          borderStyle: 'solid',
-          animation: visible ? 'scale-pulse 0.8s ease-in-out infinite' : 'none',
-          opacity: 1,
+          backdropFilter: 'blur(4px)',
         }}
       >
         {/* Emoji */}

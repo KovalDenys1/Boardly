@@ -3,6 +3,7 @@ import DiceGroup from '@/components/DiceGroup'
 import CelebrationBanner from '@/components/CelebrationBanner'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 import { CelebrationEvent } from '@/lib/celebrations'
+import { useTranslation } from 'react-i18next'
 
 interface GameBoardProps {
   gameEngine: YahtzeeGame
@@ -37,6 +38,8 @@ export default function GameBoard({
   onScore,
   onCelebrationComplete,
 }: GameBoardProps) {
+  const { t } = useTranslation()
+  
   return (
     <div className="h-full flex flex-col gap-2 sm:gap-3">
       {/* Dice Area with Timer */}
@@ -74,7 +77,7 @@ export default function GameBoard({
             <div className="text-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-lg bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse">
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <span className="text-base sm:text-xl">⚠️</span>
-                <p className="text-xs sm:text-sm font-bold">Hurry!</p>
+                <p className="text-xs sm:text-sm font-bold">{t('yahtzee.ui.hurry')}</p>
               </div>
             </div>
           ) : (
@@ -82,7 +85,7 @@ export default function GameBoard({
             <div className="text-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-lg bg-gradient-to-r from-green-500 to-emerald-500 text-white">
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <span className="text-base sm:text-xl">🎯</span>
-                <p className="text-xs sm:text-sm font-bold">Your Turn</p>
+                <p className="text-xs sm:text-sm font-bold">{t('yahtzee.ui.yourTurn')}</p>
               </div>
             </div>
           )
@@ -91,7 +94,7 @@ export default function GameBoard({
             <div className="flex items-center justify-center gap-1.5 sm:gap-2">
               <span className="text-base sm:text-xl animate-pulse">⏳</span>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">
-                Waiting...
+                {t('yahtzee.ui.waiting')}
               </p>
             </div>
           </div>
@@ -114,12 +117,12 @@ export default function GameBoard({
           {isRolling ? (
             <span className="flex items-center justify-center gap-1.5 sm:gap-2">
               <span className="text-lg sm:text-xl animate-spin">🎲</span>
-              <span>Rolling...</span>
+              <span>{t('yahtzee.ui.rolling')}</span>
             </span>
           ) : (
             <span className="flex items-center justify-center gap-1.5 sm:gap-2">
               <span className="text-lg sm:text-xl">🎲</span>
-              <span>Roll ({gameEngine.getRollsLeft()}/3)</span>
+              <span>{t('yahtzee.ui.rollDice')} ({t('yahtzee.ui.rollsLeft', { count: gameEngine.getRollsLeft() })})</span>
             </span>
           )}
         </button>

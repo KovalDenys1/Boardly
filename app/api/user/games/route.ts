@@ -4,6 +4,10 @@ import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger as log } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
+import { Prisma, GameStatus, GameType } from '@prisma/client'
+
+// Force dynamic rendering (uses request.headers)
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/user/games
@@ -41,21 +45,21 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     // Parse query params
-    const status = searchParams.get('status') || undefined
-    const gameType = searchParams.get('gameType') || undefined
+    const statusParam = searchParams.get('status')
+    const gameTypeParam = searchParams.get('gameType')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
     const offset = parseInt(searchParams.get('offset') || '0')
 
     logger.info('Fetching user game history', {
       userId,
-      status,
-      gameType,
+      status: statusParam,
+      gameType: gameTypeParam,
       limit,
       offset,
     })
 
     // Build where clause
-    const where: any = {
+    const where: Prisma.GameWhereInput = {
       players: {
         some: {
           userId,
@@ -63,12 +67,12 @@ export async function GET(request: NextRequest) {
       },
     }
 
-    if (status) {
-      where.status = status
+    if (statusParam) {
+      where.status = statusParam as GameStatus
     }
 
-    if (gameType) {
-      where.gameType = gameType
+    if (gameTypeParam) {
+      where.gameType = gameTypeParam as GameType
     }
 
     // Fetch games with player data
@@ -83,12 +87,17 @@ export async function GET(request: NextRequest) {
             },
           },
           players: {
-            include: {
+            select: {
+              id: true,
+              userId: true,
+              score: true,
+              finalScore: true,
+              placement: true,
+              isWinner: true,
               user: {
                 select: {
                   id: true,
                   username: true,
-                  
                   isBot: true,
                 },
               },
@@ -118,11 +127,11 @@ export async function GET(request: NextRequest) {
         id: game.id,
         lobbyCode: game.lobby.code,
         lobbyName: game.lobby.name,
-        gameType: (game as any).gameType || 'yahtzee', // TypeScript cache issue - field exists in DB
+        gameType: game.gameType,
         status: game.status,
         createdAt: game.createdAt,
         updatedAt: game.updatedAt,
-        abandonedAt: (game as any).abandonedAt || null, // TypeScript cache issue - field exists in DB
+        abandonedAt: game.abandonedAt,
         players: game.players.map((player) => ({
           id: player.id,
           username: player.user.username,

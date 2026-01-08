@@ -125,18 +125,20 @@ function CreateLobbyPage() {
       const socketUrl = getBrowserSocketUrl()
       const token = session?.user?.id || null
       
+      const authPayload: Record<string, unknown> = {}
+      if (token) authPayload.token = token
+      authPayload.isGuest = false
+
+      const queryPayload: Record<string, string> = {}
+      if (token) queryPayload.token = String(token)
+      queryPayload.isGuest = 'false'
+
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: false, // Don't reconnect for this one-time notification
         timeout: 5000,
-        auth: {
-          token: token,
-          isGuest: false,
-        },
-        query: {
-          token: token,
-          isGuest: 'false',
-        },
+        auth: authPayload,
+        query: queryPayload,
       })
       
       // Set a timeout to force cleanup after 10 seconds

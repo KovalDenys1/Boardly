@@ -15,22 +15,29 @@
 This project implements a dual-server architecture with real-time WebSocket communication for multiplayer gaming experiences. Currently features Yahtzee with AI opponents, turn-based gameplay, and comprehensive game state management.
 
 **Current Status:**
-- **Available Games**: Yahtzee (fully implemented)
-- **In Development**: Chess
-- **Planned**: Guess the Spy, Uno, and additional board games
+- **Available Games**: Yahtzee (fully implemented with AI bots)
+- **In Development**: Guess the Spy (social deduction game)
+- **Planned**: Chess, Uno, and additional board games
+
+⚠️ **Important Note on Free Tier WebSocket**: The Socket.IO server runs on Render's free tier, which automatically spins down after 15 minutes of inactivity. Upon first connection after inactivity, the server may take 30-60 seconds to wake up. For production use with no spin-down, consider upgrading to Render's Starter plan ($7/month).
 
 ---
 
 ## ✨ Features
 
 ### 🎲 Game Implementation
-- **Yahtzee** - Complete implementation with standard rules
+- **Yahtzee** ✅ - Complete implementation with standard rules
   - Real-time multiplayer support (2-4 players)
   - AI opponents with probability-based decision logic
   - Automatic scoring and category selection
   - Turn timer system (60 seconds per turn)
   - Celebration effects for special combinations
   - Roll history tracking
+- **Guess the Spy** 🔄 - Social deduction game in development
+  - Hidden role mechanics (spy vs citizens)
+  - Word guessing rounds
+  - Voting and discussion phases
+  - Real-time game progression
 
 ### 🔐 Authentication
 - Email/password registration with verification flow (Resend)
@@ -45,12 +52,14 @@ This project implements a dual-server architecture with real-time WebSocket comm
   - Password protection support
   - Shareable invite links
   - Real-time player synchronization
+  - Friend system with invite links
 - **Game Features**
   - Real-time chat with typing indicators
   - Turn timer with visual countdown
   - Automatic turn advancement
   - Live score updates
   - Bot automation for AI players
+  - Game history and replay tracking
 
 ### 💻 Technical Implementation
 - Dual-server architecture (Next.js + Socket.IO)
@@ -182,19 +191,21 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
     │ • API Routes    │          │ • Real-time events │
     │ • SSR/SSG       │◄────────►│ • Room management  │
     │ • Auth          │  Notify  │ • Broadcasting     │
+    │ • NextAuth      │ API Call │ • Presence sync    │
     └────────┬────────┘          └────────┬───────────┘
              │                            │
              └──────────┬─────────────────┘
                         │
                  ┌──────▼────────┐
                  │   PostgreSQL  │
-                 │   Database    │
-                 │               │
-                 │ • Users       │
-                 │ • Lobbies     │
-                 │ • Games       │
-                 │ • Players     │
-                 └───────────────┘
+                 │   (Supabase)  │
+                 │                │
+                 │ • Users (auth) │
+                 │ • Lobbies      │
+                 │ • Games        │
+                 │ • Players      │
+                 │ • Friends      │
+                 └────────────────┘
 ```
 
 ### Game State Flow
@@ -223,25 +234,44 @@ Boardly/
 │   │   ├── auth/                   # Authentication endpoints
 │   │   ├── game/[gameId]/          # Game state management
 │   │   ├── lobby/[code]/           # Lobby management
-│   │   └── user/profile/           # User profile
+│   │   ├── user/                   # User operations
+│   │   └── notify/                 # Socket notification webhook
 │   ├── lobby/[code]/               # Active game lobby
 │   │   ├── components/             # Lobby UI components
-│   │   └── hooks/                  # Custom hooks (6 modular files)
-│   └── games/yahtzee/lobbies/      # Yahtzee lobby browser
+│   │   └── hooks/                  # Custom hooks (modular logic)
+│   ├── games/                      # Game-specific routes
+│   │   ├── yahtzee/                # Yahtzee game pages
+│   │   └── spy/                    # Guess the Spy game pages
+│   ├── profile/                    # User profile pages
+│   └── auth/                       # Authentication pages
 ├── components/                     # Reusable React components
 │   ├── Dice.tsx, DiceGroup.tsx     # Dice components
 │   ├── Scorecard.tsx               # Yahtzee scorecard
+│   ├── SpyVoting.tsx, SpyResults.tsx # Spy game components
 │   ├── Chat.tsx                    # In-game chat
-│   └── YahtzeeResults.tsx          # Game over screen
+│   ├── GameResultsModal.tsx        # Game over screen
+│   └── [others]/                   # Utility components
 ├── lib/                            # Core logic
-│   ├── game-engine.ts              # Abstract game engine
-│   ├── games/yahtzee-game.ts       # Yahtzee implementation
-│   ├── yahtzee.ts                  # Game rules & scoring
-│   ├── yahtzee-bot.ts              # AI opponent logic
+│   ├── game-engine.ts              # Abstract game engine base
+│   ├── games/                      # Game implementations
+│   │   ├── yahtzee-game.ts         # Yahtzee class
+│   │   └── spy-game.ts             # Guess the Spy class
+│   ├── yahtzee.ts                  # Yahtzee rules & scoring
+│   ├── spy-utils.ts                # Spy game utilities
+│   ├── bot-executor.ts             # AI bot system
 │   ├── rate-limit.ts               # API rate limiting
-│   └── socket-url.ts               # Socket URL helpers
-├── prisma/schema.prisma            # Database schema
+│   └── [other utilities]/          # Socket, auth, logging, etc.
+├── prisma/                         # Database management
+│   ├── schema.prisma               # Database schema
+│   └── migrations/                 # Migration history
+├── __tests__/                      # Test suite
+│   ├── lib/                        # Business logic tests
+│   └── lib/games/                  # Game logic tests (96%+ coverage)
+├── messages/                       # i18n translations
+│   ├── en.json                     # English messages
+│   └── uk.json                     # Ukrainian messages
 ├── socket-server.ts                # Standalone Socket.IO server
+├── render.yaml                     # Render deployment config
 └── package.json                    # Dependencies and scripts
 ```
 
@@ -250,7 +280,7 @@ Boardly/
 ### Getting Started
 1. Register an account or continue as guest
 2. Create a lobby with custom settings (name, password, player limit)
-3. Share lobby code or invite link with other players
+3. Share lobby code or invite link with other players (or add bots)
 4. Start game when minimum 2 players have joined
 
 ### Yahtzee Rules
@@ -260,23 +290,34 @@ Boardly/
 4. Turn timer enforces 60-second limit per turn
 5. Game ends when all players complete their scorecards
 
+### Guess the Spy Rules
+1. One player is the spy, others are citizens
+2. Citizens try to identify the spy through discussion
+3. Multiple rounds of voting and word guessing
+4. Citizens win if they find the spy; spy wins if they remain hidden
+5. Game ends when spy is found or time expires
+
 ### Automated Features
 - Auto-roll: Dice automatically rolled if timer expires before first roll
 - Auto-score: Best available category selected if timer expires
-- AI players: Bots added automatically for single-player games
+- AI players: Bots added via "Add Bot" button for single/multi-player games
+- Bot AI: Probability-based decision making for intelligent gameplay
 
 ## 🚢 Deployment
 
 ### Live Demo
 A production instance is available at [boardly.online](https://boardly.online) for demonstration purposes.
 
+**Note on WebSocket Performance**: The live demo runs Socket.IO on Render's free tier. The server may take 30-60 seconds to wake up after inactivity. This is expected behavior and does not indicate an error.
+
 ### Production Stack
-- **Frontend**: Vercel
-- **Socket.IO Server**: Render (Node.js Web Service)
-- **Database**: PostgreSQL (Supabase)
-- **Email Service**: Resend
-- **Error Tracking**: Sentry
+- **Frontend**: Vercel (Next.js)
+- **Socket.IO Server**: Render (Node.js Web Service - Free Tier)
+- **Database**: PostgreSQL (Supabase with connection pooler)
+- **Email Service**: Resend (email verification)
+- **Error Tracking**: Sentry (error monitoring)
 - **OAuth Providers**: Google, GitHub
+- **CDN/Static Assets**: Vercel global edge network
 
 ### Deploy Your Own Instance
 
@@ -293,12 +334,18 @@ A production instance is available at [boardly.online](https://boardly.online) f
 
 1. Create a new **Web Service** on [Render](https://render.com/)
 2. Connect your repository
-3. Build Command: `npm install`
-4. Start Command: `node socket-server.ts`
-5. Add environment variables
+3. Build Command: `npm install && npm run db:generate`
+4. Start Command: `npm run socket:start`
+5. Add environment variables (at minimum: `DATABASE_URL`, `CORS_ORIGIN`, `JWT_SECRET`)
 6. Deploy!
 
-See `render.yaml` for configuration details.
+**Free Tier Limitations**:
+- Server spins down after 15 minutes of inactivity
+- First connection may take 30-60 seconds to wake up
+- 512MB RAM limit
+- **Recommendation**: Upgrade to Starter plan ($7/month) for production use to eliminate spin-down
+
+See `render.yaml` for full configuration details.
 
 ### Database Setup (Supabase)
 
@@ -378,39 +425,41 @@ All project documentation is centralized in the `/docs` folder:
 
 ## 🎯 Roadmap
 
-### ✅ Completed (Live in Production)
-- Yahtzee multiplayer game
-- Real-time Socket.IO communication
-- Authentication (Email, Google, GitHub OAuth)
-- Guest mode
-- AI opponents
-- Turn timer with auto-scoring
-- In-game chat
-- Sound effects and celebrations
-- Internationalization (English, Ukrainian)
-- Friend system with invite links
+### ✅ Completed (Live in Production - Jan 2026)
+- ✅ Yahtzee multiplayer game with AI bots
+- ✅ Real-time Socket.IO communication
+- ✅ Authentication (Email, Google, GitHub OAuth)
+- ✅ Guest mode for unauthenticated access
+- ✅ AI opponents with probability-based decision logic
+- ✅ Turn timer system (60 seconds) with auto-actions
+- ✅ In-game chat with typing indicators
+- ✅ Sound effects and celebration animations
+- ✅ Internationalization (English, Ukrainian)
+- ✅ Friend system with invite links
+- ✅ Game history and statistics
+- ✅ Rate limiting and security
 
-### 🔄 In Progress
-- ♟️ Chess implementation
-- 📧 Email notifications
-- 📊 Analytics integration
+### 🔄 In Progress (Q1 2026)
+- 🕵️ **Guess the Spy** - Social deduction game (active development)
+  - Hidden role mechanics
+  - Discussion and voting rounds
+  - Real-time word guessing
 
-### 📋 Next Up
-- 🕵️ Guess the Spy social deduction game
-- 🎴 Uno card game
+### 📋 Next Priority
+- ♟️ Chess (classical chess with AI opponent) - Q1 2026
+- 🎴 Uno (card game) - Q2 2026
 - 🏆 Leaderboards and achievements
 - 💰 Premium subscriptions (Stripe)
 - 📱 Progressive Web App (PWA)
-- 👥 Enhanced friend system
 
-### 🎯 Future
-- 🎮 More games (Connect Four, Battleship, Codenames)
+### 🎯 Future Enhancements
+- 🎮 Additional games (Connect Four, Battleship, Codenames)
 - 🏅 Tournament mode
-- 📈 Advanced statistics dashboard
-- 🎮 Custom game creator
+- 📊 Advanced statistics dashboard
 - 🤝 Spectator mode
 - 🔊 Voice chat integration
-- 🎪 Tournament system
+- 💾 Game replay system
+- 🎪 Achievements and badges
 
 ## 📄 License
 
@@ -420,6 +469,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Denys Koval**  
 - GitHub: [@KovalDenys1](https://github.com/KovalDenys1)
+- Website: [boardly.online](https://boardly.online)
 - Email: kovaldenys@icloud.com
 
 ## 🙏 Acknowledgments

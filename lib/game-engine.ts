@@ -33,11 +33,28 @@ export interface GameConfig {
   rules?: Record<string, any>;
 }
 
-// Abstract Game Engine
+/**
+ * Abstract Game Engine - Base class for all game implementations
+ * Handles common game logic: player management, turn system, move validation
+ * 
+ * @abstract
+ * @example
+ * class MyGame extends GameEngine {
+ *   validateMove(move: Move): boolean { ... }
+ *   processMove(move: Move): void { ... }
+ *   getInitialGameData(): MyGameData { ... }
+ * }
+ */
 export abstract class GameEngine {
   protected state: GameState;
   protected config: GameConfig;
 
+  /**
+   * Initialize a new game instance
+   * @param gameId - Unique identifier for the game
+   * @param gameType - Type of game (yahtzee, chess, etc.)
+   * @param config - Game configuration (max players, time limits, etc.)
+   */
   constructor(gameId: string, gameType: string, config: GameConfig) {
     this.config = config;
     this.state = {

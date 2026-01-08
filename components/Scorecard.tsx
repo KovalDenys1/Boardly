@@ -18,36 +18,20 @@ interface ScorecardProps {
   showCurrentTurnButton?: boolean
 }
 
-const categoryLabels: Record<YahtzeeCategory, string> = {
-  ones: '⚀ Ones',
-  twos: '⚁ Twos',
-  threes: '⚂ Threes',
-  fours: '⚃ Fours',
-  fives: '⚄ Fives',
-  sixes: '⚅ Sixes',
-  threeOfKind: '🎲 Three of a Kind',
-  fourOfKind: '🎲🎲 Four of a Kind',
-  fullHouse: '🏠 Full House',
-  smallStraight: '📈 Small Straight',
-  largeStraight: '📊 Large Straight',
-  yahtzee: '🎯 YAHTZEE!',
-  chance: '🎲 Chance',
-}
-
-const categoryDescriptions: Record<YahtzeeCategory, string> = {
-  ones: 'Sum of all ones',
-  twos: 'Sum of all twos',
-  threes: 'Sum of all threes',
-  fours: 'Sum of all fours',
-  fives: 'Sum of all fives',
-  sixes: 'Sum of all sixes',
-  threeOfKind: 'Sum of all dice (3+ same)',
-  fourOfKind: 'Sum of all dice (4+ same)',
-  fullHouse: '25 points',
-  smallStraight: '30 points',
-  largeStraight: '40 points',
-  yahtzee: '50 points!',
-  chance: 'Sum of all dice',
+const categoryIcons: Record<YahtzeeCategory, string> = {
+  ones: '⚀',
+  twos: '⚁',
+  threes: '⚂',
+  fours: '⚃',
+  fives: '⚄',
+  sixes: '⚅',
+  threeOfKind: '🎲',
+  fourOfKind: '🎲🎲',
+  fullHouse: '🏠',
+  smallStraight: '📈',
+  largeStraight: '📊',
+  yahtzee: '🎯',
+  chance: '🎲',
 }
 
 // Category state classification for enhanced visual feedback
@@ -159,20 +143,22 @@ const Scorecard = React.memo(function Scorecard({
     
     const styles = stateStyles[state]
     const filledScore = scorecard[category]
+      const categoryLabel = t(`yahtzee.categories.${category}`)
+      const icon = categoryIcons[category]
     
     return (
       <button
         key={category}
         onClick={() => (state !== 'filled' && state !== 'disabled') && !isLoading && onSelectCategory(category)}
         disabled={state === 'filled' || state === 'disabled' || isLoading}
-        aria-label={`${categoryLabels[category]}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
+        aria-label={`${categoryLabel}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
         aria-disabled={state === 'filled' || state === 'disabled'}
         className={`group relative w-full flex items-center justify-between transition-all ${styles.container} ${isLoading ? 'opacity-50 cursor-wait' : ''} focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none shadow-md hover:shadow-lg`}
         style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', borderRadius: 'clamp(10px, 1vw, 16px)' }}
       >
         <span className="font-semibold flex items-center flex-1 min-w-0" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)', gap: 'clamp(4px, 0.4vw, 8px)' }}>
-          <span className="shrink-0" style={{ fontSize: 'clamp(12px, 0.95vw, 16px)' }}>{categoryLabels[category].split(' ')[0]}</span>
-          <span className="truncate">{categoryLabels[category].split(' ').slice(1).join(' ')}</span>
+          <span className="shrink-0" style={{ fontSize: 'clamp(12px, 0.95vw, 16px)' }}>{icon}</span>
+          <span className="truncate">{categoryLabel}</span>
         </span>
         
         <div className="flex items-center shrink-0" style={{ gap: 'clamp(8px, 0.8vw, 14px)', marginLeft: 'clamp(10px, 1vw, 16px)' }}>
@@ -221,7 +207,7 @@ const Scorecard = React.memo(function Scorecard({
               <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
                 <span style={{ fontSize: 'clamp(14px, 1.1vw, 20px)' }}>🎯</span>
                 <h3 className="font-bold text-blue-600 dark:text-blue-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
-                  Upper Section
+                  {t('yahtzee.categories.upperSection')}
                 </h3>
               </div>
               {/* Bonus inline */}
@@ -248,7 +234,7 @@ const Scorecard = React.memo(function Scorecard({
               <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
                 <span style={{ fontSize: 'clamp(14px, 1.1vw, 20px)' }}>🎲</span>
                 <h3 className="font-bold text-purple-600 dark:text-purple-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
-                  Lower Section
+                  {t('yahtzee.categories.lowerSection')}
                 </h3>
               </div>
               {/* Back to My Cards button */}
@@ -258,7 +244,7 @@ const Scorecard = React.memo(function Scorecard({
                   className="bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors font-semibold"
                   style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(6px, 0.6vw, 10px)' }}
                 >
-                  ← My Cards
+                  ← {t('yahtzee.actions.myCards')}
                 </button>
               )}
               {/* Current Turn button */}
@@ -268,7 +254,7 @@ const Scorecard = React.memo(function Scorecard({
                   className="bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-semibold"
                   style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(6px, 0.6vw, 10px)' }}
                 >
-                  Current Turn →
+                  {t('yahtzee.actions.currentTurn')} →
                 </button>
               )}
             </div>

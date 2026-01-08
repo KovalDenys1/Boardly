@@ -133,19 +133,31 @@ export async function POST(
         lastMoveAt: new Date(), // Track when this move was made
         updatedAt: new Date(),
       },
-      include: {
+      select: {
+        id: true,
+        status: true,
         players: {
-          include: {
-            user: true,
+          select: {
+            id: true,
+            userId: true,
+            score: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                isBot: true,
+              },
+            },
           },
         },
       },
     })
 
     // Update player scores
+    const enginePlayers = gameEngine.getPlayers()
     await Promise.all(
-      gameEngine.getPlayers().map(async (player: any) => {
-        const dbPlayer = updatedGame.players.find((p: any) => p.userId === player.id)
+      enginePlayers.map(async (player) => {
+        const dbPlayer = updatedGame.players.find(p => p.userId === player.id)
         if (dbPlayer) {
           await prisma.player.update({
             where: { id: dbPlayer.id },
@@ -163,7 +175,7 @@ export async function POST(
         id: updatedGame.id,
         status: updatedGame.status,
         state: gameEngine.getState(),
-        players: updatedGame.players.map((p: any) => ({
+        players: updatedGame.players.map(p => ({
           id: p.userId,
           name: p.user.username || 'Unknown',
           score: p.score,
