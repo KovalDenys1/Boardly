@@ -1073,8 +1073,8 @@ function LobbyPageContent() {
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
                   <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
-                    {/* Players List - Shows 1 player with scroll for more */}
-                    <div className="flex-shrink-0" style={{ height: '140px' }}>
+                    {/* Players List - 40% of space */}
+                    <div className="flex-1 min-h-0 overflow-hidden">
                       <PlayerList
                         players={game?.players?.map(p => {
                           // Find the player's actual position in the game engine
@@ -1105,7 +1105,7 @@ function LobbyPageContent() {
                       />
                     </div>
 
-                    {/* Roll History - Shows 2 recent rolls */}
+                    {/* Roll History - 60% of space */}
                     {rollHistory.length > 0 && (
                       <div className="flex-1 min-h-0 overflow-hidden">
                         <RollHistory entries={rollHistory} />

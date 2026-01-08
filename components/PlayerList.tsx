@@ -70,17 +70,17 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-full flex flex-col">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="text-base font-bold mb-3 flex items-center gap-2 flex-shrink-0 w-full text-left hover:opacity-70 transition-opacity cursor-pointer"
+          className="text-sm font-bold mb-3 flex items-center gap-2 flex-shrink-0 w-full text-left hover:opacity-70 transition-opacity cursor-pointer"
         >
-          <span className="text-xl">👥</span>
-          <span>{t('lobby.players.title', 'Players')}</span>
+          <span className="text-lg">👥</span>
+          <span className="truncate">{t('lobby.players.title', 'Players')}</span>
           {onPlayerClick && (
-            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto">
-              {t('lobby.players.clickToView', 'Click to view cards')}
+            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto shrink-0">
+              {t('lobby.players.clickToView', 'Click')}
             </span>
           )}
         </button>
-      <div className="space-y-2 overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
+      <div className="space-y-1.5 overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
         {sortedPlayers.map((player, index) => {
           // Use player.position (actual game index) instead of sorted index
           const isCurrentTurn = player.position === currentTurn
@@ -96,7 +96,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
               key={player.id}
               onClick={() => onPlayerClick?.(player.userId)}
               className={`
-                w-full text-left p-2.5 rounded-xl transition-all duration-200 shadow-sm snap-start
+                w-full text-left p-2 rounded-lg transition-all duration-200 shadow-sm snap-start
                 ${isCurrentTurn 
                   ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md' 
                   : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent'
@@ -107,51 +107,51 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 ${onPlayerClick ? 'cursor-pointer hover:shadow-lg' : ''}
               `}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(8px, 0.8vw, 14px)' }}>
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(6px, 0.6vw, 10px)' }}>
                   {/* Position Badge - Shows current rank by score */}
                   <div className={`
-                    rounded-full flex items-center justify-center font-bold text-white shrink-0 shadow-md
+                    rounded-full flex items-center justify-center font-bold text-white shrink-0 shadow-md text-center
                     ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : ''}
                     ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
                     ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
-                  `} style={{ width: 'clamp(24px, 2.5vw, 32px)', height: 'clamp(24px, 2.5vw, 32px)', fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
+                  `} style={{ width: 'clamp(22px, 2.2vw, 28px)', height: 'clamp(22px, 2.2vw, 28px)', fontSize: 'clamp(10px, 0.75vw, 12px)' }}>
                     {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                   </div>
 
                   {/* Player Info */}
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center flex-wrap" style={{ gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(2px, 0.2vh, 4px)' }}>
-                      <span className="font-bold truncate" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
+                    <div className="flex items-center flex-wrap" style={{ gap: 'clamp(3px, 0.3vw, 6px)', marginBottom: 'clamp(1px, 0.1vh, 3px)' }}>
+                      <span className="font-semibold truncate" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
                         {playerName}
                       </span>
                       {isBot && (
-                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(5px, 0.5vw, 9px)' }}>
+                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
                           AI
                         </span>
                       )}
                       {isCurrentUser && !isBot && (
-                        <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(5px, 0.5vw, 9px)' }}>
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
                           You
                         </span>
                       )}
                       {isCurrentTurn && (
-                        <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>
+                        <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
                           🎲
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
-                      <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>Score:</span>
+                    <div className="flex items-center" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
+                      <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(9px, 0.7vw, 11px)' }}>Score:</span>
                       <span className={`font-bold ${
                         animatingScores[player.id] 
                           ? 'text-green-600 dark:text-green-400 animate-pulse' 
                           : 'text-gray-900 dark:text-white'
-                      }`} style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>
+                      }`} style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
                         {player.score}
                         {animatingScores[player.id] && (
-                          <span className="text-green-500" style={{ marginLeft: 'clamp(3px, 0.3vw, 6px)', fontSize: 'clamp(10px, 0.8vw, 13px)' }}>✨</span>
+                          <span className="text-green-500" style={{ marginLeft: 'clamp(2px, 0.2vw, 4px)', fontSize: 'clamp(9px, 0.7vw, 11px)' }}>✨</span>
                         )}
                       </span>
                     </div>
@@ -160,7 +160,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
                 {/* Ready Status */}
                 {player.isReady && (
-                  <div className="text-green-500 font-bold text-base ml-2">
+                  <div className="text-green-500 font-bold text-sm ml-1 shrink-0">
                     ✓
                   </div>
                 )}
