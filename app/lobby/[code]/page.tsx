@@ -22,6 +22,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { useTranslation } from 'react-i18next'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -94,6 +95,19 @@ function LobbyPageContent() {
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
   const { celebrate, fireworks } = useConfetti()
+  const { t } = useTranslation()
+
+  const roundInfo = React.useMemo(() => {
+    if (!gameEngine) return { current: 1, total: 13 }
+    const players = gameEngine.getPlayers()
+    const filledCounts = players.map(p => {
+      const scorecard = gameEngine.getScorecard(p.id)
+      return scorecard ? Object.keys(scorecard).length : 0
+    })
+    const maxFilled = filledCounts.length ? Math.max(...filledCounts) : 0
+    const current = Math.min(13, maxFilled + 1)
+    return { current, total: 13 }
+  }, [gameEngine, game?.state])
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
@@ -885,14 +899,14 @@ function LobbyPageContent() {
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            R {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
+                            {t('yahtzee.ui.round')}: {roundInfo.current}/{roundInfo.total}
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
                         <div className="flex items-center gap-1 max-w-[120px]">
                           <span className="text-base">👤</span>
                           <span className="text-sm font-bold truncate">
-                            {gameEngine.getCurrentPlayer()?.name || 'Player'}
+                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
                           </span>
                         </div>
                       </div>
@@ -910,28 +924,28 @@ function LobbyPageContent() {
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          toast.success(newState ? '🔊 Sound enabled' : '🔇 Sound disabled', {
+                          toast.success(newState ? t('yahtzee.ui.soundOn') : t('yahtzee.ui.soundOff'), {
                             duration: 2000,
                             position: 'top-center',
                           })
                         }}
-                        aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+                        aria-label={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
                         className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+                        title={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
                       >
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Are you sure you want to leave the game?')) {
+                          if (confirm(t('yahtzee.ui.leaveConfirm'))) {
                             handleLeaveLobby()
                           }
                         }}
-                        aria-label="Leave game"
+                        aria-label={t('yahtzee.ui.leave')}
                         className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
-                        <span>Leave</span>
+                        <span>{t('yahtzee.ui.leave')}</span>
                       </button>
                     </div>
                   </div>
@@ -942,9 +956,9 @@ function LobbyPageContent() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">Round</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.round')}</div>
                           <div className="text-base font-bold leading-tight">
-                            {Math.ceil(gameEngine.getRound() / (game?.players?.length || 1))}/13
+                            {roundInfo.current}/{roundInfo.total}
                           </div>
                         </div>
                       </div>
@@ -952,9 +966,9 @@ function LobbyPageContent() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">👤</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">Turn</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.turn')}</div>
                           <div className="text-base font-bold leading-tight truncate max-w-[150px]">
-                            {gameEngine.getCurrentPlayer()?.name || 'Player'}
+                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
                           </div>
                         </div>
                       </div>

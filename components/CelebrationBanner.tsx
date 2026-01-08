@@ -29,21 +29,21 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
 
   if (!event || !visible) return null
 
-  // Different colors for different celebration types
+  // Different colors for different celebration types - with opaque backgrounds
   const getColorClasses = () => {
     switch (event.type) {
       case 'yahtzee':
-        return 'from-yellow-400 via-orange-500 to-red-500 border-yellow-500'
+        return 'from-yellow-600 via-orange-600 to-red-600 border-yellow-400 bg-opacity-95'
       case 'largeStraight':
-        return 'from-blue-400 via-purple-500 to-pink-500 border-purple-500'
+        return 'from-blue-600 via-purple-600 to-pink-600 border-purple-400 bg-opacity-95'
       case 'fullHouse':
-        return 'from-green-400 via-teal-500 to-cyan-500 border-green-500'
+        return 'from-green-600 via-teal-600 to-cyan-600 border-green-400 bg-opacity-95'
       case 'highScore':
-        return 'from-indigo-400 via-purple-500 to-pink-500 border-indigo-500'
+        return 'from-indigo-600 via-purple-600 to-pink-600 border-indigo-400 bg-opacity-95'
       case 'perfectRoll':
-        return 'from-amber-400 via-yellow-500 to-orange-500 border-amber-500'
+        return 'from-amber-600 via-yellow-600 to-orange-600 border-amber-400 bg-opacity-95'
       default:
-        return 'from-blue-500 via-purple-600 to-pink-500 border-blue-500'
+        return 'from-blue-600 via-purple-700 to-pink-600 border-blue-400 bg-opacity-95'
     }
   }
 
@@ -55,11 +55,11 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
       `}
     >
       <div
-        className="bg-gradient-to-r text-white rounded-2xl shadow-2xl flex items-center animate-scale-pulse"
+        className={`bg-gradient-to-r ${getColorClasses()} text-white rounded-2xl shadow-2xl flex items-center animate-scale-pulse border-2`}
         style={{
           padding: `clamp(12px, 1.2vh, 20px) clamp(24px, 2.4vw, 40px)`,
           gap: `clamp(12px, 1.2vw, 20px)`,
-          borderWidth: `clamp(3px, 0.3vw, 5px)`,
+          backdropFilter: 'blur(4px)',
         }}
       >
         {/* Emoji */}
