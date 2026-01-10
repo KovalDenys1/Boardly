@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { soundManager } from '@/lib/sounds'
 
 interface DiceProps {
   value: number
@@ -50,9 +51,16 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
     'bottom-right': 'bottom-2 right-2',
   }
 
+  const handleClick = () => {
+    if (!disabled) {
+      soundManager.play('click')
+      onToggleHold()
+    }
+  }
+
   return (
     <button
-      onClick={!disabled ? onToggleHold : undefined}
+      onClick={handleClick}
       disabled={disabled}
       aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
       aria-pressed={held}
