@@ -96,8 +96,8 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsMoveInProgress(true)
     setIsRolling(true)
 
-    // Play sound immediately for instant feedback
-    soundManager.play('diceRoll')
+    // Play sound immediately for instant feedback (force to ensure it plays)
+    soundManager.play('diceRoll', { force: true })
     
     // NOTE: We don't update dice values optimistically because:
     // 1. Client random != server random (will cause "flicker" when values change)
@@ -142,7 +142,7 @@ export function useGameActions(props: UseGameActionsProps) {
         const rollNumber = 3 - newEngine.getRollsLeft()
         const newEntry: RollHistoryEntry = {
           id: `${Date.now()}_${Math.random()}`,
-          turnNumber: Math.floor(newEngine.getRound() / (game?.players?.length || 1)) + 1,
+          turnNumber: newEngine.getRound(),
           playerName: currentPlayer?.name || username || 'You',
           rollNumber: rollNumber,
           dice: newEngine.getDice(),
@@ -228,8 +228,7 @@ export function useGameActions(props: UseGameActionsProps) {
       newHeld[diceIndex] = !newHeld[diceIndex]
       return newHeld
     })
-    
-    soundManager.play('click')
+    // Sound is now played in Dice component for instant feedback
   }, [gameEngine, game, isMyTurn, isRolling, isScoring])
 
   const handleScore = useCallback(async (category: YahtzeeCategory) => {

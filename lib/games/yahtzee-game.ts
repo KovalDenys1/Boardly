@@ -225,7 +225,16 @@ export class YahtzeeGame extends GameEngine {
   }
 
   getRound(): number {
-    return (this.state.data as YahtzeeGameData).round
+    // For Yahtzee, round is the number of categories filled by current player + 1
+    const gameData = this.state.data as YahtzeeGameData
+    const currentPlayerIndex = this.state.currentPlayerIndex
+    const currentPlayerScorecard = gameData.scores[currentPlayerIndex] || {}
+    
+    // Count filled categories
+    const filledCategories = Object.keys(currentPlayerScorecard).length
+    
+    // Round is filled categories + 1 (next round to play)
+    return filledCategories + 1
   }
 
   startGame(): boolean {

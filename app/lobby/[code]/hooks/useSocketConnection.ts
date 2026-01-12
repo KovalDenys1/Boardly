@@ -139,22 +139,22 @@ export function useSocketConnection({
     if (isGuest && guestName) queryPayload.guestName = String(guestName)
 
     const newSocket = io(url, {
-      // Оптимізовано для Render free tier (холодні старти можуть займати до 60s)
-      transports: ['polling', 'websocket'], // Polling → WebSocket для стабільності
+      // Optimized for Render free tier (cold starts can take up to 60s)
+      transports: ['polling', 'websocket'], // Polling → WebSocket for stability
       reconnection: true,
-      reconnectionAttempts: 20, // Збільшено для холодних стартів Render
-      reconnectionDelay: 3000, // 3 секунди початкова затримка
-      reconnectionDelayMax: 120000, // До 2 хвилин між спробами (холодний старт)
-      timeout: 180000, // 3 хвилини - важливо для холодного старту Render (було 2 хв)
+      reconnectionAttempts: 20, // Increased for Render cold starts
+      reconnectionDelay: 3000, // 3 seconds initial delay
+      reconnectionDelayMax: 120000, // Up to 2 minutes between attempts (cold start)
+      timeout: 180000, // 3 minutes - important for Render cold start (increased from 2 min)
       upgrade: true, // Auto-upgrade polling → websocket
-      rememberUpgrade: true, // Запам'ятати успішний upgrade
-      autoConnect: true, // Автоматичне підключення
-      forceNew: false, // Використовувати існуюче з'єднання якщо можливо
-      multiplex: true, // Multiplexing для ефективності
-      path: '/socket.io/', // Явний шлях
-      // Додаткові налаштування для стабільності
-      closeOnBeforeunload: false, // Не закривати при перезавантаженні
-      withCredentials: false, // Не потрібно для токен-авторизації
+      rememberUpgrade: true, // Remember successful upgrade
+      autoConnect: true, // Automatic connection
+      forceNew: false, // Use existing connection if possible
+      multiplex: true, // Multiplexing for efficiency
+      path: '/socket.io/', // Explicit path
+      // Additional stability settings
+      closeOnBeforeunload: false, // Don't close on page reload
+      withCredentials: false, // Not needed for token-based auth
       auth: authPayload,
       query: queryPayload,
     })

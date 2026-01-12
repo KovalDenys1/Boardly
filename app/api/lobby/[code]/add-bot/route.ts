@@ -72,19 +72,18 @@ export async function POST(
     let botUser = await prisma.user.findFirst({
       where: {
         username: 'AI Bot',
-        email: { startsWith: 'bot-' }
-      } as any // Type cast until Prisma regenerates
+        isBot: true
+      }
     })
 
     if (!botUser) {
       botUser = await prisma.user.create({
         data: {
           username: 'AI Bot',
-          name: 'AI Bot 🤖',
           email: `bot-${Date.now()}@boardly.local`,
           isBot: true,
-          botDifficulty: 'hard'
-        } as any // Type cast until Prisma regenerates
+          emailVerified: new Date()
+        }
       })
     }
 

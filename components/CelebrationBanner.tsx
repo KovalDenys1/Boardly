@@ -51,7 +51,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
     <div
       className={`
         fixed top-20 left-1/2 transform -translate-x-1/2 z-50
-        ${visible ? 'animate-bounce-in' : 'animate-fade-out'}
+        ${visible ? 'animate-bounce-in opacity-100' : 'animate-fade-out opacity-0'}
       `}
     >
       <div

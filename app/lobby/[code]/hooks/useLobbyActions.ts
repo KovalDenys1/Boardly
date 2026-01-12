@@ -269,8 +269,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      toast.loading('Starting game...', { id: 'start-game' })
-
       const res = await fetch('/api/game/create', {
         method: 'POST',
         headers: {
@@ -316,22 +314,22 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       
       const firstPlayerName = data.game.players[0]?.name || 'Player 1'
       
-      // Emit game-started event to all clients
-      socket?.emit('game-started', {
-        lobbyCode: code,
-        game: data.game,
-        firstPlayerName: firstPlayerName,
-      })
-      
-      // Also emit state change
-      socket?.emit('game-action', {
-        lobbyCode: code,
-        action: 'state-change',
-        payload: data.game.state,
-      })
+      // Emit events in parallel for faster update
+      if (socket) {
+        socket.emit('game-started', {
+          lobbyCode: code,
+          game: data.game,
+          firstPlayerName: firstPlayerName,
+        })
+        
+        socket.emit('game-action', {
+          lobbyCode: code,
+          action: 'state-change',
+          payload: data.game.state,
+        })
+      }
 
-      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`)
-      toast.dismiss('start-game')
+      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`, { id: 'start-game' })
 
       const gameStartMessage = {
         id: Date.now().toString() + '_gamestart',
@@ -343,14 +341,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       setChatMessages(prev => [...prev, gameStartMessage])
       
-      // Call via ref to avoid circular dependency
+      // Load lobby data without blocking UI
       if (loadLobbyRef.current) {
-        await loadLobbyRef.current()
+        loadLobbyRef.current().catch(err => clientLogger.error('Failed to reload lobby:', err))
       }
       // Sound will play automatically via socket event handler
     } catch (error: any) {
       toast.dismiss('start-game')
-      toast.dismiss('add-bot')
       toast.error(error.message || 'Failed to start game')
       clientLogger.error('Failed to start game:', error)
     } finally {

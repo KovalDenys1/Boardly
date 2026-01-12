@@ -3,14 +3,14 @@ import i18n from '@/i18n'
 
 /**
  * Localized toast notifications helper
- * Використовує поточну мову з i18n для показу повідомлень
+ * Uses current language from i18n for displaying messages
  */
 export const showToast = {
   /**
-   * Показати успішне повідомлення
-   * @param key - ключ перекладу (наприклад, 'toast.saved')
-   * @param fallback - резервний текст якщо ключ не знайдено
-   * @param params - параметри для інтерполяції
+   * Show success message
+   * @param key - translation key (e.g., 'toast.saved')
+   * @param fallback - fallback text if key not found
+   * @param params - parameters for interpolation
    */
   success: (key: string, fallback?: string, params?: Record<string, any>) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
@@ -18,10 +18,10 @@ export const showToast = {
   },
 
   /**
-   * Показати повідомлення про помилку
-   * @param key - ключ перекладу (наприклад, 'errors.network')
-   * @param fallback - резервний текст якщо ключ не знайдено
-   * @param params - параметри для інтерполяції
+   * Show error message
+   * @param key - translation key (e.g., 'errors.network')
+   * @param fallback - fallback text if key not found
+   * @param params - parameters for interpolation
    */
   error: (key: string, fallback?: string, params?: Record<string, any>) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
@@ -29,10 +29,10 @@ export const showToast = {
   },
 
   /**
-   * Показати інформаційне повідомлення
-   * @param key - ключ перекладу (наприклад, 'toast.copied')
-   * @param fallback - резервний текст якщо ключ не знайдено
-   * @param params - параметри для інтерполяції
+   * Show info message
+   * @param key - translation key (e.g., 'toast.copied')
+   * @param fallback - fallback text if key not found
+   * @param params - parameters for interpolation
    */
   info: (key: string, fallback?: string, params?: Record<string, any>) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
@@ -40,11 +40,11 @@ export const showToast = {
   },
 
   /**
-   * Показати повідомлення з кастомною іконкою
-   * @param key - ключ перекладу
-   * @param icon - emoji або компонент іконки
-   * @param fallback - резервний текст якщо ключ не знайдено
-   * @param params - параметри для інтерполяції
+   * Show message with custom icon
+   * @param key - translation key
+   * @param icon - emoji or icon component
+   * @param fallback - fallback text if key not found
+   * @param params - parameters for interpolation
    */
   custom: (key: string, icon: string, fallback?: string, params?: Record<string, any>) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
@@ -52,9 +52,9 @@ export const showToast = {
   },
 
   /**
-   * Показати toast з promise (loading → success/error)
-   * @param promise - Promise для відстеження
-   * @param messages - об'єкт з ключами loading, success, error
+   * Show toast with promise (loading → success/error)
+   * @param promise - Promise to track
+   * @param messages - object with loading, success, error keys
    */
   promise: <T,>(
     promise: Promise<T>,
@@ -73,7 +73,7 @@ export const showToast = {
 }
 
 /**
- * Старий метод для зворотної сумісності
- * @deprecated Використовуйте showToast замість toast напряму
+ * Legacy method for backward compatibility
+ * @deprecated Use showToast instead of toast directly
  */
 export default showToast
