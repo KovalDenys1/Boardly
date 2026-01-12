@@ -35,7 +35,7 @@ export async function sendVerificationEmail(email: string, token: string, userna
               <h2 style="color: #333; margin-top: 0;">Hi ${displayName}! 👋</h2>
               <p>Thanks for signing up for Boardly! Please click the button below to verify your email address and activate your account.</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${verifyUrl}" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${verifyUrl}" target="_blank" rel="noopener noreferrer" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   ✓ Verify Email
                 </a>
               </div>
@@ -84,7 +84,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <p style="margin-top: 0;">We received a request to reset your password. Click the button below to create a new password.</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Reset Password
                 </a>
               </div>
@@ -139,7 +139,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
                 <li>Customize your profile</li>
               </ul>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXTAUTH_URL}/games" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${process.env.NEXTAUTH_URL}/games" target="_blank" rel="noopener noreferrer" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Start Playing
                 </a>
               </div>
@@ -202,7 +202,7 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
               <p>If you're sure you want to proceed, click the button below:</p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${deleteUrl}" style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${deleteUrl}" target="_blank" rel="noopener noreferrer" style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   ⚠️ Confirm Account Deletion
                 </a>
               </div>

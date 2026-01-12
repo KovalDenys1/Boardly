@@ -49,6 +49,29 @@ export default function ProfilePage() {
     }
   }, [status, router])
 
+  // Refresh session when the tab becomes visible or window gains focus.
+  // This helps update `emailVerified` if user verified in another tab.
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      if (status === 'authenticated') {
+        update().catch(() => {})
+      }
+    }
+
+    window.addEventListener('focus', refreshOnFocus)
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshOnFocus()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      window.removeEventListener('focus', refreshOnFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [status, update])
+
   // Check if account was just linked
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -156,11 +179,17 @@ export default function ProfilePage() {
       const data = await res.json()
 
       if (!res.ok) {
+        // If backend reports that the email is already verified, refresh session so UI updates
+        if (data && data.error === 'Email already verified') {
+          await update()
+          toast.success('✅ Email already verified')
+          return
+        }
+
         throw new Error(data.error || 'Failed to resend verification email')
       }
 
       toast.success('✅ Verification email sent! Check your inbox.')
-      
       // Refresh session to get updated emailVerified status
       await update()
     } catch (error) {
