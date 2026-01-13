@@ -13,11 +13,12 @@ import { apiLogger } from '@/lib/logger'
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/abandon')
   
   try {
+    const { gameId } = await params
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
@@ -26,8 +27,6 @@ export async function POST(
         { status: 401 }
       )
     }
-
-    const { gameId } = params
 
     // Find the game with its lobby and players
     const game = await prisma.game.findUnique({

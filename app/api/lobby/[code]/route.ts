@@ -7,11 +7,12 @@ import { apiLogger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const { code } = await params
     const lobby = await prisma.lobby.findUnique({
-      where: { code: params.code },
+      where: { code },
       include: {
         creator: {
           select: {
@@ -47,8 +48,9 @@ export async function GET(
     return NextResponse.json({ lobby })
   } catch (error) {
     const log = apiLogger('GET /api/lobby/[code]')
+    const { code: errorCode } = await params
     log.error('Get lobby error', error as Error, {
-      code: params.code,
+      code: errorCode,
       stack: (error as Error).stack
     })
     return NextResponse.json({ 
@@ -60,16 +62,17 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const { code } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const lobby = await prisma.lobby.findUnique({
-      where: { code: params.code },
+      where: { code },
       include: {
         games: {
           where: { status: { in: ['waiting', 'playing'] } },
@@ -170,7 +173,7 @@ export async function POST(
 
     // Notify all clients via WebSocket that a player joined
     await notifySocket(
-      `lobby:${params.code}`,
+      `lobby:${code}`,
       'player-joined',
       {
         username: session.user.name || session.user.email || 'Player',
@@ -180,16 +183,17 @@ export async function POST(
 
     // Also send lobby-update event
     await notifySocket(
-      `lobby:${params.code}`,
+      `lobby:${code}`,
       'lobby-update',
-      { lobbyCode: params.code }
+      { lobbyCode: code }
     )
 
     return NextResponse.json({ game, player })
   } catch (error) {
     const log = apiLogger('POST /api/lobby/[code]')
+    const { code: errorCode } = await params
     log.error('Join lobby error', error as Error, {
-      code: params.code,
+      code: errorCode,
       stack: (error as Error).stack
     })
     return NextResponse.json({ 

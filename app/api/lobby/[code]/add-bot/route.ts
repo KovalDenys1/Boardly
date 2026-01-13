@@ -6,16 +6,15 @@ import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   request: Request,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const { code } = await params
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { code } = params
 
     // Find lobby
     const lobby = await prisma.lobby.findUnique({

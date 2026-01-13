@@ -4,10 +4,10 @@ import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const { code } = params
+    const { code } = await params
     const { guestId, guestName } = await req.json()
 
     if (!guestId || !guestName) {

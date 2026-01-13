@@ -11,11 +11,12 @@ const log = apiLogger('/api/friends/request/accept')
 // POST /api/friends/request/[requestId]/accept - Accept friend request
 export async function POST(
   req: NextRequest,
-  { params }: { params: { requestId: string } }
+  { params }: { params: Promise<{ requestId: string }> }
 ) {
   try {
     await limiter(req)
 
+    const { requestId } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -32,7 +33,7 @@ export async function POST(
 
     // Get friend request
     const friendRequest = await prisma.friendRequest.findUnique({
-      where: { id: params.requestId }
+      where: { id: requestId }
     })
 
     if (!friendRequest) {
@@ -59,7 +60,7 @@ export async function POST(
 
     // Update request status
     await prisma.friendRequest.update({
-      where: { id: params.requestId },
+      where: { id: requestId },
       data: { status: 'accepted' }
     })
 
@@ -88,7 +89,7 @@ export async function POST(
     })
 
     log.info('Friend request accepted', {
-      requestId: params.requestId,
+      requestId,
       user1Id,
       user2Id,
       friendshipId: friendship.id
@@ -100,7 +101,8 @@ export async function POST(
     })
 
   } catch (error) {
-    log.error('Error accepting friend request', error as Error, { requestId: params.requestId })
+    const { requestId: errorRequestId } = await params
+    log.error('Error accepting friend request', error as Error, { requestId: errorRequestId })
     return NextResponse.json(
       { error: 'Failed to accept friend request' },
       { status: 500 }

@@ -7,9 +7,10 @@ import { getServerSocketUrl } from '@/lib/socket-url'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const { code } = await params
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
@@ -18,8 +19,6 @@ export async function POST(
         { status: 401 }
       )
     }
-
-    const { code } = params
 
     // Find lobby with its game and players
     const lobby = await prisma.lobby.findUnique({

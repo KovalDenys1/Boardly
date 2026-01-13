@@ -103,12 +103,13 @@ if (typeof setInterval !== 'undefined') {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/bot-turn')
   let lockKey: string | null = null
   
   try {
+    const { gameId } = await params
     const { botUserId, lobbyCode } = await request.json()
 
     if (!botUserId) {
@@ -116,12 +117,12 @@ export async function POST(
     }
 
     log.info('Bot turn endpoint called', {
-      gameId: params.gameId,
+      gameId,
       botUserId
     })
 
     // Check if bot turn is already in progress for this game
-    lockKey = `bot-turn-lock:${params.gameId}:${botUserId}`
+    lockKey = `bot-turn-lock:${gameId}:${botUserId}`
     const lockAcquired = await acquireLock(lockKey)
     
     if (!lockAcquired) {
@@ -181,7 +182,7 @@ export async function POST(
     }
 
     if (!game) {
-      log.error('Game not found', undefined, { gameId: params.gameId })
+      log.error('Game not found', undefined, { gameId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
@@ -273,7 +274,7 @@ export async function POST(
           log.info('Saving bot move to database...')
           try {
             await prisma.game.update({
-              where: { id: params.gameId },
+              where: { id: gameId },
               data: {
                 state: JSON.stringify(gameEngine.getState()),
                 status: gameEngine.getState().status,
@@ -286,7 +287,7 @@ export async function POST(
               log.warn('Database update failed, retrying...', { error: dbError.message })
               await new Promise(resolve => setTimeout(resolve, 200))
               return prisma.game.update({
-                where: { id: params.gameId },
+                where: { id: gameId },
                 data: {
                   state: JSON.stringify(gameEngine.getState()),
                   status: gameEngine.getState().status,
@@ -373,8 +374,9 @@ export async function POST(
     })
 
   } catch (error) {
+    const { gameId: errorGameId } = await params
     log.error('Bot turn execution failed', error as Error, {
-      gameId: params.gameId,
+      gameId: errorGameId,
       lockKey,
       errorStack: error instanceof Error ? error.stack : undefined,
       errorMessage: error instanceof Error ? error.message : String(error)

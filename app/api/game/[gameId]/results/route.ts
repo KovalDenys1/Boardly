@@ -6,11 +6,12 @@ import { apiLogger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('/api/game/[gameId]/results')
   
   try {
+    const { gameId } = await params
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
@@ -19,8 +20,6 @@ export async function GET(
         { status: 401 }
       )
     }
-
-    const { gameId } = params
 
     // Get game with all players
     const game = await prisma.game.findUnique({

@@ -11,7 +11,7 @@ const limiter = rateLimit(rateLimitPresets.game)
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   // Apply rate limiting
   const rateLimitResult = await limiter(request)
@@ -22,12 +22,11 @@ export async function POST(
   const log = apiLogger('POST /api/game/[gameId]/spy-init')
 
   try {
+    const { gameId } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const { gameId } = params
 
     // Fetch game
     const game = await prisma.game.findUnique({

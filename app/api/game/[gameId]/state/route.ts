@@ -10,9 +10,11 @@ import { withDbTimeout, DB_TIMEOUTS } from '@/lib/timeout'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   try {
+    const { gameId } = await params
+
     // Check for guest or authenticated user
     const session = await getServerSession(authOptions)
     const guestId = request.headers.get('X-Guest-Id')
@@ -31,7 +33,7 @@ export async function POST(
     // Get game from database - optimize by selecting only needed fields
     const game = await withDbTimeout(
       prisma.game.findUnique({
-        where: { id: params.gameId },
+        where: { id: gameId },
         select: {
           id: true,
           state: true,
@@ -129,7 +131,7 @@ export async function POST(
 
     // Update game state in database
     const updatedGame = await prisma.game.update({
-      where: { id: params.gameId },
+      where: { id: gameId },
       data: {
         state: JSON.stringify(gameEngine.getState()),
         status: gameEngine.getState().status,
