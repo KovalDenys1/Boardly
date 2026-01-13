@@ -20,8 +20,8 @@ const nextConfig = {
     optimizePackageImports: ['react-hot-toast', 'next-auth', 'react-i18next'],
     // Enable modern optimizations
     optimisticClientCache: true,
-    // Optimize CSS loading
-    optimizeCss: true,
+    // Note: optimizeCss requires critters package, disabled to avoid build issues
+    // optimizeCss: true,
   },
   
   // Compiler optimizations
