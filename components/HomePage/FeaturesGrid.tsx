@@ -37,11 +37,16 @@ export default function FeaturesGrid() {
         <div 
           key={index}
           className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in" 
-          style={{ animationDelay: feature.delay }}
+          style={{ 
+            animationDelay: feature.delay,
+            minHeight: '200px', // Fixed height to prevent CLS
+            display: 'flex',
+            flexDirection: 'column'
+          }}
         >
-          <div className="text-4xl mb-4">{feature.emoji}</div>
-          <h3 className="text-xl font-bold mb-2">{t(feature.titleKey)}</h3>
-          <p className="text-white/80 text-sm">{t(feature.descriptionKey)}</p>
+          <div className="text-4xl mb-4" style={{ height: '3rem', display: 'flex', alignItems: 'center' }}>{feature.emoji}</div>
+          <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(feature.titleKey)}</h3>
+          <p className="text-white/80 text-sm" style={{ minHeight: '3rem' }}>{t(feature.descriptionKey)}</p>
         </div>
       ))}
     </div>

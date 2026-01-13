@@ -10,13 +10,13 @@ import { Analytics } from '@vercel/analytics/react'
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50 h-16">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-        <div className="flex justify-between items-center h-full">
-          <div className="flex items-center gap-2 text-2xl font-bold text-white">
+    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
+        <div className="flex justify-between items-center" style={{ height: '100%' }}>
+          <div className="flex items-center gap-2 text-2xl font-bold text-white" style={{ minWidth: '120px' }}>
             🎲 Boardly
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4" style={{ minWidth: '200px' }}>
             <div className="w-20 h-8 bg-white/20 rounded animate-pulse"></div>
             <div className="w-24 h-10 bg-white/20 rounded-lg animate-pulse"></div>
           </div>
@@ -26,9 +26,9 @@ function HeaderSkeleton() {
   )
 }
 
-// Import Header without SSR to avoid hydration issues with i18n
+// Import Header with SSR for better FCP, but handle i18n client-side
 const Header = dynamic(() => import('@/components/Header'), {
-  ssr: false,
+  ssr: true, // Enable SSR for better FCP
   loading: () => <HeaderSkeleton />
 })
 
@@ -37,6 +37,9 @@ const inter = Inter({
   display: 'swap',
   preload: true,
   variable: '--font-inter',
+  // Optimize font loading for better FCP
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+  adjustFontFallback: true,
 })
 
 export const metadata: Metadata = {
@@ -123,15 +126,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Preconnect to external domains */}
+        {/* Preconnect to external domains - moved before font loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {isProduction && (
           <>
-            <link rel="preconnect" href="https://vitals.vercel-insights.com" />
-            <link rel="preconnect" href="https://va.vercel-scripts.com" />
+            <link rel="dns-prefetch" href="https://vitals.vercel-insights.com" />
+            <link rel="dns-prefetch" href="https://va.vercel-scripts.com" />
           </>
         )}
+        
+        {/* Critical CSS inline for faster FCP */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            html { font-family: ${inter.style.fontFamily}; }
+            body { margin: 0; }
+            /* Prevent layout shift for header */
+            header { min-height: 64px; height: 64px; }
+            /* Optimize font rendering */
+            * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+          `
+        }} />
         
         <script
           type="application/ld+json"

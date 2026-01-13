@@ -20,6 +20,16 @@ const nextConfig = {
     optimizePackageImports: ['react-hot-toast', 'next-auth', 'react-i18next'],
     // Enable modern optimizations
     optimisticClientCache: true,
+    // Optimize CSS loading
+    optimizeCss: true,
+  },
+  
+  // Compiler optimizations
+  compiler: {
+    // Remove console.log in production
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
   
   // Output configuration for better caching

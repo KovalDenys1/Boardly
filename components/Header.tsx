@@ -21,9 +21,9 @@ export default function Header() {
   const isLoading = status === 'loading'
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
+        <div className="flex justify-between" style={{ height: '100%', alignItems: 'center' }}>
           {/* Logo and main navigation */}
           <div className="flex items-center">
             <button
