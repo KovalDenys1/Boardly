@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getSecurityHeaders } from '@/lib/csrf'
 import { getServerSocketUrl } from '@/lib/socket-url'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const response = NextResponse.next()
 
   // Add security headers to all responses
@@ -69,7 +69,7 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-// Configure which routes the middleware should run on
+// Configure which routes the proxy should run on
 export const config = {
   matcher: [
     /*

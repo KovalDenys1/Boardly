@@ -107,6 +107,10 @@ module.exports = withSentryConfig(nextConfig, {
   // Disable telemetry to reduce noise in logs
   telemetry: false,
 
+  // Note: Source map warnings for client-reference-manifest files are expected
+  // These are internal Next.js files generated at build time and don't need source maps
+  // The warnings don't affect functionality and can be safely ignored
+
   // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
   // See the following for more information:
   // https://docs.sentry.io/product/crons/
