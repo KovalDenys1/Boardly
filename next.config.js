@@ -33,7 +33,9 @@ const nextConfig = {
   },
   
   // Output configuration for better caching
-  output: 'standalone',
+  // Note: standalone mode may have issues on Windows with long paths
+  // but works fine on Vercel (Linux). If local build fails, this is expected.
+  output: process.env.SKIP_STANDALONE ? undefined : 'standalone',
   
   webpack: (config, { isServer }) => {
     config.externals.push({
