@@ -6,10 +6,10 @@ import { BotMoveExecutor } from '@/lib/bot-executor'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { BotMoveStep } from '@/types/game'
-import type { KV } from '@vercel/kv'
 // Optional: Only import if KV is available
 // Supports Vercel KV or any Redis-compatible service via REST API
-let kv: KV | null = null
+// Using any type for dynamic import - kv is a VercelKV instance
+let kv: any = null
 try {
   kv = require('@vercel/kv').kv
 } catch {
@@ -249,7 +249,7 @@ export async function POST(
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: BotMoveStep) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event)
+      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event as Record<string, unknown>)
     }
 
     // Execute bot's turn with visual feedback
