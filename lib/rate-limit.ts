@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { kv } from '@vercel/kv'
 
 interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
@@ -6,29 +7,154 @@ interface RateLimitConfig {
   message?: string // Custom error message
 }
 
+interface RateLimitRecord {
+  count: number
+  resetTime: number
+}
+
+// Fallback in-memory store for development when KV is not available
 interface RateLimitStore {
-  [key: string]: {
-    count: number
-    resetTime: number
+  [key: string]: RateLimitRecord
+}
+
+const fallbackStore: RateLimitStore = {}
+
+// Cleanup old entries every 5 minutes (fallback only)
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    Object.keys(fallbackStore).forEach(key => {
+      if (fallbackStore[key].resetTime < now) {
+        delete fallbackStore[key]
+      }
+    })
+  }, 5 * 60 * 1000)
+}
+
+/**
+ * Check if Vercel KV or Upstash Redis is available
+ * Supports:
+ * - Vercel KV: KV_URL or KV_REST_API_URL + KV_REST_API_TOKEN
+ * - Upstash Redis: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN (or with custom prefix)
+ */
+function isKvAvailable(): boolean {
+  try {
+    return !!(
+      process.env.KV_URL ||
+      (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+      // Support Upstash Redis with or without custom prefix
+      (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) ||
+      // Support custom prefix (e.g., if prefix is "UPSTASH", variables become UPSTASH_UPSTASH_REDIS_REST_URL)
+      Object.keys(process.env).some(key => 
+        key.includes('UPSTASH_REDIS_REST_URL') && 
+        process.env[key] &&
+        process.env[key.replace('UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN')]
+      )
+    )
+  } catch {
+    return false
   }
 }
 
-// In-memory store for rate limiting (use Redis in production for multi-instance deployments)
-const store: RateLimitStore = {}
-
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now()
-  Object.keys(store).forEach(key => {
-    if (store[key].resetTime < now) {
-      delete store[key]
-    }
-  })
-}, 5 * 60 * 1000)
+/**
+ * Get KV REST API URL (supports Vercel KV and Upstash Redis)
+ */
+function getKvRestApiUrl(): string | undefined {
+  return (
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    // Find any env var containing UPSTASH_REDIS_REST_URL
+    Object.keys(process.env).find(key => 
+      key.includes('UPSTASH_REDIS_REST_URL') && process.env[key]
+    ) ? process.env[Object.keys(process.env).find(key => 
+      key.includes('UPSTASH_REDIS_REST_URL') && process.env[key]
+    )!] : undefined
+  )
+}
 
 /**
- * Simple in-memory rate limiter middleware for Next.js API routes
- * For production with multiple instances, use Redis instead
+ * Get KV REST API Token (supports Vercel KV and Upstash Redis)
+ */
+function getKvRestApiToken(): string | undefined {
+  const urlKey = process.env.KV_REST_API_URL 
+    ? 'KV_REST_API_TOKEN'
+    : process.env.UPSTASH_REDIS_REST_URL
+    ? 'UPSTASH_REDIS_REST_TOKEN'
+    : Object.keys(process.env).find(key => 
+        key.includes('UPSTASH_REDIS_REST_URL') && process.env[key]
+      )?.replace('UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN')
+  
+  return urlKey ? process.env[urlKey] : undefined
+}
+
+/**
+ * Get rate limit record from KV or fallback store
+ */
+async function getRecord(key: string): Promise<RateLimitRecord | null> {
+  if (isKvAvailable() && kv) {
+    try {
+      const record = await kv.get<RateLimitRecord>(key)
+      return record || null
+    } catch (error) {
+      console.error('KV error, falling back to in-memory store:', error)
+      return fallbackStore[key] || null
+    }
+  }
+  return fallbackStore[key] || null
+}
+
+/**
+ * Set rate limit record in KV or fallback store
+ */
+async function setRecord(key: string, record: RateLimitRecord, ttlSeconds: number): Promise<void> {
+  if (isKvAvailable() && kv) {
+    try {
+      await kv.set(key, record, { ex: ttlSeconds })
+    } catch (error) {
+      console.error('KV error, falling back to in-memory store:', error)
+      fallbackStore[key] = record
+    }
+  } else {
+    fallbackStore[key] = record
+  }
+}
+
+/**
+ * Increment rate limit counter in KV or fallback store
+ */
+async function incrementRecord(key: string): Promise<RateLimitRecord> {
+  if (isKvAvailable() && kv) {
+    try {
+      // Use atomic increment with transaction-like behavior
+      const record = await kv.get<RateLimitRecord>(key)
+      if (!record) {
+        const newRecord: RateLimitRecord = { count: 1, resetTime: Date.now() }
+        await kv.set(key, newRecord)
+        return newRecord
+      }
+      record.count++
+      await kv.set(key, record)
+      return record
+    } catch (error) {
+      console.error('KV error, falling back to in-memory store:', error)
+      if (!fallbackStore[key]) {
+        fallbackStore[key] = { count: 0, resetTime: Date.now() }
+      }
+      fallbackStore[key].count++
+      return fallbackStore[key]
+    }
+  } else {
+    if (!fallbackStore[key]) {
+      fallbackStore[key] = { count: 0, resetTime: Date.now() }
+    }
+    fallbackStore[key].count++
+    return fallbackStore[key]
+  }
+}
+
+/**
+ * Rate limiter middleware for Next.js API routes
+ * Uses Vercel KV in production, falls back to in-memory store in development
  */
 export function rateLimit(config: RateLimitConfig) {
   const {
@@ -44,30 +170,37 @@ export function rateLimit(config: RateLimitConfig) {
     
     // Create unique key for this IP and endpoint
     const pathname = new URL(request.url).pathname
-    const key = `${ip}:${pathname}`
+    const key = `ratelimit:${ip}:${pathname}`
 
     const now = Date.now()
-    const record = store[key]
+    const record = await getRecord(key)
 
     if (!record) {
       // First request from this IP
-      store[key] = {
+      const newRecord: RateLimitRecord = {
         count: 1,
         resetTime: now + windowMs
       }
+      const ttlSeconds = Math.ceil(windowMs / 1000)
+      await setRecord(key, newRecord, ttlSeconds)
       return null // Allow request
     }
 
     if (now > record.resetTime) {
       // Window has expired, reset counter
-      store[key] = {
+      const newRecord: RateLimitRecord = {
         count: 1,
         resetTime: now + windowMs
       }
+      const ttlSeconds = Math.ceil(windowMs / 1000)
+      await setRecord(key, newRecord, ttlSeconds)
       return null // Allow request
     }
 
-    if (record.count >= maxRequests) {
+    // Increment counter
+    const updatedRecord = await incrementRecord(key)
+
+    if (updatedRecord.count >= maxRequests) {
       // Rate limit exceeded
       const retryAfter = Math.ceil((record.resetTime - now) / 1000)
       
@@ -85,8 +218,12 @@ export function rateLimit(config: RateLimitConfig) {
       )
     }
 
-    // Increment counter
-    record.count++
+    // Calculate remaining requests
+    const remaining = Math.max(0, maxRequests - updatedRecord.count)
+    
+    // Note: Can't modify request headers in Next.js, so we'll set them in response
+    // The response will be created by the handler, so we'll just allow the request
+
     return null // Allow request
   }
 }

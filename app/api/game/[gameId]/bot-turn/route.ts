@@ -5,11 +5,101 @@ import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
+// Optional: Only import if KV is available
+// Supports Vercel KV or any Redis-compatible service via REST API
+let kv: any = null
+try {
+  kv = require('@vercel/kv').kv
+} catch {
+  // KV not available - will use fallback
+}
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
-// In-memory lock to prevent concurrent bot turns for the same game
-const botTurnLocks = new Map<string, boolean>()
+// Lock TTL in seconds (should be longer than max bot turn duration)
+const LOCK_TTL_SECONDS = 90
+
+/**
+ * Check if Vercel KV or Upstash Redis is available
+ * Supports:
+ * - Vercel KV: KV_URL or KV_REST_API_URL + KV_REST_API_TOKEN
+ * - Upstash Redis: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN (or with custom prefix)
+ */
+function isKvAvailable(): boolean {
+  try {
+    return !!(
+      process.env.KV_URL ||
+      (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) ||
+      // Support Upstash Redis with or without custom prefix
+      (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) ||
+      // Support custom prefix (e.g., if prefix is "UPSTASH", variables become UPSTASH_UPSTASH_REDIS_REST_URL)
+      Object.keys(process.env).some(key => 
+        key.includes('UPSTASH_REDIS_REST_URL') && 
+        process.env[key] &&
+        process.env[key.replace('UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN')]
+      )
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Acquire distributed lock using Vercel KV or fallback to in-memory
+ */
+async function acquireLock(lockKey: string): Promise<boolean> {
+  if (isKvAvailable() && kv) {
+    try {
+      // Try to set lock with NX (only if not exists) and expiration
+      const result = await kv.set(lockKey, 'locked', { 
+        ex: LOCK_TTL_SECONDS,
+        nx: true // Only set if key doesn't exist
+      })
+      return result === 'OK'
+    } catch (error) {
+      apiLogger('acquireLock').error('KV lock error, falling back', error as Error)
+      // Fallback to in-memory (not ideal but better than nothing)
+      return !fallbackLocks.has(lockKey)
+    }
+  }
+  // Fallback: in-memory lock (only works for single instance)
+  if (fallbackLocks.has(lockKey)) {
+    return false
+  }
+  fallbackLocks.set(lockKey, Date.now())
+  return true
+}
+
+/**
+ * Release distributed lock
+ */
+async function releaseLock(lockKey: string): Promise<void> {
+  if (isKvAvailable() && kv) {
+    try {
+      await kv.del(lockKey)
+    } catch (error) {
+      apiLogger('releaseLock').error('KV unlock error', error as Error)
+      fallbackLocks.delete(lockKey)
+    }
+  } else {
+    fallbackLocks.delete(lockKey)
+  }
+}
+
+// Fallback in-memory locks (only for development/single instance)
+const fallbackLocks = new Map<string, number>()
+
+// Cleanup expired fallback locks every minute
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, timestamp] of fallbackLocks.entries()) {
+      if (now - timestamp > LOCK_TTL_SECONDS * 1000) {
+        fallbackLocks.delete(key)
+      }
+    }
+  }, 60 * 1000)
+}
 
 export async function POST(
   request: NextRequest,
@@ -31,17 +121,16 @@ export async function POST(
     })
 
     // Check if bot turn is already in progress for this game
-    lockKey = `${params.gameId}:${botUserId}`
-    if (botTurnLocks.get(lockKey)) {
+    lockKey = `bot-turn-lock:${params.gameId}:${botUserId}`
+    const lockAcquired = await acquireLock(lockKey)
+    
+    if (!lockAcquired) {
       log.warn('Bot turn already in progress, ignoring duplicate request')
       return NextResponse.json({ 
         error: 'Bot turn already in progress',
         message: 'Another bot turn request is being processed'
       }, { status: 409 })
     }
-
-    // Acquire lock
-    botTurnLocks.set(lockKey, true)
 
     // Load game state with retry on connection errors - optimized query
     let game
@@ -272,7 +361,7 @@ export async function POST(
     log.info('Bot turn execution completed')
 
     // Release lock
-    botTurnLocks.delete(lockKey)
+    await releaseLock(lockKey)
 
     // Final notification removed - already sent after each move
     const finalState = gameEngine.getState()
@@ -293,7 +382,7 @@ export async function POST(
     
     // Release lock on error
     if (lockKey) {
-      botTurnLocks.delete(lockKey)
+      await releaseLock(lockKey)
     }
     
     return NextResponse.json({ 

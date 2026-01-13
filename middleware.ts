@@ -16,9 +16,15 @@ export function middleware(request: NextRequest) {
   const isDevelopment = process.env.NODE_ENV === 'development'
   const socketUrl = getServerSocketUrl()
   
+  // In production, remove 'unsafe-eval' for better security
+  // Next.js may require it in development mode for hot reload
+  const scriptSrc = isDevelopment
+    ? "'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
+    : "'self' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
+  
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com;
+    script-src ${scriptSrc};
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;

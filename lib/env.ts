@@ -45,6 +45,11 @@ const envSchema = z.object({
   
   // Security
   ALLOWED_ORIGINS: z.string().optional(),
+  
+  // Vercel KV (for rate limiting and caching)
+  KV_URL: z.string().url().optional(),
+  KV_REST_API_URL: z.string().url().optional(),
+  KV_REST_API_TOKEN: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>

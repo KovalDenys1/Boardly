@@ -69,6 +69,7 @@ import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
 import FriendsListModal from '@/components/FriendsListModal'
+import ConfirmModal from '@/components/ConfirmModal'
 import { showToast } from '@/lib/i18n-toast'
 
 function LobbyPageContent() {
@@ -94,6 +95,8 @@ function LobbyPageContent() {
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   const { celebrate, fireworks } = useConfetti()
   const { t } = useTranslation()
 
@@ -443,12 +446,8 @@ function LobbyPageContent() {
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
     
-    const reason = data.reason
-    if (reason === 'no_human_players') {
-      showToast.error('lobby.gameAbandoned')
-    } else if (reason === 'insufficient_players') {
-      showToast.error('lobby.gameAbandoned')
-    }
+    // Don't show toast here - handleLeaveLobby already shows appropriate message
+    // This prevents duplicate toast notifications
     
     // Refresh lobby data
     if (loadLobbyRef.current) {
@@ -731,6 +730,7 @@ function LobbyPageContent() {
   }, [])
 
   const handleLeaveLobby = async () => {
+    setIsLeaving(true)
     try {
       // Call leave API
       const res = await fetch(`/api/lobby/${code}/leave`, {
@@ -745,6 +745,8 @@ function LobbyPageContent() {
       if (!res.ok) {
         showToast.error('errors.unexpected')
         clientLogger.error('Failed to leave lobby:', data.error)
+        setIsLeaving(false)
+        setShowLeaveConfirm(false)
         return
       }
 
@@ -754,7 +756,7 @@ function LobbyPageContent() {
         socket.disconnect()
       }
 
-      // Show appropriate message based on game status
+      // Show appropriate message based on game status (only one toast)
       if (data.gameAbandoned) {
         if (data.gameStatus === 'playing') {
           showToast.error('lobby.gameAbandonedNoHumans')
@@ -772,6 +774,8 @@ function LobbyPageContent() {
     } catch (error) {
       clientLogger.error('Error leaving lobby:', error)
       showToast.error('errors.unexpected')
+      setIsLeaving(false)
+      setShowLeaveConfirm(false)
       
       // Fallback: disconnect and redirect anyway
       if (socket) {
@@ -964,11 +968,7 @@ function LobbyPageContent() {
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(t('yahtzee.ui.leaveConfirm'))) {
-                            handleLeaveLobby()
-                          }
-                        }}
+                        onClick={() => setShowLeaveConfirm(true)}
                         aria-label={t('yahtzee.ui.leave')}
                         className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
@@ -1030,11 +1030,7 @@ function LobbyPageContent() {
                         <span className="hidden sm:inline text-xs">Sound</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to leave the game?')) {
-                            handleLeaveLobby()
-                          }
-                        }}
+                        onClick={() => setShowLeaveConfirm(true)}
                         aria-label="Leave game"
                         className="px-3 py-1.5 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
@@ -1052,22 +1048,33 @@ function LobbyPageContent() {
                 <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
                   <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-                    <GameBoard
-                      gameEngine={gameEngine}
-                      game={game}
-                      isMyTurn={isMyTurn()}
-                      timeLeft={timeLeft}
-                      isMoveInProgress={isMoveInProgress}
-                      isRolling={isRolling}
-                      isScoring={isScoring}
-                      celebrationEvent={celebrationEvent}
-                      held={held}
-                      getCurrentUserId={getCurrentUserId}
-                      onRollDice={handleRollDice}
-                      onToggleHold={handleToggleHold}
-                      onScore={handleScore}
-                      onCelebrationComplete={() => setCelebrationEvent(null)}
-                    />
+                    <ErrorBoundary
+                      fallback={
+                        <div className="h-full flex items-center justify-center bg-gray-800 rounded-xl p-4">
+                          <div className="text-center">
+                            <div className="text-red-500 text-4xl mb-2">🎲</div>
+                            <p className="text-gray-400 text-sm">Game board error</p>
+                          </div>
+                        </div>
+                      }
+                    >
+                      <GameBoard
+                        gameEngine={gameEngine}
+                        game={game}
+                        isMyTurn={isMyTurn()}
+                        timeLeft={timeLeft}
+                        isMoveInProgress={isMoveInProgress}
+                        isRolling={isRolling}
+                        isScoring={isScoring}
+                        celebrationEvent={celebrationEvent}
+                        held={held}
+                        getCurrentUserId={getCurrentUserId}
+                        onRollDice={handleRollDice}
+                        onToggleHold={handleToggleHold}
+                        onScore={handleScore}
+                        onCelebrationComplete={() => setCelebrationEvent(null)}
+                      />
+                    </ErrorBoundary>
                   </div>
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
@@ -1084,29 +1091,40 @@ function LobbyPageContent() {
                       return (
                         <div className="h-full flex flex-col">
                           <div className="flex-1 min-h-0">
-                            <Scorecard
-                              scorecard={scorecard}
-                              currentDice={gameEngine.getDice()}
-                              onSelectCategory={handleScore}
-                              canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                              isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
-                              isLoading={isScoring}
-                              playerName={(() => {
-                                const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
-                                if (!dbPlayer) return undefined
-                                return dbPlayer.user?.username || dbPlayer.name || 'Player'
-                              })()}
-                              onBackToMyCards={isViewingOtherPlayer ? () => {
-                                // Set to current user's ID instead of null
-                                setSelectedPlayerId(currentUserId || null)
-                              } : undefined}
-                              showBackButton={isViewingOtherPlayer}
-                              onGoToCurrentTurn={() => {
-                                // Go back to viewing current player's turn
-                                setSelectedPlayerId(null)
-                              }}
-                              showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
-                            />
+                            <ErrorBoundary
+                              fallback={
+                                <div className="h-full flex items-center justify-center bg-gray-800 rounded-xl p-4">
+                                  <div className="text-center">
+                                    <div className="text-red-500 text-4xl mb-2">📊</div>
+                                    <p className="text-gray-400 text-sm">Scorecard error</p>
+                                  </div>
+                                </div>
+                              }
+                            >
+                              <Scorecard
+                                scorecard={scorecard}
+                                currentDice={gameEngine.getDice()}
+                                onSelectCategory={handleScore}
+                                canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
+                                isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+                                isLoading={isScoring}
+                                playerName={(() => {
+                                  const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
+                                  if (!dbPlayer) return undefined
+                                  return dbPlayer.user?.username || dbPlayer.name || 'Player'
+                                })()}
+                                onBackToMyCards={isViewingOtherPlayer ? () => {
+                                  // Set to current user's ID instead of null
+                                  setSelectedPlayerId(currentUserId || null)
+                                } : undefined}
+                                showBackButton={isViewingOtherPlayer}
+                                onGoToCurrentTurn={() => {
+                                  // Go back to viewing current player's turn
+                                  setSelectedPlayerId(null)
+                                }}
+                                showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
+                              />
+                            </ErrorBoundary>
                           </div>
                         </div>
                       )
@@ -1161,22 +1179,33 @@ function LobbyPageContent() {
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
                     <div className="p-4 space-y-4">
-                      <GameBoard
-                        gameEngine={gameEngine}
-                        game={game}
-                        isMyTurn={isMyTurn()}
-                        timeLeft={timeLeft}
-                        isMoveInProgress={isMoveInProgress}
-                        isRolling={isRolling}
-                        isScoring={isScoring}
-                        celebrationEvent={celebrationEvent}
-                        held={held}
-                        getCurrentUserId={getCurrentUserId}
-                        onRollDice={handleRollDice}
-                        onToggleHold={handleToggleHold}
-                        onScore={handleScore}
-                        onCelebrationComplete={() => setCelebrationEvent(null)}
-                      />
+                      <ErrorBoundary
+                        fallback={
+                          <div className="h-full flex items-center justify-center bg-gray-800 rounded-xl p-4">
+                            <div className="text-center">
+                              <div className="text-red-500 text-4xl mb-2">🎲</div>
+                              <p className="text-gray-400 text-sm">Game board error</p>
+                            </div>
+                          </div>
+                        }
+                      >
+                        <GameBoard
+                          gameEngine={gameEngine}
+                          game={game}
+                          isMyTurn={isMyTurn()}
+                          timeLeft={timeLeft}
+                          isMoveInProgress={isMoveInProgress}
+                          isRolling={isRolling}
+                          isScoring={isScoring}
+                          celebrationEvent={celebrationEvent}
+                          held={held}
+                          getCurrentUserId={getCurrentUserId}
+                          onRollDice={handleRollDice}
+                          onToggleHold={handleToggleHold}
+                          onScore={handleScore}
+                          onCelebrationComplete={() => setCelebrationEvent(null)}
+                        />
+                      </ErrorBoundary>
                     </div>
                   </MobileTabPanel>
 
@@ -1192,27 +1221,38 @@ function LobbyPageContent() {
                         if (!scorecard) return null
                         
                         return (
-                          <Scorecard
-                            scorecard={scorecard}
-                            currentDice={gameEngine.getDice()}
-                            onSelectCategory={handleScore}
-                            canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                            isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
-                            isLoading={isScoring}
-                            playerName={(() => {
-                              const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
-                              if (!dbPlayer) return undefined
-                              return dbPlayer.user?.username || dbPlayer.name || 'Player'
-                            })()}
-                            onBackToMyCards={isViewingOtherPlayer ? () => {
-                              setSelectedPlayerId(currentUserId || null)
-                            } : undefined}
-                            showBackButton={isViewingOtherPlayer}
-                            onGoToCurrentTurn={() => {
-                              setSelectedPlayerId(null)
-                            }}
-                            showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
-                          />
+                          <ErrorBoundary
+                            fallback={
+                              <div className="h-full flex items-center justify-center bg-gray-800 rounded-xl p-4">
+                                <div className="text-center">
+                                  <div className="text-red-500 text-4xl mb-2">📊</div>
+                                  <p className="text-gray-400 text-sm">Scorecard error</p>
+                                </div>
+                              </div>
+                            }
+                          >
+                            <Scorecard
+                              scorecard={scorecard}
+                              currentDice={gameEngine.getDice()}
+                              onSelectCategory={handleScore}
+                              canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
+                              isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+                              isLoading={isScoring}
+                              playerName={(() => {
+                                const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
+                                if (!dbPlayer) return undefined
+                                return dbPlayer.user?.username || dbPlayer.name || 'Player'
+                              })()}
+                              onBackToMyCards={isViewingOtherPlayer ? () => {
+                                setSelectedPlayerId(currentUserId || null)
+                              } : undefined}
+                              showBackButton={isViewingOtherPlayer}
+                              onGoToCurrentTurn={() => {
+                                setSelectedPlayerId(null)
+                              }}
+                              showCurrentTurnButton={!isViewingOtherPlayer && !isMyTurn()}
+                            />
+                          </ErrorBoundary>
                         )
                       })()}
                     </div>
@@ -1262,23 +1302,34 @@ function LobbyPageContent() {
                   {/* Chat Tab */}
                   <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
                     <div className="h-full">
-                      <Chat
-                        messages={chatMessages}
-                        onSendMessage={(message) => {
-                          emitWhenConnected('send-chat-message', {
-                            lobbyCode: code,
-                            message,
-                            userId: getCurrentUserId(),
-                            username: getCurrentUserName(),
-                          })
-                        }}
-                        currentUserId={getCurrentUserId()}
-                        isMinimized={false}
-                        onToggleMinimize={() => {}}
-                        unreadCount={0}
-                        someoneTyping={someoneTyping}
-                        fullScreen={true}
-                      />
+                      <ErrorBoundary
+                        fallback={
+                          <div className="h-full flex items-center justify-center bg-gray-800 rounded-xl p-4">
+                            <div className="text-center">
+                              <div className="text-red-500 text-4xl mb-2">💬</div>
+                              <p className="text-gray-400 text-sm">Chat error</p>
+                            </div>
+                          </div>
+                        }
+                      >
+                        <Chat
+                          messages={chatMessages}
+                          onSendMessage={(message) => {
+                            emitWhenConnected('send-chat-message', {
+                              lobbyCode: code,
+                              message,
+                              userId: getCurrentUserId(),
+                              username: getCurrentUserName(),
+                            })
+                          }}
+                          currentUserId={getCurrentUserId()}
+                          isMinimized={false}
+                          onToggleMinimize={() => {}}
+                          unreadCount={0}
+                          someoneTyping={someoneTyping}
+                          fullScreen={true}
+                        />
+                      </ErrorBoundary>
                     </div>
                   </MobileTabPanel>
                 </div>
@@ -1287,27 +1338,38 @@ function LobbyPageContent() {
               {/* Desktop Chat - Minimized Button */}
               <div className="hidden md:block">
                 {isInGame && (
-                  <Chat
-                    messages={chatMessages}
-                    onSendMessage={(message) => {
-                      emitWhenConnected('send-chat-message', {
-                        lobbyCode: code,
-                        message,
-                        userId: getCurrentUserId(),
-                        username: getCurrentUserName(),
-                      })
-                    }}
-                    currentUserId={getCurrentUserId()}
-                    isMinimized={chatMinimized}
-                    onToggleMinimize={() => {
-                      setChatMinimized(!chatMinimized)
-                      if (chatMinimized) {
-                        setUnreadMessageCount(0)
-                      }
-                    }}
-                    unreadCount={unreadMessageCount}
-                    someoneTyping={someoneTyping}
-                  />
+                  <ErrorBoundary
+                    fallback={
+                      <div className="h-full flex items-center justify-center bg-gray-800 rounded-xl p-4">
+                        <div className="text-center">
+                          <div className="text-red-500 text-4xl mb-2">💬</div>
+                          <p className="text-gray-400 text-sm">Chat error</p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <Chat
+                      messages={chatMessages}
+                      onSendMessage={(message) => {
+                        emitWhenConnected('send-chat-message', {
+                          lobbyCode: code,
+                          message,
+                          userId: getCurrentUserId(),
+                          username: getCurrentUserName(),
+                        })
+                      }}
+                      currentUserId={getCurrentUserId()}
+                      isMinimized={chatMinimized}
+                      onToggleMinimize={() => {
+                        setChatMinimized(!chatMinimized)
+                        if (chatMinimized) {
+                          setUnreadMessageCount(0)
+                        }
+                      }}
+                      unreadCount={unreadMessageCount}
+                      someoneTyping={someoneTyping}
+                    />
+                  </ErrorBoundary>
                 )}
               </div>
 
@@ -1358,6 +1420,27 @@ function LobbyPageContent() {
           lobbyCode={code}
         />
       )}
+
+      {/* Leave Game Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLeaveConfirm}
+        onClose={() => {
+          if (!isLeaving) {
+            setShowLeaveConfirm(false)
+          }
+        }}
+        onConfirm={handleLeaveLobby}
+        title={t('yahtzee.ui.leave', 'Leave Game')}
+        message={
+          game?.status === 'playing'
+            ? t('lobby.leaveConfirmDuringGame', 'Are you sure you want to leave the game? The game will continue without you.')
+            : t('yahtzee.ui.leaveConfirm', 'Are you sure you want to leave the lobby?')
+        }
+        confirmText={t('yahtzee.ui.leave', 'Leave')}
+        cancelText={t('common.cancel', 'Cancel')}
+        confirmButtonStyle="danger"
+        isLoading={isLeaving}
+      />
     </div>
   )
 }

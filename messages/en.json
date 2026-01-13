@@ -57,6 +57,7 @@
     "leftLobby": "You left the lobby",
     "leftLobbyDuringGame": "You left the game. The game will continue without you.",
     "leftLobbyWaiting": "You left the lobby",
+    "leaveConfirmDuringGame": "Are you sure you want to leave the game? The game will continue without you.",
     "gameAbandoned": "Game ended - not enough players remaining",
     "gameAbandonedNoHumans": "Game ended - all human players left",
     "playerLeftGame": "{{playerName}} left the game",

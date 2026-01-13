@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger as log } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
 import { Prisma, GameStatus, GameType } from '@prisma/client'
+import { withDbTimeout, DB_TIMEOUTS } from '@/lib/timeout'
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -89,44 +90,47 @@ export async function GET(request: NextRequest) {
 
     // Fetch games with player data
     const [games, totalCount] = await Promise.all([
-      prisma.game.findMany({
-        where,
-        include: {
-          lobby: {
-            select: {
-              code: true,
-              name: true,
-            },
-          },
-          players: {
-            select: {
-              id: true,
-              userId: true,
-              score: true,
-              finalScore: true,
-              placement: true,
-              isWinner: true,
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  isBot: true,
-                },
+      withDbTimeout(
+        prisma.game.findMany({
+          where,
+          include: {
+            lobby: {
+              select: {
+                code: true,
+                name: true,
               },
             },
-            orderBy: {
-              placement: 'asc',
+            players: {
+              select: {
+                id: true,
+                userId: true,
+                score: true,
+                finalScore: true,
+                placement: true,
+                isWinner: true,
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    isBot: true,
+                  },
+                },
+              },
+              orderBy: {
+                placement: 'asc',
+              },
             },
           },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: limit,
-        skip: offset,
-      }),
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: limit,
+          skip: offset,
+        }),
+        DB_TIMEOUTS.MEDIUM
+      ),
       // Count will be adjusted after filtering
-      prisma.game.count({ where }),
+      withDbTimeout(prisma.game.count({ where }), DB_TIMEOUTS.FAST),
     ])
 
     // Filter out games where user is not an active player (for waiting/playing status)

@@ -6,6 +6,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 import { apiLogger } from '@/lib/logger'
+import { withDbTimeout, DB_TIMEOUTS } from '@/lib/timeout'
 
 export async function POST(
   request: NextRequest,
@@ -28,34 +29,37 @@ export async function POST(
     }
 
     // Get game from database - optimize by selecting only needed fields
-    const game = await prisma.game.findUnique({
-      where: { id: params.gameId },
-      select: {
-        id: true,
-        state: true,
-        status: true,
-        currentTurn: true,
-        players: {
-          select: {
-            id: true,
-            userId: true,
-            user: {
-              select: {
-                id: true,
-                isBot: true,
+    const game = await withDbTimeout(
+      prisma.game.findUnique({
+        where: { id: params.gameId },
+        select: {
+          id: true,
+          state: true,
+          status: true,
+          currentTurn: true,
+          players: {
+            select: {
+              id: true,
+              userId: true,
+              user: {
+                select: {
+                  id: true,
+                  isBot: true,
+                },
               },
             },
           },
-        },
-        lobby: {
-          select: {
-            id: true,
-            code: true,
-            gameType: true,
+          lobby: {
+            select: {
+              id: true,
+              code: true,
+              gameType: true,
+            },
           },
         },
-      },
-    })
+      }),
+      DB_TIMEOUTS.FAST
+    )
 
     if (!game) {
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })

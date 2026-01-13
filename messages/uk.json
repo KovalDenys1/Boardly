@@ -102,6 +102,7 @@
     "leftLobby": "Ви вийшли з лобі",
     "leftLobbyDuringGame": "Ви вийшли з гри. Гра продовжиться без вас.",
     "leftLobbyWaiting": "Ви вийшли з лобі",
+    "leaveConfirmDuringGame": "Ви впевнені, що хочете вийти з гри? Гра продовжиться без вас.",
     "gameAbandoned": "Гра завершена - недостатньо гравців",
     "gameAbandonedNoHumans": "Гра завершена - всі гравці вийшли",
     "playerLeftGame": "{{playerName}} вийшов з гри"

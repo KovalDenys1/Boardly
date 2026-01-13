@@ -12,8 +12,6 @@ import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import i18n from '@/i18n'
 
-let socket: Socket
-
 interface Lobby {
   id: string
   code: string
@@ -113,55 +111,58 @@ export default function LobbyListPage() {
     }
   }, [loadLobbies])
 
+  // Socket connection state
+  const [socket, setSocket] = useState<Socket | null>(null)
+
   // Socket connection effect
   useEffect(() => {
-    // Setup WebSocket for real-time updates
-    if (!socket) {
-      const url = getBrowserSocketUrl()
-      clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
-      
-      // Get auth token - use userId for authenticated users, null for guests
-      const token = session?.user?.id || null
+    const url = getBrowserSocketUrl()
+    clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
+    
+    // Get auth token - use userId for authenticated users, null for guests
+    const token = session?.user?.id || null
 
-      const authPayload: Record<string, unknown> = {}
-      if (token) authPayload.token = token
-      if (!session?.user) authPayload.isGuest = true
+    const authPayload: Record<string, unknown> = {}
+    if (token) authPayload.token = token
+    if (!session?.user) authPayload.isGuest = true
 
-      const queryPayload: Record<string, string> = {}
-      if (token) queryPayload.token = String(token)
-      if (!session?.user) queryPayload.isGuest = 'true'
+    const queryPayload: Record<string, string> = {}
+    if (token) queryPayload.token = String(token)
+    if (!session?.user) queryPayload.isGuest = 'true'
 
-      socket = io(url, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        auth: authPayload,
-        query: queryPayload,
-      })
+    const newSocket = io(url, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      auth: authPayload,
+      query: queryPayload,
+    })
 
-      socket.on('connect', () => {
-        clientLogger.log('✅ Socket connected for lobby list')
-        socket.emit('join-lobby-list')
-      })
+    newSocket.on('connect', () => {
+      clientLogger.log('✅ Socket connected for lobby list')
+      newSocket.emit('join-lobby-list')
+    })
 
-      socket.on('lobby-list-update', () => {
-        clientLogger.log('📡 Lobby list update received')
-        loadLobbies()
-      })
+    newSocket.on('lobby-list-update', () => {
+      clientLogger.log('📡 Lobby list update received')
+      loadLobbies()
+    })
 
-      socket.on('disconnect', () => {
-        clientLogger.log('❌ Socket disconnected from lobby list')
-      })
-    }
+    newSocket.on('disconnect', () => {
+      clientLogger.log('❌ Socket disconnected from lobby list')
+    })
+
+    setSocket(newSocket)
 
     return () => {
-      if (socket && socket.connected) {
-        clientLogger.log('🔌 Disconnecting socket from lobby list')
-        socket.emit('leave-lobby-list')
-        socket.disconnect()
-        socket = null as any
+      clientLogger.log('🔌 Disconnecting socket from lobby list')
+      if (newSocket.connected) {
+        newSocket.emit('leave-lobby-list')
+        newSocket.disconnect()
       }
+      // Remove all listeners
+      newSocket.removeAllListeners()
     }
   }, [loadLobbies, session?.user])
 
