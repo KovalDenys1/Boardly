@@ -6,6 +6,7 @@ import { BotMoveExecutor } from '@/lib/bot-executor'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { BotMoveStep } from '@/types/game'
+import { BotActionEvent } from '@/lib/bot-executor'
 // Optional: Only import if KV is available
 // Supports Vercel KV or any Redis-compatible service via REST API
 // Using any type for dynamic import - kv is a VercelKV instance
@@ -247,9 +248,15 @@ export async function POST(
     log.info('Verified it\'s bot\'s turn, executing...')
     
     // Helper function to broadcast bot actions in real-time
-    const broadcastBotAction = async (event: BotMoveStep) => {
+    const broadcastBotAction = async (event: BotActionEvent) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event as unknown as Record<string, unknown>)
+      // Convert BotActionEvent to BotMoveStep format for socket
+      const socketEvent: BotMoveStep = {
+        type: event.type,
+        message: event.message,
+        data: event.data,
+      }
+      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', socketEvent as unknown as Record<string, unknown>)
     }
 
     // Execute bot's turn with visual feedback

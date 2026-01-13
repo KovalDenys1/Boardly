@@ -401,7 +401,7 @@ function LobbyPageContent() {
     }
   }, [isGuest, guestId, session?.user?.id, lobby?.creatorId])
 
-  const onBotAction = useCallback((event: BotMoveStep) => {
+  const onBotAction = useCallback((event: BotMoveStep & { botName?: string }) => {
     clientLogger.log('🤖 Received bot-action:', event)
     
     const botName = event.botName || 'Bot'
@@ -415,10 +415,10 @@ function LobbyPageContent() {
       setRollHistory(prev => [...prev, {
         id: `bot-${Date.now()}-${Math.random()}`,
         playerName: botName,
-        dice: event.data.dice,
-        rollNumber: event.data.rollNumber || 1,
+        dice: event.data?.dice || [],
+        rollNumber: event.data?.rollNumber || 1,
         turnNumber: turnNumber,
-        held: event.data.held || [],
+        held: event.data?.held || [],
         isBot: true,
         timestamp: Date.now(),
       }])
