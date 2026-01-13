@@ -5,9 +5,11 @@ import { Move } from '@/lib/game-engine'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
+import { BotMoveStep } from '@/types/game'
+import type { KV } from '@vercel/kv'
 // Optional: Only import if KV is available
 // Supports Vercel KV or any Redis-compatible service via REST API
-let kv: any = null
+let kv: KV | null = null
 try {
   kv = require('@vercel/kv').kv
 } catch {
@@ -245,7 +247,7 @@ export async function POST(
     log.info('Verified it\'s bot\'s turn, executing...')
     
     // Helper function to broadcast bot actions in real-time
-    const broadcastBotAction = async (event: any) => {
+    const broadcastBotAction = async (event: BotMoveStep) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
       await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event)
     }
@@ -306,7 +308,7 @@ export async function POST(
           // Update player scores - do this sequentially to avoid connection issues
           // Vercel serverless + Supabase pooler can have timeout issues with parallel queries
           for (const player of gameEngine.getPlayers()) {
-            const dbPlayer = game.players.find((p: any) => p.userId === player.id)
+            const dbPlayer = game.players.find((p) => p.userId === player.id)
             if (dbPlayer) {
               try {
                 await prisma.player.update({
