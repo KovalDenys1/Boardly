@@ -249,7 +249,7 @@ export async function POST(
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: BotMoveStep) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event as Record<string, unknown>)
+      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event as unknown as Record<string, unknown>)
     }
 
     // Execute bot's turn with visual feedback
