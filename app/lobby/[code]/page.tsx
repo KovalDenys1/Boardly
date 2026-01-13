@@ -754,11 +754,17 @@ function LobbyPageContent() {
         socket.disconnect()
       }
 
-      // Show appropriate message
+      // Show appropriate message based on game status
       if (data.gameAbandoned) {
-        showToast.info('lobby.gameAbandoned')
+        if (data.gameStatus === 'playing') {
+          showToast.error('lobby.gameAbandonedNoHumans')
+        } else {
+          showToast.info('lobby.gameAbandoned')
+        }
+      } else if (data.gameStatus === 'playing') {
+        showToast.error('lobby.leftLobbyDuringGame')
       } else {
-        showToast.success('lobby.leftLobby')
+        showToast.success('lobby.leftLobbyWaiting')
       }
 
       // Redirect

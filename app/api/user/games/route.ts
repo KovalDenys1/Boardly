@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
     })
 
     // Build where clause
+    // For 'waiting' or 'playing' status, only show games where user is still an active player
+    // For finished/abandoned games, show all games where user was a player
     const where: Prisma.GameWhereInput = {
       players: {
         some: {
@@ -69,6 +71,16 @@ export async function GET(request: NextRequest) {
 
     if (statusParam) {
       where.status = statusParam as GameStatus
+      
+      // For active games (waiting/playing), ensure user is still a player
+      if (statusParam === 'waiting' || statusParam === 'playing') {
+        where.players = {
+          some: {
+            userId,
+            // Ensure player record still exists (not deleted)
+          },
+        }
+      }
     }
 
     if (gameTypeParam) {
@@ -113,17 +125,37 @@ export async function GET(request: NextRequest) {
         take: limit,
         skip: offset,
       }),
+      // Count will be adjusted after filtering
       prisma.game.count({ where }),
     ])
 
+    // Filter out games where user is not an active player (for waiting/playing status)
+    const filteredGames = games.filter((game) => {
+      // For finished/abandoned games, show all games where user was a player
+      if (game.status === 'finished' || game.status === 'abandoned' || game.status === 'cancelled') {
+        return true
+      }
+      
+      // For waiting/playing games, only show if user is still a player
+      const userIsPlayer = game.players.some((player) => player.userId === userId)
+      return userIsPlayer
+    })
+
+    // Recalculate total count after filtering
+    // If filtering by waiting/playing status, count only filtered games
+    // Otherwise use the original count
+    const finalTotalCount = (statusParam && (statusParam === 'waiting' || statusParam === 'playing'))
+      ? filteredGames.length
+      : totalCount
+
     logger.info('User game history fetched successfully', {
       userId,
-      count: games.length,
-      totalCount,
+      count: filteredGames.length,
+      totalCount: finalTotalCount,
     })
 
     return NextResponse.json({
-      games: games.map((game) => ({
+      games: filteredGames.map((game) => ({
         id: game.id,
         lobbyCode: game.lobby.code,
         lobbyName: game.lobby.name,
@@ -145,8 +177,8 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        totalCount,
-        hasMore: offset + limit < totalCount,
+        totalCount: finalTotalCount,
+        hasMore: offset + limit < finalTotalCount,
       },
     })
   } catch (error) {

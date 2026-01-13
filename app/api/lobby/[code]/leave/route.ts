@@ -102,14 +102,16 @@ export async function POST(
         return NextResponse.json({
           message: 'You left the lobby',
           gameEnded: false,
-          lobbyDeactivated: true
+          lobbyDeactivated: true,
+          gameStatus: 'waiting'
         })
       }
       
       return NextResponse.json({
         message: 'You left the lobby',
         gameEnded: false,
-        lobbyDeactivated: false
+        lobbyDeactivated: false,
+        gameStatus: activeGame.status
       })
     }
 
@@ -150,7 +152,8 @@ export async function POST(
         message: 'You left the lobby',
         gameEnded: true,
         gameAbandoned: true,
-        lobbyDeactivated: true
+        lobbyDeactivated: true,
+        gameStatus: activeGame.status
       })
     }
 
@@ -191,7 +194,8 @@ export async function POST(
         message: 'You left the lobby',
         gameEnded: true,
         gameAbandoned: true,
-        lobbyDeactivated: true
+        lobbyDeactivated: true,
+        gameStatus: activeGame.status
       })
     }
 
@@ -219,7 +223,8 @@ export async function POST(
     return NextResponse.json({
       message: 'You left the lobby',
       gameEnded: false,
-      lobbyDeactivated: false
+      lobbyDeactivated: false,
+      gameStatus: activeGame.status
     })
   } catch (error: any) {
     const log = apiLogger('POST /api/lobby/[code]/leave')

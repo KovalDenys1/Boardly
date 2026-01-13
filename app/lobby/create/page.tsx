@@ -241,7 +241,7 @@ function CreateLobbyPage() {
 
         {/* Form Card */}
         <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border-2 border-white/20">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
             {/* Lobby Name */}
             <div>
               <label className="block text-sm font-bold text-white mb-2">
@@ -267,6 +267,9 @@ function CreateLobbyPage() {
               </label>
               <input
                 type="password"
+                autoComplete="new-password"
+                name="lobby-password"
+                id="lobby-password"
                 placeholder="Leave empty for public lobby"
                 className="w-full px-4 py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                 value={formData.password}

@@ -55,7 +55,11 @@
     "backToGames": "Back to Games",
     "players": "Players",
     "leftLobby": "You left the lobby",
+    "leftLobbyDuringGame": "You left the game. The game will continue without you.",
+    "leftLobbyWaiting": "You left the lobby",
     "gameAbandoned": "Game ended - not enough players remaining",
+    "gameAbandonedNoHumans": "Game ended - all human players left",
+    "playerLeftGame": "{{playerName}} left the game",
     "invite": {
       "title": "Invite Friends",
       "description": "Select friends to invite to this lobby",

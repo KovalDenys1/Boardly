@@ -100,7 +100,11 @@
       "playing": "В грі"
     },
     "leftLobby": "Ви вийшли з лобі",
-    "gameAbandoned": "Гра завершена - недостатньо гравців"
+    "leftLobbyDuringGame": "Ви вийшли з гри. Гра продовжиться без вас.",
+    "leftLobbyWaiting": "Ви вийшли з лобі",
+    "gameAbandoned": "Гра завершена - недостатньо гравців",
+    "gameAbandonedNoHumans": "Гра завершена - всі гравці вийшли",
+    "playerLeftGame": "{{playerName}} вийшов з гри"
   },
   "header": {
     "home": "Головна",
