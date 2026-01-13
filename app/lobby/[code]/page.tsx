@@ -110,7 +110,7 @@ function LobbyPageContent() {
     const maxFilled = filledCounts.length ? Math.max(...filledCounts) : 0
     const current = Math.min(13, maxFilled + 1)
     return { current, total: 13 }
-  }, [gameEngine, game?.state])
+  }, [gameEngine])
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
@@ -401,7 +401,7 @@ function LobbyPageContent() {
     }
   }, [isGuest, guestId, session?.user?.id, lobby?.creatorId])
 
-  const onBotAction = useCallback((event: any) => {
+  const onBotAction = useCallback((event: BotMoveStep) => {
     clientLogger.log('🤖 Received bot-action:', event)
     
     const botName = event.botName || 'Bot'
@@ -532,7 +532,7 @@ function LobbyPageContent() {
   })
 
   // Create refs for game actions to use in timer callback
-  const handleScoreRef = React.useRef<((category: any) => Promise<void>) | null>(null)
+  const handleScoreRef = React.useRef<((category: YahtzeeCategory) => Promise<void>) | null>(null)
   const handleRollDiceRef = React.useRef<(() => Promise<void>) | null>(null)
 
   // Game timer hook

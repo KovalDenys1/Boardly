@@ -4,10 +4,11 @@ import CelebrationBanner from '@/components/CelebrationBanner'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 import { CelebrationEvent } from '@/lib/celebrations'
 import { useTranslation } from 'react-i18next'
+import { Game } from '@/types/game'
 
 interface GameBoardProps {
   gameEngine: YahtzeeGame
-  game: any
+  game: Game | null
   isMyTurn: boolean
   timeLeft: number
   isMoveInProgress: boolean

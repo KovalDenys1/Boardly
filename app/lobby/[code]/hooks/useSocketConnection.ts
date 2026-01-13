@@ -2,22 +2,32 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import { Session } from 'next-auth'
+import {
+  GameUpdatePayload,
+  ChatMessagePayload,
+  PlayerTypingPayload,
+  LobbyUpdatePayload,
+  PlayerJoinedPayload,
+  GameStartedPayload,
+  BotMoveStep,
+} from '@/types/game'
 
 interface UseSocketConnectionProps {
   code: string
-  session: any
+  session: Session | null
   isGuest: boolean
   guestId: string
   guestName: string
-  onGameUpdate: (data: any) => void
-  onChatMessage: (message: any) => void
-  onPlayerTyping: (data: any) => void
-  onLobbyUpdate: (data: any) => void
-  onPlayerJoined: (data: any) => void
-  onGameStarted: (data: any) => void
-  onGameAbandoned?: (data: any) => void
-  onPlayerLeft?: (data: any) => void
-  onBotAction?: (event: any) => void
+  onGameUpdate: (data: GameUpdatePayload) => void
+  onChatMessage: (message: ChatMessagePayload) => void
+  onPlayerTyping: (data: PlayerTypingPayload) => void
+  onLobbyUpdate: (data: LobbyUpdatePayload) => void
+  onPlayerJoined: (data: PlayerJoinedPayload) => void
+  onGameStarted: (data: GameStartedPayload) => void
+  onGameAbandoned?: (data: { gameId: string }) => void
+  onPlayerLeft?: (data: { userId: string; username: string }) => void
+  onBotAction?: (event: BotMoveStep) => void
 }
 
 export function useSocketConnection({
