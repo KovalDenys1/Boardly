@@ -137,7 +137,7 @@ export async function POST(
     let game
     try {
       const optimizedQuery = {
-        where: { id: params.gameId },
+        where: { id: gameId },
         select: {
           id: true,
           state: true,
