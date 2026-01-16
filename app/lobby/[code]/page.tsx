@@ -2,8 +2,28 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
+// New modular imports
+import { useGuestMode } from './hooks/useGuestMode'
+import { useSocketConnection } from './hooks/useSocketConnection'
+import { useGameTimer } from './hooks/useGameTimer'
+import { useGameActions } from './hooks/useGameActions'
+import { useLobbyActions } from './hooks/useLobbyActions'
+import { useBotTurn } from './hooks/useBotTurn'
+import { useSpyActions } from './hooks/useSpyActions'
+import LobbyInfo from './components/LobbyInfo'
+// GameBoard is now replaced by GameRouter
+import WaitingRoom from './components/WaitingRoom'
+import JoinPrompt from './components/JoinPrompt'
+import MobileTabs, { TabId } from './components/MobileTabs'
+import MobileTabPanel from './components/MobileTabPanel'
+import FriendsListModal from '@/components/FriendsListModal'
+import ConfirmModal from '@/components/ConfirmModal'
+import { showToast } from '@/lib/i18n-toast'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { GameEngine } from '@/lib/game-engine'
+import { GameRegistry } from '@/lib/game-registry'
+import { registerGameComponents } from '@/lib/game-registry-client'
 import toast from 'react-hot-toast'
 import PlayerList from '@/components/PlayerList'
 import Scorecard from '@/components/Scorecard'
@@ -11,6 +31,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { soundManager } from '@/lib/sounds'
+import GameRouter from './components/GameRouter'
 import { useConfetti } from '@/hooks/useConfetti'
 import { createBotMoveVisualization, detectBotMove, findFilledCategory } from '@/lib/bot-visualization'
 import BotMoveOverlay from '@/components/BotMoveOverlay'
@@ -23,6 +44,7 @@ import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, Lobby
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from 'react-i18next'
+ 
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -55,23 +77,6 @@ interface DBPlayer {
   }
 }
 
-// New modular imports
-import { useGuestMode } from './hooks/useGuestMode'
-import { useSocketConnection } from './hooks/useSocketConnection'
-import { useGameTimer } from './hooks/useGameTimer'
-import { useGameActions } from './hooks/useGameActions'
-import { useLobbyActions } from './hooks/useLobbyActions'
-import { useBotTurn } from './hooks/useBotTurn'
-import LobbyInfo from './components/LobbyInfo'
-import GameBoard from './components/GameBoard'
-import WaitingRoom from './components/WaitingRoom'
-import JoinPrompt from './components/JoinPrompt'
-import MobileTabs, { TabId } from './components/MobileTabs'
-import MobileTabPanel from './components/MobileTabPanel'
-import FriendsListModal from '@/components/FriendsListModal'
-import ConfirmModal from '@/components/ConfirmModal'
-import { showToast } from '@/lib/i18n-toast'
-
 function LobbyPageContent() {
   const router = useRouter()
   const params = useParams()
@@ -82,6 +87,11 @@ function LobbyPageContent() {
   const isGuest = searchParams.get('guest') === 'true'
   const { guestName, guestId } = useGuestMode(isGuest, code)
 
+  // Register game components on mount
+  useEffect(() => {
+    registerGameComponents()
+  }, [])
+
   // Log session status for debugging
   useEffect(() => {
     clientLogger.log('Session status:', { status, isGuest, hasSession: !!session, userId: session?.user?.id })
@@ -90,7 +100,7 @@ function LobbyPageContent() {
   // Core state
   const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
   const [game, setGame] = useState<Game | null>(null)
-  const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
+  const [gameEngine, setGameEngine] = useState<GameEngine | null>(null)
   const [loading, setLoading] = useState(true)
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
@@ -101,7 +111,7 @@ function LobbyPageContent() {
   const { t } = useTranslation()
 
   const roundInfo = React.useMemo(() => {
-    if (!gameEngine) return { current: 1, total: 13 }
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: 13 }
     const players = gameEngine.getPlayers()
     const filledCounts = players.map(p => {
       const scorecard = gameEngine.getScorecard(p.id)
@@ -191,11 +201,46 @@ function LobbyPageContent() {
     return (session?.user as { username?: string })?.username || session?.user?.email || session?.user?.name || 'You'
   }, [isGuest, guestName, session?.user])
 
-  const isMyTurn = useCallback(() => {
+  const isMyTurn = useCallback((): boolean => {
     if (!gameEngine || !game) return false
+    
+    // For spy game, check phase-specific turn logic
+    const gameType = (lobby as any)?.gameType
+    if (gameType === 'guess_the_spy') {
+      const gameData = (gameEngine as any).getState()?.data
+      if (!gameData) return false
+      
+      const currentUserId = getCurrentUserId()
+      const phase = gameData.phase
+      
+      // In role reveal phase, everyone can be ready
+      if (phase === 'role_reveal' || phase === 'ROLE_REVEAL') {
+        return true // Anyone can mark ready
+      }
+      
+      // In questioning phase, check if it's your turn to ask or answer
+      if (phase === 'questioning' || phase === 'QUESTIONING') {
+        return gameData.currentQuestionerId === currentUserId || 
+               gameData.currentTargetId === currentUserId
+      }
+      
+      // In voting phase, everyone can vote
+      if (phase === 'voting' || phase === 'VOTING') {
+        return !!currentUserId && !gameData.votes?.[currentUserId] // Can vote if haven't voted yet
+      }
+      
+      // In results phase, only creator can start next round
+      if (phase === 'results' || phase === 'RESULTS') {
+        return (lobby as any)?.creatorId === currentUserId
+      }
+      
+      return false
+    }
+    
+    // Default logic for other games (Yahtzee, etc.)
     const currentPlayer = gameEngine.getCurrentPlayer()
     return currentPlayer?.id === getCurrentUserId()
-  }, [gameEngine, game, getCurrentUserId])
+  }, [gameEngine, game, getCurrentUserId, lobby])
 
   // Track previous current player to detect turn changes
   const prevCurrentPlayerIdRef = React.useRef<string | undefined>()
@@ -244,12 +289,11 @@ function LobbyPageContent() {
     prevPlayerIdRef.current = currentPlayerId
   }, [currentPlayerId, getCurrentUserId])
 
-  // Create ref for loadLobby to avoid circular dependency
-  const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
 
   // Memoize socket event handlers to prevent infinite loops
   const onGameUpdate = useCallback((payload: GameUpdatePayload) => {
     clientLogger.log('📡 Received game-update:', payload)
+    const gameType = lobby?.gameType
     
     // Extract state from payload structure: { action: 'state-change', payload: { state: ... } }
     let state: unknown
@@ -267,58 +311,52 @@ function LobbyPageContent() {
           ? JSON.parse(state) 
           : state
         
-        if (game?.id) {
-          const newEngine = new YahtzeeGame(game.id)
-          newEngine.restoreState(parsedState)
-          setGameEngine(newEngine)
+        // Update game object with new state
+        setGame((prevGame) => {
+          if (!prevGame) return prevGame
+          return {
+            ...prevGame,
+            state: JSON.stringify(parsedState),
+          }
+        })
+        
+        // Sync roll history from game state (Yahtzee specific)
+        if (gameType === 'yahtzee' && parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
+          const lastRoll = parsedState.data.lastRoll
+          // Find player with proper type checking
+          const player = game.players.find((p) => p.id === lastRoll.playerId)
           
-          // Update game object with new state
-          setGame((prevGame) => {
-            if (!prevGame) return prevGame
-            return {
-              ...prevGame,
-              state: JSON.stringify(parsedState),
-            }
-          })
-          
-          // Sync roll history from game state
-          if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
-            const lastRoll = parsedState.data.lastRoll
-            // Find player with proper type checking
-            const player = game.players.find((p) => p.id === lastRoll.playerId)
+          // Safety check: ensure player exists and has required data
+          if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
+            const playerCount = game.players.length
+            const currentRound = parsedState.data.round || 1
+            const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+            const currentUserId = getCurrentUserId()
             
-            // Safety check: ensure player exists and has required data
-            if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
-              const playerCount = game.players.length
-              const currentRound = parsedState.data.round || 1
-              const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
-              const currentUserId = getCurrentUserId()
+            // Check if this roll is already in history (by timestamp)
+            setRollHistory(prev => {
+              const exists = prev.some(entry => 
+                Math.abs(entry.timestamp - lastRoll.timestamp) < 1000 // Within 1 second
+              )
               
-              // Check if this roll is already in history (by timestamp)
-              setRollHistory(prev => {
-                const exists = prev.some(entry => 
-                  Math.abs(entry.timestamp - lastRoll.timestamp) < 1000 // Within 1 second
-                )
-                
-                if (exists) return prev
-                
-                // Play dice roll sound for other players' rolls (not our own)
-                if (lastRoll.playerId !== currentUserId) {
-                  soundManager.play('diceRoll')
-                }
-                
-                return [...prev, {
-                  id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
-                  playerName: player.user?.username || player.name || 'Unknown',
-                  dice: lastRoll.dice,
-                  rollNumber: lastRoll.rollNumber,
-                  turnNumber: turnNumber,
-                  held: lastRoll.held,
-                  isBot: player.user?.isBot || player.isBot || false,
-                  timestamp: lastRoll.timestamp,
-                }]
-              })
-            }
+              if (exists) return prev
+              
+              // Play dice roll sound for other players' rolls (not our own)
+              if (lastRoll.playerId !== currentUserId) {
+                soundManager.play('diceRoll')
+              }
+              
+              return [...prev, {
+                id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
+                playerName: player.user?.username || player.name || 'Unknown',
+                dice: lastRoll.dice,
+                rollNumber: lastRoll.rollNumber,
+                turnNumber: turnNumber,
+                held: lastRoll.held,
+                isBot: player.user?.isBot || player.isBot || false,
+                timestamp: lastRoll.timestamp,
+              }]
+            })
           }
         }
         
@@ -329,7 +367,7 @@ function LobbyPageContent() {
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId])
+  }, [game?.id, game?.players, lobby?.gameType, getCurrentUserId])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -358,19 +396,10 @@ function LobbyPageContent() {
 
   const onLobbyUpdate = useCallback((data: LobbyUpdatePayload) => {
     clientLogger.log('📡 Received lobby-update:', data)
-    // Use ref to avoid circular dependency
-    if (loadLobbyRef.current) {
-      loadLobbyRef.current()
-    }
   }, [])
 
   const onPlayerJoined = useCallback((data: PlayerJoinedPayload) => {
     clientLogger.log('📡 Player joined:', data)
-    // Use ref to avoid circular dependency
-    if (loadLobbyRef.current) {
-      loadLobbyRef.current()
-    }
-    
     // Show notification and play sound only after initial load
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
@@ -383,11 +412,6 @@ function LobbyPageContent() {
 
   const onGameStarted = useCallback((data: GameStartedPayload) => {
     clientLogger.log('📡 Game started:', data)
-    // Use ref to avoid circular dependency
-    if (loadLobbyRef.current) {
-      loadLobbyRef.current()
-    }
-    
     // Show toast for non-host players (host already saw it in handleStartGame)
     const currentUserId = isGuest ? guestId : session?.user?.id
     const isHost = lobby?.creatorId === currentUserId
@@ -407,7 +431,7 @@ function LobbyPageContent() {
     const botName = event.botName || 'Bot'
     
     // Add bot action to roll history ONLY if dice are present (after roll, not before)
-    if (event.type === 'roll' && event.data?.dice && gameEngine) {
+    if (event.type === 'roll' && event.data?.dice && gameEngine && gameEngine instanceof YahtzeeGame) {
       const currentRound = gameEngine.getRound()
       const playerCount = game?.players?.length || 1
       const turnNumber = Math.floor(currentRound / playerCount) + 1
@@ -449,11 +473,6 @@ function LobbyPageContent() {
     // Don't show toast here - handleLeaveLobby already shows appropriate message
     // This prevents duplicate toast notifications
     
-    // Refresh lobby data
-    if (loadLobbyRef.current) {
-      loadLobbyRef.current()
-    }
-    
     // Navigate back to lobby list after a short delay
     setTimeout(() => {
       router.push('/games/yahtzee/lobbies')
@@ -467,10 +486,6 @@ function LobbyPageContent() {
       showToast.info('toast.playerLeft', undefined, { player: data.username })
     }
     
-    // Refresh lobby data
-    if (loadLobbyRef.current) {
-      loadLobbyRef.current()
-    }
   }, [])
 
   // Socket connection hook - must be before useLobbyActions
@@ -494,10 +509,24 @@ function LobbyPageContent() {
   // Calculate once to avoid calling functions repeatedly
   const userId = getCurrentUserId()
   const username = getCurrentUserName()
+  
+  // Spy game actions hook
+  const isSpyGame = (lobby as any)?.gameType === 'guess_the_spy'
+  const spyActions = useSpyActions({
+    game,
+    gameEngine: isSpyGame ? gameEngine : null,
+    setGameEngine: (engine) => {
+      setGameEngine(engine)
+    },
+    isGuest,
+    guestId,
+    guestName,
+    userId,
+    setGame,
+  })
 
   // Lobby actions hook - after socket is initialized
   const {
-    loadLobby,
     addBotToLobby,
     handleJoinLobby,
     handleStartGame,
@@ -526,23 +555,18 @@ function LobbyPageContent() {
     setStartingGame,
   })
 
-  // Update ref with loadLobby function
-  React.useEffect(() => {
-    loadLobbyRef.current = loadLobby
-  })
-
   // Create refs for game actions to use in timer callback
   const handleScoreRef = React.useRef<((category: YahtzeeCategory) => Promise<void>) | null>(null)
   const handleRollDiceRef = React.useRef<(() => Promise<void>) | null>(null)
 
   // Game timer hook
   const { timeLeft, timerActive } = useGameTimer({
-    isMyTurn: isMyTurn(),
+    isMyTurn: !!isMyTurn(),
     gameState: gameEngine?.getState() || null,
     onTimeout: async () => {
       if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
-          isMyTurn: isMyTurn(),
+          isMyTurn: !!isMyTurn(),
           hasGameEngine: !!gameEngine,
           hasHandleScore: !!handleScoreRef.current
         })
@@ -550,6 +574,11 @@ function LobbyPageContent() {
       }
       
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
+      
+      if (!(gameEngine instanceof YahtzeeGame)) {
+        clientLogger.error('⏰ Timer only works for Yahtzee game')
+        return
+      }
       
       const rollsLeft = gameEngine.getRollsLeft()
       const currentPlayer = gameEngine.getCurrentPlayer()
@@ -628,7 +657,7 @@ function LobbyPageContent() {
     },
   })
 
-  // Game actions hook
+  // Game actions hook (Yahtzee-specific)
   const {
     handleRollDice,
     handleToggleHold,
@@ -639,14 +668,14 @@ function LobbyPageContent() {
     held, // Local held state for dice locking
   } = useGameActions({
     game,
-    gameEngine,
-    setGameEngine,
+    gameEngine: gameEngine instanceof YahtzeeGame ? gameEngine : null,
+    setGameEngine: (engine) => setGameEngine(engine),
     isGuest,
     guestId,
     guestName,
     userId,
     username,
-    isMyTurn: isMyTurn(),
+    isMyTurn: !!isMyTurn(),
     emitWhenConnected,
     code,
     setRollHistory,
@@ -662,10 +691,10 @@ function LobbyPageContent() {
     handleRollDiceRef.current = handleRollDice
   }, [handleScore, handleRollDice])
 
-  // Bot turn automation hook
+  // Bot turn automation hook (Yahtzee-specific)
   const { triggerBotTurn } = useBotTurn({
     game,
-    gameEngine,
+    gameEngine: gameEngine instanceof YahtzeeGame ? gameEngine : null,
     code,
     isGameStarted: game?.status === 'playing',
   })
@@ -679,10 +708,6 @@ function LobbyPageContent() {
     }
     if (isGuest && !guestName) return
     
-    // Call via ref to avoid dependency on loadLobby function
-    if (loadLobbyRef.current) {
-      loadLobbyRef.current()
-    }
   }, [status, isGuest, guestName, code, router])
 
   // Handle bot overlay progression
@@ -708,7 +733,7 @@ function LobbyPageContent() {
 
   // Handle celebration detection on game updates
   useEffect(() => {
-    if (!gameEngine || !game) return
+    if (!gameEngine || !game || !(gameEngine instanceof YahtzeeGame)) return
     
     if (gameEngine.isGameFinished()) {
       const dice = gameEngine.getDice()
@@ -907,7 +932,7 @@ function LobbyPageContent() {
       ) : (
         // Game Started - ABSOLUTE NO SCROLL - Fixed viewport
         <div className="fixed inset-0 top-20 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-          {gameEngine?.isGameFinished() ? (
+          {gameEngine instanceof YahtzeeGame && gameEngine.isGameFinished() ? (
             <YahtzeeResults
               results={analyzeResults(
                 gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
@@ -1058,10 +1083,11 @@ function LobbyPageContent() {
                         </div>
                       }
                     >
-                      <GameBoard
+                      <GameRouter
+                        gameType={(lobby as any)?.gameType || 'yahtzee'}
                         gameEngine={gameEngine}
                         game={game}
-                        isMyTurn={isMyTurn()}
+                        isMyTurn={!!isMyTurn()}
                         timeLeft={timeLeft}
                         isMoveInProgress={isMoveInProgress}
                         isRolling={isRolling}
@@ -1073,6 +1099,13 @@ function LobbyPageContent() {
                         onToggleHold={handleToggleHold}
                         onScore={handleScore}
                         onCelebrationComplete={() => setCelebrationEvent(null)}
+                        // Spy game actions
+                        onPlayerReady={spyActions.handlePlayerReady}
+                        onAskQuestion={spyActions.handleAskQuestion}
+                        onAnswerQuestion={spyActions.handleAnswerQuestion}
+                        onSkipTurn={spyActions.handleSkipTurn}
+                        onVote={spyActions.handleVote}
+                        onNextRound={spyActions.initializeRound}
                       />
                     </ErrorBoundary>
                   </div>
@@ -1081,6 +1114,7 @@ function LobbyPageContent() {
                   <div className="lg:col-span-6 h-full overflow-hidden">
                     {(() => {
                       // Show selected player's scorecard or current player's scorecard
+                      if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return null
                       const currentUserId = getCurrentUserId()
                       const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
                       const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
@@ -1106,7 +1140,7 @@ function LobbyPageContent() {
                                 currentDice={gameEngine.getDice()}
                                 onSelectCategory={handleScore}
                                 canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                                isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+                                isCurrentPlayer={!!isMyTurn() && !isViewingOtherPlayer}
                                 isLoading={isScoring}
                                 playerName={(() => {
                                   const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)
@@ -1189,10 +1223,11 @@ function LobbyPageContent() {
                           </div>
                         }
                       >
-                        <GameBoard
+                        <GameRouter
+                          gameType={(lobby as any)?.gameType || 'yahtzee'}
                           gameEngine={gameEngine}
                           game={game}
-                          isMyTurn={isMyTurn()}
+                          isMyTurn={!!isMyTurn()}
                           timeLeft={timeLeft}
                           isMoveInProgress={isMoveInProgress}
                           isRolling={isRolling}
@@ -1204,6 +1239,13 @@ function LobbyPageContent() {
                           onToggleHold={handleToggleHold}
                           onScore={handleScore}
                           onCelebrationComplete={() => setCelebrationEvent(null)}
+                          // Spy game actions
+                          onPlayerReady={spyActions.handlePlayerReady}
+                          onAskQuestion={spyActions.handleAskQuestion}
+                          onAnswerQuestion={spyActions.handleAnswerQuestion}
+                          onSkipTurn={spyActions.handleSkipTurn}
+                          onVote={spyActions.handleVote}
+                          onNextRound={spyActions.initializeRound}
                         />
                       </ErrorBoundary>
                     </div>
@@ -1213,6 +1255,7 @@ function LobbyPageContent() {
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
                     <div className="p-4">
                       {(() => {
+                        if (!(gameEngine instanceof YahtzeeGame)) return null
                         const currentUserId = getCurrentUserId()
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
                         const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
@@ -1236,7 +1279,7 @@ function LobbyPageContent() {
                               currentDice={gameEngine.getDice()}
                               onSelectCategory={handleScore}
                               canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
-                              isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
+                              isCurrentPlayer={!!isMyTurn() && !isViewingOtherPlayer}
                               isLoading={isScoring}
                               playerName={(() => {
                                 const dbPlayer = game?.players?.find(p => p.userId === viewingPlayerId)

@@ -23,8 +23,13 @@ export async function POST(
 
   try {
     const { gameId } = await params
+    
+    // Get session or guest user
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -50,7 +55,7 @@ export async function POST(
     }
 
     // Only lobby creator can initialize round
-    if (game.lobby.creatorId !== session.user.id) {
+    if (game.lobby.creatorId !== userId) {
       return NextResponse.json(
         { error: 'Only lobby creator can initialize round' },
         { status: 403 }
@@ -61,8 +66,15 @@ export async function POST(
     const spyGame = new SpyGame(gameId)
     spyGame.loadState(JSON.parse(game.state))
 
-    // Initialize round (assigns roles, selects location)
-    await spyGame.initializeRound()
+    // Check if we're starting a new round (after results) or initializing first round
+    const gameData = spyGame.getState().data as any
+    if ((gameData?.phase === 'results' || gameData?.phase === 'RESULTS') && gameData?.currentRound < gameData?.totalRounds) {
+      // Start next round
+      await spyGame.startNextRound()
+    } else {
+      // Initialize first round (assigns roles, selects location)
+      await spyGame.initializeRound()
+    }
 
     // Get updated state
     const updatedState = spyGame.getState()

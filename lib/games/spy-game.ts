@@ -42,7 +42,8 @@ export interface SpyGameData {
   currentQuestionerId: string | null
   currentTargetId: string | null
   pendingQuestion: string | null // Temporary storage for current question
-  playersReady: Set<string> // For role reveal phase
+  playersReady: string[] // For role reveal phase (array for JSON serialization)
+  eliminatedId?: string // Player eliminated in current round
 }
 
 export class SpyGame extends GameEngine {
@@ -72,7 +73,8 @@ export class SpyGame extends GameEngine {
       currentQuestionerId: null,
       currentTargetId: null,
       pendingQuestion: null,
-      playersReady: new Set(),
+      playersReady: [],
+      eliminatedId: undefined,
     }
   }
 
@@ -101,10 +103,23 @@ export class SpyGame extends GameEngine {
     const availableRoles = [...randomLocation.roles]
     data.playerRoles = {}
 
-    for (const player of this.state.players) {
-      if (player.id === data.spyPlayerId) {
-        data.playerRoles[player.id] = 'Spy'
-      } else {
+    // Assign roles to all players
+    const nonSpyPlayers = this.state.players.filter(p => p.id !== data.spyPlayerId)
+    
+    // Assign spy role first
+    data.playerRoles[data.spyPlayerId] = 'Spy'
+    
+    // Check if we have enough roles for all non-spy players
+    if (availableRoles.length < nonSpyPlayers.length) {
+      // If not enough unique roles, allow duplicates
+      const rolesCopy = [...randomLocation.roles]
+      for (const player of nonSpyPlayers) {
+        const roleIndex = Math.floor(Math.random() * rolesCopy.length)
+        data.playerRoles[player.id] = rolesCopy[roleIndex]
+      }
+    } else {
+      // We have enough unique roles, assign without duplicates
+      for (const player of nonSpyPlayers) {
         const roleIndex = Math.floor(Math.random() * availableRoles.length)
         data.playerRoles[player.id] = availableRoles[roleIndex]
         // Remove used role to avoid duplicates
@@ -122,10 +137,11 @@ export class SpyGame extends GameEngine {
     // Clear previous round data
     data.votes = {}
     data.questionHistory = []
-    data.playersReady = new Set()
+    data.playersReady = []
     data.currentQuestionerId = null
     data.currentTargetId = null
     data.pendingQuestion = null
+    data.eliminatedId = undefined
 
     // Start role reveal phase
     data.phase = SpyGamePhase.ROLE_REVEAL
@@ -215,10 +231,12 @@ export class SpyGame extends GameEngine {
 
   private processPlayerReady(playerId: string): void {
     const data = this.state.data as SpyGameData
-    data.playersReady.add(playerId)
+    if (!data.playersReady.includes(playerId)) {
+      data.playersReady.push(playerId)
+    }
 
     // If all players are ready, start questioning phase
-    if (data.playersReady.size === this.state.players.length) {
+    if (data.playersReady.length === this.state.players.length) {
       this.startQuestioningPhase()
     }
   }
@@ -333,6 +351,9 @@ export class SpyGame extends GameEngine {
       }
     }
 
+    // Store eliminated player ID
+    data.eliminatedId = eliminatedId
+
     // Calculate scores
     const spyWon = eliminatedId !== data.spyPlayerId
 
@@ -359,6 +380,17 @@ export class SpyGame extends GameEngine {
 
     data.phase = SpyGamePhase.RESULTS
     this.state.updatedAt = new Date()
+  }
+
+  // Start next round
+  async startNextRound(): Promise<void> {
+    const data = this.state.data as SpyGameData
+    
+    // Increment round
+    data.currentRound += 1
+    
+    // Initialize new round
+    await this.initializeRound()
   }
 
   checkWinCondition(): Player | null {

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { generateLobbyCode } from '@/lib/lobby'
+import { GameRegistry } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 
@@ -26,27 +27,58 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Verify authentication with NextAuth
+    // Check for guest or authenticated user
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const guestName = request.headers.get('X-Guest-Name')
+    
+    const userId = session?.user?.id || guestId
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify user exists in database
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
-
-    if (!user) {
-      log.error('User not found in database', undefined, { userId: session.user.id })
-      return NextResponse.json(
-        { error: 'User not found. Please log in again.' },
-        { status: 404 }
-      )
     }
 
     const body = await request.json()
     const { name, password, maxPlayers, gameType } = createLobbySchema.parse(body)
+
+    // Validate guest name if guest
+    if (guestId && (!guestName || guestName.length < 2 || guestName.length > 20)) {
+      return NextResponse.json(
+        { error: 'Guest name must be 2-20 characters' },
+        { status: 400 }
+      )
+    }
+
+    // Get or create user (for guests, create if doesn't exist)
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      if (guestId && guestName) {
+        // Create guest user
+        user = await prisma.user.create({
+          data: {
+            id: guestId,
+            username: guestName,
+            isBot: false,
+            isGuest: true,
+            lastActiveAt: new Date(),
+          },
+        })
+      } else {
+        log.error('User not found in database', undefined, { userId })
+        return NextResponse.json(
+          { error: 'User not found. Please log in again.' },
+          { status: 404 }
+        )
+      }
+    } else if (guestId && user.isGuest) {
+      // Update lastActiveAt for existing guest
+      await prisma.user.update({
+        where: { id: guestId },
+        data: { lastActiveAt: new Date() },
+      })
+    }
 
     log.info('Creating lobby', { gameType, maxPlayers })
 
@@ -60,36 +92,17 @@ export async function POST(request: NextRequest) {
       attempts++
     }
 
-    // Create lobby with initial game and add creator as first player
-    // Build initial state depending on selected game type
-    let initialState: any
-    if (gameType === 'guess_the_spy') {
-      initialState = {
-        gameType: 'guess_the_spy',
-        players: [],
-        status: 'waiting',
-        currentRound: 0,
-        spyIndex: null,
-        location: null,
-        categories: [],
-        votes: {},
-      }
-    } else {
-      // Default to Yahtzee-compatible initial state
-      initialState = {
-        gameType: 'yahtzee',
-        players: [],
-        currentPlayerIndex: 0,
-        status: 'waiting',
-        data: {
-          round: 0,
-          dice: [1, 1, 1, 1, 1],
-          held: [false, false, false, false, false],
-          rollsLeft: 3,
-          scores: [{}],
-        },
-      }
+    // Get game registration to create initial state
+    const gameRegistration = GameRegistry.get(gameType)
+    if (!gameRegistration) {
+      return NextResponse.json(
+        { error: `Unsupported game type: ${gameType}` },
+        { status: 400 }
+      )
     }
+
+    // Create initial state using game factory
+    const initialState = gameRegistration.factory.createInitialState()
     
     const lobby = await prisma.lobby.create({
       data: {

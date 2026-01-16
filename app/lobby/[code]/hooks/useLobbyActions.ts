@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { GameEngine } from '@/lib/game-engine'
+import { GameRegistry } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -22,7 +24,7 @@ interface UseLobbyActionsProps {
   game: any | null
   setGame: (game: any) => void
   setLobby: (lobby: any) => void
-  setGameEngine: (engine: YahtzeeGame | null) => void
+  setGameEngine: (engine: GameEngine | null) => void
   setTimerActive: (active: boolean) => void
   setTimeLeft: (time: number) => void
   setRollHistory: (history: any[]) => void
@@ -115,11 +117,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const addBotToLobby = useCallback(async (options?: { auto?: boolean }) => {
     try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
+
       const res = await fetch(`/api/lobby/${code}/add-bot`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       const data = await res.json()
@@ -149,7 +151,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       toast.error(err.message || 'Failed to add bot')
       return false
     }
-  }, [code])
+  }, [code, isGuest, guestId, guestName])
 
   const announceBotJoined = useCallback(() => {
     socket?.emit('player-joined')
@@ -269,11 +271,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
+
       const res = await fetch('/api/game/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           gameType: lobby.gameType || 'yahtzee',
           lobbyId: lobby.id,
@@ -289,9 +291,25 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       const data = await res.json()
       
-      const engine = new YahtzeeGame(data.game.id)
-      engine.restoreState(data.game.state)
-      setGameEngine(engine)
+      // Get game type from lobby or response
+      const gameType = lobby?.gameType || data.game?.type || 'yahtzee'
+      
+      // Create engine using GameRegistry
+      try {
+        const engine = GameRegistry.createEngine(
+          data.game.id,
+          gameType,
+          { maxPlayers: lobby?.maxPlayers || 4, minPlayers: 1 }
+        )
+        engine.restoreState(data.game.state)
+        setGameEngine(engine)
+      } catch (error) {
+        clientLogger.error('Failed to create game engine:', error)
+        // Fallback to Yahtzee for backward compatibility
+        const engine = new YahtzeeGame(data.game.id)
+        engine.restoreState(data.game.state)
+        setGameEngine(engine)
+      }
       
       // Track game start
       const players = data.game.players || []
@@ -305,6 +323,44 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         hasBot: botCount > 0,
         botCount,
       })
+      
+      // Initialize round for spy game
+      if (gameType === 'guess_the_spy') {
+        try {
+          const initRes = await fetch(`/api/game/${data.game.id}/spy-init`, {
+            method: 'POST',
+            headers,
+          })
+          
+          if (initRes.ok) {
+            const initData = await initRes.json()
+            if (initData.state) {
+              // Update engine with initialized state
+              const spyEngine = GameRegistry.createEngine(
+                data.game.id,
+                gameType,
+                { maxPlayers: lobby?.maxPlayers || 4, minPlayers: 1 }
+              )
+              spyEngine.restoreState(initData.state)
+              setGameEngine(spyEngine)
+              
+              // Update game with new state
+              setGame((prev: any) => {
+                if (!prev) return prev
+                return {
+                  ...prev,
+                  state: JSON.stringify(initData.state),
+                }
+              })
+              
+              clientLogger.log('Spy game round initialized')
+            }
+          }
+        } catch (error) {
+          clientLogger.error('Failed to initialize spy round:', error)
+          // Continue anyway - game is created
+        }
+      }
       
       setTimerActive(true)
       setTimeLeft(60)
@@ -329,7 +385,8 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         })
       }
 
-      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`, { id: 'start-game' })
+      const gameEmoji = gameType === 'guess_the_spy' ? '🕵️' : '🎲'
+      toast.success(`${gameEmoji} Game started! ${firstPlayerName} goes first!`, { id: 'start-game' })
 
       const gameStartMessage = {
         id: Date.now().toString() + '_gamestart',

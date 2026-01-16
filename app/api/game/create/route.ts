@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { SpyGame } from '@/lib/games/spy-game'
-import { GameEngine, GameConfig } from '@/lib/game-engine'
+import { GameConfig } from '@/lib/game-engine'
+import { GameRegistry } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { BotMoveExecutor } from '@/lib/bot-executor'
 import { notifySocket } from '@/lib/socket-url'
@@ -20,8 +19,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Check for guest or authenticated user
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
     }
 
-    if (lobby.creatorId !== session.user.id) {
+    if (lobby.creatorId !== userId) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
     }
 
@@ -109,30 +112,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create game instance based on type
-    let gameEngine: any
-    let gameConfig: GameConfig
-
-    switch (gameType) {
-      case 'yahtzee':
-        gameConfig = {
-          maxPlayers: config?.maxPlayers || 4,
-          minPlayers: config?.minPlayers || 1,
-          ...config
-        }
-        gameEngine = new YahtzeeGame(`game_${Date.now()}`, gameConfig)
-        break
-      case 'guess_the_spy':
-        gameConfig = {
-          maxPlayers: config?.maxPlayers || 10,
-          minPlayers: config?.minPlayers || 3,
-          ...config
-        }
-        gameEngine = new SpyGame(`game_${Date.now()}`)
-        break
-      default:
-        return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    // Get game metadata from registry
+    const gameMetadata = GameRegistry.getMetadata(gameType)
+    if (!gameMetadata) {
+      return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
+
+    // Create game engine using registry
+    const gameConfig: GameConfig = {
+      maxPlayers: config?.maxPlayers || gameMetadata.maxPlayers,
+      minPlayers: config?.minPlayers || gameMetadata.minPlayers,
+      ...config
+    }
+
+    const gameEngine = GameRegistry.createEngine(
+      `game_${Date.now()}`,
+      gameType,
+      gameConfig
+    )
 
     // Add players to the game - sort so bots go last
     const sortedPlayers = [...waitingGame.players].sort((a, b) => {

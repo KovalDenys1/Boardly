@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { getBrowserSocketUrl, getAuthHeaders } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import { getGameInfo, getAvailableGames, getGameGradient, getGameLobbiesRoute } from '@/lib/game-config'
+import { registerGameComponents } from '@/lib/game-registry-client'
+import { GameMetadata } from '@/lib/game-registry'
 
-type GameType = 'yahtzee' | 'guess_the_spy'
+type GameType = string
 
 type GameInfo = {
   name: string
@@ -18,41 +21,66 @@ type GameInfo = {
   defaultMaxPlayers: number
 }
 
-const GAME_INFO: Record<GameType, GameInfo> = {
-  yahtzee: {
-    name: 'Yahtzee',
-    emoji: '🎲',
-    description: 'Roll five dice, score combos, and race friends to the highest total.',
-    gradient: 'from-purple-600 via-pink-500 to-orange-400',
-    allowedPlayers: [2, 3, 4],
-    defaultMaxPlayers: 4,
-  },
-  guess_the_spy: {
-    name: 'Guess the Spy',
-    emoji: '🕵️‍♂️',
-    description: 'Find the spy among you! Most players know the location, but one is the spy. Can you spot them before time runs out?',
-    gradient: 'from-blue-600 via-cyan-500 to-green-400',
-    allowedPlayers: [3, 4, 5, 6, 7, 8],
-    defaultMaxPlayers: 6,
-  },
-}
-
 function CreateLobbyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   
+  // Register game components on mount
+  useEffect(() => {
+    registerGameComponents()
+  }, [])
+  
   const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
-  const gameInfo = GAME_INFO[selectedGameType]
+  
+  // Get game info from registry
+  const gameMetadata = useMemo(() => getGameInfo(selectedGameType), [selectedGameType])
+  
+  // Convert metadata to GameInfo format
+  const gameInfo: GameInfo | null = useMemo(() => {
+    if (!gameMetadata) return null
+    
+    return {
+      name: gameMetadata.name,
+      emoji: gameMetadata.emoji,
+      description: gameMetadata.description,
+      gradient: getGameGradient(gameMetadata.category),
+      allowedPlayers: gameMetadata.allowedPlayers || 
+        Array.from({ length: gameMetadata.maxPlayers - gameMetadata.minPlayers + 1 }, 
+          (_, i) => gameMetadata.minPlayers + i),
+      defaultMaxPlayers: gameMetadata.defaultMaxPlayers,
+    }
+  }, [gameMetadata])
+  
+  // Get available games for selector
+  const availableGames = useMemo(() => getAvailableGames(), [])
   
   const [formData, setFormData] = useState({
     name: '',
     password: '',
-    maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
+    maxPlayers: 4, // Will be updated by useEffect when gameInfo is available
     gameType: selectedGameType as GameType,
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  
+  // Guest mode support
+  const [isGuest, setIsGuest] = useState(false)
+  const [guestId, setGuestId] = useState<string>('')
+  const [guestName, setGuestName] = useState<string>('')
+  
+  // Check if user is guest on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && status === 'unauthenticated') {
+      const storedGuestName = localStorage.getItem('guestName')
+      const storedGuestId = localStorage.getItem('guestId')
+      if (storedGuestName && storedGuestId) {
+        setIsGuest(true)
+        setGuestId(storedGuestId)
+        setGuestName(storedGuestName)
+      }
+    }
+  }, [status])
 
   // Update formData when gameType changes from URL
   useEffect(() => {
@@ -61,16 +89,12 @@ function CreateLobbyPage() {
       setFormData(prev => ({
         ...prev,
         maxPlayers: gameInfo.defaultMaxPlayers,
-        gameType: selectedGameType,
+        gameType: selectedGameType as GameType,
       }))
     }
   }, [selectedGameType, gameInfo])
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/login')
-    }
-  }, [status, router])
+  // Allow guests to create lobbies - no redirect to login
   
   // Validate game type - show error UI if invalid
   if (!gameInfo) {
@@ -99,18 +123,32 @@ function CreateLobbyPage() {
     setLoading(true)
 
     try {
-      if (!session) {
-        router.push('/auth/login')
-        return
+      // Check if user is authenticated or guest
+      if (!session && !isGuest) {
+        // If not authenticated and not a guest, prompt for guest name or redirect to login
+        const guestNameInput = prompt('Enter your name to play as guest (2-20 characters):')
+        if (!guestNameInput || guestNameInput.length < 2 || guestNameInput.length > 20) {
+          setError('Please enter a valid name (2-20 characters) or log in')
+          setLoading(false)
+          return
+        }
+        
+        // Create guest ID and store in localStorage
+        const newGuestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        localStorage.setItem('guestId', newGuestId)
+        localStorage.setItem('guestName', guestNameInput)
+        setIsGuest(true)
+        setGuestId(newGuestId)
+        setGuestName(guestNameInput)
       }
 
       clientLogger.log('📤 Sending lobby creation request:', formData)
 
+      const headers = getAuthHeaders(isGuest || !session, guestId, guestName)
+
       const res = await fetch('/api/lobby', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(formData),
       })
 
@@ -123,15 +161,16 @@ function CreateLobbyPage() {
 
       // Notify lobby list about new lobby via WebSocket
       const socketUrl = getBrowserSocketUrl()
-      const token = session?.user?.id || null
+      const token = session?.user?.id || guestId || null
+      const isGuestMode = isGuest || !session
       
       const authPayload: Record<string, unknown> = {}
       if (token) authPayload.token = token
-      authPayload.isGuest = false
+      authPayload.isGuest = isGuestMode
 
       const queryPayload: Record<string, string> = {}
       if (token) queryPayload.token = String(token)
-      queryPayload.isGuest = 'false'
+      queryPayload.isGuest = String(isGuestMode)
 
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
@@ -161,8 +200,11 @@ function CreateLobbyPage() {
       })
 
       clientLogger.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
-      // Redirect to the new lobby
-      router.push(`/lobby/${data.lobby.code}`)
+      // Redirect to the new lobby (with guest parameter if guest)
+      const redirectUrl = isGuestMode 
+        ? `/lobby/${data.lobby.code}?guest=true`
+        : `/lobby/${data.lobby.code}`
+      router.push(redirectUrl)
     } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby'
@@ -180,28 +222,28 @@ function CreateLobbyPage() {
     )
   }
 
-  if (status === 'unauthenticated') {
-    return null
-  }
-
   return (
     <div className={`min-h-screen bg-gradient-to-br ${gameInfo.gradient} py-12 px-4`}>
       <div className="max-w-2xl mx-auto">
         {/* Game Type Selector */}
         <div className="mb-8 flex flex-col items-center">
           <div className="mb-2 text-white font-semibold">Choose Game</div>
-          <div className="flex gap-4">
-            {Object.entries(GAME_INFO).map(([key, info]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSelectedGameType(key as GameType)}
-                className={`flex flex-col items-center px-4 py-2 rounded-xl font-bold transition-all border-2 ${selectedGameType === key ? 'bg-white text-blue-600 border-blue-500 scale-105 shadow-lg' : 'bg-white/20 text-white border-transparent hover:bg-white/30'}`}
-              >
-                <span className="text-2xl mb-1">{info.emoji}</span>
-                <span>{info.name}</span>
-              </button>
-            ))}
+          <div className="flex gap-4 flex-wrap justify-center">
+            {availableGames.map((metadata) => {
+              const gameId = metadata.id
+              const isSelected = selectedGameType === gameId
+              return (
+                <button
+                  key={gameId}
+                  type="button"
+                  onClick={() => setSelectedGameType(gameId)}
+                  className={`flex flex-col items-center px-4 py-2 rounded-xl font-bold transition-all border-2 ${isSelected ? 'bg-white text-blue-600 border-blue-500 scale-105 shadow-lg' : 'bg-white/20 text-white border-transparent hover:bg-white/30'}`}
+                >
+                  <span className="text-2xl mb-1">{metadata.emoji}</span>
+                  <span>{metadata.name}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
         {/* Breadcrumbs */}
@@ -221,7 +263,7 @@ function CreateLobbyPage() {
           </button>
           <span>›</span>
           <button 
-            onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
+            onClick={() => router.push(getGameLobbiesRoute(selectedGameType))}
             className="hover:text-white transition-colors"
           >
             {gameInfo.emoji} {gameInfo.name}
@@ -320,7 +362,7 @@ function CreateLobbyPage() {
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
+                onClick={() => router.push(getGameLobbiesRoute(selectedGameType))}
                 className="flex-1 px-6 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
               >
                 Cancel

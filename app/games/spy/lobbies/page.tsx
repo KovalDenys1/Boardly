@@ -40,72 +40,68 @@ export default function SpyLobbiesPage() {
   const isAuthenticated = status === 'authenticated'
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      setLoading(false)
-      return
+    // Allow guests to view lobbies - load for both authenticated and unauthenticated
+    loadLobbies()
+    triggerCleanup()
+
+    // Auto-refresh lobbies every 5 seconds
+    const refreshInterval = setInterval(() => {
+      loadLobbies()
+    }, 5000)
+
+    // Setup WebSocket for real-time updates
+    if (!socket) {
+      const url = getBrowserSocketUrl()
+      clientLogger.log('🔌 Connecting to Socket.IO for Spy lobby list:', url)
+      
+      // Get auth token - use userId for authenticated users, guestId for guests
+      const guestId = typeof window !== 'undefined' ? localStorage.getItem('guestId') : null
+      const token = session?.user?.id || guestId || null
+      const isGuestMode = !session?.user && !!guestId
+
+      const authPayload: Record<string, unknown> = {}
+      if (token) authPayload.token = token
+      authPayload.isGuest = isGuestMode
+
+      const queryPayload: Record<string, string> = {}
+      if (token) queryPayload.token = String(token)
+      queryPayload.isGuest = String(isGuestMode)
+
+      socket = io(url, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        auth: authPayload,
+        query: queryPayload,
+      })
+
+      socket.on('connect', () => {
+        clientLogger.log('✅ Socket connected for Spy lobby list')
+        socket.emit('join-lobby-list')
+      })
+
+      socket.on('lobby-list-update', () => {
+        clientLogger.log('📡 Spy lobby list update received')
+        loadLobbies()
+      })
+
+      socket.on('disconnect', () => {
+        clientLogger.log('❌ Socket disconnected from Spy lobby list')
+      })
     }
 
-    if (status === 'authenticated') {
-      loadLobbies()
-      triggerCleanup()
-
-      // Auto-refresh lobbies every 5 seconds
-      const refreshInterval = setInterval(() => {
-        loadLobbies()
-      }, 5000)
-
-      // Setup WebSocket for real-time updates
-      if (!socket) {
-        const url = getBrowserSocketUrl()
-        clientLogger.log('🔌 Connecting to Socket.IO for Spy lobby list:', url)
-        
-        // Get auth token - use userId for authenticated users
-        const token = session?.user?.id || null
-
-        const authPayload: Record<string, unknown> = {}
-        if (token) authPayload.token = token
-        authPayload.isGuest = false
-
-        const queryPayload: Record<string, string> = {}
-        if (token) queryPayload.token = String(token)
-        queryPayload.isGuest = 'false'
-
-        socket = io(url, {
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionAttempts: 10,
-          reconnectionDelay: 1000,
-          auth: authPayload,
-          query: queryPayload,
-        })
-
-        socket.on('connect', () => {
-          clientLogger.log('✅ Socket connected for Spy lobby list')
-          socket.emit('join-lobby-list')
-        })
-
-        socket.on('lobby-list-update', () => {
-          clientLogger.log('📡 Spy lobby list update received')
-          loadLobbies()
-        })
-
-        socket.on('disconnect', () => {
-          clientLogger.log('❌ Socket disconnected from Spy lobby list')
-        })
-      }
-
-      return () => {
-        clearInterval(refreshInterval)
-        if (socket && socket.connected) {
-          clientLogger.log('🔌 Disconnecting socket from Spy lobby list')
-          socket.emit('leave-lobby-list')
-          socket.disconnect()
-          socket = null as any
-        }
+    return () => {
+      clearInterval(refreshInterval)
+      if (socket && socket.connected) {
+        clientLogger.log('🔌 Disconnecting socket from Spy lobby list')
+        socket.emit('leave-lobby-list')
+        socket.disconnect()
+        socket = null as any
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, router])
+  }, [status, router, session])
 
   const triggerCleanup = async () => {
     try {

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { Move } from '@/lib/game-engine'
+import { Move, GameEngine } from '@/lib/game-engine'
+import { GameRegistry } from '@/lib/game-registry'
 import { BotMoveExecutor } from '@/lib/bot-executor'
+import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { apiLogger } from '@/lib/logger'
 import { withDbTimeout, DB_TIMEOUTS } from '@/lib/timeout'
 
@@ -103,17 +104,19 @@ export async function POST(
       }, { status: 500 })
     }
     
-    let gameEngine: YahtzeeGame
-
-    switch (game.lobby.gameType) {
-      case 'yahtzee':
-        gameEngine = new YahtzeeGame(game.id)
-        // Restore state (gameState is validated JSON from DB)
-        gameEngine.restoreState(gameState as any)
-        break
-      default:
-        return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    // Create game engine using registry
+    const gameRegistration = GameRegistry.get(game.lobby.gameType)
+    if (!gameRegistration) {
+      return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
+
+    // Create engine instance and restore state
+    const gameEngine = GameRegistry.createEngine(
+      game.id,
+      game.lobby.gameType,
+      { maxPlayers: 10, minPlayers: 1 } // Config not critical for restoring state
+    )
+    gameEngine.restoreState(gameState as any)
 
     // Create move object
     const gameMove: Move = {
@@ -165,11 +168,12 @@ export async function POST(
       enginePlayers.map(async (player) => {
         const dbPlayer = updatedGame.players.find(p => p.userId === player.id)
         if (dbPlayer) {
+          const scorecard = gameEngine instanceof YahtzeeGame ? gameEngine.getScorecard(player.id) : {}
           await prisma.player.update({
             where: { id: dbPlayer.id },
             data: {
               score: player.score || 0,
-              scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
+              scorecard: JSON.stringify(scorecard),
             },
           })
         }

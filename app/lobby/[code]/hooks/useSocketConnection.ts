@@ -240,6 +240,24 @@ export function useSocketConnection({
     })
     
     newSocket.on('game-update', (data) => onGameUpdateRef.current(data))
+    newSocket.on('spy-action', (data: any) => {
+      // Handle spy-action events - they also contain state updates
+      if (data.state) {
+        onGameUpdateRef.current({
+          action: 'spy-action',
+          payload: { state: data.state },
+        })
+      }
+    })
+    newSocket.on('spy-round-start', (data: any) => {
+      // Handle spy round initialization
+      if (data.state) {
+        onGameUpdateRef.current({
+          action: 'spy-round-start',
+          payload: { state: data.state },
+        })
+      }
+    })
     newSocket.on('chat-message', (data) => onChatMessageRef.current(data))
     newSocket.on('player-typing', (data) => onPlayerTypingRef.current(data))
     newSocket.on('lobby-update', (data) => onLobbyUpdateRef.current(data))

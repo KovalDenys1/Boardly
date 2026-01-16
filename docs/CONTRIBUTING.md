@@ -25,10 +25,14 @@ Boardly is a modern multiplayer board games platform. This project contains mult
 - **Location**: TBD
 - **Goal**: Classic chess with real-time multiplayer
 
-### 📋 Guess the Spy (Planned)
-- **Status**: 📝 Planning phase
-- **Location**: `/app/games/spy/` (to be created)
-- **Goal**: Social deduction game where players find the spy
+### ✅ Guess the Spy (Live in Production)
+- **Status**: ✅ Fully functional and deployed
+- **Location**: `/lib/games/spy-game.ts`, `/components/games/spy/SpyGameBoard.tsx`
+- **Features**: 
+  - Social deduction game (3-10 players)
+  - Role reveal system
+  - Voting mechanism
+  - Round-based gameplay
 
 ## 🏗️ Project Structure
 
@@ -36,18 +40,20 @@ Boardly is a modern multiplayer board games platform. This project contains mult
 Boardly/
 ├── app/
 │   ├── games/              # Games selection page
-│   │   ├── page.tsx        # Main games menu
-│   │   └── yahtzee/        # Yahtzee-specific pages
+│   │   ├── page.tsx        # Main games menu (uses GameRegistry)
+│   │   ├── yahtzee/        # Yahtzee-specific pages
+│   │   └── spy/            # Spy-specific pages
 │   ├── lobby/              # Universal lobby system
 │   │   ├── [code]/         # Dynamic lobby room
-│   │   │   ├── page.tsx    # Main lobby page
+│   │   │   ├── page.tsx    # Main lobby page (uses GameRouter)
 │   │   │   ├── hooks/      # Game logic hooks
-│   │   │   └── components/ # UI components
-│   │   ├── create/         # Create lobby page
+│   │   │   └── components/
+│   │   │       └── GameRouter.tsx # ✅ Universal game router
+│   │   ├── create/         # Create lobby page (uses GameRegistry)
 │   │   └── join/           # Join lobby page
 │   └── api/                # API routes
-│       ├── game/           # Game management
-│       ├── lobby/          # Lobby management
+│       ├── game/           # Game management (uses GameRegistry)
+│       ├── lobby/          # Lobby management (uses GameRegistry)
 │       └── auth/           # Authentication
 ├── components/             # Shared UI components
 │   ├── Chat.tsx           # ✅ Reusable chat component
@@ -57,14 +63,27 @@ Boardly/
 │   └── Scorecard.tsx      # Game-specific scorecard
 ├── lib/
 │   ├── game-engine.ts     # ✅ Abstract game engine base class
+│   ├── game-registry.ts   # ✅ Centralized game registration system
+│   ├── game-registry-client.ts # ✅ Client-side component registration
+│   ├── game-config.ts     # ✅ Game configuration helpers
 │   ├── games/             # Game-specific implementations
-│   │   └── yahtzee-game.ts # Yahtzee engine
+│   │   ├── yahtzee-game.ts # Yahtzee engine
+│   │   └── spy-game.ts    # Spy game engine
 │   ├── yahtzee.ts         # Yahtzee game logic
 │   ├── yahtzee-bot.ts     # AI opponent logic
 │   ├── bot-executor.ts    # Bot turn automation
 │   ├── auth.ts            # ✅ Authentication
 │   ├── db.ts              # ✅ Database connection
 │   └── sounds.ts          # ✅ Sound manager
+├── components/
+│   ├── games/             # Game-specific UI components
+│   │   ├── yahtzee/
+│   │   │   └── YahtzeeGameBoard.tsx
+│   │   └── spy/
+│   │       └── SpyGameBoard.tsx
+│   ├── Chat.tsx           # ✅ Reusable chat component
+│   ├── PlayerList.tsx     # ✅ Reusable player list
+│   └── ...
 ├── prisma/
 │   └── schema.prisma      # Database schema
 ├── socket-server.ts       # WebSocket server
@@ -126,57 +145,195 @@ All Clients in Room → UI Update
 
 ## 🎯 Adding a New Game
 
+The project now uses a **Game Registry** system that makes adding new games much simpler. Follow these steps:
+
 ### Step 1: Create Game Engine
 
-Create `lib/games/your-game.ts` extending the base `GameEngine` class:
+Create `lib/games/[game-name]-game.ts` extending the base `GameEngine` class:
 
 ```typescript
-import { GameEngine } from '../game-engine'
+import { GameEngine, GameConfig, Move, Player } from '@/lib/game-engine'
+
+export interface YourGameData {
+  // Define your game's data structure
+  // Example: deck: Card[], currentPlayer: number, etc.
+}
 
 export class YourGame extends GameEngine {
-  // Implement required methods
-  validateMove(move: any): boolean { /* ... */ }
-  processMove(move: any): void { /* ... */ }
-  getInitialGameData(): any { /* ... */ }
+  constructor(gameId: string, config: GameConfig) {
+    super(gameId, 'your_game_id', config)
+  }
+
+  getInitialGameData(): YourGameData {
+    return {
+      // Initial game state
+    }
+  }
+
+  validateMove(move: Move): boolean {
+    // Validate move logic
+    return true
+  }
+
+  processMove(move: Move): void {
+    // Process the move
+  }
+
+  checkWinCondition(): Player | null {
+    // Check win conditions
+    return null
+  }
+
+  getGameRules(): string[] {
+    return ['Rule 1', 'Rule 2']
+  }
 }
 ```
 
-### Step 2: Add Database Support
+### Step 2: Register Game in GameRegistry
+
+Open `lib/game-registry.ts` and add your game registration:
+
+```typescript
+import { YourGame } from './games/your-game-game'
+
+GameRegistry.register(
+  'your_game_id', // Must match GameType in database
+  {
+    id: 'your_game_id',
+    name: 'Your Game Name',
+    emoji: '🎮',
+    description: 'Game description',
+    minPlayers: 2,
+    maxPlayers: 4,
+    defaultMaxPlayers: 4,
+    allowedPlayers: [2, 3, 4], // Optional
+    difficulty: 'medium', // 'easy' | 'medium' | 'hard'
+    estimatedDuration: 20, // in minutes
+    supportsBots: true,
+    category: 'card', // 'dice' | 'card' | 'board' | 'social' | 'strategy'
+  },
+  {
+    createEngine: (gameId: string, config: GameConfig) => {
+      return new YourGame(gameId, config)
+    },
+    createInitialState: () => ({
+      // Initial state for lobby creation
+    }),
+  }
+  // component will be added in Step 4
+)
+```
+
+### Step 3: Add Database Support
 
 Update `prisma/schema.prisma`:
 
 ```prisma
 enum GameType {
-  YAHTZEE
-  YOUR_GAME  // Add your game type
+  yahtzee
+  guess_the_spy
+  your_game_id  // Add here (must match registry ID)
 }
 ```
 
 Run migration: `npx prisma migrate dev --name add_your_game`
 
-### Step 3: Create UI Components
+### Step 4: Create UI Components
 
-Create game-specific components in `components/`:
-- `YourGameBoard.tsx` - Main game interface
-- `YourGameScorecard.tsx` - Scoring display
-- Additional components as needed
-
-### Step 4: Add Socket Events
-
-In `socket-server.ts`, add event handlers:
+Create `components/games/[game-name]/YourGameBoard.tsx`:
 
 ```typescript
-socket.on('your-game-action', async (data) => {
-  // Handle game-specific actions
-  io.to(`lobby:${lobbyCode}`).emit('game-update', newState)
-})
+'use client'
+
+import { YourGame } from '@/lib/games/your-game-game'
+import { Game } from '@/types/game'
+
+interface YourGameBoardProps {
+  gameEngine: YourGame
+  game: Game | null
+  isMyTurn: boolean
+  timeLeft: number
+  getCurrentUserId: () => string | undefined
+  // Add other props as needed
+}
+
+export default function YourGameBoard({
+  gameEngine,
+  game,
+  isMyTurn,
+  timeLeft,
+  getCurrentUserId,
+}: YourGameBoardProps) {
+  // Implement your game UI
+  return <div>Your game UI</div>
+}
 ```
 
-### Step 5: Create Game Pages
+Then register the component in `lib/game-registry-client.ts`:
 
-Create pages in `app/games/your-game/`:
-- `lobbies/page.tsx` - Lobby browser
-- Implement game-specific rendering in `app/lobby/[code]/components/GameBoard.tsx`
+```typescript
+import YourGameBoard from '@/components/games/[game-name]/YourGameBoard'
+
+// In registerGameComponents():
+const yourGameRegistration = GameRegistry.get('your_game_id')
+if (yourGameRegistration) {
+  GameRegistry.register(
+    'your_game_id',
+    yourGameRegistration.metadata,
+    yourGameRegistration.factory,
+    YourGameBoard // Add component
+  )
+}
+```
+
+**Note**: The `GameRouter` component will automatically use your component once registered!
+
+### Step 5: Add Localization
+
+Add translations to `messages/en.json` and `messages/uk.json`:
+
+```json
+{
+  "games": {
+    "your_game_id": {
+      "name": "Your Game Name",
+      "description": "Game description",
+      "difficulty": "medium"
+    }
+  }
+}
+```
+
+### Step 6: Create Lobby Pages (Optional)
+
+If you need a game-specific lobby page, create `app/games/[game-name]/lobbies/page.tsx`:
+
+```typescript
+'use client'
+
+import { getGameLobbiesRoute } from '@/lib/game-config'
+// Use existing components as examples
+// See app/games/yahtzee/lobbies/page.tsx
+```
+
+### What Happens Automatically?
+
+Once you register your game in `GameRegistry`, the following happens automatically:
+
+- ✅ Game appears on `/games` page
+- ✅ Game appears in lobby creation page
+- ✅ Game engine is created via API routes
+- ✅ Game UI is rendered via `GameRouter`
+- ✅ No need to modify core API routes or main components
+
+### See Also
+
+- **Detailed Template**: See `docs/GAME_TEMPLATE.md` for complete step-by-step instructions
+- **Scalability Plan**: See `docs/SCALABILITY_PLAN.md` for architecture overview
+- **Example Games**: 
+  - Yahtzee: `lib/games/yahtzee-game.ts`, `components/games/yahtzee/YahtzeeGameBoard.tsx`
+  - Spy: `lib/games/spy-game.ts`, `components/games/spy/SpyGameBoard.tsx`
 
 ## 📚 Key Patterns
 
@@ -378,4 +535,4 @@ Thank you for contributing to Boardly! Your work helps make multiplayer board ga
 
 ---
 
-*Last Updated: November 28, 2025*
+*Last Updated: January 2026*

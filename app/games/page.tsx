@@ -2,8 +2,10 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getAllGames, getAvailableGames, getComingSoonGames, getPlayerRange, getGameGradient, getGameLobbiesRoute } from '@/lib/game-config'
+import { registerGameComponents } from '@/lib/game-registry-client'
 
 interface Game {
   id: string
@@ -23,40 +25,43 @@ export default function GamesPage() {
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
   
-  const games: Game[] = [
-    {
-      id: 'yahtzee',
-      nameKey: 'games.yahtzee.name',
-      emoji: '🎲',
-      descriptionKey: 'games.yahtzee.description',
-      players: '2-8',
-      difficultyKey: 'games.yahtzee.difficulty',
-      status: 'available',
-      route: '/games/yahtzee/lobbies',
-      color: 'from-blue-500 to-purple-600'
-    },
-    {
-      id: 'spy',
-      nameKey: 'games.spy.name',
-      emoji: '🕵️',
-      descriptionKey: 'games.spy.description',
-      players: '3-10',
-      difficultyKey: 'games.spy.difficulty',
-      status: 'available',
-      route: '/games/spy/lobbies',
-      color: 'from-red-500 to-pink-600'
-    },
-    {
-      id: 'chess',
-      nameKey: 'games.chess.name',
-      emoji: '♟️',
-      descriptionKey: 'games.chess.description',
-      players: '2',
-      difficultyKey: 'games.chess.difficulty',
-      status: 'coming-soon',
-      color: 'from-gray-700 to-gray-900'
-    },
-  ]
+  // Register game components on mount
+  useEffect(() => {
+    registerGameComponents()
+  }, [])
+
+  // Get games from registry
+  const games: Game[] = useMemo(() => {
+    const availableGames = getAvailableGames()
+    const comingSoonGames = getComingSoonGames()
+    
+    // Map available games
+    const available: Game[] = availableGames.map(metadata => ({
+      id: metadata.id,
+      nameKey: `games.${metadata.id === 'guess_the_spy' ? 'spy' : metadata.id}.name`,
+      emoji: metadata.emoji,
+      descriptionKey: `games.${metadata.id === 'guess_the_spy' ? 'spy' : metadata.id}.description`,
+      players: getPlayerRange(metadata),
+      difficultyKey: `games.${metadata.id === 'guess_the_spy' ? 'spy' : metadata.id}.difficulty`,
+      status: 'available' as const,
+      route: getGameLobbiesRoute(metadata.id),
+      color: getGameGradient(metadata.category),
+    }))
+    
+    // Map coming soon games
+    const comingSoon: Game[] = comingSoonGames.map(metadata => ({
+      id: metadata.id,
+      nameKey: `games.${metadata.id}.name`,
+      emoji: metadata.emoji,
+      descriptionKey: `games.${metadata.id}.description`,
+      players: getPlayerRange(metadata),
+      difficultyKey: `games.${metadata.id}.difficulty`,
+      status: 'coming-soon' as const,
+      color: getGameGradient(metadata.category),
+    }))
+    
+    return [...available, ...comingSoon]
+  }, [])
 
   // Handle authentication redirect in useEffect to avoid hydration issues
   useEffect(() => {
@@ -86,6 +91,19 @@ export default function GamesPage() {
     if (game.status === 'available' && game.route) {
       router.push(game.route)
     }
+  }
+
+  // Show message if no games found
+  if (games.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="text-6xl mb-4">🎮</div>
+          <h1 className="text-3xl font-bold mb-2">No Games Available</h1>
+          <p className="text-white/80">Games are being registered. Please check back later.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
