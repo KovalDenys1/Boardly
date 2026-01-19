@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import toast from 'react-hot-toast'
+import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 function LinkAccountContent() {
@@ -34,7 +35,7 @@ function LinkAccountContent() {
         redirect: true,
       })
     } catch (error) {
-      console.error('Link account error:', error)
+      clientLogger.error('Link account error:', error)
       toast.error('Failed to link account')
       router.push('/profile')
     }

@@ -318,7 +318,7 @@ describe('GameEngine', () => {
       expect(state.lastMoveAt).toBeLessThanOrEqual(Date.now())
     })
 
-    it('should update timestamps on moves', () => {
+    it('should update timestamps on moves', async () => {
       game.addPlayer(player1)
       game.addPlayer(player2)
       game.startGame()
@@ -326,17 +326,17 @@ describe('GameEngine', () => {
       const initialUpdated = game.getState().updatedAt
       
       // Wait a bit
-      setTimeout(() => {
-        game.makeMove({
-          playerId: 'p1',
-          type: 'valid',
-          data: {},
-          timestamp: new Date(),
-        })
-        
-        const newUpdated = game.getState().updatedAt
-        expect(newUpdated.getTime()).toBeGreaterThanOrEqual(initialUpdated.getTime())
-      }, 10)
+      await new Promise(resolve => setTimeout(resolve, 10))
+      
+      game.makeMove({
+        playerId: 'p1',
+        type: 'valid',
+        data: {},
+        timestamp: new Date(),
+      })
+      
+      const newUpdated = game.getState().updatedAt
+      expect(newUpdated.getTime()).toBeGreaterThanOrEqual(initialUpdated.getTime())
     })
   })
 })

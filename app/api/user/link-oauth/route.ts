@@ -104,8 +104,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    log.error('Failed to process OAuth linking')
-    console.error('OAuth linking error:', errorMessage)
+    log.error('Failed to process OAuth linking', { error: errorMessage })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

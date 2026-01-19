@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { signIn } from 'next-auth/react'
+import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 function OAuthErrorContent() {
@@ -59,7 +60,7 @@ function OAuthErrorContent() {
         callbackUrl: '/profile'
       })
     } catch (error) {
-      console.error('Sign in error:', error)
+      clientLogger.error('Sign in error:', error)
       toast.error('Failed to sign in. Please try again.')
       setMerging(false)
     }

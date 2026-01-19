@@ -1,11 +1,6 @@
-// Load environment variables from .env.local (for local development)
-import dotenv from 'dotenv'
-import { resolve } from 'path'
-
-// Load .env.local first (local development overrides), then .env
-// Use override: true to ensure .env.local values take precedence
-dotenv.config({ path: resolve(process.cwd(), '.env.local'), override: true })
-dotenv.config({ path: resolve(process.cwd(), '.env') })
+// Load environment variables FIRST before any other imports
+// This MUST be the very first import
+import './load-env'
 
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'

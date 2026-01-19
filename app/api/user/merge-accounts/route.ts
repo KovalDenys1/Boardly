@@ -108,8 +108,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    log.error('Failed to merge accounts')
-    console.error('Account merge error:', errorMessage)
+    log.error('Failed to merge accounts', { error: errorMessage })
     return NextResponse.json(
       { error: 'Failed to merge accounts' },
       { status: 500 }

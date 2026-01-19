@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useTranslation } from 'react-i18next'
 import { showToast } from '@/lib/i18n-toast'
@@ -70,7 +71,7 @@ function DeleteAccountContent() {
       }, 2000)
 
     } catch (error) {
-      console.error('Error deleting account:', error)
+      clientLogger.error('Error deleting account:', error)
       setError('errors.network')
     } finally {
       setDeleting(false)

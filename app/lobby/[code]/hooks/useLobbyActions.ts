@@ -92,7 +92,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           try {
             const parsedState = JSON.parse(activeGame.state)
             
-            const engine = new YahtzeeGame(activeGame.id)
+            // Use GameRegistry to create the correct engine type
+            const gameType = data.lobby.gameType
+            const engine = GameRegistry.createEngine(
+              activeGame.id,
+              gameType,
+              { maxPlayers: data.lobby.maxPlayers, minPlayers: 2 }
+            )
             engine.restoreState(parsedState)
             setGameEngine(engine)
           } catch (parseError) {
@@ -410,7 +416,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame])
+  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, setGame])
 
   return {
     loadLobby,

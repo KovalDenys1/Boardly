@@ -9,6 +9,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const log = apiLogger('POST /api/lobby/[code]/leave')
+  
   try {
     const { code } = await params
     const session = await getServerSession(authOptions)
@@ -144,7 +146,7 @@ export async function POST(
           })
         })
       } catch (err) {
-        console.error('Failed to notify via socket:', err)
+        log.warn('Failed to notify via socket', { error: err })
       }
 
       return NextResponse.json({
@@ -186,7 +188,7 @@ export async function POST(
           })
         })
       } catch (err) {
-        console.error('Failed to notify via socket:', err)
+        log.warn('Failed to notify via socket', { error: err })
       }
 
       return NextResponse.json({
@@ -216,7 +218,7 @@ export async function POST(
         })
       })
     } catch (err) {
-      console.error('Failed to notify via socket:', err)
+      log.warn('Failed to notify via socket', { error: err })
     }
 
     return NextResponse.json({
@@ -226,7 +228,6 @@ export async function POST(
       gameStatus: activeGame.status
     })
   } catch (error: any) {
-    const log = apiLogger('POST /api/lobby/[code]/leave')
     log.error('Leave lobby error', error)
     return NextResponse.json(
       { error: 'Failed to leave lobby' },

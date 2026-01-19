@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import { clientLogger } from '@/lib/client-logger'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
 import Friends from '@/components/Friends'
@@ -91,7 +92,7 @@ export default function ProfilePage() {
           setLinkedAccounts(data.linkedAccounts || {})
         }
       } catch (error) {
-        console.error('Failed to fetch linked accounts:', error)
+        clientLogger.error('Failed to fetch linked accounts:', error)
       } finally {
         setLoadingLinkedAccounts(false)
       }
