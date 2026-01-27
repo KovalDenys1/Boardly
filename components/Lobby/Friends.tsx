@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
-import LoadingSpinner from './LoadingSpinner'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 
@@ -814,7 +814,7 @@ export default function Friends() {
               {!addByCode ? (
                 <form onSubmit={handleSendRequest} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       <span>👤</span>
                       {t('profile.friends.username')}
                     </label>
@@ -862,7 +862,7 @@ export default function Friends() {
               ) : (
                 <form onSubmit={handleSendRequestByCode} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       <span>🔑</span>
                       {t('profile.friends.friendCode')}
                     </label>

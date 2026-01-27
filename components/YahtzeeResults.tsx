@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { sounds } from '@/lib/sounds'
 
 interface YahtzeeResultsProps {

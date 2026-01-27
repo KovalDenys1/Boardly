@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 
 let socket: Socket

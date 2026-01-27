@@ -1,5 +1,5 @@
 'use client'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function HowItWorks() {
   const { t } = useTranslation()
@@ -34,8 +34,8 @@ export default function HowItWorks() {
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${step.bgColor} text-white font-bold text-2xl mb-4 shadow-lg`} style={{ width: '64px', height: '64px' }}>
               {step.number}
             </div>
-            <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(step.titleKey)}</h3>
-            <p className="text-white/80" style={{ minHeight: '3rem' }}>{t(step.descriptionKey)}</p>
+            <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(step.titleKey as any)}</h3>
+            <p className="text-white/80" style={{ minHeight: '3rem' }}>{t(step.descriptionKey as any)}</p>
           </div>
         ))}
       </div>

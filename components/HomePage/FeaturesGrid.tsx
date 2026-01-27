@@ -1,5 +1,5 @@
 'use client'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function FeaturesGrid() {
   const { t } = useTranslation()
@@ -45,8 +45,8 @@ export default function FeaturesGrid() {
           }}
         >
           <div className="text-4xl mb-4" style={{ height: '3rem', display: 'flex', alignItems: 'center' }}>{feature.emoji}</div>
-          <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(feature.titleKey)}</h3>
-          <p className="text-white/80 text-sm" style={{ minHeight: '3rem' }}>{t(feature.descriptionKey)}</p>
+          <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(feature.titleKey as any)}</h3>
+          <p className="text-white/80 text-sm" style={{ minHeight: '3rem' }}>{t(feature.descriptionKey as any)}</p>
         </div>
       ))}
     </div>

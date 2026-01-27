@@ -1,7 +1,7 @@
 'use client'
 
-import { useTranslation } from 'react-i18next'
-import { locales } from '@/i18n'
+import { useTranslation } from '@/lib/i18n-helpers'
+import { availableLocales } from '@/locales'
 
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation()
@@ -12,7 +12,7 @@ export default function LanguageSwitcher() {
 
   return (
     <div className="flex items-center gap-1 bg-white/10 rounded-lg p-1">
-      {locales.map((loc) => (
+      {availableLocales.map((loc) => (
         <button
           key={loc}
           onClick={() => handleLocaleChange(loc)}

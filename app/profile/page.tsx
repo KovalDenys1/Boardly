@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import toast from 'react-hot-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'

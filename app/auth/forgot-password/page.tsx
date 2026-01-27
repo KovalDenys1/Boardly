@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
 
@@ -26,13 +26,13 @@ export default function ForgotPasswordPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || t('auth.forgotPassword.error'))
+        throw new Error(data?.error || 'Failed to send reset email')
       }
 
-      showToast.success('auth.forgotPassword.success')
+      showToast.success('auth.resetPasswordSuccess')
       setSent(true)
     } catch (err: any) {
-      showToast.error(err.message || t('auth.forgotPassword.error'))
+      showToast.error('auth.resetPasswordError')
     } finally {
       setLoading(false)
     }

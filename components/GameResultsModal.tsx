@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
@@ -216,7 +216,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
                 game.status
               )}`}
             >
-              {t(`profile.gameHistory.${game.status}`)}
+              {t(`profile.gameHistory.${game.status}` as any)}
             </span>
           </div>
 

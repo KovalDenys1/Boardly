@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface Game {
   id: string
@@ -173,8 +173,8 @@ export default function GamesPage() {
               </div>
 
               {/* Game Info */}
-              <h3 className="text-2xl font-bold mb-2">{t(game.nameKey)}</h3>
-              <p className="text-white/80 text-sm mb-4 min-h-[60px]">{t(game.descriptionKey)}</p>
+              <h3 className="text-2xl font-bold mb-2">{t(game.nameKey as any)}</h3>
+              <p className="text-white/80 text-sm mb-4 min-h-[60px]">{t(game.descriptionKey as any)}</p>
 
               {/* Game Details */}
               <div className="space-y-2">
@@ -185,7 +185,7 @@ export default function GamesPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-white/60">⚡</span>
                   <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200">
-                    {t('games.difficulty')}: {t(game.difficultyKey)}
+                    {t('games.difficulty')}: {t(game.difficultyKey as any)}
                   </span>
                 </div>
               </div>

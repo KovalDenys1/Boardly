@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 
 function DeleteAccountContent() {
@@ -95,7 +95,7 @@ function DeleteAccountContent() {
               <h1 className="text-2xl font-bold text-gray-800 mb-2">
                 {t('deleteAccount.error')}
               </h1>
-              <p className="text-gray-600">{t(error)}</p>
+              <p className="text-gray-600">{error}</p>
             </div>
             <button
               onClick={() => router.push('/')}

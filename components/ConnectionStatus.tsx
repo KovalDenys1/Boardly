@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { useEffect, useState } from 'react'
 
 interface ConnectionStatusProps {
