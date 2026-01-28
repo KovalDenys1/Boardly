@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/next-auth'
 import HeroSection from '@/components/HomePage/HeroSection'
 import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
 import HowItWorks from '@/components/HomePage/HowItWorks'
+import AnimatedSection from '@/components/ui/AnimatedSection'
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60
@@ -19,24 +20,26 @@ export default async function HomePage() {
         style={{ minHeight: 'calc(100vh - 64px)' }}
       >
         <div className="w-full max-w-3xl flex flex-col items-center justify-center h-full">
-          <HeroSection
-            isLoggedIn={isLoggedIn}
-            userName={session?.user?.name}
-            userEmail={session?.user?.email}
-          />
+          <AnimatedSection threshold={0} animationClass="animate-scale-fade-in">
+            <HeroSection
+              isLoggedIn={isLoggedIn}
+              userName={session?.user?.name}
+              userEmail={session?.user?.email}
+            />
+          </AnimatedSection>
         </div>
       </section>
 
       {/* Main content below hero */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-        {/* Features Grid - Responsive */}
-        <div className="mb-12">
+        {/* Features Grid - Animated */}
+        <AnimatedSection className="mb-8" threshold={0.6}>
           <FeaturesGrid />
-        </div>
-        {/* How It Works */}
-        <div className="mb-20">
+        </AnimatedSection>
+        {/* How It Works - Animated */}
+        <AnimatedSection className="mb-8" threshold={0.4}>
           <HowItWorks />
-        </div>
+        </AnimatedSection>
       </div>
 
       {/* Footer */}

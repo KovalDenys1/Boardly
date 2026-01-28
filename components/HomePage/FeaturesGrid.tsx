@@ -36,9 +36,8 @@ export default function FeaturesGrid() {
       {features.map((feature, index) => (
         <div 
           key={index}
-          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in" 
+          className="bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105" 
           style={{ 
-            animationDelay: feature.delay,
             minHeight: '200px', // Fixed height to prevent CLS
             display: 'flex',
             flexDirection: 'column'

@@ -1,3 +1,35 @@
+  .animate-scale-fade-in {
+    @apply opacity-100;
+    animation: scaleFadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+@keyframes scaleFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@layer utilities {
+  .animate-fade-in-up {
+    @apply opacity-100 translate-y-0;
+    animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 /* Social connect buttons unified style */
 .btn-social {
   font-size: 1rem;

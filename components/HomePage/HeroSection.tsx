@@ -17,8 +17,8 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
   return (
     <>
       {/* Hero Section - Responsive, no forced minHeight, no mb-16 */}
-      <div className="flex flex-col items-center justify-center text-center w-full animate-scale-in">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm mb-6 animate-bounce-in">
+      <div className="flex flex-col items-center justify-center text-center w-full">
+        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm mb-6">
           <span className="text-6xl" style={{ fontSize: '4rem', lineHeight: '1' }}>🎲</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg">
@@ -33,7 +33,7 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
           </p>
         )}
         {/* CTA Buttons - always visible, no mb-20, no minHeight */}
-        <div className="w-full max-w-md mx-auto space-y-4 mt-8 animate-slide-in-up">
+        <div className="w-full max-w-md mx-auto space-y-4 mt-8">
           {isLoggedIn ? (
             <button
             onClick={() => router.push('/games')}
