@@ -51,9 +51,7 @@ export default function LoginForm() {
       })
 
       if (result?.error) {
-        setError(t('auth.login.error'))
         showToast.error('auth.login.error')
-        
         // Track failed login
         trackAuth({
           event: 'login',
@@ -82,7 +80,6 @@ export default function LoginForm() {
         router.refresh()
       }
     } catch (err: any) {
-      setError(err.message)
       showToast.error('errors.generic', err.message)
     } finally {
       setLoading(false)
@@ -191,11 +188,7 @@ export default function LoginForm() {
             </Link>
           </div>
 
-          {error && (
-            <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded">
-              {error}
-            </div>
-          )}
+
 
           <button 
             type="submit" 
@@ -203,10 +196,10 @@ export default function LoginForm() {
             className="btn btn-primary w-full"
           >
             {loading ? (
-              <>
-                <LoadingSpinner />
-                <span className="ml-2">{t('auth.login.loggingIn', 'Logging in...')}</span>
-              </>
+              <span className="flex flex-row items-center justify-center gap-2">
+                <LoadingSpinner size="sm" />
+                <span>{t('auth.login.loggingIn', 'Logging in...')}</span>
+              </span>
             ) : (
               t('auth.login.submit')
             )}

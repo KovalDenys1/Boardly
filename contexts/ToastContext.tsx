@@ -25,11 +25,17 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
+  // Limit to 3 visible toasts at a time
   const showToast = useCallback((message: string, type: ToastType = 'info', duration?: number) => {
     const id = Math.random().toString(36).substring(7)
     const newToast: ToastMessage = { id, message, type, duration }
-    
-    setToasts((prev) => [...prev, newToast])
+    setToasts((prev) => {
+      if (prev.length >= 3) {
+        // Remove the oldest toast to keep max 3
+        return [...prev.slice(1), newToast]
+      }
+      return [...prev, newToast]
+    })
   }, [])
 
   const removeToast = useCallback((id: string) => {

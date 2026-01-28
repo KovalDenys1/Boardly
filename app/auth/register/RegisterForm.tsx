@@ -212,10 +212,10 @@ export default function RegisterForm() {
             className="btn btn-primary w-full"
           >
             {loading ? (
-              <>
-                <LoadingSpinner />
-                <span className="ml-2">{t('auth.register.creating')}</span>
-              </>
+              <span className="flex flex-row items-center justify-center gap-2">
+                <LoadingSpinner size="sm" />
+                <span>{t('auth.register.creating')}</span>
+              </span>
             ) : (
               t('auth.register.submit')
             )}
