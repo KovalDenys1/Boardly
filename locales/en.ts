@@ -294,11 +294,40 @@ const en = {
         newGame: 'NEW GAME',
       },
     },
-    chess: {
-      name: 'Chess',
-      title: 'Chess',
-      description: 'The timeless strategy game. Checkmate your opponent in this classic board game.',
-      difficulty: 'Hard',
+    tictactoe: {
+      name: 'Tic-Tac-Toe',
+      description: 'Simple and fast game. Get three in a row to win!',
+      difficulty: 'Easy',
+    },
+    memory: {
+      name: 'Memory',
+      description: 'Find all the matching pairs. Test your memory skills!',
+      difficulty: 'Easy',
+    },
+    rps: {
+      name: 'Rock Paper Scissors',
+      description: 'Classic quick game. Outsmart your opponent in three moves!',
+      difficulty: 'Easy',
+    },
+    alias: {
+      name: 'Alias',
+      description: 'Explain words to your team without using the word itself!',
+      difficulty: 'Medium',
+    },
+    wordsmines: {
+      name: 'Words-Mines',
+      description: 'Avoid the mines and guess the right words!',
+      difficulty: 'Medium',
+    },
+    anagrams: {
+      name: 'Anagrams',
+      description: 'Rearrange the letters to find the hidden word!',
+      difficulty: 'Medium',
+    },
+    crocodile: {
+      name: 'Crocodile',
+      description: 'Act out or draw the word for your team to guess!',
+      difficulty: 'Medium',
     },
   },
   yahtzee: {

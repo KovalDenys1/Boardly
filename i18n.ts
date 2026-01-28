@@ -14,6 +14,8 @@ i18n
     resources: {
       en: { translation: locales.en },
       uk: { translation: locales.uk },
+      no: { translation: locales.no },
+      ru: { translation: locales.ru },
     },
     fallbackLng: defaultLocale,
     supportedLngs: availableLocales,

@@ -21,10 +21,10 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm mb-6">
           <span className="text-6xl" style={{ fontSize: '4rem', lineHeight: '1' }}>🎲</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg">
+        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg break-words">
           Boardly
         </h1>
-        <p className="text-xl md:text-2xl text-white/90 mb-4 max-w-2xl mx-auto">
+        <p className="text-xl md:text-2xl text-white/90 mb-4 max-w-2xl mx-auto break-words leading-relaxed px-4">
           {t('home.subtitle')}
         </p>
         {isLoggedIn && displayName && (

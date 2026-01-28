@@ -118,7 +118,6 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             >
               <option value="">{t('common.all')}</option>
               <option value="yahtzee">{t('games.yahtzee.title')}</option>
-              <option value="chess">{t('games.chess.title')}</option>
             </select>
           </div>
 
