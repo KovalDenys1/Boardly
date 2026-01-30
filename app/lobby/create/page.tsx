@@ -54,9 +54,11 @@ function CreateLobbyPage() {
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     gameType: selectedGameType as GameType,
   })
+  const [maxPlayersInput, setMaxPlayersInput] = useState(GAME_INFO[selectedGameType].defaultMaxPlayers.toString())
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showTips, setShowTips] = useState(false)
+  const [showPlayerWarning, setShowPlayerWarning] = useState(false)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -66,6 +68,8 @@ function CreateLobbyPage() {
         maxPlayers: gameInfo.defaultMaxPlayers,
         gameType: selectedGameType,
       }))
+      setMaxPlayersInput(gameInfo.defaultMaxPlayers.toString())
+      setShowPlayerWarning(false)
     }
   }, [selectedGameType, gameInfo])
 
@@ -239,19 +243,105 @@ function CreateLobbyPage() {
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   👥 Maximum Players *
                 </label>
-                <div className="flex gap-2 flex-wrap">
-                  {gameInfo.allowedPlayers.map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, maxPlayers: num })}
-                      className={`px-4 py-2 rounded-xl font-bold transition-all min-w-[48px] text-base ${formData.maxPlayers === num ? 'bg-white text-blue-600 shadow-lg scale-105' : 'bg-white/20 text-white hover:bg-white/30'}`}
-                      aria-label={`Set max players to ${num}`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+                
+                {/* Number Input - Centered above slider */}
+                <div className="flex flex-col items-center mb-2">
+                  <input
+                    type="number"
+                    min={gameInfo.allowedPlayers[0]}
+                    max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                    value={maxPlayersInput}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      setMaxPlayersInput(inputValue);
+
+                      // Check for validation warnings
+                      if (inputValue === '') {
+                        setShowPlayerWarning(false);
+                        return;
+                      }
+
+                      const value = parseInt(inputValue);
+                      if (!isNaN(value)) {
+                        // If value is allowed, sync to formData
+                        if (gameInfo.allowedPlayers.includes(value)) {
+                          setFormData({ ...formData, maxPlayers: value });
+                          setShowPlayerWarning(false);
+                        } else {
+                          // If value is out of bounds, show warning
+                          if (value < gameInfo.allowedPlayers[0] || value > gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]) {
+                            setShowPlayerWarning(true);
+                          } else {
+                            // Valid number but not in allowed set (if gaps exist), treat as warning or just ignore
+                            setShowPlayerWarning(false);
+                          }
+                        }
+                      }
+                    }}
+                    onFocus={() => {
+                      setShowPlayerWarning(false);
+                    }}
+                    onBlur={() => {
+                      // On blur, reset to the last valid value in formData
+                      setMaxPlayersInput(formData.maxPlayers.toString());
+                      setShowPlayerWarning(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' || e.key === 'Delete') {
+                        setShowPlayerWarning(false);
+                      }
+                    }}
+                    className="w-12 px-2 py-1.5 text-center text-base border-2 border-white/30 rounded-md focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white font-bold transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-md"
+                  />
+                  {/* Validation warning */}
+                  {showPlayerWarning && (
+                    <p className="text-xs text-red-300 mt-1 animate-fade-in">
+                      ⚠️ Must be between {gameInfo.allowedPlayers[0]} and {gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                    </p>
+                  )}
                 </div>
+
+                {/* Range Slider */}
+                <div className="relative">
+                  <input
+                    type="range"
+                    min={gameInfo.allowedPlayers[0]}
+                    max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                    step="1"
+                    value={formData.maxPlayers}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (gameInfo.allowedPlayers.includes(value)) {
+                        setFormData({ ...formData, maxPlayers: value });
+                        setMaxPlayersInput(value.toString());
+                        setShowPlayerWarning(false);
+                      }
+                    }}
+                    className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider-thumb"
+                    style={{
+                      background: `linear-gradient(to right, white 0%, white ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) 100%)`
+                    }}
+                  />
+                  {/* Tick marks for allowed values */}
+                  <div className="flex justify-between mt-1 px-0.5">
+                    {gameInfo.allowedPlayers.map((num) => (
+                      <span 
+                        key={num} 
+                        className={`text-xs transition-all ${formData.maxPlayers === num ? 'text-white font-bold scale-110' : 'text-white/50'}`}
+                      >
+                        {num}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Helper text */}
+                <p className="text-xs text-white/70 mt-2 text-center">
+                  {gameInfo.allowedPlayers.length === 1 
+                    ? `This game requires exactly ${gameInfo.allowedPlayers[0]} players`
+                    : `This game supports ${gameInfo.allowedPlayers[0]}-${gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]} players`
+                  }
+                </p>
               </div>
               {error && (
                 <div className="bg-red-500/20 border-2 border-red-400 text-white px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
