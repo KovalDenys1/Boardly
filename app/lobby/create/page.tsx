@@ -54,6 +54,8 @@ function CreateLobbyPage() {
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     gameType: selectedGameType as GameType,
   })
+  const LOBBY_NAME_MAX = 22;
+  const [showNameWarning, setShowNameWarning] = useState(false);
   const [maxPlayersInput, setMaxPlayersInput] = useState(GAME_INFO[selectedGameType].defaultMaxPlayers.toString())
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -222,10 +224,25 @@ function CreateLobbyPage() {
                   type="text"
                   required
                   placeholder="e.g., Friday Night Game"
+                  maxLength={LOBBY_NAME_MAX}
                   className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    if (value.length > LOBBY_NAME_MAX) {
+                      value = value.slice(0, LOBBY_NAME_MAX);
+                    }
+                    setFormData({ ...formData, name: value });
+                    setShowNameWarning(value.length >= LOBBY_NAME_MAX);
+                  }}
+                  onBlur={() => setShowNameWarning(false)}
                 />
+                {/* Validation warning for name length */}
+                {showNameWarning && (
+                  <p className="text-xs text-red-300 mt-1 animate-fade-in">
+                    ⚠️ Maximum {LOBBY_NAME_MAX} characters reached
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
