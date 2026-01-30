@@ -20,20 +20,22 @@ export default function AnimatedSection({
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const node = ref.current
-    if (!node) return
+    if (typeof window === 'undefined') return;
+    const node = ref.current;
+    if (!node) return;
+    if (typeof window.IntersectionObserver !== 'function') return;
     const observer = new window.IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setTimeout(() => setVisible(true), delay)
-          observer.disconnect()
+          setTimeout(() => setVisible(true), delay);
+          observer.disconnect();
         }
       },
       { threshold }
-    )
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [delay])
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
