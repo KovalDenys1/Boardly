@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 type GameType = 'yahtzee' | 'guess_the_spy'
 
@@ -18,11 +19,12 @@ type GameInfo = {
   defaultMaxPlayers: number
 }
 
+// Game info without descriptions (will be added via i18n)
 const GAME_INFO: Record<GameType, GameInfo> = {
   yahtzee: {
     name: 'Yahtzee',
     emoji: '🎲',
-    description: 'Roll five dice, score combos, and race friends to the highest total.',
+    description: '', // Set via i18n
     gradient: 'from-purple-600 via-pink-500 to-orange-400',
     allowedPlayers: [2, 3, 4],
     defaultMaxPlayers: 4,
@@ -30,7 +32,7 @@ const GAME_INFO: Record<GameType, GameInfo> = {
   guess_the_spy: {
     name: 'Guess the Spy',
     emoji: '🕵️‍♂️',
-    description: 'Find the spy among you! Most players know the location, but one is the spy. Can you spot them before time runs out?',
+    description: '', // Set via i18n
     gradient: 'from-blue-600 via-cyan-500 to-green-400',
     allowedPlayers: [3, 4, 5, 6, 7, 8],
     defaultMaxPlayers: 6,
@@ -41,6 +43,7 @@ const GAME_INFO: Record<GameType, GameInfo> = {
 import { Disclosure } from '@headlessui/react'
 
 function CreateLobbyPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
@@ -86,15 +89,15 @@ function CreateLobbyPage() {
       <div className="min-h-screen bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-white mb-4">Game Not Found</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">{t('lobby.create.gameNotFound')}</h1>
           <p className="text-white/80 mb-6">
-            The game type &quot;{selectedGameType}&quot; is not supported yet.
+            {t('lobby.create.gameNotSupported', { gameType: selectedGameType })}
           </p>
           <button
             onClick={() => router.push('/games')}
             className="w-full bg-white text-purple-600 rounded-xl px-6 py-3 font-semibold hover:bg-white/90 transition-colors"
           >
-            ← Back to Games
+            {t('lobby.create.backToGames')}
           </button>
         </div>
       </div>
@@ -173,7 +176,7 @@ function CreateLobbyPage() {
       router.push(`/lobby/${data.lobby.code}`)
     } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby'
+      const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -183,7 +186,7 @@ function CreateLobbyPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-white text-xl">{t('common.loading')}</div>
       </div>
     )
   }
@@ -200,7 +203,7 @@ function CreateLobbyPage() {
         <div className="w-full max-w-4xl flex flex-col items-center justify-center">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
             {/* 1. Game Type Selector - clean scrollable list */}
-            <div className="md:w-1/4 w-full flex md:flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
+            <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO).map(([key, info], index) => (
                 <button
                   key={key}
@@ -211,7 +214,7 @@ function CreateLobbyPage() {
                       ? 'bg-white text-blue-600 shadow-lg' 
                       : 'text-white hover:bg-white/10'
                   }`}
-                  aria-label={`Select ${info.name}`}
+                  aria-label={t('lobby.create.selectGame', { name: info.name })}
                 >
                   <span className="text-3xl flex-shrink-0">{info.emoji}</span>
                   <span className="text-left text-base md:text-lg font-bold">{info.name}</span>
@@ -222,12 +225,12 @@ function CreateLobbyPage() {
             <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col justify-center order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🎮 Lobby Name *
+                  🎮 {t('lobby.create.lobbyName')} *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Friday Night Game"
+                  placeholder={t('lobby.create.lobbyNamePlaceholder')}
                   maxLength={LOBBY_NAME_MAX}
                   className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                   value={formData.name}
@@ -244,18 +247,18 @@ function CreateLobbyPage() {
                 {/* Validation warning for name length */}
                 {showNameWarning && (
                   <p className="text-xs text-red-300 mt-1 animate-fade-in">
-                    ⚠️ Maximum {LOBBY_NAME_MAX} characters reached
+                    ⚠️ {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
                   </p>
                 )}
               </div>
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🔒 Password (Optional)
+                  🔒 {t('lobby.create.password')}
                 </label>
                 <input
                   type="text"
                   autoComplete="off"
-                  placeholder="Leave empty for public lobby"
+                  placeholder={t('lobby.create.passwordPlaceholder')}
                   className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -263,7 +266,7 @@ function CreateLobbyPage() {
               </div>
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  👥 Maximum Players *
+                  👥 {t('lobby.create.maxPlayers')} *
                 </label>
                 
                 {/* Number Input - Centered above slider */}
@@ -318,7 +321,7 @@ function CreateLobbyPage() {
                   {/* Validation warning */}
                   {showPlayerWarning && (
                     <p className="text-xs text-red-300 mt-1 animate-fade-in">
-                      ⚠️ Must be between {gameInfo.allowedPlayers[0]} and {gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                      ⚠️ {t('lobby.create.mustBeBetween', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
                     </p>
                   )}
                 </div>
@@ -360,8 +363,8 @@ function CreateLobbyPage() {
                 {/* Helper text */}
                 <p className="text-xs text-white/70 mt-2 text-center">
                   {gameInfo.allowedPlayers.length === 1 
-                    ? `This game requires exactly ${gameInfo.allowedPlayers[0]} players`
-                    : `This game supports ${gameInfo.allowedPlayers[0]}-${gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]} players`
+                    ? t('lobby.create.playerCountHelper', { count: gameInfo.allowedPlayers[0] })
+                    : t('lobby.create.playerCountHelper', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1], count: 2 })
                   }
                 </p>
               </div>
@@ -379,7 +382,7 @@ function CreateLobbyPage() {
                   onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
                   className="flex-1 px-4 py-2.5 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
                 >
-                  Cancel
+                  {t('lobby.create.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -389,12 +392,12 @@ function CreateLobbyPage() {
                   {loading ? (
                     <>
                       <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Creating...
+                      {t('lobby.create.creating')}
                     </>
                   ) : (
                     <>
                       <span>✨</span>
-                      Create Lobby
+                      {t('lobby.create.create')}
                     </>
                   )}
                 </button>
@@ -404,22 +407,22 @@ function CreateLobbyPage() {
                 {({ open }) => (
                   <div className="bg-white/10 rounded-2xl p-3 mt-2">
                     <Disclosure.Button className="w-full flex items-center justify-between text-white font-bold text-base focus:outline-none">
-                      <span>💡 Quick Tips</span>
+                      <span>💡 {t('lobby.create.tips.title')}</span>
                       <span className="ml-2">{open ? '▲' : '▼'}</span>
                     </Disclosure.Button>
                     <Disclosure.Panel>
                       <ul className="space-y-2 text-sm text-white/80 mt-3">
                         <li className="flex items-start gap-2">
                           <span className="text-green-400 font-bold mt-0.5">✓</span>
-                          <span>You'll be automatically added as the first player</span>
+                          <span>{t('lobby.create.tips.autoAdd')}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-green-400 font-bold mt-0.5">✓</span>
-                          <span>Share the lobby code with friends to invite them</span>
+                          <span>{t('lobby.create.tips.shareCode')}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-green-400 font-bold mt-0.5">✓</span>
-                          <span>Start the game when everyone is ready!</span>
+                          <span>{t('lobby.create.tips.startReady')}</span>
                         </li>
                       </ul>
                     </Disclosure.Panel>
@@ -431,19 +434,19 @@ function CreateLobbyPage() {
             <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-4 md:p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
               <div className="text-5xl mb-2">{gameInfo.emoji}</div>
               <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
-              <div className="text-white/80 mb-2 text-sm">{gameInfo.description}</div>
+              <div className="text-white/80 mb-2 text-sm">{t(`games.${selectedGameType}.description`)}</div>
               <div className="flex items-center justify-center gap-3 mt-2">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                  👥 {formData.maxPlayers} players
+                  👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}
                 </span>
                 {formData.password && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                    🔒 Private
+                    🔒 {t('lobby.create.preview.private')}
                   </span>
                 )}
               </div>
               <div className="mt-4 text-xs text-white/70">
-                Lobby name: <span className="font-semibold text-white">{formData.name || '—'}</span>
+                {t('lobby.create.preview.lobbyName')} <span className="font-semibold text-white">{formData.name || t('lobby.create.preview.noName')}</span>
               </div>
             </div>
           </div>
