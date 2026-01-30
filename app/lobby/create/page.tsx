@@ -192,7 +192,7 @@ function CreateLobbyPage() {
         className="flex flex-col w-full px-4 py-4 md:py-0 md:h-[calc(100vh-64px)] md:items-center md:justify-center flex-shrink-0"
       >
         <div className="w-full max-w-4xl flex flex-col items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
             {/* 1. Game Type Selector - in separate column */}
             <div className="md:w-1/4 w-full flex flex-row md:flex-col items-center justify-center md:justify-start gap-2 md:gap-4 p-3 md:p-4 bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO).map(([key, info]) => (
