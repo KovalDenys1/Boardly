@@ -199,18 +199,22 @@ function CreateLobbyPage() {
       >
         <div className="w-full max-w-4xl flex flex-col items-center justify-center">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
-            {/* 1. Game Type Selector - in separate column */}
-            <div className="md:w-1/4 w-full flex flex-row md:flex-col items-center justify-center md:justify-start gap-2 md:gap-4 p-3 md:p-4 bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
-              {Object.entries(GAME_INFO).map(([key, info]) => (
+            {/* 1. Game Type Selector - clean scrollable list */}
+            <div className="md:w-1/4 w-full flex md:flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
+              {Object.entries(GAME_INFO).map(([key, info], index) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setSelectedGameType(key as GameType)}
-                  className={`flex flex-col items-center px-3 py-3 rounded-2xl font-bold transition-all border-2 min-w-[70px] text-base md:text-lg shadow-sm ${selectedGameType === key ? 'bg-white text-blue-600 border-blue-500 scale-105 shadow-lg' : 'bg-white/20 text-white border-transparent hover:bg-white/30'}`}
+                  className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${
+                    selectedGameType === key 
+                      ? 'bg-white text-blue-600 shadow-lg' 
+                      : 'text-white hover:bg-white/10'
+                  }`}
                   aria-label={`Select ${info.name}`}
                 >
-                  <span className="text-2xl md:text-3xl mb-1">{info.emoji}</span>
-                  <span className="truncate font-bold">{info.name}</span>
+                  <span className="text-3xl flex-shrink-0">{info.emoji}</span>
+                  <span className="text-left text-base md:text-lg font-bold">{info.name}</span>
                 </button>
               ))}
             </div>
