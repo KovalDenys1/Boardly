@@ -249,7 +249,8 @@ function CreateLobbyPage() {
                   🔒 Password (Optional)
                 </label>
                 <input
-                  type="password"
+                  type="text"
+                  autoComplete="off"
                   placeholder="Leave empty for public lobby"
                   className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
                   value={formData.password}
