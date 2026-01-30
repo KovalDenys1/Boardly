@@ -3,7 +3,7 @@ import DiceGroup from '@/components/DiceGroup'
 import CelebrationBanner from '@/components/CelebrationBanner'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 import { CelebrationEvent } from '@/lib/celebrations'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface GameBoardProps {
   gameEngine: YahtzeeGame

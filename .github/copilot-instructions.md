@@ -26,8 +26,9 @@
   - Monitor performance: use debounces, rate limiting, DB indexes.
 
 3. **Scaling the Team**
-  - Follow code style, write comments, cover code with tests.
+  - Follow code style, write comments (English only), cover code with tests.
   - Use pull request review, CI/CD.
+  - **All code comments must be in English** - maintain consistency across the entire codebase.
 
 ### Checklist for New Game/Feature
 
@@ -184,6 +185,12 @@ Use `clientLogger` from `lib/client-logger.ts` (not `console.log`)
 - Automatically disabled in production
 - Consistent format across app
 - `clientLogger.log()`, `clientLogger.warn()`, `clientLogger.error()`
+
+### Code Style and Comments
+**Critical**: All code comments must be written in English only
+- Maintain consistency across the entire codebase
+- Use clear, descriptive English comments for functions, complex logic, and edge cases
+- Never use non-English languages in comments (including Ukrainian, Russian, etc.)
 
 ### Internationalization (i18n)
 **System**: `react-i18next` with client-side language detection (English, Ukrainian)

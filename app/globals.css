@@ -1,3 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .animate-scale-fade-in {
+    @apply opacity-100;
+    animation: scaleFadeIn 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  
+  .animate-fade-in-up {
+    @apply opacity-100 translate-y-0;
+    animation: fadeInUp 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes scaleFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Social connect buttons unified style */
 .btn-social {
   font-size: 1rem;
@@ -54,9 +92,6 @@
   background: #ffe5e5;
   color: #c53030;
 }
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -115,6 +150,26 @@ body {
   }
 }
 
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes slide-in-up {
   from {
     transform: translateY(20px);
@@ -170,8 +225,16 @@ body {
   animation: fade-in 0.3s ease-out;
 }
 
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out;
+}
+
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-out;
 }
 
 .animate-slide-in-up {
@@ -498,4 +561,62 @@ input:focus, select:focus, textarea:focus {
 
 .animate-timer-warning {
   animation: timer-warning 0.5s ease-in-out infinite;
+}
+
+/* Custom Range Slider Styles */
+input[type="range"].slider-thumb {
+  height: 8px;
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: -6px; /* Center the thumb vertically */
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:active {
+  transform: scale(1.1);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb:active {
+  transform: scale(1.1);
+}
+
+/* Remove default track styling */
+input[type="range"].slider-thumb::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+}
+
+input[type="range"].slider-thumb::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: transparent;
 }

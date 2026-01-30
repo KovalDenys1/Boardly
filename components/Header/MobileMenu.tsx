@@ -14,8 +14,17 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
 
   const isActive = (path: string) => pathname === path
+
+  const closeMenu = () => {
+    setIsClosing(true)
+    setTimeout(() => {
+      setMobileMenuOpen(false)
+      setIsClosing(false)
+    }, 300) // Match animation duration
+  }
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -37,14 +46,22 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
   // Close on route change
   useEffect(() => {
-    setMobileMenuOpen(false)
+    if (mobileMenuOpen) {
+      closeMenu()
+    }
   }, [pathname])
 
   return (
     <>
       {/* Mobile menu button - Improved design */}
       <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        onClick={() => {
+          if (mobileMenuOpen) {
+            closeMenu()
+          } else {
+            setMobileMenuOpen(true)
+          }
+        }}
         className="md:hidden rounded-lg transition-all duration-200 relative z-50"
         style={{ 
           padding: 'clamp(8px, 0.8vh, 12px)',
@@ -80,13 +97,17 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-fade-in"
-            onClick={() => setMobileMenuOpen(false)}
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden ${
+              isClosing ? 'animate-fade-out' : 'animate-fade-in'
+            }`}
+            onClick={closeMenu}
           />
           
           {/* Menu panel */}
           <div
-            className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden animate-slide-in-right overflow-y-auto"
+            className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden overflow-y-auto ${
+              isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
+            }`}
             style={{
               borderLeft: '1px solid',
               borderColor: 'rgb(229 231 235 / 1)',
@@ -101,7 +122,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                 Menu
               </h2>
               <button
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={closeMenu}
                 className="rounded-lg p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Close menu"
               >

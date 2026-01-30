@@ -1,8 +1,11 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import HeroSection from '@/components/HomePage/HeroSection'
-import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
-import HowItWorks from '@/components/HomePage/HowItWorks'
+import dynamic from 'next/dynamic'
+
+const FeaturesGrid = dynamic(() => import('@/components/HomePage/FeaturesGrid'), { ssr: false })
+const HowItWorks = dynamic(() => import('@/components/HomePage/HowItWorks'), { ssr: false })
+import AnimatedSection from '@/components/ui/AnimatedSection'
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60
@@ -12,31 +15,39 @@ export default async function HomePage() {
   const isLoggedIn = !!session
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      {/* Main content with fixed layout to prevent CLS */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20" style={{ minHeight: 'calc(100vh - 64px)' }}>
-        {/* Hero Section - Critical content, render immediately */}
-        <HeroSection 
-          isLoggedIn={isLoggedIn}
-          userName={session?.user?.name}
-          userEmail={session?.user?.email}
-        />
-        
-        {/* Features Grid - Fixed height to prevent CLS */}
-        <div style={{ minHeight: '300px' }}>
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex flex-col">
+      {/* Hero Block - Full viewport height minus nav, flex centered, responsive */}
+      <section
+        className="flex flex-col items-center justify-center flex-shrink-0 w-full px-4"
+        style={{ minHeight: 'calc(100vh - 64px)' }}
+      >
+        <div className="w-full max-w-3xl flex flex-col items-center justify-center h-full">
+          <AnimatedSection threshold={0} animationClass="animate-scale-fade-in">
+            <HeroSection
+              isLoggedIn={isLoggedIn}
+              userName={session?.user?.name}
+              userEmail={session?.user?.email}
+            />
+          </AnimatedSection>
+        </div>
+      </section>
+
+      {/* Main content below hero */}
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        {/* Features Grid - Animated */}
+        <AnimatedSection className="mb-8" threshold={0.5}>
           <FeaturesGrid />
-        </div>
-        
-        {/* How It Works - Fixed height to prevent CLS */}
-        <div style={{ minHeight: '400px' }}>
+        </AnimatedSection>
+        {/* How It Works - Animated */}
+        <AnimatedSection className="mb-8" threshold={0.4}>
           <HowItWorks />
-        </div>
+        </AnimatedSection>
       </div>
 
       {/* Footer */}
-      <footer className="bg-black/20 backdrop-blur-sm py-8 mt-20" style={{ minHeight: '80px' }}>
+      <footer className="bg-black/20 backdrop-blur-sm py-8 mt-auto" style={{ minHeight: '80px' }}>
         <div className="max-w-7xl mx-auto px-4 text-center text-white/60 text-sm">
-          <p>© 2025 Boardly. Built with Next.js, Socket.IO, and Prisma.</p>
+          <p>© 2026 Boardly. Built with Next.js, Socket.IO, and Prisma.</p>
         </div>
       </footer>
     </div>

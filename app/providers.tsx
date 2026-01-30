@@ -15,7 +15,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <ToastProvider>
-        <Toaster position="top-center" />
+        <Toaster position="top-right" />
         {children}
       </ToastProvider>
     </SessionProvider>

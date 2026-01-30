@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
 import PasswordInput from '@/components/PasswordInput'
 import UsernameInput from '@/components/UsernameInput'
@@ -212,10 +212,10 @@ export default function RegisterForm() {
             className="btn btn-primary w-full"
           >
             {loading ? (
-              <>
-                <LoadingSpinner />
-                <span className="ml-2">{t('auth.register.creating')}</span>
-              </>
+              <span className="flex flex-row items-center justify-center gap-2">
+                <LoadingSpinner size="sm" />
+                <span>{t('auth.register.creating')}</span>
+              </span>
             ) : (
               t('auth.register.submit')
             )}

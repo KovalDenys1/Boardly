@@ -22,7 +22,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {

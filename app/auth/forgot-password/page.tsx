@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
 
@@ -26,13 +26,13 @@ export default function ForgotPasswordPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data?.error || t('auth.forgotPassword.error'))
+        throw new Error(data?.error || 'Failed to send reset email')
       }
 
-      showToast.success('auth.forgotPassword.success')
+      showToast.success('auth.resetPasswordSuccess')
       setSent(true)
     } catch (err: any) {
-      showToast.error(err.message || t('auth.forgotPassword.error'))
+      showToast.error('auth.resetPasswordError')
     } finally {
       setLoading(false)
     }
@@ -99,16 +99,16 @@ export default function ForgotPasswordPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="btn btn-primary w-full"
+            className="btn btn-primary w-full flex items-center justify-center"
+            style={{ minHeight: 44 }}
           >
-            {loading ? (
-              <>
-                <LoadingSpinner />
-                <span className="ml-2">{t('auth.forgotPassword.sending')}</span>
-              </>
-            ) : (
-              t('auth.forgotPassword.submit')
-            )}
+            {/* Always reserve space for spinner and text to prevent size jump */}
+            <span className={loading ? '' : 'invisible'}>
+              <LoadingSpinner size="sm" />
+            </span>
+            <span className={loading ? 'ml-2' : ''}>
+              {loading ? t('auth.forgotPassword.sending') : t('auth.forgotPassword.submit')}
+            </span>
           </button>
         </form>
 

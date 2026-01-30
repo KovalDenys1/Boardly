@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
@@ -245,7 +245,7 @@ export default function GameHistory() {
                     game.status
                   )}`}
                 >
-                  {t(`profile.gameHistory.${game.status}`)}
+                  {t(`profile.gameHistory.${game.status}` as any)}
                 </span>
               </div>
 

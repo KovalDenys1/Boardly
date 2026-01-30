@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface Game {
   id: string
@@ -47,14 +47,74 @@ export default function GamesPage() {
       color: 'from-red-500 to-pink-600'
     },
     {
-      id: 'chess',
-      nameKey: 'games.chess.name',
-      emoji: '♟️',
-      descriptionKey: 'games.chess.description',
+      id: 'tic-tac-toe',
+      nameKey: 'games.tictactoe.name',
+      emoji: '❌',
+      descriptionKey: 'games.tictactoe.description',
       players: '2',
-      difficultyKey: 'games.chess.difficulty',
+      difficultyKey: 'games.tictactoe.difficulty',
       status: 'coming-soon',
-      color: 'from-gray-700 to-gray-900'
+      color: 'from-yellow-400 to-orange-500'
+    },
+    {
+      id: 'memory',
+      nameKey: 'games.memory.name',
+      emoji: '🧠',
+      descriptionKey: 'games.memory.description',
+      players: '2-4',
+      difficultyKey: 'games.memory.difficulty',
+      status: 'coming-soon',
+      color: 'from-green-400 to-teal-500'
+    },
+    {
+      id: 'rps',
+      nameKey: 'games.rps.name',
+      emoji: '✊',
+      descriptionKey: 'games.rps.description',
+      players: '2',
+      difficultyKey: 'games.rps.difficulty',
+      status: 'coming-soon',
+      color: 'from-pink-400 to-purple-500'
+    },
+    {
+      id: 'alias',
+      nameKey: 'games.alias.name',
+      emoji: '🗣️',
+      descriptionKey: 'games.alias.description',
+      players: '4-16',
+      difficultyKey: 'games.alias.difficulty',
+      status: 'coming-soon',
+      color: 'from-orange-400 to-red-500'
+    },
+    {
+      id: 'words-mines',
+      nameKey: 'games.wordsmines.name',
+      emoji: '💣',
+      descriptionKey: 'games.wordsmines.description',
+      players: '2-8',
+      difficultyKey: 'games.wordsmines.difficulty',
+      status: 'coming-soon',
+      color: 'from-gray-400 to-black'
+    },
+    {
+      id: 'anagrams',
+      nameKey: 'games.anagrams.name',
+      emoji: '🔀',
+      descriptionKey: 'games.anagrams.description',
+      players: '2-8',
+      difficultyKey: 'games.anagrams.difficulty',
+      status: 'coming-soon',
+      color: 'from-blue-300 to-indigo-500'
+    },
+    {
+      id: 'crocodile',
+      nameKey: 'games.crocodile.name',
+      emoji: '🐊',
+      descriptionKey: 'games.crocodile.description',
+      players: '3-12',
+      difficultyKey: 'games.crocodile.difficulty',
+      status: 'coming-soon',
+      color: 'from-green-600 to-lime-400'
     },
   ]
 
@@ -105,10 +165,10 @@ export default function GamesPage() {
         </div>
 
         {/* Filter Buttons */}
-        <div className="flex justify-center gap-4 mb-12 animate-fade-in">
+        <div className="flex flex-wrap justify-center gap-4 mb-12 animate-fade-in">
           <button
             onClick={() => setSelectedFilter('all')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${
               selectedFilter === 'all'
                 ? 'bg-white text-blue-600 shadow-lg scale-105'
                 : 'bg-white/20 text-white hover:bg-white/30'
@@ -118,7 +178,7 @@ export default function GamesPage() {
           </button>
           <button
             onClick={() => setSelectedFilter('available')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${
               selectedFilter === 'available'
                 ? 'bg-white text-blue-600 shadow-lg scale-105'
                 : 'bg-white/20 text-white hover:bg-white/30'
@@ -128,7 +188,7 @@ export default function GamesPage() {
           </button>
           <button
             onClick={() => setSelectedFilter('coming-soon')}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${
               selectedFilter === 'coming-soon'
                 ? 'bg-white text-blue-600 shadow-lg scale-105'
                 : 'bg-white/20 text-white hover:bg-white/30'
@@ -147,19 +207,19 @@ export default function GamesPage() {
               className={`
                 relative bg-white/10 backdrop-blur-md rounded-2xl p-8 text-white 
                 transition-all duration-300 hover:scale-105 hover:shadow-2xl
-                animate-fade-in
+                animate-fade-in flex flex-col
                 ${game.status === 'available' ? 'cursor-pointer hover:bg-white/20' : 'opacity-75'}
               `}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Status Badge */}
               {game.status === 'coming-soon' && (
-                <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
                   {t('games.comingSoon')}
                 </div>
               )}
               {game.status === 'available' && (
-                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse whitespace-nowrap">
                   {t('games.available')}
                 </div>
               )}
@@ -168,31 +228,41 @@ export default function GamesPage() {
               <div className={`
                 inline-flex items-center justify-center w-20 h-20 rounded-2xl 
                 bg-gradient-to-br ${game.color} mb-6 shadow-lg
+                ${game.emoji.length > 2 ? 'px-2' : ''}
               `}>
-                <span className="text-5xl">{game.emoji}</span>
+                <span
+                  className={
+                    game.emoji.length > 2
+                      ? 'text-3xl flex flex-wrap justify-center items-center w-full h-full'
+                      : 'text-5xl'
+                  }
+                  style={game.emoji.length > 2 ? {lineHeight: '1.1', letterSpacing: '0.05em'} : {}}
+                >
+                  {game.emoji}
+                </span>
               </div>
 
               {/* Game Info */}
-              <h3 className="text-2xl font-bold mb-2">{t(game.nameKey)}</h3>
-              <p className="text-white/80 text-sm mb-4 min-h-[60px]">{t(game.descriptionKey)}</p>
+              <h3 className="text-2xl font-bold mb-2 break-words">{t(game.nameKey as any)}</h3>
+              <p className="text-white/80 text-sm mb-4 break-words leading-relaxed flex-grow">{t(game.descriptionKey as any)}</p>
 
               {/* Game Details */}
-              <div className="space-y-2">
+              <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-white/60">👥</span>
-                  <span className="text-white/90">{game.players} {t('games.players')}</span>
+                  <span className="text-white/90 break-words">{game.players} {t('games.players')}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 text-sm flex-wrap">
                   <span className="text-white/60">⚡</span>
-                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200">
-                    {t('games.difficulty')}: {t(game.difficultyKey)}
+                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200 break-words">
+                    {t('games.difficulty')}: {t(game.difficultyKey as any)}
                   </span>
                 </div>
               </div>
 
               {/* Play Button */}
               {game.status === 'available' && (
-                <button className="w-full mt-6 px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <button className="w-full mt-auto px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl">
                   {t('games.playNow')} →
                 </button>
               )}

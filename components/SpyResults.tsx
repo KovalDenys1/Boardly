@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { Player } from '@/lib/game-engine'
 
 interface SpyResultsProps {

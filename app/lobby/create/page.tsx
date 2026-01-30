@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 type GameType = 'yahtzee' | 'guess_the_spy'
 
@@ -18,11 +19,12 @@ type GameInfo = {
   defaultMaxPlayers: number
 }
 
+// Game info without descriptions (will be added via i18n)
 const GAME_INFO: Record<GameType, GameInfo> = {
   yahtzee: {
     name: 'Yahtzee',
     emoji: '🎲',
-    description: 'Roll five dice, score combos, and race friends to the highest total.',
+    description: '', // Set via i18n
     gradient: 'from-purple-600 via-pink-500 to-orange-400',
     allowedPlayers: [2, 3, 4],
     defaultMaxPlayers: 4,
@@ -30,31 +32,39 @@ const GAME_INFO: Record<GameType, GameInfo> = {
   guess_the_spy: {
     name: 'Guess the Spy',
     emoji: '🕵️‍♂️',
-    description: 'Find the spy among you! Most players know the location, but one is the spy. Can you spot them before time runs out?',
+    description: '', // Set via i18n
     gradient: 'from-blue-600 via-cyan-500 to-green-400',
     allowedPlayers: [3, 4, 5, 6, 7, 8],
     defaultMaxPlayers: 6,
   },
 }
 
+
+import { Disclosure } from '@headlessui/react'
+
 function CreateLobbyPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-  
+
   const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
   const gameInfo = GAME_INFO[selectedGameType]
-  
+
   const [formData, setFormData] = useState({
     name: '',
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     gameType: selectedGameType as GameType,
   })
+  const LOBBY_NAME_MAX = 22;
+  const [showNameWarning, setShowNameWarning] = useState(false);
+  const [maxPlayersInput, setMaxPlayersInput] = useState(GAME_INFO[selectedGameType].defaultMaxPlayers.toString())
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showTips, setShowTips] = useState(false)
+  const [showPlayerWarning, setShowPlayerWarning] = useState(false)
 
-  // Update formData when gameType changes from URL
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
     if (gameInfo) {
@@ -63,6 +73,8 @@ function CreateLobbyPage() {
         maxPlayers: gameInfo.defaultMaxPlayers,
         gameType: selectedGameType,
       }))
+      setMaxPlayersInput(gameInfo.defaultMaxPlayers.toString())
+      setShowPlayerWarning(false)
     }
   }, [selectedGameType, gameInfo])
 
@@ -71,22 +83,21 @@ function CreateLobbyPage() {
       router.push('/auth/login')
     }
   }, [status, router])
-  
-  // Validate game type - show error UI if invalid
+
   if (!gameInfo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-white mb-4">Game Not Found</h1>
+          <h1 className="text-2xl font-bold text-white mb-4">{t('lobby.create.gameNotFound')}</h1>
           <p className="text-white/80 mb-6">
-            The game type &quot;{selectedGameType}&quot; is not supported yet.
+            {t('lobby.create.gameNotSupported', { gameType: selectedGameType })}
           </p>
           <button
             onClick={() => router.push('/games')}
             className="w-full bg-white text-purple-600 rounded-xl px-6 py-3 font-semibold hover:bg-white/90 transition-colors"
           >
-            ← Back to Games
+            {t('lobby.create.backToGames')}
           </button>
         </div>
       </div>
@@ -165,7 +176,7 @@ function CreateLobbyPage() {
       router.push(`/lobby/${data.lobby.code}`)
     } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create lobby'
+      const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -175,7 +186,7 @@ function CreateLobbyPage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-        <div className="text-white text-xl">Loading...</div>
+        <div className="text-white text-xl">{t('common.loading')}</div>
       </div>
     )
   }
@@ -185,183 +196,262 @@ function CreateLobbyPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${gameInfo.gradient} py-12 px-4`}>
-      <div className="max-w-2xl mx-auto">
-        {/* Game Type Selector */}
-        <div className="mb-8 flex flex-col items-center">
-          <div className="mb-2 text-white font-semibold">Choose Game</div>
-          <div className="flex gap-4">
-            {Object.entries(GAME_INFO).map(([key, info]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSelectedGameType(key as GameType)}
-                className={`flex flex-col items-center px-4 py-2 rounded-xl font-bold transition-all border-2 ${selectedGameType === key ? 'bg-white text-blue-600 border-blue-500 scale-105 shadow-lg' : 'bg-white/20 text-white border-transparent hover:bg-white/30'}`}
-              >
-                <span className="text-2xl mb-1">{info.emoji}</span>
-                <span>{info.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* Breadcrumbs */}
-        <div className="mb-6 flex items-center gap-2 text-white/80 text-sm">
-          <button 
-            onClick={() => router.push('/')}
-            className="hover:text-white transition-colors"
-          >
-            🏠 Home
-          </button>
-          <span>›</span>
-          <button 
-            onClick={() => router.push('/games')}
-            className="hover:text-white transition-colors"
-          >
-            🎮 Games
-          </button>
-          <span>›</span>
-          <button 
-            onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
-            className="hover:text-white transition-colors"
-          >
-            {gameInfo.emoji} {gameInfo.name}
-          </button>
-          <span>›</span>
-          <span className="text-white font-semibold">Create Lobby</span>
-        </div>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6">
-            <span className="text-5xl">{gameInfo.emoji}</span>
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-4 drop-shadow-lg">Create {gameInfo.name} Lobby</h1>
-          <p className="text-xl text-white/90">{gameInfo.description}</p>
-        </div>
-
-        {/* Form Card */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border-2 border-white/20">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Lobby Name */}
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">
-                🎮 Lobby Name *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g., Friday Night Game"
-                className="w-full px-4 py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-              <p className="text-xs text-white/80 mt-1">
-                Choose a memorable name for your lobby
-              </p>
+    <div className={`bg-gradient-to-br ${gameInfo.gradient} flex flex-col`}>
+      <section
+        className="flex flex-col w-full px-4 py-4 md:py-0 md:h-[calc(100vh-64px)] md:items-center md:justify-center flex-shrink-0"
+      >
+        <div className="w-full max-w-4xl flex flex-col items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
+            {/* 1. Game Type Selector - clean scrollable list */}
+            <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
+              {Object.entries(GAME_INFO).map(([key, info], index) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedGameType(key as GameType)}
+                  className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${
+                    selectedGameType === key 
+                      ? 'bg-white text-blue-600 shadow-lg' 
+                      : 'text-white hover:bg-white/10'
+                  }`}
+                  aria-label={t('lobby.create.selectGame', { name: info.name })}
+                >
+                  <span className="text-3xl flex-shrink-0">{info.emoji}</span>
+                  <span className="text-left text-base md:text-lg font-bold">{info.name}</span>
+                </button>
+              ))}
             </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">
-                🔒 Password (Optional)
-              </label>
-              <input
-                type="password"
-                placeholder="Leave empty for public lobby"
-                className="w-full px-4 py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
-              <p className="text-xs text-white/80 mt-1">
-                Set a password to make your lobby private
-              </p>
-            </div>
-
-            {/* Max Players */}
-            <div>
-              <label className="block text-sm font-bold text-white mb-2">
-                👥 Maximum Players *
-              </label>
-              <div className={`grid gap-3 ${gameInfo.allowedPlayers.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
-                {gameInfo.allowedPlayers.map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, maxPlayers: num })}
-                    className={`px-4 py-3 rounded-xl font-bold transition-all ${
-                      formData.maxPlayers === num
-                        ? 'bg-white text-blue-600 shadow-lg scale-105'
-                        : 'bg-white/20 text-white hover:bg-white/30'
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-white/80 mt-2">
-                Select how many players can join
-              </p>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-500/20 border-2 border-red-400 text-white px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                {error}
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
-                className="flex-1 px-6 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <span>✨</span>
-                    Create Lobby
-                  </>
+            {/* 2. Form */}
+            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col justify-center order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                  🎮 {t('lobby.create.lobbyName')} *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={t('lobby.create.lobbyNamePlaceholder')}
+                  maxLength={LOBBY_NAME_MAX}
+                  className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
+                  value={formData.name}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    if (value.length > LOBBY_NAME_MAX) {
+                      value = value.slice(0, LOBBY_NAME_MAX);
+                    }
+                    setFormData({ ...formData, name: value });
+                    setShowNameWarning(value.length >= LOBBY_NAME_MAX);
+                  }}
+                  onBlur={() => setShowNameWarning(false)}
+                />
+                {/* Validation warning for name length */}
+                {showNameWarning && (
+                  <p className="text-xs text-red-300 mt-1 animate-fade-in">
+                    ⚠️ {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
+                  </p>
                 )}
-              </button>
-            </div>
-          </form>
+              </div>
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                  🔒 {t('lobby.create.password')}
+                </label>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder={t('lobby.create.passwordPlaceholder')}
+                  className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                  👥 {t('lobby.create.maxPlayers')} *
+                </label>
+                
+                {/* Number Input - Centered above slider */}
+                <div className="flex flex-col items-center mb-2">
+                  <input
+                    type="number"
+                    min={gameInfo.allowedPlayers[0]}
+                    max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                    value={maxPlayersInput}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      setMaxPlayersInput(inputValue);
 
-          {/* Info Section */}
-          <div className="mt-8 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-3">💡 Quick Tips:</h3>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-              <li className="flex items-start gap-2">
-                <span className="text-green-500 font-bold mt-0.5">✓</span>
-                <span>You'll be automatically added as the first player</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-500 font-bold mt-0.5">✓</span>
-                <span>Share the lobby code with friends to invite them</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-500 font-bold mt-0.5">✓</span>
-                <span>Start the game when everyone is ready!</span>
-              </li>
-            </ul>
+                      // Check for validation warnings
+                      if (inputValue === '') {
+                        setShowPlayerWarning(false);
+                        return;
+                      }
+
+                      const value = parseInt(inputValue);
+                      if (!isNaN(value)) {
+                        // If value is allowed, sync to formData
+                        if (gameInfo.allowedPlayers.includes(value)) {
+                          setFormData({ ...formData, maxPlayers: value });
+                          setShowPlayerWarning(false);
+                        } else {
+                          // If value is out of bounds, show warning
+                          if (value < gameInfo.allowedPlayers[0] || value > gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]) {
+                            setShowPlayerWarning(true);
+                          } else {
+                            // Valid number but not in allowed set (if gaps exist), treat as warning or just ignore
+                            setShowPlayerWarning(false);
+                          }
+                        }
+                      }
+                    }}
+                    onFocus={() => {
+                      setShowPlayerWarning(false);
+                    }}
+                    onBlur={() => {
+                      // On blur, reset to the last valid value in formData
+                      setMaxPlayersInput(formData.maxPlayers.toString());
+                      setShowPlayerWarning(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' || e.key === 'Delete') {
+                        setShowPlayerWarning(false);
+                      }
+                    }}
+                    className="w-12 px-2 py-1.5 text-center text-base border-2 border-white/30 rounded-md focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white font-bold transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-md"
+                  />
+                  {/* Validation warning */}
+                  {showPlayerWarning && (
+                    <p className="text-xs text-red-300 mt-1 animate-fade-in">
+                      ⚠️ {t('lobby.create.mustBeBetween', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
+                    </p>
+                  )}
+                </div>
+
+                {/* Range Slider */}
+                <div className="relative">
+                  <input
+                    type="range"
+                    min={gameInfo.allowedPlayers[0]}
+                    max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                    step="1"
+                    value={formData.maxPlayers}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      if (gameInfo.allowedPlayers.includes(value)) {
+                        setFormData({ ...formData, maxPlayers: value });
+                        setMaxPlayersInput(value.toString());
+                        setShowPlayerWarning(false);
+                      }
+                    }}
+                    className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider-thumb"
+                    style={{
+                      background: `linear-gradient(to right, white 0%, white ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) 100%)`
+                    }}
+                  />
+                  {/* Tick marks for allowed values */}
+                  <div className="flex justify-between mt-1 px-0.5">
+                    {gameInfo.allowedPlayers.map((num) => (
+                      <span 
+                        key={num} 
+                        className={`text-xs transition-all ${formData.maxPlayers === num ? 'text-white font-bold scale-110' : 'text-white/50'}`}
+                      >
+                        {num}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Helper text */}
+                <p className="text-xs text-white/70 mt-2 text-center">
+                  {gameInfo.allowedPlayers.length === 1 
+                    ? t('lobby.create.playerCountHelper', { count: gameInfo.allowedPlayers[0] })
+                    : t('lobby.create.playerCountHelper', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1], count: 2 })
+                  }
+                </p>
+              </div>
+              {error && (
+                <div className="bg-red-500/20 border-2 border-red-400 text-white px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  {error}
+                </div>
+              )}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
+                  className="flex-1 px-4 py-2.5 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
+                >
+                  {t('lobby.create.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 px-4 py-2.5 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {t('lobby.create.creating')}
+                    </>
+                  ) : (
+                    <>
+                      <span>✨</span>
+                      {t('lobby.create.create')}
+                    </>
+                  )}
+                </button>
+              </div>
+              {/* Tips - compact under the form */}
+              <Disclosure defaultOpen={false}>
+                {({ open }) => (
+                  <div className="bg-white/10 rounded-2xl p-3 mt-2">
+                    <Disclosure.Button className="w-full flex items-center justify-between text-white font-bold text-base focus:outline-none">
+                      <span>💡 {t('lobby.create.tips.title')}</span>
+                      <span className="ml-2">{open ? '▲' : '▼'}</span>
+                    </Disclosure.Button>
+                    <Disclosure.Panel>
+                      <ul className="space-y-2 text-sm text-white/80 mt-3">
+                        <li className="flex items-start gap-2">
+                          <span className="text-green-400 font-bold mt-0.5">✓</span>
+                          <span>{t('lobby.create.tips.autoAdd')}</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-green-400 font-bold mt-0.5">✓</span>
+                          <span>{t('lobby.create.tips.shareCode')}</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-green-400 font-bold mt-0.5">✓</span>
+                          <span>{t('lobby.create.tips.startReady')}</span>
+                        </li>
+                      </ul>
+                    </Disclosure.Panel>
+                  </div>
+                )}
+              </Disclosure>
+            </form>
+            {/* 3. Preview/Info */}
+            <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-4 md:p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
+              <div className="text-5xl mb-2">{gameInfo.emoji}</div>
+              <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
+              <div className="text-white/80 mb-2 text-sm">{t(`games.${selectedGameType}.description`)}</div>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
+                  👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}
+                </span>
+                {formData.password && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
+                    🔒 {t('lobby.create.preview.private')}
+                  </span>
+                )}
+              </div>
+              <div className="mt-4 text-xs text-white/70">
+                {t('lobby.create.preview.lobbyName')} <span className="font-semibold text-white">{formData.name || t('lobby.create.preview.noName')}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

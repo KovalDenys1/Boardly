@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean

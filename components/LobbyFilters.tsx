@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export interface LobbyFilterOptions {
   gameType?: string
@@ -118,7 +118,6 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             >
               <option value="">{t('common.all')}</option>
               <option value="yahtzee">{t('games.yahtzee.title')}</option>
-              <option value="chess">{t('games.chess.title')}</option>
             </select>
           </div>
 

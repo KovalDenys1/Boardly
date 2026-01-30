@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import LobbyFilters, { LobbyFilterOptions } from '@/components/LobbyFilters'
 import LobbyStats from '@/components/LobbyStats'

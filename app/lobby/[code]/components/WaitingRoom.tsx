@@ -1,6 +1,6 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface WaitingRoomProps {
   game: any

@@ -28,7 +28,7 @@ export default function Header() {
           <div className="flex items-center">
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-2 text-2xl font-bold text-white hover:scale-105 transition-transform"
+              className="flex items-center gap-2 text-2xl font-bold text-white hover:scale-105 transition-transform whitespace-nowrap"
             >
               🎲 Boardly
             </button>
