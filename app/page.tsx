@@ -35,7 +35,7 @@ export default async function HomePage() {
       {/* Main content below hero */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Features Grid - Animated */}
-        <AnimatedSection className="mb-8" threshold={0.6}>
+        <AnimatedSection className="mb-8" threshold={0.5}>
           <FeaturesGrid />
         </AnimatedSection>
         {/* How It Works - Animated */}

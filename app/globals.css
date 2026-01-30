@@ -147,6 +147,26 @@ body {
   }
 }
 
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes slide-in-up {
   from {
     transform: translateY(20px);
@@ -202,8 +222,16 @@ body {
   animation: fade-in 0.3s ease-out;
 }
 
+.animate-fade-out {
+  animation: fade-out 0.3s ease-out;
+}
+
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-out;
 }
 
 .animate-slide-in-up {
