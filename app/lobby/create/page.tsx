@@ -187,15 +187,14 @@ function CreateLobbyPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${gameInfo.gradient} flex flex-col`}>
+    <div className={`bg-gradient-to-br ${gameInfo.gradient} flex flex-col`}>
       <section
-        className="flex flex-col items-center justify-center flex-shrink-0 w-full px-2 md:px-6"
-        style={{ minHeight: 'calc(100vh - 64px)' }}
+        className="flex flex-col w-full px-4 py-4 md:py-0 md:h-[calc(100vh-64px)] md:items-center md:justify-center flex-shrink-0"
       >
-        <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center h-full">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-6 overflow-hidden w-full">
+        <div className="w-full max-w-4xl flex flex-col items-center justify-center">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full">
             {/* 1. Game Type Selector - in separate column */}
-            <div className="md:w-1/4 w-full flex flex-row md:flex-col items-center justify-center md:justify-start gap-2 md:gap-4 p-4 bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
+            <div className="md:w-1/4 w-full flex flex-row md:flex-col items-center justify-center md:justify-start gap-2 md:gap-4 p-3 md:p-4 bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO).map(([key, info]) => (
                 <button
                   key={key}
@@ -210,9 +209,9 @@ function CreateLobbyPage() {
               ))}
             </div>
             {/* 2. Form */}
-            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-3 md:space-y-4 flex flex-col justify-center order-3 md:order-2 md:max-h-[calc(100vh-120px)] md:overflow-y-auto">
+            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col justify-center order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
               <div>
-                <label className="block text-sm font-bold text-white mb-2">
+                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   🎮 Lobby Name *
                 </label>
                 <input
@@ -225,7 +224,7 @@ function CreateLobbyPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-white mb-2">
+                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   🔒 Password (Optional)
                 </label>
                 <input
@@ -237,7 +236,7 @@ function CreateLobbyPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-white mb-2">
+                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   👥 Maximum Players *
                 </label>
                 <div className="flex gap-2 flex-wrap">
@@ -317,7 +316,7 @@ function CreateLobbyPage() {
               </Disclosure>
             </form>
             {/* 3. Preview/Info */}
-            <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
+            <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-4 md:p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
               <div className="text-5xl mb-2">{gameInfo.emoji}</div>
               <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
               <div className="text-white/80 mb-2 text-sm">{gameInfo.description}</div>
