@@ -620,10 +620,65 @@ const en = {
     },
     settings: {
       title: 'Settings',
+      subtitle: 'Customize your experience',
       changePassword: 'Change Password',
-      notifications: 'Notifications',
-      language: 'Language',
-      theme: 'Theme',
+      
+      // Language
+      language: {
+        title: 'Language',
+        subtitle: 'Choose your preferred language',
+        current: 'Current: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Theme',
+        subtitle: 'Choose your preferred color scheme',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System Default',
+        current: 'Current: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Notifications',
+        subtitle: 'Manage how you receive updates',
+        email: 'Email Notifications',
+        emailDesc: 'Receive game invites and updates via email',
+        push: 'Push Notifications',
+        pushDesc: 'Browser notifications for real-time updates',
+        sound: 'Sound Effects',
+        soundDesc: 'Play sounds for in-game actions and notifications',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Privacy',
+        subtitle: 'Control who can see your information',
+        profileVisibility: 'Profile Visibility',
+        profileVisibilityDesc: 'Who can view your profile and game history',
+        public: 'Public',
+        friendsOnly: 'Friends Only',
+        private: 'Private',
+        showOnline: 'Show Online Status',
+        showOnlineDesc: 'Let others see when you\'re online',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Game Preferences',
+        subtitle: 'Customize your gaming experience',
+        autoJoin: 'Auto-Join Games',
+        autoJoinDesc: 'Automatically join when invited to a game',
+        confirmMoves: 'Confirm Moves',
+        confirmMovesDesc: 'Ask for confirmation before submitting moves',
+        animations: 'Animations',
+        animationsDesc: 'Enable smooth animations and transitions',
+      },
+      
+      saved: 'Settings saved successfully',
+      error: 'Failed to save settings',
     },
     edit: {
       title: 'Edit Profile',

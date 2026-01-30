@@ -589,10 +589,65 @@ const no = {
     },
     settings: {
       title: 'Innstillinger',
+      subtitle: 'Tilpass din opplevelse',
       changePassword: 'Endre passord',
-      notifications: 'Varsler',
-      language: 'Språk',
-      theme: 'Tema',
+      
+      // Language
+      language: {
+        title: 'Språk',
+        subtitle: 'Velg foretrukket språk for grensesnittet',
+        current: 'Gjeldende: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Tema',
+        subtitle: 'Velg foretrukket fargevalg',
+        light: 'Lys',
+        dark: 'Mørk',
+        system: 'Systemstandard',
+        current: 'Gjeldende: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Varsler',
+        subtitle: 'Administrer hvordan du mottar oppdateringer',
+        email: 'E-postvarsler',
+        emailDesc: 'Motta spillinvitasjoner og oppdateringer via e-post',
+        push: 'Push-varsler',
+        pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
+        sound: 'Lydeffekter',
+        soundDesc: 'Spill av lyder for spillhandlinger og varsler',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Personvern',
+        subtitle: 'Kontroller hvem som kan se informasjonen din',
+        profileVisibility: 'Profilsynlighet',
+        profileVisibilityDesc: 'Hvem kan se profilen og spillhistorikken din',
+        public: 'Offentlig',
+        friendsOnly: 'Bare venner',
+        private: 'Privat',
+        showOnline: 'Vis online-status',
+        showOnlineDesc: 'La andre se når du er online',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Spillinnstillinger',
+        subtitle: 'Tilpass spillopplevelsen din',
+        autoJoin: 'Automatisk deltakelse',
+        autoJoinDesc: 'Bli automatisk med når du inviteres til et spill',
+        confirmMoves: 'Bekreft trekk',
+        confirmMovesDesc: 'Be om bekreftelse før trekk sendes inn',
+        animations: 'Animasjoner',
+        animationsDesc: 'Aktiver jevne animasjoner og overganger',
+      },
+      
+      saved: 'Innstillinger lagret',
+      error: 'Kunne ikke lagre innstillinger',
     },
     edit: {
       title: 'Rediger profil',

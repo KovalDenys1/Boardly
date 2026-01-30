@@ -622,10 +622,65 @@ const uk: Translation = {
     },
     settings: {
       title: 'Налаштування',
+      subtitle: 'Налаштуйте свій досвід',
       changePassword: 'Змінити пароль',
-      notifications: 'Сповіщення',
-      language: 'Мова',
-      theme: 'Тема',
+      
+      // Language
+      language: {
+        title: 'Мова',
+        subtitle: 'Оберіть бажану мову інтерфейсу',
+        current: 'Поточна: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Тема',
+        subtitle: 'Оберіть бажану кольорову схему',
+        light: 'Світла',
+        dark: 'Темна',
+        system: 'Системна',
+        current: 'Поточна: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Сповіщення',
+        subtitle: 'Керуйте способом отримання оновлень',
+        email: 'Email сповіщення',
+        emailDesc: 'Отримуйте запрошення до ігор та оновлення на email',
+        push: 'Push сповіщення',
+        pushDesc: 'Сповіщення браузера для оновлень у реальному часі',
+        sound: 'Звукові ефекти',
+        soundDesc: 'Відтворювати звуки для ігрових дій та сповіщень',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Приватність',
+        subtitle: 'Керуйте видимістю вашої інформації',
+        profileVisibility: 'Видимість профілю',
+        profileVisibilityDesc: 'Хто може переглядати ваш профіль та історію ігор',
+        public: 'Публічний',
+        friendsOnly: 'Тільки друзі',
+        private: 'Приватний',
+        showOnline: 'Показувати онлайн статус',
+        showOnlineDesc: 'Дозволити іншим бачити, коли ви онлайн',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Налаштування ігор',
+        subtitle: 'Налаштуйте ігровий досвід',
+        autoJoin: 'Автоматичне приєднання',
+        autoJoinDesc: 'Автоматично приєднуватися при запрошенні до гри',
+        confirmMoves: 'Підтверджувати ходи',
+        confirmMovesDesc: 'Запитувати підтвердження перед відправкою ходів',
+        animations: 'Анімації',
+        animationsDesc: 'Увімкнути плавні анімації та переходи',
+      },
+      
+      saved: 'Налаштування збережено',
+      error: 'Не вдалося зберегти налаштування',
     },
     edit: {
       title: 'Редагувати профіль',
