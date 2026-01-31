@@ -20,6 +20,7 @@ const uk: Translation = {
     sort: 'Сортування',
     all: 'Всі',
     or: 'або',
+    and: 'та',
     deleting: 'Видалення...',
     goHome: 'На головну',
     optional: 'необов\'язково',
@@ -538,6 +539,10 @@ const uk: Translation = {
       oauthError: 'Не вдалося увійти',
       inviteBanner: 'Вас запросили до гри!',
       inviteSubtitle: 'Зареєструйтеся, щоб приєднатися до лобі',
+      agreeToTerms: 'Я погоджуюсь з',
+      termsOfService: 'Умовами використання',
+      privacyPolicy: 'Політикою конфіденційності',
+      mustAgreeToTerms: 'Ви повинні погодитися з Умовами використання та Політикою конфіденційності',
     },
     forgotPassword: {
       title: 'Забули пароль?',

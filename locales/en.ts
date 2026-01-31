@@ -18,6 +18,7 @@ const en = {
     sort: 'Sort',
     all: 'All',
     or: 'or',
+    and: 'and',
     deleting: 'Deleting...',
     goHome: 'Go to Home',
     optional: 'optional',
@@ -536,6 +537,10 @@ const en = {
       oauthError: 'Failed to sign in',
       inviteBanner: 'You have been invited to a game!',
       inviteSubtitle: 'Register to join the lobby',
+      agreeToTerms: 'I agree to the',
+      termsOfService: 'Terms of Service',
+      privacyPolicy: 'Privacy Policy',
+      mustAgreeToTerms: 'You must agree to the Terms of Service and Privacy Policy',
     },
     forgotPassword: {
       title: 'Forgot Password?',

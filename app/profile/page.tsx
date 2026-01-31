@@ -8,6 +8,8 @@ import toast from 'react-hot-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
 import Friends from '@/components/Friends'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 interface LinkedAccount {
   provider: string
@@ -764,42 +766,39 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.emailNotifications}
-                      onChange={(e) => updateSetting('emailNotifications', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('emailNotifications', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.notifications.email')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.emailDesc')}</div>
                     </div>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.pushNotifications}
-                      onChange={(e) => updateSetting('pushNotifications', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('pushNotifications', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.notifications.push')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.pushDesc')}</div>
                     </div>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.soundEffects}
-                      onChange={(e) => updateSetting('soundEffects', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('soundEffects', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.notifications.sound')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.soundDesc')}</div>
                     </div>
-                  </label>
+                  </Label>
                 </div>
               </div>
 
@@ -826,18 +825,17 @@ export default function ProfilePage() {
                       <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
                     </select>
                   </div>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.showOnlineStatus}
-                      onChange={(e) => updateSetting('showOnlineStatus', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('showOnlineStatus', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.privacy.showOnline')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.privacy.showOnlineDesc')}</div>
                     </div>
-                  </label>
+                  </Label>
                 </div>
               </div>
 
@@ -851,42 +849,39 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.autoJoin}
-                      onChange={(e) => updateSetting('autoJoin', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('autoJoin', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.game.autoJoin')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.autoJoinDesc')}</div>
                     </div>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.confirmMoves}
-                      onChange={(e) => updateSetting('confirmMoves', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('confirmMoves', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.game.confirmMoves')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.confirmMovesDesc')}</div>
                     </div>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
                       checked={settings.animations}
-                      onChange={(e) => updateSetting('animations', e.target.checked)}
-                      className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                      onCheckedChange={(checked) => updateSetting('animations', checked)}
+                      className="mt-1"
                     />
                     <div>
                       <div className="font-medium">{t('profile.settings.game.animations')}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.animationsDesc')}</div>
                     </div>
-                  </label>
+                  </Label>
                 </div>
               </div>
 

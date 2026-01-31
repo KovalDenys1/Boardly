@@ -18,6 +18,7 @@ const no = {
     sort: 'Sorter',
     all: 'Alle',
     or: 'eller',
+    and: 'og',
     deleting: 'Sletter...',
     goHome: 'Gå til hjem',
     optional: 'valgfritt',
@@ -505,6 +506,10 @@ const no = {
       oauthError: 'Kunne ikke logge inn',
       inviteBanner: 'Du er invitert til et spill!',
       inviteSubtitle: 'Registrer deg for å bli med i lobbyen',
+      agreeToTerms: 'Jeg godtar',
+      termsOfService: 'Vilkårene for bruk',
+      privacyPolicy: 'Personvernerklæringen',
+      mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen',
     },
     forgotPassword: {
       title: 'Glemt passord?',
