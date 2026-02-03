@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import { SocketEvents, ServerErrorPayload } from '@/types/socket-events'
+import { showToast } from '@/lib/i18n-toast'
 
 interface UseSocketConnectionProps {
   code: string
@@ -18,6 +20,8 @@ interface UseSocketConnectionProps {
   onGameAbandoned?: (data: any) => void
   onPlayerLeft?: (data: any) => void
   onBotAction?: (event: any) => void
+  /** Callback to sync state after reconnection */
+  onStateSync?: () => Promise<void>
 }
 
 export function useSocketConnection({
@@ -35,6 +39,7 @@ export function useSocketConnection({
   onGameAbandoned,
   onPlayerLeft,
   onBotAction,
+  onStateSync,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -43,6 +48,8 @@ export function useSocketConnection({
   const hasConnectedOnceRef = useRef(false)
   const authFailedRef = useRef(false) // Track authentication failures
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastProcessedSequenceRef = useRef(0) // Track event sequence to prevent duplicates
+  const isRejoiningRef = useRef(false) // Prevent multiple rejoin attempts
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -54,6 +61,7 @@ export function useSocketConnection({
   const onGameAbandonedRef = useRef(onGameAbandoned)
   const onPlayerLeftRef = useRef(onPlayerLeft)
   const onBotActionRef = useRef(onBotAction)
+  const onStateSyncRef = useRef(onStateSync)
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -66,7 +74,8 @@ export function useSocketConnection({
     onGameAbandonedRef.current = onGameAbandoned
     onPlayerLeftRef.current = onPlayerLeft
     onBotActionRef.current = onBotAction
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction])
+    onStateSyncRef.current = onStateSync
+  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onStateSync])
 
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
@@ -159,16 +168,36 @@ export function useSocketConnection({
       query: queryPayload,
     })
 
-    newSocket.on('connect', () => {
+    newSocket.on('connect', async () => {
       if (!isMounted) return
-      clientLogger.log('✅ Socket connected to lobby:', code)
+      
+      const isReconnect = hasConnectedOnceRef.current
+      clientLogger.log(isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:', code)
+      
       setIsConnected(true)
       setIsReconnecting(false)
       setReconnectAttempt(0) // Reset counter on successful connection
-      hasConnectedOnceRef.current = true // Mark that we've connected at least once
       
-      // Join lobby room (server expects string, not object)
-      newSocket.emit('join-lobby', code)
+      // Always rejoin room on connect/reconnect
+      if (!isRejoiningRef.current) {
+        isRejoiningRef.current = true
+        newSocket.emit(SocketEvents.JOIN_LOBBY, code)
+        
+        // On reconnect, sync state to catch up on missed events
+        if (isReconnect && onStateSyncRef.current) {
+          try {
+            clientLogger.log('🔄 Syncing state after reconnect...')
+            await onStateSyncRef.current()
+            clientLogger.log('✅ State synced successfully')
+          } catch (error) {
+            clientLogger.error('❌ Failed to sync state after reconnect:', error)
+          }
+        }
+        
+        isRejoiningRef.current = false
+      }
+      
+      hasConnectedOnceRef.current = true // Mark that we've connected at least once
     })
 
     newSocket.on('disconnect', (reason) => {
@@ -210,10 +239,17 @@ export function useSocketConnection({
       
       if (error.message.includes('timeout')) {
         clientLogger.warn('⏳ Socket connection timeout - retrying...')
+        // Only show toast after multiple timeout failures
+        if (reconnectAttempt > 3) {
+          showToast.error('errors.connectionTimeout')
+        }
       } else if (error.message.includes('Authentication failed') || error.message.includes('Authentication required')) {
         clientLogger.error('🔐 Authentication failed - stopping reconnection attempts')
         authFailedRef.current = true // Mark auth as failed
         setIsReconnecting(false) // Stop showing reconnecting state
+        
+        // Show user-friendly error
+        showToast.error('errors.authenticationFailed')
         
         // Stop any further reconnection attempts
         if (newSocket) {
@@ -226,23 +262,86 @@ export function useSocketConnection({
           clientLogger.log('🔄 Resetting authentication flag - retry allowed')
           authFailedRef.current = false
         }, 5000)
+      } else {
+        // Generic connection error
+        clientLogger.error('❌ Socket error:', error.message)
+        if (reconnectAttempt > 5) {
+          showToast.error('errors.connectionError')
+        }
       }
     })
     
-    newSocket.on('game-update', (data) => onGameUpdateRef.current(data))
-    newSocket.on('chat-message', (data) => onChatMessageRef.current(data))
-    newSocket.on('player-typing', (data) => onPlayerTypingRef.current(data))
-    newSocket.on('lobby-update', (data) => onLobbyUpdateRef.current(data))
-    newSocket.on('player-joined', (data) => onPlayerJoinedRef.current(data))
-    newSocket.on('game-started', (data) => onGameStartedRef.current(data))
+    // Add generic error handler
+    newSocket.on(SocketEvents.ERROR, (error) => {
+      if (!isMounted) return
+      clientLogger.error('🔴 Socket error:', error)
+    })
+    
+    // Add server error handler with structured errors
+    newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
+      if (!isMounted) return
+      clientLogger.error('🔴 Server error:', data)
+      
+      // Show user-friendly error message
+      if (data.translationKey) {
+        showToast.error(data.translationKey)
+      } else {
+        showToast.error('errors.general', undefined, { message: data.message })
+      }
+    })
+    
+    // Helper to deduplicate events based on sequenceId
+    const handleEventWithDeduplication = (eventName: string, data: any, handler: (data: any) => void) => {
+      try {
+        // Check for sequence ID to prevent duplicate processing
+        if (data?.sequenceId !== undefined) {
+          if (data.sequenceId <= lastProcessedSequenceRef.current) {
+            clientLogger.warn(`⚠️ Dropped duplicate ${eventName} event`, {
+              sequenceId: data.sequenceId,
+              lastProcessed: lastProcessedSequenceRef.current
+            })
+            return
+          }
+          lastProcessedSequenceRef.current = data.sequenceId
+        }
+        
+        handler(data)
+      } catch (error) {
+        clientLogger.error(`❌ Error handling ${eventName} event:`, error)
+      }
+    }
+    
+    // Register event handlers with error handling
+    newSocket.on(SocketEvents.GAME_UPDATE, (data) => 
+      handleEventWithDeduplication('game-update', data, onGameUpdateRef.current)
+    )
+    newSocket.on(SocketEvents.CHAT_MESSAGE, (data) => 
+      handleEventWithDeduplication('chat-message', data, onChatMessageRef.current)
+    )
+    newSocket.on(SocketEvents.PLAYER_TYPING, (data) => onPlayerTypingRef.current(data))
+    newSocket.on(SocketEvents.LOBBY_UPDATE, (data) => 
+      handleEventWithDeduplication('lobby-update', data, onLobbyUpdateRef.current)
+    )
+    newSocket.on(SocketEvents.PLAYER_JOINED, (data) => 
+      handleEventWithDeduplication('player-joined', data, onPlayerJoinedRef.current)
+    )
+    newSocket.on(SocketEvents.GAME_STARTED, (data) => 
+      handleEventWithDeduplication('game-started', data, onGameStartedRef.current)
+    )
     if (onGameAbandonedRef.current) {
-      newSocket.on('game-abandoned', (data) => onGameAbandonedRef.current?.(data))
+      newSocket.on(SocketEvents.GAME_ABANDONED, (data) => 
+        handleEventWithDeduplication('game-abandoned', data, onGameAbandonedRef.current!)
+      )
     }
     if (onPlayerLeftRef.current) {
-      newSocket.on('player-left', (data) => onPlayerLeftRef.current?.(data))
+      newSocket.on(SocketEvents.PLAYER_LEFT, (data) => 
+        handleEventWithDeduplication('player-left', data, onPlayerLeftRef.current!)
+      )
     }
     if (onBotActionRef.current) {
-      newSocket.on('bot-action', (data) => onBotActionRef.current?.(data))
+      newSocket.on(SocketEvents.BOT_ACTION, (data) => 
+        handleEventWithDeduplication('bot-action', data, onBotActionRef.current!)
+      )
     }
 
     if (isMounted) {
@@ -260,21 +359,23 @@ export function useSocketConnection({
       }
       
       // Remove all listeners first
-      newSocket.off('connect')
-      newSocket.off('disconnect')
-      newSocket.off('connect_error')
-      newSocket.off('reconnect_attempt')
-      newSocket.off('reconnect_failed')
-      newSocket.off('reconnect')
-      newSocket.off('game-update')
-      newSocket.off('chat-message')
-      newSocket.off('player-typing')
-      newSocket.off('lobby-update')
-      newSocket.off('player-joined')
-      newSocket.off('game-started')
-      newSocket.off('game-abandoned')
-      newSocket.off('player-left')
-      newSocket.off('bot-action')
+      newSocket.off(SocketEvents.CONNECT)
+      newSocket.off(SocketEvents.DISCONNECT)
+      newSocket.off(SocketEvents.CONNECT_ERROR)
+      newSocket.off(SocketEvents.RECONNECT_ATTEMPT)
+      newSocket.off(SocketEvents.RECONNECT_FAILED)
+      newSocket.off(SocketEvents.RECONNECT)
+      newSocket.off(SocketEvents.ERROR)
+      newSocket.off(SocketEvents.SERVER_ERROR)
+      newSocket.off(SocketEvents.GAME_UPDATE)
+      newSocket.off(SocketEvents.CHAT_MESSAGE)
+      newSocket.off(SocketEvents.PLAYER_TYPING)
+      newSocket.off(SocketEvents.LOBBY_UPDATE)
+      newSocket.off(SocketEvents.PLAYER_JOINED)
+      newSocket.off(SocketEvents.GAME_STARTED)
+      newSocket.off(SocketEvents.GAME_ABANDONED)
+      newSocket.off(SocketEvents.PLAYER_LEFT)
+      newSocket.off(SocketEvents.BOT_ACTION)
       
       // Gracefully disconnect only if connected
       if (newSocket.connected) {

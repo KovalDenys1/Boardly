@@ -789,6 +789,16 @@ const uk: Translation = {
     invalidToken: 'Невірний або відсутній токен',
     failedToLoad: 'Не вдалося завантажити дані. Спробуйте знову.',
     gameNotFound: 'Гру не знайдено',
+    // Socket/Connection errors
+    connectionTimeout: 'Час очікування з\'єднання вичерпано. Перевірте інтернет.',
+    connectionError: 'Помилка з\'єднання. Повторне підключення...',
+    authenticationFailed: 'Помилка аутентифікації. Будь ласка, оновіть сторінку.',
+    rateLimitExceeded: 'Занадто багато запитів. Будь ласка, сповільніться.',
+    invalidLobbyCode: 'Невірний формат коду лобі',
+    lobbyNotFound: 'Лобі не знайдено',
+    joinLobbyFailed: 'Не вдалося приєднатися до лобі. Спробуйте знову.',
+    invalidActionData: 'Невірні дані дії',
+    general: 'Сталася помилка: {{message}}',
   },
   spy: {
     phases: {

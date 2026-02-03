@@ -490,6 +490,12 @@ function LobbyPageContent() {
     onGameAbandoned,
     onPlayerLeft,
     onBotAction,
+    // State sync callback - automatically refreshes lobby data after reconnection
+    onStateSync: async () => {
+      if (loadLobbyRef.current) {
+        await loadLobbyRef.current()
+      }
+    },
   })
 
   // Calculate once to avoid calling functions repeatedly

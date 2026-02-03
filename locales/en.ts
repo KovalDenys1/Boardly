@@ -787,6 +787,16 @@ const en = {
     invalidToken: 'Invalid or missing token',
     failedToLoad: 'Failed to load data. Please try again.',
     gameNotFound: 'Game not found',
+    // Socket/Connection errors
+    connectionTimeout: 'Connection timeout. Please check your internet.',
+    connectionError: 'Connection error. Retrying...',
+    authenticationFailed: 'Authentication failed. Please refresh the page.',
+    rateLimitExceeded: 'Too many requests. Please slow down.',
+    invalidLobbyCode: 'Invalid lobby code format',
+    lobbyNotFound: 'Lobby not found',
+    joinLobbyFailed: 'Failed to join lobby. Please try again.',
+    invalidActionData: 'Invalid action data',
+    general: 'An error occurred: {{message}}',
   },
   spy: {
     phases: {
