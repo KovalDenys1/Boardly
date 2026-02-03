@@ -112,46 +112,77 @@ export default function WaitingRoom({
 
         {/* Player Count Status */}
         <div style={{ marginBottom: `clamp(24px, 2.5vh, 40px)` }}>
-          <div
-            className={`inline-flex items-center rounded-full ${
-              playerCount < 2
-                ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600'
-                : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600'
-            }`}
-            style={{
-              gap: `clamp(10px, 1vw, 16px)`,
-              padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 32px)`,
-              borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-            }}
-          >
-            <span style={{ fontSize: `clamp(20px, 2vw, 28px)` }}>👥</span>
-            <div className="text-left">
-              <p
-                className={`font-bold ${
-                  playerCount < 2
-                    ? 'text-yellow-700 dark:text-yellow-300'
-                    : 'text-green-700 dark:text-green-300'
-                }`}
-                style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
-              >
-                {t('yahtzee.ui.playersInLobby', { count: playerCount })}
-              </p>
-              {playerCount < 2 ? (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+            {/* Player Count */}
+            <div
+              className={`inline-flex items-center rounded-full ${
+                playerCount < 2
+                  ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600'
+                  : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600'
+              }`}
+              style={{
+                gap: `clamp(10px, 1vw, 16px)`,
+                padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 32px)`,
+                borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
+              }}
+            >
+              <span style={{ fontSize: `clamp(20px, 2vw, 28px)` }}>👥</span>
+              <div className="text-left">
                 <p
-                  className="text-yellow-600 dark:text-yellow-400"
-                  style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
+                  className={`font-bold ${
+                    playerCount < 2
+                      ? 'text-yellow-700 dark:text-yellow-300'
+                      : 'text-green-700 dark:text-green-300'
+                  }`}
+                  style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
                 >
-                  {t('yahtzee.ui.addBotOrWait')}
+                  {t('yahtzee.ui.playersInLobby', { count: playerCount })}
                 </p>
-              ) : (
-                <p
-                  className="text-green-600 dark:text-green-400"
-                  style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
-                >
-                  {t('yahtzee.ui.readyToStart')}
-                </p>
-              )}
+                {playerCount < 2 ? (
+                  <p
+                    className="text-yellow-600 dark:text-yellow-400"
+                    style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
+                  >
+                    {t('yahtzee.ui.addBotOrWait')}
+                  </p>
+                ) : (
+                  <p
+                    className="text-green-600 dark:text-green-400"
+                    style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
+                  >
+                    {t('yahtzee.ui.readyToStart')}
+                  </p>
+                )}
+              </div>
             </div>
+            
+            {/* Turn Timer */}
+            {lobby?.turnTimer && (
+              <div
+                className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
+                style={{
+                  gap: `clamp(10px, 1vw, 16px)`,
+                  padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 32px)`,
+                  borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
+                }}
+              >
+                <span style={{ fontSize: `clamp(20px, 2vw, 28px)` }}>⏱️</span>
+                <div className="text-left">
+                  <p
+                    className="font-bold text-blue-700 dark:text-blue-300"
+                    style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
+                  >
+                    {lobby.turnTimer}s {t('yahtzee.ui.perTurn')}
+                  </p>
+                  <p
+                    className="text-blue-600 dark:text-blue-400"
+                    style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
+                  >
+                    {t('yahtzee.ui.timeLimit')}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

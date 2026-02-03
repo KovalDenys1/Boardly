@@ -544,10 +544,12 @@ function LobbyPageContent() {
   const handleScoreRef = React.useRef<((category: any) => Promise<void>) | null>(null)
   const handleRollDiceRef = React.useRef<(() => Promise<void>) | null>(null)
 
-  // Game timer hook
+  // Game timer hook - pass turnTimerLimit from lobby settings
+  const turnTimerLimit = (lobby as any)?.turnTimer || 60 // Get from lobby or default to 60
   const { timeLeft, timerActive } = useGameTimer({
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState() || null,
+    turnTimerLimit,
     onTimeout: async () => {
       if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
@@ -1086,6 +1088,7 @@ function LobbyPageContent() {
                       game={game}
                       isMyTurn={isMyTurn()}
                       timeLeft={timeLeft}
+                      turnTimerLimit={turnTimerLimit}
                       isMoveInProgress={isMoveInProgress}
                       isRolling={isRolling}
                       isScoring={isScoring}
@@ -1202,6 +1205,7 @@ function LobbyPageContent() {
                         game={game}
                         isMyTurn={isMyTurn()}
                         timeLeft={timeLeft}
+                        turnTimerLimit={turnTimerLimit}
                         isMoveInProgress={isMoveInProgress}
                         isRolling={isRolling}
                         isScoring={isScoring}

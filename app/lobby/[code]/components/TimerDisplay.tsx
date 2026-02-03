@@ -2,13 +2,14 @@ interface TimerDisplayProps {
   timeLeft: number
   timerActive: boolean
   isMyTurn: boolean
+  turnTimerLimit: number // Total time limit for calculating percentage
 }
 
-export default function TimerDisplay({ timeLeft, timerActive, isMyTurn }: TimerDisplayProps) {
+export default function TimerDisplay({ timeLeft, timerActive, isMyTurn, turnTimerLimit }: TimerDisplayProps) {
   if (!isMyTurn || !timerActive) return null
 
   const isUrgent = timeLeft <= 10
-  const percentage = (timeLeft / 60) * 100
+  const percentage = (timeLeft / turnTimerLimit) * 100
 
   return (
     <div

@@ -10,6 +10,7 @@ interface GameBoardProps {
   game: any
   isMyTurn: boolean
   timeLeft: number
+  turnTimerLimit: number // Total time limit for percentage calculation
   isMoveInProgress: boolean
   isRolling: boolean
   isScoring: boolean
@@ -27,6 +28,7 @@ export default function GameBoard({
   game,
   isMyTurn,
   timeLeft,
+  turnTimerLimit,
   isMoveInProgress,
   isRolling,
   isScoring,
@@ -39,6 +41,7 @@ export default function GameBoard({
   onCelebrationComplete,
 }: GameBoardProps) {
   const { t } = useTranslation()
+  const percentage = turnTimerLimit > 0 ? (timeLeft / turnTimerLimit) * 100 : 100
   
   return (
     <div className="h-full flex flex-col gap-2 sm:gap-3">
@@ -47,8 +50,8 @@ export default function GameBoard({
         {/* Timer at top of dice area */}
         <div className="flex-shrink-0 p-2 sm:p-3 border-b border-gray-200 dark:border-gray-700">
           <div className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all ${
-            timeLeft <= 10 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
-            timeLeft <= 30 ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white shadow-md' : 
+            percentage <= 17 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
+            percentage <= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white shadow-md' : 
             'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-gray-900 dark:text-white'
           }`}>
             <span className="text-lg sm:text-2xl">⏱️</span>

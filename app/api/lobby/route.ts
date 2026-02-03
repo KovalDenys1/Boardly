@@ -13,6 +13,7 @@ const createLobbySchema = z.object({
   name: z.string().min(1).max(50),
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(10).default(6),
+  turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
   gameType: z.enum(['yahtzee', 'guess_the_spy']).default('yahtzee'),
 })
 
@@ -46,9 +47,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, password, maxPlayers, gameType } = createLobbySchema.parse(body)
+    const { name, password, maxPlayers, turnTimer, gameType } = createLobbySchema.parse(body)
 
-    log.info('Creating lobby', { gameType, maxPlayers })
+    log.info('Creating lobby', { gameType, maxPlayers, turnTimer })
 
     // Generate unique lobby code
     let code = generateLobbyCode()
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
         name,
         password,
         maxPlayers,
+        turnTimer,
         gameType,
         creatorId: user.id,
         games: {

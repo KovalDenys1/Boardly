@@ -98,6 +98,7 @@ model Lobby {
   name      String
   password  String?
   maxPlayers Int     @default(4)
+  turnTimer Int      @default(60) // Turn time limit in seconds (30, 60, 90, 120)
   isActive  Boolean  @default(true)
   gameType  String   @default("yahtzee")
   createdAt DateTime @default(now())
