@@ -248,7 +248,7 @@ export const authOptions: NextAuthOptions = {
       try {
         // Import cookies dynamically to avoid Edge runtime issues
         const { cookies } = await import('next/headers')
-        const cookieStore = cookies()
+        const cookieStore = await cookies()
         const pendingLinkCookie = cookieStore.get('pendingOAuthLink')
 
         if (!pendingLinkCookie?.value) {

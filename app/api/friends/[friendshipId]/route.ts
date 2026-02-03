@@ -11,10 +11,12 @@ const log = apiLogger('/api/friends/[friendshipId]')
 // DELETE /api/friends/[friendshipId] - Remove friend
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { friendshipId: string } }
+  { params }: { params: Promise<{ friendshipId: string }> }
 ) {
   try {
     await limiter(req)
+    
+    const { friendshipId } = await params
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
@@ -32,7 +34,7 @@ export async function DELETE(
 
     // Get friendship
     const friendship = await prisma.friendship.findUnique({
-      where: { id: params.friendshipId }
+      where: { id: friendshipId }
     })
 
     if (!friendship) {
@@ -52,11 +54,11 @@ export async function DELETE(
 
     // Delete friendship
     await prisma.friendship.delete({
-      where: { id: params.friendshipId }
+      where: { id: friendshipId }
     })
 
     log.info('Friendship removed', {
-      friendshipId: params.friendshipId,
+      friendshipId: friendshipId,
       userId: user.id,
       user1Id: friendship.user1Id,
       user2Id: friendship.user2Id
@@ -68,7 +70,7 @@ export async function DELETE(
     })
 
   } catch (error) {
-    log.error('Error removing friend', error as Error, { friendshipId: params.friendshipId })
+    log.error('Error removing friend', error as Error, { friendshipId: (await params).friendshipId })
     return NextResponse.json(
       { error: 'Failed to remove friend' },
       { status: 500 }

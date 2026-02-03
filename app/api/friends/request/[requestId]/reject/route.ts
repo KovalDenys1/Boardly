@@ -11,10 +11,11 @@ const log = apiLogger('/api/friends/request/reject')
 // POST /api/friends/request/[requestId]/reject - Reject friend request
 export async function POST(
   req: NextRequest,
-  { params }: { params: { requestId: string } }
+  { params }: { params: Promise<{ requestId: string }> }
 ) {
   try {
     await limiter(req)
+    const { requestId } = await params
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
@@ -32,7 +33,7 @@ export async function POST(
 
     // Get friend request
     const friendRequest = await prisma.friendRequest.findUnique({
-      where: { id: params.requestId }
+      where: { id: requestId }
     })
 
     if (!friendRequest) {
@@ -59,12 +60,12 @@ export async function POST(
 
     // Update request status
     await prisma.friendRequest.update({
-      where: { id: params.requestId },
+      where: { id: requestId },
       data: { status: 'rejected' }
     })
 
     log.info('Friend request rejected', {
-      requestId: params.requestId,
+      requestId: requestId,
       receiverId: user.id,
       senderId: friendRequest.senderId
     })
@@ -75,7 +76,7 @@ export async function POST(
     })
 
   } catch (error) {
-    log.error('Error rejecting friend request', error as Error, { requestId: params.requestId })
+    log.error('Error rejecting friend request', error as Error, { requestId: (await params).requestId })
     return NextResponse.json(
       { error: 'Failed to reject friend request' },
       { status: 500 }

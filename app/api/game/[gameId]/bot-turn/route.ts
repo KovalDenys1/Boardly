@@ -13,12 +13,15 @@ const botTurnLocks = new Map<string, boolean>()
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/bot-turn')
   let lockKey: string | null = null
+  let gameId: string | undefined
   
   try {
+    const paramsData = await params
+    gameId = paramsData.gameId
     const { botUserId, lobbyCode } = await request.json()
 
     if (!botUserId) {
@@ -26,12 +29,12 @@ export async function POST(
     }
 
     log.info('Bot turn endpoint called', {
-      gameId: params.gameId,
+      gameId: gameId,
       botUserId
     })
 
     // Check if bot turn is already in progress for this game
-    lockKey = `${params.gameId}:${botUserId}`
+    lockKey = `${gameId}:${botUserId}`
     if (botTurnLocks.get(lockKey)) {
       log.warn('Bot turn already in progress, ignoring duplicate request')
       return NextResponse.json({ 
@@ -47,7 +50,7 @@ export async function POST(
     let game
     try {
       const optimizedQuery = {
-        where: { id: params.gameId },
+        where: { id: gameId },
         select: {
           id: true,
           state: true,
@@ -92,7 +95,7 @@ export async function POST(
     }
 
     if (!game) {
-      log.error('Game not found', undefined, { gameId: params.gameId })
+      log.error('Game not found', undefined, { gameId: gameId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
@@ -184,7 +187,7 @@ export async function POST(
           log.info('Saving bot move to database...')
           try {
             await prisma.game.update({
-              where: { id: params.gameId },
+              where: { id: gameId },
               data: {
                 state: JSON.stringify(gameEngine.getState()),
                 status: gameEngine.getState().status,
@@ -197,7 +200,7 @@ export async function POST(
               log.warn('Database update failed, retrying...', { error: dbError.message })
               await new Promise(resolve => setTimeout(resolve, 200))
               return prisma.game.update({
-                where: { id: params.gameId },
+                where: { id: gameId },
                 data: {
                   state: JSON.stringify(gameEngine.getState()),
                   status: gameEngine.getState().status,
@@ -285,7 +288,7 @@ export async function POST(
 
   } catch (error) {
     log.error('Bot turn execution failed', error as Error, {
-      gameId: params.gameId,
+      gameId: gameId,
       lockKey,
       errorStack: error instanceof Error ? error.stack : undefined,
       errorMessage: error instanceof Error ? error.message : String(error)

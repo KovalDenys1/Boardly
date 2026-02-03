@@ -6,7 +6,7 @@ import { apiLogger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('/api/game/[gameId]/results')
   
@@ -20,7 +20,7 @@ export async function GET(
       )
     }
 
-    const { gameId } = params
+    const { gameId } = await params
 
     // Get game with all players
     const game = await prisma.game.findUnique({

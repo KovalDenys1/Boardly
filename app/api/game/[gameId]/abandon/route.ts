@@ -13,7 +13,7 @@ import { apiLogger } from '@/lib/logger'
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/abandon')
   
@@ -27,7 +27,7 @@ export async function POST(
       )
     }
 
-    const { gameId } = params
+    const { gameId } = await params
 
     // Find the game with its lobby and players
     const game = await prisma.game.findUnique({
