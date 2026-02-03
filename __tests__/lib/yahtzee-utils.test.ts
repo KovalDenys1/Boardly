@@ -81,6 +81,21 @@ describe('Yahtzee Score Calculation', () => {
       expect(calculateScore([1, 2, 3, 4, 5], 'fullHouse')).toBe(0)
     })
 
+    it('should calculate one pair (10 points)', () => {
+      expect(calculateScore([3, 3, 1, 2, 4], 'onePair')).toBe(10)
+      expect(calculateScore([6, 6, 1, 2, 3], 'onePair')).toBe(10)
+      expect(calculateScore([5, 5, 4, 4, 1], 'onePair')).toBe(10) // Two pairs also counts as one pair
+      expect(calculateScore([1, 2, 3, 4, 5], 'onePair')).toBe(0) // No pairs
+    })
+
+    it('should calculate two pairs (20 points)', () => {
+      expect(calculateScore([3, 3, 2, 2, 1], 'twoPairs')).toBe(20)
+      expect(calculateScore([6, 6, 1, 1, 4], 'twoPairs')).toBe(20)
+      expect(calculateScore([5, 5, 4, 4, 4], 'twoPairs')).toBe(20) // Three of a kind includes two pairs
+      expect(calculateScore([1, 2, 3, 4, 5], 'twoPairs')).toBe(0)
+      expect(calculateScore([2, 2, 3, 4, 5], 'twoPairs')).toBe(0) // Only one pair
+    })
+
     it('should calculate small straight (30 points)', () => {
       expect(calculateScore([1, 2, 3, 4, 6], 'smallStraight')).toBe(30)
       expect(calculateScore([2, 3, 4, 5, 6], 'smallStraight')).toBe(30)
@@ -124,15 +139,17 @@ describe('Yahtzee Score Calculation', () => {
         threeOfKind: 20,
         fourOfKind: 24,
         fullHouse: 25,
+        onePair: 10,
+        twoPairs: 20,
         smallStraight: 30,
         largeStraight: 40,
         yahtzee: 50,
         chance: 25,
       }
       // Upper: 63 + 35 bonus = 98
-      // Lower: 20+24+25+30+40+50+25 = 214
-      // Total: 312
-      expect(calculateTotalScore(scorecard)).toBe(312)
+      // Lower: 20+24+25+10+20+30+40+50+25 = 244
+      // Total: 342
+      expect(calculateTotalScore(scorecard)).toBe(342)
     })
 
     it('should calculate total without bonus', () => {
@@ -146,15 +163,17 @@ describe('Yahtzee Score Calculation', () => {
         threeOfKind: 15,
         fourOfKind: 20,
         fullHouse: 25,
+        onePair: 10,
+        twoPairs: 20,
         smallStraight: 30,
         largeStraight: 40,
         yahtzee: 50,
         chance: 20,
       }
       // Upper: 21
-      // Lower: 15+20+25+30+40+50+20 = 200
-      // Total: 221
-      expect(calculateTotalScore(scorecard)).toBe(221)
+      // Lower: 15+20+25+10+20+30+40+50+20 = 230
+      // Total: 251
+      expect(calculateTotalScore(scorecard)).toBe(251)
     })
 
     it('should handle empty scorecard', () => {

@@ -8,6 +8,7 @@
 ## Overview
 
 Boardly uses a dual-server architecture with Socket.IO for real-time communication:
+
 - **Next.js** (port 3000): HTTP/API routes, SSR
 - **Socket.IO** (port 3001): WebSocket server for real-time updates
 
@@ -79,22 +80,26 @@ emitError(
 ## Key Features
 
 ### ✅ Event Sequencing & Deduplication
+
 - Every event has `sequenceId` field
 - Client tracks `lastProcessedSequence` to prevent duplicates
 - Out-of-order events are dropped
 
 ### ✅ Reconnection Handling
+
 - Automatic room rejoin on reconnect
 - State sync via `onStateSync` callback
 - Auth token recovery (5-second retry window)
 - Exponential backoff (1s → 30s)
 
 ### ✅ Error Handling
+
 - Structured errors with codes and i18n keys
 - User-friendly toast notifications
 - Error logging with context
 
 ### ✅ Type Safety
+
 - All events use TypeScript constants
 - Typed payload interfaces
 - Prevents typos and runtime errors
@@ -104,12 +109,14 @@ emitError(
 ## Event Reference
 
 ### Connection Events
+
 - `CONNECT` - Socket connected
 - `DISCONNECT` - Socket disconnected
 - `RECONNECT` - Reconnected after disconnect
 - `CONNECT_ERROR` - Connection failed
 
 ### Lobby Events
+
 - `JOIN_LOBBY` - Join lobby room
 - `LEAVE_LOBBY` - Leave lobby room
 - `LOBBY_UPDATE` - Lobby state changed
@@ -117,17 +124,20 @@ emitError(
 - `PLAYER_LEFT` - Player left lobby
 
 ### Game Events
+
 - `GAME_STARTED` - Game started
 - `GAME_UPDATE` - Game state changed
 - `GAME_ACTION` - Player action
 - `GAME_ABANDONED` - Game ended early
 
 ### Chat Events
+
 - `SEND_CHAT_MESSAGE` - Send message (client → server)
 - `CHAT_MESSAGE` - Receive message (server → client)
 - `PLAYER_TYPING` - Typing indicator
 
 ### Error Events
+
 - `ERROR` - Generic error
 - `SERVER_ERROR` - Structured error with code
 
@@ -155,15 +165,19 @@ socket.join(SocketRooms.game(gameId)) // "game:xyz"
 ## Common Issues & Solutions
 
 ### Issue: Duplicate events
+
 **Solution**: Events have `sequenceId`, duplicates are automatically dropped
 
 ### Issue: State out of sync after reconnect
+
 **Solution**: Implement `onStateSync` callback to refresh data
 
 ### Issue: Auth failures block reconnection
+
 **Solution**: 5-second timeout allows retry after auth error
 
 ### Issue: Events arrive out of order
+
 **Solution**: Sequence numbers ensure correct ordering
 
 ---
@@ -171,17 +185,20 @@ socket.join(SocketRooms.game(gameId)) // "game:xyz"
 ## Troubleshooting
 
 ### Client not receiving events
+
 1. Check both servers running: `npm run dev:all`
 2. Verify `CORS_ORIGIN` includes your domain
 3. Check browser console for connection errors
 4. Verify room joined: `socket.emit(SocketEvents.JOIN_LOBBY, code)`
 
 ### Server errors not showing
+
 1. Check client has `SERVER_ERROR` handler
 2. Verify error translations exist in `locales/`
 3. Check server logs for error emission
 
 ### Reconnection not working
+
 1. Verify `onStateSync` callback implemented
 2. Check auth token not expired
 3. Look for `authFailedRef` blocking reconnects
@@ -201,6 +218,7 @@ socket.join(SocketRooms.game(gameId)) // "game:xyz"
 ## Migration from Old Code
 
 **Before**:
+
 ```typescript
 socket.on('game-update', (data) => {...})
 socket.emit('join-lobby', code)
@@ -208,6 +226,7 @@ io.to(`lobby:${code}`).emit('player-joined', {...})
 ```
 
 **After**:
+
 ```typescript
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 
@@ -246,4 +265,5 @@ emitWithMetadata(io, SocketRooms.lobby(code), SocketEvents.PLAYER_JOINED, {...})
 
 ---
 
-**Need help?** Check inline docs in `types/socket-events.ts` for detailed examples and flow diagrams.
+**Need help?** Check inline docs in `types/socket-events.ts` for detailed examples
+and flow diagrams.

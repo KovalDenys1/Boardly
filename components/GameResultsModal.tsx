@@ -123,8 +123,8 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
     const gameData = game.state.gameData
     const categories = [
       'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-      'threeOfAKind', 'fourOfAKind', 'fullHouse', 'smallStraight',
-      'largeStraight', 'yahtzee', 'chance'
+      'threeOfAKind', 'fourOfAKind', 'fullHouse', 'onePair', 'twoPairs',
+      'smallStraight', 'largeStraight', 'yahtzee', 'chance'
     ]
 
     return (

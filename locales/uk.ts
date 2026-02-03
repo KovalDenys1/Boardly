@@ -375,6 +375,8 @@ const uk: Translation = {
       threeOfKind: 'Три однакових',
       fourOfKind: 'Чотири однакових',
       fullHouse: 'Фул-хаус',
+      onePair: 'Одна пара',
+      twoPairs: 'Дві пари',
       smallStraight: 'Малий стріт',
       largeStraight: 'Великий стріт',
       yahtzee: 'Ятці',

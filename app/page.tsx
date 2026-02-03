@@ -1,11 +1,10 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import HeroSection from '@/components/HomePage/HeroSection'
-import dynamic from 'next/dynamic'
 
-const FeaturesGrid = dynamic(() => import('@/components/HomePage/FeaturesGrid'), { ssr: false })
-const HowItWorks = dynamic(() => import('@/components/HomePage/HowItWorks'), { ssr: false })
 import AnimatedSection from '@/components/ui/AnimatedSection'
+import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
+import HowItWorks from '@/components/HomePage/HowItWorks'
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60

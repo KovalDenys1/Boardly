@@ -380,6 +380,8 @@ describe('YahtzeeGame', () => {
         threeOfKind: 15,
         fourOfKind: 20,
         fullHouse: 25,
+        onePair: 10,
+        twoPairs: 20,
         smallStraight: 30,
         largeStraight: 40,
         yahtzee: 50,
