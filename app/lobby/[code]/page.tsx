@@ -826,6 +826,23 @@ function LobbyPageContent() {
   )
   const isGameStarted = game?.status === 'playing'
 
+  // Force layout recalculation when game starts (mobile browser fix)
+  useEffect(() => {
+    if (isGameStarted && typeof window !== 'undefined') {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        // Trigger resize event to recalculate viewport
+        window.dispatchEvent(new Event('resize'))
+        // Force repaint
+        document.body.style.display = 'none'
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        document.body.offsetHeight // Trigger reflow
+        document.body.style.display = ''
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isGameStarted])
+
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
@@ -903,8 +920,18 @@ function LobbyPageContent() {
           getCurrentUserId={getCurrentUserId}
         />
       ) : (
-        // Game Started - ABSOLUTE NO SCROLL - Fixed viewport
-        <div className="fixed inset-0 top-20 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
+        // Game Started - Mobile-optimized viewport
+        <div 
+          className="flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900"
+          style={{
+            position: 'fixed' as const,
+            top: '5rem', // 80px / 16 = 5rem (header height)
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 'calc(100dvh - 5rem)', // Dynamic viewport height for mobile with fallback
+          }}
+        >
           {gameEngine?.isGameFinished() ? (
             <YahtzeeResults
               results={analyzeResults(
@@ -1049,7 +1076,7 @@ function LobbyPageContent() {
               </div>
 
               {/* Main Game Area - More spacing between columns */}
-              <div className="flex-1 min-h-0 relative">
+              <div className="flex-1 relative" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
                 <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
@@ -1159,7 +1186,14 @@ function LobbyPageContent() {
                 </div>
 
                 {/* Mobile: Tabbed Layout */}
-                <div className="md:hidden h-full relative">
+                <div 
+                  className="md:hidden relative"
+                  style={{
+                    height: '100%',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                  }}
+                >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
                     <div className="p-4 space-y-4">
