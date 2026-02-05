@@ -37,15 +37,11 @@ try {
 const port = Number(process.env.PORT) || 3001
 const hostname = process.env.HOSTNAME || '0.0.0.0'
 
+// Event sequence counter for ordering and deduplication (must be declared before server creation)
+let eventSequence = 0
+
 const server = createServer((req, res) => {
   const url = parse(req.url || '/')
-  
-  if (url.pathname === '/health') {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ ok: true }))
-    return
-  }
   
   // API endpoint for server-side bot notifications
   if (url.pathname === '/api/notify' && req.method === 'POST') {
@@ -154,9 +150,6 @@ const io = new SocketIOServer(server, {
 
 // Online users tracking: userId -> Set of socketIds
 const onlineUsers = new Map<string, Set<string>>()
-
-// Event sequence counter for ordering and deduplication
-let eventSequence = 0
 
 // Helper to create event with metadata
 function emitWithMetadata(io: SocketIOServer, room: string, event: string, data: any) {
@@ -605,9 +598,64 @@ io.on('connection', (socket) => {
 socketMonitor.initialize(io, 30000) // Log metrics every 30 seconds
 dbMonitor.initialize(60000) // Log DB metrics every 60 seconds
 
-// Add health endpoint with monitoring data
+// Health check endpoint for metrics
 server.on('request', (req, res) => {
   const url = parse(req.url || '/')
+  
+  if (url.pathname === '/health') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ ok: true }))
+    return
+  }
+  
+  // API endpoint for server-side bot notifications (moved here after io initialization)
+  if (url.pathname === '/api/notify' && req.method === 'POST') {
+    let body = ''
+    req.on('data', chunk => {
+      body += chunk.toString()
+    })
+    req.on('end', () => {
+      try {
+        const { room, event, data } = JSON.parse(body)
+        
+        if (!room || !event) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Missing room or event' }))
+          return
+        }
+        
+        logger.info('Server notification received', { room, event, dataKeys: Object.keys(data || {}) })
+        
+        // Add metadata to the event
+        const payloadWithMetadata = {
+          ...data,
+          sequenceId: ++eventSequence,
+          timestamp: Date.now(),
+          version: '1.0.0'
+        }
+        
+        // Broadcast to all clients in the room
+        io.to(room).emit(event, payloadWithMetadata)
+        
+        // Notify lobby list if it's a state change
+        if (data?.action === 'state-change' || event === SocketEvents.LOBBY_LIST_UPDATE) {
+          io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+        }
+        
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
+      } catch (error) {
+        logger.error('Error processing notification', error as Error)
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Internal server error' }))
+      }
+    })
+    return
+  }
   
   if (url.pathname === '/metrics') {
     res.statusCode = 200

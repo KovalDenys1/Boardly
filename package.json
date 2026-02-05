@@ -66,6 +66,10 @@
   },
   "devDependencies": {
     "@edge-runtime/jest-environment": "^4.0.0",
+    "@modelcontextprotocol/server-filesystem": "^2026.1.14",
+    "@modelcontextprotocol/server-github": "^2025.4.8",
+    "@modelcontextprotocol/server-memory": "^2026.1.26",
+    "@modelcontextprotocol/server-postgres": "^0.6.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
