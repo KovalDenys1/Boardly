@@ -7,10 +7,10 @@ import jwt from 'jsonwebtoken'
 // Mock Prisma
 jest.mock('@/lib/db', () => ({
   prisma: {
-    user: {
+    users: {
       findUnique: jest.fn(),
     },
-    lobby: {
+    lobbies: {
       findUnique: jest.fn(),
     },
   },
@@ -79,7 +79,7 @@ describe.skip('Socket.IO Events', () => {
         const userId = token.startsWith('jwt-') ? token.split('-')[1] : token
         
         // Mock user lookup
-        const user = await (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser)
+        const user = await (prisma.users.findUnique as jest.Mock).mockResolvedValue(mockUser)
         
         socket.data.user = mockUser
         next()
@@ -97,7 +97,7 @@ describe.skip('Socket.IO Events', () => {
         }
 
         try {
-          const lobby = await (prisma.lobby.findUnique as jest.Mock).mockResolvedValue(mockLobby)
+          const lobby = await (prisma.lobbies.findUnique as jest.Mock).mockResolvedValue(mockLobby)
           
           if (!lobby) {
             socket.emit('error', { message: 'Lobby not found' })
@@ -256,7 +256,7 @@ describe.skip('Socket.IO Events', () => {
     })
 
     it('should reject non-existent lobby', (done) => {
-      (prisma.lobby.findUnique as jest.Mock).mockResolvedValueOnce(null)
+      (prisma.lobbies.findUnique as jest.Mock).mockResolvedValueOnce(null)
 
       clientSocket.emit('join-lobby', 'INVALID')
 

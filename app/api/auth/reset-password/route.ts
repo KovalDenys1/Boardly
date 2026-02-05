@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const { token, password } = resetPasswordSchema.parse(body)
 
     // Find valid reset token
-    const resetToken = await prisma.passwordResetToken.findUnique({
+    const resetToken = await prisma.passwordResetTokens.findUnique({
       where: { token },
     })
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Check if token has expired
     if (resetToken.expires < new Date()) {
-      await prisma.passwordResetToken.delete({
+      await prisma.passwordResetTokens.delete({
         where: { id: resetToken.id },
       })
       return NextResponse.json(
@@ -48,13 +48,13 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 10)
 
     // Update user password
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: resetToken.userId },
       data: { passwordHash },
     })
 
     // Delete used token
-    await prisma.passwordResetToken.delete({
+    await prisma.passwordResetTokens.delete({
       where: { id: resetToken.id },
     })
 

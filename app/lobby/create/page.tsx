@@ -10,6 +10,13 @@ import { useTranslation } from '@/lib/i18n-helpers'
 
 type GameType = 'yahtzee' | 'guess_the_spy'
 
+type GameSettings = {
+  hasTurnTimer?: boolean // Whether this game supports turn timer
+  hasGameModes?: boolean // Whether this game supports game modes
+  turnTimerOptions?: number[] // Available turn timer options (in seconds)
+  defaultTurnTimer?: number // Default turn timer value
+}
+
 type GameInfo = {
   name: string
   emoji: string
@@ -17,9 +24,10 @@ type GameInfo = {
   gradient: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
+  settings: GameSettings // Game-specific settings configuration
 }
 
-// Game info without descriptions (will be added via i18n)
+// Game info with settings configuration for each game
 const GAME_INFO: Record<GameType, GameInfo> = {
   yahtzee: {
     name: 'Yahtzee',
@@ -28,6 +36,12 @@ const GAME_INFO: Record<GameType, GameInfo> = {
     gradient: 'from-purple-600 via-pink-500 to-orange-400',
     allowedPlayers: [2, 3, 4],
     defaultMaxPlayers: 4,
+    settings: {
+      hasTurnTimer: true,
+      hasGameModes: true,
+      turnTimerOptions: [30, 60, 90, 120],
+      defaultTurnTimer: 60,
+    },
   },
   guess_the_spy: {
     name: 'Guess the Spy',
@@ -36,6 +50,10 @@ const GAME_INFO: Record<GameType, GameInfo> = {
     gradient: 'from-blue-600 via-cyan-500 to-green-400',
     allowedPlayers: [3, 4, 5, 6, 7, 8],
     defaultMaxPlayers: 6,
+    settings: {
+      hasTurnTimer: false, // Spy game doesn't need turn timer
+      hasGameModes: false, // Spy game doesn't need game modes yet
+    },
   },
 }
 
@@ -55,6 +73,7 @@ function CreateLobbyPage() {
     name: '',
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
+    turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60, // Use game-specific default or fallback to 60
     gameType: selectedGameType as GameType,
   })
   const LOBBY_NAME_MAX = 22;
@@ -71,6 +90,7 @@ function CreateLobbyPage() {
       setFormData(prev => ({
         ...prev,
         maxPlayers: gameInfo.defaultMaxPlayers,
+        turnTimer: gameInfo.settings.defaultTurnTimer || 60, // Update turn timer when game changes
         gameType: selectedGameType,
       }))
       setMaxPlayersInput(gameInfo.defaultMaxPlayers.toString())
@@ -368,6 +388,57 @@ function CreateLobbyPage() {
                   }
                 </p>
               </div>
+
+              {/* Turn Timer Settings - Only for games that support it */}
+              {gameInfo.settings.hasTurnTimer && (
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                    ⏱️ {t('lobby.create.turnTimer')} *
+                  </label>
+                  <div className="flex gap-2">
+                    {(gameInfo.settings.turnTimerOptions || [30, 60, 90, 120]).map((seconds) => (
+                      <button
+                        key={seconds}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, turnTimer: seconds })}
+                        className={`flex-1 px-3 py-2 rounded-xl font-semibold transition-all ${
+                          formData.turnTimer === seconds
+                            ? 'bg-white text-blue-600 shadow-lg scale-105'
+                            : 'bg-white/20 text-white hover:bg-white/30'
+                        }`}
+                      >
+                        {seconds}s
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-white/70 mt-2 text-center">
+                    {t('lobby.create.turnTimerHelper')}
+                  </p>
+                </div>
+              )}
+
+              {/* Game Mode - Only for games that support it */}
+              {gameInfo.settings.hasGameModes && (
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                    🎮 {t('lobby.create.gameMode')}
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full px-4 py-2.5 rounded-xl font-semibold bg-white/10 text-white/50 cursor-not-allowed flex items-center justify-center gap-2 border-2 border-white/20"
+                    >
+                      <span>🔒</span>
+                      <span>{t('lobby.create.comingSoon')}</span>
+                    </button>
+                    <p className="text-xs text-white/70 mt-2 text-center">
+                      {t('lobby.create.gameModeHelper')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="bg-red-500/20 border-2 border-red-400 text-white px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -435,13 +506,18 @@ function CreateLobbyPage() {
               <div className="text-5xl mb-2">{gameInfo.emoji}</div>
               <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
               <div className="text-white/80 mb-2 text-sm">{t(`games.${selectedGameType}.description`)}</div>
-              <div className="flex items-center justify-center gap-3 mt-2">
+              <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
                   👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}
                 </span>
                 {formData.password && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
                     🔒 {t('lobby.create.preview.private')}
+                  </span>
+                )}
+                {gameInfo.settings.hasTurnTimer && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
+                    ⏱️ {formData.turnTimer}s
                   </span>
                 )}
               </div>

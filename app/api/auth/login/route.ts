@@ -22,7 +22,7 @@ async function loginHandler(request: NextRequest) {
   log.info('Login attempt', { email })
 
   // Find user
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { email },
   })
 

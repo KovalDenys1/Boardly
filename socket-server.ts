@@ -16,18 +16,14 @@ import { socketLogger, logger } from './lib/logger'
 import { validateEnv, printEnvInfo } from './lib/env'
 import { socketMonitor } from './lib/socket-monitoring'
 import { dbMonitor } from './lib/db-monitoring'
-
-// Socket event payload types
-interface GameActionPayload {
-  lobbyCode: string
-  action: string
-  payload: unknown
-}
-
-interface GameStartedPayload {
-  lobbyCode: string
-  game?: unknown
-}
+import { 
+  SocketEvents, 
+  GameActionPayload, 
+  GameStartedPayload,
+  ServerErrorPayload,
+  createEventPayload,
+  SocketRooms
+} from './types/socket-events'
 
 // Validate environment variables on startup
 try {
@@ -41,15 +37,11 @@ try {
 const port = Number(process.env.PORT) || 3001
 const hostname = process.env.HOSTNAME || '0.0.0.0'
 
+// Event sequence counter for ordering and deduplication (must be declared before server creation)
+let eventSequence = 0
+
 const server = createServer((req, res) => {
   const url = parse(req.url || '/')
-  
-  if (url.pathname === '/health') {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ ok: true }))
-    return
-  }
   
   // API endpoint for server-side bot notifications
   if (url.pathname === '/api/notify' && req.method === 'POST') {
@@ -68,19 +60,27 @@ const server = createServer((req, res) => {
           return
         }
         
-        logger.info('Server notification received', { room, event })
+        logger.info('Server notification received', { room, event, dataKeys: Object.keys(data || {}) })
+        
+        // Add metadata to the event
+        const payloadWithMetadata = {
+          ...data,
+          sequenceId: ++eventSequence,
+          timestamp: Date.now(),
+          version: '1.0.0'
+        }
         
         // Broadcast to all clients in the room
-        io.to(room).emit(event, data)
+        io.to(room).emit(event, payloadWithMetadata)
         
         // Notify lobby list if it's a state change
-        if (data?.action === 'state-change') {
-          io.to('lobby-list').emit('lobby-list-update')
+        if (data?.action === 'state-change' || event === SocketEvents.LOBBY_LIST_UPDATE) {
+          io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
         }
         
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ success: true }))
+        res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
       } catch (error) {
         logger.error('Error processing notification', error as Error)
         res.statusCode = 500
@@ -150,6 +150,31 @@ const io = new SocketIOServer(server, {
 
 // Online users tracking: userId -> Set of socketIds
 const onlineUsers = new Map<string, Set<string>>()
+
+// Helper to create event with metadata
+function emitWithMetadata(io: SocketIOServer, room: string, event: string, data: any) {
+  const payload = {
+    ...data,
+    sequenceId: ++eventSequence,
+    timestamp: Date.now(),
+    version: '1.0.0'
+  }
+  io.to(room).emit(event, payload)
+  return payload
+}
+
+// Helper function to emit structured errors
+function emitError(socket: any, code: string, message: string, translationKey?: string, details?: any) {
+  const error: ServerErrorPayload = {
+    code,
+    message,
+    translationKey,
+    details,
+    stack: process.env.NODE_ENV === 'development' ? new Error().stack : undefined
+  }
+  socket.emit(SocketEvents.SERVER_ERROR, error)
+  logger.warn('Socket error emitted', { code, message, socketId: socket.id })
+}
 
 // Helper functions for online status
 function markUserOnline(userId: string, socketId: string) {
@@ -282,9 +307,14 @@ io.use(async (socket, next) => {
     logger.info('Attempting to find user in database', { userId })
     
     // Verify user exists in database
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, email: true, isBot: true }
+      select: { 
+        id: true, 
+        username: true, 
+        email: true,
+        bot: true  // Include bot relation instead of isBot
+      }
     })
     
     if (!user) {
@@ -331,10 +361,10 @@ io.on('connection', (socket) => {
   // Send online users list to newly connected user
   socket.emit('online-users', { userIds: getOnlineUserIds() })
 
-  socket.on('join-lobby', async (lobbyCode: string) => {
+  socket.on(SocketEvents.JOIN_LOBBY, async (lobbyCode: string) => {
     // Rate limiting
     if (!checkRateLimit(socket.id)) {
-      socket.emit('error', { message: 'Too many requests' })
+      emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
       return
     }
     
@@ -344,13 +374,13 @@ io.on('connection', (socket) => {
     // Basic validation
     if (!lobbyCode || typeof lobbyCode !== 'string' || lobbyCode.length > 20) {
       logger.warn('Invalid lobby code received', { lobbyCode, socketId: socket.id })
-      socket.emit('error', { message: 'Invalid lobby code' })
+      emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
       return
     }
     
     try {
       // Verify lobby exists in database
-      const lobby = await prisma.lobby.findUnique({
+      const lobby = await prisma.lobbies.findUnique({
         where: { code: lobbyCode },
         include: {
           games: {
@@ -365,56 +395,59 @@ io.on('connection', (socket) => {
       })
       
       if (!lobby) {
-        socket.emit('error', { message: 'Lobby not found' })
+        emitError(socket, 'LOBBY_NOT_FOUND', 'Lobby not found', 'errors.lobbyNotFound', { lobbyCode })
         return
       }
       
       // Always allow joining the room to receive updates
       // Access control will be handled at the action level
-      socket.join(`lobby:${lobbyCode}`)
+      socket.join(SocketRooms.lobby(lobbyCode))
       socketLogger('join-lobby').info('Socket joined lobby', { 
         socketId: socket.id, 
         lobbyCode,
         userId: socket.data.user.id,
         username: socket.data.user.username
       })
+      
+      // Send success confirmation
+      socket.emit('joined-lobby', { lobbyCode, success: true })
     } catch (error) {
       logger.error('Error joining lobby', error as Error, { lobbyCode })
-      socket.emit('error', { message: 'Failed to join lobby' })
+      emitError(socket, 'JOIN_LOBBY_ERROR', 'Failed to join lobby', 'errors.joinLobbyFailed')
     }
   })
 
-  socket.on('leave-lobby', (lobbyCode: string) => {
+  socket.on(SocketEvents.LEAVE_LOBBY, (lobbyCode: string) => {
     socketMonitor.trackEvent('leave-lobby')
-    socket.leave(`lobby:${lobbyCode}`)
+    socket.leave(SocketRooms.lobby(lobbyCode))
     socketLogger('leave-lobby').debug('Socket left lobby', { socketId: socket.id, lobbyCode })
   })
 
-  socket.on('join-lobby-list', () => {
+  socket.on(SocketEvents.JOIN_LOBBY_LIST, () => {
     socketMonitor.trackEvent('join-lobby-list')
-    socket.join('lobby-list')
+    socket.join(SocketRooms.lobbyList())
     socketLogger('join-lobby-list').debug('Socket joined lobby-list', { socketId: socket.id })
   })
 
-  socket.on('leave-lobby-list', () => {
+  socket.on(SocketEvents.LEAVE_LOBBY_LIST, () => {
     socketMonitor.trackEvent('leave-lobby-list')
-    socket.leave('lobby-list')
+    socket.leave(SocketRooms.lobbyList())
     socketLogger('leave-lobby-list').debug('Socket left lobby-list', { socketId: socket.id })
   })
 
-  socket.on('game-action', (data: GameActionPayload) => {
+  socket.on(SocketEvents.GAME_ACTION, (data: GameActionPayload) => {
     socketMonitor.trackEvent('game-action')
     
     // Rate limiting
     if (!checkRateLimit(socket.id)) {
-      socket.emit('error', { message: 'Too many requests' })
+      emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
       return
     }
     
     // Validate input
     if (!data?.lobbyCode || !data?.action || typeof data.lobbyCode !== 'string') {
       logger.warn('Invalid game-action data received', { socketId: socket.id })
-      socket.emit('error', { message: 'Invalid action data' })
+      emitError(socket, 'INVALID_ACTION_DATA', 'Invalid action data', 'errors.invalidActionData')
       return
     }
     
@@ -425,26 +458,32 @@ io.on('connection', (socket) => {
       return
     }
     
-    // Broadcast to all clients in the lobby EXCEPT the sender
+    // Broadcast with metadata to all clients in the lobby EXCEPT the sender
     // This prevents the sender from processing their own update twice
-    socket.to(`lobby:${data.lobbyCode}`).emit('game-update', {
-      action: data.action,
-      payload: data.payload,
-    })
+    emitWithMetadata(
+      socket.to(SocketRooms.lobby(data.lobbyCode)) as any,
+      SocketRooms.lobby(data.lobbyCode),
+      SocketEvents.GAME_UPDATE,
+      {
+        action: data.action,
+        payload: data.payload,
+        lobbyCode: data.lobbyCode
+      }
+    )
 
     // Notify lobby list page about changes
     if (data.action === 'player-left' || data.action === 'state-change' || data.action === 'game-abandoned') {
-      io.to('lobby-list').emit('lobby-list-update')
+      io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
     }
   })
 
-  socket.on('lobby-created', () => {
+  socket.on(SocketEvents.LOBBY_CREATED, () => {
     socketMonitor.trackEvent('lobby-created')
     socketLogger('lobby-created').info('New lobby created, notifying lobby list')
-    io.to('lobby-list').emit('lobby-list-update')
+    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
   })
 
-  socket.on('player-joined', (data: { lobbyCode: string; username?: string; userId?: string }) => {
+  socket.on(SocketEvents.PLAYER_JOINED, (data: { lobbyCode: string; username?: string; userId?: string }) => {
     socketMonitor.trackEvent('player-joined')
     socketLogger('player-joined').info('Player joined lobby, notifying all players', { 
       lobbyCode: data?.lobbyCode, 
@@ -452,41 +491,58 @@ io.on('connection', (socket) => {
     })
     
     // Notify lobby list about update
-    io.to('lobby-list').emit('lobby-list-update')
+    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
     
-    // Notify all players in the lobby about the new player
+    // Notify all players in the lobby about the new player with metadata
     if (data?.lobbyCode) {
-      io.to(`lobby:${data.lobbyCode}`).emit('player-joined', {
-        username: data.username,
-        userId: data.userId,
-      })
+      emitWithMetadata(
+        io,
+        SocketRooms.lobby(data.lobbyCode),
+        SocketEvents.PLAYER_JOINED,
+        {
+          username: data.username,
+          userId: data.userId,
+          lobbyCode: data.lobbyCode
+        }
+      )
       
       // Also send lobby-update event to refresh player list
-      io.to(`lobby:${data.lobbyCode}`).emit('lobby-update', {
-        lobbyCode: data.lobbyCode,
-      })
+      emitWithMetadata(
+        io,
+        SocketRooms.lobby(data.lobbyCode),
+        SocketEvents.LOBBY_UPDATE,
+        {
+          lobbyCode: data.lobbyCode,
+          type: 'player-joined'
+        }
+      )
     }
   })
 
-  socket.on('game-started', (data: GameStartedPayload) => {
+  socket.on(SocketEvents.GAME_STARTED, (data: GameStartedPayload) => {
     socketMonitor.trackEvent('game-started')
     socketLogger('game-started').info('Game started, notifying all players', { 
       lobbyCode: data?.lobbyCode 
     })
     
     if (data?.lobbyCode) {
-      // Notify all players in the lobby that game has started
-      io.to(`lobby:${data.lobbyCode}`).emit('game-started', {
-        lobbyCode: data.lobbyCode,
-        game: data.game,
-      })
+      // Notify all players in the lobby that game has started with metadata
+      emitWithMetadata(
+        io,
+        SocketRooms.lobby(data.lobbyCode),
+        SocketEvents.GAME_STARTED,
+        {
+          lobbyCode: data.lobbyCode,
+          game: data.game
+        }
+      )
       
       // Also update lobby list
-      io.to('lobby-list').emit('lobby-list-update')
+      io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
     }
   })
 
-  socket.on('send-chat-message', (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
+  socket.on(SocketEvents.SEND_CHAT_MESSAGE, (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
     socketMonitor.trackEvent('send-chat-message')
     
     if (!data?.lobbyCode || !data?.message) {
@@ -494,22 +550,27 @@ io.on('connection', (socket) => {
       return
     }
     
-    // Broadcast chat message to all clients in the lobby
-    io.to(`lobby:${data.lobbyCode}`).emit('chat-message', {
-      id: Date.now().toString(),
-      userId: data.userId,
-      username: data.username,
-      message: data.message,
-      timestamp: Date.now(),
-    })
+    // Broadcast chat message with metadata to all clients in the lobby
+    emitWithMetadata(
+      io,
+      SocketRooms.lobby(data.lobbyCode),
+      SocketEvents.CHAT_MESSAGE,
+      {
+        id: Date.now().toString(),
+        userId: data.userId,
+        username: data.username,
+        message: data.message,
+        lobbyCode: data.lobbyCode
+      }
+    )
   })
 
-  socket.on('player-typing', (data: { lobbyCode: string; userId: string; username: string }) => {
+  socket.on(SocketEvents.PLAYER_TYPING, (data: { lobbyCode: string; userId: string; username: string }) => {
     socketMonitor.trackEvent('player-typing')
     if (!data?.lobbyCode) return
     
     // Broadcast typing indicator to other clients (not sender)
-    socket.to(`lobby:${data.lobbyCode}`).emit('player-typing', {
+    socket.to(SocketRooms.lobby(data.lobbyCode)).emit(SocketEvents.PLAYER_TYPING, {
       userId: data.userId,
       username: data.username,
     })
@@ -537,9 +598,64 @@ io.on('connection', (socket) => {
 socketMonitor.initialize(io, 30000) // Log metrics every 30 seconds
 dbMonitor.initialize(60000) // Log DB metrics every 60 seconds
 
-// Add health endpoint with monitoring data
+// Health check endpoint for metrics
 server.on('request', (req, res) => {
   const url = parse(req.url || '/')
+  
+  if (url.pathname === '/health') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ ok: true }))
+    return
+  }
+  
+  // API endpoint for server-side bot notifications (moved here after io initialization)
+  if (url.pathname === '/api/notify' && req.method === 'POST') {
+    let body = ''
+    req.on('data', chunk => {
+      body += chunk.toString()
+    })
+    req.on('end', () => {
+      try {
+        const { room, event, data } = JSON.parse(body)
+        
+        if (!room || !event) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Missing room or event' }))
+          return
+        }
+        
+        logger.info('Server notification received', { room, event, dataKeys: Object.keys(data || {}) })
+        
+        // Add metadata to the event
+        const payloadWithMetadata = {
+          ...data,
+          sequenceId: ++eventSequence,
+          timestamp: Date.now(),
+          version: '1.0.0'
+        }
+        
+        // Broadcast to all clients in the room
+        io.to(room).emit(event, payloadWithMetadata)
+        
+        // Notify lobby list if it's a state change
+        if (data?.action === 'state-change' || event === SocketEvents.LOBBY_LIST_UPDATE) {
+          io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+        }
+        
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
+      } catch (error) {
+        logger.error('Error processing notification', error as Error)
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Internal server error' }))
+      }
+    })
+    return
+  }
   
   if (url.pathname === '/metrics') {
     res.statusCode = 200

@@ -18,6 +18,7 @@ const en = {
     sort: 'Sort',
     all: 'All',
     or: 'or',
+    and: 'and',
     deleting: 'Deleting...',
     goHome: 'Go to Home',
     optional: 'optional',
@@ -123,6 +124,11 @@ const en = {
       lobbyNamePlaceholder: 'e.g., Friday Night Game',
       gameType: 'Game Type',
       maxPlayers: 'Maximum Players',
+      turnTimer: 'Turn Time Limit',
+      turnTimerHelper: 'Each player has this much time to complete their turn',
+      gameMode: 'Game Mode',
+      gameModeHelper: 'Fast mode, short mode, and mods coming soon!',
+      comingSoon: 'Coming Soon',
       password: 'Password (Optional)',
       passwordPlaceholder: 'Leave empty for public lobby',
       create: 'Create Lobby',
@@ -372,6 +378,8 @@ const en = {
       threeOfKind: 'Three of a Kind',
       fourOfKind: 'Four of a Kind',
       fullHouse: 'Full House',
+      onePair: 'One Pair',
+      twoPairs: 'Two Pairs',
       smallStraight: 'Small Straight',
       largeStraight: 'Large Straight',
       yahtzee: 'Yahtzee',
@@ -472,6 +480,8 @@ const en = {
       tip: 'Tip',
       waitingForHost: 'Waiting for host to start...',
       host: 'Host',
+      perTurn: 'per turn',
+      timeLimit: 'Time limit',
     },
   },
   chat: {
@@ -536,6 +546,10 @@ const en = {
       oauthError: 'Failed to sign in',
       inviteBanner: 'You have been invited to a game!',
       inviteSubtitle: 'Register to join the lobby',
+      agreeToTerms: 'I agree to the',
+      termsOfService: 'Terms of Service',
+      privacyPolicy: 'Privacy Policy',
+      mustAgreeToTerms: 'You must agree to the Terms of Service and Privacy Policy',
     },
     forgotPassword: {
       title: 'Forgot Password?',
@@ -620,10 +634,65 @@ const en = {
     },
     settings: {
       title: 'Settings',
+      subtitle: 'Customize your experience',
       changePassword: 'Change Password',
-      notifications: 'Notifications',
-      language: 'Language',
-      theme: 'Theme',
+      
+      // Language
+      language: {
+        title: 'Language',
+        subtitle: 'Choose your preferred language',
+        current: 'Current: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Theme',
+        subtitle: 'Choose your preferred color scheme',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System Default',
+        current: 'Current: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Notifications',
+        subtitle: 'Manage how you receive updates',
+        email: 'Email Notifications',
+        emailDesc: 'Receive game invites and updates via email',
+        push: 'Push Notifications',
+        pushDesc: 'Browser notifications for real-time updates',
+        sound: 'Sound Effects',
+        soundDesc: 'Play sounds for in-game actions and notifications',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Privacy',
+        subtitle: 'Control who can see your information',
+        profileVisibility: 'Profile Visibility',
+        profileVisibilityDesc: 'Who can view your profile and game history',
+        public: 'Public',
+        friendsOnly: 'Friends Only',
+        private: 'Private',
+        showOnline: 'Show Online Status',
+        showOnlineDesc: 'Let others see when you\'re online',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Game Preferences',
+        subtitle: 'Customize your gaming experience',
+        autoJoin: 'Auto-Join Games',
+        autoJoinDesc: 'Automatically join when invited to a game',
+        confirmMoves: 'Confirm Moves',
+        confirmMovesDesc: 'Ask for confirmation before submitting moves',
+        animations: 'Animations',
+        animationsDesc: 'Enable smooth animations and transitions',
+      },
+      
+      saved: 'Settings saved successfully',
+      error: 'Failed to save settings',
     },
     edit: {
       title: 'Edit Profile',
@@ -699,6 +768,9 @@ const en = {
       copyLink: 'Copy Profile Link',
       friendCodeCopied: 'Friend code copied to clipboard!',
       profileLinkCopied: 'Profile link copied! Share it with friends.',
+      emailVerificationRequired: 'Email Verification Required',
+      emailVerificationRequiredDesc: 'Please verify your email to access your friend code and connect with friends.',
+      verifyEmail: 'Verify Email',
       errors: {
         loadFailed: 'Failed to load friends',
         usernameRequired: 'Username is required',
@@ -727,6 +799,16 @@ const en = {
     invalidToken: 'Invalid or missing token',
     failedToLoad: 'Failed to load data. Please try again.',
     gameNotFound: 'Game not found',
+    // Socket/Connection errors
+    connectionTimeout: 'Connection timeout. Please check your internet.',
+    connectionError: 'Connection error. Retrying...',
+    authenticationFailed: 'Authentication failed. Please refresh the page.',
+    rateLimitExceeded: 'Too many requests. Please slow down.',
+    invalidLobbyCode: 'Invalid lobby code format',
+    lobbyNotFound: 'Lobby not found',
+    joinLobbyFailed: 'Failed to join lobby. Please try again.',
+    invalidActionData: 'Invalid action data',
+    general: 'An error occurred: {{message}}',
   },
   spy: {
     phases: {

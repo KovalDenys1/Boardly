@@ -2,73 +2,53 @@
 
 Complete documentation for the Boardly multiplayer gaming platform.
 
-## 📖 Table of Contents
+## 📖 Available Documentation
 
-### Getting Started
-- [README.md](../README.md) - Project overview and setup
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-- [CHANGELOG.md](CHANGELOG.md) - Version history
+### Core Documentation
+- **[README.md](../README.md)** - Project overview and quick start
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+- **[TODO.md](TODO.md)** - Roadmap and planned features
 
-### Core Features
-- [I18N_GUIDE.md](I18N_GUIDE.md) - Internationalization (English/Ukrainian)
-- [WEBSOCKET_RECONNECTION.md](WEBSOCKET_RECONNECTION.md) - Real-time connection handling
-- [PERFORMANCE_OPTIMIZATIONS.md](PERFORMANCE_OPTIMIZATIONS.md) - Performance improvements
+### Technical Guides
+- **[WEBSOCKET.md](WEBSOCKET.md)** - Real-time communication (Socket.IO)
+- **[PRODUCTION_DEPLOY_GUIDE.md](PRODUCTION_DEPLOY_GUIDE.md)** - Deployment checklist
+- **[PERFORMANCE_OPTIMIZATIONS_DEC2024.md](PERFORMANCE_OPTIMIZATIONS_DEC2024.md)** - Performance improvements
 
-### Authentication & Security
-- [EMAIL_VERIFICATION.md](EMAIL_VERIFICATION.md) - Email verification system
-- [OAUTH_EMAIL_VERIFICATION.md](OAUTH_EMAIL_VERIFICATION.md) - OAuth auto-verification
-- [OAUTH_ACCOUNT_LINKING.md](OAUTH_ACCOUNT_LINKING.md) - Linking multiple OAuth providers
-- [ACCOUNT_LINKING_ARCHITECTURE.md](ACCOUNT_LINKING_ARCHITECTURE.md) - Account linking database architecture
-- [DISCORD_OAUTH_SETUP.md](DISCORD_OAUTH_SETUP.md) - Discord OAuth configuration
-- [ACCOUNT_DELETION.md](ACCOUNT_DELETION.md) - Safe account deletion
+### Game Implementation
+- **[SPY_GAME_IMPLEMENTATION.md](SPY_GAME_IMPLEMENTATION.md)** - Guess the Spy game
+- **[GUESS_THE_SPY_DESIGN.md](GUESS_THE_SPY_DESIGN.md)** - Game design document
+- **[FRIEND_SYSTEM_API.md](FRIEND_SYSTEM_API.md)** - Friend system endpoints
 
-### Social Features
-- [FRIEND_SYSTEM_API.md](FRIEND_SYSTEM_API.md) - Friend system endpoints (planned)
+## 🚀 Quick Start
 
-### Development
-- [TESTING_COMPLETE.md](TESTING_COMPLETE.md) - Testing strategy and coverage
-- [TODO.md](TODO.md) - Roadmap and future features
+1. **Setup Project**: See [main README](../README.md)
+2. **WebSocket Guide**: Read [WEBSOCKET.md](WEBSOCKET.md)
+3. **Deploy**: Follow [PRODUCTION_DEPLOY_GUIDE.md](PRODUCTION_DEPLOY_GUIDE.md)
 
-## 🎯 Quick Links
+## 🎯 For Different Audiences
 
-### For Developers
-- **Setup**: See [README.md](../README.md#installation)
-- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Testing**: See [TESTING_COMPLETE.md](TESTING_COMPLETE.md)
-
-### For Users
-- **Games**: Currently supports Yahtzee (more coming soon!)
-- **Languages**: English and Ukrainian
-- **Auth**: Email/password, Google, GitHub, Discord
-
-### For DevOps
-- **Performance**: See [PERFORMANCE_OPTIMIZATIONS.md](PERFORMANCE_OPTIMIZATIONS.md)
-- **WebSocket**: See [WEBSOCKET_RECONNECTION.md](WEBSOCKET_RECONNECTION.md)
-
-## 📋 Documentation Standards
-
-All documentation follows these principles:
-- ✅ Clear, actionable instructions
-- ✅ Code examples with explanations
-- ✅ Security considerations highlighted
-- ✅ No personal information or secrets
-- ✅ Up-to-date with codebase
-
-## 🔒 Security
-
-Sensitive information (API keys, secrets, personal data) should **never** be committed to documentation. Use environment variables and `.env.example` templates instead.
-
-## 📝 Need Help?
-
-- Check existing documentation first
-- Search [GitHub Issues](https://github.com/KovalDenys1/Boardly/issues)
-- Create new issue with detailed description
+### Developers
+- Start with [main README](../README.md) for setup
 - Read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- Check [WEBSOCKET.md](WEBSOCKET.md) for real-time features
 
-## 🚀 Recent Updates
+### DevOps
+- Use [PRODUCTION_DEPLOY_GUIDE.md](PRODUCTION_DEPLOY_GUIDE.md)
+- Review [PERFORMANCE_OPTIMIZATIONS_DEC2024.md](PERFORMANCE_OPTIMIZATIONS_DEC2024.md)
 
-See [CHANGELOG.md](CHANGELOG.md) for version history and recent changes.
+### Contributors
+- Read [CONTRIBUTING.md](CONTRIBUTING.md)
+- Check [TODO.md](TODO.md) for what needs work
+- Review [CHANGELOG.md](CHANGELOG.md) to see recent changes
+
+## 📝 Documentation Principles
+
+- ✅ Keep it simple and actionable
+- ✅ Include code examples
+- ✅ No secrets or personal data
+- ✅ Stay up-to-date with code
 
 ---
 
-*Documentation last updated: December 2024*
+*Last updated: February 2026*

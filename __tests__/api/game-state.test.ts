@@ -12,11 +12,11 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
   prisma: {
-    game: {
+    games: {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    player: {
+    players: {
       update: jest.fn(),
     },
   },
@@ -135,7 +135,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   it('should return 404 when game not found', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue(null)
+    mockPrisma.games.findUnique.mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost:3000/api/game/invalid/state', {
       method: 'POST',
@@ -156,7 +156,7 @@ describe('POST /api/game/[gameId]/state', () => {
     }
     
     mockGetServerSession.mockResolvedValue(otherUserSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue(mockGame as any)
+    mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
@@ -173,7 +173,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   it('should successfully process roll move', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue(mockGame as any)
+    mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
     
     const updatedState = {
       ...mockGameState,
@@ -184,11 +184,11 @@ describe('POST /api/game/[gameId]/state', () => {
       },
     }
 
-    mockPrisma.game.update.mockResolvedValue({
+    mockPrisma.games.update.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify(updatedState),
     } as any)
-    mockPrisma.player.update.mockResolvedValue({} as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
@@ -201,7 +201,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
     expect(response.status).toBe(200)
     expect(data.game).toBeDefined()
-    expect(mockPrisma.game.update).toHaveBeenCalled()
+    expect(mockPrisma.games.update).toHaveBeenCalled()
   })
 
   it('should successfully process hold move', async () => {
@@ -215,12 +215,12 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue({
+    mockPrisma.games.findUnique.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify(stateAfterRoll),
     } as any)
     
-    mockPrisma.game.update.mockResolvedValue({
+    mockPrisma.games.update.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify({
         ...stateAfterRoll,
@@ -230,7 +230,7 @@ describe('POST /api/game/[gameId]/state', () => {
         },
       }),
     } as any)
-    mockPrisma.player.update.mockResolvedValue({} as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
@@ -244,7 +244,7 @@ describe('POST /api/game/[gameId]/state', () => {
     const response = await POST(request, { params: { gameId: 'game-123' } })
 
     expect(response.status).toBe(200)
-    expect(mockPrisma.game.update).toHaveBeenCalled()
+    expect(mockPrisma.games.update).toHaveBeenCalled()
   })
 
   it.skip('should successfully process score move', async () => {
@@ -259,7 +259,7 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue({
+    mockPrisma.games.findUnique.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify(stateWithRolls),
     } as any)
@@ -274,12 +274,12 @@ describe('POST /api/game/[gameId]/state', () => {
       },
     }
 
-    mockPrisma.game.update.mockResolvedValue({
+    mockPrisma.games.update.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify(updatedState),
       currentTurn: 1,
     } as any)
-    mockPrisma.player.update.mockResolvedValue({} as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
@@ -295,7 +295,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
     expect(response.status).toBe(200)
     expect(data.game.currentTurn).toBe(1)
-    expect(mockPrisma.player.update).toHaveBeenCalled()
+    expect(mockPrisma.players.update).toHaveBeenCalled()
   })
 
   it('should return 400 for invalid move', async () => {
@@ -308,7 +308,7 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue({
+    mockPrisma.games.findUnique.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify(stateWithNoRolls),
     } as any)
@@ -330,7 +330,7 @@ describe('POST /api/game/[gameId]/state', () => {
   it.skip('should handle guest user with X-Guest-Id header', async () => {
     // TODO: Fix guest header handling - returns 400
     mockGetServerSession.mockResolvedValue(null) // No session
-    mockPrisma.game.findUnique.mockResolvedValue({
+    mockPrisma.games.findUnique.mockResolvedValue({
       ...mockGame,
       players: [
         {
@@ -340,8 +340,8 @@ describe('POST /api/game/[gameId]/state', () => {
         },
       ],
     } as any)
-    mockPrisma.game.update.mockResolvedValue(mockGame as any)
-    mockPrisma.player.update.mockResolvedValue({} as any)
+    mockPrisma.games.update.mockResolvedValue(mockGame as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
@@ -359,7 +359,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   it('should handle corrupted game state', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue({
+    mockPrisma.games.findUnique.mockResolvedValue({
       ...mockGame,
       state: 'invalid json{{{',
     } as any)
@@ -388,12 +388,12 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.game.findUnique.mockResolvedValue(mockGame as any)
-    mockPrisma.game.update.mockResolvedValue({
+    mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
+    mockPrisma.games.update.mockResolvedValue({
       ...mockGame,
       state: JSON.stringify(stateWithScores),
     } as any)
-    mockPrisma.player.update.mockResolvedValue({} as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
@@ -403,7 +403,7 @@ describe('POST /api/game/[gameId]/state', () => {
     })
     await POST(request, { params: { gameId: 'game-123' } })
 
-    expect(mockPrisma.player.update).toHaveBeenCalledWith(
+    expect(mockPrisma.players.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           score: expect.any(Number),

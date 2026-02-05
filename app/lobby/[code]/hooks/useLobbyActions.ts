@@ -306,8 +306,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         botCount,
       })
       
+      const turnTimerLimit = lobby?.turnTimer || 60
       setTimerActive(true)
-      setTimeLeft(60)
+      setTimeLeft(turnTimerLimit)
       
       setRollHistory([])
       setCelebrationEvent(null)

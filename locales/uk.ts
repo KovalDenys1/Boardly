@@ -20,6 +20,7 @@ const uk: Translation = {
     sort: 'Сортування',
     all: 'Всі',
     or: 'або',
+    and: 'та',
     deleting: 'Видалення...',
     goHome: 'На головну',
     optional: 'необов\'язково',
@@ -132,6 +133,11 @@ const uk: Translation = {
       lobbyNamePlaceholder: 'напр., П\'ятнична гра',
       gameType: 'Тип гри',
       maxPlayers: 'Максимум гравців',
+      turnTimer: 'Ліміт часу на хід',
+      turnTimerHelper: 'Кожен гравець має цей час для завершення свого ходу',
+      gameMode: 'Режим гри',
+      gameModeHelper: 'Швидкий режим, короткий режим та моди з\'являться незабаром!',
+      comingSoon: 'Незабаром',
       password: 'Пароль (необов\'язково)',
       passwordPlaceholder: 'Залиште порожнім для публічного лобі',
       create: 'Створити лобі',
@@ -374,6 +380,8 @@ const uk: Translation = {
       threeOfKind: 'Три однакових',
       fourOfKind: 'Чотири однакових',
       fullHouse: 'Фул-хаус',
+      onePair: 'Одна пара',
+      twoPairs: 'Дві пари',
       smallStraight: 'Малий стріт',
       largeStraight: 'Великий стріт',
       yahtzee: 'Ятці',
@@ -474,6 +482,8 @@ const uk: Translation = {
       tip: 'Порада',
       waitingForHost: 'Очікуємо, поки хост почне...',
       host: 'Хост',
+      perTurn: 'на хід',
+      timeLimit: 'Ліміт часу',
     },
   },
   chat: {
@@ -538,6 +548,10 @@ const uk: Translation = {
       oauthError: 'Не вдалося увійти',
       inviteBanner: 'Вас запросили до гри!',
       inviteSubtitle: 'Зареєструйтеся, щоб приєднатися до лобі',
+      agreeToTerms: 'Я погоджуюсь з',
+      termsOfService: 'Умовами використання',
+      privacyPolicy: 'Політикою конфіденційності',
+      mustAgreeToTerms: 'Ви повинні погодитися з Умовами використання та Політикою конфіденційності',
     },
     forgotPassword: {
       title: 'Забули пароль?',
@@ -622,10 +636,65 @@ const uk: Translation = {
     },
     settings: {
       title: 'Налаштування',
+      subtitle: 'Налаштуйте свій досвід',
       changePassword: 'Змінити пароль',
-      notifications: 'Сповіщення',
-      language: 'Мова',
-      theme: 'Тема',
+      
+      // Language
+      language: {
+        title: 'Мова',
+        subtitle: 'Оберіть бажану мову інтерфейсу',
+        current: 'Поточна: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Тема',
+        subtitle: 'Оберіть бажану кольорову схему',
+        light: 'Світла',
+        dark: 'Темна',
+        system: 'Системна',
+        current: 'Поточна: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Сповіщення',
+        subtitle: 'Керуйте способом отримання оновлень',
+        email: 'Email сповіщення',
+        emailDesc: 'Отримуйте запрошення до ігор та оновлення на email',
+        push: 'Push сповіщення',
+        pushDesc: 'Сповіщення браузера для оновлень у реальному часі',
+        sound: 'Звукові ефекти',
+        soundDesc: 'Відтворювати звуки для ігрових дій та сповіщень',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Приватність',
+        subtitle: 'Керуйте видимістю вашої інформації',
+        profileVisibility: 'Видимість профілю',
+        profileVisibilityDesc: 'Хто може переглядати ваш профіль та історію ігор',
+        public: 'Публічний',
+        friendsOnly: 'Тільки друзі',
+        private: 'Приватний',
+        showOnline: 'Показувати онлайн статус',
+        showOnlineDesc: 'Дозволити іншим бачити, коли ви онлайн',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Налаштування ігор',
+        subtitle: 'Налаштуйте ігровий досвід',
+        autoJoin: 'Автоматичне приєднання',
+        autoJoinDesc: 'Автоматично приєднуватися при запрошенні до гри',
+        confirmMoves: 'Підтверджувати ходи',
+        confirmMovesDesc: 'Запитувати підтвердження перед відправкою ходів',
+        animations: 'Анімації',
+        animationsDesc: 'Увімкнути плавні анімації та переходи',
+      },
+      
+      saved: 'Налаштування збережено',
+      error: 'Не вдалося зберегти налаштування',
     },
     edit: {
       title: 'Редагувати профіль',
@@ -701,6 +770,9 @@ const uk: Translation = {
       copyLink: 'Копіювати посилання на профіль',
       friendCodeCopied: 'Код друга скопійовано в буфер обміну!',
       profileLinkCopied: 'Посилання на профіль скопійовано! Поділіться з друзями.',
+      emailVerificationRequired: 'Потрібна верифікація електронної пошти',
+      emailVerificationRequiredDesc: 'Будь ласка, підтвердіть вашу електронну пошту, щоб отримати доступ до коду друга та зв\'язатися з друзями.',
+      verifyEmail: 'Підтвердити пошту',
       errors: {
         loadFailed: 'Не вдалося завантажити друзів',
         usernameRequired: 'Ім\'я користувача обов\'язкове',
@@ -729,6 +801,16 @@ const uk: Translation = {
     invalidToken: 'Невірний або відсутній токен',
     failedToLoad: 'Не вдалося завантажити дані. Спробуйте знову.',
     gameNotFound: 'Гру не знайдено',
+    // Socket/Connection errors
+    connectionTimeout: 'Час очікування з\'єднання вичерпано. Перевірте інтернет.',
+    connectionError: 'Помилка з\'єднання. Повторне підключення...',
+    authenticationFailed: 'Помилка аутентифікації. Будь ласка, оновіть сторінку.',
+    rateLimitExceeded: 'Занадто багато запитів. Будь ласка, сповільніться.',
+    invalidLobbyCode: 'Невірний формат коду лобі',
+    lobbyNotFound: 'Лобі не знайдено',
+    joinLobbyFailed: 'Не вдалося приєднатися до лобі. Спробуйте знову.',
+    invalidActionData: 'Невірні дані дії',
+    general: 'Сталася помилка: {{message}}',
   },
   spy: {
     phases: {

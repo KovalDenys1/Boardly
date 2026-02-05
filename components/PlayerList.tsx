@@ -12,6 +12,12 @@ interface Player {
     username: string | null
     email: string | null
     isBot?: boolean
+    bot?: {
+      id: string
+      userId: string
+      botType: string
+      difficulty: string
+    } | null
   }
   score: number
   position: number
@@ -86,7 +92,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
           const isCurrentTurn = player.position === currentTurn
           const isCurrentUser = player.userId === currentUserId
           const isSelected = selectedPlayerId === player.userId
-          const isBot = player.user.isBot === true
+          const isBot = !!player.user.bot
           const playerName = isBot 
             ? t('yahtzee.ui.aiBot')
             : player.user.name || player.user.username || player.user.email || t('yahtzee.ui.player')
@@ -183,7 +189,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
           const isCurrentTurn = player.position === currentTurn
           const isCurrentUser = player.userId === currentUserId
           const isSelected = selectedPlayerId === player.userId
-          const isBot = player.user.isBot === true
+          const isBot = !!player.user.bot
           const playerName = isBot 
             ? t('yahtzee.ui.aiBot')
             : player.user.name || player.user.username || player.user.email || t('yahtzee.ui.player')

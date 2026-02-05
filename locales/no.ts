@@ -18,6 +18,7 @@ const no = {
     sort: 'Sorter',
     all: 'Alle',
     or: 'eller',
+    and: 'og',
     deleting: 'Sletter...',
     goHome: 'Gå til hjem',
     optional: 'valgfritt',
@@ -120,11 +121,42 @@ const no = {
     create: {
       title: 'Opprett lobby',
       lobbyName: 'Lobbynavn',
+      lobbyNamePlaceholder: 'f.eks., Fredagskveldsspill',
       gameType: 'Spilltype',
       maxPlayers: 'Maks spillere',
+      turnTimer: 'Turgrense',
+      turnTimerHelper: 'Hver spiller har så mye tid til å fullføre sin tur',
+      gameMode: 'Spillmodus',
+      gameModeHelper: 'Rask modus, kort modus og mods kommer snart!',
+      comingSoon: 'Kommer snart',
       password: 'Passord (valgfritt)',
       passwordPlaceholder: 'La stå tomt for offentlig lobby',
       create: 'Opprett lobby',
+      creating: 'Oppretter...',
+      cancel: 'Avbryt',
+      gameNotFound: 'Spill ikke funnet',
+      gameNotSupported: 'Spilltypen "{{gameType}}" støttes ikke ennå.',
+      backToGames: '← Tilbake til spill',
+      selectGame: 'Velg {{name}}',
+      maxCharacters: 'Maksimum {{max}} tegn nådd',
+      mustBeBetween: 'Må være mellom {{min}} og {{max}}',
+      playerCountHelper: 'Dette spillet krever nøyaktig {{count}} spiller',
+      playerCountHelper_other: 'Dette spillet støtter {{min}}-{{max}} spillere',
+      tips: {
+        title: 'Raske tips',
+        autoAdd: 'Du blir automatisk lagt til som den første spilleren',
+        shareCode: 'Del lobbykoden med venner for å invitere dem',
+        startReady: 'Start spillet når alle er klare!',
+      },
+      preview: {
+        players: '{{count}} spillere',
+        private: 'Privat',
+        lobbyName: 'Lobbynavn:',
+        noName: '—',
+      },
+      errors: {
+        failedToCreate: 'Kunne ikke opprette lobby',
+      },
     },
     joinSection: {
       title: 'Bli med i lobby',
@@ -441,6 +473,8 @@ const no = {
       tip: 'Tips',
       waitingForHost: 'Venter på at verten skal starte...',
       host: 'Vert',
+      perTurn: 'per tur',
+      timeLimit: 'Tidsgrense',
     },
   },
   chat: {
@@ -505,6 +539,10 @@ const no = {
       oauthError: 'Kunne ikke logge inn',
       inviteBanner: 'Du er invitert til et spill!',
       inviteSubtitle: 'Registrer deg for å bli med i lobbyen',
+      agreeToTerms: 'Jeg godtar',
+      termsOfService: 'Vilkårene for bruk',
+      privacyPolicy: 'Personvernerklæringen',
+      mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen',
     },
     forgotPassword: {
       title: 'Glemt passord?',
@@ -589,10 +627,65 @@ const no = {
     },
     settings: {
       title: 'Innstillinger',
+      subtitle: 'Tilpass din opplevelse',
       changePassword: 'Endre passord',
-      notifications: 'Varsler',
-      language: 'Språk',
-      theme: 'Tema',
+      
+      // Language
+      language: {
+        title: 'Språk',
+        subtitle: 'Velg foretrukket språk for grensesnittet',
+        current: 'Gjeldende: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Tema',
+        subtitle: 'Velg foretrukket fargevalg',
+        light: 'Lys',
+        dark: 'Mørk',
+        system: 'Systemstandard',
+        current: 'Gjeldende: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Varsler',
+        subtitle: 'Administrer hvordan du mottar oppdateringer',
+        email: 'E-postvarsler',
+        emailDesc: 'Motta spillinvitasjoner og oppdateringer via e-post',
+        push: 'Push-varsler',
+        pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
+        sound: 'Lydeffekter',
+        soundDesc: 'Spill av lyder for spillhandlinger og varsler',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Personvern',
+        subtitle: 'Kontroller hvem som kan se informasjonen din',
+        profileVisibility: 'Profilsynlighet',
+        profileVisibilityDesc: 'Hvem kan se profilen og spillhistorikken din',
+        public: 'Offentlig',
+        friendsOnly: 'Bare venner',
+        private: 'Privat',
+        showOnline: 'Vis online-status',
+        showOnlineDesc: 'La andre se når du er online',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Spillinnstillinger',
+        subtitle: 'Tilpass spillopplevelsen din',
+        autoJoin: 'Automatisk deltakelse',
+        autoJoinDesc: 'Bli automatisk med når du inviteres til et spill',
+        confirmMoves: 'Bekreft trekk',
+        confirmMovesDesc: 'Be om bekreftelse før trekk sendes inn',
+        animations: 'Animasjoner',
+        animationsDesc: 'Aktiver jevne animasjoner og overganger',
+      },
+      
+      saved: 'Innstillinger lagret',
+      error: 'Kunne ikke lagre innstillinger',
     },
     edit: {
       title: 'Rediger profil',

@@ -1,13 +1,15 @@
 
 
-# Boardly – Copilot Instructions (2025 Update)
+# Boardly – Copilot Instructions (February 2026)
 
-## 2025: Scaling and Development
+## 2026: Production & Database Migration Complete
 
-- Project is in production: boardly.online, Yahtzee (AI bots), Chess in development, Guess the Spy, Uno and more planned.
-- Architecture: Next.js (API, SSR) + standalone Socket.IO server (real-time) + PostgreSQL (Supabase/Prisma).
-- Modular hooks, bot system, test coverage (96% for GameEngine core).
-- Supports both guest and authenticated users.
+- **Status**: Production live at [boardly.online](https://boardly.online)
+- **Architecture**: Next.js (API, SSR) + standalone Socket.IO server (real-time) + PostgreSQL (Supabase/Prisma)
+- **Games**: Yahtzee (with AI bots), Guess the Spy, Uno and more planned
+- **Latest Update**: Database restructured (Feb 2026) - all tables plural, Bots separate table, RLS enabled
+- **Test Coverage**: 131 tests, 96% on GameEngine core
+- **Security**: Row Level Security (RLS) enabled on all tables
 
 ### Key Recommendations
 
@@ -77,13 +79,91 @@ Socket Server Broadcast → All Clients in Room → UI Update
 
 ## Critical Patterns
 
-### 1. Guest vs Authenticated Users
+### 1. Database Schema (February 2026 Migration)
+
+**Important**: All table names are now PLURAL
+
+- ✅ **Users** (not User) - User accounts and profiles
+- ✅ **Bots** (separate table) - Bot player records with `userId` foreign key
+- ✅ **Games**, **Players**, **Lobbies** - All game-related tables
+- ✅ **Accounts**, **Sessions** - NextAuth tables
+- ✅ **Friendships**, **FriendRequests** - Social features
+- ✅ **EmailVerificationTokens**, **PasswordResetTokens**, **VerificationTokens**
+- ✅ **SpyLocations** - Game-specific data
+
+**Prisma Patterns**:
+```typescript
+// ✅ Correct (plural)
+await prisma.users.findMany()
+await prisma.games.create()
+await prisma.lobbies.findUnique()
+
+// ❌ Wrong (singular - old pattern)
+await prisma.user.findMany()  // Don't use!
+await prisma.game.create()     // Don't use!
+```
+
+**Bot System** (changed from `isBot` field to separate table):
+```typescript
+// ✅ New pattern (after Feb 2026)
+const user = await prisma.users.findUnique({
+  where: { id: userId },
+  include: { bot: true }  // One-to-one relation
+})
+const isBot = !!user.bot
+const botType = user.bot?.botType  // 'yahtzee', 'chess', 'spy'
+
+// ❌ Old pattern (removed)
+const isBot = user.isBot  // Field no longer exists!
+```
+
+**Creating Bots**:
+```typescript
+// Create user with bot relation
+const botUser = await prisma.users.create({
+  data: {
+    username: 'Bot Player',
+    email: `bot-${Date.now()}@boardly.bot`,
+    bot: {
+      create: {
+        botType: 'yahtzee',
+        difficulty: 'medium'
+      }
+    }
+  },
+  include: { bot: true }
+})
+```
+
+### 2. Row Level Security (RLS)
+
+**Status**: ✅ Enabled on all 13 tables (Feb 2026)
+
+- **Security Model**: Multi-layer defense
+  - Layer 1: NextAuth (session, JWT)
+  - Layer 2: API routes (business logic)
+  - Layer 3: RLS (database safety net)
+  
+- **Implementation**: Service role policies allow full access for Prisma
+- **Impact**: Zero breaking changes, production-ready
+- **Docs**: See `docs/RLS_CONFIGURATION.md` for details
+
+**Database Connection**:
+```env
+# Connection pooler (port 6543) - uses service_role
+DATABASE_URL="postgresql://...@project.supabase.co:6543/postgres"
+
+# Direct connection (port 5432) - for migrations only
+DIRECT_URL="postgresql://...@project.supabase.co:5432/postgres"
+```
+
+### 3. Guest vs Authenticated Users
 - **Guests**: Identified via `X-Guest-Id` and `X-Guest-Name` headers (set client-side)
 - **Authenticated**: Use NextAuth session + JWT tokens
-- Both can play games; guest data stored temporarily in game state, not User table
+- Both can play games; guest data stored temporarily in game state, not Users table
 - Check: `app/api/game/[gameId]/state/route.ts` for header handling
 
-### 2. Socket.IO Room Management
+### 4. Socket.IO Room Management
 - Lobby rooms: `lobby:${lobbyCode}` - all players in a specific game lobby
 - Lobby list: `lobby-list` - users browsing available lobbies
 - Always `socket.join()` before emitting to rooms
@@ -97,14 +177,14 @@ socket.on('join-lobby', async (lobbyCode: string) => {
 })
 ```
 
-### 3. Game Engine Pattern
+### 5. Game Engine Pattern
 - **Abstract**: `lib/game-engine.ts` - base class for all games
 - **Concrete**: `lib/games/yahtzee-game.ts` - extends GameEngine
 - Each game implements: `validateMove()`, `processMove()`, `getInitialGameData()`
-- State stored as JSON in `Game.state` (PostgreSQL JSONB)
+- State stored as JSON in `Games.state` (PostgreSQL JSONB)
 - Load engine: `new YahtzeeGame(gameId).loadState(JSON.parse(game.state))`
 
-### 4. Custom Hooks Architecture (Lobby Page)
+### 6. Custom Hooks Architecture (Lobby Page)
 Modular hooks split complex lobby logic (`app/lobby/[code]/hooks/`):
 - `useLobbyActions.ts` - join, start game, add bots
 - `useSocketConnection.ts` - WebSocket setup and event handlers
@@ -114,11 +194,12 @@ Modular hooks split complex lobby logic (`app/lobby/[code]/hooks/`):
 
 **Hook dependency**: Socket must be initialized before actions (use `emitWhenConnected`)
 
-### 5. Bot Player System
-- Bots are regular Users with `isBot: true` flag in database
+### 7. Bot Player System
+- Bots are Users with one-to-one relation to Bots table
 - Created on-demand via `lib/bot-executor.ts`
 - AI logic in `lib/yahtzee-bot.ts` - probability-based decision making
-- Bot turns automated via `useBotTurn` hook when `currentPlayer.isBot === true`
+- Bot turns automated via `useBotTurn` hook when `currentPlayer.bot !== null`
+- Check bot status: `!!user.bot`, get bot type: `user.bot?.botType`
 
 ## Development Workflows
 
@@ -142,15 +223,16 @@ npm run db:studio        # GUI for database inspection
 
 ### Testing
 ```bash
-npm test                 # Run all tests (74 tests, ~1.2s)
+npm test                 # Run all tests (131 tests, ~1.3s)
 npm run test:watch       # Watch mode for TDD
-npm run test:coverage    # Generate coverage report (17.8% overall, 96% GameEngine)
+npm run test:coverage    # Generate coverage report
 ```
 
-**Test Coverage** (Dec 2024):
+**Test Coverage** (Feb 2026):
 - Game logic: `lib/game-engine.ts` (96%), `lib/yahtzee.ts` (80%), `lib/games/yahtzee-game.ts` (80%)
+- Total: 131 tests passing, 20 skipped
 - Focus: Unit tests for business logic (not API routes - too complex to mock Edge Runtime)
-- See: `docs/TESTING_COMPLETE.md` for detailed breakdown
+- See: Test files in `__tests__/lib/` and `__tests__/api/`
 
 ### Adding a New Game
 1. Create game class in `lib/games/your-game.ts` extending `GameEngine`
@@ -260,7 +342,8 @@ See: `docs/I18N_GUIDE.md` for complete guide
 - Add bot via UI "Add Bot" button in lobby
 - Bots auto-play when their turn arrives (see `useBotTurn.ts`)
 - Bot decisions logged with 🤖 emoji - check client logs
-- Adjust bot difficulty (future): Set `botDifficulty` field in User table
+- Adjust bot difficulty: Bots table has `difficulty` field ('easy', 'medium', 'hard')
+- Check if user is bot: `!!user.bot`, get bot type: `user.bot?.botType`
 
 ### Working with Game State
 ```typescript
@@ -321,8 +404,8 @@ useEffect(() => {
 ```typescript
 // Parallel queries instead of sequential
 const [lobbies, activeGamesCount] = await Promise.all([
-  prisma.lobby.findMany({ /* ... */ }),
-  prisma.game.count({ where: { status: 'playing' } })
+  prisma.lobbies.findMany({ /* ... */ }),
+  prisma.games.count({ where: { status: 'playing' } })
 ])
 ```
 
@@ -338,7 +421,7 @@ const [lobbies, activeGamesCount] = await Promise.all([
 - **Location**: `__tests__/lib/` and `__tests__/lib/games/`
 - **Framework**: Jest with ts-jest
 - **Coverage**: 96% on `GameEngine`, 80%+ on game-specific logic
-- **Run**: `npm test` (74 tests, ~1.2s execution)
+- **Run**: `npm test` (131 tests, ~1.3s execution)
 
 **Pattern Example** (`__tests__/lib/games/yahtzee-game.test.ts`):
 ```typescript
@@ -363,11 +446,12 @@ describe('YahtzeeGame', () => {
 
 ### Mocking Patterns
 ```typescript
-// Mock Prisma client
+// Mock Prisma client (use PLURAL table names)
 jest.mock('@/lib/db', () => ({
   prisma: {
-    game: { findUnique: jest.fn(), update: jest.fn() },
-    player: { create: jest.fn() }
+    games: { findUnique: jest.fn(), update: jest.fn() },
+    players: { create: jest.fn() },
+    users: { findUnique: jest.fn() }
   }
 }))
 

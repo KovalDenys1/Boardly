@@ -10,11 +10,12 @@ interface GameState {
 interface UseGameTimerProps {
   isMyTurn: boolean
   gameState: GameState | null
+  turnTimerLimit: number // Turn time limit from lobby settings (in seconds)
   onTimeout: () => void
 }
 
-export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerProps) {
-  const [timeLeft, setTimeLeft] = useState<number>(60)
+export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }: UseGameTimerProps) {
+  const [timeLeft, setTimeLeft] = useState<number>(turnTimerLimit)
   const [timerActive, setTimerActive] = useState<boolean>(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [lastPlayerIndex, setLastPlayerIndex] = useState<number>(-1)
@@ -52,25 +53,25 @@ export function useGameTimer({ isMyTurn, gameState, onTimeout }: UseGameTimerPro
       const lastMoveAt = gameState.lastMoveAt
       if (lastMoveAt && typeof lastMoveAt === 'number') {
         const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
-        const remainingTime = Math.max(0, 60 - elapsedSeconds)
+        const remainingTime = Math.max(0, turnTimerLimit - elapsedSeconds)
         
         if (isInitialLoad) {
-          clientLogger.log('🔄 Initial load - turn changed, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
+          clientLogger.log('🔄 Initial load - turn changed, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's, limit:', turnTimerLimit, 's)')
           setTimeLeft(remainingTime)
           setIsInitialLoad(false)
         } else {
-          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's)')
+          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's, limit:', turnTimerLimit, 's)')
           setTimeLeft(remainingTime)
         }
       } else {
-        // Fallback to 60s if no lastMoveAt
+        // Fallback to turnTimerLimit if no lastMoveAt
         if (isInitialLoad) {
-          clientLogger.log('🔄 Initial load - turn changed, starting timer at 60s (no lastMoveAt)')
-          setTimeLeft(60)
+          clientLogger.log('🔄 Initial load - turn changed, starting timer at', turnTimerLimit, 's (no lastMoveAt)')
+          setTimeLeft(turnTimerLimit)
           setIsInitialLoad(false)
         } else {
-          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), resetting timer to 60s (no lastMoveAt)')
-          setTimeLeft(60)
+          clientLogger.log('🔄 Turn changed (player index:', currentPlayerIndex, '), resetting timer to', turnTimerLimit, 's (no lastMoveAt)')
+          setTimeLeft(turnTimerLimit)
         }
       }
     }

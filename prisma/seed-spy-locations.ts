@@ -404,7 +404,7 @@ async function main() {
   console.log('🌍 Starting Spy game locations seed...')
 
   for (const location of spyLocations) {
-    await prisma.spyLocation.upsert({
+    await prisma.spyLocations.upsert({
       where: { name: location.name },
       update: {
         category: location.category,

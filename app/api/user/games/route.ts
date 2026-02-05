@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Build where clause
-    const where: Prisma.GameWhereInput = {
+    const where: Prisma.GamesWhereInput = {
       players: {
         some: {
           userId,
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch games with player data
     const [games, totalCount] = await Promise.all([
-      prisma.game.findMany({
+      prisma.games.findMany({
         where,
         include: {
           lobby: {
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
                 select: {
                   id: true,
                   username: true,
-                  isBot: true,
+                  bot: true,  // Bot relation
                 },
               },
             },
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         skip: offset,
       }),
-      prisma.game.count({ where }),
+      prisma.games.count({ where }),
     ])
 
     logger.info('User game history fetched successfully', {
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
         players: game.players.map((player) => ({
           id: player.id,
           username: player.user.username,
-          isBot: player.user.isBot,
+          isBot: !!player.user.bot,  // Convert bot relation to boolean
           score: player.score,
           finalScore: player.finalScore,
           placement: player.placement,

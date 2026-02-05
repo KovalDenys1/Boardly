@@ -19,13 +19,13 @@ export async function cleanupUnverifiedAccounts(daysOld: number = 7) {
     })
 
     // Find unverified accounts older than cutoff date
-    const unverifiedUsers = await prisma.user.findMany({
+    const unverifiedUsers = await prisma.users.findMany({
       where: {
         emailVerified: null,
         createdAt: {
           lt: cutoffDate
         },
-        isBot: false, // Don't delete bot accounts
+        bot: null, // Don't delete bot accounts
         // Don't delete OAuth users (they don't need email verification)
         accounts: {
           none: {}
@@ -60,17 +60,17 @@ export async function cleanupUnverifiedAccounts(daysOld: number = 7) {
     const userIds = unverifiedUsers.map(u => u.id)
 
     // Delete email verification tokens
-    await prisma.emailVerificationToken.deleteMany({
+    await prisma.emailVerificationTokens.deleteMany({
       where: { userId: { in: userIds } }
     })
 
     // Delete password reset tokens
-    await prisma.passwordResetToken.deleteMany({
+    await prisma.passwordResetTokens.deleteMany({
       where: { userId: { in: userIds } }
     })
 
     // Delete the users (this will cascade delete sessions, players, etc.)
-    const result = await prisma.user.deleteMany({
+    const result = await prisma.users.deleteMany({
       where: {
         id: { in: userIds }
       }
@@ -117,14 +117,14 @@ export async function warnUnverifiedAccounts(
     })
 
     // Find unverified accounts in warning window
-    const usersToWarn = await prisma.user.findMany({
+    const usersToWarn = await prisma.users.findMany({
       where: {
         emailVerified: null,
         createdAt: {
           lt: warnDate,
           gte: cutoffDate
         },
-        isBot: false,
+        bot: null,  // Don't warn bot accounts
         accounts: {
           none: {}
         }

@@ -307,17 +307,19 @@ export class BotMoveExecutor {
   }
 
   /**
-   * Check if a player is a bot
+   * Check if a player is a bot (type guard for client-side)
+   * Checks for bot relation or bot field in user object
    */
-  static isBot(player: unknown): player is { user: { isBot: true } } {
+  static isBot(player: unknown): player is { user: { bot: unknown } } {
     return (
       typeof player === 'object' &&
       player !== null &&
       'user' in player &&
       typeof player.user === 'object' &&
       player.user !== null &&
-      'isBot' in player.user &&
-      player.user.isBot === true
+      'bot' in player.user &&
+      player.user.bot !== null &&
+      player.user.bot !== undefined
     )
   }
 }

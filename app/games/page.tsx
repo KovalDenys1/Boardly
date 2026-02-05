@@ -125,16 +125,13 @@ export default function GamesPage() {
     }
   }, [status, router])
 
-  if (status === 'loading') {
+  // Show loading state or redirect without flickering
+  if (status === 'loading' || status === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <div className="text-white text-2xl">Loading...</div>
       </div>
     )
-  }
-
-  if (status === 'unauthenticated') {
-    return null
   }
 
   const filteredGames = games.filter(game => {
@@ -207,10 +204,9 @@ export default function GamesPage() {
               className={`
                 relative bg-white/10 backdrop-blur-md rounded-2xl p-8 text-white 
                 transition-all duration-300 hover:scale-105 hover:shadow-2xl
-                animate-fade-in flex flex-col
+                flex flex-col
                 ${game.status === 'available' ? 'cursor-pointer hover:bg-white/20' : 'opacity-75'}
               `}
-              style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Status Badge */}
               {game.status === 'coming-soon' && (
@@ -219,7 +215,7 @@ export default function GamesPage() {
                 </div>
               )}
               {game.status === 'available' && (
-                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse whitespace-nowrap">
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
                   {t('games.available')}
                 </div>
               )}

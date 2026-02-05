@@ -10,6 +10,8 @@ import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError } from '@/lib/analytics'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -169,17 +171,16 @@ export default function LoginForm() {
           </div>
 
           <div className="flex items-center justify-between">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
+            <Label className="flex items-center gap-3 cursor-pointer">
+              <Checkbox
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                onCheckedChange={setRememberMe}
+                disabled={loading}
               />
-              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 {t('auth.login.rememberMe', 'Remember me')}
               </span>
-            </label>
+            </Label>
             <Link 
               href="/auth/forgot-password" 
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline"

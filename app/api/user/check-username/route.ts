@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if username exists (case-insensitive)
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.users.findFirst({
       where: {
         username: {
           equals: username,
@@ -93,7 +93,7 @@ async function generateUsernameSuggestions(baseUsername: string): Promise<string
   for (let i = 1; i <= 99 && suggestions.length < maxSuggestions; i++) {
     const suggestion = `${baseUsername}${i}`
     if (suggestion.length <= 20) {
-      const exists = await prisma.user.findFirst({
+      const exists = await prisma.users.findFirst({
         where: {
           username: {
             equals: suggestion,
@@ -112,7 +112,7 @@ async function generateUsernameSuggestions(baseUsername: string): Promise<string
     for (let i = 1; i <= 99 && suggestions.length < maxSuggestions; i++) {
       const suggestion = `${baseUsername}_${i}`
       if (suggestion.length <= 20) {
-        const exists = await prisma.user.findFirst({
+        const exists = await prisma.users.findFirst({
           where: {
             username: {
               equals: suggestion,
@@ -131,7 +131,7 @@ async function generateUsernameSuggestions(baseUsername: string): Promise<string
   if (suggestions.length < maxSuggestions) {
     const randomNum = Math.floor(Math.random() * 9000) + 1000 // 1000-9999
     const suggestion = `${baseUsername}${randomNum}`.substring(0, 20)
-    const exists = await prisma.user.findFirst({
+    const exists = await prisma.users.findFirst({
       where: {
         username: {
           equals: suggestion,

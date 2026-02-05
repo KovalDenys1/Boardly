@@ -7,19 +7,19 @@ async function cleanupDatabase() {
 
   try {
     // 1. Delete all players
-    const deletedPlayers = await prisma.player.deleteMany({})
+    const deletedPlayers = await prisma.players.deleteMany({})
     console.log(`✅ Deleted ${deletedPlayers.count} player records`)
 
     // 2. Delete all games
-    const deletedGames = await prisma.game.deleteMany({})
+    const deletedGames = await prisma.games.deleteMany({})
     console.log(`✅ Deleted ${deletedGames.count} games`)
 
     // 3. Delete all lobbies
-    const deletedLobbies = await prisma.lobby.deleteMany({})
+    const deletedLobbies = await prisma.lobbies.deleteMany({})
     console.log(`✅ Deleted ${deletedLobbies.count} lobbies`)
 
     // 4. Get all users except admin (for testing purposes)
-    const usersToDelete = await prisma.user.findMany({
+    const usersToDelete = await prisma.users.findMany({
       where: {
         email: {
           not: process.env.ADMIN_EMAIL || 'admin@boardly.online'
@@ -33,23 +33,23 @@ async function cleanupDatabase() {
     })
 
     console.log(`\n📋 Users to delete (${usersToDelete.length}):`)
-    usersToDelete.forEach(user => {
+    usersToDelete.forEach((user: any) => {
       console.log(`   - ${user.username || 'no username'} (${user.email || 'no email'})`)
     })
 
     // 5. Delete associated accounts, sessions, and tokens for users to be deleted
     for (const user of usersToDelete) {
-      await prisma.account.deleteMany({ where: { userId: user.id } })
-      await prisma.session.deleteMany({ where: { userId: user.id } })
+      await prisma.accounts.deleteMany({ where: { userId: user.id } })
+      await prisma.sessions.deleteMany({ where: { userId: user.id } })
     }
 
     // 6. Delete password reset and email verification tokens
-    await prisma.passwordResetToken.deleteMany({})
-    await prisma.emailVerificationToken.deleteMany({})
+    await prisma.passwordResetTokens.deleteMany({})
+    await prisma.emailVerificationTokens.deleteMany({})
     console.log(`✅ Deleted all password reset and email verification tokens`)
 
     // 7. Delete users
-    const deletedUsers = await prisma.user.deleteMany({
+    const deletedUsers = await prisma.users.deleteMany({
       where: {
         email: {
           not: process.env.ADMIN_EMAIL || 'admin@boardly.online'
@@ -59,7 +59,7 @@ async function cleanupDatabase() {
     console.log(`✅ Deleted ${deletedUsers.count} users`)
 
     // 8. Show remaining user
-    const remainingUser = await prisma.user.findUnique({
+    const remainingUser = await prisma.users.findUnique({
       where: { email: process.env.ADMIN_EMAIL || 'admin@boardly.online' },
       select: {
         id: true,

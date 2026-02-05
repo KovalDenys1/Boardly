@@ -32,14 +32,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify lobby exists and user is the creator
-    const lobby = await prisma.lobby.findUnique({
+    const lobby = await prisma.lobbies.findUnique({
       where: { id: lobbyId },
       include: {
         games: {
           include: {
             players: {
               include: {
-                user: true,
+                user: {
+                  include: {
+                    bot: true  // Include bot relation
+                  }
+                },
               },
             },
           },
@@ -69,7 +73,7 @@ export async function POST(request: NextRequest) {
         })
         
         // Create new waiting game with same players
-        waitingGame = await prisma.game.create({
+        waitingGame = await prisma.games.create({
           data: {
             lobbyId: lobbyId,
             status: 'waiting',
@@ -85,7 +89,11 @@ export async function POST(request: NextRequest) {
           include: {
             players: {
               include: {
-                user: true,
+                user: {
+                  include: {
+                    bot: true  // Include bot relation
+                  }
+                },
               },
             },
           },
@@ -93,6 +101,11 @@ export async function POST(request: NextRequest) {
       } else {
         return NextResponse.json({ error: 'No game found in lobby' }, { status: 404 })
       }
+    }
+
+    // Type guard - ensure waitingGame is defined
+    if (!waitingGame) {
+      return NextResponse.json({ error: 'Failed to get or create game' }, { status: 500 })
     }
 
     // Validate minimum players
@@ -136,8 +149,8 @@ export async function POST(request: NextRequest) {
 
     // Add players to the game - sort so bots go last
     const sortedPlayers = [...waitingGame.players].sort((a, b) => {
-      const aIsBot = a.user.isBot ? 1 : 0
-      const bIsBot = b.user.isBot ? 1 : 0
+      const aIsBot = a.user.bot ? 1 : 0
+      const bIsBot = b.user.bot ? 1 : 0
       return aIsBot - bIsBot // Non-bots first, bots last
     })
     
@@ -159,7 +172,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update existing game instead of creating new one
-    const game = await prisma.game.update({
+    const game = await prisma.games.update({
       where: { id: waitingGame.id },
       data: {
         state: JSON.stringify(gameEngine.getState()),
@@ -176,7 +189,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Update lobby status
-    await prisma.lobby.update({
+    await prisma.lobbies.update({
       where: { id: lobbyId },
       data: { isActive: false }, // Mark lobby as inactive when game starts
     })

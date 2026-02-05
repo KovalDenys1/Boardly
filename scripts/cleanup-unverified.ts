@@ -9,18 +9,18 @@ async function main() {
 
   try {
     // Check current status
-    const unverifiedCount = await prisma.user.count({
+    const unverifiedCount = await prisma.users.count({
       where: {
         emailVerified: null,
-        isBot: false,
+        bot: null,
         accounts: { none: {} }
       }
     })
 
-    const oldUnverifiedCount = await prisma.user.count({
+    const oldUnverifiedCount = await prisma.users.count({
       where: {
         emailVerified: null,
-        isBot: false,
+        bot: null,
         accounts: { none: {} },
         createdAt: {
           lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -52,10 +52,10 @@ async function main() {
 
     // Show accounts that would be deleted
     if (oldUnverifiedCount > 0) {
-      const accountsToDelete = await prisma.user.findMany({
+      const accountsToDelete = await prisma.users.findMany({
         where: {
           emailVerified: null,
-          isBot: false,
+          bot: null,
           accounts: { none: {} },
           createdAt: {
             lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -70,7 +70,7 @@ async function main() {
       })
 
       console.log(`\n🗑️  Accounts to be deleted (${oldUnverifiedCount} total):`)
-      accountsToDelete.forEach(user => {
+      accountsToDelete.forEach((user: any) => {
         const daysOld = Math.floor(
           (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
         )

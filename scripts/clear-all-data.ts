@@ -11,31 +11,31 @@ async function clearAllTables() {
   try {
     // Delete in correct order (respecting foreign keys)
     console.log('Deleting Players...')
-    const players = await prisma.player.deleteMany({})
+    const players = await prisma.players.deleteMany({})
     console.log(`✅ Deleted ${players.count} players`)
 
     console.log('Deleting Games...')
-    const games = await prisma.game.deleteMany({})
+    const games = await prisma.games.deleteMany({})
     console.log(`✅ Deleted ${games.count} games`)
 
     console.log('Deleting Lobbies...')
-    const lobbies = await prisma.lobby.deleteMany({})
+    const lobbies = await prisma.lobbies.deleteMany({})
     console.log(`✅ Deleted ${lobbies.count} lobbies`)
 
     console.log('Deleting Sessions...')
-    const sessions = await prisma.session.deleteMany({})
+    const sessions = await prisma.sessions.deleteMany({})
     console.log(`✅ Deleted ${sessions.count} sessions`)
 
     console.log('Deleting Accounts...')
-    const accounts = await prisma.account.deleteMany({})
+    const accounts = await prisma.accounts.deleteMany({})
     console.log(`✅ Deleted ${accounts.count} accounts`)
 
     console.log('Deleting Verification Tokens...')
-    const tokens = await prisma.verificationToken.deleteMany({})
+    const tokens = await prisma.verificationTokens.deleteMany({})
     console.log(`✅ Deleted ${tokens.count} verification tokens`)
 
     console.log('Deleting Users...')
-    const users = await prisma.user.deleteMany({})
+    const users = await prisma.users.deleteMany({})
     console.log(`✅ Deleted ${users.count} users`)
 
     console.log('\n✅ All tables cleared successfully!')
@@ -43,13 +43,13 @@ async function clearAllTables() {
     // Verify
     console.log('\n📊 Verifying tables are empty:')
     const counts = await Promise.all([
-      prisma.user.count(),
-      prisma.account.count(),
-      prisma.session.count(),
-      prisma.lobby.count(),
-      prisma.game.count(),
-      prisma.player.count(),
-      prisma.verificationToken.count(),
+      prisma.users.count(),
+      prisma.accounts.count(),
+      prisma.sessions.count(),
+      prisma.lobbies.count(),
+      prisma.games.count(),
+      prisma.players.count(),
+      prisma.verificationTokens.count(),
     ])
 
     console.log(`  Users: ${counts[0]}`)
@@ -60,7 +60,7 @@ async function clearAllTables() {
     console.log(`  Players: ${counts[5]}`)
     console.log(`  Verification Tokens: ${counts[6]}`)
     
-    const total = counts.reduce((a, b) => a + b, 0)
+    const total = counts.reduce((a: number, b: number) => a + b, 0)
     if (total === 0) {
       console.log('\n✅ All tables are empty! Database is clean.')
     } else {

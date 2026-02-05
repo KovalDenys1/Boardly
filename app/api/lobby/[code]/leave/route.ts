@@ -7,7 +7,7 @@ import { getServerSocketUrl } from '@/lib/socket-url'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -19,10 +19,10 @@ export async function POST(
       )
     }
 
-    const { code } = params
+    const { code } = await params
 
     // Find lobby with its game and players
-    const lobby = await prisma.lobby.findUnique({
+    const lobby = await prisma.lobbies.findUnique({
       where: { code },
       include: {
         games: {
@@ -70,21 +70,21 @@ export async function POST(
     }
 
     // Remove player from the game
-    await prisma.player.delete({
+    await prisma.players.delete({
       where: { id: player.id }
     })
 
     // Get remaining players count
-    const remainingPlayers = await prisma.player.count({
+    const remainingPlayers = await prisma.players.count({
       where: { gameId: activeGame.id }
     })
 
     // Get remaining human players (non-bots)
-    const remainingHumanPlayers = await prisma.player.count({
+    const remainingHumanPlayers = await prisma.players.count({
       where: {
         gameId: activeGame.id,
         user: {
-          isBot: false
+          bot: null  // Human players don't have bot relation
         }
       }
     })
@@ -94,7 +94,7 @@ export async function POST(
       // In waiting state, just remove player
       // If no players left, deactivate the lobby
       if (remainingPlayers === 0) {
-        await prisma.lobby.update({
+        await prisma.lobbies.update({
           where: { id: lobby.id },
           data: { isActive: false }
         })
@@ -116,7 +116,7 @@ export async function POST(
     // If game is playing and no human players remain (only bots or empty), end the game
     if (remainingHumanPlayers === 0) {
       // Mark game as abandoned since all human players left
-      await prisma.game.update({
+      await prisma.games.update({
         where: { id: activeGame.id },
         data: { 
           status: 'abandoned',
@@ -125,7 +125,7 @@ export async function POST(
       })
 
       // Deactivate the lobby
-      await prisma.lobby.update({
+      await prisma.lobbies.update({
         where: { id: lobby.id },
         data: { isActive: false }
       })
@@ -157,7 +157,7 @@ export async function POST(
     // If only 1 or fewer players remain in total, end the game
     // A game needs at least 2 players to continue
     if (remainingPlayers <= 1) {
-      await prisma.game.update({
+      await prisma.games.update({
         where: { id: activeGame.id },
         data: { 
           status: 'abandoned',
@@ -166,7 +166,7 @@ export async function POST(
       })
 
       // Deactivate the lobby
-      await prisma.lobby.update({
+      await prisma.lobbies.update({
         where: { id: lobby.id },
         data: { isActive: false }
       })

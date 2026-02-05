@@ -30,7 +30,7 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     console.log(`📅 Cutoff date: ${cutoff.toISOString()} (inactive for > ${days} days)`)
 
     // Find old guest users (we use lastActiveAt which is non-nullable)
-    const oldGuests = await prisma.user.findMany({
+    const oldGuests = await prisma.users.findMany({
       where: {
         isGuest: true,
         lastActiveAt: { lt: cutoff },
@@ -61,7 +61,7 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     }
 
     // Delete old guests in a safe manner
-    const result = await prisma.user.deleteMany({
+    const result = await prisma.users.deleteMany({
       where: {
         isGuest: true,
         lastActiveAt: { lt: cutoff },
@@ -71,8 +71,8 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     console.log(`✅ Successfully deleted ${result.count} old guest user(s)`)
 
     // Log database stats
-    const totalGuests = await prisma.user.count({ where: { isGuest: true } })
-    const totalUsers = await prisma.user.count()
+    const totalGuests = await prisma.users.count({ where: { isGuest: true } })
+    const totalUsers = await prisma.users.count()
 
     console.log('📊 Database stats:')
     console.log(`  - Active guests: ${totalGuests}`)

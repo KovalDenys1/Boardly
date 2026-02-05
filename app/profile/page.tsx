@@ -8,6 +8,8 @@ import toast from 'react-hot-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
 import Friends from '@/components/Friends'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 interface LinkedAccount {
   provider: string
@@ -36,6 +38,22 @@ export default function ProfilePage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
+  
+  // Settings state
+  const [settingsChanged, setSettingsChanged] = useState(false)
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [settings, setSettings] = useState({
+    language: 'en',
+    theme: 'system',
+    emailNotifications: true,
+    pushNotifications: false,
+    soundEffects: true,
+    profileVisibility: 'public',
+    showOnlineStatus: true,
+    autoJoin: false,
+    confirmMoves: true,
+    animations: true,
+  })
 
   useEffect(() => {
     if (session?.user?.name) {
@@ -99,6 +117,30 @@ export default function ProfilePage() {
 
     if (status === 'authenticated') {
       fetchLinkedAccounts()
+      
+      // Load settings from localStorage
+      const savedLanguage = localStorage.getItem('language') || 'en'
+      const savedTheme = localStorage.getItem('theme') || 'system'
+      const savedSettings = localStorage.getItem('userSettings')
+      
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings)
+          setSettings({
+            language: savedLanguage,
+            theme: savedTheme,
+            ...parsed
+          })
+        } catch (e) {
+          // Use defaults if parsing fails
+        }
+      } else {
+        setSettings(prev => ({
+          ...prev,
+          language: savedLanguage,
+          theme: savedTheme
+        }))
+      }
     }
   }, [status])
 
@@ -254,6 +296,57 @@ export default function ProfilePage() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to unlink account'
       toast.error(errorMessage)
     }
+  }
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true)
+    try {
+      // Save to localStorage
+      localStorage.setItem('language', settings.language)
+      localStorage.setItem('theme', settings.theme)
+      localStorage.setItem('userSettings', JSON.stringify({
+        emailNotifications: settings.emailNotifications,
+        pushNotifications: settings.pushNotifications,
+        soundEffects: settings.soundEffects,
+        profileVisibility: settings.profileVisibility,
+        showOnlineStatus: settings.showOnlineStatus,
+        autoJoin: settings.autoJoin,
+        confirmMoves: settings.confirmMoves,
+        animations: settings.animations,
+      }))
+      
+      // Apply theme
+      if (settings.theme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else if (settings.theme === 'light') {
+        document.documentElement.classList.remove('dark')
+      } else {
+        // System preference
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
+      
+      // Trigger language change
+      window.dispatchEvent(new Event('languageChange'))
+      
+      toast.success(t('profile.settings.saved'))
+      setSettingsChanged(false)
+      
+      // Reload to apply all settings
+      setTimeout(() => window.location.reload(), 500)
+    } catch (error) {
+      toast.error(t('profile.settings.error'))
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
+  const updateSetting = (key: string, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }))
+    setSettingsChanged(true)
   }
 
   if (status === 'loading') {
@@ -588,11 +681,242 @@ export default function ProfilePage() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">{t('profile.settings.title')}</h2>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
-                Settings coming soon: language, theme, notifications, and more.
-              </p>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold mb-1">{t('profile.settings.title')}</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                  {t('profile.settings.subtitle')}
+                </p>
+              </div>
+
+              {/* Language Settings */}
+              <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">🌐</span>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">{t('profile.settings.language.title')}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.language.subtitle')}</p>
+                  </div>
+                </div>
+                <select
+                  value={settings.language}
+                  onChange={(e) => updateSetting('language', e.target.value)}
+                  className="input w-full"
+                >
+                  <option value="en">English</option>
+                  <option value="uk">Українська</option>
+                  <option value="ru">Русский</option>
+                  <option value="no">Norsk</option>
+                </select>
+              </div>
+
+              {/* Theme Settings */}
+              <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">🎨</span>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">{t('profile.settings.theme.title')}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.theme.subtitle')}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => updateSetting('theme', 'light')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      settings.theme === 'light'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">☀️</div>
+                    <div className="text-sm font-medium">{t('profile.settings.theme.light')}</div>
+                  </button>
+                  <button
+                    onClick={() => updateSetting('theme', 'dark')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      settings.theme === 'dark'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">🌙</div>
+                    <div className="text-sm font-medium">{t('profile.settings.theme.dark')}</div>
+                  </button>
+                  <button
+                    onClick={() => updateSetting('theme', 'system')}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      settings.theme === 'system'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">⚙️</div>
+                    <div className="text-sm font-medium">{t('profile.settings.theme.system')}</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Notification Settings */}
+              <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">🔔</span>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">{t('profile.settings.notifications.title')}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.subtitle')}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.emailNotifications}
+                      onCheckedChange={(checked) => updateSetting('emailNotifications', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.notifications.email')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.emailDesc')}</div>
+                    </div>
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.pushNotifications}
+                      onCheckedChange={(checked) => updateSetting('pushNotifications', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.notifications.push')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.pushDesc')}</div>
+                    </div>
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.soundEffects}
+                      onCheckedChange={(checked) => updateSetting('soundEffects', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.notifications.sound')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.soundDesc')}</div>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+
+              {/* Privacy Settings */}
+              <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">🔒</span>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">{t('profile.settings.privacy.title')}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.privacy.subtitle')}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block font-medium mb-2">{t('profile.settings.privacy.profileVisibility')}</label>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('profile.settings.privacy.profileVisibilityDesc')}</p>
+                    <select
+                      value={settings.profileVisibility}
+                      onChange={(e) => updateSetting('profileVisibility', e.target.value)}
+                      className="input w-full"
+                    >
+                      <option value="public">🌍 {t('profile.settings.privacy.public')}</option>
+                      <option value="friends">👥 {t('profile.settings.privacy.friendsOnly')}</option>
+                      <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
+                    </select>
+                  </div>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.showOnlineStatus}
+                      onCheckedChange={(checked) => updateSetting('showOnlineStatus', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.privacy.showOnline')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.privacy.showOnlineDesc')}</div>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+
+              {/* Game Preferences */}
+              <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">🎮</span>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">{t('profile.settings.game.title')}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.subtitle')}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.autoJoin}
+                      onCheckedChange={(checked) => updateSetting('autoJoin', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.game.autoJoin')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.autoJoinDesc')}</div>
+                    </div>
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.confirmMoves}
+                      onCheckedChange={(checked) => updateSetting('confirmMoves', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.game.confirmMoves')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.confirmMovesDesc')}</div>
+                    </div>
+                  </Label>
+                  <Label className="flex items-start gap-3 cursor-pointer">
+                    <Checkbox
+                      checked={settings.animations}
+                      onCheckedChange={(checked) => updateSetting('animations', checked)}
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{t('profile.settings.game.animations')}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.animationsDesc')}</div>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+
+              {/* Save Button */}
+              {settingsChanged && (
+                <div className="sticky bottom-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 rounded-lg shadow-lg">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="flex-1">
+                      <p className="font-semibold text-blue-900 dark:text-blue-100">
+                        You have unsaved changes
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Don't forget to save your settings
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={savingSettings}
+                      className="btn btn-primary w-full sm:w-auto"
+                    >
+                      {savingSettings ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-2">💾</span>
+                          Save Settings
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,8 +1,8 @@
 // Yahtzee scoring categories
 export type YahtzeeCategory =
   | 'ones' | 'twos' | 'threes' | 'fours' | 'fives' | 'sixes'
-  | 'threeOfKind' | 'fourOfKind' | 'fullHouse' | 'smallStraight'
-  | 'largeStraight' | 'yahtzee' | 'chance'
+  | 'threeOfKind' | 'fourOfKind' | 'fullHouse' | 'onePair' | 'twoPairs'
+  | 'smallStraight' | 'largeStraight' | 'yahtzee' | 'chance'
 
 export interface YahtzeeScorecard {
   ones?: number
@@ -14,6 +14,8 @@ export interface YahtzeeScorecard {
   threeOfKind?: number
   fourOfKind?: number
   fullHouse?: number
+  onePair?: number
+  twoPairs?: number
   smallStraight?: number
   largeStraight?: number
   yahtzee?: number
@@ -67,6 +69,28 @@ export function calculateScore(dice: number[], category: YahtzeeCategory): numbe
       // Check for Yahtzee (5 of a kind) - also valid as Full House
       if (counts.some(c => c === 5)) {
         return 25
+      }
+      
+      return 0
+    }
+    
+    case 'onePair': {
+      // One Pair: at least 2 of the same kind = 10 points
+      const pairValues = counts.map((count, value) => ({ count, value })).filter(item => item.count >= 2)
+      
+      if (pairValues.length >= 1) {
+        return 10
+      }
+      
+      return 0
+    }
+    
+    case 'twoPairs': {
+      // Two Pairs: 2 of one kind + 2 of another kind = 20 points
+      const pairValues = counts.map((count, value) => ({ count, value })).filter(item => item.count >= 2)
+      
+      if (pairValues.length >= 2) {
+        return 20
       }
       
       return 0
@@ -129,9 +153,9 @@ export function calculateTotalScore(scorecard: YahtzeeScorecard): number {
   const upperBonus = upperSection >= 63 ? 35 : 0
   
   const lowerSection = (scorecard.threeOfKind || 0) + (scorecard.fourOfKind || 0) +
-    (scorecard.fullHouse || 0) + (scorecard.smallStraight || 0) +
-    (scorecard.largeStraight || 0) + (scorecard.yahtzee || 0) +
-    (scorecard.chance || 0)
+    (scorecard.fullHouse || 0) + (scorecard.onePair || 0) + (scorecard.twoPairs || 0) +
+    (scorecard.smallStraight || 0) + (scorecard.largeStraight || 0) +
+    (scorecard.yahtzee || 0) + (scorecard.chance || 0)
   
   return upperSection + upperBonus + lowerSection
 }
@@ -139,8 +163,8 @@ export function calculateTotalScore(scorecard: YahtzeeScorecard): number {
 export function isGameFinished(scorecard: YahtzeeScorecard): boolean {
   const categories: YahtzeeCategory[] = [
     'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-    'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
-    'largeStraight', 'yahtzee', 'chance'
+    'threeOfKind', 'fourOfKind', 'fullHouse', 'onePair', 'twoPairs',
+    'smallStraight', 'largeStraight', 'yahtzee', 'chance'
   ]
   
   return categories.every(cat => scorecard[cat] !== undefined)
@@ -149,8 +173,8 @@ export function isGameFinished(scorecard: YahtzeeScorecard): boolean {
 // All Yahtzee categories in order
 export const ALL_CATEGORIES: YahtzeeCategory[] = [
   'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-  'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
-  'largeStraight', 'yahtzee', 'chance'
+  'threeOfKind', 'fourOfKind', 'fullHouse', 'onePair', 'twoPairs',
+  'smallStraight', 'largeStraight', 'yahtzee', 'chance'
 ]
 
 // Priority order for wasting categories when no points available

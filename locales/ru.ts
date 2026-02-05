@@ -18,6 +18,7 @@ const ru = {
     sort: 'Сортировка',
     all: 'Все',
     or: 'или',
+    and: 'и',
     deleting: 'Удаление...',
     goHome: 'На главную',
     optional: 'необязательно',
@@ -120,11 +121,42 @@ const ru = {
     create: {
       title: 'Создать лобби',
       lobbyName: 'Название лобби',
+      lobbyNamePlaceholder: 'напр., Пятничная игра',
       gameType: 'Тип игры',
       maxPlayers: 'Максимум игроков',
+      turnTimer: 'Лимит времени на ход',
+      turnTimerHelper: 'Каждый игрок имеет это время для завершения своего хода',
+      gameMode: 'Режим игры',
+      gameModeHelper: 'Быстрый режим, короткий режим и моды появятся скоро!',
+      comingSoon: 'Скоро',
       password: 'Пароль (необязательно)',
       passwordPlaceholder: 'Оставьте пустым для публичного лобби',
       create: 'Создать лобби',
+      creating: 'Создаём...',
+      cancel: 'Отменить',
+      gameNotFound: 'Игра не найдена',
+      gameNotSupported: 'Тип игры "{{gameType}}" ещё не поддерживается.',
+      backToGames: '← Назад к играм',
+      selectGame: 'Выбрать {{name}}',
+      maxCharacters: 'Достигнут максимум {{max}} символов',
+      mustBeBetween: 'Должно быть между {{min}} и {{max}}',
+      playerCountHelper: 'Эта игра требует ровно {{count}} игрока',
+      playerCountHelper_other: 'Эта игра поддерживает {{min}}-{{max}} игроков',
+      tips: {
+        title: 'Быстрые советы',
+        autoAdd: 'Вы будете автоматически добавлены первым игроком',
+        shareCode: 'Поделитесь кодом лобби с друзьями, чтобы пригласить их',
+        startReady: 'Начните игру, когда все будут готовы!',
+      },
+      preview: {
+        players: '{{count}} игроков',
+        private: 'Приватное',
+        lobbyName: 'Название лобби:',
+        noName: '—',
+      },
+      errors: {
+        failedToCreate: 'Не удалось создать лобби',
+      },
     },
     joinSection: {
       title: 'Присоединиться к лобби',
@@ -441,6 +473,8 @@ const ru = {
       tip: 'Совет',
       waitingForHost: 'Ожидание запуска хостом...',
       host: 'Хост',
+      perTurn: 'на ход',
+      timeLimit: 'Лимит времени',
     },
   },
   chat: {
@@ -505,6 +539,10 @@ const ru = {
       oauthError: 'Не удалось войти',
       inviteBanner: 'Вас пригласили в игру!',
       inviteSubtitle: 'Зарегистрируйтесь, чтобы присоединиться к лобби',
+      agreeToTerms: 'Я согласен с',
+      termsOfService: 'Условиями использования',
+      privacyPolicy: 'Политикой конфиденциальности',
+      mustAgreeToTerms: 'Вы должны согласиться с Условиями использования и Политикой конфиденциальности',
     },
     forgotPassword: {
       title: 'Забыли пароль?',
@@ -589,10 +627,65 @@ const ru = {
     },
     settings: {
       title: 'Настройки',
+      subtitle: 'Настройте свой опыт',
       changePassword: 'Изменить пароль',
-      notifications: 'Уведомления',
-      language: 'Язык',
-      theme: 'Тема',
+      
+      // Language
+      language: {
+        title: 'Язык',
+        subtitle: 'Выберите предпочитаемый язык интерфейса',
+        current: 'Текущий: {{language}}',
+      },
+      
+      // Theme
+      theme: {
+        title: 'Тема',
+        subtitle: 'Выберите предпочитаемую цветовую схему',
+        light: 'Светлая',
+        dark: 'Тёмная',
+        system: 'Системная',
+        current: 'Текущая: {{theme}}',
+      },
+      
+      // Notifications
+      notifications: {
+        title: 'Уведомления',
+        subtitle: 'Управляйте способом получения обновлений',
+        email: 'Email уведомления',
+        emailDesc: 'Получайте приглашения в игры и обновления на email',
+        push: 'Push уведомления',
+        pushDesc: 'Уведомления браузера для обновлений в реальном времени',
+        sound: 'Звуковые эффекты',
+        soundDesc: 'Воспроизводить звуки для игровых действий и уведомлений',
+      },
+      
+      // Privacy
+      privacy: {
+        title: 'Приватность',
+        subtitle: 'Управляйте видимостью вашей информации',
+        profileVisibility: 'Видимость профиля',
+        profileVisibilityDesc: 'Кто может просматривать ваш профиль и историю игр',
+        public: 'Публичный',
+        friendsOnly: 'Только друзья',
+        private: 'Приватный',
+        showOnline: 'Показывать онлайн статус',
+        showOnlineDesc: 'Позволить другим видеть, когда вы онлайн',
+      },
+      
+      // Game Preferences
+      game: {
+        title: 'Настройки игр',
+        subtitle: 'Настройте игровой опыт',
+        autoJoin: 'Автоматическое присоединение',
+        autoJoinDesc: 'Автоматически присоединяться при приглашении в игру',
+        confirmMoves: 'Подтверждать ходы',
+        confirmMovesDesc: 'Запрашивать подтверждение перед отправкой ходов',
+        animations: 'Анимации',
+        animationsDesc: 'Включить плавные анимации и переходы',
+      },
+      
+      saved: 'Настройки сохранены',
+      error: 'Не удалось сохранить настройки',
     },
     edit: {
       title: 'Редактировать профиль',

@@ -80,7 +80,7 @@ export class SpyGame extends GameEngine {
     const data = this.state.data as SpyGameData
 
     // Select random location
-    const locations = await prisma.spyLocation.findMany({
+    const locations = await prisma.spyLocations.findMany({
       where: { isActive: true },
     })
 

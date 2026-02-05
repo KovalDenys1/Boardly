@@ -12,7 +12,7 @@ async function main() {
   console.log('🔍 Checking OAuth users email verification status...\n')
 
   // Get all users with OAuth accounts
-  const usersWithOAuth = await prisma.user.findMany({
+  const usersWithOAuth = await prisma.users.findMany({
     where: {
       accounts: {
         some: {

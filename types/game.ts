@@ -17,10 +17,22 @@ export interface GamePlayer {
   score: number
   isBot: boolean
   userId: string
+  bot?: {
+    id: string
+    userId: string
+    botType: string
+    difficulty: string
+  } | null
   user?: {
     id: string
     username: string
     isBot: boolean
+    bot?: {
+      id: string
+      userId: string
+      botType: string
+      difficulty: string
+    } | null
   }
 }
 

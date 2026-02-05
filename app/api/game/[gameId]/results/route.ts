@@ -6,7 +6,7 @@ import { apiLogger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('/api/game/[gameId]/results')
   
@@ -20,10 +20,10 @@ export async function GET(
       )
     }
 
-    const { gameId } = params
+    const { gameId } = await params
 
     // Get game with all players
-    const game = await prisma.game.findUnique({
+    const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
         players: {
@@ -32,8 +32,7 @@ export async function GET(
               select: {
                 id: true,
                 username: true,
-                
-                isBot: true
+                bot: true  // Bot relation
               }
             }
           },
@@ -82,7 +81,7 @@ export async function GET(
       players: game.players.map(player => ({
         id: player.user.id,
         username: player.user.username,
-        isBot: player.user.isBot,
+        isBot: !!player.user.bot,  // Convert bot relation to boolean
         score: player.score,
         finalScore: player.finalScore,
         placement: player.placement,

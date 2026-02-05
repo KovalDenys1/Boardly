@@ -9,9 +9,11 @@ import { apiLogger } from '@/lib/logger'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   try {
+    const { gameId } = await params
+    
     // Check for guest or authenticated user
     const session = await getServerSession(authOptions)
     const guestId = request.headers.get('X-Guest-Id')
@@ -28,8 +30,8 @@ export async function POST(
     }
 
     // Get game from database - optimize by selecting only needed fields
-    const game = await prisma.game.findUnique({
-      where: { id: params.gameId },
+    const game = await prisma.games.findUnique({
+      where: { id: gameId },
       select: {
         id: true,
         state: true,
@@ -42,7 +44,7 @@ export async function POST(
             user: {
               select: {
                 id: true,
-                isBot: true,
+                bot: true,
               },
             },
           },
@@ -66,7 +68,7 @@ export async function POST(
       userId: string
       user: {
         id: string
-        isBot: boolean
+        bot: unknown
       }
     }
 
@@ -124,8 +126,8 @@ export async function POST(
     }
 
     // Update game state in database
-    const updatedGame = await prisma.game.update({
-      where: { id: params.gameId },
+    const updatedGame = await prisma.games.update({
+      where: { id: gameId },
       data: {
         state: JSON.stringify(gameEngine.getState()),
         status: gameEngine.getState().status,
@@ -145,7 +147,7 @@ export async function POST(
               select: {
                 id: true,
                 username: true,
-                isBot: true,
+                bot: true,  // Bot relation
               },
             },
           },
@@ -159,7 +161,7 @@ export async function POST(
       enginePlayers.map(async (player) => {
         const dbPlayer = updatedGame.players.find(p => p.userId === player.id)
         if (dbPlayer) {
-          await prisma.player.update({
+          await prisma.players.update({
             where: { id: dbPlayer.id },
             data: {
               score: player.score || 0,
@@ -179,7 +181,7 @@ export async function POST(
           id: p.userId,
           name: p.user.username || 'Unknown',
           score: p.score,
-          isBot: p.user.isBot || false,
+          isBot: !!p.user.bot,
         })),
       }
     }

@@ -9,7 +9,7 @@ async function verifyOAuthUsers() {
   console.log('🔍 Finding OAuth users with unverified emails...\n')
 
   // Find all users who have OAuth accounts but no email verification
-  const users = await prisma.user.findMany({
+  const users = await prisma.users.findMany({
     where: {
       emailVerified: null,
       accounts: {
@@ -43,7 +43,7 @@ async function verifyOAuthUsers() {
     console.log(`   Created: ${user.createdAt.toISOString()}`)
     
     // Auto-verify
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: user.id },
       data: { 
         emailVerified: new Date(),

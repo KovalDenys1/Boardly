@@ -10,7 +10,7 @@ const limiter = rateLimit(rateLimitPresets.api)
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   // Apply rate limiting
   const rateLimitResult = await limiter(request)
@@ -21,6 +21,8 @@ export async function GET(
   const log = apiLogger('GET /api/game/[gameId]/spy-role')
 
   try {
+    const { gameId } = await params
+    
     // Get session or guest user
     const session = await getServerSession(authOptions)
     const guestId = request.headers.get('X-Guest-Id')
@@ -31,10 +33,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { gameId } = params
-
     // Fetch game
-    const game = await prisma.game.findUnique({
+    const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
         players: {

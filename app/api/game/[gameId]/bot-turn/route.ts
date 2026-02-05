@@ -13,12 +13,15 @@ const botTurnLocks = new Map<string, boolean>()
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/bot-turn')
   let lockKey: string | null = null
+  let gameId: string | undefined
   
   try {
+    const paramsData = await params
+    gameId = paramsData.gameId
     const { botUserId, lobbyCode } = await request.json()
 
     if (!botUserId) {
@@ -26,12 +29,12 @@ export async function POST(
     }
 
     log.info('Bot turn endpoint called', {
-      gameId: params.gameId,
+      gameId: gameId,
       botUserId
     })
 
     // Check if bot turn is already in progress for this game
-    lockKey = `${params.gameId}:${botUserId}`
+    lockKey = `${gameId}:${botUserId}`
     if (botTurnLocks.get(lockKey)) {
       log.warn('Bot turn already in progress, ignoring duplicate request')
       return NextResponse.json({ 
@@ -47,7 +50,7 @@ export async function POST(
     let game
     try {
       const optimizedQuery = {
-        where: { id: params.gameId },
+        where: { id: gameId },
         select: {
           id: true,
           state: true,
@@ -62,7 +65,7 @@ export async function POST(
               user: {
                 select: {
                   id: true,
-                  isBot: true,
+                  bot: true,  // Bot relation
                 },
               },
             },
@@ -77,11 +80,11 @@ export async function POST(
         },
       }
       
-      game = await prisma.game.findUnique(optimizedQuery).catch(async (fetchError) => {
+      game = await prisma.games.findUnique(optimizedQuery).catch(async (fetchError) => {
         // Retry once on connection error (serverless cold start issue)
         log.warn('Initial game fetch failed, retrying...', { error: fetchError.code })
         await new Promise(resolve => setTimeout(resolve, 300))
-        return prisma.game.findUnique(optimizedQuery)
+        return prisma.games.findUnique(optimizedQuery)
       })
     } catch (error) {
       log.error('Failed to load game after retry', error as Error)
@@ -92,7 +95,7 @@ export async function POST(
     }
 
     if (!game) {
-      log.error('Game not found', undefined, { gameId: params.gameId })
+      log.error('Game not found', undefined, { gameId: gameId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
@@ -103,7 +106,7 @@ export async function POST(
       return NextResponse.json({ error: 'Bot player not found' }, { status: 404 })
     }
 
-    if (!botPlayer.user.isBot) {
+    if (!botPlayer.user.bot) {
       log.error('Player is not a bot', undefined, { botUserId, gameId: game.id })
       return NextResponse.json({ error: 'Player is not a bot' }, { status: 400 })
     }
@@ -183,8 +186,8 @@ export async function POST(
           // Save to database with retry logic
           log.info('Saving bot move to database...')
           try {
-            await prisma.game.update({
-              where: { id: params.gameId },
+            await prisma.games.update({
+              where: { id: gameId },
               data: {
                 state: JSON.stringify(gameEngine.getState()),
                 status: gameEngine.getState().status,
@@ -196,8 +199,8 @@ export async function POST(
               // Retry once on connection error (common on serverless cold starts)
               log.warn('Database update failed, retrying...', { error: dbError.message })
               await new Promise(resolve => setTimeout(resolve, 200))
-              return prisma.game.update({
-                where: { id: params.gameId },
+              return prisma.games.update({
+                where: { id: gameId },
                 data: {
                   state: JSON.stringify(gameEngine.getState()),
                   status: gameEngine.getState().status,
@@ -219,7 +222,7 @@ export async function POST(
             const dbPlayer = game.players.find((p: any) => p.userId === player.id)
             if (dbPlayer) {
               try {
-                await prisma.player.update({
+                await prisma.players.update({
                   where: { id: dbPlayer.id },
                   data: {
                     score: player.score || 0,
@@ -229,7 +232,7 @@ export async function POST(
                   // Retry once on connection error
                   log.warn('Player update failed, retrying...', { playerId: dbPlayer.id })
                   await new Promise(resolve => setTimeout(resolve, 100))
-                  return prisma.player.update({
+                  return prisma.players.update({
                     where: { id: dbPlayer.id },
                     data: {
                       score: player.score || 0,
@@ -285,7 +288,7 @@ export async function POST(
 
   } catch (error) {
     log.error('Bot turn execution failed', error as Error, {
-      gameId: params.gameId,
+      gameId: gameId,
       lockKey,
       errorStack: error instanceof Error ? error.stack : undefined,
       errorMessage: error instanceof Error ? error.message : String(error)

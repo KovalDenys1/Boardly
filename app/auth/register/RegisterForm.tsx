@@ -11,6 +11,8 @@ import UsernameInput from '@/components/UsernameInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -26,6 +28,8 @@ export default function RegisterForm() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; username?: string; password?: string; confirmPassword?: string }>({})
   const [loading, setLoading] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const returnUrl = searchParams.get('returnUrl') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,13 +37,15 @@ export default function RegisterForm() {
     setError('')
     setLoading(true)
     setFieldErrors({})
-
     try {
+      if (!agreedToTerms) {
+        showToast.error('auth.register.mustAgreeToTerms')
+        throw new Error(t('auth.register.mustAgreeToTerms'))
+      }
       if (formData.password !== formData.confirmPassword) {
         setFieldErrors({ confirmPassword: t('auth.register.passwordMismatch') })
         throw new Error(t('auth.register.passwordMismatch'))
       }
-
       const parsed = registerSchema.safeParse(formData)
       if (!parsed.success) {
         const errs: Record<string, string> = {}
@@ -50,31 +56,25 @@ export default function RegisterForm() {
         setFieldErrors(errs)
         throw new Error(t('auth.register.fixFields'))
       }
-
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         if (Array.isArray(data?.error)) {
           setFieldErrors(zodIssuesToFieldErrors(data.error))
           throw new Error(t('auth.register.fixFields'))
         }
-        
         trackError({
           errorType: 'auth',
           errorMessage: data?.error || 'Registration failed',
           component: 'RegisterForm',
           severity: 'medium',
         })
-        
         throw new Error(data?.error || t('auth.register.error'))
       }
-
       // Track successful registration
       trackAuth({
         event: 'register',
@@ -83,14 +83,12 @@ export default function RegisterForm() {
         userId: formData.email,
       })
       trackFunnelStep('register')
-
       // Auto-login after registration
       const loginResult = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
         redirect: false,
       })
-
       if (loginResult?.error) {
         showToast.error('auth.register.loginFailed')
         router.push(`/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`)
@@ -139,7 +137,6 @@ export default function RegisterForm() {
             </div>
           </div>
         )}
-        
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
           {t('auth.register.title')}
         </h1>
@@ -187,6 +184,7 @@ export default function RegisterForm() {
             )}
           </div>
 
+
           <div>
             <PasswordInput
               value={formData.confirmPassword}
@@ -195,6 +193,40 @@ export default function RegisterForm() {
               autoComplete="new-password"
               label={t('auth.register.confirmPassword')}
             />
+            {/* Terms and Conditions */}
+            <div className="pt-2 mb-3">
+              <Label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={agreedToTerms}
+                  onCheckedChange={setAgreedToTerms}
+                  disabled={loading}
+                  className="mt-0.5"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {t('auth.register.agreeToTerms')}{' '}
+                  <Link href="/terms" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                    {t('auth.register.termsOfService')}
+                  </Link>
+                  {' '}{t('common.and')}{' '}
+                  <Link href="/privacy" target="_blank" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                    {t('auth.register.privacyPolicy')}
+                  </Link>
+                </span>
+              </Label>
+            </div>
+            {/* Remember Me */}
+            <div>
+              <Label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox
+                  checked={rememberMe}
+                  onCheckedChange={setRememberMe}
+                  disabled={loading}
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {t('auth.login.rememberMe')}
+                </span>
+              </Label>
+            </div>
             {fieldErrors.confirmPassword && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
             )}

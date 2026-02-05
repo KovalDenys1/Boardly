@@ -3,10 +3,11 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { createBot } from '@/lib/bot-helpers'
 
 export async function POST(
   request: Request,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -15,10 +16,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { code } = params
+    const { code } = await params
 
     // Find lobby
-    const lobby = await prisma.lobby.findUnique({
+    const lobby = await prisma.lobbies.findUnique({
       where: { code },
       include: {
         games: {
@@ -28,7 +29,11 @@ export async function POST(
           include: {
             players: {
               include: {
-                user: true
+                user: {
+                  include: {
+                    bot: true  // Include bot relation
+                  }
+                }
               }
             }
           }
@@ -63,33 +68,41 @@ export async function POST(
     }
 
     // Check if bot already exists in this game
-    const botExists = activeGame.players.some((p: any) => p.user.isBot)
+    const botExists = activeGame.players.some((p: any) => p.user.bot !== null)
     if (botExists) {
       return NextResponse.json({ error: 'Bot already in lobby' }, { status: 400 })
     }
 
     // Create or find bot user
-    let botUser = await prisma.user.findFirst({
+    let botUser = await prisma.users.findFirst({
       where: {
         username: 'AI Bot',
-        isBot: true
+        bot: {
+          isNot: null  // Has bot relation
+        }
+      },
+      include: {
+        bot: true
       }
     })
 
     if (!botUser) {
-      botUser = await prisma.user.create({
-        data: {
-          username: 'AI Bot',
-          email: `bot-${Date.now()}@boardly.local`,
-          isBot: true,
-          emailVerified: new Date()
-        }
-      })
+      const result = await createBot('AI Bot', lobby.gameType, 'medium')
+      // Type assertion: result.user includes bot relation
+      botUser = {
+        ...result.user,
+        bot: result.bot
+      } as any
+    }
+
+    // Ensure botUser is defined (TypeScript guard)
+    if (!botUser) {
+      return NextResponse.json({ error: 'Failed to create bot' }, { status: 500 })
     }
 
     // Add bot to game
     const position = activeGame.players.length
-    await prisma.player.create({
+    await prisma.players.create({
       data: {
         gameId: activeGame.id,
         userId: botUser.id,
@@ -100,12 +113,16 @@ export async function POST(
     })
 
     // Fetch updated game
-    const updatedGame = await prisma.game.findUnique({
+    const updatedGame = await prisma.games.findUnique({
       where: { id: activeGame.id },
       include: {
         players: {
           include: {
-            user: true
+            user: {
+              include: {
+                bot: true  // Include bot relation
+              }
+            }
           },
           orderBy: {
             position: 'asc'

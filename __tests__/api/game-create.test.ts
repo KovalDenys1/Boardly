@@ -12,14 +12,14 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
   prisma: {
-    lobby: {
+    lobbies: {
       findUnique: jest.fn(),
     },
-    game: {
+    games: {
       create: jest.fn(),
       update: jest.fn(),
     },
-    player: {
+    players: {
       create: jest.fn(),
     },
   },
@@ -149,7 +149,7 @@ describe('POST /api/game/create', () => {
 
   it('should return 404 when lobby not found', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue(null)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
       method: 'POST',
@@ -175,7 +175,7 @@ describe('POST /api/game/create', () => {
     }
     
     mockGetServerSession.mockResolvedValue(otherUserSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue({
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [mockWaitingGame],
     } as any)
@@ -198,7 +198,7 @@ describe('POST /api/game/create', () => {
   it.skip('should successfully create and start game', async () => {
     // TODO: Fix this test - needs proper mock setup for YahtzeeGame and all Prisma operations
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue({
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [mockWaitingGame],
     } as any)
@@ -226,7 +226,7 @@ describe('POST /api/game/create', () => {
       }),
     }
 
-    mockPrisma.game.update.mockResolvedValue(updatedGame as any)
+    mockPrisma.games.update.mockResolvedValue(updatedGame as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
       method: 'POST',
@@ -242,7 +242,7 @@ describe('POST /api/game/create', () => {
     expect(response.status).toBe(200)
     expect(data.game).toBeDefined()
     expect(data.game.status).toBe('playing')
-    expect(mockPrisma.game.update).toHaveBeenCalled()
+    expect(mockPrisma.games.update).toHaveBeenCalled()
   })
 
   it('should return 400 when not enough players', async () => {
@@ -252,7 +252,7 @@ describe('POST /api/game/create', () => {
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue({
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [gameWithOnePlayer],
     } as any)
@@ -285,11 +285,11 @@ describe('POST /api/game/create', () => {
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue({
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [finishedGame],
     } as any)
-    mockPrisma.game.create.mockResolvedValue(newWaitingGame as any)
+    mockPrisma.games.create.mockResolvedValue(newWaitingGame as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
       method: 'POST',
@@ -301,7 +301,7 @@ describe('POST /api/game/create', () => {
     })
     const response = await POST(request)
 
-    expect(mockPrisma.game.create).toHaveBeenCalledWith(
+    expect(mockPrisma.games.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           lobbyId: 'lobby-123',
@@ -313,14 +313,14 @@ describe('POST /api/game/create', () => {
 
   it('should initialize game state correctly', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue({
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [mockWaitingGame],
     } as any)
     
     let capturedGameState: any
 
-    mockPrisma.game.update.mockImplementation((args: any) => {
+    mockPrisma.games.update.mockImplementation((args: any) => {
       capturedGameState = JSON.parse(args.data.state)
       return Promise.resolve({
         ...mockWaitingGame,
