@@ -8,31 +8,31 @@ async function checkVerificationStatus() {
 
   try {
     // Total users
-    const totalUsers = await prisma.user.count({
-      where: { isBot: false }
+    const totalUsers = await prisma.users.count({
+      where: { bot: null }
     })
 
     // Verified users
-    const verifiedUsers = await prisma.user.count({
+    const verifiedUsers = await prisma.users.count({
       where: {
-        isBot: false,
+        bot: null,
         emailVerified: { not: null }
       }
     })
 
     // Unverified users
-    const unverifiedUsers = await prisma.user.count({
+    const unverifiedUsers = await prisma.users.count({
       where: {
-        isBot: false,
+        bot: null,
         emailVerified: null,
         accounts: { none: {} } // Email/password only
       }
     })
 
     // OAuth users (don't need verification)
-    const oauthUsers = await prisma.user.count({
+    const oauthUsers = await prisma.users.count({
       where: {
-        isBot: false,
+        bot: null,
         accounts: { some: {} }
       }
     })
@@ -51,45 +51,45 @@ async function checkVerificationStatus() {
       const fiveDaysAgo = new Date(now - 5 * 24 * 60 * 60 * 1000)
       const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000)
 
-      const lessThanDay = await prisma.user.count({
+      const lessThanDay = await prisma.users.count({
         where: {
-          isBot: false,
+          bot: null,
           emailVerified: null,
           accounts: { none: {} },
           createdAt: { gte: oneDayAgo }
         }
       })
 
-      const oneToThree = await prisma.user.count({
+      const oneToThree = await prisma.users.count({
         where: {
-          isBot: false,
+          bot: null,
           emailVerified: null,
           accounts: { none: {} },
           createdAt: { lt: oneDayAgo, gte: threeDaysAgo }
         }
       })
 
-      const threeToFive = await prisma.user.count({
+      const threeToFive = await prisma.users.count({
         where: {
-          isBot: false,
+          bot: null,
           emailVerified: null,
           accounts: { none: {} },
           createdAt: { lt: threeDaysAgo, gte: fiveDaysAgo }
         }
       })
 
-      const fiveToSeven = await prisma.user.count({
+      const fiveToSeven = await prisma.users.count({
         where: {
-          isBot: false,
+          bot: null,
           emailVerified: null,
           accounts: { none: {} },
           createdAt: { lt: fiveDaysAgo, gte: sevenDaysAgo }
         }
       })
 
-      const moreThanSeven = await prisma.user.count({
+      const moreThanSeven = await prisma.users.count({
         where: {
-          isBot: false,
+          bot: null,
           emailVerified: null,
           accounts: { none: {} },
           createdAt: { lt: sevenDaysAgo }
@@ -104,9 +104,9 @@ async function checkVerificationStatus() {
       console.log(`   > 7 days (🗑️  deletion zone): ${moreThanSeven}`)
 
       if (moreThanSeven > 0) {
-        const oldAccounts = await prisma.user.findMany({
+        const oldAccounts = await prisma.users.findMany({
           where: {
-            isBot: false,
+            bot: null,
             emailVerified: null,
             accounts: { none: {} },
             createdAt: { lt: sevenDaysAgo }
@@ -119,7 +119,7 @@ async function checkVerificationStatus() {
         })
 
         console.log('\n🗑️  Accounts ready for deletion:')
-        oldAccounts.forEach(user => {
+        oldAccounts.forEach((user: any) => {
           const daysOld = Math.floor(
             (now - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
           )
@@ -129,13 +129,13 @@ async function checkVerificationStatus() {
     }
 
     // Pending verification tokens
-    const activeTokens = await prisma.emailVerificationToken.count({
+    const activeTokens = await prisma.emailVerificationTokens.count({
       where: {
         expires: { gt: new Date() }
       }
     })
 
-    const expiredTokens = await prisma.emailVerificationToken.count({
+    const expiredTokens = await prisma.emailVerificationTokens.count({
       where: {
         expires: { lte: new Date() }
       }

@@ -13,7 +13,7 @@ export async function generateUniqueFriendCode(): Promise<string> {
     const code = Math.floor(10000 + Math.random() * 90000).toString()
 
     // Check if code already exists
-    const existing = await prisma.user.findUnique({
+    const existing = await prisma.users.findUnique({
       where: { friendCode: code },
       select: { id: true }
     })
@@ -33,7 +33,7 @@ export async function generateUniqueFriendCode(): Promise<string> {
  * Assign friend code to user if they don't have one
  */
 export async function ensureUserHasFriendCode(userId: string): Promise<string> {
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: userId },
     select: { friendCode: true }
   })
@@ -44,7 +44,7 @@ export async function ensureUserHasFriendCode(userId: string): Promise<string> {
 
   const friendCode = await generateUniqueFriendCode()
   
-  await prisma.user.update({
+  await prisma.users.update({
     where: { id: userId },
     data: { friendCode }
   })
@@ -56,7 +56,7 @@ export async function ensureUserHasFriendCode(userId: string): Promise<string> {
  * Find user by friend code
  */
 export async function findUserByFriendCode(friendCode: string) {
-  return prisma.user.findUnique({
+  return prisma.users.findUnique({
     where: { friendCode },
     select: {
       id: true,

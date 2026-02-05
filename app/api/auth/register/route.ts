@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const { email, username, password } = registerSchema.parse(body)
 
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.users.findFirst({
       where: {
         OR: [{ email }, { username }],
       },
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const passwordHash = await hashPassword(password)
     
     // Check if username already exists
-    const existingUsername = await prisma.user.findUnique({
+    const existingUsername = await prisma.users.findUnique({
       where: { username },
     })
     
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
         email,
         username,
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     const verificationToken = nanoid(32)
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    await prisma.emailVerificationToken.create({
+    await prisma.emailVerificationTokens.create({
       data: {
         userId: user.id,
         token: verificationToken,

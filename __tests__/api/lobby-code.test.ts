@@ -12,23 +12,23 @@ import { getServerSession } from 'next-auth'
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
   prisma: {
-    lobby: {
+    lobbies: {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
-    game: {
+    games: {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
-    player: {
+    players: {
       create: jest.fn(),
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       delete: jest.fn(),
       count: jest.fn(),
     },
-    user: {
+    users: {
       findUnique: jest.fn(),
     },
   },
@@ -81,7 +81,7 @@ describe('GET /api/lobby/[code]', () => {
   })
 
   it('should return lobby data when lobby exists', async () => {
-    mockPrisma.lobby.findUnique.mockResolvedValue(mockLobby as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(mockLobby as any)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123')
     const response = await GET(request, { params: { code: 'ABC123' } })
@@ -90,14 +90,14 @@ describe('GET /api/lobby/[code]', () => {
     expect(response.status).toBe(200)
     expect(data.lobby).toBeDefined()
     expect(data.lobby.code).toBe('ABC123')
-    expect(mockPrisma.lobby.findUnique).toHaveBeenCalledWith({
+    expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledWith({
       where: { code: 'ABC123' },
       include: expect.any(Object),
     })
   })
 
   it('should return 404 when lobby not found', async () => {
-    mockPrisma.lobby.findUnique.mockResolvedValue(null)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/INVALID')
     const response = await GET(request, { params: { code: 'INVALID' } })
@@ -108,7 +108,7 @@ describe('GET /api/lobby/[code]', () => {
   })
 
   it('should handle database errors gracefully', async () => {
-    mockPrisma.lobby.findUnique.mockRejectedValue(new Error('Database error'))
+    mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('Database error'))
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123')
     const response = await GET(request, { params: { code: 'ABC123' } })
@@ -174,8 +174,8 @@ describe('POST /api/lobby/[code]', () => {
 
   it('should return 404 when lobby not found', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.user.findUnique.mockResolvedValue(mockUser as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue(null)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/INVALID', {
       method: 'POST',
@@ -192,8 +192,8 @@ describe('POST /api/lobby/[code]', () => {
     const lobbyWithPassword = { ...mockLobby, password: 'secret123' }
     
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.user.findUnique.mockResolvedValue(mockUser as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue(lobbyWithPassword as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithPassword as any)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
       method: 'POST',
@@ -215,21 +215,21 @@ describe('POST /api/lobby/[code]', () => {
     }
     
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.user.findUnique.mockResolvedValue(mockUser as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue({
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...lobbyWithPassword,
       games: [gameWithPlayers],
     } as any)
-    mockPrisma.player.findUnique.mockResolvedValue(null) // Player not already in game
-    mockPrisma.player.count.mockResolvedValue(0) // No players yet
-    mockPrisma.player.create.mockResolvedValue({
+    mockPrisma.players.findUnique.mockResolvedValue(null) // Player not already in game
+    mockPrisma.players.count.mockResolvedValue(0) // No players yet
+    mockPrisma.players.create.mockResolvedValue({
       id: 'player-123',
       userId: 'user-123',
       gameId: 'game-123',
       score: 0,
       position: 0,
     } as any)
-    mockPrisma.game.update.mockResolvedValue(gameWithPlayers as any)
+    mockPrisma.games.update.mockResolvedValue(gameWithPlayers as any)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
       method: 'POST',
@@ -293,9 +293,9 @@ describe('POST /api/lobby/[code]/leave', () => {
 
   it('should successfully remove player from lobby', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue(mockLobby as any)
-    mockPrisma.player.delete.mockResolvedValue({ id: 'player-123' } as any)
-    mockPrisma.player.count.mockResolvedValue(1) // 1 remaining player
+    mockPrisma.lobbies.findUnique.mockResolvedValue(mockLobby as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.count.mockResolvedValue(1) // 1 remaining player
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
       method: 'POST',
@@ -305,7 +305,7 @@ describe('POST /api/lobby/[code]/leave', () => {
 
     expect(response.status).toBe(200)
     expect(data.message).toBe('You left the lobby')
-    expect(mockPrisma.player.delete).toHaveBeenCalledWith({
+    expect(mockPrisma.players.delete).toHaveBeenCalledWith({
       where: { id: 'player-123' },
     })
   })
@@ -322,7 +322,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     }
     
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobby.findUnique.mockResolvedValue(lobbyWithoutPlayer as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithoutPlayer as any)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
       method: 'POST',

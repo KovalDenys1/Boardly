@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
       select: {
         id: true,
@@ -70,7 +70,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Provider is required' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
       select: {
         id: true,
@@ -102,7 +102,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    await prisma.account.delete({
+    await prisma.accounts.delete({
       where: { id: account.id }
     })
 

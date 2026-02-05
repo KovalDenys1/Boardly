@@ -190,6 +190,13 @@ export default function Friends() {
   }, [loadFriends, loadRequests])
 
   const loadMyFriendCode = async () => {
+    // Check if email is verified
+    if (!session?.user?.emailVerified) {
+      clientLogger.warn('Email not verified, skipping friend code load')
+      setMyFriendCode('')
+      return
+    }
+
     try {
       const res = await fetch('/api/user/friend-code')
       if (!res.ok) throw new Error('Failed to load friend code')
@@ -385,8 +392,32 @@ export default function Friends() {
 
   return (
     <div className="space-y-6">
+      {/* Email Verification Required Notice */}
+      {!session?.user?.emailVerified && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-xl p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-3xl">⚠️</span>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">
+                {t('profile.friends.emailVerificationRequired')}
+              </h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+                {t('profile.friends.emailVerificationRequiredDesc')}
+              </p>
+              <a
+                href="/auth/verify-email"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
+              >
+                <span>📧</span>
+                {t('profile.friends.verifyEmail')}
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* My Friend Code Section - Improved Design */}
-      {myFriendCode && (
+      {myFriendCode && session?.user?.emailVerified && (
         <div className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-[2px]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4">
@@ -814,7 +845,7 @@ export default function Friends() {
               {!addByCode ? (
                 <form onSubmit={handleSendRequest} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <label className="flex text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 items-center gap-2">
                       <span>👤</span>
                       {t('profile.friends.username')}
                     </label>
@@ -862,7 +893,7 @@ export default function Friends() {
               ) : (
                 <form onSubmit={handleSendRequestByCode} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <label className="flex text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 items-center gap-2">
                       <span>🔑</span>
                       {t('profile.friends.friendCode')}
                     </label>

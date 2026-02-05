@@ -30,13 +30,17 @@ export async function POST(
     const { gameId } = await params
 
     // Find the game with its lobby and players
-    const game = await prisma.game.findUnique({
+    const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
         lobby: true,
         players: {
           include: {
-            user: true
+            user: {
+              include: {
+                bot: true  // Include bot relation
+              }
+            }
           }
         }
       }
@@ -69,10 +73,10 @@ export async function POST(
     }
 
     // Count human players still in the game
-    const humanPlayersCount = game.players.filter(p => !p.user.isBot).length
+    const humanPlayersCount = game.players.filter(p => !p.user.bot).length
 
     // Mark game as abandoned
-    await prisma.game.update({
+    await prisma.games.update({
       where: { id: gameId },
       data: {
         status: 'abandoned',

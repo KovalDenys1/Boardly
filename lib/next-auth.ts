@@ -48,7 +48,7 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.users.findUnique({
           where: { email: credentials.email },
         })
 
@@ -88,7 +88,7 @@ export const authOptions: NextAuthOptions = {
           // Here we just validate and allow/deny the sign-in
           
           // Check if there's already an account with this provider + providerAccountId
-          const existingAccount = await prisma.account.findUnique({
+          const existingAccount = await prisma.accounts.findUnique({
             where: {
               provider_providerAccountId: {
                 provider: account.provider,
@@ -102,7 +102,7 @@ export const authOptions: NextAuthOptions = {
             // Account already exists - allow sign in
             // Auto-verify email if not already verified
             if (!existingAccount.user.emailVerified) {
-              await prisma.user.update({
+              await prisma.users.update({
                 where: { id: existingAccount.userId },
                 data: { emailVerified: new Date() }
               })
@@ -114,7 +114,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // New OAuth account - check if user with this email already exists
-          const existingUserByEmail = await prisma.user.findUnique({
+          const existingUserByEmail = await prisma.users.findUnique({
             where: { email: user.email! },
           })
 
@@ -122,7 +122,7 @@ export const authOptions: NextAuthOptions = {
             // A user with this email already exists — allow sign-in and let
             // PrismaAdapter link the OAuth account to the existing user.
             // Also ensure emailVerified is set for convenience.
-            await prisma.user.update({
+            await prisma.users.update({
               where: { id: existingUserByEmail.id },
               data: { emailVerified: existingUserByEmail.emailVerified ?? new Date() }
             })
@@ -164,7 +164,7 @@ export const authOptions: NextAuthOptions = {
       
       // Ensure we have user data from database
       if (!token.id && token.email) {
-        const dbUser = await prisma.user.findUnique({
+        const dbUser = await prisma.users.findUnique({
           where: { email: token.email },
           select: {
             id: true,
@@ -181,13 +181,31 @@ export const authOptions: NextAuthOptions = {
       
       // Refresh emailVerified status on update trigger
       if (trigger === 'update' && token.email) {
-        const dbUser = await prisma.user.findUnique({
+        const dbUser = await prisma.users.findUnique({
           where: { email: token.email },
           select: { emailVerified: true }
         })
         if (dbUser) {
           token.emailVerified = dbUser.emailVerified
         }
+      }
+
+      // Update lastActiveAt for authenticated users (throttled to once per 5 minutes)
+      if (token.id && !token.lastActiveUpdate) {
+        token.lastActiveUpdate = Date.now()
+      }
+      const now = Date.now()
+      const lastUpdate = token.lastActiveUpdate as number || 0
+      const fiveMinutes = 5 * 60 * 1000
+      
+      if (token.id && now - lastUpdate > fiveMinutes) {
+        // Update lastActiveAt in background (non-blocking)
+        prisma.users.update({
+          where: { id: token.id as string },
+          data: { lastActiveAt: new Date() }
+        }).catch(() => {}) // Silently fail to avoid blocking auth
+        
+        token.lastActiveUpdate = now
       }
       
       return token
@@ -217,7 +235,7 @@ export const authOptions: NextAuthOptions = {
       // This event fires when PrismaAdapter successfully links an OAuth account
       // Important: This works even if OAuth email differs from user's primary email
       
-      await prisma.user.update({
+      await prisma.users.update({
         where: { id: user.id },
         data: { 
           emailVerified: new Date(),
@@ -279,7 +297,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Get the target user
-        const targetUser = await prisma.user.findUnique({
+        const targetUser = await prisma.users.findUnique({
           where: { id: userId },
           select: {
             id: true,
@@ -311,7 +329,7 @@ export const authOptions: NextAuthOptions = {
 
         // SUCCESS: Manually create Account record linking OAuth to existing user
         // This bypasses NextAuth's "create new user" behavior when emails differ
-        await prisma.account.create({
+        await prisma.accounts.create({
           data: {
             userId: targetUser.id, // Link to EXISTING user
             type: account.type,
@@ -329,7 +347,7 @@ export const authOptions: NextAuthOptions = {
 
         // Delete the temporary user that NextAuth created (if new user)
         if (isNewUser && user.id !== targetUser.id) {
-          await prisma.user.delete({
+          await prisma.users.delete({
             where: { id: user.id }
           }).catch(() => {
             // Ignore if user doesn't exist or has constraints

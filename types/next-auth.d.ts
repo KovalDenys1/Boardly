@@ -24,5 +24,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     emailVerified?: Date | null
+    lastActiveUpdate?: number // Timestamp of last lastActiveAt update
   }
 }

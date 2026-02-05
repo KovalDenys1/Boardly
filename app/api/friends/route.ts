@@ -21,10 +21,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Friends list access denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
     const userId = session.user.id
 
     // Get all friendships where user is either user1 or user2
-    const friendships = await prisma.friendship.findMany({
+    const friendships = await prisma.friendships.findMany({
       where: {
         OR: [
           { user1Id: userId },
@@ -38,7 +47,7 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             email: true,
-            isBot: true,
+            bot: true,  // Bot relation
           }
         },
         user2: {
@@ -47,7 +56,7 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             email: true,
-            isBot: true,
+            bot: true,  // Bot relation
           }
         }
       },

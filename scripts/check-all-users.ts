@@ -8,7 +8,7 @@ import { prisma } from '../lib/db'
 async function checkUsers() {
   console.log('🔍 Checking all users...\n')
 
-  const users = await prisma.user.findMany({
+  const users = await prisma.users.findMany({
     include: {
       accounts: {
         select: {

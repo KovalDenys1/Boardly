@@ -21,7 +21,7 @@ export function CustomPrismaAdapter(): Adapter {
     // Map NextAuth's `name` to our Prisma `username`
     async createUser(user: AdapterUser) {
       const username = user.name || (user.email ? user.email.split('@')[0] : null)
-      const created = await prisma.user.create({
+      const created = await prisma.users.create({
         data: {
           email: user.email,
           emailVerified: user.emailVerified ?? null,
@@ -39,7 +39,7 @@ export function CustomPrismaAdapter(): Adapter {
     },
     async updateUser(user) {
       const username = user.name || (user.email ? user.email.split('@')[0] : null)
-      const updated = await prisma.user.update({
+      const updated = await prisma.users.update({
         where: { id: user.id },
         data: {
           email: user.email ?? undefined,

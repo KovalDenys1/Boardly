@@ -770,6 +770,9 @@ const uk: Translation = {
       copyLink: 'Копіювати посилання на профіль',
       friendCodeCopied: 'Код друга скопійовано в буфер обміну!',
       profileLinkCopied: 'Посилання на профіль скопійовано! Поділіться з друзями.',
+      emailVerificationRequired: 'Потрібна верифікація електронної пошти',
+      emailVerificationRequiredDesc: 'Будь ласка, підтвердіть вашу електронну пошту, щоб отримати доступ до коду друга та зв\'язатися з друзями.',
+      verifyEmail: 'Підтвердити пошту',
       errors: {
         loadFailed: 'Не вдалося завантажити друзів',
         usernameRequired: 'Ім\'я користувача обов\'язкове',

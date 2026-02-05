@@ -54,6 +54,12 @@ interface DBPlayer {
     username: string | null
     name?: string | null
     isBot?: boolean
+    bot?: {
+      id: string
+      userId: string
+      botType: string
+      difficulty: string
+    } | null
   }
 }
 
@@ -313,7 +319,8 @@ function LobbyPageContent() {
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
                   held: lastRoll.held,
-                  isBot: player.user?.isBot || player.isBot || false,
+                  isBot: !!(player.user?.bot || player.bot),
+                  botId: player.user?.bot ? player.userId : null,
                   timestamp: lastRoll.timestamp,
                 }]
               })
@@ -1162,7 +1169,7 @@ function LobbyPageContent() {
                               name: p.user?.username || null,
                               username: p.user?.username || null,
                               email: null,
-                              isBot: p.user?.isBot || false,
+                              bot: p.user?.bot || null,
                             },
                             score: enginePlayer?.score || 0,
                             position: actualPosition, // Use position from game engine, not DB
@@ -1273,7 +1280,7 @@ function LobbyPageContent() {
                               name: p.user?.username || null,
                               username: p.user?.username || null,
                               email: null,
-                              isBot: p.user?.isBot || false,
+                              bot: p.user?.bot || null,
                             },
                             score: enginePlayer?.score || 0,
                             position: actualPosition,

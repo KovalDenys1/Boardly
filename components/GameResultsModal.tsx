@@ -11,6 +11,12 @@ interface Player {
   username: string | null
   avatar: string | null
   isBot: boolean
+  bot?: {
+    id: string
+    userId: string
+    botType: string
+    difficulty: string
+  } | null
   score: number
   finalScore: number | null
   placement: number | null
@@ -143,7 +149,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
                     className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center"
                   >
                     {player.username || 'Player'}
-                    {player.isBot && ' 🤖'}
+                    {(player.isBot || player.bot) && ' 🤖'}
                   </th>
                 ))}
               </tr>
@@ -242,7 +248,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
                       <div>
                         <div className="font-medium text-gray-900 dark:text-gray-100">
                           {player.username || `Player ${index + 1}`}
-                          {player.isBot && ' 🤖'}
+                          {(player.isBot || player.bot) && ' 🤖'}
                         </div>
                       </div>
                     </div>

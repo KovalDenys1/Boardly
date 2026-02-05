@@ -8,11 +8,11 @@ async function getDatabaseStats() {
 
   try {
     // User statistics
-    const totalUsers = await prisma.user.count()
-    const botUsers = await prisma.user.count({ where: { isBot: true } })
+    const totalUsers = await prisma.users.count()
+    const botUsers = await prisma.bots.count()
     const realUsers = totalUsers - botUsers
-    const verifiedUsers = await prisma.user.count({ where: { emailVerified: { not: null } } })
-    const oauthUsers = await prisma.account.count()
+    const verifiedUsers = await prisma.users.count({ where: { emailVerified: { not: null } } })
+    const oauthUsers = await prisma.accounts.count()
 
     console.log('\n👥 Users:')
     console.log(`   Total: ${totalUsers}`)
@@ -22,8 +22,8 @@ async function getDatabaseStats() {
     console.log(`   OAuth accounts: ${oauthUsers}`)
 
     // Recent users
-    const recentUsers = await prisma.user.findMany({
-      where: { isBot: false },
+    const recentUsers = await prisma.users.findMany({
+      where: { bot: null },
       orderBy: { createdAt: 'desc' },
       take: 5,
       select: {
@@ -43,9 +43,9 @@ async function getDatabaseStats() {
     }
 
     // Lobby statistics
-    const totalLobbies = await prisma.lobby.count()
-    const activeLobbies = await prisma.lobby.count({ where: { isActive: true } })
-    const lobbyByGame = await prisma.lobby.groupBy({
+    const totalLobbies = await prisma.lobbies.count()
+    const activeLobbies = await prisma.lobbies.count({ where: { isActive: true } })
+    const lobbyByGame = await prisma.lobbies.groupBy({
       by: ['gameType'],
       _count: true,
     })
@@ -59,8 +59,8 @@ async function getDatabaseStats() {
     })
 
     // Game statistics
-    const totalGames = await prisma.game.count()
-    const gamesByStatus = await prisma.game.groupBy({
+    const totalGames = await prisma.games.count()
+    const gamesByStatus = await prisma.games.groupBy({
       by: ['status'],
       _count: true,
     })
@@ -73,7 +73,7 @@ async function getDatabaseStats() {
     })
 
     // Player statistics
-    const totalPlayers = await prisma.player.count()
+    const totalPlayers = await prisma.players.count()
     const avgPlayersPerGame = totalGames > 0 ? (totalPlayers / totalGames).toFixed(2) : 0
 
     console.log('\n👤 Players:')
@@ -81,7 +81,7 @@ async function getDatabaseStats() {
     console.log(`   Avg players per game: ${avgPlayersPerGame}`)
 
     // Active sessions
-    const activeSessions = await prisma.session.count({
+    const activeSessions = await prisma.sessions.count({
       where: { expires: { gt: new Date() } }
     })
 
@@ -89,7 +89,7 @@ async function getDatabaseStats() {
     console.log(`   Active sessions: ${activeSessions}`)
 
     // Recent activity
-    const recentGames = await prisma.game.findMany({
+    const recentGames = await prisma.games.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: {
@@ -104,7 +104,7 @@ async function getDatabaseStats() {
             user: {
               select: {
                 username: true,
-                isBot: true,
+                bot: true,
               }
             }
           }
@@ -115,8 +115,8 @@ async function getDatabaseStats() {
     if (recentGames.length > 0) {
       console.log('\n🕐 Recent Games:')
       recentGames.forEach(game => {
-        const playerNames = game.players.map(p => 
-          p.user.isBot ? `🤖 ${p.user.username}` : p.user.username
+        const playerNames = game.players.map((p: any) => 
+          p.user.bot ? `🤖 ${p.user.username}` : p.user.username
         ).join(', ')
         console.log(`   - ${game.lobby.name} (${game.lobby.code}) - ${game.status}`)
         console.log(`     Players: ${playerNames}`)

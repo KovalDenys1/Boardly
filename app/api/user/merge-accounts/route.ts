@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const currentUserId = session.user.id
 
     // Find the OAuth account
-    const oauthAccount = await prisma.account.findUnique({
+    const oauthAccount = await prisma.accounts.findUnique({
       where: {
         provider_providerAccountId: {
           provider,
@@ -72,25 +72,25 @@ export async function POST(request: NextRequest) {
     // Start transaction to merge accounts
     await prisma.$transaction(async (tx) => {
       // 1. Move all accounts from source user to current user
-      await tx.account.updateMany({
+      await tx.accounts.updateMany({
         where: { userId: sourceUserId },
         data: { userId: currentUserId }
       })
 
       // 2. Move all players from source user to current user
-      await tx.player.updateMany({
+      await tx.players.updateMany({
         where: { userId: sourceUserId },
         data: { userId: currentUserId }
       })
 
       // 3. Update lobbies where source user was creator
-      await tx.lobby.updateMany({
+      await tx.lobbies.updateMany({
         where: { creatorId: sourceUserId },
         data: { creatorId: currentUserId }
       })
 
       // 4. Delete the source user (cascade will handle remaining relations)
-      await tx.user.delete({
+      await tx.users.delete({
         where: { id: sourceUserId }
       })
     })

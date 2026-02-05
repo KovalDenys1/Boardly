@@ -28,7 +28,7 @@ async function cleanupAbandonedGames() {
     // Find abandoned games older than cutoff date
     // Note: Using updatedAt instead of abandonedAt due to TypeScript cache issue
     // After TS server restart, replace with abandonedAt
-    const abandonedGames = await prisma.game.findMany({
+    const abandonedGames = await prisma.games.findMany({
       where: {
         status: 'abandoned',
         updatedAt: {
@@ -53,10 +53,10 @@ async function cleanupAbandonedGames() {
     })
 
     // Delete games (cascade will delete related players)
-    const result = await prisma.game.deleteMany({
+    const result = await prisma.games.deleteMany({
       where: {
         id: {
-          in: abandonedGames.map((g) => g.id),
+          in: abandonedGames.map((g: any) => g.id),
         },
       },
     })
@@ -80,7 +80,7 @@ async function cleanupEmptyLobbies() {
     logger.info('Cleaning up empty lobbies')
 
     // Find lobbies with no active games
-    const emptyLobbies = await prisma.lobby.findMany({
+    const emptyLobbies = await prisma.lobbies.findMany({
       where: {
         isActive: false,
         games: {
@@ -100,10 +100,10 @@ async function cleanupEmptyLobbies() {
 
     logger.info(`Found ${emptyLobbies.length} empty lobbies to delete`)
 
-    const result = await prisma.lobby.deleteMany({
+    const result = await prisma.lobbies.deleteMany({
       where: {
         id: {
-          in: emptyLobbies.map((l) => l.id),
+          in: emptyLobbies.map((l: any) => l.id),
         },
       },
     })

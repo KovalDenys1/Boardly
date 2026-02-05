@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email },
       select: {
         id: true,
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email already verified' }, { status: 400 })
     }
 
-    await prisma.emailVerificationToken.deleteMany({
+    await prisma.emailVerificationTokens.deleteMany({
       where: { userId: user.id },
     })
 
     const token = nanoid(32)
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    await prisma.emailVerificationToken.create({
+    await prisma.emailVerificationTokens.create({
       data: {
         userId: user.id,
         token,

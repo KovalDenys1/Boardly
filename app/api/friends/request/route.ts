@@ -18,6 +18,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Friend request denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
     const { receiverUsername } = await req.json()
 
     if (!receiverUsername) {
@@ -30,9 +39,9 @@ export async function POST(req: NextRequest) {
     const senderId = session.user.id
 
     // Get receiver
-    const receiver = await prisma.user.findUnique({
+    const receiver = await prisma.users.findUnique({
       where: { username: receiverUsername },
-      select: { id: true, username: true, isBot: true }
+      select: { id: true, username: true, bot: true }
     })
 
     if (!receiver) {
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (receiver.isBot) {
+    if (receiver.bot) {
       return NextResponse.json(
         { error: 'Cannot send friend request to bot' },
         { status: 400 }
@@ -57,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if already friends
-    const existingFriendship = await prisma.friendship.findFirst({
+    const existingFriendship = await prisma.friendships.findFirst({
       where: {
         OR: [
           { user1Id: senderId, user2Id: receiver.id },
@@ -74,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for existing pending request
-    const existingRequest = await prisma.friendRequest.findFirst({
+    const existingRequest = await prisma.friendRequests.findFirst({
       where: {
         OR: [
           { senderId: senderId, receiverId: receiver.id, status: 'pending' },
@@ -91,7 +100,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create friend request
-    const friendRequest = await prisma.friendRequest.create({
+    const friendRequest = await prisma.friendRequests.create({
       data: {
         senderId: senderId,
         receiverId: receiver.id,
@@ -147,10 +156,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Friend requests access denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type') || 'received' // received, sent, all
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
       select: { id: true }
     })
@@ -174,7 +192,7 @@ export async function GET(req: NextRequest) {
       ]
     }
 
-    const requests = await prisma.friendRequest.findMany({
+    const requests = await prisma.friendRequests.findMany({
       where: whereClause,
       include: {
         sender: {

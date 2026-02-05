@@ -22,7 +22,16 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Accept friend request denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
       select: { id: true }
     })
@@ -32,7 +41,7 @@ export async function POST(
     }
 
     // Get friend request
-    const friendRequest = await prisma.friendRequest.findUnique({
+    const friendRequest = await prisma.friendRequests.findUnique({
       where: { id: requestId }
     })
 
@@ -59,7 +68,7 @@ export async function POST(
     }
 
     // Update request status
-    await prisma.friendRequest.update({
+    await prisma.friendRequests.update({
       where: { id: requestId },
       data: { status: 'accepted' }
     })
@@ -67,7 +76,7 @@ export async function POST(
     // Create friendship (ensure user1Id < user2Id for consistency)
     const [user1Id, user2Id] = [friendRequest.senderId, friendRequest.receiverId].sort()
     
-    const friendship = await prisma.friendship.create({
+    const friendship = await prisma.friendships.create({
       data: {
         user1Id,
         user2Id

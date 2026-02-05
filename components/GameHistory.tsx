@@ -11,6 +11,12 @@ interface Player {
   username: string | null
   avatar: string | null
   isBot: boolean
+  bot?: {
+    id: string
+    userId: string
+    botType: string
+    difficulty: string
+  } | null
   score: number
   finalScore: number | null
   placement: number | null
@@ -262,7 +268,7 @@ export default function GameHistory() {
                   >
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {player.username || `Player ${index + 1}`}
-                      {player.isBot && ' 🤖'}
+                      {(player.isBot || player.bot) && ' 🤖'}
                     </span>
                     {player.finalScore !== null && (
                       <span className="text-xs text-gray-600 dark:text-gray-400">

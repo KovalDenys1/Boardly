@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { code } = await params
     
-    const lobby = await prisma.lobby.findUnique({
+    const lobby = await prisma.lobbies.findUnique({
       where: { code },
       include: {
         creator: {
@@ -32,7 +32,7 @@ export async function GET(
                     id: true,
                     username: true,
                     email: true,
-                    isBot: true,
+                    bot: true,  // Bot relation
                   },
                 },
               },
@@ -72,7 +72,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const lobby = await prisma.lobby.findUnique({
+    const lobby = await prisma.lobbies.findUnique({
       where: { code },
       include: {
         games: {
@@ -106,7 +106,7 @@ export async function POST(
         finished: false,
       }
       
-      game = await prisma.game.create({
+      game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
           state: JSON.stringify(initialState),
@@ -116,7 +116,7 @@ export async function POST(
     }
 
     // Check if player already joined
-    const existingPlayer = await prisma.player.findUnique({
+    const existingPlayer = await prisma.players.findUnique({
       where: {
         gameId_userId: {
           gameId: game.id,
@@ -130,7 +130,7 @@ export async function POST(
     }
 
     // Count current players
-    const playerCount = await prisma.player.count({
+    const playerCount = await prisma.players.count({
       where: { gameId: game.id },
     })
 
@@ -142,7 +142,7 @@ export async function POST(
     }
 
     // Add player to game
-    const player = await prisma.player.create({
+    const player = await prisma.players.create({
       data: {
         gameId: game.id,
         userId: session.user.id,
@@ -160,7 +160,7 @@ export async function POST(
       // Add empty scorecard for new player
       currentState.scores.push({})
       
-      await prisma.game.update({
+      await prisma.games.update({
         where: { id: game.id },
         data: {
           state: JSON.stringify(currentState),

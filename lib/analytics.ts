@@ -34,7 +34,7 @@ interface PlayerActionEvent {
   actionType: string
   gameType: GameType
   playerCount: number
-  isBot: boolean
+  isBot: boolean  // Keep for backwards compatibility with analytics
   metadata?: Record<string, unknown>
 }
 

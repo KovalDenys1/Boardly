@@ -23,7 +23,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Remove friend denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
       select: { id: true }
     })
@@ -33,7 +42,7 @@ export async function DELETE(
     }
 
     // Get friendship
-    const friendship = await prisma.friendship.findUnique({
+    const friendship = await prisma.friendships.findUnique({
       where: { id: friendshipId }
     })
 
@@ -53,7 +62,7 @@ export async function DELETE(
     }
 
     // Delete friendship
-    await prisma.friendship.delete({
+    await prisma.friendships.delete({
       where: { id: friendshipId }
     })
 

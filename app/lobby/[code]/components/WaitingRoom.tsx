@@ -27,7 +27,7 @@ export default function WaitingRoom({
 }: WaitingRoomProps) {
   const { t } = useTranslation()
   const playerCount = game?.players?.length || 0
-  const hasBot = game?.players?.some((p: any) => p.user?.isBot)
+  const hasBot = game?.players?.some((p: any) => !!p.user?.bot)
   const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
 
   // Show loading overlay when starting game
@@ -206,7 +206,7 @@ export default function WaitingRoom({
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
               {game.players.map((p: any, index: number) => {
-                const isBot = p.user?.isBot === true
+                const isBot = !!p.user?.bot
                 const playerName = isBot 
                   ? t('yahtzee.ui.aiBot')
                   : p.user.name || p.user.username || p.user.email || t('yahtzee.ui.player')

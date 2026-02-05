@@ -11,7 +11,7 @@ async function findStuckGames() {
   console.log('🔍 Searching for stuck games...\n')
 
   // Find all games in "playing" status
-  const playingGames = await prisma.game.findMany({
+  const playingGames = await prisma.games.findMany({
     where: {
       status: 'playing'
     },
@@ -19,7 +19,11 @@ async function findStuckGames() {
       lobby: true,
       players: {
         include: {
-          user: true
+          user: {
+            include: {
+              bot: true
+            }
+          }
         }
       }
     },
@@ -33,8 +37,8 @@ async function findStuckGames() {
   const stuckGames: any[] = []
 
   for (const game of playingGames) {
-    const humanPlayers = game.players.filter(p => !p.user.isBot)
-    const botPlayers = game.players.filter(p => p.user.isBot)
+    const humanPlayers = game.players.filter((p: any) => !p.user.bot)
+    const botPlayers = game.players.filter((p: any) => p.user.bot)
     
     // Game is stuck if:
     // 1. No human players remain (only bots)
@@ -75,13 +79,15 @@ async function findStuckGames() {
 async function fixStuckGames() {
   console.log('🔧 Fixing stuck games...\n')
 
-  const result = await prisma.game.updateMany({
+  const result = await prisma.games.updateMany({
     where: {
       status: 'playing',
       players: {
         every: {
           user: {
-            isBot: true
+            bot: {
+              isNot: null
+            }
           }
         }
       }
@@ -95,7 +101,7 @@ async function fixStuckGames() {
   console.log(`✅ Marked ${result.count} games as abandoned\n`)
 
   // Also find games with only 1 human player that are old
-  const oldGames = await prisma.game.findMany({
+  const oldGames = await prisma.games.findMany({
     where: {
       status: 'playing',
       createdAt: {
@@ -105,7 +111,11 @@ async function fixStuckGames() {
     include: {
       players: {
         include: {
-          user: true
+          user: {
+            include: {
+              bot: true
+            }
+          }
         }
       }
     }
@@ -113,9 +123,9 @@ async function fixStuckGames() {
 
   let abandonedCount = 0
   for (const game of oldGames) {
-    const humanPlayers = game.players.filter(p => !p.user.isBot)
+    const humanPlayers = game.players.filter((p: any) => !p.user.bot)
     if (humanPlayers.length <= 1) {
-      await prisma.game.update({
+      await prisma.games.update({
         where: { id: game.id },
         data: {
           status: 'abandoned',

@@ -5,7 +5,7 @@ import { clientLogger } from './client-logger'
 interface BotPlayer {
   userId: string
   user?: {
-    isBot?: boolean
+    bot?: unknown  // Bot relation from database
     username?: string
   }
 }
@@ -93,7 +93,7 @@ export function detectBotMove(
   }
 
   // Check if it was a bot
-  if (playerWhoMoved.user?.isBot || playerWhoMoved.userId?.startsWith('bot_')) {
+  if (playerWhoMoved.user?.bot || playerWhoMoved.userId?.startsWith('bot_')) {
     return {
       botId: playerWhoMoved.userId,
       botName: playerWhoMoved.user?.username || 'Bot',

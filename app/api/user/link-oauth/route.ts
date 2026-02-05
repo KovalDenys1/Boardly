@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const currentUserId = session.user.id
 
     // Check if this OAuth account is already linked to another user
-    const existingAccount = await prisma.account.findUnique({
+    const existingAccount = await prisma.accounts.findUnique({
       where: {
         provider_providerAccountId: {
           provider,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if there's a user with the OAuth email who doesn't have this provider linked
-    const userWithOAuthEmail = await prisma.user.findUnique({
+    const userWithOAuthEmail = await prisma.users.findUnique({
       where: { email: oauthEmail },
       include: {
         accounts: true

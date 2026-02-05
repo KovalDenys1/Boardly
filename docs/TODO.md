@@ -206,6 +206,13 @@
 ## 🐛 Known Issues & Tech Debt
 
 ### High Priority (Post-Launch)
+- [ ] **Security: Apply RLS (Row Level Security) migration** - Created Feb 5, 2026
+  - Migration ready: `prisma/migrations/20260205000000_enable_rls/`
+  - Comprehensive policies for all tables (User, Lobby, Game, etc.)
+  - Supports authenticated users, guests, and service role
+  - Documentation: `docs/RLS_ARCHITECTURE.md`, `docs/RLS_SETUP_GUIDE.md`
+  - Test in staging before production deployment
+  - Monitor for permission errors after deployment
 - [ ] Add game replay functionality
 - [ ] Implement player statistics tracking
 - [ ] Add friend system

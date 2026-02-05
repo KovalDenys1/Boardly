@@ -25,6 +25,15 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Friend code access denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
     const friendCode = await ensureUserHasFriendCode(session.user.id)
 
     log.info('Friend code retrieved', { userId: session.user.id })

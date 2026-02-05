@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find deletion token (with DELETE_ prefix)
-    const deletionToken = await prisma.passwordResetToken.findUnique({
+    const deletionToken = await prisma.passwordResetTokens.findUnique({
       where: { token: `DELETE_${token}` }
     })
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (deletionToken.expires < new Date()) {
-      await prisma.passwordResetToken.delete({
+      await prisma.passwordResetTokens.delete({
         where: { token: `DELETE_${token}` }
       })
       return NextResponse.json(
@@ -35,13 +35,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user details before deletion
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: deletionToken.userId },
       select: {
         id: true,
         email: true,
         username: true,
-        isBot: true
+        bot: true  // Bot relation
       }
     })
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    if (user.isBot) {
+    if (user.bot) {
       return NextResponse.json(
         { error: 'Bot accounts cannot be deleted' },
         { status: 400 }
@@ -66,15 +66,15 @@ export async function POST(req: NextRequest) {
     // But we'll be explicit for logging purposes
     
     // Delete tokens
-    await prisma.passwordResetToken.deleteMany({
+      await prisma.passwordResetTokens.deleteMany({
       where: { userId: user.id }
     })
-    await prisma.emailVerificationToken.deleteMany({
+    await prisma.emailVerificationTokens.deleteMany({
       where: { userId: user.id }
     })
 
     // Delete friend requests (sent and received)
-    await prisma.friendRequest.deleteMany({
+    await prisma.friendRequests.deleteMany({
       where: {
         OR: [
           { senderId: user.id },
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Delete friendships
-    await prisma.friendship.deleteMany({
+    await prisma.friendships.deleteMany({
       where: {
         OR: [
           { user1Id: user.id },
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Delete the user (this will cascade delete sessions, accounts, players, lobbies)
-    await prisma.user.delete({
+    await prisma.users.delete({
       where: { id: user.id }
     })
 

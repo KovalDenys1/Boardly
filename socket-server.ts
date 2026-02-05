@@ -314,9 +314,14 @@ io.use(async (socket, next) => {
     logger.info('Attempting to find user in database', { userId })
     
     // Verify user exists in database
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: userId },
-      select: { id: true, username: true, email: true, isBot: true }
+      select: { 
+        id: true, 
+        username: true, 
+        email: true,
+        bot: true  // Include bot relation instead of isBot
+      }
     })
     
     if (!user) {
@@ -382,7 +387,7 @@ io.on('connection', (socket) => {
     
     try {
       // Verify lobby exists in database
-      const lobby = await prisma.lobby.findUnique({
+      const lobby = await prisma.lobbies.findUnique({
         where: { code: lobbyCode },
         include: {
           games: {

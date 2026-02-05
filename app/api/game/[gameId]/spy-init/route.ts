@@ -30,7 +30,7 @@ export async function POST(
     const { gameId } = await params
 
     // Fetch game
-    const game = await prisma.game.findUnique({
+    const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
         players: {
@@ -69,7 +69,7 @@ export async function POST(
     const updatedState = spyGame.getState()
 
     // Update game in database
-    await prisma.game.update({
+    await prisma.games.update({
       where: { id: gameId },
       data: {
         state: JSON.stringify(updatedState),

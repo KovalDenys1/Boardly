@@ -10,7 +10,8 @@ export interface RollHistoryEntry {
   dice: number[]
   held: number[]
   timestamp: number
-  isBot: boolean
+  isBot?: boolean  // Optional for backwards compatibility, use botId instead
+  botId?: string | null  // New: null = human, string = bot user ID
 }
 
 interface RollHistoryProps {
@@ -52,7 +53,7 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
             className={`
               rounded-lg transition-all shadow-sm border-2 snap-start
               ${
-                entry.isBot
+                (entry.isBot || entry.botId)
                   ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-purple-200 dark:border-purple-700'
                   : 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-700'
               }
@@ -62,7 +63,7 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
             {/* Header */}
             <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(4px, 0.4vh, 7px)' }}>
               <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
-                <span style={{ fontSize: 'clamp(11px, 0.85vw, 14px)', flexShrink: 0 }}>{entry.isBot ? '🤖' : '🎲'}</span>
+                <span style={{ fontSize: 'clamp(11px, 0.85vw, 14px)', flexShrink: 0 }}>{(entry.isBot || entry.botId) ? '🤖' : '🎲'}</span>
                 <span className="font-bold text-gray-900 dark:text-white truncate" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
                   {entry.playerName}
                 </span>

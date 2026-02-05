@@ -29,13 +29,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
       select: {
         id: true,
         email: true,
         username: true,
-        isBot: true
+        bot: true  // Bot relation
       }
     })
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    if (user.isBot) {
+    if (user.bot) {
       return NextResponse.json(
         { error: 'Bot accounts cannot be deleted this way' },
         { status: 400 }
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     // Store token in PasswordResetToken table (reusing for deletion tokens)
     // We'll use a special format to distinguish deletion tokens: "DELETE_" prefix
-    await prisma.passwordResetToken.create({
+    await prisma.passwordResetTokens.create({
       data: {
         userId: user.id,
         token: `DELETE_${token}`,

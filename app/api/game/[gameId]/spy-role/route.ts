@@ -34,7 +34,7 @@ export async function GET(
     }
 
     // Fetch game
-    const game = await prisma.game.findUnique({
+    const game = await prisma.games.findUnique({
       where: { id: gameId },
       include: {
         players: {

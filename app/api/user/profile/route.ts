@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Check if username is already taken by another user
-    const existingUser = await prisma.user.findFirst({
+    const existingUser = await prisma.users.findFirst({
       where: {
         username,
         NOT: {
@@ -50,7 +50,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Update user
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: {
         id: session.user.id,
       },

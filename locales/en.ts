@@ -768,6 +768,9 @@ const en = {
       copyLink: 'Copy Profile Link',
       friendCodeCopied: 'Friend code copied to clipboard!',
       profileLinkCopied: 'Profile link copied! Share it with friends.',
+      emailVerificationRequired: 'Email Verification Required',
+      emailVerificationRequiredDesc: 'Please verify your email to access your friend code and connect with friends.',
+      verifyEmail: 'Verify Email',
       errors: {
         loadFailed: 'Failed to load friends',
         usernameRequired: 'Username is required',

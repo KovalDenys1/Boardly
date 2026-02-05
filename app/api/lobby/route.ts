@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user exists in database
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
     })
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     let code = generateLobbyCode()
     let attempts = 0
     while (attempts < 10) {
-      const existing = await prisma.lobby.findUnique({ where: { code } })
+      const existing = await prisma.lobbies.findUnique({ where: { code } })
       if (!existing) break
       code = generateLobbyCode()
       attempts++
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    const lobby = await prisma.lobby.create({
+    const lobby = await prisma.lobbies.create({
       data: {
         code,
         name,
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
 
     // Get active lobbies with timeout protection
     const lobbies = await Promise.race([
-      prisma.lobby.findMany({
+      prisma.lobbies.findMany({
         where,
         include: {
           creator: {
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
                 select: {
                   user: {
                     select: {
-                      isBot: true
+                      bot: true  // Bot relation
                     }
                   }
                 }

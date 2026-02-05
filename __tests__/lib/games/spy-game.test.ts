@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 // Mock Prisma
 jest.mock('@/lib/db', () => ({
   prisma: {
-    spyLocation: {
+    spyLocations: {
       findMany: jest.fn(),
     },
   },
@@ -17,7 +17,7 @@ describe('SpyGame', () => {
     game = new SpyGame('test-game-123')
     
     // Mock locations
-    ;(prisma.spyLocation.findMany as jest.Mock).mockResolvedValue([
+    ;(prisma.spyLocations.findMany as jest.Mock).mockResolvedValue([
       {
         id: '1',
         name: 'Airport',

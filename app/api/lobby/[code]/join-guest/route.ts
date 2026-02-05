@@ -26,7 +26,7 @@ export async function POST(
     }
 
     // Find the lobby
-    const lobby = await prisma.lobby.findUnique({
+    const lobby = await prisma.lobbies.findUnique({
       where: { code },
       include: {
         games: {
@@ -53,16 +53,15 @@ export async function POST(
     }
 
     // Create or find guest user
-    let guestUser = await prisma.user.findUnique({
+    let guestUser = await prisma.users.findUnique({
       where: { id: guestId },
     })
 
     if (!guestUser) {
-      guestUser = await prisma.user.create({
+      guestUser = await prisma.users.create({
         data: {
           id: guestId,
           username: guestName,
-          isBot: false,
           isGuest: true,
           lastActiveAt: new Date(),
         },
@@ -70,7 +69,7 @@ export async function POST(
     } else {
       // Update lastActiveAt for existing guest
       if (guestUser.isGuest) {
-        await prisma.user.update({
+        await prisma.users.update({
           where: { id: guestId },
           data: { lastActiveAt: new Date() },
         })
@@ -93,7 +92,7 @@ export async function POST(
     // Create or get the active game
     let game
     if (!activeGame) {
-      game = await prisma.game.create({
+      game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
           status: 'waiting',
@@ -116,7 +115,7 @@ export async function POST(
     } else {
       // Add guest player to existing game
       const nextPosition = activeGame.players.length
-      await prisma.player.create({
+      await prisma.players.create({
         data: {
           gameId: activeGame.id,
           userId: guestId,
@@ -125,7 +124,7 @@ export async function POST(
       })
 
       // Refresh game data
-      const refreshedGame = await prisma.game.findUnique({
+      const refreshedGame = await prisma.games.findUnique({
         where: { id: activeGame.id },
         include: { 
           players: {

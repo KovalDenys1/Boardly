@@ -10,7 +10,7 @@ async function analyzeDatabaseBehavior() {
   console.log('═══════════════════════════════════════════════════════════\n')
 
   // Get all users with their accounts
-  const users = await prisma.user.findMany({
+  const users = await prisma.users.findMany({
     include: {
       accounts: {
         select: {

@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   
   try {
     // Find lobbies with no active games and no players
-    const lobbiesWithGames = await prisma.lobby.findMany({
+    const lobbiesWithGames = await prisma.lobbies.findMany({
       where: {
         isActive: true,
       },
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Deactivate inactive lobbies
     if (lobbiesToDeactivate.length > 0) {
-      await prisma.lobby.updateMany({
+      await prisma.lobbies.updateMany({
         where: {
           id: { in: lobbiesToDeactivate }
         },

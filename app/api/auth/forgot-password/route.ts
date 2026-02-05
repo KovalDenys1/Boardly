@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // doesn't return 500 — instead log and return generic success.
     let user
     try {
-      user = await prisma.user.findUnique({ where: { email } })
+      user = await prisma.users.findUnique({ where: { email } })
     } catch (dbError) {
       const log = apiLogger('POST /api/auth/forgot-password')
       log.warn('DB lookup failed during forgot-password; returning generic success to caller', {
@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
     const expires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
     // Delete any existing reset tokens for this user
-    await prisma.passwordResetToken.deleteMany({
+    await prisma.passwordResetTokens.deleteMany({
       where: { userId: user.id },
     })
 
     // Create new reset token
-    await prisma.passwordResetToken.create({
+    await prisma.passwordResetTokens.create({
       data: {
         userId: user.id,
         token,

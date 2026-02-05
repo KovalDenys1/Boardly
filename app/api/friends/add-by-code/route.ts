@@ -32,6 +32,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Check if email is verified
+    if (!session.user.emailVerified) {
+      log.warn('Friend request denied - email not verified', { userId: session.user.id })
+      return NextResponse.json(
+        { error: 'Email verification required' },
+        { status: 403 }
+      )
+    }
+
     const body = await req.json()
     const { friendCode } = body
 
@@ -52,9 +61,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Get current user
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await prisma.users.findUnique({
       where: { email: session.user.email },
-      select: { id: true, username: true, isBot: true }
+      select: { id: true, username: true, bot: true }
     })
 
     if (!currentUser) {
@@ -64,7 +73,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (currentUser.isBot) {
+    if (currentUser.bot) {
       return NextResponse.json(
         { error: 'Bots cannot send friend requests' },
         { status: 400 }
@@ -90,7 +99,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if already friends
-    const existingFriendship = await prisma.friendship.findFirst({
+    const existingFriendship = await prisma.friendships.findFirst({
       where: {
         OR: [
           { user1Id: currentUser.id, user2Id: targetUser.id },
@@ -107,7 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for pending request
-    const pendingRequest = await prisma.friendRequest.findFirst({
+    const pendingRequest = await prisma.friendRequests.findFirst({
       where: {
         OR: [
           { senderId: currentUser.id, receiverId: targetUser.id },
@@ -125,7 +134,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create friend request
-    const friendRequest = await prisma.friendRequest.create({
+    const friendRequest = await prisma.friendRequests.create({
       data: {
         senderId: currentUser.id,
         receiverId: targetUser.id,

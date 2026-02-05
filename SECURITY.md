@@ -92,6 +92,30 @@ While we work hard to ensure the security of Boardly, you can help protect your 
 - Personal data follows GDPR principles (minimal collection)
 - Regular security audits of dependencies
 
+### Row Level Security (RLS)
+**Status**: Migration prepared, pending production deployment
+
+Boardly implements PostgreSQL Row Level Security to enforce data access controls at the database level:
+
+- **Protection**: Users can only access their own sensitive data (accounts, sessions, tokens)
+- **Game Access**: Players can only view games they participate in
+- **Lobby Privacy**: Only lobby creators can modify their lobbies
+- **Friend System**: Users can only view their own friend requests and friendships
+- **Service Role**: Backend operations use elevated privileges for authorized actions only
+
+**Documentation**:
+- [RLS Architecture](docs/RLS_ARCHITECTURE.md) - Complete security model
+- [Setup Guide](docs/RLS_SETUP_GUIDE.md) - Implementation instructions
+- [SQL Reference](docs/RLS_SQL_CHEATSHEET.md) - Testing and debugging
+
+**Key Benefits**:
+- Defense in depth: Security enforced at database level, not just application
+- Protection against SQL injection and unauthorized queries
+- Automatic filtering of unauthorized data
+- Support for authenticated users, guests, and service role operations
+
+**Migration**: `prisma/migrations/20260205000000_enable_rls/`
+
 ## Known Security Considerations
 
 ### Guest Mode
@@ -136,4 +160,4 @@ Boardly follows these security standards:
 
 ---
 
-*Last Updated: November 28, 2025*
+*Last Updated: February 5, 2026*
