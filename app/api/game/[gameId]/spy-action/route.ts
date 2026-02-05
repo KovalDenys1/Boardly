@@ -23,7 +23,7 @@ export async function POST(
 
   try {
     const { gameId } = await params
-    
+
     // Get session or guest user
     const session = await getServerSession(authOptions)
     const guestId = request.headers.get('X-Guest-Id')
@@ -92,17 +92,34 @@ export async function POST(
     // Get updated state
     const updatedState = spyGame.getState()
 
-    // Update game in database
+    // Check if game status changed (e.g., finished)
+    const statusChanged = game.status !== updatedState.status
+    const oldStatus = game.status
+
+    // Update game in database - CRITICAL: include status from engine
     await prisma.games.update({
       where: { id: gameId },
       data: {
         state: JSON.stringify(updatedState),
+        status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
         lastMoveAt: new Date(),
       },
     })
 
-    log.info('Spy game action processed', { userId, action, gameId })
+    // Log state transitions for debugging
+    if (statusChanged) {
+      log.info('Game status changed', {
+        gameId,
+        userId,
+        action,
+        oldStatus,
+        newStatus: updatedState.status,
+        winner: updatedState.winner
+      })
+    } else {
+      log.info('Spy game action processed', { userId, action, gameId })
+    }
 
     // Notify all clients via WebSocket
     await notifySocket(`lobby:${game.lobby.code}`, 'spy-action', {

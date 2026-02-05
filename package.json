@@ -23,6 +23,7 @@
     "cleanup:old-guests": "tsx scripts/cleanup-old-guests.ts",
     "find-stuck-games": "tsx scripts/find-stuck-games.ts",
     "fix-stuck-games": "tsx scripts/find-stuck-games.ts --fix",
+    "fix-game-statuses": "tsx scripts/fix-game-statuses.ts",
     "clear-all-data": "tsx scripts/clear-all-data.ts",
     "security-check": "bash scripts/security-check.sh",
     "pre-deploy": "npm run lint && npm run test && npm run build"

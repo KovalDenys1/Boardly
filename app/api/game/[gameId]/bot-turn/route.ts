@@ -18,7 +18,7 @@ export async function POST(
   const log = apiLogger('POST /api/game/[gameId]/bot-turn')
   let lockKey: string | null = null
   let gameId: string | undefined
-  
+
   try {
     const paramsData = await params
     gameId = paramsData.gameId
@@ -37,7 +37,7 @@ export async function POST(
     lockKey = `${gameId}:${botUserId}`
     if (botTurnLocks.get(lockKey)) {
       log.warn('Bot turn already in progress, ignoring duplicate request')
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Bot turn already in progress',
         message: 'Another bot turn request is being processed'
       }, { status: 409 })
@@ -79,7 +79,7 @@ export async function POST(
           },
         },
       }
-      
+
       game = await prisma.games.findUnique(optimizedQuery).catch(async (fetchError) => {
         // Retry once on connection error (serverless cold start issue)
         log.warn('Initial game fetch failed, retrying...', { error: fetchError.code })
@@ -88,7 +88,7 @@ export async function POST(
       })
     } catch (error) {
       log.error('Failed to load game after retry', error as Error)
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Database connection error. Please try again.',
         code: 'DB_CONNECTION_FAILED'
       }, { status: 503 })
@@ -126,12 +126,12 @@ export async function POST(
       }
     } catch (parseError) {
       log.error('Failed to parse game state', parseError as Error)
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Corrupted game state. Please restart the game.',
         code: 'INVALID_STATE'
       }, { status: 500 })
     }
-    
+
     const gameEngine = new YahtzeeGame(game.id)
     gameEngine.restoreState(gameState)
 
@@ -139,7 +139,7 @@ export async function POST(
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
     const gamePlayers = gameEngine.getPlayers() // Use game engine's player order (sorted)
     const currentPlayer = gamePlayers[currentPlayerIndex]
-    
+
     // Find corresponding database player
     const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
 
@@ -148,7 +148,7 @@ export async function POST(
         currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
         expectedBot: botUserId
       })
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Not bot\'s turn',
         currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
         expectedBot: botUserId
@@ -156,7 +156,7 @@ export async function POST(
     }
 
     log.info('Verified it\'s bot\'s turn, executing...')
-    
+
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: any) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
@@ -169,29 +169,37 @@ export async function POST(
       botUserId,
       async (botMove: Move) => {
         log.info('Bot making move', { moveType: botMove.type, data: botMove.data })
-        
+
         try {
           // Make the bot's move
           const moveSuccess = gameEngine.makeMove(botMove)
           log.info('Move result', { success: moveSuccess })
-          
+
           if (!moveSuccess) {
-            log.error('Move validation failed', undefined, { 
-              move: botMove, 
-              gameState: gameEngine.getState() 
+            log.error('Move validation failed', undefined, {
+              move: botMove,
+              gameState: gameEngine.getState()
             })
             throw new Error('Move validation failed')
           }
 
           // Save to database with retry logic
-          log.info('Saving bot move to database...')
+          const newState = gameEngine.getState()
+          const statusChanged = game.status !== newState.status
+          const oldStatus = game.status
+
+          log.info('Saving bot move to database...', {
+            moveType: botMove.type,
+            currentStatus: newState.status
+          })
+
           try {
             await prisma.games.update({
               where: { id: gameId },
               data: {
-                state: JSON.stringify(gameEngine.getState()),
-                status: gameEngine.getState().status,
-                currentTurn: gameEngine.getState().currentPlayerIndex,
+                state: JSON.stringify(newState),
+                status: newState.status,
+                currentTurn: newState.currentPlayerIndex,
                 lastMoveAt: new Date(),
                 updatedAt: new Date(),
               },
@@ -202,15 +210,27 @@ export async function POST(
               return prisma.games.update({
                 where: { id: gameId },
                 data: {
-                  state: JSON.stringify(gameEngine.getState()),
-                  status: gameEngine.getState().status,
-                  currentTurn: gameEngine.getState().currentPlayerIndex,
+                  state: JSON.stringify(newState),
+                  status: newState.status,
+                  currentTurn: newState.currentPlayerIndex,
                   lastMoveAt: new Date(),
                   updatedAt: new Date(),
                 },
               })
             })
-            log.info('Database updated successfully')
+
+            // Log state transitions
+            if (statusChanged) {
+              log.info('Game status changed by bot', {
+                gameId,
+                botUserId,
+                oldStatus,
+                newStatus: newState.status,
+                winner: newState.winner
+              })
+            } else {
+              log.info('Database updated successfully')
+            }
           } catch (dbError) {
             log.error('Critical: Failed to save game state after retry', dbError as Error)
             throw new Error('Database connection failed. Please try again.')
@@ -241,16 +261,16 @@ export async function POST(
                   })
                 })
               } catch (playerUpdateError) {
-                log.error('Failed to update player score', playerUpdateError as Error, { 
+                log.error('Failed to update player score', playerUpdateError as Error, {
                   playerId: dbPlayer.id,
-                  userId: player.id 
+                  userId: player.id
                 })
                 // Continue with other players even if one fails
               }
             }
           }
           log.info('Player scores updated')
-          
+
           // Broadcast state update after each move - fire-and-forget
           const currentState = gameEngine.getState()
           await notifySocket(
@@ -262,9 +282,9 @@ export async function POST(
             }
           )
         } catch (error) {
-          log.error('Error processing bot move', error as Error, { 
+          log.error('Error processing bot move', error as Error, {
             moveType: botMove.type,
-            botUserId 
+            botUserId
           })
           throw error // Re-throw to stop bot turn execution
         }
@@ -280,7 +300,7 @@ export async function POST(
     // Final notification removed - already sent after each move
     const finalState = gameEngine.getState()
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Bot turn completed',
       currentPlayerIndex: finalState.currentPlayerIndex
@@ -293,13 +313,13 @@ export async function POST(
       errorStack: error instanceof Error ? error.stack : undefined,
       errorMessage: error instanceof Error ? error.message : String(error)
     })
-    
+
     // Release lock on error
     if (lockKey) {
       botTurnLocks.delete(lockKey)
     }
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       error: 'Failed to execute bot turn',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })

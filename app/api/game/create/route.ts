@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const log = apiLogger('POST /api/game/create')
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -61,17 +63,16 @@ export async function POST(request: NextRequest) {
 
     // Get or create waiting game
     let waitingGame = lobby.games.find(g => g.status === 'waiting')
-    
+
     // If no waiting game exists, check for finished game and create new waiting game
     if (!waitingGame) {
       const finishedGame = lobby.games.find(g => g.status === 'finished')
       if (finishedGame) {
-        const log = apiLogger('POST /api/game/create')
-        log.info('Creating new waiting game from finished game', { 
-          finishedGameId: finishedGame.id, 
-          playerCount: finishedGame.players?.length || 0 
+        log.info('Creating new waiting game from finished game', {
+          finishedGameId: finishedGame.id,
+          playerCount: finishedGame.players?.length || 0
         })
-        
+
         // Create new waiting game with same players
         waitingGame = await prisma.games.create({
           data: {
@@ -111,14 +112,13 @@ export async function POST(request: NextRequest) {
     // Validate minimum players
     const playerCount = waitingGame.players?.length || 0
     if (playerCount < 2) {
-      const log = apiLogger('POST /api/game/create')
-      log.warn('Attempted to start game with insufficient players', { 
-        playerCount, 
-        gameId: waitingGame.id 
+      log.warn('Attempted to start game with insufficient players', {
+        playerCount,
+        gameId: waitingGame.id
       })
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'At least 2 players are required to start the game',
-        details: 'Please add a bot or wait for another player to join' 
+        details: 'Please add a bot or wait for another player to join'
       }, { status: 400 })
     }
 
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       const bIsBot = b.user.bot ? 1 : 0
       return aIsBot - bIsBot // Non-bots first, bots last
     })
-    
+
     for (const player of sortedPlayers) {
       gameEngine.addPlayer({
         id: player.userId,
@@ -170,6 +170,13 @@ export async function POST(request: NextRequest) {
     if (!gameStarted) {
       return NextResponse.json({ error: 'Not enough players to start the game' }, { status: 400 })
     }
+
+    log.info('Game starting', {
+      gameId: waitingGame.id,
+      gameType,
+      playerCount,
+      lobbyCode: lobby.code
+    })
 
     // Update existing game instead of creating new one
     const game = await prisma.games.update({
@@ -188,6 +195,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    log.info('Game status changed', {
+      gameId: game.id,
+      oldStatus: 'waiting',
+      newStatus: 'playing',
+      playerCount: game.players.length
+    })
+
     // Update lobby status
     await prisma.lobbies.update({
       where: { id: lobbyId },
@@ -195,8 +209,6 @@ export async function POST(request: NextRequest) {
     })
 
     // Notify all clients via WebSocket that game started
-    const log = apiLogger('POST /api/game/create')
-    
     await notifySocket(
       `lobby:${lobby.code}`,
       'game-started',
@@ -220,21 +232,20 @@ export async function POST(request: NextRequest) {
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
     const gamePlayers = gameEngine.getPlayers() // Use game engine's sorted players
     const currentPlayer = gamePlayers[currentPlayerIndex]
-    
+
     // Find the corresponding database player
     const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
-    
+
     if (dbCurrentPlayer && BotMoveExecutor.isBot(dbCurrentPlayer)) {
-      const log = apiLogger('POST /api/game/create')
       log.info('First player is a bot, triggering bot turn...', { botUserId: dbCurrentPlayer.userId })
-      
+
       // Trigger bot turn via separate HTTP request (fire and forget)
       const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
-      
+
       // Add timeout to prevent hanging
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
-      
+
       fetch(botApiUrl, {
         method: 'POST',
         headers: {
@@ -255,7 +266,7 @@ export async function POST(request: NextRequest) {
             log.error('Failed to trigger bot turn', error)
           }
         })
-        
+
       log.info('Bot turn request sent', { botApiUrl })
     }
 
@@ -275,9 +286,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const log = apiLogger('POST /api/game/create')
     log.error('Create game error', error as Error)
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: error instanceof Error ? error.message : 'Unknown error' 
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }

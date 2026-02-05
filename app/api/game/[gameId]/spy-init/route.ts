@@ -68,16 +68,29 @@ export async function POST(
     // Get updated state
     const updatedState = spyGame.getState()
 
-    // Update game in database
+    // Check if status changed during initialization
+    const statusChanged = game.status !== updatedState.status
+    const oldStatus = game.status
+
+    // Update game in database - include status from engine
     await prisma.games.update({
       where: { id: gameId },
       data: {
         state: JSON.stringify(updatedState),
+        status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
       },
     })
 
-    log.info('Spy game round initialized', { gameId })
+    if (statusChanged) {
+      log.info('Game status changed during round init', {
+        gameId,
+        oldStatus,
+        newStatus: updatedState.status
+      })
+    } else {
+      log.info('Spy game round initialized', { gameId })
+    }
 
     // Notify all clients via WebSocket
     await notifySocket(`lobby:${game.lobby.code}`, 'spy-round-start', {
