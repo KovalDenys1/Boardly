@@ -844,8 +844,8 @@ function LobbyPageContent() {
         window.dispatchEvent(new Event('resize'))
         // Force repaint
         document.body.style.display = 'none'
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        document.body.offsetHeight // Trigger reflow
+        // Trigger reflow
+        document.body.offsetHeight
         document.body.style.display = ''
       }, 100)
       return () => clearTimeout(timer)
