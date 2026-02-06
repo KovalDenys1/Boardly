@@ -6,7 +6,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { SpyGame } from '@/lib/games/spy-game'
 import { GameEngine, GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { BotMoveExecutor } from '@/lib/bot-executor'
+import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
     // Find the corresponding database player
     const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
 
-    if (dbCurrentPlayer && BotMoveExecutor.isBot(dbCurrentPlayer)) {
+    if (dbCurrentPlayer && isBot(dbCurrentPlayer)) {
       log.info('First player is a bot, triggering bot turn...', { botUserId: dbCurrentPlayer.userId })
 
       // Trigger bot turn via separate HTTP request (fire and forget)

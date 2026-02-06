@@ -1,4 +1,4 @@
-import toast from 'react-hot-toast'
+import toast, { ToastOptions } from 'react-hot-toast'
 import i18n from '@/i18n'
 
 /**
@@ -11,10 +11,11 @@ export const showToast = {
    * @param key - translation key (e.g., 'toast.saved')
    * @param fallback - fallback text if key not found
    * @param params - parameters for interpolation
+   * @param opts - react-hot-toast options (id, duration, position, etc.)
    */
-  success: (key: string, fallback?: string, params?: Record<string, any>) => {
+  success: (key: string, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
-    toast.success(message)
+    toast.success(message, opts)
   },
 
   /**
@@ -22,10 +23,11 @@ export const showToast = {
    * @param key - translation key (e.g., 'errors.network')
    * @param fallback - fallback text if key not found
    * @param params - parameters for interpolation
+   * @param opts - react-hot-toast options (id, duration, position, etc.)
    */
-  error: (key: string, fallback?: string, params?: Record<string, any>) => {
+  error: (key: string, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
-    toast.error(message)
+    toast.error(message, opts)
   },
 
   /**
@@ -33,10 +35,32 @@ export const showToast = {
    * @param key - translation key (e.g., 'toast.copied')
    * @param fallback - fallback text if key not found
    * @param params - parameters for interpolation
+   * @param opts - react-hot-toast options (id, duration, position, etc.)
    */
-  info: (key: string, fallback?: string, params?: Record<string, any>) => {
+  info: (key: string, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
-    toast(message)
+    toast(message, opts)
+  },
+
+  /**
+   * Show loading message
+   * @param key - translation key
+   * @param fallback - fallback text if key not found
+   * @param params - parameters for interpolation
+   * @param opts - react-hot-toast options (id, duration, etc.)
+   * @returns toast id for later dismissal
+   */
+  loading: (key: string, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
+    const message = i18n.t(key, { defaultValue: fallback || key, ...params })
+    return toast.loading(message, opts)
+  },
+
+  /**
+   * Dismiss a toast by id
+   * @param toastId - the id of the toast to dismiss
+   */
+  dismiss: (toastId?: string) => {
+    toast.dismiss(toastId)
   },
 
   /**
@@ -45,10 +69,11 @@ export const showToast = {
    * @param icon - emoji or icon component
    * @param fallback - fallback text if key not found
    * @param params - parameters for interpolation
+   * @param opts - react-hot-toast options
    */
-  custom: (key: string, icon: string, fallback?: string, params?: Record<string, any>) => {
+  custom: (key: string, icon: string, fallback?: string, params?: Record<string, any>, opts?: ToastOptions) => {
     const message = i18n.t(key, { defaultValue: fallback || key, ...params })
-    toast(message, { icon })
+    toast(message, { icon, ...opts })
   },
 
   /**

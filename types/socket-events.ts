@@ -28,32 +28,33 @@ export const SocketEvents = {
   RECONNECT: 'reconnect',
   RECONNECT_ATTEMPT: 'reconnect_attempt',
   RECONNECT_FAILED: 'reconnect_failed',
-  
+
   // ========================================
   // Error Events
   // ========================================
   ERROR: 'error', // Generic socket error
   SERVER_ERROR: 'server-error', // Structured error from server
-  
+
   // ========================================
   // Lobby Room Management (Client → Server)
   // ========================================
   JOIN_LOBBY: 'join-lobby', // Join a specific lobby room
   LEAVE_LOBBY: 'leave-lobby', // Leave a lobby room
-  
+  JOINED_LOBBY: 'joined-lobby', // Confirmation of successful join (Server → Client)
+
   // ========================================
   // Lobby List Management (Client → Server)
   // ========================================
   JOIN_LOBBY_LIST: 'join-lobby-list', // Subscribe to lobby list updates
   LEAVE_LOBBY_LIST: 'leave-lobby-list', // Unsubscribe from lobby list
-  
+
   // ========================================
   // Lobby Updates (Server → Client)
   // ========================================
   LOBBY_UPDATE: 'lobby-update', // Generic lobby state change
   LOBBY_CREATED: 'lobby-created', // New lobby created (triggers list refresh)
   LOBBY_LIST_UPDATE: 'lobby-list-update', // Lobby list changed (trigger refetch)
-  
+
   // ========================================
   // Player Events (Bidirectional)
   // ========================================
@@ -61,7 +62,7 @@ export const SocketEvents = {
   PLAYER_LEFT: 'player-left', // Player left lobby (Server → Client)
   PLAYER_READY: 'player-ready', // Player marked ready (future)
   PLAYER_TYPING: 'player-typing', // Chat typing indicator
-  
+
   // ========================================
   // Game Lifecycle Events
   // ========================================
@@ -70,18 +71,18 @@ export const SocketEvents = {
   GAME_ACTION: 'game-action', // Player action (Client → Server)
   GAME_ABANDONED: 'game-abandoned', // Game was abandoned (Server → Client)
   GAME_ENDED: 'game-ended', // Game finished normally (future)
-  
+
   // ========================================
   // Chat Events
   // ========================================
   SEND_CHAT_MESSAGE: 'send-chat-message', // Client → Server
   CHAT_MESSAGE: 'chat-message', // Server → Client (broadcast)
-  
+
   // ========================================
   // Bot Events
   // ========================================
   BOT_ACTION: 'bot-action', // Bot performed action (Server → Client)
-  
+
   // ========================================
   // Friend System Events (future)
   // ========================================
@@ -90,13 +91,13 @@ export const SocketEvents = {
   USER_ONLINE: 'user-online',
   USER_OFFLINE: 'user-offline',
   ONLINE_USERS: 'online-users',
-  
+
   // ========================================
   // Spectator Events (future)
   // ========================================
   SPECTATOR_JOINED: 'spectator-joined',
   SPECTATOR_LEFT: 'spectator-left',
-  
+
   // ========================================
   // Lobby Settings Events (future)
   // ========================================
@@ -367,7 +368,7 @@ export function validateEvent<T extends BaseEventPayload>(
   if (typeof event !== 'object' || event === null) {
     return false
   }
-  
+
   return requiredFields.every(field => field in event)
 }
 
@@ -411,16 +412,16 @@ export function getCorrelationId(event: BaseEventPayload): string | undefined {
 export const SocketRooms = {
   /** Room for a specific lobby (e.g., "lobby:ABC123") */
   lobby: (lobbyCode: string) => `lobby:${lobbyCode}`,
-  
+
   /** Room for lobby list subscribers */
   lobbyList: () => 'lobby-list',
-  
+
   /** Room for a specific game (future) */
   game: (gameId: string) => `game:${gameId}`,
-  
+
   /** Room for spectators of a game (future) */
   spectators: (gameId: string) => `spectators:${gameId}`,
-  
+
   /** Room for user's friends (future) */
   userFriends: (userId: string) => `friends:${userId}`,
 }

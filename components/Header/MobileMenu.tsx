@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 
 interface MobileMenuProps {
@@ -20,13 +20,13 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
   const isActive = (path: string) => pathname === path
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setIsClosing(true)
     setTimeout(() => {
       setMobileMenuOpen(false)
       setIsClosing(false)
     }, 300) // Match animation duration
-  }
+  }, [])
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -51,7 +51,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
     if (mobileMenuOpen) {
       closeMenu()
     }
-  }, [pathname])
+  }, [pathname, mobileMenuOpen, closeMenu])
 
   return (
     <>

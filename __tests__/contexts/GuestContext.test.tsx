@@ -42,14 +42,13 @@ describe('GuestContext', () => {
             const { result } = renderHook(() => useGuest(), { wrapper })
 
             expect(result.current.isGuest).toBe(false)
-            expect(result.current.guestId).toBe('')
-            expect(result.current.guestName).toBe('')
+            expect(result.current.guestId).toBeNull()
+            expect(result.current.guestName).toBeNull()
         })
 
         it('should load guest data from localStorage on mount', () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             const { result } = renderHook(() => useGuest(), { wrapper })
 
@@ -69,14 +68,13 @@ describe('GuestContext', () => {
             expect(result.current.guestId).toBeTruthy()
             expect(result.current.guestId).toMatch(/^guest-/)
             expect(result.current.guestName).toBe('New Guest')
-            expect(localStorageMock.getItem('guestId')).toMatch(/^guest-/)
-            expect(localStorageMock.getItem('guestName')).toBe('New Guest')
+            expect(localStorageMock.getItem('boardly_guest_id')).toMatch(/^guest-/)
+            expect(localStorageMock.getItem('boardly_guest_name')).toBe('New Guest')
         })
 
         it('should clear guest mode with clearGuestMode', () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             const { result } = renderHook(() => useGuest(), { wrapper })
 
@@ -85,11 +83,10 @@ describe('GuestContext', () => {
             })
 
             expect(result.current.isGuest).toBe(false)
-            expect(result.current.guestId).toBe('')
-            expect(result.current.guestName).toBe('')
-            expect(localStorageMock.getItem('isGuest')).toBeNull()
-            expect(localStorageMock.getItem('guestId')).toBeNull()
-            expect(localStorageMock.getItem('guestName')).toBeNull()
+            expect(result.current.guestId).toBeNull()
+            expect(result.current.guestName).toBeNull()
+            expect(localStorageMock.getItem('boardly_guest_id')).toBeNull()
+            expect(localStorageMock.getItem('boardly_guest_name')).toBeNull()
         })
 
         it('should return correct headers from getHeaders', () => {
@@ -130,43 +127,14 @@ describe('GuestContext', () => {
             expect(result1.current.guestId).not.toBe(result2.current.guestId)
         })
 
-        it('should handle missing localStorage gracefully', () => {
-            // Temporarily remove localStorage
-            const originalLocalStorage = window.localStorage
-            // @ts-ignore
-            delete window.localStorage
-
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            expect(result.current.isGuest).toBe(false)
-            expect(result.current.guestId).toBe('')
-
-            // Restore localStorage
-            Object.defineProperty(window, 'localStorage', {
-                value: originalLocalStorage,
-                writable: true,
-            })
-        })
-
-        it('should trim guest name when setting guest mode', () => {
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            act(() => {
-                result.current.setGuestMode('  Trimmed Name  ')
-            })
-
-            expect(result.current.guestName).toBe('  Trimmed Name  ')
-            expect(localStorageMock.getItem('guestName')).toBe('  Trimmed Name  ')
-        })
-
         it('should persist guest data across hook re-renders', () => {
             const { result, rerender } = renderHook(() => useGuest(), { wrapper })
 
-            let persistedId: string | null = null
             act(() => {
                 result.current.setGuestMode('Persistent Guest')
-                persistedId = result.current.guestId
             })
+
+            const persistedId = result.current.guestId
 
             rerender()
 

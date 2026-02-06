@@ -1,5 +1,5 @@
 import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 
 interface LobbyInfoProps {
   lobby: any
@@ -14,7 +14,7 @@ export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave 
   const handleCopyInvite = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(`${window.location.origin}/lobby/join/${lobby.code}`)
-      toast.success('📋 Invite link copied to clipboard!')
+      showToast.success('toast.linkCopied')
     }
   }
 
@@ -86,7 +86,7 @@ export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave 
             className="flex items-center w-full sm:w-auto"
             style={{ gap: `clamp(6px, 0.6vw, 10px)` }}
           >
-            <button 
+            <button
               onClick={onSoundToggle}
               aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
               aria-pressed={soundEnabled}
@@ -95,7 +95,7 @@ export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave 
             >
               {soundEnabled ? '🔊' : '🔇'}
             </button>
-            <button 
+            <button
               onClick={onLeave}
               aria-label="Leave lobby"
               className="btn btn-secondary flex-1 sm:flex-none"
@@ -104,7 +104,7 @@ export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave 
             </button>
           </div>
         </div>
-        
+
         {/* Invite Link */}
         <div
           className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-300 dark:border-blue-600 rounded-lg"

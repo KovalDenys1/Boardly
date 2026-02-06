@@ -5,12 +5,20 @@ import { authOptions } from '@/lib/next-auth'
 import { notifySocket } from '@/lib/socket-url'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { apiLogger } from '@/lib/logger'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const apiLimiter = rateLimit(rateLimitPresets.api)
+const gameLimiter = rateLimit(rateLimitPresets.game)
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    // Rate limit GET requests
+    const rateLimitResult = await apiLimiter(request)
+    if (rateLimitResult) return rateLimitResult
+
     const { code } = await params
 
     const lobby = await prisma.lobbies.findUnique({
@@ -66,6 +74,10 @@ export async function POST(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    // Rate limit join requests
+    const rateLimitResult = await gameLimiter(request)
+    if (rateLimitResult) return rateLimitResult
+
     const { code } = await params
 
     // Check for authenticated user or guest

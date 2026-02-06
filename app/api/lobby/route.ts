@@ -259,8 +259,8 @@ export async function GET(request: NextRequest) {
       const game = lobby.games[0]
       if (!game) return false
 
-      // Count human (non-bot) players
-      const humanPlayerCount = game.players?.filter((p: any) => !p.user.isBot).length || 0
+      // Count human (non-bot) players using bot relation
+      const humanPlayerCount = game.players?.filter((p: any) => !p.user.bot).length || 0
 
       // Exclude games with no human players (abandoned or bot-only games)
       if (humanPlayerCount === 0) return false

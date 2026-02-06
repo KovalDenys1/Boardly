@@ -4,7 +4,7 @@ import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -137,7 +137,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const successMessage = options?.auto
         ? '🤖 Added an AI opponent so you can start playing!'
         : '🤖 Bot added to lobby!'
-      toast.success(successMessage)
+      showToast.success('toast.success', successMessage)
       return true
     } catch (err: any) {
       if (options?.auto) {
@@ -145,10 +145,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         return false
       }
 
-      toast.error(err.message || 'Failed to add bot')
+      showToast.error('toast.botAddFailed', err.message)
       return false
     }
-  }, [code])
+  }, [code, isGuest, guestId, guestName])
 
   const announceBotJoined = useCallback(() => {
     socket?.emit('player-joined')
@@ -246,13 +246,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       // Check if we need to add a bot first
       if ((game?.players?.length || 0) < 2) {
-        toast.loading('Adding bot player...', { id: 'add-bot' })
+        showToast.loading('toast.addingBot', undefined, undefined, { id: 'add-bot' })
         const botAdded = await addBotToLobby({ auto: true })
-        toast.dismiss('add-bot')
+        showToast.dismiss('add-bot')
 
         if (!botAdded) {
           setStartingGame(false)
-          toast.error('Failed to add bot player. Please try again.')
+          showToast.error('toast.botAddFailed')
           return
         }
 
@@ -328,7 +328,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         })
       }
 
-      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`, { id: 'start-game' })
+      showToast.success('toast.gameStarted', undefined, { player: firstPlayerName }, { id: 'start-game' })
 
       const gameStartMessage = {
         id: Date.now().toString() + '_gamestart',
@@ -346,13 +346,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       // Sound will play automatically via socket event handler
     } catch (error: any) {
-      toast.dismiss('start-game')
-      toast.error(error.message || 'Failed to start game')
+      showToast.dismiss('start-game')
+      showToast.error('toast.gameStartFailed', error.message)
       clientLogger.error('Failed to start game:', error)
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame])
+  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
 
   return {
     loadLobby,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
-import { BotMoveExecutor } from '@/lib/bot-executor'
+import { YahtzeeBotExecutor, getBotDifficulty } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 
@@ -157,16 +157,21 @@ export async function POST(
 
     log.info('Verified it\'s bot\'s turn, executing...')
 
+    // Get bot difficulty from bot relation
+    const botDifficulty = getBotDifficulty(botPlayer)
+    log.info('Bot difficulty', { difficulty: botDifficulty })
+
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: any) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
       await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event)
     }
 
-    // Execute bot's turn with visual feedback
-    await BotMoveExecutor.executeBotTurn(
+    // Execute bot's turn with visual feedback using new modular system
+    await YahtzeeBotExecutor.executeBotTurn(
       gameEngine,
       botUserId,
+      botDifficulty,
       async (botMove: Move) => {
         log.info('Bot making move', { moveType: botMove.type, data: botMove.data })
 
