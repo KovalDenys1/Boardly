@@ -18,30 +18,73 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
         })
 
         if (existingGuest) {
-            // Update last active timestamp
+            // Update last active timestamp and username only if it changed
+            const updateData: any = {
+                lastActiveAt: new Date(),
+            }
+
+            // Only update username if it has changed
+            if (existingGuest.username !== guestName) {
+                // Check if the new username is already taken
+                const usernameExists = await prisma.users.findFirst({
+                    where: {
+                        username: guestName,
+                        id: { not: guestId },
+                    },
+                })
+
+                // Only update if the username is available
+                if (!usernameExists) {
+                    updateData.username = guestName
+                } else {
+                    // Keep the old username if the new one is taken
+                    log.info('Username already taken, keeping old username', {
+                        guestId,
+                        requestedName: guestName,
+                        currentName: existingGuest.username
+                    })
+                }
+            }
+
             const updatedGuest = await prisma.users.update({
                 where: { id: existingGuest.id },
-                data: {
-                    lastActiveAt: new Date(),
-                    username: guestName, // Update name in case it changed
-                },
+                data: updateData,
             })
-            log.info('Found existing guest user', { guestId, guestName })
+            log.info('Found existing guest user', {
+                guestId,
+                guestName: updatedGuest.username,
+                usernameUpdated: updateData.username !== undefined
+            })
             return updatedGuest
+        }
+
+        // For new guest users, ensure username is unique
+        let uniqueUsername = guestName
+        let usernameExists = await prisma.users.findFirst({
+            where: { username: uniqueUsername },
+        })
+
+        // If username is taken, append guest ID suffix
+        if (usernameExists) {
+            uniqueUsername = `${guestName}-${guestId.slice(0, 6)}`
+            log.info('Username taken, using unique username', {
+                requestedName: guestName,
+                uniqueName: uniqueUsername
+            })
         }
 
         // Create new guest user
         const newGuest = await prisma.users.create({
             data: {
                 id: guestId,
-                username: guestName,
+                username: uniqueUsername,
                 email: `guest-${guestId}@boardly.guest`, // Temporary email for guests
                 isGuest: true,
                 lastActiveAt: new Date(),
             },
         })
 
-        log.info('Created new guest user', { guestId, guestName })
+        log.info('Created new guest user', { guestId, username: newGuest.username })
         return newGuest
     } catch (error) {
         log.error('Error creating/getting guest user', error as Error, { guestId, guestName })
