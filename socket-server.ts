@@ -590,6 +590,14 @@ server.on('request', (req, res) => {
     let body = ''
     let responseSent = false // Track if response has been sent
 
+    const sendResponse = (statusCode: number, responseData: any) => {
+      if (responseSent || res.headersSent) return
+      responseSent = true
+      res.statusCode = statusCode
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify(responseData))
+    }
+
     req.on('data', chunk => {
       body += chunk.toString()
     })
@@ -602,12 +610,7 @@ server.on('request', (req, res) => {
         const { room, event, data } = JSON.parse(body)
 
         if (!room || !event) {
-          if (!responseSent && !res.headersSent) {
-            responseSent = true
-            res.statusCode = 400
-            res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ error: 'Missing room or event' }))
-          }
+          sendResponse(400, { error: 'Missing room or event' })
           return
         }
 
@@ -629,32 +632,17 @@ server.on('request', (req, res) => {
           io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
         }
 
-        if (!responseSent && !res.headersSent) {
-          responseSent = true
-          res.statusCode = 200
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
-        }
+        sendResponse(200, { success: true, sequenceId: payloadWithMetadata.sequenceId })
       } catch (error) {
         logger.error('Error processing notification', error as Error)
-        if (!responseSent && !res.headersSent) {
-          responseSent = true
-          res.statusCode = 500
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Internal server error' }))
-        }
+        sendResponse(500, { error: 'Internal server error' })
       }
     })
 
     // Handle request errors
     req.on('error', (error) => {
       logger.error('Request error in /api/notify', error)
-      if (!responseSent && !res.headersSent) {
-        responseSent = true
-        res.statusCode = 500
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ error: 'Request error' }))
-      }
+      sendResponse(500, { error: 'Request error' })
     })
 
     return
