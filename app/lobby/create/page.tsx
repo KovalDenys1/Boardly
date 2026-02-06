@@ -245,7 +245,7 @@ function CreateLobbyPage() {
               ))}
             </div>
             {/* 2. Form */}
-            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col justify-center order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
+            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   🎮 {t('lobby.create.lobbyName')} *
