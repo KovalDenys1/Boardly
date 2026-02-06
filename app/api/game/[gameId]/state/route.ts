@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
-import { BotMoveExecutor } from '@/lib/bot-executor'
+import { isBot } from '@/lib/bots'
 import { apiLogger } from '@/lib/logger'
 
 export async function POST(

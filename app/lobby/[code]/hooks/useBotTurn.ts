@@ -1,12 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { clientLogger } from '@/lib/client-logger'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 
 interface GamePlayer {
   userId: string
   user?: {
-    isBot?: boolean
+    bot?: unknown  // Bot relation (one-to-one with Bots table)
   }
 }
 
@@ -46,7 +46,7 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
 
       if (!response.ok) {
         const error = await response.json()
-        
+
         // Don't show error toast or log for expected race conditions:
         // - 409: Bot turn already in progress (lock prevented duplicate)
         // - "Not bot's turn": Race condition timing issue
@@ -54,9 +54,9 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
           clientLogger.log('🤖 Bot turn request skipped (expected race condition):', { status: response.status, error: error.error })
           return // Silent return, no error thrown
         }
-        
+
         clientLogger.error('🤖 Bot turn API error:', { status: response.status, error })
-        toast.error('Bot failed to make a move')
+        showToast.error('toast.botMoveFailed')
         throw new Error(error.error || 'Bot turn failed')
       }
 
@@ -72,16 +72,23 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
   // Monitor for bot turns
   useEffect(() => {
     if (!isGameStarted || !gameEngine || !game?.id || !game?.players || !Array.isArray(game.players)) {
+      clientLogger.log('🤖 [BOT-TURN-MONITOR] Skipping - preconditions not met:', {
+        isGameStarted,
+        hasGameEngine: !!gameEngine,
+        hasGameId: !!game?.id,
+        hasPlayers: !!game?.players,
+        isPlayersArray: game?.players ? Array.isArray(game.players) : false
+      })
       return
     }
 
     const gameState = gameEngine.getState()
-    
+
     // Don't trigger if game is finished
     if (gameState.status !== 'playing') {
       return
     }
-    
+
     const currentPlayer = gameEngine.getCurrentPlayer()
     if (!currentPlayer) {
       return
@@ -89,8 +96,8 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
 
     // Check if it's a new turn - player index changed OR it's a different bot
     const currentPlayerIndex = gameState.currentPlayerIndex
-    const isSameTurn = 
-      lastPlayerIndex.current === currentPlayerIndex && 
+    const isSameTurn =
+      lastPlayerIndex.current === currentPlayerIndex &&
       lastBotPlayerId.current === currentPlayer.id
 
     if (isSameTurn) {
@@ -104,30 +111,46 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
     )
 
     if (!currentGamePlayer || !currentGamePlayer.user) {
-      clientLogger.warn('🤖 Current player not found in game.players or missing user data')
+      clientLogger.warn('🤖 [BOT-TURN-MONITOR] Current player not found in game.players or missing user data', {
+        currentPlayerId: currentPlayer.id,
+        availablePlayers: game.players.map(p => ({
+          userId: p.userId,
+          hasUser: !!p.user,
+          hasBot: p.user ? !!p.user.bot : false
+        }))
+      })
       return
     }
 
-    // Check if current player is a bot
-    const isBot = currentGamePlayer.user.isBot === true
+    // Check if current player is a bot (using bot relation)
+    const isBot = !!currentGamePlayer.user.bot
+
+    clientLogger.log('🤖 [BOT-TURN-MONITOR] Turn check:', {
+      currentPlayerId: currentPlayer.id,
+      currentPlayerIndex,
+      isBot,
+      hasBotRelation: !!currentGamePlayer.user.bot,
+      botData: currentGamePlayer.user.bot,
+      rollsLeft: gameEngine.getRollsLeft()
+    })
 
     if (isBot) {
       // Check that bot has rolls available (new turn)
       const rollsLeft = gameEngine.getRollsLeft()
-      
+
       // Only trigger if it's the START of a new turn (all 3 rolls available)
       if (rollsLeft !== 3) {
         clientLogger.log('🤖 Bot turn already in progress (rollsLeft:', rollsLeft, '), skipping trigger')
         // DO NOT update tracking - wait for the turn to complete
         return
       }
-      
+
       clientLogger.log('🤖 Bot turn detected, triggering bot move...')
-      
+
       // Update tracking variables before triggering
       lastBotPlayerId.current = currentPlayer.id
       lastPlayerIndex.current = currentPlayerIndex
-      
+
       // Small delay to allow UI to update
       const timer = setTimeout(() => {
         triggerBotTurn(currentPlayer.id, game.id)

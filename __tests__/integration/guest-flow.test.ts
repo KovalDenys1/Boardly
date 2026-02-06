@@ -72,9 +72,8 @@ describe('Guest User Flow - Integration Tests', () => {
             const guestName = 'Integration Test Guest'
 
             // Step 1: User clicks "Play as Guest" and enters name
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', guestId)
-            localStorageMock.setItem('guestName', guestName)
+            localStorageMock.setItem('boardly_guest_id', guestId)
+            localStorageMock.setItem('boardly_guest_name', guestName)
 
             // Verify localStorage state
             expect(isGuestMode()).toBe(true)
@@ -118,14 +117,12 @@ describe('Guest User Flow - Integration Tests', () => {
                 body: JSON.stringify({ name: 'Test Lobby' }),
             })
 
-            expect(global.fetch).toHaveBeenCalledWith('/api/lobby', {
-                method: 'POST',
-                body: JSON.stringify({ name: 'Test Lobby' }),
-                headers: {
-                    'X-Guest-Id': guestId,
-                    'X-Guest-Name': guestName,
-                },
-            })
+            const [url, opts] = (global.fetch as jest.Mock).mock.calls[0]
+            expect(url).toBe('/api/lobby')
+            expect(opts.method).toBe('POST')
+            expect(opts.headers).toBeInstanceOf(Headers)
+            expect(opts.headers.get('X-Guest-Id')).toBe(guestId)
+            expect(opts.headers.get('X-Guest-Name')).toBe(guestName)
         })
 
         it('should update guest activity timestamp on subsequent API calls', async () => {
@@ -191,37 +188,32 @@ describe('Guest User Flow - Integration Tests', () => {
 
         it('should handle guest logout by clearing localStorage', () => {
             // Setup guest session
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_logout')
-            localStorageMock.setItem('guestName', 'Guest Logout Test')
+            localStorageMock.setItem('boardly_guest_id', 'guest_logout')
+            localStorageMock.setItem('boardly_guest_name', 'Guest Logout Test')
 
             expect(isGuestMode()).toBe(true)
 
             // Simulate logout
-            localStorageMock.removeItem('isGuest')
-            localStorageMock.removeItem('guestId')
-            localStorageMock.removeItem('guestName')
+            localStorageMock.removeItem('boardly_guest_id')
+            localStorageMock.removeItem('boardly_guest_name')
 
             expect(isGuestMode()).toBe(false)
             expect(getGuestHeaders()).toEqual({})
         })
 
         it('should handle network errors gracefully in fetchWithGuest', async () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_error')
-            localStorageMock.setItem('guestName', 'Error Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_error')
+            localStorageMock.setItem('boardly_guest_name', 'Error Guest')
 
             global.fetch = jest.fn().mockRejectedValue(new Error('Network error'))
 
             await expect(fetchWithGuest('/api/test')).rejects.toThrow('Network error')
 
             // Verify headers were still attached before the error
-            expect(global.fetch).toHaveBeenCalledWith('/api/test', {
-                headers: {
-                    'X-Guest-Id': 'guest_error',
-                    'X-Guest-Name': 'Error Guest',
-                },
-            })
+            const callHeaders = (global.fetch as jest.Mock).mock.calls[0][1].headers
+            expect(callHeaders).toBeInstanceOf(Headers)
+            expect(callHeaders.get('X-Guest-Id')).toBe('guest_error')
+            expect(callHeaders.get('X-Guest-Name')).toBe('Error Guest')
         })
 
         it('should support concurrent guest sessions in different tabs', async () => {
@@ -235,22 +227,21 @@ describe('Guest User Flow - Integration Tests', () => {
             }
 
             // Simulate tab 1
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', guest1.id)
-            localStorageMock.setItem('guestName', guest1.name)
+            localStorageMock.setItem('boardly_guest_id', guest1.id)
+            localStorageMock.setItem('boardly_guest_name', guest1.name)
 
             const headers1 = getGuestHeaders() as Record<string, string>
             expect(headers1['X-Guest-Id']).toBe(guest1.id)
 
             // Simulate tab 2 (overwrites localStorage - expected behavior)
-            localStorageMock.setItem('guestId', guest2.id)
-            localStorageMock.setItem('guestName', guest2.name)
+            localStorageMock.setItem('boardly_guest_id', guest2.id)
+            localStorageMock.setItem('boardly_guest_name', guest2.name)
 
             const headers2 = getGuestHeaders() as Record<string, string>
             expect(headers2['X-Guest-Id']).toBe(guest2.id)
 
                 // Both guests should be able to create users in DB
-                ; (prisma.users.findUnique as jest.Mock).mockResolvedValue(null)
+                ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(null)
                 ; (prisma.users.create as jest.Mock)
                     .mockResolvedValueOnce({
                         id: guest1.id,

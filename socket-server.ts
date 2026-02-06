@@ -41,55 +41,10 @@ const hostname = process.env.HOSTNAME || '0.0.0.0'
 let eventSequence = 0
 
 const server = createServer((req, res) => {
+  // Note: /api/notify endpoint is handled in server.on('request') after io initialization
+  // This handler is just for basic health checks
+
   const url = parse(req.url || '/')
-
-  // API endpoint for server-side bot notifications
-  if (url.pathname === '/api/notify' && req.method === 'POST') {
-    let body = ''
-    req.on('data', chunk => {
-      body += chunk.toString()
-    })
-    req.on('end', () => {
-      try {
-        const { room, event, data } = JSON.parse(body)
-
-        if (!room || !event) {
-          res.statusCode = 400
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Missing room or event' }))
-          return
-        }
-
-        logger.info('Server notification received', { room, event, dataKeys: Object.keys(data || {}) })
-
-        // Add metadata to the event
-        const payloadWithMetadata = {
-          ...data,
-          sequenceId: ++eventSequence,
-          timestamp: Date.now(),
-          version: '1.0.0'
-        }
-
-        // Broadcast to all clients in the room
-        io.to(room).emit(event, payloadWithMetadata)
-
-        // Notify lobby list if it's a state change
-        if (data?.action === 'state-change' || event === SocketEvents.LOBBY_LIST_UPDATE) {
-          io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
-        }
-
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
-      } catch (error) {
-        logger.error('Error processing notification', error as Error)
-        res.statusCode = 500
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ error: 'Internal server error' }))
-      }
-    })
-    return
-  }
 
   // Minimal root response for sanity checks
   res.statusCode = 200
@@ -184,7 +139,7 @@ function markUserOnline(userId: string, socketId: string) {
   onlineUsers.get(userId)!.add(socketId)
 
   // Broadcast to friends that user is online
-  io.emit('user-online', { userId })
+  io.emit(SocketEvents.USER_ONLINE, { userId })
   logger.info('User marked online', { userId, socketId, totalOnline: onlineUsers.size })
 }
 
@@ -198,7 +153,7 @@ function markUserOffline(userId: string, socketId: string) {
       onlineUsers.delete(userId)
 
       // Broadcast to friends that user is offline
-      io.emit('user-offline', { userId })
+      io.emit(SocketEvents.USER_OFFLINE, { userId })
       logger.info('User marked offline', { userId, socketId, totalOnline: onlineUsers.size })
     }
   }
@@ -215,6 +170,7 @@ function isUserOnline(userId: string): boolean {
 // Rate limiting for socket events
 const socketRateLimits = new Map<string, { count: number; resetTime: number }>()
 const MAX_EVENTS_PER_SECOND = 10
+const RATE_LIMIT_CLEANUP_INTERVAL = 60000 // Clean up every 60 seconds
 
 function checkRateLimit(socketId: string): boolean {
   const now = Date.now()
@@ -233,12 +189,27 @@ function checkRateLimit(socketId: string): boolean {
   return true
 }
 
+// Clean up expired rate limit entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now()
+  let cleaned = 0
+  for (const [socketId, limit] of socketRateLimits.entries()) {
+    if (now > limit.resetTime + 60000) { // Clean entries older than 1 minute
+      socketRateLimits.delete(socketId)
+      cleaned++
+    }
+  }
+  if (cleaned > 0) {
+    logger.debug('Rate limit cleanup', { cleaned, remaining: socketRateLimits.size })
+  }
+}, RATE_LIMIT_CLEANUP_INTERVAL)
+
 // Authentication middleware
 io.use(async (socket, next) => {
-  try {
-    const token = socket.handshake.auth.token || socket.handshake.query.token
-    const isGuest = socket.handshake.auth.isGuest === true || socket.handshake.query.isGuest === 'true'
+  const token = socket.handshake.auth.token || socket.handshake.query.token
+  const isGuest = socket.handshake.auth.isGuest === true || socket.handshake.query.isGuest === 'true'
 
+  try {
     logger.info('Socket authentication attempt', {
       hasToken: !!token,
       tokenPreview: token ? String(token).substring(0, 20) + '...' : 'none',
@@ -333,9 +304,7 @@ io.use(async (socket, next) => {
     next()
   } catch (error) {
     const err = error as Error
-    logger.error('Socket authentication error', {
-      errorMessage: err.message,
-      errorStack: err.stack,
+    logger.error('Socket authentication error', err, {
       isGuest,
       hasToken: !!token,
       tokenType: token ? typeof token : 'undefined'
@@ -368,7 +337,7 @@ io.on('connection', (socket) => {
   }
 
   // Send online users list to newly connected user
-  socket.emit('online-users', { userIds: getOnlineUserIds() })
+  socket.emit(SocketEvents.ONLINE_USERS, { userIds: getOnlineUserIds() })
 
   socket.on(SocketEvents.JOIN_LOBBY, async (lobbyCode: string) => {
     // Rate limiting
@@ -388,18 +357,13 @@ io.on('connection', (socket) => {
     }
 
     try {
-      // Verify lobby exists in database
+      // Verify lobby exists in database (optimized - only check existence)
       const lobby = await prisma.lobbies.findUnique({
         where: { code: lobbyCode },
-        include: {
-          games: {
-            where: { status: { in: ['waiting', 'playing'] } },
-            include: {
-              players: {
-                select: { userId: true }
-              }
-            }
-          }
+        select: {
+          id: true,
+          code: true,
+          isActive: true
         }
       })
 
@@ -419,7 +383,7 @@ io.on('connection', (socket) => {
       })
 
       // Send success confirmation
-      socket.emit('joined-lobby', { lobbyCode, success: true })
+      socket.emit(SocketEvents.JOINED_LOBBY, { lobbyCode, success: true })
     } catch (error) {
       logger.error('Error joining lobby', error as Error, { lobbyCode })
       emitError(socket, 'JOIN_LOBBY_ERROR', 'Failed to join lobby', 'errors.joinLobbyFailed')
@@ -596,6 +560,9 @@ io.on('connection', (socket) => {
     if (userId && !socket.data.user?.isGuest) {
       markUserOffline(userId, socket.id)
     }
+
+    // Clean up rate limit entry for this socket
+    socketRateLimits.delete(socket.id)
   })
 
   socket.on('error', (error) => {
@@ -621,17 +588,26 @@ server.on('request', (req, res) => {
   // API endpoint for server-side bot notifications (moved here after io initialization)
   if (url.pathname === '/api/notify' && req.method === 'POST') {
     let body = ''
+    let responseSent = false // Track if response has been sent
+
     req.on('data', chunk => {
       body += chunk.toString()
     })
+
     req.on('end', () => {
+      // Prevent multiple handler executions
+      if (responseSent) return
+
       try {
         const { room, event, data } = JSON.parse(body)
 
         if (!room || !event) {
-          res.statusCode = 400
-          res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ error: 'Missing room or event' }))
+          if (!responseSent && !res.headersSent) {
+            responseSent = true
+            res.statusCode = 400
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ error: 'Missing room or event' }))
+          }
           return
         }
 
@@ -653,16 +629,34 @@ server.on('request', (req, res) => {
           io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
         }
 
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
+        if (!responseSent && !res.headersSent) {
+          responseSent = true
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ success: true, sequenceId: payloadWithMetadata.sequenceId }))
+        }
       } catch (error) {
         logger.error('Error processing notification', error as Error)
-        res.statusCode = 500
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ error: 'Internal server error' }))
+        if (!responseSent && !res.headersSent) {
+          responseSent = true
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Internal server error' }))
+        }
       }
     })
+
+    // Handle request errors
+    req.on('error', (error) => {
+      logger.error('Request error in /api/notify', error)
+      if (!responseSent && !res.headersSent) {
+        responseSent = true
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Request error' }))
+      }
+    })
+
     return
   }
 
@@ -731,11 +725,7 @@ const gracefulShutdown = async (signal: string) => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
-  logger.error('Uncaught Exception - server will continue running', {
-    error: error.message,
-    stack: error.stack,
-    name: error.name
-  })
+  logger.error('Uncaught Exception - server will continue running', error)
   // Don't exit - log and continue (unless it's critical)
   if (error.message.includes('EADDRINUSE')) {
     logger.error('Port already in use - exiting')
@@ -745,9 +735,8 @@ process.on('uncaughtException', (error: Error) => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-  logger.error('Unhandled Promise Rejection - server will continue running', {
-    reason: reason?.message || String(reason),
-    stack: reason?.stack,
+  const err = reason instanceof Error ? reason : new Error(String(reason))
+  logger.error('Unhandled Promise Rejection - server will continue running', err, {
     promise: String(promise)
   })
   // Don't exit - log and continue

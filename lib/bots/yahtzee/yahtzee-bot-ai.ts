@@ -1,8 +1,11 @@
-import { YahtzeeCategory, calculateScore, YahtzeeScorecard } from './yahtzee'
+import { YahtzeeCategory, calculateScore, YahtzeeScorecard } from '@/lib/yahtzee'
 
 /**
- * Yahtzee AI Bot with optimal strategy
+ * Yahtzee Bot AI - Pure decision logic without game engine coupling
  * Implements game theory and probability-based decision making
+ * 
+ * This class contains the AI "brain" - all decision algorithms
+ * Extracted from original yahtzee-bot.ts for modularity
  */
 
 export interface BotDecision {
@@ -11,7 +14,7 @@ export interface BotDecision {
   category?: YahtzeeCategory
 }
 
-export class YahtzeeBot {
+export class YahtzeeBotAI {
   /**
    * Decides which dice to hold based on current roll and available categories
    */
@@ -43,7 +46,7 @@ export class YahtzeeBot {
     scorecard: YahtzeeScorecard
   ): YahtzeeCategory {
     const availableCategories = this.getAvailableCategories(scorecard)
-    
+
     // Task 2.1: Graceful fallback if no categories available
     // This should never happen in normal gameplay, but provides safety
     if (availableCategories.length === 0) {
@@ -185,7 +188,7 @@ export class YahtzeeBot {
 
     // Straight strategies
     const uniqueValues = Array.from(diceCounts.keys()).sort((a, b) => a - b)
-    
+
     // Large straight (5 consecutive)
     if (this.hasConsecutive(uniqueValues, 5) && availableCategories.includes('largeStraight')) {
       return this.getConsecutiveDice(dice, 5)
@@ -270,7 +273,7 @@ export class YahtzeeBot {
       const upperSum = this.getUpperSectionSum(scorecard)
       const remaining = 63 - upperSum
       const availableUpper = upperCategories.filter(cat => scorecard[cat] === undefined)
-      
+
       // Calculate if bonus is still achievable (max points per category: ones=5, twos=10, threes=15, etc.)
       const maxPossibleFromAvailable = availableUpper.reduce((sum, cat) => {
         const value = upperValueMap[cat]
@@ -278,7 +281,7 @@ export class YahtzeeBot {
       }, 0)
       const maxPossibleUpper = upperSum + maxPossibleFromAvailable
       const bonusAchievable = maxPossibleUpper >= 63
-      
+
       if (bonusAchievable && remaining > 0) {
         // Strategy: prioritize based on how close we are to bonus
         if (remaining <= 10) {
@@ -288,7 +291,7 @@ export class YahtzeeBot {
           if (category === 'fives' || category === 'sixes') {
             priority += 150
           }
-          
+
           // If this exact category can complete the bonus, mega boost
           if (score >= remaining) {
             priority += 300 // CRITICAL: This secures the +35 bonus!
@@ -299,7 +302,7 @@ export class YahtzeeBot {
           if (category === 'fives' || category === 'sixes') {
             priority += 100
           }
-          
+
           // If this category can complete or nearly complete the bonus
           if (score >= remaining) {
             priority += 250 // Secures bonus
@@ -318,13 +321,13 @@ export class YahtzeeBot {
             priority += 50
           }
         }
-        
+
         // Don't sacrifice high-value combinations for tiny upper section gains
         // If we have a good lower section combo (e.g., Yahtzee, straights), don't force upper
         const hasHighValueCombo = dice.every(d => d === dice[0]) || // Yahtzee
-                                   this.isLargeStraight(dice) ||
-                                   (category === 'ones' || category === 'twos') && score <= 3
-        
+          this.isLargeStraight(dice) ||
+          (category === 'ones' || category === 'twos') && score <= 3
+
         if (hasHighValueCombo && (category === 'ones' || category === 'twos')) {
           // Don't waste excellent combos on 1-3 points in upper section
           priority -= 100
@@ -343,7 +346,7 @@ export class YahtzeeBot {
     if (isEndgame) {
       // In endgame, be more conservative and take guaranteed points
       // Avoid risky plays and prioritize actual score over potential
-      
+
       if (score === 0) {
         // In endgame, taking 0 is very bad - try to avoid if possible
         priority = -200
@@ -351,7 +354,7 @@ export class YahtzeeBot {
         // Boost any decent score in endgame
         priority += 50
       }
-      
+
       // Prefer completing upper section if bonus is still achievable
       if (upperCategories.includes(category as UpperCategory)) {
         const upperSum = this.getUpperSectionSum(scorecard)
@@ -367,12 +370,12 @@ export class YahtzeeBot {
     if (score === 0) {
       // Use this slot to dump bad rolls
       priority = -100
-      
+
       // But prefer to zero out low-value categories first
       if (category === 'ones' || category === 'twos') {
         priority = -50
       }
-      
+
       // In endgame, avoid zeros even more
       if (isEndgame) {
         priority -= 100
@@ -386,7 +389,7 @@ export class YahtzeeBot {
       } else if (score < 15) {
         priority = -80
       }
-      
+
       // In endgame, chance is often the last resort
       if (isEndgame && score >= 15) {
         priority += 30
@@ -442,7 +445,7 @@ export class YahtzeeBot {
    */
   private static hasConsecutive(values: number[], length: number): boolean {
     if (values.length < length) return false
-    
+
     for (let i = 0; i <= values.length - length; i++) {
       let consecutive = true
       for (let j = 1; j < length; j++) {
@@ -461,7 +464,7 @@ export class YahtzeeBot {
    */
   private static getConsecutiveDice(dice: number[], length: number): number[] {
     const uniqueValues = [...new Set(dice)].sort((a, b) => a - b)
-    
+
     for (let i = 0; i <= uniqueValues.length - length; i++) {
       let consecutive = true
       for (let j = 1; j < length; j++) {
@@ -470,7 +473,7 @@ export class YahtzeeBot {
           break
         }
       }
-      
+
       if (consecutive) {
         // Return indices of dice that match these values
         const targetValues = uniqueValues.slice(i, i + length)
@@ -483,7 +486,7 @@ export class YahtzeeBot {
         return indices.slice(0, length)
       }
     }
-    
+
     return []
   }
 
@@ -492,11 +495,11 @@ export class YahtzeeBot {
    */
   private static getUpperSectionSum(scorecard: YahtzeeScorecard): number {
     return (scorecard.ones || 0) +
-           (scorecard.twos || 0) +
-           (scorecard.threes || 0) +
-           (scorecard.fours || 0) +
-           (scorecard.fives || 0) +
-           (scorecard.sixes || 0)
+      (scorecard.twos || 0) +
+      (scorecard.threes || 0) +
+      (scorecard.fours || 0) +
+      (scorecard.fives || 0) +
+      (scorecard.sixes || 0)
   }
 
   /**
@@ -505,7 +508,7 @@ export class YahtzeeBot {
   private static isLargeStraight(dice: number[]): boolean {
     const uniqueSorted = [...new Set(dice)].sort((a, b) => a - b)
     if (uniqueSorted.length !== 5) return false
-    
+
     return uniqueSorted.every((val, idx) => {
       if (idx === 0) return true
       return val === uniqueSorted[idx - 1] + 1
@@ -559,7 +562,7 @@ export class YahtzeeBot {
    */
   private static shouldStopRolling(dice: number[], scorecard: YahtzeeScorecard): boolean {
     const diceCounts = this.countDice(dice)
-    
+
     // Stop if we have Yahtzee
     for (const indices of diceCounts.values()) {
       if (indices.length === 5) return true

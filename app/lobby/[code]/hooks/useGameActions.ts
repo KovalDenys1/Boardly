@@ -5,7 +5,7 @@ import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game, GamePlayer } from '@/types/game'
@@ -84,12 +84,12 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     if (!isMyTurn) {
-      toast.error('🚫 It\'s not your turn to roll the dice!')
+      showToast.error('toast.notYourTurnRoll')
       return
     }
 
     if (gameEngine.getRollsLeft() === 0) {
-      toast.error('🚫 No rolls left! Choose a category to score.')
+      showToast.error('toast.noRollsLeft')
       return
     }
 
@@ -201,7 +201,7 @@ export function useGameActions(props: UseGameActionsProps) {
         },
       })
     } catch (error: any) {
-      toast.error(error.message || 'Failed to roll dice')
+      showToast.error('toast.rollFailed', error.message)
     } finally {
       setIsMoveInProgress(false)
       setIsRolling(false)
@@ -212,7 +212,7 @@ export function useGameActions(props: UseGameActionsProps) {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
 
     if (!isMyTurn) {
-      toast.error('🚫 It\'s not your turn!')
+      showToast.error('toast.notYourTurn')
       return
     }
 
@@ -240,7 +240,7 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     if (!isMyTurn) {
-      toast.error('🚫 It\'s not your turn!')
+      showToast.error('toast.notYourTurn')
       return
     }
 
@@ -346,7 +346,7 @@ export function useGameActions(props: UseGameActionsProps) {
           playerCount: game.players.length,
           duration: durationMinutes,
           winner: winner?.name || 'Unknown',
-          wasBot: winnerPlayer?.isBot || false,
+          wasBot: !!(winnerPlayer?.user?.bot),
           finalScores: game.players.map((p: GamePlayer) => ({
             playerName: p.name,
             score: p.score,
@@ -356,7 +356,7 @@ export function useGameActions(props: UseGameActionsProps) {
         if (winner) {
           soundManager.play('win')
           fireworks()
-          toast.success(`🎉 Game Over! ${winner.name} wins!`)
+          showToast.success('toast.gameOver', undefined, { player: winner.name })
         }
       } else {
         const nextPlayer = newEngine.getCurrentPlayer()
@@ -366,11 +366,11 @@ export function useGameActions(props: UseGameActionsProps) {
         // Only show "next turn" toast if it's NOT our turn now
         // (don't show to the player who just scored)
         if (nextPlayer && nextPlayer.id !== userId) {
-          toast(`${nextPlayer.name}'s turn!`, { icon: 'ℹ️' })
+          showToast.custom('toast.playerTurn', 'ℹ️', undefined, { player: nextPlayer.name })
         }
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to score')
+      showToast.error('toast.scoreFailed', error.message)
     } finally {
       setIsMoveInProgress(false)
       setIsScoring(false)

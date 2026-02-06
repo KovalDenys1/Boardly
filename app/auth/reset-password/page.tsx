@@ -5,12 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { useToast } from '@/contexts/ToastContext'
+import { showToast } from '@/lib/i18n-toast'
 
 function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const toast = useToast()
   const [token, setToken] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -53,12 +52,12 @@ function ResetPasswordForm() {
         throw new Error(data?.error || 'Failed to reset password')
       }
 
-      toast.success('Password reset successfully! Please login.')
+      showToast.success('toast.passwordReset')
       router.push('/auth/login')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reset password'
       setError(errorMessage)
-      toast.error(errorMessage)
+      showToast.error('toast.error', errorMessage)
     } finally {
       setLoading(false)
     }
@@ -121,8 +120,8 @@ function ResetPasswordForm() {
             </div>
           )}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="btn btn-primary w-full"
           >
@@ -139,7 +138,7 @@ function ResetPasswordForm() {
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           Remember your password?{' '}
-          <Link 
+          <Link
             href="/auth/login"
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >

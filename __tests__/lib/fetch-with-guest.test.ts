@@ -40,26 +40,26 @@ describe('fetch-with-guest utility', () => {
     })
 
     describe('isGuestMode', () => {
-        it('should return true when isGuest flag is set', () => {
-            localStorageMock.setItem('isGuest', 'true')
+        it('should return true when guest data is set', () => {
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
             expect(isGuestMode()).toBe(true)
         })
 
-        it('should return false when isGuest flag is not set', () => {
+        it('should return false when guest data is not set', () => {
             expect(isGuestMode()).toBe(false)
         })
 
-        it('should return false when isGuest is set to false', () => {
-            localStorageMock.setItem('isGuest', 'false')
+        it('should return false when only guest id is set', () => {
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
             expect(isGuestMode()).toBe(false)
         })
     })
 
     describe('getGuestHeaders', () => {
-        it('should return guest headers when in guest mode', () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+        it('should return guest headers when guest data is set', () => {
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             const headers = getGuestHeaders()
 
@@ -69,15 +69,14 @@ describe('fetch-with-guest utility', () => {
             })
         })
 
-        it('should return empty object when not in guest mode', () => {
+        it('should return empty object when guest data is not set', () => {
             const headers = getGuestHeaders()
             expect(headers).toEqual({})
         })
 
         it('should return empty object when guest data is incomplete', () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            // Missing guestName
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            // Missing boardly_guest_name
 
             const headers = getGuestHeaders()
             expect(headers).toEqual({})
@@ -86,24 +85,20 @@ describe('fetch-with-guest utility', () => {
 
     describe('fetchWithGuest', () => {
         it('should add guest headers to fetch request', async () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             await fetchWithGuest('/api/test')
 
-            expect(global.fetch).toHaveBeenCalledWith('/api/test', {
-                headers: {
-                    'X-Guest-Id': 'guest_123',
-                    'X-Guest-Name': 'Test Guest',
-                },
-            })
+            const callHeaders = (global.fetch as jest.Mock).mock.calls[0][1].headers
+            expect(callHeaders).toBeInstanceOf(Headers)
+            expect(callHeaders.get('X-Guest-Id')).toBe('guest_123')
+            expect(callHeaders.get('X-Guest-Name')).toBe('Test Guest')
         })
 
         it('should merge guest headers with existing headers', async () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             await fetchWithGuest('/api/test', {
                 headers: {
@@ -112,20 +107,17 @@ describe('fetch-with-guest utility', () => {
                 },
             })
 
-            expect(global.fetch).toHaveBeenCalledWith('/api/test', {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Custom-Header': 'value',
-                    'X-Guest-Id': 'guest_123',
-                    'X-Guest-Name': 'Test Guest',
-                },
-            })
+            const callHeaders = (global.fetch as jest.Mock).mock.calls[0][1].headers
+            expect(callHeaders).toBeInstanceOf(Headers)
+            expect(callHeaders.get('Content-Type')).toBe('application/json')
+            expect(callHeaders.get('Custom-Header')).toBe('value')
+            expect(callHeaders.get('X-Guest-Id')).toBe('guest_123')
+            expect(callHeaders.get('X-Guest-Name')).toBe('Test Guest')
         })
 
         it('should work with Headers object', async () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             const headers = new Headers()
             headers.set('Content-Type', 'application/json')
@@ -145,32 +137,28 @@ describe('fetch-with-guest utility', () => {
                 },
             })
 
-            expect(global.fetch).toHaveBeenCalledWith('/api/test', {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
+            const callHeaders = (global.fetch as jest.Mock).mock.calls[0][1].headers
+            expect(callHeaders).toBeInstanceOf(Headers)
+            expect(callHeaders.get('Content-Type')).toBe('application/json')
+            expect(callHeaders.get('X-Guest-Id')).toBeNull()
+            expect(callHeaders.get('X-Guest-Name')).toBeNull()
         })
 
         it('should handle request without init options', async () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             await fetchWithGuest('/api/test')
 
-            expect(global.fetch).toHaveBeenCalledWith('/api/test', {
-                headers: {
-                    'X-Guest-Id': 'guest_123',
-                    'X-Guest-Name': 'Test Guest',
-                },
-            })
+            const callHeaders = (global.fetch as jest.Mock).mock.calls[0][1].headers
+            expect(callHeaders).toBeInstanceOf(Headers)
+            expect(callHeaders.get('X-Guest-Id')).toBe('guest_123')
+            expect(callHeaders.get('X-Guest-Name')).toBe('Test Guest')
         })
 
         it('should pass through other fetch options', async () => {
-            localStorageMock.setItem('isGuest', 'true')
-            localStorageMock.setItem('guestId', 'guest_123')
-            localStorageMock.setItem('guestName', 'Test Guest')
+            localStorageMock.setItem('boardly_guest_id', 'guest_123')
+            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
 
             await fetchWithGuest('/api/test', {
                 method: 'POST',
@@ -178,15 +166,13 @@ describe('fetch-with-guest utility', () => {
                 credentials: 'include',
             })
 
-            expect(global.fetch).toHaveBeenCalledWith('/api/test', {
-                method: 'POST',
-                body: JSON.stringify({ data: 'test' }),
-                credentials: 'include',
-                headers: {
-                    'X-Guest-Id': 'guest_123',
-                    'X-Guest-Name': 'Test Guest',
-                },
-            })
+            const [url, opts] = (global.fetch as jest.Mock).mock.calls[0]
+            expect(url).toBe('/api/test')
+            expect(opts.method).toBe('POST')
+            expect(opts.body).toBe(JSON.stringify({ data: 'test' }))
+            expect(opts.credentials).toBe('include')
+            expect(opts.headers.get('X-Guest-Id')).toBe('guest_123')
+            expect(opts.headers.get('X-Guest-Name')).toBe('Test Guest')
         })
     })
 })

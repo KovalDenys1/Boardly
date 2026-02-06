@@ -168,6 +168,26 @@ export default function Friends() {
     }
   }, [])
 
+  const loadMyFriendCode = useCallback(async () => {
+    // Check if email is verified
+    if (!session?.user?.emailVerified) {
+      clientLogger.warn('Email not verified, skipping friend code load')
+      setMyFriendCode('')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/user/friend-code')
+      if (!res.ok) throw new Error('Failed to load friend code')
+      
+      const data = await res.json()
+      setMyFriendCode(data.friendCode || '')
+      clientLogger.log('My friend code loaded', { code: data.friendCode })
+    } catch (error) {
+      clientLogger.error('Error loading friend code:', error)
+    }
+  }, [session?.user?.emailVerified])
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
@@ -187,27 +207,7 @@ export default function Friends() {
     }, 30000)
 
     return () => clearInterval(refreshInterval)
-  }, [loadFriends, loadRequests])
-
-  const loadMyFriendCode = async () => {
-    // Check if email is verified
-    if (!session?.user?.emailVerified) {
-      clientLogger.warn('Email not verified, skipping friend code load')
-      setMyFriendCode('')
-      return
-    }
-
-    try {
-      const res = await fetch('/api/user/friend-code')
-      if (!res.ok) throw new Error('Failed to load friend code')
-      
-      const data = await res.json()
-      setMyFriendCode(data.friendCode || '')
-      clientLogger.log('My friend code loaded', { code: data.friendCode })
-    } catch (error) {
-      clientLogger.error('Error loading friend code:', error)
-    }
-  }
+  }, [loadFriends, loadRequests, loadMyFriendCode])
 
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault()

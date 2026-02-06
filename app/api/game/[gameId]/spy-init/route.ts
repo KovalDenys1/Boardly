@@ -65,8 +65,13 @@ export async function POST(
     const spyGame = new SpyGame(gameId)
     spyGame.loadState(JSON.parse(game.state))
 
+    // Fetch locations from DB
+    const locations = await prisma.spyLocations.findMany({
+      where: { isActive: true },
+    })
+
     // Initialize round (assigns roles, selects location)
-    await spyGame.initializeRound()
+    spyGame.initializeRound(locations)
 
     // Get updated state
     const updatedState = spyGame.getState()

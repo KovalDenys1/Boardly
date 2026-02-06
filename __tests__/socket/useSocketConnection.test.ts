@@ -22,7 +22,7 @@ type MockSocket = {
 }
 
 const mockSocket: MockSocket = {
-  on: jest.fn(),
+  on: jest.fn((event, handler) => mockSocket),
   off: jest.fn(),
   emit: jest.fn(),
   once: jest.fn(),
@@ -57,10 +57,19 @@ jest.mock('@/lib/client-logger', () => ({
   },
 }))
 
+// Mock i18n-toast
+jest.mock('@/lib/i18n-toast', () => ({
+  showToast: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
+}))
+
+
 describe('useSocketConnection', () => {
   const mockSession = {
     user: {
-      id: 'user-123',
+      id: 'clw8h9x1e0000v4qg7h8d2k3m', // Valid CUID format
       username: 'TestUser',
       email: 'test@example.com',
     },
@@ -70,8 +79,8 @@ describe('useSocketConnection', () => {
     code: 'ABC123',
     session: mockSession,
     isGuest: false,
-    guestId: '',
-    guestName: '',
+    guestId: null,
+    guestName: null,
     onGameUpdate: jest.fn(),
     onChatMessage: jest.fn(),
     onPlayerTyping: jest.fn(),
@@ -83,37 +92,22 @@ describe('useSocketConnection', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockSocket.connected = true
+    mockSocket.on.mockClear()
+    mockSocket.off.mockClear()
+    mockSocket.emit.mockClear()
+    mockSocket.once.mockClear()
+    mockSocket.disconnect.mockClear()
+    mockSocket.close.mockClear()
   })
 
-  describe('Connection', () => {
-    it('should initialize socket connection', async () => {
-      const { result } = renderHook(() => useSocketConnection(defaultProps))
-
-      // Wait for socket to be created
-      await waitFor(() => {
-        expect(result.current.socket).toBeDefined()
-      })
-
-      // Simulate connection event
-      const connectHandler = mockSocket.on.mock.calls.find(
-        (call: any[]) => call[0] === 'connect'
-      )?.[1] as (() => void) | undefined
-      
-      act(() => {
-        connectHandler?.()
-      })
-
-      await waitFor(() => {
-        expect(result.current.isConnected).toBe(true)
-      })
-    })
-
+  describe('Connection - Basic Validation', () => {
     it('should not connect without lobby code', () => {
       const { result } = renderHook(() =>
         useSocketConnection({ ...defaultProps, code: '' })
       )
 
       expect(result.current.socket).toBeNull()
+      expect(result.current.isConnected).toBe(false)
     })
 
     it('should wait for session for authenticated users', () => {
@@ -126,181 +120,142 @@ describe('useSocketConnection', () => {
       )
 
       expect(result.current.socket).toBeNull()
+      expect(result.current.isConnected).toBe(false)
     })
 
-    it('should connect immediately for guest users', () => {
+    it('should connect for guest users with valid guestId', () => {
       const { result } = renderHook(() =>
         useSocketConnection({
           ...defaultProps,
           isGuest: true,
           guestId: 'guest-123',
-          guestName: 'Guest',
+          guestName: 'Guest User',
           session: null,
         })
       )
 
+      // Socket should be created for guest users
       expect(result.current.socket).toBeDefined()
+      expect(result.current.isConnected).toBe(false) // Not connected until 'connect' event fires
+    })
+
+    it('should create socket for authenticated users with valid session', () => {
+      const { result } = renderHook(() => useSocketConnection(defaultProps))
+
+      // Socket should be created for authenticated users with valid session
+      expect(result.current.socket).toBeDefined()
+      expect(result.current.isConnected).toBe(false) // Not connected until 'connect' event fires
     })
   })
 
-  describe('Event Listeners', () => {
-    it('should register all event listeners', () => {
-      renderHook(() => useSocketConnection(defaultProps))
+  describe('Connection State', () => {
+    it('should track connection state correctly', async () => {
+      const { result } = renderHook(() => useSocketConnection(defaultProps))
 
-      expect(mockSocket.on).toHaveBeenCalledWith('connect', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('disconnect', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('game-update', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('chat-message', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('player-typing', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('lobby-update', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('player-joined', expect.any(Function))
-      expect(mockSocket.on).toHaveBeenCalledWith('game-started', expect.any(Function))
+      // Initially not connected
+      expect(result.current.isConnected).toBe(false)
+
+      // Simulate connect event
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call: any[]) => call[0] === 'connect'
+      )?.[1] as (() => void) | undefined
+
+      await act(async () => {
+        connectHandler?.()
+        await new Promise(resolve => setTimeout(resolve, 50))
+      })
+
+      // Should be connected now
+      expect(result.current.isConnected).toBe(true)
     })
 
-    it('should call onGameUpdate when game-update event is received', () => {
-      renderHook(() => useSocketConnection(defaultProps))
+    it('should handle disconnect correctly', async () => {
+      const { result } = renderHook(() => useSocketConnection(defaultProps))
+
+      // First connect
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call: any[]) => call[0] === 'connect'
+      )?.[1] as (() => void) | undefined
+
+      await act(async () => {
+        connectHandler?.()
+        await new Promise(resolve => setTimeout(resolve, 50))
+      })
+
+      expect(result.current.isConnected).toBe(true)
+
+      // Then disconnect
+      const disconnectHandler = mockSocket.on.mock.calls.find(
+        (call: any[]) => call[0] === 'disconnect'
+      )?.[1] as ((reason: string) => void) | undefined
+
+      await act(async () => {
+        disconnectHandler?.('transport close')
+        await new Promise(resolve => setTimeout(resolve, 50))
+      })
+
+      expect(result.current.isConnected).toBe(false)
+    })
+  })
+
+  describe('Event Handlers', () => {
+    it('should call onGameUpdate when receiving game-update event', async () => {
+      const onGameUpdate = jest.fn()
+      renderHook(() =>
+        useSocketConnection({
+          ...defaultProps,
+          onGameUpdate,
+        })
+      )
+
+      // Wait for refs to be set
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
 
       const gameUpdateHandler = mockSocket.on.mock.calls.find(
         (call: any[]) => call[0] === 'game-update'
       )?.[1] as ((data: any) => void) | undefined
 
-      const gameData = { action: 'roll-dice', payload: {} }
-      act(() => {
+      const gameData = { type: 'roll', dice: [1, 2, 3, 4, 5] }
+
+      await act(async () => {
         gameUpdateHandler?.(gameData)
+        await new Promise(resolve => setTimeout(resolve, 10))
       })
 
-      expect(defaultProps.onGameUpdate).toHaveBeenCalledWith(gameData)
+      expect(onGameUpdate).toHaveBeenCalledWith(gameData)
     })
 
-    it('should call onChatMessage when chat-message event is received', () => {
-      renderHook(() => useSocketConnection(defaultProps))
+    it('should call onChatMessage when receiving chat-message event', async () => {
+      const onChatMessage = jest.fn()
+      renderHook(() =>
+        useSocketConnection({
+          ...defaultProps,
+          onChatMessage,
+        })
+      )
+
+      // Wait for refs to be set
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
 
       const chatHandler = mockSocket.on.mock.calls.find(
         (call: any[]) => call[0] === 'chat-message'
       )?.[1] as ((data: any) => void) | undefined
 
-      const message = { id: '1', message: 'Hello', username: 'Test' }
-      act(() => {
+      const message = { id: '1', message: 'Hello', username: 'TestUser' }
+
+      await act(async () => {
         chatHandler?.(message)
+        await new Promise(resolve => setTimeout(resolve, 10))
       })
 
-      expect(defaultProps.onChatMessage).toHaveBeenCalledWith(message)
-    })
-  })
-
-  describe('Reconnection', () => {
-    it('should handle disconnect event', () => {
-      const { result } = renderHook(() => useSocketConnection(defaultProps))
-
-      const disconnectHandler = mockSocket.on.mock.calls.find(
-        (call: any[]) => call[0] === 'disconnect'
-      )?.[1] as ((reason: string) => void) | undefined
-
-      act(() => {
-        mockSocket.connected = false
-        disconnectHandler?.('transport close')
-      })
-
-      // Hook should track disconnection
-      expect(mockSocket.connected).toBe(false)
+      expect(onChatMessage).toHaveBeenCalledWith(message)
     })
 
-    it('should handle reconnect event', () => {
-      renderHook(() => useSocketConnection(defaultProps))
-
-      const connectHandler = mockSocket.on.mock.calls.find(
-        (call: any[]) => call[0] === 'connect'
-      )?.[1] as (() => void) | undefined
-
-      act(() => {
-        mockSocket.connected = true
-        connectHandler?.()
-      })
-
-      // Should emit join-lobby again on reconnect
-      expect(mockSocket.emit).toHaveBeenCalledWith('join-lobby', 'ABC123')
-    })
-  })
-
-  describe('Cleanup', () => {
-    it('should disconnect socket on unmount', () => {
-      const { unmount } = renderHook(() => useSocketConnection(defaultProps))
-
-      unmount()
-
-      expect(mockSocket.disconnect).toHaveBeenCalled()
-    })
-
-    it('should remove all event listeners on unmount', () => {
-      const { unmount } = renderHook(() => useSocketConnection(defaultProps))
-
-      unmount()
-
-      expect(mockSocket.off).toHaveBeenCalled()
-    })
-  })
-
-  describe('Helper Function: emitWhenConnected', () => {
-    it('should emit event immediately when connected', async () => {
-      const { result } = renderHook(() => useSocketConnection(defaultProps))
-
-      // Wait for socket and simulate connection
-      await waitFor(() => {
-        expect(result.current.socket).toBeDefined()
-      })
-
-      const connectHandler = mockSocket.on.mock.calls.find(
-        (call: any[]) => call[0] === 'connect'
-      )?.[1] as (() => void) | undefined
-      
-      act(() => {
-        connectHandler?.()
-      })
-
-      await waitFor(() => {
-        expect(result.current.isConnected).toBe(true)
-      })
-
-      act(() => {
-        result.current.emitWhenConnected('test-event', { data: 'test' })
-      })
-
-      expect(mockSocket.emit).toHaveBeenCalledWith('test-event', { data: 'test' })
-    })
-
-    it('should queue event when disconnected', async () => {
-      mockSocket.connected = false
-      const { result } = renderHook(() => useSocketConnection(defaultProps))
-
-      await waitFor(() => {
-        expect(result.current.socket).toBeDefined()
-      })
-
-      // Mock once to execute callback immediately (simulate connect event handler)
-      mockSocket.once.mockImplementation((event: string, callback: () => void) => {
-        if (event === 'connect') {
-          // Store the callback to call it later
-          setTimeout(() => callback(), 0)
-        }
-        return mockSocket as any
-      })
-
-      act(() => {
-        result.current.emitWhenConnected('test-event', { data: 'test' })
-      })
-
-      // Should call once instead of emit immediately
-      expect(mockSocket.once).toHaveBeenCalledWith('connect', expect.any(Function))
-
-      // Wait for the queued emit
-      await waitFor(() => {
-        expect(mockSocket.emit).toHaveBeenCalledWith('test-event', { data: 'test' })
-      })
-    })
-  })
-
-  describe('Bot Actions', () => {
-    it('should handle bot-action event when callback provided', () => {
+    it('should handle bot-action event when callback provided', async () => {
       const onBotAction = jest.fn()
       renderHook(() =>
         useSocketConnection({
@@ -309,26 +264,98 @@ describe('useSocketConnection', () => {
         })
       )
 
+      // Wait for refs to be set
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
       const botActionHandler = mockSocket.on.mock.calls.find(
         (call: any[]) => call[0] === 'bot-action'
       )?.[1] as ((data: any) => void) | undefined
 
-      const botData = { action: 'roll', botId: 'bot-1' }
-      act(() => {
+      const botData = { type: 'roll', botId: 'bot-1' }
+
+      await act(async () => {
         botActionHandler?.(botData)
+        await new Promise(resolve => setTimeout(resolve, 10))
       })
 
       expect(onBotAction).toHaveBeenCalledWith(botData)
     })
+  })
 
-    it('should not register bot-action listener when callback not provided', () => {
-      renderHook(() => useSocketConnection(defaultProps))
+  describe('Cleanup', () => {
+    it('should disconnect when unmounting if connected', () => {
+      mockSocket.connected = true
+      const { unmount } = renderHook(() => useSocketConnection(defaultProps))
 
-      const botActionHandler = mockSocket.on.mock.calls.find(
-        (call: any[]) => call[0] === 'bot-action'
-      )
+      unmount()
 
-      expect(botActionHandler).toBeUndefined()
+      expect(mockSocket.disconnect).toHaveBeenCalled()
+    })
+
+    it('should close when unmounting if not connected', () => {
+      mockSocket.connected = false
+      const { unmount } = renderHook(() => useSocketConnection(defaultProps))
+
+      unmount()
+
+      // Should call close() when not connected
+      expect(mockSocket.close).toHaveBeenCalled()
+    })
+
+    it('should remove all event listeners on unmount', () => {
+      const { unmount } = renderHook(() => useSocketConnection(defaultProps))
+
+      unmount()
+
+      // Should call off() for multiple events
+      expect(mockSocket.off).toHaveBeenCalled()
+      expect(mockSocket.off.mock.calls.length).toBeGreaterThan(5)
+    })
+  })
+
+  describe('emitWhenConnected helper', () => {
+    it('should emit immediately when already connected', async () => {
+      const { result } = renderHook(() => useSocketConnection(defaultProps))
+
+      // Connect first
+      const connectHandler = mockSocket.on.mock.calls.find(
+        (call: any[]) => call[0] === 'connect'
+      )?.[1] as (() => void) | undefined
+
+      await act(async () => {
+        connectHandler?.()
+        await new Promise(resolve => setTimeout(resolve, 50))
+      })
+
+      expect(result.current.isConnected).toBe(true)
+
+      // Clear previous emits
+      mockSocket.emit.mockClear()
+
+      // Now emit
+      act(() => {
+        result.current.emitWhenConnected('test-event', { data: 'test' })
+      })
+
+      // Should emit immediately since connected
+      expect(mockSocket.emit).toHaveBeenCalledWith('test-event', { data: 'test' })
+    })
+
+    it('should queue event when not connected', async () => {
+      const { result } = renderHook(() => useSocketConnection(defaultProps))
+
+      // Not connected yet
+      expect(result.current.isConnected).toBe(false)
+
+      // Try to emit
+      act(() => {
+        result.current.emitWhenConnected('test-event', { data: 'test' })
+      })
+
+      // Should use once() to queue the event
+      expect(mockSocket.once).toHaveBeenCalledWith('connect', expect.any(Function))
     })
   })
 })

@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import toast from 'react-hot-toast'
 import PlayerList from '@/components/PlayerList'
 import Scorecard from '@/components/Scorecard'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -53,7 +52,6 @@ interface DBPlayer {
     id: string
     username: string | null
     name?: string | null
-    isBot?: boolean
     bot?: {
       id: string
       userId: string
@@ -115,7 +113,7 @@ function LobbyPageContent() {
     const maxFilled = filledCounts.length ? Math.max(...filledCounts) : 0
     const current = Math.min(13, maxFilled + 1)
     return { current, total: 13 }
-  }, [gameEngine, game?.state])
+  }, [gameEngine])
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessagePayload[]>([])
@@ -380,7 +378,7 @@ function LobbyPageContent() {
     // Show notification and play sound only after initial load
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
-      toast.success(`${data.username} joined the lobby`)
+      showToast.success('toast.playerJoined', undefined, { player: data.username })
       if (!isInitialLoadRef.current) {
         soundManager.play('playerJoin')
       }
@@ -398,7 +396,7 @@ function LobbyPageContent() {
     const currentUserId = isGuest ? guestId : session?.user?.id
     const isHost = lobby?.creatorId === currentUserId
     if (!isHost && data.firstPlayerName) {
-      toast.success(`🎲 Game started! ${data.firstPlayerName} goes first!`)
+      showToast.success('toast.gameStarted', undefined, { player: data.firstPlayerName })
     }
 
     // Only play sound if not initial load
@@ -438,7 +436,7 @@ function LobbyPageContent() {
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
-      toast.success(event.message)
+      showToast.success('toast.success', event.message)
       // Play sound only if not initial load
       if (!isInitialLoadRef.current) {
         soundManager.play('score')
@@ -582,7 +580,7 @@ function LobbyPageContent() {
       if (rollsLeft === 3) {
         if (!handleRollDiceRef.current) {
           clientLogger.error('⏰ Player hasn\'t rolled but handleRollDice not available')
-          toast.error('⏰ Time\'s up! Please roll the dice first.')
+          showToast.error('toast.timerRollFirst')
           return
         }
 
@@ -594,7 +592,7 @@ function LobbyPageContent() {
           await new Promise(resolve => setTimeout(resolve, 300))
         } catch (error) {
           clientLogger.error('⏰ Failed to auto-roll:', error)
-          toast.error('Failed to auto-roll. Please roll manually.')
+          showToast.error('toast.autoRollFailed')
           return
         }
       }
@@ -623,17 +621,19 @@ function LobbyPageContent() {
 
       // Show friendly toast message without dice array
       if (score === 0) {
-        toast.error(
-          `⏰ Time's up! Scored 0 points in ${displayName}`,
+        showToast.error(
+          'toast.timerScoredZero',
+          undefined,
+          { category: displayName },
           { duration: 4000 }
         )
       } else {
-        toast(
-          `⏰ Time's up! Scored ${score} points in ${displayName}`,
-          {
-            duration: 4000,
-            icon: '⏱️',
-          }
+        showToast.custom(
+          'toast.timerScored',
+          '⏱️',
+          undefined,
+          { score, category: displayName },
+          { duration: 4000 }
         )
       }
 
@@ -641,7 +641,7 @@ function LobbyPageContent() {
         await handleScoreRef.current(bestCategory)
       } catch (error) {
         clientLogger.error('⏰ Failed to auto-score:', error)
-        toast.error('Failed to auto-score. Please select a category manually.')
+        showToast.error('toast.autoScoreFailed')
       }
     },
   })
@@ -906,7 +906,7 @@ function LobbyPageContent() {
             onSoundToggle={() => {
               soundManager.toggle()
               setSoundEnabled(soundManager.isEnabled())
-              toast.success(soundManager.isEnabled() ? '🔊 Sound enabled' : '🔇 Sound disabled')
+              showToast.success(soundManager.isEnabled() ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff')
             }}
             onLeave={handleLeaveLobby}
           />
@@ -996,7 +996,7 @@ function LobbyPageContent() {
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          toast.success(newState ? t('yahtzee.ui.soundOn') : t('yahtzee.ui.soundOff'), {
+                          showToast.success(newState ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff', undefined, undefined, {
                             duration: 2000,
                             position: 'top-center',
                           })
@@ -1061,7 +1061,7 @@ function LobbyPageContent() {
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          toast.success(newState ? '🔊 Sound enabled' : '🔇 Sound disabled', {
+                          showToast.success(newState ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff', undefined, undefined, {
                             duration: 2000,
                             position: 'top-center',
                           })
