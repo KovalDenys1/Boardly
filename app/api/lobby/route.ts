@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/next-auth'
 import { generateLobbyCode } from '@/lib/lobby'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 
 const log = apiLogger('/api/lobby')
 
@@ -27,23 +28,32 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Verify authentication with NextAuth
+    // Check for authenticated user or guest
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const guestName = request.headers.get('X-Guest-Name')
+
+    let user
+    if (session?.user?.id) {
+      // Authenticated user
+      user = await prisma.users.findUnique({
+        where: { id: session.user.id },
+      })
+
+      if (!user) {
+        log.error('User not found in database', undefined, { userId: session.user.id })
+        return NextResponse.json(
+          { error: 'User not found. Please log in again.' },
+          { status: 404 }
+        )
+      }
+    } else if (guestId && guestName) {
+      // Guest user
+      user = await getOrCreateGuestUser(guestId, guestName)
+      log.info('Guest creating lobby', { guestId, guestName })
+    } else {
+      // No authentication
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify user exists in database
-    const user = await prisma.users.findUnique({
-      where: { id: session.user.id },
-    })
-
-    if (!user) {
-      log.error('User not found in database', undefined, { userId: session.user.id })
-      return NextResponse.json(
-        { error: 'User not found. Please log in again.' },
-        { status: 404 }
-      )
     }
 
     const body = await request.json()
@@ -91,7 +101,7 @@ export async function POST(request: NextRequest) {
         },
       }
     }
-    
+
     const lobby = await prisma.lobbies.create({
       data: {
         code,
@@ -125,7 +135,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       lobby,
       autoJoined: true,
       message: 'Lobby created and you have been added as the first player!'
@@ -135,7 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.issues }, { status: 400 })
     }
     log.error('Create lobby error', error as Error)
-    
+
     // Provide more specific error messages
     if (error instanceof Error) {
       if (error.message.includes('Foreign key constraint')) {
@@ -145,7 +155,7 @@ export async function POST(request: NextRequest) {
         )
       }
     }
-    
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -153,7 +163,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     // Parse filters
     const gameType = searchParams.get('gameType')
     const status = searchParams.get('status') // 'waiting', 'playing', 'all'
@@ -166,7 +176,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: any = { isActive: true }
-    
+
     if (gameType) {
       where.gameType = gameType
     }
@@ -178,15 +188,15 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    log.info('Fetching lobbies', { 
-      gameType, 
-      status, 
-      search, 
-      minPlayers, 
+    log.info('Fetching lobbies', {
+      gameType,
+      status,
+      search,
+      minPlayers,
       maxPlayers,
       sortBy,
       sortOrder,
-      limit 
+      limit
     })
 
     // Get lobbies with game status filter
@@ -213,7 +223,7 @@ export async function GET(request: NextRequest) {
           },
           games: {
             where: gameStatusFilter,
-            select: { 
+            select: {
               id: true,
               status: true,
               _count: {
@@ -233,13 +243,13 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: 
-          sortBy === 'name' 
+        orderBy:
+          sortBy === 'name'
             ? { name: sortOrder as 'asc' | 'desc' }
             : { createdAt: sortOrder as 'asc' | 'desc' },
         take: limit,
       }),
-      new Promise((_, reject) => 
+      new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Database query timeout')), 5000)
       )
     ]) as any[]
@@ -248,13 +258,13 @@ export async function GET(request: NextRequest) {
     let filteredLobbies = lobbies.filter(lobby => {
       const game = lobby.games[0]
       if (!game) return false
-      
+
       // Count human (non-bot) players
       const humanPlayerCount = game.players?.filter((p: any) => !p.user.isBot).length || 0
-      
+
       // Exclude games with no human players (abandoned or bot-only games)
       if (humanPlayerCount === 0) return false
-      
+
       // Apply player count filters
       if (minPlayers || maxPlayers) {
         const playerCount = game._count?.players || 0
@@ -262,7 +272,7 @@ export async function GET(request: NextRequest) {
         const max = maxPlayers ? parseInt(maxPlayers) : Infinity
         return playerCount >= min && playerCount <= max
       }
-      
+
       return true
     })
 
@@ -283,23 +293,23 @@ export async function GET(request: NextRequest) {
       totalPlayers: filteredLobbies.reduce((sum, l) => sum + (l.games[0]?._count?.players || 0), 0),
     }
 
-    log.info('Lobbies fetched successfully', { 
+    log.info('Lobbies fetched successfully', {
       count: filteredLobbies.length,
-      stats 
+      stats
     })
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       lobbies: filteredLobbies,
-      stats 
+      stats
     })
   } catch (error) {
-    log.error('Get lobbies error', error as Error, { 
+    log.error('Get lobbies error', error as Error, {
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
       errorType: error instanceof Error ? error.constructor.name : typeof error
     })
-    
+
     // Return empty array instead of error to prevent UI from breaking
-    return NextResponse.json({ 
+    return NextResponse.json({
       lobbies: [],
       stats: {
         totalLobbies: 0,

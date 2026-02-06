@@ -98,17 +98,17 @@ export async function notifySocket(
  */
 export function getAuthHeaders(
   isGuest: boolean,
-  guestId?: string,
-  guestName?: string
+  guestId?: string | null,
+  guestName?: string | null
 ): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   }
-  
+
   if (isGuest && guestId && guestName) {
     headers['X-Guest-Id'] = guestId
     headers['X-Guest-Name'] = guestName
   }
-  
+
   return headers
 }

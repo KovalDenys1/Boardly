@@ -8,6 +8,8 @@ import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
+import { useGuest } from '@/contexts/GuestContext'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 let socket: Socket
 
@@ -17,7 +19,7 @@ interface Lobby {
   name: string
   maxPlayers: number
   gameType: string
-  creator: { 
+  creator: {
     username: string | null
     email: string | null
   }
@@ -33,19 +35,21 @@ interface Lobby {
 export default function SpyLobbiesPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { isGuest, guestId, guestName } = useGuest()
   const { t } = useTranslation()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
-  const isAuthenticated = status === 'authenticated'
+  const isAuthenticated = status === 'authenticated' || isGuest
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    // Allow both authenticated users and guests
+    if (status === 'unauthenticated' && !isGuest) {
       setLoading(false)
       return
     }
 
-    if (status === 'authenticated') {
+    if (status === 'authenticated' || isGuest) {
       loadLobbies()
       triggerCleanup()
 
@@ -58,17 +62,19 @@ export default function SpyLobbiesPage() {
       if (!socket) {
         const url = getBrowserSocketUrl()
         clientLogger.log('🔌 Connecting to Socket.IO for Spy lobby list:', url)
-        
-        // Get auth token - use userId for authenticated users
-        const token = session?.user?.id || null
+
+        // Get auth token - use userId for authenticated users or guestId for guests
+        const token = session?.user?.id || guestId || null
 
         const authPayload: Record<string, unknown> = {}
         if (token) authPayload.token = token
-        authPayload.isGuest = false
+        authPayload.isGuest = isGuest
+        if (isGuest && guestName) authPayload.guestName = guestName
 
         const queryPayload: Record<string, string> = {}
         if (token) queryPayload.token = String(token)
-        queryPayload.isGuest = 'false'
+        queryPayload.isGuest = String(isGuest)
+        if (isGuest && guestName) queryPayload.guestName = guestName
 
         socket = io(url, {
           transports: ['websocket', 'polling'],
@@ -105,14 +111,14 @@ export default function SpyLobbiesPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, router])
+  }, [status, isGuest, router])
 
   const triggerCleanup = async () => {
     try {
       const res = await fetch('/api/lobby/cleanup', {
         method: 'POST',
       })
-      
+
       if (!res.ok) {
         clientLogger.warn('Cleanup returned non-ok status:', res.status)
       }
@@ -123,19 +129,19 @@ export default function SpyLobbiesPage() {
 
   const loadLobbies = async () => {
     try {
-      const res = await fetch('/api/lobby?gameType=guess_the_spy')
-      
+      const res = await fetchWithGuest('/api/lobby?gameType=guess_the_spy')
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
-      
+
       const data = await res.json()
-      
+
       // Handle case where API returns error but with 200 status
       if (data.error) {
         clientLogger.warn('Spy lobbies loaded with error:', data.error)
       }
-      
+
       setLobbies(data.lobbies || [])
     } catch (error) {
       clientLogger.error('Failed to load Spy lobbies:', error)
@@ -149,7 +155,7 @@ export default function SpyLobbiesPage() {
 
   const handleJoinByCode = () => {
     if (!isAuthenticated) {
-      router.push(`/auth/login?returnUrl=${encodeURIComponent('/games/spy/lobbies')}`)
+      router.push('/')
       return
     }
     if (joinCode) {
@@ -170,14 +176,14 @@ export default function SpyLobbiesPage() {
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-16 sm:pt-20">
         {/* Breadcrumbs */}
         <div className="mb-4 sm:mb-6 flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm overflow-x-auto">
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="hover:text-white transition-colors whitespace-nowrap"
           >
             🏠 <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
           </button>
           <span>›</span>
-          <button 
+          <button
             onClick={() => router.push('/games')}
             className="hover:text-white transition-colors whitespace-nowrap"
           >

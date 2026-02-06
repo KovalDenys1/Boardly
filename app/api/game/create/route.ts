@@ -23,7 +23,10 @@ export async function POST(request: NextRequest) {
     const log = apiLogger('POST /api/game/create')
 
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
     }
 
-    if (lobby.creatorId !== session.user.id) {
+    if (lobby.creatorId !== userId) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
     }
 

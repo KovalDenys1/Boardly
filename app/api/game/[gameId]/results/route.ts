@@ -9,11 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('/api/game/[gameId]/results')
-  
+
   try {
     const session = await getServerSession(authOptions)
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -57,8 +59,8 @@ export async function GET(
     }
 
     // Check if user is a player in this game
-    const isPlayer = game.players.some(p => p.userId === session.user.id)
-    
+    const isPlayer = game.players.some(p => p.userId === userId)
+
     if (!isPlayer) {
       return NextResponse.json(
         { error: 'You are not a player in this game' },
@@ -91,7 +93,7 @@ export async function GET(
 
     log.info('Game results fetched', {
       gameId,
-      userId: session.user.id,
+      userId,
       status: game.status
     })
 
@@ -99,7 +101,7 @@ export async function GET(
 
   } catch (error) {
     log.error('Error fetching game results', error as Error)
-    
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

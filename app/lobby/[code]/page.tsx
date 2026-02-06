@@ -78,16 +78,16 @@ import MobileTabs, { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
 import FriendsListModal from '@/components/FriendsListModal'
 import { showToast } from '@/lib/i18n-toast'
+import { useGuest } from '@/contexts/GuestContext'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 function LobbyPageContent() {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
+  const { isGuest, guestId, guestName } = useGuest()
   const code = params.code as string
-  
-  const isGuest = searchParams.get('guest') === 'true'
-  const { guestName, guestId } = useGuestMode(isGuest, code)
 
   // Log session status for debugging
   useEffect(() => {
@@ -145,7 +145,7 @@ function LobbyPageContent() {
     return []
   })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
-  
+
   // Mobile tabs state
   const [mobileActiveTab, setMobileActiveTab] = useState<TabId>('game')
 
@@ -171,7 +171,7 @@ function LobbyPageContent() {
 
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
-  
+
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -204,26 +204,26 @@ function LobbyPageContent() {
 
   // Track previous current player to detect turn changes
   const prevCurrentPlayerIdRef = React.useRef<string | undefined>()
-  
+
   // Auto-reset selectedPlayerId when turn changes (only if viewing current player's card automatically)
   useEffect(() => {
     if (gameEngine) {
       const currentPlayerId = gameEngine.getCurrentPlayer()?.id
       const currentUserId = getCurrentUserId()
-      
+
       // Detect turn change
-      const turnChanged = prevCurrentPlayerIdRef.current !== undefined && 
-                          prevCurrentPlayerIdRef.current !== currentPlayerId
-      
+      const turnChanged = prevCurrentPlayerIdRef.current !== undefined &&
+        prevCurrentPlayerIdRef.current !== currentPlayerId
+
       // Only reset if:
       // 1. Turn actually changed
       // 2. selectedPlayerId is null (auto-viewing current player) OR
       // 3. selectedPlayerId matches the previous current player (was following the turn automatically)
-      if (turnChanged && 
-          (selectedPlayerId === null || selectedPlayerId === prevCurrentPlayerIdRef.current)) {
+      if (turnChanged &&
+        (selectedPlayerId === null || selectedPlayerId === prevCurrentPlayerIdRef.current)) {
         setSelectedPlayerId(null) // Reset to show new current player
       }
-      
+
       // Update ref
       prevCurrentPlayerIdRef.current = currentPlayerId
     }
@@ -232,7 +232,7 @@ function LobbyPageContent() {
   // Separate effect to track the complex expression
   const currentPlayerId = gameEngine?.getCurrentPlayer()?.id
   const prevPlayerIdRef = React.useRef<string | undefined>(undefined)
-  
+
   useEffect(() => {
     // Track changes to current player ID and play sound when turn changes
     if (currentPlayerId && prevPlayerIdRef.current && currentPlayerId !== prevPlayerIdRef.current) {
@@ -255,7 +255,7 @@ function LobbyPageContent() {
   // Memoize socket event handlers to prevent infinite loops
   const onGameUpdate = useCallback((payload: GameUpdatePayload) => {
     clientLogger.log('📡 Received game-update:', payload)
-    
+
     // Extract state from payload structure: { action: 'state-change', payload: { state: ... } }
     let state: unknown
     if ('state' in payload.payload && payload.payload.state) {
@@ -265,18 +265,18 @@ function LobbyPageContent() {
     } else {
       state = payload.payload
     }
-    
+
     if (state) {
       try {
-        const parsedState = typeof state === 'string' 
-          ? JSON.parse(state) 
+        const parsedState = typeof state === 'string'
+          ? JSON.parse(state)
           : state
-        
+
         if (game?.id) {
           const newEngine = new YahtzeeGame(game.id)
           newEngine.restoreState(parsedState)
           setGameEngine(newEngine)
-          
+
           // Update game object with new state
           setGame((prevGame) => {
             if (!prevGame) return prevGame
@@ -285,33 +285,33 @@ function LobbyPageContent() {
               state: JSON.stringify(parsedState),
             }
           })
-          
+
           // Sync roll history from game state
           if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
             const lastRoll = parsedState.data.lastRoll
             // Find player with proper type checking
             const player = game.players.find((p) => p.id === lastRoll.playerId)
-            
+
             // Safety check: ensure player exists and has required data
             if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
               const playerCount = game.players.length
               const currentRound = parsedState.data.round || 1
               const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
               const currentUserId = getCurrentUserId()
-              
+
               // Check if this roll is already in history (by timestamp)
               setRollHistory(prev => {
-                const exists = prev.some(entry => 
+                const exists = prev.some(entry =>
                   Math.abs(entry.timestamp - lastRoll.timestamp) < 1000 // Within 1 second
                 )
-                
+
                 if (exists) return prev
-                
+
                 // Play dice roll sound for other players' rolls (not our own)
                 if (lastRoll.playerId !== currentUserId) {
                   soundManager.play('diceRoll')
                 }
-                
+
                 return [...prev, {
                   id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
                   playerName: player.user?.username || player.name || 'Unknown',
@@ -327,7 +327,7 @@ function LobbyPageContent() {
             }
           }
         }
-        
+
         // Note: Bot move detection handled by bot-visualization.ts
       } catch (e) {
         clientLogger.error('Failed to parse game state:', e)
@@ -345,17 +345,17 @@ function LobbyPageContent() {
   }, [chatMinimized])
 
   const typingTimeoutRef = React.useRef<NodeJS.Timeout>()
-  
+
   const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.userId !== currentUserId) {
       setSomeoneTyping(true)
-      
+
       // Clear previous timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
       }
-      
+
       typingTimeoutRef.current = setTimeout(() => {
         setSomeoneTyping(false)
       }, 3000)
@@ -376,7 +376,7 @@ function LobbyPageContent() {
     if (loadLobbyRef.current) {
       loadLobbyRef.current()
     }
-    
+
     // Show notification and play sound only after initial load
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
@@ -393,14 +393,14 @@ function LobbyPageContent() {
     if (loadLobbyRef.current) {
       loadLobbyRef.current()
     }
-    
+
     // Show toast for non-host players (host already saw it in handleStartGame)
     const currentUserId = isGuest ? guestId : session?.user?.id
     const isHost = lobby?.creatorId === currentUserId
     if (!isHost && data.firstPlayerName) {
       toast.success(`🎲 Game started! ${data.firstPlayerName} goes first!`)
     }
-    
+
     // Only play sound if not initial load
     if (!isInitialLoadRef.current) {
       soundManager.play('gameStart')
@@ -409,15 +409,15 @@ function LobbyPageContent() {
 
   const onBotAction = useCallback((event: any) => {
     clientLogger.log('🤖 Received bot-action:', event)
-    
+
     const botName = event.botName || 'Bot'
-    
+
     // Add bot action to roll history ONLY if dice are present (after roll, not before)
     if (event.type === 'roll' && event.data?.dice && gameEngine) {
       const currentRound = gameEngine.getRound()
       const playerCount = game?.players?.length || 1
       const turnNumber = Math.floor(currentRound / playerCount) + 1
-      
+
       setRollHistory(prev => [...prev, {
         id: `bot-${Date.now()}-${Math.random()}`,
         playerName: botName,
@@ -428,14 +428,14 @@ function LobbyPageContent() {
         isBot: true,
         timestamp: Date.now(),
       }])
-      
+
       // Play sound ONLY after roll completes AND not during initial load
       // Use force option to ensure sound plays even if previous roll sound is still playing
       if (!isInitialLoadRef.current) {
         soundManager.play('diceRoll', { force: true })
       }
     }
-    
+
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
       toast.success(event.message)
@@ -444,26 +444,26 @@ function LobbyPageContent() {
         soundManager.play('score')
       }
     }
-    
+
     // Log all actions to console for debugging
     clientLogger.log(`🤖 ${event.message}`)
   }, [gameEngine, game?.players?.length])
 
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
-    
+
     const reason = data.reason
     if (reason === 'no_human_players') {
       showToast.error('lobby.gameAbandoned')
     } else if (reason === 'insufficient_players') {
       showToast.error('lobby.gameAbandoned')
     }
-    
+
     // Refresh lobby data
     if (loadLobbyRef.current) {
       loadLobbyRef.current()
     }
-    
+
     // Navigate back to lobby list after a short delay
     setTimeout(() => {
       router.push('/games/yahtzee/lobbies')
@@ -472,11 +472,11 @@ function LobbyPageContent() {
 
   const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
-    
+
     if (data.username) {
       showToast.info('toast.playerLeft', undefined, { player: data.username })
     }
-    
+
     // Refresh lobby data
     if (loadLobbyRef.current) {
       loadLobbyRef.current()
@@ -526,8 +526,8 @@ function LobbyPageContent() {
     setGame,
     setLobby,
     setGameEngine,
-    setTimerActive: (active) => {}, // Will be set by timer hook
-    setTimeLeft: (time) => {},
+    setTimerActive: (active) => { }, // Will be set by timer hook
+    setTimeLeft: (time) => { },
     setRollHistory,
     setCelebrationEvent,
     setChatMessages,
@@ -566,17 +566,17 @@ function LobbyPageContent() {
         })
         return
       }
-      
+
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
-      
+
       const rollsLeft = gameEngine.getRollsLeft()
       const currentPlayer = gameEngine.getCurrentPlayer()
-      
+
       if (!currentPlayer) {
         clientLogger.error('⏰ No current player found')
         return
       }
-      
+
       // If player hasn't rolled yet (rollsLeft === 3), we MUST roll first
       // This is a Yahtzee rule - you can't score without rolling
       if (rollsLeft === 3) {
@@ -585,7 +585,7 @@ function LobbyPageContent() {
           toast.error('⏰ Time\'s up! Please roll the dice first.')
           return
         }
-        
+
         clientLogger.log('⏰ Player hasn\'t rolled - auto-rolling once before scoring')
         try {
           // Roll the dice once
@@ -598,29 +598,29 @@ function LobbyPageContent() {
           return
         }
       }
-      
+
       // Get final state after potential roll
       const finalDice = gameEngine.getDice()
       const scorecard = gameEngine.getScorecard(currentPlayer.id)
-      
+
       if (!scorecard) {
         clientLogger.error('⏰ No scorecard found')
         return
       }
-      
+
       // Use smart category selection
       const bestCategory = selectBestAvailableCategory(finalDice, scorecard)
       const score = calculateScore(finalDice, bestCategory)
-      
-      clientLogger.log('⏰ Auto-scoring:', { 
-        category: bestCategory, 
-        score, 
+
+      clientLogger.log('⏰ Auto-scoring:', {
+        category: bestCategory,
+        score,
         dice: finalDice,
         rollsUsed: 3 - gameEngine.getRollsLeft()
       })
-      
+
       const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
-      
+
       // Show friendly toast message without dice array
       if (score === 0) {
         toast.error(
@@ -630,13 +630,13 @@ function LobbyPageContent() {
       } else {
         toast(
           `⏰ Time's up! Scored ${score} points in ${displayName}`,
-          { 
+          {
             duration: 4000,
             icon: '⏱️',
           }
         )
       }
-      
+
       try {
         await handleScoreRef.current(bestCategory)
       } catch (error) {
@@ -669,7 +669,7 @@ function LobbyPageContent() {
     code,
     setRollHistory,
     setCelebrationEvent,
-    setTimerActive: () => {}, // Timer managed by useGameTimer
+    setTimerActive: () => { }, // Timer managed by useGameTimer
     celebrate,
     fireworks,
   })
@@ -692,11 +692,10 @@ function LobbyPageContent() {
   useEffect(() => {
     if (status === 'loading') return
     if (!isGuest && status === 'unauthenticated') {
-      router.push(`/auth/login?callbackUrl=/lobby/${code}`)
+      router.push('/')
       return
     }
-    if (isGuest && !guestName) return
-    
+
     // Call via ref to avoid dependency on loadLobby function
     if (loadLobbyRef.current) {
       loadLobbyRef.current()
@@ -708,7 +707,7 @@ function LobbyPageContent() {
     if (!showingBotOverlay || botMoveSteps.length === 0) return
 
     let timer: NodeJS.Timeout
-    
+
     if (currentBotStepIndex < botMoveSteps.length - 1) {
       timer = setTimeout(() => {
         setCurrentBotStepIndex(prev => prev + 1)
@@ -720,14 +719,14 @@ function LobbyPageContent() {
         setCurrentBotStepIndex(0)
       }, 2500)
     }
-    
+
     return () => clearTimeout(timer)
   }, [showingBotOverlay, currentBotStepIndex, botMoveSteps])
 
   // Handle celebration detection on game updates
   useEffect(() => {
     if (!gameEngine || !game) return
-    
+
     if (gameEngine.isGameFinished()) {
       const dice = gameEngine.getDice()
       const celebration = detectCelebration(dice)
@@ -737,7 +736,7 @@ function LobbyPageContent() {
       }
     }
   }, [gameEngine, game])
-  
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -749,12 +748,19 @@ function LobbyPageContent() {
 
   const handleLeaveLobby = async () => {
     try {
-      // Call leave API
+      // Call leave API with guest headers if needed
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+
+      if (isGuest && guestId && guestName) {
+        headers['X-Guest-Id'] = guestId
+        headers['X-Guest-Name'] = guestName
+      }
+
       const res = await fetch(`/api/lobby/${code}/leave`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       const data = await res.json()
@@ -783,7 +789,7 @@ function LobbyPageContent() {
     } catch (error) {
       clientLogger.error('Error leaving lobby:', error)
       showToast.error('errors.unexpected')
-      
+
       // Fallback: disconnect and redirect anyway
       if (socket) {
         socket.emit('leave-lobby', code)
@@ -805,17 +811,17 @@ function LobbyPageContent() {
     try {
       // Create lobby join link
       const lobbyUrl = `${window.location.origin}/lobby/join/${code}`
-      
+
       // TODO: Implement invitation system (e.g., notifications, direct messages, etc.)
       // For now, just copy the link to clipboard and show toast
-      
+
       await navigator.clipboard.writeText(lobbyUrl)
-      showToast.success('lobby.invite.linkCopied', undefined, { 
-        count: friendIds.length 
+      showToast.success('lobby.invite.linkCopied', undefined, {
+        count: friendIds.length
       })
-      
+
       clientLogger.log('Lobby link copied for friends', { url: lobbyUrl, friendCount: friendIds.length })
-      
+
       // Close modal
       setShowFriendsModal(false)
     } catch (error) {
@@ -824,13 +830,13 @@ function LobbyPageContent() {
     }
   }, [lobby, code])
 
-  const isCreator = lobby?.creatorId === session?.user?.id || 
+  const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
   const playerCount = game?.players?.length || 0
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
-  const isInGame = game?.players?.some(p => 
-    p.userId === getCurrentUserId() || 
+  const isInGame = game?.players?.some(p =>
+    p.userId === getCurrentUserId() ||
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
@@ -930,7 +936,7 @@ function LobbyPageContent() {
         />
       ) : (
         // Game Started - Mobile-optimized viewport
-        <div 
+        <div
           className="flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900"
           style={{
             position: 'fixed' as const,
@@ -983,7 +989,7 @@ function LobbyPageContent() {
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* Row 2: Actions */}
                     <div className="flex items-center justify-between">
                       <button
@@ -1049,7 +1055,7 @@ function LobbyPageContent() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
@@ -1117,9 +1123,9 @@ function LobbyPageContent() {
                       const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
                       const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
                       const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-                      
+
                       if (!scorecard) return null
-                      
+
                       return (
                         <div className="h-full flex flex-col">
                           <div className="flex-1 min-h-0">
@@ -1161,7 +1167,7 @@ function LobbyPageContent() {
                           // Find the player's actual position in the game engine
                           const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
                           const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-                          
+
                           return {
                             id: p.id,
                             userId: p.userId,
@@ -1196,7 +1202,7 @@ function LobbyPageContent() {
                 </div>
 
                 {/* Mobile: Tabbed Layout */}
-                <div 
+                <div
                   className="md:hidden relative"
                   style={{
                     height: '100%',
@@ -1235,9 +1241,9 @@ function LobbyPageContent() {
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
                         const scorecard = gameEngine.getScorecard(viewingPlayerId || '')
                         const isViewingOtherPlayer = viewingPlayerId !== currentUserId
-                        
+
                         if (!scorecard) return null
-                        
+
                         return (
                           <Scorecard
                             scorecard={scorecard}
@@ -1272,7 +1278,7 @@ function LobbyPageContent() {
                         players={game?.players?.map(p => {
                           const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
                           const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-                          
+
                           return {
                             id: p.id,
                             userId: p.userId,
@@ -1296,7 +1302,7 @@ function LobbyPageContent() {
                         }}
                         selectedPlayerId={selectedPlayerId || undefined}
                       />
-                      
+
                       {rollHistory.length > 0 && (
                         <div className="mt-4">
                           <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Roll History</h3>
@@ -1321,7 +1327,7 @@ function LobbyPageContent() {
                         }}
                         currentUserId={getCurrentUserId()}
                         isMinimized={false}
-                        onToggleMinimize={() => {}}
+                        onToggleMinimize={() => { }}
                         unreadCount={0}
                         someoneTyping={someoneTyping}
                         fullScreen={true}

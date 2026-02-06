@@ -638,14 +638,14 @@ const uk: Translation = {
       title: 'Налаштування',
       subtitle: 'Налаштуйте свій досвід',
       changePassword: 'Змінити пароль',
-      
+
       // Language
       language: {
         title: 'Мова',
         subtitle: 'Оберіть бажану мову інтерфейсу',
         current: 'Поточна: {{language}}',
       },
-      
+
       // Theme
       theme: {
         title: 'Тема',
@@ -655,7 +655,7 @@ const uk: Translation = {
         system: 'Системна',
         current: 'Поточна: {{theme}}',
       },
-      
+
       // Notifications
       notifications: {
         title: 'Сповіщення',
@@ -667,7 +667,7 @@ const uk: Translation = {
         sound: 'Звукові ефекти',
         soundDesc: 'Відтворювати звуки для ігрових дій та сповіщень',
       },
-      
+
       // Privacy
       privacy: {
         title: 'Приватність',
@@ -680,7 +680,7 @@ const uk: Translation = {
         showOnline: 'Показувати онлайн статус',
         showOnlineDesc: 'Дозволити іншим бачити, коли ви онлайн',
       },
-      
+
       // Game Preferences
       game: {
         title: 'Налаштування ігор',
@@ -692,7 +692,7 @@ const uk: Translation = {
         animations: 'Анімації',
         animationsDesc: 'Увімкнути плавні анімації та переходи',
       },
-      
+
       saved: 'Налаштування збережено',
       error: 'Не вдалося зберегти налаштування',
     },
@@ -804,6 +804,7 @@ const uk: Translation = {
     // Socket/Connection errors
     connectionTimeout: 'Час очікування з\'єднання вичерпано. Перевірте інтернет.',
     connectionError: 'Помилка з\'єднання. Повторне підключення...',
+    connectionFailed: 'Не вдалося підключитися до сервера. Перевірте інтернет-з\'єднання.',
     authenticationFailed: 'Помилка аутентифікації. Будь ласка, оновіть сторінку.',
     rateLimitExceeded: 'Занадто багато запитів. Будь ласка, сповільніться.',
     invalidLobbyCode: 'Невірний формат коду лобі',
@@ -908,6 +909,20 @@ const uk: Translation = {
     error: 'Помилка Видалення',
     success: 'Акаунт Видалено',
     successMessage: 'Ваш акаунт видалено. Перенаправлення на головну...',
+  },
+  guest: {
+    playAsGuest: 'Грати як Гість',
+    enterName: 'Введіть ваше ім\'я',
+    namePlaceholder: 'Ваше ім\'я',
+    nameDescription: 'Оберіть ім\'я, щоб почати грати миттєво',
+    continue: 'Продовжити',
+    startPlaying: 'Почати Гру',
+    playingAs: 'Граєте як гість',
+    limitedFeatures: 'Гостьовий режим - без статистики, історії та збереженого прогресу',
+    exit: 'Вийти з Гостьового Режиму',
+    welcome: 'Вітаємо, {{name}}!',
+    welcomeBack: 'З поверненням, {{name}}!',
+    nameTooShort: 'Ім\'я має бути не менше 2 символів',
   },
 }
 

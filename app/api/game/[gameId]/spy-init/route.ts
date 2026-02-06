@@ -23,7 +23,10 @@ export async function POST(
 
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -51,7 +54,7 @@ export async function POST(
     }
 
     // Only lobby creator can initialize round
-    if (game.lobby.creatorId !== session.user.id) {
+    if (game.lobby.creatorId !== userId) {
       return NextResponse.json(
         { error: 'Only lobby creator can initialize round' },
         { status: 403 }

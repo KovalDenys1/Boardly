@@ -11,8 +11,10 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
+    const guestId = req.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -60,7 +62,7 @@ export async function POST(
     }
 
     // Find player in the game
-    const player = activeGame.players.find((p: any) => p.userId === session.user.id)
+    const player = activeGame.players.find((p: any) => p.userId === userId)
 
     if (!player) {
       return NextResponse.json(
@@ -98,14 +100,14 @@ export async function POST(
           where: { id: lobby.id },
           data: { isActive: false }
         })
-        
+
         return NextResponse.json({
           message: 'You left the lobby',
           gameEnded: false,
           lobbyDeactivated: true
         })
       }
-      
+
       return NextResponse.json({
         message: 'You left the lobby',
         gameEnded: false,
@@ -118,7 +120,7 @@ export async function POST(
       // Mark game as abandoned since all human players left
       await prisma.games.update({
         where: { id: activeGame.id },
-        data: { 
+        data: {
           status: 'abandoned',
           abandonedAt: new Date() as any // TypeScript cache issue - field exists in schema
         }
@@ -159,7 +161,7 @@ export async function POST(
     if (remainingPlayers <= 1) {
       await prisma.games.update({
         where: { id: activeGame.id },
-        data: { 
+        data: {
           status: 'abandoned',
           abandonedAt: new Date() as any
         }
@@ -205,9 +207,9 @@ export async function POST(
         body: JSON.stringify({
           room: `lobby:${code}`,
           event: 'player-left',
-          data: { 
-            playerId: session.user.id,
-            playerName: session.user.name || session.user.email,
+          data: {
+            playerId: userId,
+            playerName: player.user.username || player.user.email || 'Guest',
             remainingPlayers
           }
         })

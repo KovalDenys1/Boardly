@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { notifySocket } from '@/lib/socket-url'
+import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { apiLogger } from '@/lib/logger'
 
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
 ) {
   try {
     const { code } = await params
-    
+
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
       include: {
@@ -53,7 +54,7 @@ export async function GET(
       code: (await params).code,
       stack: (error as Error).stack
     })
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     }, { status: 500 })
@@ -66,9 +67,20 @@ export async function POST(
 ) {
   try {
     const { code } = await params
-    
+
+    // Check for authenticated user or guest
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const guestName = request.headers.get('X-Guest-Name')
+
+    let userId: string
+    if (session?.user?.id) {
+      userId = session.user.id
+    } else if (guestId && guestName) {
+      // Create or get guest user
+      const guestUser = await getOrCreateGuestUser(guestId, guestName)
+      userId = guestUser.id
+    } else {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -105,7 +117,7 @@ export async function POST(
         scores: [], // Will be initialized when players join
         finished: false,
       }
-      
+
       game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
@@ -120,7 +132,7 @@ export async function POST(
       where: {
         gameId_userId: {
           gameId: game.id,
-          userId: session.user.id,
+          userId: userId,
         },
       },
     })
@@ -145,9 +157,19 @@ export async function POST(
     const player = await prisma.players.create({
       data: {
         gameId: game.id,
-        userId: session.user.id,
+        userId: userId,
         position: playerCount,
         scorecard: JSON.stringify({}),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            isGuest: true,
+          },
+        },
       },
     })
 
@@ -159,7 +181,7 @@ export async function POST(
       }
       // Add empty scorecard for new player
       currentState.scores.push({})
-      
+
       await prisma.games.update({
         where: { id: game.id },
         data: {
@@ -177,8 +199,9 @@ export async function POST(
       `lobby:${code}`,
       'player-joined',
       {
-        username: session.user.name || session.user.email || 'Player',
-        userId: session.user.id,
+        username: player.user.username || player.user.email || 'Player',
+        userId: userId,
+        isGuest: player.user.isGuest,
       }
     )
 
@@ -196,7 +219,7 @@ export async function POST(
       code: (await params).code,
       stack: (error as Error).stack
     })
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     }, { status: 500 })

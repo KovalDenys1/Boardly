@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
+import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
 import { MobileMenu } from './Header/MobileMenu'
@@ -9,6 +10,7 @@ import LanguageSwitcher from './LanguageSwitcher'
 
 export default function Header() {
   const { data: session, status } = useSession()
+  const { isGuest, guestName } = useGuest()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -33,19 +35,26 @@ export default function Header() {
               🎲 Boardly
             </button>
 
-            <HeaderNavigation isAuthenticated={isAuthenticated} />
+            <HeaderNavigation isAuthenticated={isAuthenticated} isGuest={isGuest} />
           </div>
 
           {/* User menu and language switcher */}
           <div className="flex items-center gap-3">
+            {/* Guest indicator */}
+            {isGuest && guestName && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
+                <span className="text-yellow-100 text-sm">👤 {guestName}</span>
+              </div>
+            )}
+
             <div className="hidden sm:block">
               <LanguageSwitcher />
             </div>
-            
+
             {isLoading ? (
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <HeaderActions 
+              <HeaderActions
                 isAuthenticated={isAuthenticated}
                 userName={session?.user?.name}
                 userEmail={session?.user?.email}
