@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { useGuest } from '@/contexts/GuestContext'
 
 interface Game {
   id: string
@@ -20,9 +21,10 @@ interface Game {
 export default function GamesPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { isGuest } = useGuest()
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
-  
+
   const games: Game[] = [
     {
       id: 'yahtzee',
@@ -120,16 +122,26 @@ export default function GamesPage() {
 
   // Handle authentication redirect in useEffect to avoid hydration issues
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    // Don't redirect guests - they can access games page
+    if (status === 'unauthenticated' && !isGuest) {
       router.push('/auth/login')
     }
-  }, [status, router])
+  }, [status, isGuest, router])
 
   // Show loading state or redirect without flickering
-  if (status === 'loading' || status === 'unauthenticated') {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <div className="text-white text-2xl">Loading...</div>
+      </div>
+    )
+  }
+
+  // Allow access if authenticated OR guest
+  if (status === 'unauthenticated' && !isGuest) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+        <div className="text-white text-2xl">Redirecting...</div>
       </div>
     )
   }
@@ -165,31 +177,28 @@ export default function GamesPage() {
         <div className="flex flex-wrap justify-center gap-4 mb-12 animate-fade-in">
           <button
             onClick={() => setSelectedFilter('all')}
-            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${
-              selectedFilter === 'all'
+            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'all'
                 ? 'bg-white text-blue-600 shadow-lg scale-105'
                 : 'bg-white/20 text-white hover:bg-white/30'
-            }`}
+              }`}
           >
             {t('common.filter')} - {t('common.all', 'All')}
           </button>
           <button
             onClick={() => setSelectedFilter('available')}
-            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${
-              selectedFilter === 'available'
+            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'available'
                 ? 'bg-white text-blue-600 shadow-lg scale-105'
                 : 'bg-white/20 text-white hover:bg-white/30'
-            }`}
+              }`}
           >
             {t('games.available')}
           </button>
           <button
             onClick={() => setSelectedFilter('coming-soon')}
-            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${
-              selectedFilter === 'coming-soon'
+            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'coming-soon'
                 ? 'bg-white text-blue-600 shadow-lg scale-105'
                 : 'bg-white/20 text-white hover:bg-white/30'
-            }`}
+              }`}
           >
             {t('games.comingSoon')}
           </button>
@@ -232,7 +241,7 @@ export default function GamesPage() {
                       ? 'text-3xl flex flex-wrap justify-center items-center w-full h-full'
                       : 'text-5xl'
                   }
-                  style={game.emoji.length > 2 ? {lineHeight: '1.1', letterSpacing: '0.05em'} : {}}
+                  style={game.emoji.length > 2 ? { lineHeight: '1.1', letterSpacing: '0.05em' } : {}}
                 >
                   {game.emoji}
                 </span>

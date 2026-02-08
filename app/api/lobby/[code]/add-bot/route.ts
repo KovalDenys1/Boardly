@@ -11,8 +11,10 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -47,7 +49,7 @@ export async function POST(
     }
 
     // Only lobby creator can add bots
-    if (lobby.creatorId !== session.user.id) {
+    if (lobby.creatorId !== userId) {
       return NextResponse.json({ error: 'Only lobby creator can add bots' }, { status: 403 })
     }
 

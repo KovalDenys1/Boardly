@@ -15,7 +15,6 @@ export interface GamePlayer {
   id: string
   name: string
   score: number
-  isBot: boolean
   userId: string
   bot?: {
     id: string
@@ -26,7 +25,6 @@ export interface GamePlayer {
   user?: {
     id: string
     username: string
-    isBot: boolean
     bot?: {
       id: string
       userId: string

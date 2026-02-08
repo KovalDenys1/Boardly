@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
+import { useGuest } from '@/contexts/GuestContext'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 let socket: Socket
 
@@ -15,7 +17,7 @@ interface Lobby {
   name: string
   maxPlayers: number
   gameType: string
-  creator: { 
+  creator: {
     username: string | null
     email: string | null
   }
@@ -31,18 +33,20 @@ interface Lobby {
 export default function YahtzeeLobbiesPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const { isGuest, guestId, guestName } = useGuest()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
-  const isAuthenticated = status === 'authenticated'
+  const isAuthenticated = status === 'authenticated' || isGuest
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    // Allow both authenticated users and guests
+    if (status === 'unauthenticated' && !isGuest) {
       setLoading(false)
       return
     }
 
-    if (status === 'authenticated') {
+    if (status === 'authenticated' || isGuest) {
       loadLobbies()
       triggerCleanup()
 
@@ -55,17 +59,19 @@ export default function YahtzeeLobbiesPage() {
       if (!socket) {
         const url = getBrowserSocketUrl()
         clientLogger.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
-        
-        // Get auth token - use userId for authenticated users
-        const token = session?.user?.id || null
+
+        // Get auth token - use userId for authenticated users or guestId for guests
+        const token = session?.user?.id || guestId || null
 
         const authPayload: Record<string, unknown> = {}
         if (token) authPayload.token = token
-        authPayload.isGuest = false
+        authPayload.isGuest = isGuest
+        if (isGuest && guestName) authPayload.guestName = guestName
 
         const queryPayload: Record<string, string> = {}
         if (token) queryPayload.token = String(token)
-        queryPayload.isGuest = 'false'
+        queryPayload.isGuest = String(isGuest)
+        if (isGuest && guestName) queryPayload.guestName = guestName
 
         socket = io(url, {
           transports: ['websocket', 'polling'],
@@ -102,14 +108,14 @@ export default function YahtzeeLobbiesPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, router])
+  }, [status, isGuest, router])
 
   const triggerCleanup = async () => {
     try {
       const res = await fetch('/api/lobby/cleanup', {
         method: 'POST',
       })
-      
+
       if (!res.ok) {
         clientLogger.warn('Cleanup returned non-ok status:', res.status)
       }
@@ -120,19 +126,19 @@ export default function YahtzeeLobbiesPage() {
 
   const loadLobbies = async () => {
     try {
-      const res = await fetch('/api/lobby?gameType=yahtzee')
-      
+      const res = await fetchWithGuest('/api/lobby?gameType=yahtzee')
+
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
-      
+
       const data = await res.json()
-      
+
       // Handle case where API returns error but with 200 status
       if (data.error) {
         clientLogger.warn('Yahtzee lobbies loaded with error:', data.error)
       }
-      
+
       setLobbies(data.lobbies || [])
     } catch (error) {
       clientLogger.error('Failed to load Yahtzee lobbies:', error)
@@ -145,7 +151,7 @@ export default function YahtzeeLobbiesPage() {
 
   const handleJoinByCode = () => {
     if (!isAuthenticated) {
-      router.push(`/auth/login?returnUrl=${encodeURIComponent('/games/yahtzee/lobbies')}`)
+      router.push('/')
       return
     }
     if (joinCode) {
@@ -166,14 +172,14 @@ export default function YahtzeeLobbiesPage() {
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-16 sm:pt-20">
         {/* Breadcrumbs */}
         <div className="mb-4 sm:mb-6 flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm overflow-x-auto">
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="hover:text-white transition-colors whitespace-nowrap"
           >
             🏠 <span className="hidden xs:inline">Home</span>
           </button>
           <span>›</span>
-          <button 
+          <button
             onClick={() => router.push('/games')}
             className="hover:text-white transition-colors whitespace-nowrap"
           >
@@ -347,14 +353,12 @@ export default function YahtzeeLobbiesPage() {
                         </span>
                       </div>
                     </div>
-                    <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold flex items-center gap-1 sm:gap-1.5 flex-shrink-0 ${
-                      lobby.games.length > 0 && lobby.games[0].status === 'playing'
+                    <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-bold flex items-center gap-1 sm:gap-1.5 flex-shrink-0 ${lobby.games.length > 0 && lobby.games[0].status === 'playing'
                         ? 'bg-green-500/80 text-white'
                         : 'bg-yellow-500/80 text-white'
-                    }`}>
-                      <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
-                        lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-white' : 'bg-white'
-                      }`}></div>
+                      }`}>
+                      <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-white' : 'bg-white'
+                        }`}></div>
                       <span className="hidden xs:inline">
                         {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
                           `Playing (${lobby.games[0]._count.players})`

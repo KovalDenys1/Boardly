@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
-import { BotMoveExecutor } from '@/lib/bot-executor'
+import { isBot } from '@/lib/bots'
 import { apiLogger } from '@/lib/logger'
 
 export async function POST(
@@ -13,7 +13,7 @@ export async function POST(
 ) {
   try {
     const { gameId } = await params
-    
+
     // Check for guest or authenticated user
     const session = await getServerSession(authOptions)
     const guestId = request.headers.get('X-Guest-Id')
@@ -82,23 +82,23 @@ export async function POST(
     let gameState: unknown
     try {
       gameState = JSON.parse(game.state)
-      
+
       // Basic validation of state structure
       if (!gameState || typeof gameState !== 'object') {
         throw new Error('Invalid game state structure')
       }
-      
+
       if (!Array.isArray((gameState as Record<string, unknown>).players)) {
         throw new Error('Game state missing players array')
       }
     } catch (parseError) {
       const log = apiLogger('POST /api/game/[gameId]/state')
       log.error('Failed to parse game state', parseError as Error)
-      return NextResponse.json({ 
-        error: 'Corrupted game state. Please restart the game.' 
+      return NextResponse.json({
+        error: 'Corrupted game state. Please restart the game.'
       }, { status: 500 })
     }
-    
+
     let gameEngine: YahtzeeGame
 
     switch (game.lobby.gameType) {
@@ -125,13 +125,18 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
 
+    // Check if game status changed after this move
+    const newState = gameEngine.getState()
+    const statusChanged = game.status !== newState.status
+    const oldStatus = game.status
+
     // Update game state in database
     const updatedGame = await prisma.games.update({
       where: { id: gameId },
       data: {
-        state: JSON.stringify(gameEngine.getState()),
-        status: gameEngine.getState().status,
-        currentTurn: gameEngine.getState().currentPlayerIndex,
+        state: JSON.stringify(newState),
+        status: newState.status,
+        currentTurn: newState.currentPlayerIndex,
         lastMoveAt: new Date(), // Track when this move was made
         updatedAt: new Date(),
       },
@@ -154,6 +159,19 @@ export async function POST(
         },
       },
     })
+
+    // Log state transitions for debugging
+    const log = apiLogger('POST /api/game/[gameId]/state')
+    if (statusChanged) {
+      log.info('Game status changed', {
+        gameId,
+        userId,
+        moveType: gameMove.type,
+        oldStatus,
+        newStatus: newState.status,
+        winner: newState.winner
+      })
+    }
 
     // Update player scores
     const enginePlayers = gameEngine.getPlayers()

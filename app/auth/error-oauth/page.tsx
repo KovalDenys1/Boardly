@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 import { signIn } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
@@ -12,7 +12,7 @@ function OAuthErrorContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [merging, setMerging] = useState(false)
-  
+
   const error = searchParams?.get('error')
   const provider = searchParams?.get('provider') || 'unknown'
 
@@ -21,7 +21,7 @@ function OAuthErrorContent() {
     if (error !== 'OAuthAccountNotLinked') {
       // For other errors, show generic error message
       if (error) {
-        toast.error('Authentication error. Please try again.')
+        showToast.error('toast.authError')
       }
       // Don't auto-redirect - let user see the error
     }
@@ -60,7 +60,7 @@ function OAuthErrorContent() {
       })
     } catch (error) {
       console.error('Sign in error:', error)
-      toast.error('Failed to sign in. Please try again.')
+      showToast.error('toast.signInFailed')
       setMerging(false)
     }
   }
@@ -88,7 +88,7 @@ function OAuthErrorContent() {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             An account with this email already exists. You can either:
           </p>
-          
+
           <div className="space-y-3 mb-6 text-left">
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
@@ -98,7 +98,7 @@ function OAuthErrorContent() {
                 If this is your {getProviderName()} account, sign in to access your profile
               </p>
             </div>
-            
+
             <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
               <p className="text-sm font-semibold text-green-900 dark:text-green-100">
                 2️⃣ Sign in with your existing account
@@ -108,7 +108,7 @@ function OAuthErrorContent() {
               </p>
             </div>
           </div>
-          
+
           <div className="space-y-3">
             <button
               onClick={handleSignInWithProvider}
@@ -117,7 +117,7 @@ function OAuthErrorContent() {
             >
               {merging ? 'Redirecting...' : `Sign in with ${getProviderName()}`}
             </button>
-            
+
             <button
               onClick={handleSignInDifferent}
               className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"

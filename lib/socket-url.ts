@@ -66,30 +66,60 @@ export function getServerSocketUrl(): string {
   return process.env.NEXT_PUBLIC_SOCKET_URL || process.env.SOCKET_SERVER_URL || DEFAULT_LOCAL_SOCKET_URL
 }
 
+// Debounce map to prevent duplicate notifications
+const notificationQueue = new Map<string, NodeJS.Timeout>()
+const pendingPromises = new Map<string, Promise<boolean>>()
+
 /**
  * Helper to notify Socket.IO server about state changes
  * Centralizes the fetch logic for socket notifications
+ * Includes debouncing to prevent duplicate notifications within 100ms
  */
 export async function notifySocket(
   room: string,
   event: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  debounceMs: number = 100
 ): Promise<boolean> {
-  try {
-    const socketUrl = getServerSocketUrl()
-    const response = await fetch(`${socketUrl}/api/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room, event, data }),
-    })
-    return response.ok
-  } catch (error) {
-    // Log error but don't throw - socket notifications are non-critical
-    if (logger) {
-      logger.error('Failed to notify socket server:', error as Error)
-    }
-    return false
+  const key = `${room}:${event}`
+
+  // If there's a pending request for this room+event, return that promise
+  if (pendingPromises.has(key)) {
+    return pendingPromises.get(key)!
   }
+
+  // Clear existing timeout for this room+event
+  if (notificationQueue.has(key)) {
+    clearTimeout(notificationQueue.get(key)!)
+  }
+
+  const promise = new Promise<boolean>((resolve) => {
+    const timeoutId = setTimeout(async () => {
+      notificationQueue.delete(key)
+      pendingPromises.delete(key)
+
+      try {
+        const socketUrl = getServerSocketUrl()
+        const response = await fetch(`${socketUrl}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ room, event, data }),
+        })
+        resolve(response.ok)
+      } catch (error) {
+        // Log error but don't throw - socket notifications are non-critical
+        if (logger) {
+          logger.error('Failed to notify socket server:', error as Error)
+        }
+        resolve(false)
+      }
+    }, debounceMs)
+
+    notificationQueue.set(key, timeoutId)
+  })
+
+  pendingPromises.set(key, promise)
+  return promise
 }
 
 /**
@@ -98,17 +128,17 @@ export async function notifySocket(
  */
 export function getAuthHeaders(
   isGuest: boolean,
-  guestId?: string,
-  guestName?: string
+  guestId?: string | null,
+  guestName?: string | null
 ): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   }
-  
+
   if (isGuest && guestId && guestName) {
     headers['X-Guest-Id'] = guestId
     headers['X-Guest-Name'] = guestName
   }
-  
+
   return headers
 }

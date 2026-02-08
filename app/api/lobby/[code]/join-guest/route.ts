@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.game)
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    // Rate limit join requests
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) return rateLimitResult
+
     const { code } = await params
     const { guestId, guestName } = await req.json()
 

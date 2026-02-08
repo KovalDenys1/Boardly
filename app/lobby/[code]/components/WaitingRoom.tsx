@@ -11,7 +11,7 @@ interface WaitingRoomProps {
   onStartGame: () => void
   onAddBot: () => void
   onInviteFriends?: () => void
-  getCurrentUserId: () => string | undefined
+  getCurrentUserId: () => string | null | undefined
 }
 
 export default function WaitingRoom({
@@ -115,11 +115,10 @@ export default function WaitingRoom({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
             {/* Player Count */}
             <div
-              className={`inline-flex items-center rounded-full ${
-                playerCount < 2
+              className={`inline-flex items-center rounded-full ${playerCount < 2
                   ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600'
                   : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600'
-              }`}
+                }`}
               style={{
                 gap: `clamp(10px, 1vw, 16px)`,
                 padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 32px)`,
@@ -129,11 +128,10 @@ export default function WaitingRoom({
               <span style={{ fontSize: `clamp(20px, 2vw, 28px)` }}>👥</span>
               <div className="text-left">
                 <p
-                  className={`font-bold ${
-                    playerCount < 2
+                  className={`font-bold ${playerCount < 2
                       ? 'text-yellow-700 dark:text-yellow-300'
                       : 'text-green-700 dark:text-green-300'
-                  }`}
+                    }`}
                   style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
                 >
                   {t('yahtzee.ui.playersInLobby', { count: playerCount })}
@@ -155,7 +153,7 @@ export default function WaitingRoom({
                 )}
               </div>
             </div>
-            
+
             {/* Turn Timer */}
             {lobby?.turnTimer && (
               <div
@@ -207,7 +205,7 @@ export default function WaitingRoom({
             <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
               {game.players.map((p: any, index: number) => {
                 const isBot = !!p.user?.bot
-                const playerName = isBot 
+                const playerName = isBot
                   ? t('yahtzee.ui.aiBot')
                   : p.user.name || p.user.username || p.user.email || t('yahtzee.ui.player')
                 const isCurrentUser = p.userId === getCurrentUserId()
@@ -215,13 +213,11 @@ export default function WaitingRoom({
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center rounded-lg transition-all ${
-                      isCurrentUser
+                    className={`flex items-center rounded-lg transition-all ${isCurrentUser
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
                         : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                    } ${
-                      isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20' : ''
-                    }`}
+                      } ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20' : ''
+                      }`}
                     style={{
                       gap: `clamp(10px, 1vw, 16px)`,
                       padding: `clamp(12px, 1.2vh, 20px)`,
@@ -230,9 +226,8 @@ export default function WaitingRoom({
                   >
                     {/* Position */}
                     <div
-                      className={`rounded-full flex items-center justify-center font-bold text-white ${
-                        index === 0 ? 'bg-yellow-500' : 'bg-gray-400'
-                      }`}
+                      className={`rounded-full flex items-center justify-center font-bold text-white ${index === 0 ? 'bg-yellow-500' : 'bg-gray-400'
+                        }`}
                       style={{
                         width: `clamp(32px, 3.5vw, 48px)`,
                         height: `clamp(32px, 3.5vw, 48px)`,
@@ -310,7 +305,7 @@ export default function WaitingRoom({
               <span style={{ fontSize: `clamp(20px, 2vw, 28px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>🎮</span>
               {t('yahtzee.ui.startYahtzeeGame')}
             </button>
-            
+
             {playerCount === 1 && !hasBot && (
               <div
                 className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-600 rounded-lg"

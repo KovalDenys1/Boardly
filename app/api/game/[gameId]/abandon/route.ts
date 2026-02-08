@@ -16,11 +16,13 @@ export async function POST(
   { params }: { params: Promise<{ gameId: string }> }
 ) {
   const log = apiLogger('POST /api/game/[gameId]/abandon')
-  
+
   try {
     const session = await getServerSession(authOptions)
+    const guestId = req.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -54,8 +56,8 @@ export async function POST(
     }
 
     // Check if user is the lobby creator or a player in the game
-    const isCreator = game.lobby.creatorId === session.user.id
-    const isPlayer = game.players.some(p => p.userId === session.user.id)
+    const isCreator = game.lobby.creatorId === userId
+    const isPlayer = game.players.some(p => p.userId === userId)
 
     if (!isCreator && !isPlayer) {
       return NextResponse.json(
@@ -86,7 +88,7 @@ export async function POST(
 
     log.info('Game abandoned manually', {
       gameId,
-      userId: session.user.id,
+      userId,
       humanPlayersCount,
       totalPlayers: game.players.length
     })

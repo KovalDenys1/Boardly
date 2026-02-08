@@ -35,7 +35,7 @@ export default function AnimatedSection({
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [delay, threshold]);
 
   return (
     <div

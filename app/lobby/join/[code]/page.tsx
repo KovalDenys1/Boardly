@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useGuest } from '@/contexts/GuestContext'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 
@@ -10,6 +11,7 @@ export default function LobbyInvitePage() {
   const router = useRouter()
   const params = useParams()
   const { data: session, status } = useSession()
+  const { setGuestMode, guestId } = useGuest()
   const code = params.code as string
   const [guestName, setGuestName] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,7 +28,7 @@ export default function LobbyInvitePage() {
 
   const handleGuestJoin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!guestName.trim()) {
       setError('Please enter your name')
       return
@@ -41,14 +43,9 @@ export default function LobbyInvitePage() {
     setError('')
 
     try {
-      // Generate guest ID
-      const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
-      // Save guest data to localStorage
-      localStorage.setItem('guestName', guestName.trim())
-      localStorage.setItem('guestId', guestId)
-      localStorage.setItem('isGuest', 'true')
-      
+      // Save guest data via GuestContext (which handles localStorage and generates guest ID)
+      setGuestMode(guestName.trim())
+
       // Call API to add guest to lobby
       const response = await fetch(`/api/lobby/${code}/join-guest`, {
         method: 'POST',
@@ -56,13 +53,12 @@ export default function LobbyInvitePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          guestId,
           guestName: guestName.trim(),
         }),
       })
-      
+
       const data = await response.json()
-      
+
       if (!response.ok) {
         trackError({
           errorType: 'auth',
@@ -72,18 +68,18 @@ export default function LobbyInvitePage() {
         })
         throw new Error(data.error || 'Failed to join lobby')
       }
-      
+
       // Track successful guest join
       trackAuth({
         event: 'login',
         method: 'guest',
         success: true,
-        userId: guestId,
+        userId: guestId || undefined,
       })
       trackFunnelStep('guest-join')
-      
-      // Redirect to lobby as guest
-      router.push(`/lobby/${code}?guest=true`)
+
+      // Redirect to lobby (guest context is already set)
+      router.push(`/lobby/${code}`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to join as guest'
       setError(errorMessage)

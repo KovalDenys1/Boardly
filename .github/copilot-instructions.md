@@ -19,7 +19,7 @@
   - UI: separate components and pages for lobby and game board.
   - All new texts must use i18n (react-i18next, showToast).
   - Cover business logic with unit tests (`__tests__/lib/`).
-  - Update documentation and TODO.md.
+  - Update TODO.md.
 
 2. **Scaling Code and Infrastructure**
   - Maintain modularity: business logic in classes and hooks, UI in components.
@@ -47,8 +47,7 @@
 ## Project Status
 
 **Stage**: ✅ Production Live at [boardly.online](https://boardly.online)  
-**Available Games**: Yahtzee (fully implemented with AI bots)  
-**In Development**: Chess  
+**Available Games**: Yahtzee (fully implemented with AI bots)    
 **Planned**: Guess the Spy, Uno, and more casual multiplayer games
 
 ## Architecture Overview

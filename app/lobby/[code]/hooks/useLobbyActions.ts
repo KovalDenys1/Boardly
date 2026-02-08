@@ -4,7 +4,7 @@ import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -30,10 +30,10 @@ interface UseLobbyActionsProps {
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   socket: Socket | null
   isGuest: boolean
-  guestId: string
-  guestName: string
-  userId: string | undefined
-  username: string
+  guestId: string | null
+  guestName: string | null
+  userId: string | null | undefined
+  username: string | null
   setError: (error: string) => void
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
@@ -64,14 +64,14 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   } = props
 
   const [password, setPassword] = useState('')
-  
+
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
 
   const loadLobby = useCallback(async () => {
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName)
-      
+
       const res = await fetch(`/api/lobby/${code}`, { headers })
       const data = await res.json()
 
@@ -80,7 +80,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       setLobby(data.lobby)
-      
+
       const activeGame = data.lobby.games.find((g: any) =>
         ['waiting', 'playing'].includes(g.status)
       )
@@ -89,7 +89,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         if (activeGame.state) {
           try {
             const parsedState = JSON.parse(activeGame.state)
-            
+
             const engine = new YahtzeeGame(activeGame.id)
             engine.restoreState(parsedState)
             setGameEngine(engine)
@@ -104,10 +104,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setLoading(false)
     }
-  // setState functions are stable and don't need to be in dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // setState functions are stable and don't need to be in dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, isGuest, guestId, guestName])
-  
+
   // Update ref when loadLobby changes
   useEffect(() => {
     loadLobbyRef.current = loadLobby
@@ -115,11 +115,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const addBotToLobby = useCallback(async (options?: { auto?: boolean }) => {
     try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
       const res = await fetch(`/api/lobby/${code}/add-bot`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       const data = await res.json()
@@ -138,7 +137,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const successMessage = options?.auto
         ? '🤖 Added an AI opponent so you can start playing!'
         : '🤖 Bot added to lobby!'
-      toast.success(successMessage)
+      showToast.success('toast.success', successMessage)
       return true
     } catch (err: any) {
       if (options?.auto) {
@@ -146,10 +145,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         return false
       }
 
-      toast.error(err.message || 'Failed to add bot')
+      showToast.error('toast.botAddFailed', err.message)
       return false
     }
-  }, [code])
+  }, [code, isGuest, guestId, guestName])
 
   const announceBotJoined = useCallback(() => {
     socket?.emit('player-joined')
@@ -171,7 +170,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         'Content-Type': 'application/json',
       }
 
-      if (isGuest && guestId) {
+      if (isGuest && guestId && guestName) {
         headers['X-Guest-Id'] = guestId
         headers['X-Guest-Name'] = guestName
       }
@@ -189,12 +188,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       setGame(data.game)
-      
+
       // Call via ref to avoid circular dependency
       if (loadLobbyRef.current) {
         await loadLobbyRef.current()
       }
-      
+
       const emitPlayerJoined = () => {
         if (socket && socket.connected) {
           clientLogger.log('📡 Emitting player-joined event')
@@ -215,16 +214,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           })
         }
       }
-      
+
       emitPlayerJoined()
-      
+
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
         gameType: lobby?.gameType || 'yahtzee',
         isPrivate: !!lobby?.password,
       })
-      
+
       const joinMessage = {
         id: Date.now().toString() + '_join',
         userId: 'system',
@@ -244,36 +243,35 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     try {
       setStartingGame(true)
-      
+
       // Check if we need to add a bot first
       if ((game?.players?.length || 0) < 2) {
-        toast.loading('Adding bot player...', { id: 'add-bot' })
+        showToast.loading('toast.addingBot', undefined, undefined, { id: 'add-bot' })
         const botAdded = await addBotToLobby({ auto: true })
-        toast.dismiss('add-bot')
-        
+        showToast.dismiss('add-bot')
+
         if (!botAdded) {
           setStartingGame(false)
-          toast.error('Failed to add bot player. Please try again.')
+          showToast.error('toast.botAddFailed')
           return
         }
-        
+
         // Announce bot joined
         announceBotJoined()
-        
+
         // Wait for lobby to reload and get updated player list
         if (loadLobbyRef.current) {
           await loadLobbyRef.current()
         }
-        
+
         // Small delay to ensure state is updated
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
       const res = await fetch('/api/game/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           gameType: lobby.gameType || 'yahtzee',
           lobbyId: lobby.id,
@@ -288,11 +286,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       const data = await res.json()
-      
+
       const engine = new YahtzeeGame(data.game.id)
       engine.restoreState(data.game.state)
       setGameEngine(engine)
-      
+
       // Track game start
       const players = data.game.players || []
       const botCount = players.filter((p: any) => p.user?.isBot).length
@@ -305,16 +303,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         hasBot: botCount > 0,
         botCount,
       })
-      
+
       const turnTimerLimit = lobby?.turnTimer || 60
       setTimerActive(true)
       setTimeLeft(turnTimerLimit)
-      
+
       setRollHistory([])
       setCelebrationEvent(null)
-      
+
       const firstPlayerName = data.game.players[0]?.name || 'Player 1'
-      
+
       // Emit events in parallel for faster update
       if (socket) {
         socket.emit('game-started', {
@@ -322,7 +320,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           game: data.game,
           firstPlayerName: firstPlayerName,
         })
-        
+
         socket.emit('game-action', {
           lobbyCode: code,
           action: 'state-change',
@@ -330,7 +328,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         })
       }
 
-      toast.success(`🎲 Game started! ${firstPlayerName} goes first!`, { id: 'start-game' })
+      showToast.success('toast.gameStarted', undefined, { player: firstPlayerName }, { id: 'start-game' })
 
       const gameStartMessage = {
         id: Date.now().toString() + '_gamestart',
@@ -341,20 +339,20 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         type: 'system'
       }
       setChatMessages(prev => [...prev, gameStartMessage])
-      
+
       // Load lobby data without blocking UI
       if (loadLobbyRef.current) {
         loadLobbyRef.current().catch(err => clientLogger.error('Failed to reload lobby:', err))
       }
       // Sound will play automatically via socket event handler
     } catch (error: any) {
-      toast.dismiss('start-game')
-      toast.error(error.message || 'Failed to start game')
+      showToast.dismiss('start-game')
+      showToast.error('toast.gameStartFailed', error.message)
       clientLogger.error('Failed to start game:', error)
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame])
+  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
 
   return {
     loadLobby,

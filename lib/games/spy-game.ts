@@ -1,5 +1,4 @@
 import { GameEngine, Player, Move, GameState } from '../game-engine'
-import { prisma } from '../db'
 
 // Spy Game Specific Types
 export enum SpyGamePhase {
@@ -42,7 +41,7 @@ export interface SpyGameData {
   currentQuestionerId: string | null
   currentTargetId: string | null
   pendingQuestion: string | null // Temporary storage for current question
-  playersReady: Set<string> // For role reveal phase
+  playersReady: string[] // For role reveal phase
 }
 
 export class SpyGame extends GameEngine {
@@ -72,19 +71,14 @@ export class SpyGame extends GameEngine {
       currentQuestionerId: null,
       currentTargetId: null,
       pendingQuestion: null,
-      playersReady: new Set(),
+      playersReady: [],
     }
   }
 
-  async initializeRound(): Promise<void> {
+  initializeRound(locations: { name: string; category: string; roles: string[] }[]): void {
     const data = this.state.data as SpyGameData
 
-    // Select random location
-    const locations = await prisma.spyLocations.findMany({
-      where: { isActive: true },
-    })
-
-    if (locations.length === 0) {
+    if (!locations || locations.length === 0) {
       throw new Error('No locations available for Spy game')
     }
 
@@ -122,7 +116,7 @@ export class SpyGame extends GameEngine {
     // Clear previous round data
     data.votes = {}
     data.questionHistory = []
-    data.playersReady = new Set()
+    data.playersReady = []
     data.currentQuestionerId = null
     data.currentTargetId = null
     data.pendingQuestion = null
@@ -215,10 +209,12 @@ export class SpyGame extends GameEngine {
 
   private processPlayerReady(playerId: string): void {
     const data = this.state.data as SpyGameData
-    data.playersReady.add(playerId)
+    if (!data.playersReady.includes(playerId)) {
+      data.playersReady.push(playerId)
+    }
 
     // If all players are ready, start questioning phase
-    if (data.playersReady.size === this.state.players.length) {
+    if (data.playersReady.length === this.state.players.length) {
       this.startQuestioningPhase()
     }
   }
