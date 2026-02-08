@@ -87,7 +87,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
       // Reset timeout flag when it's not my turn
       timeoutCalledRef.current = false
     }
-  }, [gameState, isMyTurn, lastPlayerIndex, isInitialLoad])
+  }, [gameState, isMyTurn, lastPlayerIndex, isInitialLoad, turnTimerLimit])
 
   // Countdown
   useEffect(() => {

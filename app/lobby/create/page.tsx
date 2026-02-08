@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useGuest } from '@/contexts/GuestContext'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { io } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
@@ -65,6 +67,7 @@ function CreateLobbyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
+  const { isGuest, guestId } = useGuest()
 
   const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
   const gameInfo = GAME_INFO[selectedGameType]
@@ -99,10 +102,10 @@ function CreateLobbyPage() {
   }, [selectedGameType, gameInfo])
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/auth/login')
+    if (status === 'unauthenticated' && !isGuest) {
+      router.push('/')
     }
-  }, [status, router])
+  }, [status, isGuest, router])
 
   if (!gameInfo) {
     return (
@@ -130,14 +133,15 @@ function CreateLobbyPage() {
     setLoading(true)
 
     try {
-      if (!session) {
+      // Allow both authenticated users and guests to create lobbies
+      if (!session && !isGuest) {
         router.push('/auth/login')
         return
       }
 
       clientLogger.log('📤 Sending lobby creation request:', formData)
 
-      const res = await fetch('/api/lobby', {
+      const res = await fetchWithGuest('/api/lobby', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,11 +158,11 @@ function CreateLobbyPage() {
 
       // Notify lobby list about new lobby via WebSocket
       const socketUrl = getBrowserSocketUrl()
-      const token = session?.user?.id || null
-      
+      const token = session?.user?.id || guestId || null
+
       const authPayload: Record<string, unknown> = {}
       if (token) authPayload.token = token
-      authPayload.isGuest = false
+      authPayload.isGuest = isGuest
 
       const queryPayload: Record<string, string> = {}
       if (token) queryPayload.token = String(token)
@@ -171,20 +175,20 @@ function CreateLobbyPage() {
         auth: authPayload,
         query: queryPayload,
       })
-      
+
       // Set a timeout to force cleanup after 10 seconds
       const cleanupTimeout = setTimeout(() => {
         if (socket.connected) {
           socket.disconnect()
         }
       }, 10000)
-      
+
       socket.on('connect', () => {
         socket.emit('lobby-created')
         clearTimeout(cleanupTimeout)
         socket.disconnect()
       })
-      
+
       socket.on('connect_error', (error) => {
         clientLogger.warn('Socket notification failed (non-critical):', error.message)
         clearTimeout(cleanupTimeout)
@@ -211,7 +215,7 @@ function CreateLobbyPage() {
     )
   }
 
-  if (status === 'unauthenticated') {
+  if (status === 'unauthenticated' && !isGuest) {
     return null
   }
 
@@ -229,11 +233,10 @@ function CreateLobbyPage() {
                   key={key}
                   type="button"
                   onClick={() => setSelectedGameType(key as GameType)}
-                  className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${
-                    selectedGameType === key 
-                      ? 'bg-white text-blue-600 shadow-lg' 
-                      : 'text-white hover:bg-white/10'
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${selectedGameType === key
+                    ? 'bg-white text-blue-600 shadow-lg'
+                    : 'text-white hover:bg-white/10'
+                    }`}
                   aria-label={t('lobby.create.selectGame', { name: info.name })}
                 >
                   <span className="text-3xl flex-shrink-0">{info.emoji}</span>
@@ -242,7 +245,7 @@ function CreateLobbyPage() {
               ))}
             </div>
             {/* 2. Form */}
-            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col justify-center order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
+            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   🎮 {t('lobby.create.lobbyName')} *
@@ -288,7 +291,7 @@ function CreateLobbyPage() {
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
                   👥 {t('lobby.create.maxPlayers')} *
                 </label>
-                
+
                 {/* Number Input - Centered above slider */}
                 <div className="flex flex-col items-center mb-2">
                   <input
@@ -370,8 +373,8 @@ function CreateLobbyPage() {
                   {/* Tick marks for allowed values */}
                   <div className="flex justify-between mt-1 px-0.5">
                     {gameInfo.allowedPlayers.map((num) => (
-                      <span 
-                        key={num} 
+                      <span
+                        key={num}
                         className={`text-xs transition-all ${formData.maxPlayers === num ? 'text-white font-bold scale-110' : 'text-white/50'}`}
                       >
                         {num}
@@ -382,7 +385,7 @@ function CreateLobbyPage() {
 
                 {/* Helper text */}
                 <p className="text-xs text-white/70 mt-2 text-center">
-                  {gameInfo.allowedPlayers.length === 1 
+                  {gameInfo.allowedPlayers.length === 1
                     ? t('lobby.create.playerCountHelper', { count: gameInfo.allowedPlayers[0] })
                     : t('lobby.create.playerCountHelper', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1], count: 2 })
                   }
@@ -401,11 +404,10 @@ function CreateLobbyPage() {
                         key={seconds}
                         type="button"
                         onClick={() => setFormData({ ...formData, turnTimer: seconds })}
-                        className={`flex-1 px-3 py-2 rounded-xl font-semibold transition-all ${
-                          formData.turnTimer === seconds
-                            ? 'bg-white text-blue-600 shadow-lg scale-105'
-                            : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
+                        className={`flex-1 px-3 py-2 rounded-xl font-semibold transition-all ${formData.turnTimer === seconds
+                          ? 'bg-white text-blue-600 shadow-lg scale-105'
+                          : 'bg-white/20 text-white hover:bg-white/30'
+                          }`}
                       >
                         {seconds}s
                       </button>

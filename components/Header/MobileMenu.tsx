@@ -2,7 +2,8 @@
 
 import { signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useGuest } from '@/contexts/GuestContext'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
@@ -15,16 +16,17 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const { isGuest, guestName } = useGuest()
 
   const isActive = (path: string) => pathname === path
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setIsClosing(true)
     setTimeout(() => {
       setMobileMenuOpen(false)
       setIsClosing(false)
     }, 300) // Match animation duration
-  }
+  }, [])
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -38,7 +40,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
     } else {
       document.body.style.overflow = 'unset'
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset'
     }
@@ -49,7 +51,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
     if (mobileMenuOpen) {
       closeMenu()
     }
-  }, [pathname])
+  }, [pathname, mobileMenuOpen, closeMenu])
 
   return (
     <>
@@ -63,7 +65,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
           }
         }}
         className="md:hidden rounded-lg transition-all duration-200 relative z-50"
-        style={{ 
+        style={{
           padding: 'clamp(8px, 0.8vh, 12px)',
           backgroundColor: mobileMenuOpen ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
         }}
@@ -72,21 +74,18 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
         <div className="relative" style={{ width: 'clamp(24px, 2.5vw, 28px)', height: 'clamp(24px, 2.5vw, 28px)' }}>
           {/* Animated hamburger icon */}
           <span
-            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${
-              mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
-            }`}
+            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
+              }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none' }}
           />
           <span
-            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${
-              mobileMenuOpen ? 'opacity-0' : 'opacity-100'
-            }`}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+              }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)' }}
           />
           <span
-            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${
-              mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
-            }`}
+            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
+              }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none' }}
           />
         </div>
@@ -97,17 +96,15 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
         <>
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden ${
-              isClosing ? 'animate-fade-out' : 'animate-fade-in'
-            }`}
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'
+              }`}
             onClick={closeMenu}
           />
-          
+
           {/* Menu panel */}
           <div
-            className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden overflow-y-auto ${
-              isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
-            }`}
+            className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden overflow-y-auto ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
+              }`}
             style={{
               borderLeft: '1px solid',
               borderColor: 'rgb(229 231 235 / 1)',
@@ -172,11 +169,10 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 0.8vh, 12px)' }}>
                 <button
                   onClick={() => router.push('/')}
-                  className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${
-                    isActive('/')
+                  className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/')
                       ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                   style={{
                     padding: 'clamp(12px, 1.2vh, 16px)',
                     fontSize: 'clamp(15px, 1.5vw, 17px)'
@@ -190,11 +186,10 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                   <>
                     <button
                       onClick={() => router.push('/games')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${
-                        pathname?.startsWith('/games')
+                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/games')
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                        }`}
                       style={{
                         padding: 'clamp(12px, 1.2vh, 16px)',
                         fontSize: 'clamp(15px, 1.5vw, 17px)'
@@ -206,11 +201,10 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
                     <button
                       onClick={() => router.push('/lobby')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${
-                        pathname?.startsWith('/lobby')
+                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/lobby')
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                        }`}
                       style={{
                         padding: 'clamp(12px, 1.2vh, 16px)',
                         fontSize: 'clamp(15px, 1.5vw, 17px)'
@@ -225,11 +219,10 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
                     <button
                       onClick={() => router.push('/profile')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${
-                        isActive('/profile')
+                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/profile')
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                        }`}
                       style={{
                         padding: 'clamp(12px, 1.2vh, 16px)',
                         fontSize: 'clamp(15px, 1.5vw, 17px)'

@@ -14,7 +14,7 @@ interface ChatMessage {
 interface ChatProps {
   messages: ChatMessage[]
   onSendMessage: (message: string) => void
-  currentUserId?: string
+  currentUserId?: string | null
   isMinimized?: boolean
   onToggleMinimize?: () => void
   onClearChat?: () => void
@@ -114,7 +114,7 @@ export default function Chat({
     const date = new Date(timestamp)
     const now = new Date()
     const isToday = date.toDateString() === now.toDateString()
-    
+
     if (isToday) {
       return date.toLocaleTimeString([], {
         hour: '2-digit',
@@ -131,10 +131,10 @@ export default function Chat({
   }
 
   if (isMinimized) {
-    const ariaLabel = unreadCount > 0 
+    const ariaLabel = unreadCount > 0
       ? `${t('chat.openChat')} (${unreadCount} ${t('chat.unread', { count: unreadCount })})`
       : t('chat.openChat')
-    
+
     return (
       <div className="fixed z-50" style={{ bottom: '20px', right: '20px' }}>
         <button
@@ -155,13 +155,12 @@ export default function Chat({
   }
 
   return (
-    <div 
+    <div
       ref={chatRef}
-      className={`bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col ${
-        fullScreen 
-          ? 'h-full rounded-none' 
+      className={`bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col ${fullScreen
+          ? 'h-full rounded-none'
           : 'fixed z-50 rounded-2xl'
-      }`}
+        }`}
       style={fullScreen ? {} : {
         bottom: '20px',
         right: '20px',
@@ -170,9 +169,8 @@ export default function Chat({
       }}
     >
       {/* Header */}
-      <div className={`flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 ${
-        fullScreen ? 'rounded-none' : 'rounded-t-2xl'
-      }`}>
+      <div className={`flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 ${fullScreen ? 'rounded-none' : 'rounded-t-2xl'
+        }`}>
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse flex-shrink-0" aria-hidden="true" />
           <h3 className="font-bold text-lg truncate" id="chat-title">
@@ -209,11 +207,11 @@ export default function Chat({
       </div>
 
       {/* Messages */}
-      <div 
+      <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto p-4 space-y-2.5 scroll-smooth bg-gradient-to-b from-gray-50/50 to-white dark:from-gray-900/50 dark:to-gray-800 relative"
-        role="log" 
-        aria-live="polite" 
+        role="log"
+        aria-live="polite"
         aria-labelledby="chat-title"
         aria-label={t('chat.title')}
       >
@@ -228,53 +226,48 @@ export default function Chat({
             {messages.map((msg, index) => {
               const isCurrentUser = msg.userId === currentUserId
               const showAvatar = msg.type !== 'system' && (index === 0 || messages[index - 1].userId !== msg.userId)
-              
+
               return (
                 <div
                   key={msg.id}
-                  className={`flex gap-2 ${
-                    isCurrentUser ? 'flex-row-reverse' : 'flex-row'
-                  } animate-[slideIn_0.2s_ease-out]`}
+                  className={`flex gap-2 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'
+                    } animate-[slideIn_0.2s_ease-out]`}
                 >
                   {/* Avatar */}
                   {msg.type !== 'system' && (
                     <div className={`flex-shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ${
-                        isCurrentUser 
-                          ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md ${isCurrentUser
+                          ? 'bg-gradient-to-br from-blue-500 to-purple-600'
                           : 'bg-gradient-to-br from-gray-500 to-gray-600'
-                      }`}>
+                        }`}>
                         {(isCurrentUser ? 'You' : msg.username).charAt(0).toUpperCase()}
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Message bubble */}
-                  <div className={`flex flex-col ${
-                    msg.type === 'system' ? 'items-center mx-auto' : (isCurrentUser ? 'items-end' : 'items-start')
-                  }`}>
+                  <div className={`flex flex-col ${msg.type === 'system' ? 'items-center mx-auto' : (isCurrentUser ? 'items-end' : 'items-start')
+                    }`}>
                     {msg.type !== 'system' && showAvatar && !isCurrentUser && (
                       <div className="font-semibold text-xs text-gray-600 dark:text-gray-400 mb-1 px-1">
                         {msg.username}
                       </div>
                     )}
-                    
+
                     <div
-                      className={`max-w-[280px] sm:max-w-xs rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md ${
-                        msg.type === 'system'
+                      className={`max-w-[280px] sm:max-w-xs rounded-2xl px-4 py-2.5 shadow-sm transition-all hover:shadow-md ${msg.type === 'system'
                           ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 italic text-center text-xs'
                           : isCurrentUser
-                          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md'
-                          : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md border border-gray-200 dark:border-gray-600'
-                      }`}
+                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-br-md'
+                            : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md border border-gray-200 dark:border-gray-600'
+                        }`}
                     >
                       <div className="break-words text-sm leading-relaxed whitespace-pre-wrap">
                         {msg.message}
                       </div>
                       {msg.type !== 'system' && (
-                        <div className={`text-[10px] mt-1.5 flex items-center gap-1 ${
-                          isCurrentUser ? 'text-blue-100 justify-end' : 'text-gray-500 dark:text-gray-400'
-                        }`}>
+                        <div className={`text-[10px] mt-1.5 flex items-center gap-1 ${isCurrentUser ? 'text-blue-100 justify-end' : 'text-gray-500 dark:text-gray-400'
+                          }`}>
                           <span>{formatTime(msg.timestamp)}</span>
                           {isCurrentUser && <span className="opacity-75">✓</span>}
                         </div>
@@ -287,7 +280,7 @@ export default function Chat({
             <div ref={messagesEndRef} />
           </>
         )}
-        
+
         {/* Scroll to bottom button */}
         {showScrollButton && (
           <button
@@ -317,9 +310,8 @@ export default function Chat({
       )}
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 ${
-        fullScreen ? 'rounded-none' : 'rounded-b-2xl'
-      }`}>
+      <form onSubmit={handleSubmit} className={`border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-2xl'
+        }`}>
         <div className="flex gap-2.5">
           <div className="flex-1 relative">
             <input

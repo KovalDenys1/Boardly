@@ -9,8 +9,8 @@ interface UseSocketConnectionProps {
   code: string
   session: any
   isGuest: boolean
-  guestId: string
-  guestName: string
+  guestId: string | null
+  guestName: string | null
   onGameUpdate: (data: any) => void
   onChatMessage: (message: any) => void
   onPlayerTyping: (data: any) => void
@@ -79,13 +79,13 @@ export function useSocketConnection({
 
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
-    
+
     // Clear any existing reconnect timeouts
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
     }
-    
+
     if (!code) {
       clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
       return
@@ -93,10 +93,30 @@ export function useSocketConnection({
 
     // For authenticated users, wait for session to load
     if (!isGuest && !session?.user?.id) {
-      clientLogger.log('⏳ Waiting for session to load before connecting socket...')
+      clientLogger.log('⏳ Waiting for session to load before connecting socket...', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userId: session?.user?.id
+      })
       // Reset auth failed flag when waiting for session
       authFailedRef.current = false
       return
+    }
+
+    // Additional validation for authenticated users
+    if (!isGuest && session?.user?.id) {
+      const userId = session.user.id
+      // Validate userId format (should be a CUID or similar)
+      if (typeof userId !== 'string' || userId.length < 10) {
+        clientLogger.error('❌ Invalid user ID format in session:', {
+          userId,
+          userIdType: typeof userId,
+          userIdLength: userId ? String(userId).length : 0
+        })
+        authFailedRef.current = true
+        showToast.error('errors.authenticationFailed')
+        return
+      }
     }
 
     // Don't retry if authentication failed
@@ -106,7 +126,12 @@ export function useSocketConnection({
     }
 
     const url = getBrowserSocketUrl()
-    clientLogger.log('🔌 Initializing socket connection', { url, code, isGuest })
+    clientLogger.log('🔌 Initializing socket connection', {
+      url,
+      code,
+      isGuest,
+      userId: !isGuest ? session?.user?.id : guestId
+    })
 
     // Get authentication token
     const getAuthToken = () => {
@@ -116,20 +141,32 @@ export function useSocketConnection({
       }
       const userId = session?.user?.id
       if (userId) {
-        clientLogger.log('🔐 Using authenticated user:', { userId })
+        clientLogger.log('🔐 Using authenticated user:', { userId, userEmail: session?.user?.email })
       } else {
-        clientLogger.warn('⚠️ No user ID found in session:', { session })
+        clientLogger.error('⚠️ No user ID found in session:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email,
+          sessionKeys: session ? Object.keys(session) : [],
+          userKeys: session?.user ? Object.keys(session.user) : []
+        })
       }
       return userId || null
     }
 
     const token = getAuthToken()
-    
+
     if (!token && !isGuest) {
-      clientLogger.error('❌ Cannot connect socket: No authentication token available')
+      clientLogger.error('❌ Cannot connect socket: No authentication token available', {
+        isGuest,
+        hasSession: !!session,
+        hasUserId: !!session?.user?.id,
+        token
+      })
       return
     }
-    
+
     // Exponential backoff calculation: min(1000 * 2^attempt, 30000)
     const calculateBackoff = (attempt: number) => {
       const baseDelay = 1000 // 1 second
@@ -170,19 +207,19 @@ export function useSocketConnection({
 
     newSocket.on('connect', async () => {
       if (!isMounted) return
-      
+
       const isReconnect = hasConnectedOnceRef.current
       clientLogger.log(isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:', code)
-      
+
       setIsConnected(true)
       setIsReconnecting(false)
       setReconnectAttempt(0) // Reset counter on successful connection
-      
+
       // Always rejoin room on connect/reconnect
       if (!isRejoiningRef.current) {
         isRejoiningRef.current = true
         newSocket.emit(SocketEvents.JOIN_LOBBY, code)
-        
+
         // On reconnect, sync state to catch up on missed events
         if (isReconnect && onStateSyncRef.current) {
           try {
@@ -193,17 +230,17 @@ export function useSocketConnection({
             clientLogger.error('❌ Failed to sync state after reconnect:', error)
           }
         }
-        
+
         isRejoiningRef.current = false
       }
-      
+
       hasConnectedOnceRef.current = true // Mark that we've connected at least once
     })
 
     newSocket.on('disconnect', (reason) => {
       if (!isMounted) return
       setIsConnected(false)
-      
+
       // Only show reconnecting if we've connected before
       // This prevents showing "reconnecting" on initial page load
       if (reason !== 'io client disconnect' && hasConnectedOnceRef.current) {
@@ -234,29 +271,61 @@ export function useSocketConnection({
 
     newSocket.on('connect_error', (error) => {
       if (!isMounted) return
-      clientLogger.error('🔴 Socket connection error:', error.message)
+
+      const errorMsg = error.message || String(error)
+      clientLogger.error('🔴 Socket connection error:', errorMsg, {
+        isGuest,
+        hasToken: !!token,
+        tokenPreview: token ? String(token).substring(0, 10) + '...' : 'none',
+        reconnectAttempt,
+        errorType: (error as any).type,
+        errorDescription: (error as any).description
+      })
+
       setIsConnected(false)
-      
-      if (error.message.includes('timeout')) {
+
+      if (errorMsg.includes('timeout')) {
         clientLogger.warn('⏳ Socket connection timeout - retrying...')
         // Only show toast after multiple timeout failures
         if (reconnectAttempt > 3) {
           showToast.error('errors.connectionTimeout')
         }
-      } else if (error.message.includes('Authentication failed') || error.message.includes('Authentication required')) {
+      } else if (errorMsg.includes('xhr poll error')) {
+        clientLogger.warn('⚠️ XHR poll error detected', {
+          attempt: reconnectAttempt,
+          hasToken: !!token,
+          isGuest,
+          message: 'This usually means the server is unreachable or authentication failed'
+        })
+
+        // For non-guest users, if we get poll error, check if token is valid
+        if (!isGuest && reconnectAttempt === 0) {
+          clientLogger.log('🔍 First poll error for authenticated user - checking token:', {
+            tokenType: typeof token,
+            tokenValue: token,
+            sessionExists: !!session,
+            userIdInSession: session?.user?.id
+          })
+        }
+
+        // Show toast after a few attempts
+        if (reconnectAttempt > 3) {
+          showToast.error('errors.connectionFailed')
+        }
+      } else if (errorMsg.includes('Authentication failed') || errorMsg.includes('Authentication required')) {
         clientLogger.error('🔐 Authentication failed - stopping reconnection attempts')
         authFailedRef.current = true // Mark auth as failed
         setIsReconnecting(false) // Stop showing reconnecting state
-        
+
         // Show user-friendly error
         showToast.error('errors.authenticationFailed')
-        
+
         // Stop any further reconnection attempts
         if (newSocket) {
           newSocket.removeAllListeners()
           newSocket.close()
         }
-        
+
         // Set timeout to reset auth flag after 5 seconds (allow retry after page refresh/navigation)
         reconnectTimeoutRef.current = setTimeout(() => {
           clientLogger.log('🔄 Resetting authentication flag - retry allowed')
@@ -270,18 +339,18 @@ export function useSocketConnection({
         }
       }
     })
-    
+
     // Add generic error handler
     newSocket.on(SocketEvents.ERROR, (error) => {
       if (!isMounted) return
       clientLogger.error('🔴 Socket error:', error)
     })
-    
+
     // Add server error handler with structured errors
     newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
       if (!isMounted) return
       clientLogger.error('🔴 Server error:', data)
-      
+
       // Show user-friendly error message
       if (data.translationKey) {
         showToast.error(data.translationKey)
@@ -289,7 +358,7 @@ export function useSocketConnection({
         showToast.error('errors.general', undefined, { message: data.message })
       }
     })
-    
+
     // Helper to deduplicate events based on sequenceId
     const handleEventWithDeduplication = (eventName: string, data: any, handler: (data: any) => void) => {
       try {
@@ -304,42 +373,42 @@ export function useSocketConnection({
           }
           lastProcessedSequenceRef.current = data.sequenceId
         }
-        
+
         handler(data)
       } catch (error) {
         clientLogger.error(`❌ Error handling ${eventName} event:`, error)
       }
     }
-    
+
     // Register event handlers with error handling
-    newSocket.on(SocketEvents.GAME_UPDATE, (data) => 
+    newSocket.on(SocketEvents.GAME_UPDATE, (data) =>
       handleEventWithDeduplication('game-update', data, onGameUpdateRef.current)
     )
-    newSocket.on(SocketEvents.CHAT_MESSAGE, (data) => 
+    newSocket.on(SocketEvents.CHAT_MESSAGE, (data) =>
       handleEventWithDeduplication('chat-message', data, onChatMessageRef.current)
     )
     newSocket.on(SocketEvents.PLAYER_TYPING, (data) => onPlayerTypingRef.current(data))
-    newSocket.on(SocketEvents.LOBBY_UPDATE, (data) => 
+    newSocket.on(SocketEvents.LOBBY_UPDATE, (data) =>
       handleEventWithDeduplication('lobby-update', data, onLobbyUpdateRef.current)
     )
-    newSocket.on(SocketEvents.PLAYER_JOINED, (data) => 
+    newSocket.on(SocketEvents.PLAYER_JOINED, (data) =>
       handleEventWithDeduplication('player-joined', data, onPlayerJoinedRef.current)
     )
-    newSocket.on(SocketEvents.GAME_STARTED, (data) => 
+    newSocket.on(SocketEvents.GAME_STARTED, (data) =>
       handleEventWithDeduplication('game-started', data, onGameStartedRef.current)
     )
     if (onGameAbandonedRef.current) {
-      newSocket.on(SocketEvents.GAME_ABANDONED, (data) => 
+      newSocket.on(SocketEvents.GAME_ABANDONED, (data) =>
         handleEventWithDeduplication('game-abandoned', data, onGameAbandonedRef.current!)
       )
     }
     if (onPlayerLeftRef.current) {
-      newSocket.on(SocketEvents.PLAYER_LEFT, (data) => 
+      newSocket.on(SocketEvents.PLAYER_LEFT, (data) =>
         handleEventWithDeduplication('player-left', data, onPlayerLeftRef.current!)
       )
     }
     if (onBotActionRef.current) {
-      newSocket.on(SocketEvents.BOT_ACTION, (data) => 
+      newSocket.on(SocketEvents.BOT_ACTION, (data) =>
         handleEventWithDeduplication('bot-action', data, onBotActionRef.current!)
       )
     }
@@ -351,13 +420,13 @@ export function useSocketConnection({
     return () => {
       isMounted = false
       clientLogger.log('🔌 Cleaning up socket connection')
-      
+
       // Clear reconnect timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = null
       }
-      
+
       // Remove all listeners first
       newSocket.off(SocketEvents.CONNECT)
       newSocket.off(SocketEvents.DISCONNECT)
@@ -376,7 +445,7 @@ export function useSocketConnection({
       newSocket.off(SocketEvents.GAME_ABANDONED)
       newSocket.off(SocketEvents.PLAYER_LEFT)
       newSocket.off(SocketEvents.BOT_ACTION)
-      
+
       // Gracefully disconnect only if connected
       if (newSocket.connected) {
         newSocket.disconnect()
@@ -385,8 +454,8 @@ export function useSocketConnection({
         newSocket.close()
       }
     }
-  // session?.user?.id is accessed directly in the effect, no need to add session itself
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // session?.user?.id is accessed directly in the effect, no need to add session itself
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, isGuest, guestId, guestName, session?.user?.id])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
@@ -401,11 +470,11 @@ export function useSocketConnection({
     }
   }, [socket, isConnected])
 
-  return { 
-    socket, 
-    isConnected, 
+  return {
+    socket,
+    isConnected,
     isReconnecting,
     reconnectAttempt,
-    emitWhenConnected 
+    emitWhenConnected
   }
 }

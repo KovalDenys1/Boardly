@@ -1,5 +1,5 @@
 import { NextAuthOptions } from 'next-auth'
-// Use custom adapter to map `name` -> `username` and handle linking
+// Use custom adapter to map plural model names (Users) to NextAuth expectations (User)
 import { CustomPrismaAdapter } from './custom-prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
@@ -10,32 +10,32 @@ import { comparePassword } from './auth'
 import { apiLogger } from './logger'
 
 export const authOptions: NextAuthOptions = {
-  adapter: CustomPrismaAdapter(),
+  adapter: CustomPrismaAdapter(prisma),
   providers: [
     // Include providers only when configured to avoid build-time errors
     ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
       ? [
-          GitHubProvider({
-            clientId: process.env.GITHUB_CLIENT_ID,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET,
-          }),
-        ]
+        GitHubProvider({
+          clientId: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        }),
+      ]
       : []),
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
+        GoogleProvider({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
+      ]
       : []),
     ...(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET
       ? [
-          DiscordProvider({
-            clientId: process.env.DISCORD_CLIENT_ID,
-            clientSecret: process.env.DISCORD_CLIENT_SECRET,
-          }),
-        ]
+        DiscordProvider({
+          clientId: process.env.DISCORD_CLIENT_ID,
+          clientSecret: process.env.DISCORD_CLIENT_SECRET,
+        }),
+      ]
       : []),
     CredentialsProvider({
       name: 'Credentials',
@@ -86,7 +86,7 @@ export const authOptions: NextAuthOptions = {
         try {
           // Manual linking handled in events.linkAccount callback
           // Here we just validate and allow/deny the sign-in
-          
+
           // Check if there's already an account with this provider + providerAccountId
           const existingAccount = await prisma.accounts.findUnique({
             where: {
@@ -106,7 +106,7 @@ export const authOptions: NextAuthOptions = {
                 where: { id: existingAccount.userId },
                 data: { emailVerified: new Date() }
               })
-              
+
               const log = apiLogger('OAuth signIn')
               log.info('Auto-verified existing OAuth user', { userId: existingAccount.userId })
             }
@@ -144,7 +144,7 @@ export const authOptions: NextAuthOptions = {
             provider: account.provider,
             email: user.email
           })
-          
+
         } catch (error) {
           console.error('Error in signIn callback:', error)
           return false
@@ -161,7 +161,7 @@ export const authOptions: NextAuthOptions = {
         token.picture = user.image
         token.emailVerified = user.emailVerified
       }
-      
+
       // Ensure we have user data from database
       if (!token.id && token.email) {
         const dbUser = await prisma.users.findUnique({
@@ -178,7 +178,7 @@ export const authOptions: NextAuthOptions = {
           token.emailVerified = dbUser.emailVerified
         }
       }
-      
+
       // Refresh emailVerified status on update trigger
       if (trigger === 'update' && token.email) {
         const dbUser = await prisma.users.findUnique({
@@ -197,17 +197,17 @@ export const authOptions: NextAuthOptions = {
       const now = Date.now()
       const lastUpdate = token.lastActiveUpdate as number || 0
       const fiveMinutes = 5 * 60 * 1000
-      
+
       if (token.id && now - lastUpdate > fiveMinutes) {
         // Update lastActiveAt in background (non-blocking)
         prisma.users.update({
           where: { id: token.id as string },
           data: { lastActiveAt: new Date() }
-        }).catch(() => {}) // Silently fail to avoid blocking auth
-        
+        }).catch(() => { }) // Silently fail to avoid blocking auth
+
         token.lastActiveUpdate = now
       }
-      
+
       return token
     },
     async session({ session, token }) {
@@ -234,19 +234,19 @@ export const authOptions: NextAuthOptions = {
       // Auto-verify email when OAuth account is linked
       // This event fires when PrismaAdapter successfully links an OAuth account
       // Important: This works even if OAuth email differs from user's primary email
-      
+
       await prisma.users.update({
         where: { id: user.id },
-        data: { 
+        data: {
           emailVerified: new Date(),
           // Only set username if user doesn't have one yet
           username: (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         }
       })
-      
+
       const log = apiLogger('OAuth linkAccount')
-      log.info('OAuth account linked successfully', { 
-        userId: user.id, 
+      log.info('OAuth account linked successfully', {
+        userId: user.id,
         userEmail: user.email,
         provider: account.provider,
         providerAccountId: account.providerAccountId,
@@ -258,7 +258,7 @@ export const authOptions: NextAuthOptions = {
       // Phase 2: Handle manual OAuth linking with different email
       // This event fires AFTER successful OAuth authentication
       // Check if there's a pending link request in cookies
-      
+
       if (!account || account.provider === 'credentials') {
         return // Skip for credentials login
       }

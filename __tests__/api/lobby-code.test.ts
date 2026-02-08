@@ -190,7 +190,7 @@ describe('POST /api/lobby/[code]', () => {
 
   it('should return 403 when password is incorrect', async () => {
     const lobbyWithPassword = { ...mockLobby, password: 'secret123' }
-    
+
     mockGetServerSession.mockResolvedValue(mockSession as any)
     mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithPassword as any)
@@ -208,12 +208,12 @@ describe('POST /api/lobby/[code]', () => {
 
   it('should successfully join lobby with correct password', async () => {
     const lobbyWithPassword = { ...mockLobby, password: 'secret123' }
-    const gameWithPlayers = { 
-      ...mockGame, 
+    const gameWithPlayers = {
+      ...mockGame,
       players: [],
       state: JSON.stringify({ scores: [] })
     }
-    
+
     mockGetServerSession.mockResolvedValue(mockSession as any)
     mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
@@ -228,6 +228,12 @@ describe('POST /api/lobby/[code]', () => {
       gameId: 'game-123',
       score: 0,
       position: 0,
+      user: {
+        id: 'user-123',
+        username: 'testuser',
+        email: 'test@example.com',
+        isGuest: false,
+      },
     } as any)
     mockPrisma.games.update.mockResolvedValue(gameWithPlayers as any)
 
@@ -320,7 +326,7 @@ describe('POST /api/lobby/[code]/leave', () => {
         },
       ],
     }
-    
+
     mockGetServerSession.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithoutPlayer as any)
 

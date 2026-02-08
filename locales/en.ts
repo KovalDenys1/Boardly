@@ -636,14 +636,14 @@ const en = {
       title: 'Settings',
       subtitle: 'Customize your experience',
       changePassword: 'Change Password',
-      
+
       // Language
       language: {
         title: 'Language',
         subtitle: 'Choose your preferred language',
         current: 'Current: {{language}}',
       },
-      
+
       // Theme
       theme: {
         title: 'Theme',
@@ -653,7 +653,7 @@ const en = {
         system: 'System Default',
         current: 'Current: {{theme}}',
       },
-      
+
       // Notifications
       notifications: {
         title: 'Notifications',
@@ -665,7 +665,7 @@ const en = {
         sound: 'Sound Effects',
         soundDesc: 'Play sounds for in-game actions and notifications',
       },
-      
+
       // Privacy
       privacy: {
         title: 'Privacy',
@@ -678,7 +678,7 @@ const en = {
         showOnline: 'Show Online Status',
         showOnlineDesc: 'Let others see when you\'re online',
       },
-      
+
       // Game Preferences
       game: {
         title: 'Game Preferences',
@@ -690,7 +690,7 @@ const en = {
         animations: 'Animations',
         animationsDesc: 'Enable smooth animations and transitions',
       },
-      
+
       saved: 'Settings saved successfully',
       error: 'Failed to save settings',
     },
@@ -802,6 +802,7 @@ const en = {
     // Socket/Connection errors
     connectionTimeout: 'Connection timeout. Please check your internet.',
     connectionError: 'Connection error. Retrying...',
+    connectionFailed: 'Failed to connect to server. Please check your internet connection.',
     authenticationFailed: 'Authentication failed. Please refresh the page.',
     rateLimitExceeded: 'Too many requests. Please slow down.',
     invalidLobbyCode: 'Invalid lobby code format',
@@ -892,6 +893,42 @@ const en = {
     success: 'Action completed successfully',
     accountDeleted: 'Account deleted successfully',
     playerLeft: '{{player}} left the game',
+    playerJoined: '{{player}} joined the lobby',
+    addingBot: 'Adding bot player...',
+    botAddFailed: 'Failed to add bot player. Please try again.',
+    gameStarted: '🎲 Game started! {{player}} goes first!',
+    gameStartFailed: 'Failed to start game',
+    botMoveFailed: 'Bot failed to make a move',
+    notYourTurnRoll: '🚫 It\'s not your turn to roll the dice!',
+    noRollsLeft: '🚫 No rolls left! Choose a category to score.',
+    notYourTurn: '🚫 It\'s not your turn!',
+    gameOver: '🎉 Game Over! {{player}} wins!',
+    playerTurn: '{{player}}\'s turn!',
+    rollFailed: 'Failed to roll dice',
+    scoreFailed: 'Failed to score',
+    linkCopied: '📋 Invite link copied to clipboard!',
+    timerRollFirst: '⏰ Time\'s up! Please roll the dice first.',
+    autoRollFailed: 'Failed to auto-roll. Please roll manually.',
+    timerScoredZero: '⏰ Time\'s up! Scored 0 points in {{category}}',
+    timerScored: '⏰ Time\'s up! Scored {{score}} points in {{category}}',
+    autoScoreFailed: 'Failed to auto-score. Please select a category manually.',
+    accountLinked: '🎉 Account linked successfully!',
+    profileUpdated: '✅ Profile updated successfully!',
+    emailVerified: '✅ Email already verified',
+    verificationSent: '✅ Verification email sent! Check your inbox.',
+    deletionConfirmSent: '📧 Deletion confirmation email sent! Check your inbox.',
+    providerUnlinked: '✅ {{provider}} account unlinked',
+    linkAccountFailed: 'Failed to link account',
+    invalidProvider: 'Invalid provider',
+    providerLinked: '🎉 {{provider}} account linked successfully!',
+    authError: 'Authentication error. Please try again.',
+    signInFailed: 'Failed to sign in. Please try again.',
+    passwordReset: 'Password reset successfully! Please login.',
+    usernameEmpty: 'Username cannot be empty',
+    usernameTooShort: 'Username must be at least 3 characters',
+    usernameTooLong: 'Username must be less than 20 characters',
+    usernameSame: 'This is already your username',
+    usernameUnavailable: 'This username is not available',
   },
   deleteAccount: {
     title: 'Delete Account',
@@ -907,6 +944,20 @@ const en = {
     success: 'Account Deleted',
     successMessage: 'Your account has been deleted. Redirecting to home...',
   },
+  guest: {
+    playAsGuest: 'Play as Guest',
+    enterName: 'Enter your name',
+    namePlaceholder: 'Your name',
+    nameDescription: 'Choose a name to start playing instantly',
+    continue: 'Continue',
+    startPlaying: 'Start Playing',
+    playingAs: 'Playing as guest',
+    limitedFeatures: 'Guest mode - no stats, history, or saved progress',
+    exit: 'Exit Guest Mode',
+    welcome: 'Welcome, {{name}}!',
+    welcomeBack: 'Welcome back, {{name}}!',
+    nameTooShort: 'Name must be at least 2 characters',
+  },
 } as const
 
 export default en
@@ -918,6 +969,6 @@ export type Translation = DeepStringify<TranslationSchema>
 // Helper type to convert all values to strings (removes literal types)
 type DeepStringify<T> = {
   [K in keyof T]: T[K] extends object
-    ? DeepStringify<T[K]>
-    : string
+  ? DeepStringify<T[K]>
+  : string
 }

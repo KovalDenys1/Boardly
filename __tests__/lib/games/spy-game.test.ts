@@ -1,38 +1,23 @@
 import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
-import { prisma } from '@/lib/db'
 
-// Mock Prisma
-jest.mock('@/lib/db', () => ({
-  prisma: {
-    spyLocations: {
-      findMany: jest.fn(),
-    },
+const mockLocations = [
+  {
+    name: 'Airport',
+    category: 'Travel',
+    roles: ['Pilot', 'Flight Attendant', 'Security Guard', 'Passenger'],
   },
-}))
+  {
+    name: 'Hospital',
+    category: 'Public',
+    roles: ['Doctor', 'Nurse', 'Patient', 'Surgeon'],
+  },
+]
 
 describe('SpyGame', () => {
   let game: SpyGame
 
   beforeEach(() => {
     game = new SpyGame('test-game-123')
-    
-    // Mock locations
-    ;(prisma.spyLocations.findMany as jest.Mock).mockResolvedValue([
-      {
-        id: '1',
-        name: 'Airport',
-        category: 'Travel',
-        roles: ['Pilot', 'Flight Attendant', 'Security Guard', 'Passenger'],
-        isActive: true,
-      },
-      {
-        id: '2',
-        name: 'Hospital',
-        category: 'Public',
-        roles: ['Doctor', 'Nurse', 'Patient', 'Surgeon'],
-        isActive: true,
-      },
-    ])
   })
 
   afterEach(() => {
@@ -56,7 +41,7 @@ describe('SpyGame', () => {
     it('should initialize with correct game data', () => {
       const state = game.getState()
       const data = state.data as any
-      
+
       expect(data.phase).toBe(SpyGamePhase.WAITING)
       expect(data.currentRound).toBe(1)
       expect(data.totalRounds).toBe(3)
@@ -108,8 +93,8 @@ describe('SpyGame', () => {
       game.startGame()
     })
 
-    it('should assign spy and roles when initializing round', async () => {
-      await game.initializeRound()
+    it('should assign spy and roles when initializing round', () => {
+      game.initializeRound(mockLocations)
 
       const state = game.getState()
       const data = state.data as any
@@ -123,7 +108,7 @@ describe('SpyGame', () => {
 
       // Should have assigned roles to all players
       expect(Object.keys(data.playerRoles)).toHaveLength(4)
-      
+
       // Spy should have "Spy" role
       expect(data.playerRoles[data.spyPlayerId]).toBe('Spy')
 
@@ -131,15 +116,15 @@ describe('SpyGame', () => {
       const nonSpyRoles = Object.entries(data.playerRoles)
         .filter(([playerId]) => playerId !== data.spyPlayerId)
         .map(([, role]) => role)
-      
+
       nonSpyRoles.forEach((role) => {
         expect(role).not.toBe('Spy')
         expect(role).toBeTruthy()
       })
     })
 
-    it('should start in role reveal phase after initialization', async () => {
-      await game.initializeRound()
+    it('should start in role reveal phase after initialization', () => {
+      game.initializeRound(mockLocations)
 
       const state = game.getState()
       const data = state.data as any
@@ -149,12 +134,12 @@ describe('SpyGame', () => {
   })
 
   describe('Move Validation', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       game.addPlayer({ id: 'p1', name: 'Player 1' })
       game.addPlayer({ id: 'p2', name: 'Player 2' })
       game.addPlayer({ id: 'p3', name: 'Player 3' })
       game.startGame()
-      await game.initializeRound()
+      game.initializeRound(mockLocations)
     })
 
     it('should accept player-ready move during role reveal phase', () => {
@@ -192,12 +177,12 @@ describe('SpyGame', () => {
   })
 
   describe('Role Information', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       game.addPlayer({ id: 'p1', name: 'Player 1' })
       game.addPlayer({ id: 'p2', name: 'Player 2' })
       game.addPlayer({ id: 'p3', name: 'Player 3' })
       game.startGame()
-      await game.initializeRound()
+      game.initializeRound(mockLocations)
     })
 
     it('should show location and role to regular players', () => {
@@ -244,12 +229,12 @@ describe('SpyGame', () => {
   })
 
   describe('Win Condition', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       game.addPlayer({ id: 'p1', name: 'Player 1' })
       game.addPlayer({ id: 'p2', name: 'Player 2' })
       game.addPlayer({ id: 'p3', name: 'Player 3' })
       game.startGame()
-      await game.initializeRound()
+      game.initializeRound(mockLocations)
     })
 
     it('should not have winner before all rounds complete', () => {

@@ -17,7 +17,7 @@ export default async function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex flex-col">
       {/* Hero Block - Full viewport height minus nav, flex centered, responsive */}
       <section
-        className="flex flex-col items-center justify-center flex-shrink-0 w-full px-4"
+        className="relative flex flex-col items-center justify-center flex-shrink-0 w-full px-4"
         style={{ minHeight: 'calc(100vh - 64px)' }}
       >
         <div className="w-full max-w-3xl flex flex-col items-center justify-center h-full">

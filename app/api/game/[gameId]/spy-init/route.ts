@@ -23,7 +23,10 @@ export async function POST(
 
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const guestId = request.headers.get('X-Guest-Id')
+    const userId = session?.user?.id || guestId
+
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -51,7 +54,7 @@ export async function POST(
     }
 
     // Only lobby creator can initialize round
-    if (game.lobby.creatorId !== session.user.id) {
+    if (game.lobby.creatorId !== userId) {
       return NextResponse.json(
         { error: 'Only lobby creator can initialize round' },
         { status: 403 }
@@ -62,22 +65,40 @@ export async function POST(
     const spyGame = new SpyGame(gameId)
     spyGame.loadState(JSON.parse(game.state))
 
+    // Fetch locations from DB
+    const locations = await prisma.spyLocations.findMany({
+      where: { isActive: true },
+    })
+
     // Initialize round (assigns roles, selects location)
-    await spyGame.initializeRound()
+    spyGame.initializeRound(locations)
 
     // Get updated state
     const updatedState = spyGame.getState()
 
-    // Update game in database
+    // Check if status changed during initialization
+    const statusChanged = game.status !== updatedState.status
+    const oldStatus = game.status
+
+    // Update game in database - include status from engine
     await prisma.games.update({
       where: { id: gameId },
       data: {
         state: JSON.stringify(updatedState),
+        status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
       },
     })
 
-    log.info('Spy game round initialized', { gameId })
+    if (statusChanged) {
+      log.info('Game status changed during round init', {
+        gameId,
+        oldStatus,
+        newStatus: updatedState.status
+      })
+    } else {
+      log.info('Spy game round initialized', { gameId })
+    }
 
     // Notify all clients via WebSocket
     await notifySocket(`lobby:${game.lobby.code}`, 'spy-round-start', {

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 function LinkAccountContent() {
@@ -35,7 +35,7 @@ function LinkAccountContent() {
       })
     } catch (error) {
       console.error('Link account error:', error)
-      toast.error('Failed to link account')
+      showToast.error('toast.linkAccountFailed')
       router.push('/profile')
     }
   }, [provider, router, confirmed])
@@ -72,14 +72,14 @@ function LinkAccountContent() {
     }
 
     if (!provider || !['google', 'github', 'discord'].includes(provider)) {
-      toast.error('Invalid provider')
+      showToast.error('toast.invalidProvider')
       router.replace('/profile')
       return
     }
 
     // If user just linked successfully, show success and redirect
     if (linked === provider) {
-      toast.success(`🎉 ${getProviderName()} account linked successfully!`)
+      showToast.success('toast.providerLinked', undefined, { provider: getProviderName() })
       setTimeout(() => router.push('/profile'), 2000)
       return
     }
