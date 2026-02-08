@@ -1,12 +1,13 @@
-// Load environment variables from .env.local (for local development)
-import dotenv from 'dotenv'
-import { resolve } from 'path'
+// CRITICAL: Load environment variables FIRST using require (not import)
+// This ensures dotenv.config() runs BEFORE any module imports
+const dotenv = require('dotenv')
+const { resolve } = require('path')
 
 // Load .env.local first (local development overrides), then .env
-// Use override: true to ensure .env.local values take precedence
 dotenv.config({ path: resolve(process.cwd(), '.env.local'), override: true })
 dotenv.config({ path: resolve(process.cwd(), '.env') })
 
+// Now import modules that use environment variables
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { parse } from 'url'
@@ -26,13 +27,8 @@ import {
 } from './types/socket-events'
 
 // Validate environment variables on startup
-try {
-  validateEnv()
-  printEnvInfo()
-} catch (error) {
-  logger.error('Failed to start socket server due to environment validation error', error as Error)
-  process.exit(1)
-}
+validateEnv()
+printEnvInfo()
 
 const port = Number(process.env.PORT) || 3001
 const hostname = process.env.HOSTNAME || '0.0.0.0'
