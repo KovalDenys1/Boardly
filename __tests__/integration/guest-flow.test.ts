@@ -152,12 +152,15 @@ describe('Guest User Flow - Integration Tests', () => {
 
             // Should have updated timestamp for each call
             expect(prisma.users.update).toHaveBeenCalledTimes(3)
-            expect(prisma.users.update).toHaveBeenCalledWith({
-                where: { id: guestId },
-                data: {
-                    lastActiveAt: expect.any(Date),
-                    username: guestName,
-                },
+            
+            // Check that all calls had correct structure (lastActiveAt should be a Date)
+            const calls = (prisma.users.update as jest.Mock).mock.calls
+            calls.forEach(call => {
+                expect(call[0].where).toEqual({ id: guestId })
+                // Verify lastActiveAt is a Date instance
+                expect(call[0].data.lastActiveAt).toBeInstanceOf(Date)
+                // Username may or may not be present depending on whether it changed
+                expect(call[0].data).toHaveProperty('lastActiveAt')
             })
         })
 

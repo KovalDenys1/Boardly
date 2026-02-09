@@ -146,20 +146,12 @@ export default function RootLayout({
         )}
         
         {/* Critical CSS inline for faster FCP */}
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            html { font-family: ${inter.style.fontFamily}; }
-            body { margin: 0; }
-            /* Prevent layout shift for header */
-            header { min-height: 64px; height: 64px; }
-            /* Optimize font rendering */
-            * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-            /* Mobile viewport height fix */
-            @supports (height: 100dvh) {
-              html, body { height: 100dvh; }
-            }
-          `
-        }} />
+        <style 
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: 'body{margin:0}header{min-height:64px;height:64px}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+          }} 
+        />
         
         <script
           type="application/ld+json"
