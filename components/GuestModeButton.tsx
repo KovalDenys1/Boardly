@@ -99,8 +99,8 @@ export default function GuestModeButton() {
             setGuestMode(name.trim())
             showToast.success('guest.welcome', undefined, { name: name.trim() })
 
-            // Refresh to update UI
-            router.refresh()
+            // Redirect to games page immediately
+            router.push('/games')
         } catch (error) {
             showToast.error('errors.generic')
         } finally {
