@@ -21,7 +21,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD || 'test-ci-database-password-placeholder' }}
           POSTGRES_DB: boardly
         ports:
           - 5432:5432
@@ -32,7 +32,8 @@ jobs:
           --health-retries=10
     env:
       # Use secrets to avoid hardcoded credentials in workflow file
-      DATABASE_URL: ${{ secrets.DATABASE_URL_CI }}
+      # DATABASE_URL connects to the postgres service defined above
+      DATABASE_URL: ${{ format('postgresql://postgres:{0}@localhost:5432/boardly', secrets.CI_POSTGRES_PASSWORD || 'test-ci-database-password-placeholder') }}
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-min-32-chars-req' }}
       JWT_SECRET: ${{ secrets.JWT_SECRET || 'placeholder-secret-min-32-chars-req' }}
@@ -81,6 +82,9 @@ jobs:
 
       - name: Run RLS smoke checks
         run: npm run db:rls:smoke
+
+      - name: Run tests
+        run: npm test
 
       - name: Build application
         run: npm run build
