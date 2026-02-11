@@ -460,7 +460,35 @@ All project documentation is centralized in the `/docs` folder:
 - 💾 Game replay system
 - 🎪 Achievements and badges
 
-## 📄 License
+## � Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+### Getting Started
+- **[Multi-Machine Setup Guide](./docs/MULTI_MACHINE_SETUP.md)** - Work seamlessly across multiple computers
+- **[Contributing Guide](./docs/CONTRIBUTING.md)** - How to contribute to the project
+- **[Production Deployment](./docs/PRODUCTION_DEPLOY_GUIDE.md)** - Deploy to production environments
+
+### Development
+- **[VSCode Configuration](./.vscode/README.md)** - IDE setup and MCP integration
+- **[WebSocket Documentation](./docs/WEBSOCKET.md)** - Real-time communication patterns
+- **[Game Engine Architecture](./docs/GAME_SETTINGS_ARCHITECTURE.md)** - How games are structured
+- **[Testing Strategy](./docs/CONTRIBUTING.md#testing)** - Unit and integration tests
+
+### Features
+- **[Friend System API](./docs/FRIEND_SYSTEM_API.md)** - Social features implementation
+- **[Guest Mode](./docs/GUEST_MODE.md)** - Anonymous player support
+- **[Turn Timer](./docs/TURN_TIMER_SUMMARY.md)** - Timer system implementation
+- **[Bot System](./lib/bots/README.md)** - AI opponent architecture
+
+### Reference
+- **[Changelog](./docs/CHANGELOG.md)** - Version history and changes
+- **[TODO Roadmap](./docs/TODO.md)** - Current priorities and future plans
+- **[Issue Workflow](./docs/ISSUE_WORKFLOW.md)** - Development process
+
+For complete documentation index, see [docs/README.md](./docs/README.md).
+
+## �📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

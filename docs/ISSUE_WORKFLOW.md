@@ -22,6 +22,7 @@ All Issues follow a structured format with:
 ### 1. Pick an Issue
 
 **Browse Issues**:
+
 ```bash
 # View all open issues
 gh issue list --repo KovalDenys1/Boardly
@@ -35,6 +36,7 @@ open https://github.com/KovalDenys1/Boardly/issues
 ```
 
 **Assign yourself**:
+
 ```bash
 gh issue edit <issue-number> --add-assignee @me --repo KovalDenys1/Boardly
 ```
@@ -47,6 +49,7 @@ gh issue edit <issue-number> --add-assignee @me --repo KovalDenys1/Boardly
 > "I want to implement the Tic-Tac-Toe game from Issue #35"
 
 **AI will**:
+
 1. Read the Issue via GitHub API
 2. Research codebase (patterns, existing games)
 3. Create detailed step-by-step plan
@@ -63,6 +66,7 @@ git checkout -b issue-35-tic-tac-toe-game
 ### 4. Implement with AI Assistance
 
 **Iterative development**:
+
 - AI reads Issue requirements
 - Implements code following project patterns
 - Writes tests (target 80%+ coverage)
@@ -70,6 +74,7 @@ git checkout -b issue-35-tic-tac-toe-game
 - Adds translations (EN/UK)
 
 **Progress updates**:
+
 ```bash
 # Add comment to Issue
 gh issue comment <issue-number> --body "Implemented game logic and tests. Working on UI components." --repo KovalDenys1/Boardly
@@ -90,6 +95,7 @@ Refs #35"
 ```
 
 **Commit message pattern**:
+
 - Format: `<type>(<scope>): <description> (#issue-number)`
 - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
 - Always reference the Issue number
@@ -138,11 +144,13 @@ Implements Tic-Tac-Toe game with full multiplayer support.
 ### How to Work with Issues in AI Chat
 
 **Start a task**:
+
 ```markdown
 Let's work on Issue #35
 ```
 
 **AI will automatically**:
+
 1. Fetch Issue details from GitHub API
 2. Read acceptance criteria
 3. Research codebase for patterns
@@ -156,13 +164,14 @@ Let's work on Issue #35
 
 **You**: "Plan implementation for Issue #36"
 
-**AI**: 
+**AI**:
+
 1. Reads Issue #36 (Rock Paper Scissors game)
 2. Analyzes requirements
 3. Responds with:
 
 > **Implementation Plan for Issue #36: Rock Paper Scissors**
-> 
+>
 > 1. Create `RockPaperScissorsGame` class extending `GameEngine`
 > 2. Implement simultaneous move submission (hidden choices)
 > 3. Add reveal logic with winner calculation
@@ -171,7 +180,7 @@ Let's work on Issue #35
 > 6. Add reveal animation
 > 7. Write tests (all move combinations)
 > 8. Add translations
-> 
+>
 > This will take ~1-2 days. Proceed with implementation?
 
 **You**: "Yes, start with the game logic class"
@@ -181,24 +190,28 @@ Let's work on Issue #35
 ### AI Commands for Issue Management
 
 **View Issue**:
+
 ```markdown
 Show me Issue #33
 What's the status of #35?
 ```
 
 **List Issues**:
+
 ```markdown
 Show all high priority issues
 List game implementation issues
 ```
 
 **Update Issue**:
+
 ```markdown
 Add comment to Issue #35: "UI implementation in progress"
 Close Issue #34 as completed
 ```
 
 **Create Issue** (if needed):
+
 ```markdown
 Create Issue for adding dark mode to game boards
 ```
@@ -208,17 +221,20 @@ Create Issue for adding dark mode to game boards
 **Projects**: Issues are organized in GitHub Projects board
 
 **Views**:
+
 - **Kanban**: Backlog → In Progress → Review → Testing → Done
 - **Priority**: Grouped by priority labels
 - **Timeline**: Milestones and sprints
 
 **Automation**:
+
 - Issue created → Moves to Backlog
 - PR opened → Moves to Review
 - PR merged → Moves to Done
 - Auto-close Issue when PR merges
 
 **Access Projects**:
+
 ```bash
 open https://github.com/KovalDenys1/Boardly/projects
 ```
@@ -226,6 +242,7 @@ open https://github.com/KovalDenys1/Boardly/projects
 ## 🏷️ Label System
 
 ### Type Labels
+
 - `type:feature` - New feature implementation
 - `type:bug` - Bug fix
 - `type:security` - Security-related issue
@@ -234,12 +251,14 @@ open https://github.com/KovalDenys1/Boardly/projects
 - `type:game` - New game implementation
 
 ### Priority Labels
+
 - `priority:critical` - Needs immediate attention (security, data loss)
 - `priority:high` - Important, should be done soon
 - `priority:medium` - Normal priority
 - `priority:low` - Nice to have, can wait
 
 ### Area Labels
+
 - `area:monetization` - Payments, subscriptions, premium features
 - `area:security` - Authentication, authorization, RLS
 - `area:social` - Friends, chat, notifications
@@ -247,17 +266,20 @@ open https://github.com/KovalDenys1/Boardly/projects
 - `area:mobile` - Mobile UI, PWA, responsive design
 
 ### Game Labels
+
 - `game:yahtzee`, `game:spy`, `game:tic-tac-toe`, `game:rps`, `game:memory`
 
 ## 📝 Issue Templates
 
 **Available templates** (`.github/ISSUE_TEMPLATE/`):
+
 - `bug_report.md` - Bug reports
 - `feature_request.md` - Feature requests
 - `game_request.md` - New game ideas
 - `task.md` - Development tasks
 
 **Create from template**:
+
 ```bash
 gh issue create --template task.md --repo KovalDenys1/Boardly
 ```
@@ -265,11 +287,13 @@ gh issue create --template task.md --repo KovalDenys1/Boardly
 ## 🔍 Finding Work
 
 ### For Beginners
+
 ```bash
 gh issue list --label "good first issue" --repo KovalDenys1/Boardly
 ```
 
 ### By Priority
+
 ```bash
 # Critical issues (security, blockers)
 gh issue list --label "priority:critical" --repo KovalDenys1/Boardly
@@ -279,6 +303,7 @@ gh issue list --label "priority:high" --repo KovalDenys1/Boardly
 ```
 
 ### By Area of Interest
+
 ```bash
 # Game development
 gh issue list --label "type:game" --repo KovalDenys1/Boardly
@@ -293,6 +318,7 @@ gh issue list --label "area:social" --repo KovalDenys1/Boardly
 ## 📈 Tracking Progress
 
 ### View Sprint Progress
+
 ```bash
 # Issues in milestone
 gh issue list --milestone "Q1 2026" --repo KovalDenys1/Boardly
@@ -304,11 +330,13 @@ gh issue list --state closed --limit 10 --repo KovalDenys1/Boardly
 ### Weekly Sprint Planning
 
 **Monday**: Review open Issues, assign for the week
+
 ```bash
 gh issue list --label "priority:high" --state open
 ```
 
 **Friday**: Review completed Issues, close PRs
+
 ```bash
 gh issue list --assignee @me --state all
 ```
@@ -316,36 +344,41 @@ gh issue list --assignee @me --state all
 ## 🚀 Quick Reference
 
 ### Create Issue
+
 ```bash
 gh issue create --title "[FEATURE] Add dark mode" --body "Description..." --label "type:feature,priority:medium"
 ```
 
 ### Comment on Issue
+
 ```bash
 gh issue comment 35 --body "Working on this now"
 ```
 
 ### Close Issue
+
 ```bash
 gh issue close 35 --comment "Completed in PR #123"
 ```
 
 ### Reopen Issue
+
 ```bash
 gh issue reopen 35 --comment "Need to address review feedback"
 ```
 
 ### View Issue Details
+
 ```bash
 gh issue view 35
 ```
 
 ## 📚 Resources
 
-- **GitHub Issues**: https://github.com/KovalDenys1/Boardly/issues
-- **GitHub Projects**: https://github.com/KovalDenys1/Boardly/projects
+- **GitHub Issues**: <https://github.com/KovalDenys1/Boardly/issues>
+- **GitHub Projects**: <https://github.com/KovalDenys1/Boardly/projects>
 - **Label List**: `gh label list --repo KovalDenys1/Boardly`
-- **Milestones**: https://github.com/KovalDenys1/Boardly/milestones
+- **Milestones**: <https://github.com/KovalDenys1/Boardly/milestones>
 
 ---
 
