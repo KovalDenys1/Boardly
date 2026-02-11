@@ -9,6 +9,7 @@ Complete documentation for the Boardly multiplayer gaming platform.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
 - **[TODO.md](TODO.md)** - Roadmap and planned features
+- **[MULTI_MACHINE_SETUP.md](MULTI_MACHINE_SETUP.md)** - Work across multiple computers
 
 ### Technical Guides
 - **[WEBSOCKET.md](WEBSOCKET.md)** - Real-time communication (Socket.IO)

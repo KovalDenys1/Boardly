@@ -67,7 +67,7 @@ function CreateLobbyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-  const { isGuest, guestId } = useGuest()
+  const { isGuest, guestToken } = useGuest()
 
   const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
   const gameInfo = GAME_INFO[selectedGameType]
@@ -158,7 +158,7 @@ function CreateLobbyPage() {
 
       // Notify lobby list about new lobby via WebSocket
       const socketUrl = getBrowserSocketUrl()
-      const token = session?.user?.id || guestId || null
+      const token = session?.user?.id || guestToken || null
 
       const authPayload: Record<string, unknown> = {}
       if (token) authPayload.token = token
@@ -166,7 +166,7 @@ function CreateLobbyPage() {
 
       const queryPayload: Record<string, string> = {}
       if (token) queryPayload.token = String(token)
-      queryPayload.isGuest = 'false'
+      queryPayload.isGuest = String(isGuest)
 
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],

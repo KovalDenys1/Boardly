@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { SpyGame } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -22,12 +21,8 @@ export async function GET(
 
   try {
     const { gameId } = await params
-    
-    // Get session or guest user
-    const session = await getServerSession(authOptions)
-    const guestId = request.headers.get('X-Guest-Id')
-
-    const userId = session?.user?.id || guestId
+    const requestUser = await getRequestAuthUser(request)
+    const userId = requestUser?.id
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -8,14 +8,14 @@ import dotenv from 'dotenv'
 import { resolve } from 'path'
 
 // Load environment files
-dotenv.config({ path: resolve(process.cwd(), '.env.local'), override: true })
-dotenv.config({ path: resolve(process.cwd(), '.env') })
+dotenv.config({ path: resolve(process.cwd(), '.env'), override: true })
+dotenv.config({ path: resolve(process.cwd(), '.env.local') })
 
 console.log('🔍 Testing database connection...\n')
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL is not set in environment variables')
-  console.error('Please check your .env.local file\n')
+  console.error('Please check your .env file\n')
   process.exit(1)
 }
 
@@ -68,7 +68,7 @@ async function testConnection() {
       console.error('1. Go to Supabase Dashboard: https://app.supabase.com')
       console.error('2. Navigate to: Project Settings → Database → Connection String')
       console.error('3. Copy the "Connection pooling" string (port 6543)')
-      console.error('4. Update DATABASE_URL in .env.local')
+      console.error('4. Update DATABASE_URL in .env')
       console.error('5. Make sure to use the actual password (not [YOUR-PASSWORD])\n')
     } else {
       console.error('Error details:', error.message)

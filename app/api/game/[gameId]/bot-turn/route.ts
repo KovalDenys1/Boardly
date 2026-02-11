@@ -5,6 +5,7 @@ import { Move } from '@/lib/game-engine'
 import { YahtzeeBotExecutor, getBotDifficulty } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
+import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -190,6 +191,12 @@ export async function POST(
 
           // Save to database with retry logic
           const newState = gameEngine.getState()
+          const botUserIds = new Set(
+            game.players
+              .filter((player: any) => !!player.user?.bot)
+              .map((player: any) => player.userId)
+          )
+          const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as any, botUserIds)
           const statusChanged = game.status !== newState.status
           const oldStatus = game.status
 
@@ -235,6 +242,15 @@ export async function POST(
               })
             } else {
               log.info('Database updated successfully')
+            }
+
+            if (disconnectedTurnResult.changed) {
+              log.info('Skipped disconnected player turn after bot action', {
+                gameId,
+                botUserId,
+                skippedPlayerIds: disconnectedTurnResult.skippedPlayerIds,
+                currentPlayerId: disconnectedTurnResult.currentPlayerId,
+              })
             }
           } catch (dbError) {
             log.error('Critical: Failed to save game state after retry', dbError as Error)
