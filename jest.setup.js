@@ -6,6 +6,46 @@ const { TextEncoder, TextDecoder } = require('util')
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
 
+// Mock localStorage for Jest environment
+const localStorageMock = (() => {
+  let store = {}
+  return {
+    getItem: (key) => store[key] || null,
+    setItem: (key, value) => {
+      store[key] = String(value)
+    },
+    removeItem: (key) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
+    get length() {
+      return Object.keys(store).length
+    },
+    key: (index) => {
+      const keys = Object.keys(store)
+      return keys[index] || null
+    },
+  }
+})()
+
+// Set localStorage on both global and window (for jsdom environment)
+global.localStorage = localStorageMock
+global.sessionStorage = localStorageMock
+
+// Configure window object in jsdom environment
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+    writable: true,
+  })
+  Object.defineProperty(window, 'sessionStorage', {
+    value: localStorageMock,
+    writable: true,
+  })
+}
+
 // Polyfill for fetch API (using whatwg-fetch for Jest compatibility)
 require('whatwg-fetch')
 
@@ -60,10 +100,3 @@ jest.mock('socket.io-client', () => ({
     disconnect: jest.fn(),
   })),
 }))
-
-// Suppress console errors in tests
-global.console = {
-  ...console,
-  error: jest.fn(),
-  warn: jest.fn(),
-}

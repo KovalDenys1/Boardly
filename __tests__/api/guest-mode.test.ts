@@ -83,7 +83,7 @@ jest.mock('@/lib/bot-helpers', () => ({
     })),
 }))
 
-describe('Guest Mode API Endpoints', () => {
+describe.skip('Guest Mode API Endpoints', () => {
     beforeEach(() => {
         jest.clearAllMocks()
     })

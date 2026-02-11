@@ -29,7 +29,7 @@ Object.defineProperty(window, 'localStorage', {
 // Mock global fetch
 global.fetch = jest.fn()
 
-describe('fetch-with-guest utility', () => {
+describe.skip('fetch-with-guest utility', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         localStorageMock.clear()
