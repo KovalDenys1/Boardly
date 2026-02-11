@@ -14,6 +14,7 @@ interface GameBoardProps {
   isMoveInProgress: boolean
   isRolling: boolean
   isScoring: boolean
+  isStateReverting: boolean
   celebrationEvent: CelebrationEvent | null
   held: boolean[] // Local held state from useGameActions
   getCurrentUserId: () => string | null | undefined
@@ -32,6 +33,7 @@ export default function GameBoard({
   isMoveInProgress,
   isRolling,
   isScoring,
+  isStateReverting,
   celebrationEvent,
   held,
   getCurrentUserId,
@@ -72,6 +74,15 @@ export default function GameBoard({
 
       {/* Controls Section - Compact */}
       <div className="flex-shrink-0 space-y-1.5 sm:space-y-2">
+        {isStateReverting && (
+          <div className="text-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-md bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-200 animate-pulse">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+              <span className="text-base sm:text-lg">↩️</span>
+              <p className="text-xs sm:text-sm font-semibold">Move failed. Reverted to server state.</p>
+            </div>
+          </div>
+        )}
+
         {/* Turn Indicator */}
         {isMyTurn ? (
           timeLeft <= 10 ? (

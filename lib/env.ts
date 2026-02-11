@@ -20,7 +20,10 @@ const envSchema = z.object({
   // Authentication - Required for Next.js, optional for socket server
   NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL').optional(),
   NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters').optional(),
+  // Deprecated: kept for backward compatibility; session signing uses NEXTAUTH_SECRET.
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').optional(),
+  GUEST_JWT_SECRET: z.string().min(32, 'GUEST_JWT_SECRET must be at least 32 characters').optional(),
+  GUEST_JWT_EXPIRES_IN: z.string().optional(),
   
   // OAuth Providers - Optional
   GITHUB_CLIENT_ID: z.string().optional(),
@@ -83,6 +86,10 @@ export function validateEnv(): Env {
         (!env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)) {
       throw new Error('Both GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set together')
     }
+
+    if (env.JWT_SECRET) {
+      console.warn('⚠️  JWT_SECRET is deprecated. Use NEXTAUTH_SECRET for auth/session tokens.')
+    }
     
     return env
   } catch (error) {
@@ -130,6 +137,10 @@ export function printEnvInfo(): void {
   
   if (env.JWT_SECRET) {
     console.log(`  - JWT_SECRET: ${maskSecret(env.JWT_SECRET)}`)
+  }
+
+  if (env.GUEST_JWT_SECRET) {
+    console.log(`  - GUEST_JWT_SECRET: ${maskSecret(env.GUEST_JWT_SECRET)}`)
   }
   
   if (env.GITHUB_CLIENT_ID) {

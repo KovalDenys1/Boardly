@@ -11,7 +11,7 @@ export default function LobbyInvitePage() {
   const router = useRouter()
   const params = useParams()
   const { data: session, status } = useSession()
-  const { setGuestMode, guestId } = useGuest()
+  const { setGuestMode, guestToken } = useGuest()
   const code = params.code as string
   const [guestName, setGuestName] = useState('')
   const [loading, setLoading] = useState(false)
@@ -43,9 +43,6 @@ export default function LobbyInvitePage() {
     setError('')
 
     try {
-      // Save guest data via GuestContext (which handles localStorage and generates guest ID)
-      setGuestMode(guestName.trim())
-
       // Call API to add guest to lobby
       const response = await fetch(`/api/lobby/${code}/join-guest`, {
         method: 'POST',
@@ -54,6 +51,7 @@ export default function LobbyInvitePage() {
         },
         body: JSON.stringify({
           guestName: guestName.trim(),
+          guestToken: guestToken || undefined,
         }),
       })
 
@@ -69,12 +67,18 @@ export default function LobbyInvitePage() {
         throw new Error(data.error || 'Failed to join lobby')
       }
 
+      await setGuestMode(data.guestName || guestName.trim(), {
+        guestId: data.guestId,
+        guestName: data.guestName || guestName.trim(),
+        guestToken: data.guestToken,
+      })
+
       // Track successful guest join
       trackAuth({
         event: 'login',
         method: 'guest',
         success: true,
-        userId: guestId || undefined,
+        userId: data.guestId || undefined,
       })
       trackFunnelStep('guest-join')
 

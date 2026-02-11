@@ -81,6 +81,7 @@ describe('useSocketConnection', () => {
     isGuest: false,
     guestId: null,
     guestName: null,
+    guestToken: null,
     onGameUpdate: jest.fn(),
     onChatMessage: jest.fn(),
     onPlayerTyping: jest.fn(),
@@ -123,13 +124,14 @@ describe('useSocketConnection', () => {
       expect(result.current.isConnected).toBe(false)
     })
 
-    it('should connect for guest users with valid guestId', () => {
+    it('should connect for guest users with valid guest token', () => {
       const { result } = renderHook(() =>
         useSocketConnection({
           ...defaultProps,
           isGuest: true,
           guestId: 'guest-123',
           guestName: 'Guest User',
+          guestToken: 'guest.jwt.token',
           session: null,
         })
       )

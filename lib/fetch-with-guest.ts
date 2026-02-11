@@ -12,13 +12,11 @@ export function getGuestHeaders(): HeadersInit {
         return {}
     }
 
-    const guestId = localStorage.getItem('boardly_guest_id')
-    const guestName = localStorage.getItem('boardly_guest_name')
+    const guestToken = localStorage.getItem('boardly_guest_token')
 
-    if (guestId && guestName) {
+    if (guestToken) {
         return {
-            'X-Guest-Id': guestId,
-            'X-Guest-Name': guestName,
+            'X-Guest-Token': guestToken,
         }
     }
 
@@ -54,25 +52,27 @@ export function isGuestMode(): boolean {
         return false
     }
 
+    const guestToken = localStorage.getItem('boardly_guest_token')
     const guestId = localStorage.getItem('boardly_guest_id')
     const guestName = localStorage.getItem('boardly_guest_name')
 
-    return Boolean(guestId && guestName)
+    return Boolean(guestToken && guestId && guestName)
 }
 
 /**
  * Get current guest data
  */
-export function getGuestData(): { guestId: string; guestName: string } | null {
+export function getGuestData(): { guestId: string; guestName: string; guestToken: string } | null {
     if (typeof window === 'undefined') {
         return null
     }
 
+    const guestToken = localStorage.getItem('boardly_guest_token')
     const guestId = localStorage.getItem('boardly_guest_id')
     const guestName = localStorage.getItem('boardly_guest_name')
 
-    if (guestId && guestName) {
-        return { guestId, guestName }
+    if (guestToken && guestId && guestName) {
+        return { guestId, guestName, guestToken }
     }
 
     return null

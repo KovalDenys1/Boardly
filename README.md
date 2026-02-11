@@ -120,7 +120,6 @@ DATABASE_URL="postgresql://username:password@host:port/database"
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-min-32-characters"
 NEXTAUTH_URL="http://localhost:3000"
-JWT_SECRET="your-jwt-secret-min-32-characters"
 
 # Socket.IO Server
 NEXT_PUBLIC_SOCKET_URL="http://localhost:3001"
@@ -222,7 +221,7 @@ Socket Server Broadcast → All Clients in Room → UI Update
   - `useSocketConnection` - WebSocket event handling
   - `useGameTimer` - Turn timer management
   - `useBotTurn` - AI opponent automation
-- **Optimistic Updates** - Immediate UI feedback with server sync
+- **Optimistic UX + Authoritative Reconcile** - Immediate feedback, then server-broadcast snapshot reconciliation with rollback on failed moves
 - **Guest Session Handling** - Header-based authentication (`X-Guest-Id`, `X-Guest-Name`)
 
 ## 📁 Project Structure
@@ -336,7 +335,7 @@ A production instance is available at [boardly.online](https://boardly.online) f
 2. Connect your repository
 3. Build Command: `npm install && npm run db:generate`
 4. Start Command: `npm run socket:start`
-5. Add environment variables (at minimum: `DATABASE_URL`, `CORS_ORIGIN`, `JWT_SECRET`)
+5. Add environment variables (at minimum: `DATABASE_URL`, `CORS_ORIGIN`, `NEXTAUTH_SECRET`)
 6. Deploy!
 
 **Free Tier Limitations**:

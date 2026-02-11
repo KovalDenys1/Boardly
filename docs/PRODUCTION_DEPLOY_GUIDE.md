@@ -15,7 +15,6 @@ NODE_ENV=production
 DATABASE_URL=postgresql://...  # Supabase connection string
 
 # Authentication Secrets (CRITICAL - Generate new ones!)
-JWT_SECRET=<generate-with-openssl-rand-base64-32>
 NEXTAUTH_SECRET=<generate-with-openssl-rand-base64-32>
 NEXTAUTH_URL=https://your-domain.com
 
@@ -273,7 +272,7 @@ Socket.IO optimizations in `socket-server.ts`:
 
 **Solution:**
 1. Verify NEXTAUTH_URL matches domain
-2. Check JWT_SECRET and NEXTAUTH_SECRET set
+2. Check NEXTAUTH_SECRET is set
 3. Verify OAuth callback URLs configured
 4. Check browser cookies enabled
 

@@ -65,7 +65,7 @@ interface DBPlayer {
 import { useGuestMode } from './hooks/useGuestMode'
 import { useSocketConnection } from './hooks/useSocketConnection'
 import { useGameTimer } from './hooks/useGameTimer'
-import { useGameActions } from './hooks/useGameActions'
+import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
@@ -84,7 +84,7 @@ function LobbyPageContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-  const { isGuest, guestId, guestName } = useGuest()
+  const { isGuest, guestId, guestName, guestToken } = useGuest()
   const code = params.code as string
 
   // Log session status for debugging
@@ -488,6 +488,7 @@ function LobbyPageContent() {
     isGuest,
     guestId,
     guestName,
+    guestToken,
     onGameUpdate,
     onChatMessage,
     onPlayerTyping,
@@ -545,9 +546,36 @@ function LobbyPageContent() {
     loadLobbyRef.current = loadLobby
   })
 
+  const reconcileWithServerSnapshot = React.useCallback(async () => {
+    if (!loadLobbyRef.current) return
+    await loadLobbyRef.current()
+  }, [])
+
   // Create refs for game actions to use in timer callback
-  const handleScoreRef = React.useRef<((category: any) => Promise<void>) | null>(null)
-  const handleRollDiceRef = React.useRef<(() => Promise<void>) | null>(null)
+  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<YahtzeeGame | null>) | null>(null)
+  const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<YahtzeeGame | null>) | null>(null)
+
+  const buildAutoActionContext = React.useCallback(
+    (engine: YahtzeeGame, playerId: string, existingDebounceKey?: string): AutoActionContext => {
+      const state = engine.getState()
+      const debounceKey =
+        existingDebounceKey ||
+        `${game?.id || 'unknown'}:${playerId}:${state.currentPlayerIndex}:${state.lastMoveAt ?? 'none'}`
+
+      return {
+        source: 'turn-timeout',
+        debounceKey,
+        turnSnapshot: {
+          currentPlayerId: playerId,
+          currentPlayerIndex: state.currentPlayerIndex,
+          lastMoveAt: typeof state.lastMoveAt === 'number' ? state.lastMoveAt : null,
+          rollsLeft: engine.getRollsLeft(),
+          updatedAt: state.updatedAt ? String(state.updatedAt) : null,
+        },
+      }
+    },
+    [game?.id]
+  )
 
   // Game timer hook - pass turnTimerLimit from lobby settings
   const turnTimerLimit = (lobby as any)?.turnTimer || 60 // Get from lobby or default to 60
@@ -567,17 +595,20 @@ function LobbyPageContent() {
 
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
 
-      const rollsLeft = gameEngine.getRollsLeft()
-      const currentPlayer = gameEngine.getCurrentPlayer()
+      let workingEngine = gameEngine
+      const currentPlayer = workingEngine.getCurrentPlayer()
 
       if (!currentPlayer) {
         clientLogger.error('⏰ No current player found')
         return
       }
 
+      const initialContext = buildAutoActionContext(workingEngine, currentPlayer.id)
+      let autoActionContext = initialContext
+
       // If player hasn't rolled yet (rollsLeft === 3), we MUST roll first
       // This is a Yahtzee rule - you can't score without rolling
-      if (rollsLeft === 3) {
+      if (workingEngine.getRollsLeft() === 3) {
         if (!handleRollDiceRef.current) {
           clientLogger.error('⏰ Player hasn\'t rolled but handleRollDice not available')
           showToast.error('toast.timerRollFirst')
@@ -586,20 +617,30 @@ function LobbyPageContent() {
 
         clientLogger.log('⏰ Player hasn\'t rolled - auto-rolling once before scoring')
         try {
-          // Roll the dice once
-          await handleRollDiceRef.current()
-          // Small delay to let state update propagate
-          await new Promise(resolve => setTimeout(resolve, 300))
+          // Roll once with server-side debounce/guard context
+          const rolledEngine = await handleRollDiceRef.current(autoActionContext)
+          if (!rolledEngine) {
+            clientLogger.log('⏰ Auto-roll skipped by server guard')
+            return
+          }
+          workingEngine = rolledEngine
+
+          // Keep the same debounce key, but refresh turn snapshot after roll.
+          const postRollPlayer = workingEngine.getCurrentPlayer()
+          if (!postRollPlayer || postRollPlayer.id !== currentPlayer.id) {
+            clientLogger.log('⏰ Turn changed after auto-roll, skipping auto-score')
+            return
+          }
+          autoActionContext = buildAutoActionContext(workingEngine, postRollPlayer.id, initialContext.debounceKey)
         } catch (error) {
           clientLogger.error('⏰ Failed to auto-roll:', error)
-          showToast.error('toast.autoRollFailed')
           return
         }
       }
 
-      // Get final state after potential roll
-      const finalDice = gameEngine.getDice()
-      const scorecard = gameEngine.getScorecard(currentPlayer.id)
+      // Get final state from authoritative engine after potential auto-roll
+      const finalDice = workingEngine.getDice()
+      const scorecard = workingEngine.getScorecard(currentPlayer.id)
 
       if (!scorecard) {
         clientLogger.error('⏰ No scorecard found')
@@ -614,7 +655,7 @@ function LobbyPageContent() {
         category: bestCategory,
         score,
         dice: finalDice,
-        rollsUsed: 3 - gameEngine.getRollsLeft()
+        rollsUsed: 3 - workingEngine.getRollsLeft()
       })
 
       const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
@@ -638,10 +679,12 @@ function LobbyPageContent() {
       }
 
       try {
-        await handleScoreRef.current(bestCategory)
+        const scoredEngine = await handleScoreRef.current(bestCategory, autoActionContext)
+        if (!scoredEngine) {
+          clientLogger.log('⏰ Auto-score skipped by server guard')
+        }
       } catch (error) {
         clientLogger.error('⏰ Failed to auto-score:', error)
-        showToast.error('toast.autoScoreFailed')
       }
     },
   })
@@ -654,6 +697,7 @@ function LobbyPageContent() {
     isMoveInProgress,
     isRolling,
     isScoring,
+    isStateReverting,
     held, // Local held state for dice locking
   } = useGameActions({
     game,
@@ -672,6 +716,7 @@ function LobbyPageContent() {
     setTimerActive: () => { }, // Timer managed by useGameTimer
     celebrate,
     fireworks,
+    reconcileWithServerSnapshot,
   })
 
   // Update refs for timer
@@ -748,19 +793,11 @@ function LobbyPageContent() {
 
   const handleLeaveLobby = async () => {
     try {
-      // Call leave API with guest headers if needed
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-
-      if (isGuest && guestId && guestName) {
-        headers['X-Guest-Id'] = guestId
-        headers['X-Guest-Name'] = guestName
-      }
-
-      const res = await fetch(`/api/lobby/${code}/leave`, {
+      const res = await fetchWithGuest(`/api/lobby/${code}/leave`, {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
 
       const data = await res.json()
@@ -1105,6 +1142,7 @@ function LobbyPageContent() {
                       isMoveInProgress={isMoveInProgress}
                       isRolling={isRolling}
                       isScoring={isScoring}
+                      isStateReverting={isStateReverting}
                       celebrationEvent={celebrationEvent}
                       held={held}
                       getCurrentUserId={getCurrentUserId}
@@ -1222,6 +1260,7 @@ function LobbyPageContent() {
                         isMoveInProgress={isMoveInProgress}
                         isRolling={isRolling}
                         isScoring={isScoring}
+                        isStateReverting={isStateReverting}
                         celebrationEvent={celebrationEvent}
                         held={held}
                         getCurrentUserId={getCurrentUserId}

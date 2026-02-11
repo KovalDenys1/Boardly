@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 export async function GET(
   request: NextRequest,
@@ -11,9 +10,8 @@ export async function GET(
   const log = apiLogger('/api/game/[gameId]/results')
 
   try {
-    const session = await getServerSession(authOptions)
-    const guestId = request.headers.get('X-Guest-Id')
-    const userId = session?.user?.id || guestId
+    const requestUser = await getRequestAuthUser(request)
+    const userId = requestUser?.id
 
     if (!userId) {
       return NextResponse.json(
