@@ -1,10 +1,13 @@
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom'
+require('@testing-library/jest-dom')
 
 // Polyfill for TextEncoder/TextDecoder
-import { TextEncoder, TextDecoder } from 'util'
+const { TextEncoder, TextDecoder } = require('util')
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
+
+// Polyfill for fetch API (using whatwg-fetch for Jest compatibility)
+require('whatwg-fetch')
 
 // Mock nanoid for lobby code generation
 jest.mock('nanoid', () => ({
