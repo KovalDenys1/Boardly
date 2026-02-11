@@ -4,7 +4,7 @@ services:
     env: node
     region: frankfurt
     plan: free
-    buildCommand: npm install && npm run db:generate
+    buildCommand: npm install && npx prisma migrate deploy && npm run db:generate
     startCommand: npm run socket:start
     envVars:
       - key: NODE_ENV
