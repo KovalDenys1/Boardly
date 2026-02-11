@@ -7,9 +7,9 @@
 - **Status**: Production live at [boardly.online](https://boardly.online)
 - **Architecture**: Next.js (API, SSR) + standalone Socket.IO server (real-time) + PostgreSQL (Supabase/Prisma)
 - **Games**: Yahtzee (with AI bots), Guess the Spy, Uno and more planned
-- **Latest Update**: Database restructured (Feb 2026) - all tables plural, Bots separate table, RLS enabled
+- **Latest Update**: Database restructured (Feb 2026) - all tables plural, Bots separate table, RLS migration prepared
 - **Test Coverage**: 131 tests, 96% on GameEngine core
-- **Security**: Row Level Security (RLS) enabled on all tables
+- **Security**: Row Level Security (RLS) migration prepared, pending deployment (docs ready)
 
 ### Key Recommendations
 
@@ -136,16 +136,19 @@ const botUser = await prisma.users.create({
 
 ### 2. Row Level Security (RLS)
 
-**Status**: ✅ Enabled on all 13 tables (Feb 2026)
+**Status**: 🔄 Migration prepared, awaiting testing and deployment (Issue #33 completed Feb 2026)
 
 - **Security Model**: Multi-layer defense
   - Layer 1: NextAuth (session, JWT)
   - Layer 2: API routes (business logic)
-  - Layer 3: RLS (database safety net)
+  - Layer 3: RLS (database safety net) ← Migration ready but not applied
   
 - **Implementation**: Service role policies allow full access for Prisma
-- **Impact**: Zero breaking changes, production-ready
-- **Docs**: See `docs/RLS_CONFIGURATION.md` for details
+- **Migration**: `prisma/migrations/20260209000000_fix_rls_plural_tables/` - 13 tables, 40+ policies
+- **Impact**: Zero breaking changes when deployed
+- **Docs**: See `docs/RLS_CONFIGURATION.md` for complete testing and deployment guide
+
+**Next Steps**: Test in staging → Monitor 24hrs → Deploy to production
 
 **Database Connection**:
 ```env
@@ -463,6 +466,7 @@ mockValidateMove.mockReturnValue(true)
 - Architecture: `socket-server.ts`, `app/lobby/[code]/page.tsx`
 - Game logic: `lib/game-engine.ts`, `lib/games/yahtzee-game.ts`, `lib/yahtzee.ts`
 - Database: `prisma/schema.prisma`, `lib/db.ts`
+- Security: `docs/RLS_CONFIGURATION.md`, `prisma/migrations/20260209000000_fix_rls_plural_tables/`
 - Socket patterns: `app/lobby/[code]/hooks/useSocketConnection.ts`
 - API examples: `app/api/lobby/[code]/route.ts`, `app/api/game/[gameId]/state/route.ts`
 - Bot AI: `lib/yahtzee-bot.ts`, `lib/bot-executor.ts`
