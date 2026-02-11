@@ -24,6 +24,7 @@ Enable users to install Boardly as a native-like app on their devices, improving
 ## 📝 Implementation Notes
 
 **Manifest File** (`public/manifest.json`):
+
 ```json
 {
   "name": "Boardly - Multiplayer Board Games",
@@ -52,12 +53,14 @@ Enable users to install Boardly as a native-like app on their devices, improving
 ```
 
 **Service Worker** (Next.js PWA plugin or manual):
+
 - Cache static assets
 - Network-first for API calls
 - Cache-first for images/fonts
 - Offline fallback page
 
 **Install Prompt UI**:
+
 ```typescript
 // components/InstallPrompt.tsx
 // Show "Add to Home Screen" banner on mobile
@@ -65,12 +68,14 @@ Enable users to install Boardly as a native-like app on their devices, improving
 ```
 
 **iOS Considerations**:
+
 - Add apple-touch-icon meta tags
 - Add splash screens (via media queries)
 - Test in iOS Safari (limited PWA support vs Android)
 
 **Next.js PWA Setup**:
 Option 1: Use `next-pwa` plugin (recommended)
+
 ```bash
 npm install next-pwa
 ```
@@ -78,6 +83,7 @@ npm install next-pwa
 Option 2: Manual service worker registration
 
 **Files to Create**:
+
 - `public/manifest.json`
 - `public/icons/` (various sizes)
 - `public/offline.html` (fallback page)
@@ -98,6 +104,7 @@ Option 2: Manual service worker registration
 ## 📊 Estimated Complexity
 
 **S-M (Small-Medium - 1 sprint / 3-5 days)**
+
 - Day 1-2: Manifest, icons, next-pwa setup
 - Day 3: Service worker, offline support
 - Day 4-5: Install prompt UI, testing, iOS polish
@@ -123,6 +130,7 @@ Option 2: Manual service worker registration
 ## 📚 Additional Context
 
 **Benefits**:
+
 - **Install**: Users can add to home screen (no app store)
 - **Offline**: Basic functionality works without internet
 - **Fast**: Cached assets load instantly
@@ -130,8 +138,9 @@ Option 2: Manual service worker registration
 - **SEO**: Still crawlable by search engines
 
 **Resources**:
-- next-pwa: https://github.com/shadowwalker/next-pwa
-- PWA Checklist: https://web.dev/pwa-checklist/
-- Manifest Generator: https://www.simicart.com/manifest-generator.html/
+
+- next-pwa: <https://github.com/shadowwalker/next-pwa>
+- PWA Checklist: <https://web.dev/pwa-checklist/>
+- Manifest Generator: <https://www.simicart.com/manifest-generator.html/>
 
 **Priority**: Q2 2026 (low-hanging fruit for mobile engagement)

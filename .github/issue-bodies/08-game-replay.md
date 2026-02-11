@@ -23,6 +23,7 @@ Add premium feature that stores game state snapshots and allows playback of comp
 ## 📝 Implementation Notes
 
 **State Snapshot Storage**:
+
 ```prisma
 model GameStateSnapshot {
   id        String   @id @default(cuid())
@@ -41,12 +42,14 @@ model GameStateSnapshot {
 ```
 
 **Replay Flow**:
+
 1. During game: Save snapshot after each significant action
 2. Game ends: Mark game as "has replay"
 3. User clicks "Watch Replay" → Load all snapshots
 4. Replay UI: Step through snapshots with controls
 
 **Replay Viewer UI**:
+
 - Game board displayed at each turn
 - Player list showing who's active
 - Action description ("Player X rolled dice", "Player Y scored Yahtzee")
@@ -55,12 +58,14 @@ model GameStateSnapshot {
 - Auto-play mode
 
 **Storage Optimization**:
+
 - Only store diff from previous state (not full state each time)
 - Compress JSON with gzip
 - Limit replay storage to 90 days for free users, unlimited for premium
 - Auto-delete old replays (cleanup cron job)
 
 **Games Support**:
+
 - ✅ Yahtzee: Track dice rolls, holds, scores
 - ✅ Spy: Track questions, votes, reveals
 - 🔜 Future games: Add snapshot logic during implementation
@@ -77,6 +82,7 @@ model GameStateSnapshot {
 ## 📊 Estimated Complexity
 
 **L (Large - 2-3 sprints / 2-3 weeks)**
+
 - Week 1: Schema, snapshot creation during games
 - Week 2: Replay viewer UI, playback controls
 - Week 3: Optimization, premium gating, polish
@@ -96,12 +102,14 @@ model GameStateSnapshot {
 ## 📚 Additional Context
 
 **Use Cases**:
+
 - Review strategy (how did opponent win?)
 - Entertainment (watch funny moments)
 - Learning tool (study expert plays)
 - Shareable (send replay link to friends)
 
 **Technical Challenges**:
+
 - Storage cost (need compression)
 - Replay UI complexity (different for each game)
 - Performance (loading 50+ snapshots)

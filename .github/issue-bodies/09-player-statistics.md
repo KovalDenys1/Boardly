@@ -36,6 +36,7 @@ Provide users with insights into their gameplay performance and progression, inc
 ## 📝 Implementation Notes
 
 **Stats Calculation**:
+
 ```typescript
 interface UserStats {
   overall: {
@@ -68,23 +69,27 @@ interface UserStats {
 ```
 
 **Data Sources**:
+
 - `Games` table: Status, winner, duration
 - `Players` table: Join game → player mapping
 - Calculate on-demand or cache in `UserStats` table
 
 **Caching Strategy**:
+
 - Create `UserStats` table to store pre-computed stats
 - Update after each game completion
 - Invalidate cache when game deleted/modified
 - Fallback to real-time calculation if needed
 
 **Charts** (using recharts):
+
 - Line chart: Games per day over last 30 days
 - Bar chart: Wins per game type
 - Pie chart: Game type distribution
 - Area chart: Win rate trend
 
 **Premium vs Free**:
+
 - **Free**: Basic stats (total games, win rate, last 30 days)
 - **Premium**: Advanced stats (trends, all-time, per-game breakdown, charts)
 
@@ -100,6 +105,7 @@ interface UserStats {
 ## 📊 Estimated Complexity
 
 **M (Medium - 1-2 sprints / 1-2 weeks)**
+
 - Week 1: Stats calculation, caching, API endpoints
 - Week 2: UI, charts, polish
 
@@ -116,11 +122,13 @@ Premium feature differentiator - users love seeing their stats and progress!
 ## 📚 Additional Context
 
 **Design Inspiration**:
+
 - Chess.com stats page
 - Duolingo progress tracking
 - Gaming achievements/profile pages
 
 **Technical Considerations**:
+
 - Query optimization (aggregate functions, indexes)
 - Chart library choice (recharts recommended - lightweight)
 - Mobile responsive charts (aspect ratio, touch controls)

@@ -24,6 +24,7 @@ Allow users to observe games in progress, fostering community engagement and hel
 ## 📝 Implementation Notes
 
 **Lobby Settings Update**:
+
 ```prisma
 model Lobbies {
   // ... existing fields
@@ -34,10 +35,12 @@ model Lobbies {
 ```
 
 **Socket Rooms**:
+
 - Players: `lobby:${code}` (full game state)
 - Spectators: `lobby:${code}:spectators` (filtered game state)
 
 **Spectator Join Flow**:
+
 1. User clicks "Watch" on lobby
 2. Check if spectators allowed & not at limit
 3. Join spectator room
@@ -45,17 +48,20 @@ model Lobbies {
 5. Show read-only game board
 
 **Hidden Information Filtering**:
+
 - Yahtzee: Spectators see all rolls (no hidden info)
 - Spy: Hide spy identity until reveal phase
 - Future card games: Hide face-down cards, opponent hands
 
 **Spectator UI**:
+
 - Same game board as players but grayed out controls
 - Banner: "You are spectating" with "Join as Player" button (if space)
 - Spectator chat tab (separate from player chat)
 - List of other spectators
 
 **Socket Events**:
+
 ```typescript
 // Client → Server
 socket.emit('join-spectators', { lobbyCode })
@@ -82,6 +88,7 @@ io.to(`lobby:${code}:spectators`).emit('spectator-chat', { username, message })
 ## 📊 Estimated Complexity
 
 **M (Medium - 1-2 sprints / 1-2 weeks)**
+
 - Week 1: Backend (socket rooms, state filtering, API endpoints)
 - Week 2: Frontend (spectator UI, chat, join flow)
 
@@ -101,18 +108,21 @@ io.to(`lobby:${code}:spectators`).emit('spectator-chat', { username, message })
 ## 📚 Additional Context
 
 **Use Cases**:
+
 - Learning: Watch expert players
 - Entertainment: Watch friends' games
 - Community: Foster social interaction
 - Tournaments: Spectate high-stakes matches
 
 **Design Considerations**:
+
 - Clear visual distinction (spectator vs player)
 - Performance (don't overload socket broadcasts)
 - Privacy (respect "private game" settings)
 - Moderation (kick spectators if needed)
 
 **Similar Features**:
+
 - Chess.com live games
 - Twitch watch parties
 - Poker tournament streams

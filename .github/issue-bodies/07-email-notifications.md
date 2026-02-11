@@ -27,10 +27,12 @@ Improve user engagement by notifying users of game-related events via email, bri
 ## 📝 Implementation Notes
 
 **Resend Integration**: Already configured (`lib/email.ts`)
+
 - Used for auth emails (verification, password reset)
 - Extend for game notifications
 
 **Notification Types**:
+
 ```typescript
 enum NotificationType {
   GAME_INVITE = 'game_invite'
@@ -41,6 +43,7 @@ enum NotificationType {
 ```
 
 **Preferences Schema**:
+
 ```prisma
 model NotificationPreferences {
   id        String   @id @default(cuid())
@@ -58,17 +61,20 @@ model NotificationPreferences {
 ```
 
 **Email Templates** (in `lib/email-templates/`):
+
 - `game-invite.tsx` - "You've been invited to play [Game Name]!"
 - `turn-reminder.tsx` - "It's your turn in [Game Name]!"
 - `friend-request.tsx` - "[User] sent you a friend request"
 - `friend-accepted.tsx` - "[User] accepted your friend request"
 
 **Notification Queue** (prevent spam):
+
 - Don't send turn reminder if user recently visited
 - Batch multiple notifications (digest email)
 - Respect time zones (don't send at 3 AM)
 
 **API Endpoints**:
+
 - `POST /api/notifications/send` - Send notification
 - `GET/PUT /api/user/notification-preferences` - Get/update preferences
 - `POST /api/notifications/unsubscribe` - Unsubscribe from all
@@ -85,6 +91,7 @@ model NotificationPreferences {
 ## 📊 Estimated Complexity
 
 **M (Medium - 1 sprint / 1 week)**
+
 - Day 1-2: Schema, preferences, API endpoints
 - Day 3-4: Email templates, queue system
 - Day 5: Testing, deployment
@@ -97,10 +104,11 @@ model NotificationPreferences {
 
 ## 📚 Additional Context
 
-**Resend Docs**: https://resend.com/docs
+**Resend Docs**: <https://resend.com/docs>
 **Current Usage**: Auth emails only (`lib/email.ts` - sendVerification, sendPasswordReset)
 
 **Design Considerations**:
+
 - Respect user privacy (clear opt-out mechanism)
 - Don't spam (rate limiting, batching)
 - Mobile-friendly email templates
