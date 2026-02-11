@@ -2,15 +2,18 @@
 
 ## Defense layers
 
-1. Authentication/session layer (NextAuth)
+### Authentication/session layer (NextAuth)
+
 - Registered users are validated via NextAuth session/JWT.
 - Canonical signing secret: `NEXTAUTH_SECRET`.
 
-2. API authorization layer
+### API authorization layer
+
 - API routes validate actor identity and permissions before state mutation.
 - Rate limiting is applied on sensitive routes.
 
-3. Database safety layer (RLS)
+### Database safety layer (RLS)
+
 - RLS policies are used as defense-in-depth for direct DB access scenarios.
 - Application traffic via service role remains functional.
 

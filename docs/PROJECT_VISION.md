@@ -13,20 +13,11 @@ Build Boardly into the most reliable low-friction place to play short multiplaye
 
 ## Core principles
 
-1. Reliability before novelty
-- No feature should regress turn integrity, scoring correctness, or state sync.
-
-2. Server-authoritative game state
-- Client can be optimistic for UX, but final state comes from server snapshots.
-
-3. Fast iteration via shared game framework
-- New games should reuse the `GameEngine` contract and existing lobby/socket infrastructure.
-
-4. Security by default
-- Signed guest identity, strict auth boundaries, defensive API validation, and DB safety net.
-
-5. Mobile-first playability
-- Every game and lobby flow must be usable on mobile without degraded controls.
+- **Reliability before novelty**: no feature should regress turn integrity, scoring correctness, or state sync.
+- **Server-authoritative game state**: client can be optimistic for UX, but final state comes from server snapshots.
+- **Fast iteration via shared game framework**: new games should reuse the `GameEngine` contract and existing lobby/socket infrastructure.
+- **Security by default**: signed guest identity, strict auth boundaries, defensive API validation, and DB safety net.
+- **Mobile-first playability**: every game and lobby flow must be usable on mobile without degraded controls.
 
 ## Product strategy (2026)
 

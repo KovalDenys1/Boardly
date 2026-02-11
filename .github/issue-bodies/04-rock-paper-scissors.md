@@ -1,5 +1,5 @@
 ---
-status: in progress
+status: done
 priority: high
 type: game
 ---
@@ -14,7 +14,7 @@ Add second simple game with simultaneous turn mechanics, introducing a new game 
 
 ## ✅ Acceptance Criteria
 
-- [ ] Create `RockPaperScissorsGame` class extending `GameEngine`
+- [x] Create `RockPaperScissorsGame` class extending `GameEngine`
 - [x] Implement simultaneous move submission (both players choose, then reveal)
 - [x] Add best-of-3 or best-of-5 mode selection
 - [x] Implement round winner calculation (rock beats scissors, scissors beats paper, paper beats rock)
