@@ -120,7 +120,6 @@ DATABASE_URL="postgresql://username:password@host:port/database"
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-min-32-characters"
 NEXTAUTH_URL="http://localhost:3000"
-JWT_SECRET="your-jwt-secret-min-32-characters"
 
 # Socket.IO Server
 NEXT_PUBLIC_SOCKET_URL="http://localhost:3001"
@@ -222,7 +221,7 @@ Socket Server Broadcast → All Clients in Room → UI Update
   - `useSocketConnection` - WebSocket event handling
   - `useGameTimer` - Turn timer management
   - `useBotTurn` - AI opponent automation
-- **Optimistic Updates** - Immediate UI feedback with server sync
+- **Optimistic UX + Authoritative Reconcile** - Immediate feedback, then server-broadcast snapshot reconciliation with rollback on failed moves
 - **Guest Session Handling** - Header-based authentication (`X-Guest-Id`, `X-Guest-Name`)
 
 ## 📁 Project Structure
@@ -336,7 +335,7 @@ A production instance is available at [boardly.online](https://boardly.online) f
 2. Connect your repository
 3. Build Command: `npm install && npm run db:generate`
 4. Start Command: `npm run socket:start`
-5. Add environment variables (at minimum: `DATABASE_URL`, `CORS_ORIGIN`, `JWT_SECRET`)
+5. Add environment variables (at minimum: `DATABASE_URL`, `CORS_ORIGIN`, `NEXTAUTH_SECRET`)
 6. Deploy!
 
 **Free Tier Limitations**:
@@ -461,7 +460,35 @@ All project documentation is centralized in the `/docs` folder:
 - 💾 Game replay system
 - 🎪 Achievements and badges
 
-## 📄 License
+## � Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+### Getting Started
+- **[Multi-Machine Setup Guide](./docs/MULTI_MACHINE_SETUP.md)** - Work seamlessly across multiple computers
+- **[Contributing Guide](./docs/CONTRIBUTING.md)** - How to contribute to the project
+- **[Production Deployment](./docs/PRODUCTION_DEPLOY_GUIDE.md)** - Deploy to production environments
+
+### Development
+- **[VSCode Configuration](./.vscode/README.md)** - IDE setup and MCP integration
+- **[WebSocket Documentation](./docs/WEBSOCKET.md)** - Real-time communication patterns
+- **[Game Engine Architecture](./docs/GAME_SETTINGS_ARCHITECTURE.md)** - How games are structured
+- **[Testing Strategy](./docs/CONTRIBUTING.md#testing)** - Unit and integration tests
+
+### Features
+- **[Friend System API](./docs/FRIEND_SYSTEM_API.md)** - Social features implementation
+- **[Guest Mode](./docs/GUEST_MODE.md)** - Anonymous player support
+- **[Turn Timer](./docs/TURN_TIMER_SUMMARY.md)** - Timer system implementation
+- **[Bot System](./lib/bots/README.md)** - AI opponent architecture
+
+### Reference
+- **[Changelog](./docs/CHANGELOG.md)** - Version history and changes
+- **[TODO Roadmap](./docs/TODO.md)** - Current priorities and future plans
+- **[Issue Workflow](./docs/ISSUE_WORKFLOW.md)** - Development process
+
+For complete documentation index, see [docs/README.md](./docs/README.md).
+
+## �📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

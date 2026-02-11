@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { generateLobbyCode } from '@/lib/lobby'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const log = apiLogger('/api/lobby')
 
@@ -28,32 +26,28 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Check for authenticated user or guest
-    const session = await getServerSession(authOptions)
-    const guestId = request.headers.get('X-Guest-Id')
-    const guestName = request.headers.get('X-Guest-Name')
-
-    let user
-    if (session?.user?.id) {
-      // Authenticated user
-      user = await prisma.users.findUnique({
-        where: { id: session.user.id },
-      })
-
-      if (!user) {
-        log.error('User not found in database', undefined, { userId: session.user.id })
-        return NextResponse.json(
-          { error: 'User not found. Please log in again.' },
-          { status: 404 }
-        )
-      }
-    } else if (guestId && guestName) {
-      // Guest user
-      user = await getOrCreateGuestUser(guestId, guestName)
-      log.info('Guest creating lobby', { guestId, guestName })
-    } else {
-      // No authentication
+    const requestUser = await getRequestAuthUser(request)
+    if (!requestUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: requestUser.id },
+    })
+
+    if (!user) {
+      log.error('User not found in database', undefined, { userId: requestUser.id })
+      return NextResponse.json(
+        { error: 'User not found. Please log in again.' },
+        { status: 404 }
+      )
+    }
+
+    if (requestUser.isGuest) {
+      log.info('Guest creating lobby', {
+        guestId: requestUser.id,
+        guestName: requestUser.username,
+      })
     }
 
     const body = await request.json()

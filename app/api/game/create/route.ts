@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { SpyGame } from '@/lib/games/spy-game'
 import { GameEngine, GameConfig } from '@/lib/game-engine'
@@ -9,6 +7,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -22,9 +21,8 @@ export async function POST(request: NextRequest) {
   try {
     const log = apiLogger('POST /api/game/create')
 
-    const session = await getServerSession(authOptions)
-    const guestId = request.headers.get('X-Guest-Id')
-    const userId = session?.user?.id || guestId
+    const requestUser = await getRequestAuthUser(request)
+    const userId = requestUser?.id
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

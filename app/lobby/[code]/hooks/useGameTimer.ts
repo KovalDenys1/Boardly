@@ -18,11 +18,13 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
   const [timeLeft, setTimeLeft] = useState<number>(turnTimerLimit)
   const [timerActive, setTimerActive] = useState<boolean>(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [lastPlayerIndex, setLastPlayerIndex] = useState<number>(-1)
   
   // Use ref to avoid recreating timer on every onTimeout change
   const onTimeoutRef = useRef(onTimeout)
   const timeoutCalledRef = useRef(false)
+  const turnSignatureRef = useRef<string>('')
+  const lastTimeoutInvocationAtRef = useRef<number>(0)
+  const TIMEOUT_CALLBACK_DEBOUNCE_MS = 1500
   
   useEffect(() => {
     onTimeoutRef.current = onTimeout
@@ -40,18 +42,29 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
   useEffect(() => {
     if (!gameState) return
 
-    const currentPlayerIndex = gameState.currentPlayerIndex
+    // Disable timer outside active gameplay
+    if (gameState.status && gameState.status !== 'playing') {
+      setTimerActive(false)
+      return
+    }
 
-    // Detect if turn actually changed
-    const turnChanged = currentPlayerIndex !== lastPlayerIndex
+    const currentPlayerIndex = gameState.currentPlayerIndex
+    const lastMoveAt =
+      typeof gameState.lastMoveAt === 'number' && Number.isFinite(gameState.lastMoveAt)
+        ? gameState.lastMoveAt
+        : null
+    const turnSignature = `${currentPlayerIndex}:${lastMoveAt ?? 'none'}`
+
+    // Detect real turn boundary (player or turn-start timestamp changed)
+    const turnChanged = turnSignatureRef.current !== turnSignature
     if (turnChanged) {
-      setLastPlayerIndex(currentPlayerIndex)
+      turnSignatureRef.current = turnSignature
       // Reset timeout flag when turn changes
       timeoutCalledRef.current = false
+      lastTimeoutInvocationAtRef.current = 0
       
       // Calculate remaining time from lastMoveAt if available
-      const lastMoveAt = gameState.lastMoveAt
-      if (lastMoveAt && typeof lastMoveAt === 'number') {
+      if (lastMoveAt) {
         const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
         const remainingTime = Math.max(0, turnTimerLimit - elapsedSeconds)
         
@@ -76,18 +89,10 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
       }
     }
 
-    // Activate timer only when it's my turn
-    if (isMyTurn) {
-      setTimerActive(true)
-      // Reset timeout flag when it's not my turn
-      timeoutCalledRef.current = false
-    } else {
-      // Keep timer active for bot turns (visual countdown)
-      setTimerActive(true)
-      // Reset timeout flag when it's not my turn
-      timeoutCalledRef.current = false
-    }
-  }, [gameState, isMyTurn, lastPlayerIndex, isInitialLoad, turnTimerLimit])
+    // Keep timer active for all turns to visualize countdown.
+    // Timeout execution is additionally guarded by onTimeout callback conditions.
+    setTimerActive(true)
+  }, [gameState, isMyTurn, isInitialLoad, turnTimerLimit])
 
   // Countdown
   useEffect(() => {
@@ -102,9 +107,15 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
 
   // Handle timeout separately in useEffect to avoid state updates during render
   useEffect(() => {
-    if (timerActive && timeLeft === 0 && !timeoutCalledRef.current) {
+    if (timerActive && timeLeft === 0 && !timeoutCalledRef.current && gameState?.status === 'playing') {
+      const now = Date.now()
+      if (now - lastTimeoutInvocationAtRef.current < TIMEOUT_CALLBACK_DEBOUNCE_MS) {
+        return
+      }
+
       clientLogger.warn('⏰ Timer expired, calling onTimeout')
       timeoutCalledRef.current = true
+      lastTimeoutInvocationAtRef.current = now
       
       // Use setTimeout to defer the callback to next tick
       const timeoutId = setTimeout(() => {
@@ -113,7 +124,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
       
       return () => clearTimeout(timeoutId)
     }
-  }, [timerActive, timeLeft])
+  }, [timerActive, timeLeft, gameState?.status])
 
   return { timeLeft, timerActive }
 }

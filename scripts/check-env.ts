@@ -9,32 +9,29 @@ import { resolve } from 'path'
 import { existsSync } from 'fs'
 
 // Load environment files
-const envLocalPath = resolve(process.cwd(), '.env.local')
 const envPath = resolve(process.cwd(), '.env')
+const envLocalPath = resolve(process.cwd(), '.env.local')
 
 console.log('🔍 Checking environment configuration...\n')
 
-// Check if .env.local exists
-if (existsSync(envLocalPath)) {
-  console.log('✅ .env.local file found')
-  dotenv.config({ path: envLocalPath, override: true })
-} else {
-  console.log('⚠️  .env.local file NOT found')
-}
-
-// Check if .env exists
+// Check if .env exists (primary source)
 if (existsSync(envPath)) {
   console.log('✅ .env file found')
-  dotenv.config({ path: envPath })
+  dotenv.config({ path: envPath, override: true })
 } else {
-  console.log('ℹ️  .env file not found (optional)')
+  console.log('⚠️  .env file NOT found')
+}
+
+// Backward compatibility for older setups that still use .env.local
+if (!existsSync(envPath) && existsSync(envLocalPath)) {
+  console.log('ℹ️  Fallback: .env.local file found')
+  dotenv.config({ path: envLocalPath, override: true })
 }
 
 console.log('\n📋 Required environment variables:\n')
 
 const requiredVars = [
   { name: 'DATABASE_URL', critical: true },
-  { name: 'JWT_SECRET', critical: true },
   { name: 'NEXTAUTH_SECRET', critical: true },
   { name: 'NEXTAUTH_URL', critical: true },
 ]
@@ -78,7 +75,7 @@ console.log('\n' + '='.repeat(60))
 
 if (hasErrors) {
   console.log('\n❌ ERROR: Missing critical environment variables!')
-  console.log('Please check your .env.local file and add missing variables.\n')
+  console.log('Please check your .env file and add missing variables.\n')
   process.exit(1)
 } else {
   console.log('\n✅ All critical environment variables are set!')

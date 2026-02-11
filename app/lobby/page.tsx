@@ -11,6 +11,7 @@ import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import i18n from '@/i18n'
+import { useGuest } from '@/contexts/GuestContext'
 
 let socket: Socket
 
@@ -46,6 +47,7 @@ export default function LobbyListPage() {
   const { t, ready } = useTranslation()
   const router = useRouter()
   const { data: session } = useSession()
+  const { isGuest, guestToken } = useGuest()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [stats, setStats] = useState({
     totalLobbies: 0,
@@ -115,21 +117,25 @@ export default function LobbyListPage() {
 
   // Socket connection effect
   useEffect(() => {
+    if (isGuest && !guestToken) {
+      return
+    }
+
     // Setup WebSocket for real-time updates
     if (!socket) {
       const url = getBrowserSocketUrl()
       clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
       
-      // Get auth token - use userId for authenticated users, null for guests
-      const token = session?.user?.id || null
+      // Get auth token - use userId for authenticated users or guest JWT.
+      const token = session?.user?.id || guestToken || null
 
       const authPayload: Record<string, unknown> = {}
       if (token) authPayload.token = token
-      if (!session?.user) authPayload.isGuest = true
+      if (!session?.user && isGuest) authPayload.isGuest = true
 
       const queryPayload: Record<string, string> = {}
       if (token) queryPayload.token = String(token)
-      if (!session?.user) queryPayload.isGuest = 'true'
+      if (!session?.user && isGuest) queryPayload.isGuest = 'true'
 
       socket = io(url, {
         transports: ['websocket', 'polling'],
@@ -163,7 +169,7 @@ export default function LobbyListPage() {
         socket = null as any
       }
     }
-  }, [loadLobbies, session?.user])
+  }, [loadLobbies, session?.user, isGuest, guestToken])
 
   const triggerCleanup = async () => {
     try {

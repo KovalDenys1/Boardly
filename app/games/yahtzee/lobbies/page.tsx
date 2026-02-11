@@ -33,7 +33,7 @@ interface Lobby {
 export default function YahtzeeLobbiesPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const { isGuest, guestId, guestName } = useGuest()
+  const { isGuest, guestToken } = useGuest()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
@@ -43,6 +43,10 @@ export default function YahtzeeLobbiesPage() {
     // Allow both authenticated users and guests
     if (status === 'unauthenticated' && !isGuest) {
       setLoading(false)
+      return
+    }
+
+    if (isGuest && !guestToken) {
       return
     }
 
@@ -60,18 +64,16 @@ export default function YahtzeeLobbiesPage() {
         const url = getBrowserSocketUrl()
         clientLogger.log('🔌 Connecting to Socket.IO for Yahtzee lobby list:', url)
 
-        // Get auth token - use userId for authenticated users or guestId for guests
-        const token = session?.user?.id || guestId || null
+        // Get auth token - use userId for authenticated users or guest JWT for guests
+        const token = session?.user?.id || guestToken || null
 
         const authPayload: Record<string, unknown> = {}
         if (token) authPayload.token = token
         authPayload.isGuest = isGuest
-        if (isGuest && guestName) authPayload.guestName = guestName
 
         const queryPayload: Record<string, string> = {}
         if (token) queryPayload.token = String(token)
         queryPayload.isGuest = String(isGuest)
-        if (isGuest && guestName) queryPayload.guestName = guestName
 
         socket = io(url, {
           transports: ['websocket', 'polling'],
@@ -108,7 +110,7 @@ export default function YahtzeeLobbiesPage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, isGuest, router])
+  }, [status, isGuest, guestToken, router])
 
   const triggerCleanup = async () => {
     try {
@@ -396,5 +398,3 @@ export default function YahtzeeLobbiesPage() {
     </div>
   )
 }
-
-

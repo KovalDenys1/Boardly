@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
@@ -28,6 +28,27 @@ interface UseGameActionsProps {
   setTimerActive: (active: boolean) => void
   celebrate: () => void
   fireworks: () => void
+  reconcileWithServerSnapshot: () => Promise<void>
+}
+
+export interface AutoActionContext {
+  source: 'turn-timeout'
+  debounceKey: string
+  turnSnapshot: {
+    currentPlayerId: string
+    currentPlayerIndex: number
+    lastMoveAt: number | null
+    rollsLeft: number
+    updatedAt: string | number | null
+  }
+}
+
+function isExpectedAutoActionSkip(status: number, error: any): boolean {
+  if (status === 202) return true
+  if (status === 409) return true
+
+  const code = error?.code
+  return code === 'TURN_ALREADY_ENDED' || code === 'AUTO_ACTION_DEBOUNCED' || code === 'STATE_CONFLICT'
 }
 
 export function useGameActions(props: UseGameActionsProps) {
@@ -48,14 +69,48 @@ export function useGameActions(props: UseGameActionsProps) {
     setTimerActive,
     celebrate,
     fireworks,
+    reconcileWithServerSnapshot,
   } = props
 
   const [isMoveInProgress, setIsMoveInProgress] = useState(false)
   const [isRolling, setIsRolling] = useState(false)
   const [isScoring, setIsScoring] = useState(false)
+  const [isStateReverting, setIsStateReverting] = useState(false)
+  const rollbackIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Local held state - purely client-side between rolls
   const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
+
+  const triggerRollbackIndicator = useCallback(() => {
+    if (rollbackIndicatorTimeoutRef.current) {
+      clearTimeout(rollbackIndicatorTimeoutRef.current)
+    }
+
+    setIsStateReverting(true)
+    rollbackIndicatorTimeoutRef.current = setTimeout(() => {
+      setIsStateReverting(false)
+      rollbackIndicatorTimeoutRef.current = null
+    }, 1800)
+  }, [])
+
+  const reconcileAfterMoveError = useCallback(async () => {
+    try {
+      await reconcileWithServerSnapshot()
+      triggerRollbackIndicator()
+      return true
+    } catch (error) {
+      clientLogger.warn('Failed to reconcile state after move error', error)
+      return false
+    }
+  }, [reconcileWithServerSnapshot, triggerRollbackIndicator])
+
+  useEffect(() => {
+    return () => {
+      if (rollbackIndicatorTimeoutRef.current) {
+        clearTimeout(rollbackIndicatorTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Sync held state when game state changes
   useEffect(() => {
@@ -75,22 +130,29 @@ export function useGameActions(props: UseGameActionsProps) {
     }
   }, [gameEngine, isMyTurn])
 
-  const handleRollDice = useCallback(async () => {
-    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
+  const handleRollDice = useCallback(async (autoActionContext?: AutoActionContext): Promise<YahtzeeGame | null> => {
+    const isAutoAction = !!autoActionContext
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return null
+
+    const preMoveHeld = [...gameEngine.getHeld()]
 
     if (isMoveInProgress) {
       clientLogger.log('Move already in progress, ignoring')
-      return
+      return null
     }
 
     if (!isMyTurn) {
-      showToast.error('toast.notYourTurnRoll')
-      return
+      if (!isAutoAction) {
+        showToast.error('toast.notYourTurnRoll')
+      }
+      return null
     }
 
     if (gameEngine.getRollsLeft() === 0) {
-      showToast.error('toast.noRollsLeft')
-      return
+      if (!isAutoAction) {
+        showToast.error('toast.noRollsLeft')
+      }
+      return null
     }
 
     setIsMoveInProgress(true)
@@ -118,15 +180,28 @@ export function useGameActions(props: UseGameActionsProps) {
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ move }),
+        body: JSON.stringify({ move, autoActionContext }),
       })
+
+      // Auto-actions can be debounced/ignored server-side by design.
+      if (isAutoAction && res.status === 202) {
+        return null
+      }
 
       if (!res.ok) {
         const error = await res.json()
+        if (isAutoAction && isExpectedAutoActionSkip(res.status, error)) {
+          clientLogger.log('⏱️ Auto roll skipped by server guard', { status: res.status, code: error?.code })
+          return null
+        }
         throw new Error(error.error || 'Failed to roll dice')
       }
 
       const data = await res.json()
+      if (!data?.game?.state) {
+        if (isAutoAction) return null
+        throw new Error('Invalid server response')
+      }
 
       // Replace optimistic update with real server data
       let newEngine: YahtzeeGame | null = null
@@ -193,20 +268,30 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
 
-      emitWhenConnected('game-action', {
-        lobbyCode: code,
-        action: 'state-change',
-        payload: {
-          state: data.game.state,
-        },
-      })
+      if (data.serverBroadcasted !== true) {
+        emitWhenConnected('game-action', {
+          lobbyCode: code,
+          action: 'state-change',
+          payload: data.game.state,
+        })
+        void reconcileWithServerSnapshot()
+      }
+
+      return newEngine
     } catch (error: any) {
-      showToast.error('toast.rollFailed', error.message)
+      if (!isAutoAction) {
+        setHeld(preMoveHeld)
+        await reconcileAfterMoveError()
+        showToast.error('toast.rollFailed', error.message)
+      } else {
+        clientLogger.log('⏱️ Auto roll failed or skipped', { message: error?.message })
+      }
+      return null
     } finally {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -231,17 +316,22 @@ export function useGameActions(props: UseGameActionsProps) {
     // Sound is now played in Dice component for instant feedback
   }, [gameEngine, game, isMyTurn, isRolling, isScoring])
 
-  const handleScore = useCallback(async (category: YahtzeeCategory) => {
-    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
+  const handleScore = useCallback(async (category: YahtzeeCategory, autoActionContext?: AutoActionContext): Promise<YahtzeeGame | null> => {
+    const isAutoAction = !!autoActionContext
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return null
+
+    const preMoveHeld = [...gameEngine.getHeld()]
 
     if (isMoveInProgress) {
       clientLogger.log('Move already in progress, ignoring')
-      return
+      return null
     }
 
     if (!isMyTurn) {
-      showToast.error('toast.notYourTurn')
-      return
+      if (!isAutoAction) {
+        showToast.error('toast.notYourTurn')
+      }
+      return null
     }
 
     // Check if category is already filled
@@ -249,7 +339,7 @@ export function useGameActions(props: UseGameActionsProps) {
     if (scorecard && scorecard[category] !== undefined) {
       // Category already filled - silently ignore (UI should prevent this)
       clientLogger.log('Category already filled, ignoring click')
-      return
+      return null
     }
 
     setIsMoveInProgress(true)
@@ -268,15 +358,28 @@ export function useGameActions(props: UseGameActionsProps) {
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ move }),
+        body: JSON.stringify({ move, autoActionContext }),
       })
+
+      // Auto-actions can be debounced/ignored server-side by design.
+      if (isAutoAction && res.status === 202) {
+        return null
+      }
 
       if (!res.ok) {
         const error = await res.json()
+        if (isAutoAction && isExpectedAutoActionSkip(res.status, error)) {
+          clientLogger.log('⏱️ Auto score skipped by server guard', { status: res.status, code: error?.code })
+          return null
+        }
         throw new Error(error.error || 'Failed to score')
       }
 
       const data = await res.json()
+      if (!data?.game?.state) {
+        if (isAutoAction) return null
+        throw new Error('Invalid server response')
+      }
       const newEngine = new YahtzeeGame(gameEngine.getState().id)
       newEngine.restoreState(data.game.state)
       setGameEngine(newEngine)
@@ -319,13 +422,14 @@ export function useGameActions(props: UseGameActionsProps) {
         },
       })
 
-      emitWhenConnected('game-action', {
-        lobbyCode: code,
-        action: 'state-change',
-        payload: {
-          state: data.game.state,
-        },
-      })
+      if (data.serverBroadcasted !== true) {
+        emitWhenConnected('game-action', {
+          lobbyCode: code,
+          action: 'state-change',
+          payload: data.game.state,
+        })
+        void reconcileWithServerSnapshot()
+      }
 
       if (newEngine.isGameFinished()) {
         setTimerActive(false)
@@ -369,13 +473,22 @@ export function useGameActions(props: UseGameActionsProps) {
           showToast.custom('toast.playerTurn', 'ℹ️', undefined, { player: nextPlayer.name })
         }
       }
+
+      return newEngine
     } catch (error: any) {
-      showToast.error('toast.scoreFailed', error.message)
+      if (!isAutoAction) {
+        setHeld(preMoveHeld)
+        await reconcileAfterMoveError()
+        showToast.error('toast.scoreFailed', error.message)
+      } else {
+        clientLogger.log('⏱️ Auto score failed or skipped', { message: error?.message })
+      }
+      return null
     } finally {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   return {
     handleRollDice,
@@ -384,6 +497,7 @@ export function useGameActions(props: UseGameActionsProps) {
     isMoveInProgress,
     isRolling,
     isScoring,
+    isStateReverting,
     held, // Export local held state for UI
   }
 }

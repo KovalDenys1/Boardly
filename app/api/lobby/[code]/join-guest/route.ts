@@ -2,8 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { z } from 'zod'
+import {
+  createGuestId,
+  createGuestToken,
+  getGuestTokenFromRequest,
+  verifyGuestToken,
+} from '@/lib/guest-auth'
+import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 
 const limiter = rateLimit(rateLimitPresets.game)
+const joinGuestSchema = z.object({
+  guestName: z.string().trim().min(2).max(20),
+  guestToken: z.string().optional(),
+})
 
 export async function POST(
   req: NextRequest,
@@ -15,22 +27,15 @@ export async function POST(
     if (rateLimitResult) return rateLimitResult
 
     const { code } = await params
-    const { guestId, guestName } = await req.json()
-
-    if (!guestId || !guestName) {
-      return NextResponse.json(
-        { error: 'Guest ID and name are required' },
-        { status: 400 }
-      )
+    const parsedBody = joinGuestSchema.safeParse(await req.json())
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Guest name must be 2-20 characters' }, { status: 400 })
     }
 
-    // Validate guest name length
-    if (guestName.length < 2 || guestName.length > 20) {
-      return NextResponse.json(
-        { error: 'Guest name must be 2-20 characters' },
-        { status: 400 }
-      )
-    }
+    const providedToken = parsedBody.data.guestToken || getGuestTokenFromRequest(req)
+    const existingGuestClaims = providedToken ? verifyGuestToken(providedToken) : null
+    const requestedGuestName = parsedBody.data.guestName
+    const guestId = existingGuestClaims?.guestId || createGuestId()
 
     // Find the lobby
     const lobby = await prisma.lobbies.findUnique({
@@ -53,47 +58,34 @@ export async function POST(
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
     }
 
-    // Check if lobby is full
+    const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName)
+    const guestName = guestUser.username || requestedGuestName
+    const guestToken = createGuestToken(guestUser.id, guestName)
+
     const activeGame = lobby.games[0]
-    if (activeGame && activeGame.players.length >= lobby.maxPlayers) {
-      return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
-    }
-
-    // Create or find guest user
-    let guestUser = await prisma.users.findUnique({
-      where: { id: guestId },
-    })
-
-    if (!guestUser) {
-      guestUser = await prisma.users.create({
-        data: {
-          id: guestId,
-          username: guestName,
-          isGuest: true,
-          lastActiveAt: new Date(),
-        },
-      })
-    } else {
-      // Update lastActiveAt for existing guest
-      if (guestUser.isGuest) {
-        await prisma.users.update({
-          where: { id: guestId },
-          data: { lastActiveAt: new Date() },
-        })
-      }
-    }
 
     // Check if guest is already in the lobby
     if (activeGame) {
       const existingPlayer = activeGame.players.find(
-        (p: any) => p.userId === guestId
+        (p: any) => p.userId === guestUser.id
       )
       if (existingPlayer) {
         return NextResponse.json(
-          { message: 'Already in lobby', player: existingPlayer },
+          {
+            message: 'Already in lobby',
+            player: existingPlayer,
+            guestId: guestUser.id,
+            guestName,
+            guestToken,
+          },
           { status: 200 }
         )
       }
+    }
+
+    // Check if lobby is full
+    if (activeGame && activeGame.players.length >= lobby.maxPlayers) {
+      return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
     }
 
     // Create or get the active game
@@ -106,7 +98,7 @@ export async function POST(
           state: JSON.stringify({}), // Empty initial state
           players: {
             create: {
-              userId: guestId,
+              userId: guestUser.id,
               position: 0,
             },
           },
@@ -125,7 +117,7 @@ export async function POST(
       await prisma.players.create({
         data: {
           gameId: activeGame.id,
-          userId: guestId,
+          userId: guestUser.id,
           position: nextPosition,
         },
       })
@@ -156,7 +148,9 @@ export async function POST(
       {
         message: 'Guest joined successfully',
         game,
-        guestToken: guestId,
+        guestId: guestUser.id,
+        guestName,
+        guestToken,
       },
       { status: 200 }
     )
