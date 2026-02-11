@@ -1,0 +1,32 @@
+{
+  "recommendations": [
+    // Essential for Next.js + TypeScript development
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    
+    // GitHub Copilot with MCP support
+    "github.copilot",
+    "github.copilot-chat",
+    
+    // Database management
+    "prisma.prisma",
+    "cweijan.vscode-postgresql-client2",
+    
+    // Testing
+    "orta.vscode-jest",
+    
+    // Git workflow
+    "eamodio.gitlens",
+    
+    // Code quality
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    
+    // Utilities
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+    "editorconfig.editorconfig"
+  ],
+  "unwantedRecommendations": []
+}

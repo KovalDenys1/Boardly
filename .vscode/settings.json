@@ -1,0 +1,30 @@
+{
+  // CSS linting
+  "css.lint.unknownAtRules": "ignore",
+  // TypeScript/JavaScript settings
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  // Editor settings
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Files to exclude from explorer
+  "files.exclude": {
+    "**/.git": true,
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/.DS_Store": true
+  },
+  // Search settings
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/coverage": true
+  },
+  "chat.tools.terminal.autoApprove": {
+    "nc": true,
+    "npx prisma": true
+  }
+}
