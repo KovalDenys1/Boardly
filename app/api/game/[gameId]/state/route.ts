@@ -36,6 +36,28 @@ function normalizeTimestamp(value: unknown): number | null {
   return null
 }
 
+function resolveTurnTimerMs(turnTimer: unknown): number {
+  if (typeof turnTimer !== 'number' || !Number.isFinite(turnTimer)) return 0
+  if (turnTimer <= 0) return 0
+  return Math.max(0, Math.floor(turnTimer * 1000))
+}
+
+function resolveLastMoveAtMs(stateLastMoveAt: unknown, fallback?: Date | null): number | null {
+  const stateTimestamp = normalizeTimestamp(stateLastMoveAt)
+  if (stateTimestamp !== null) return stateTimestamp
+  if (fallback instanceof Date) {
+    const fallbackTimestamp = fallback.getTime()
+    return Number.isNaN(fallbackTimestamp) ? null : fallbackTimestamp
+  }
+  return null
+}
+
+function resolveLastMoveAtDate(stateLastMoveAt: unknown): Date | undefined {
+  const timestamp = normalizeTimestamp(stateLastMoveAt)
+  if (timestamp === null) return undefined
+  return new Date(timestamp)
+}
+
 function shouldDebounceAutoAction(key: string): boolean {
   const now = Date.now()
   const previous = autoActionDebounceMap.get(key)
@@ -126,6 +148,7 @@ export async function POST(
             id: true,
             code: true,
             gameType: true,
+            turnTimer: true,
           },
         },
       },
@@ -232,6 +255,31 @@ export async function POST(
           { status: 409 }
         )
       }
+
+      const turnTimerMs = resolveTurnTimerMs(game.lobby?.turnTimer)
+      if (turnTimerMs > 0) {
+        const lastMoveAtMs = resolveLastMoveAtMs(serverState?.lastMoveAt, game.lastMoveAt)
+        if (lastMoveAtMs !== null) {
+          const elapsedMs = Date.now() - lastMoveAtMs
+          if (elapsedMs < turnTimerMs) {
+            return NextResponse.json(
+              {
+                error: 'Turn timer still active',
+                code: 'TURN_TIMER_ACTIVE',
+                skipped: true,
+                remainingMs: Math.max(0, turnTimerMs - elapsedMs),
+              },
+              { status: 409 }
+            )
+          }
+        } else {
+          log.warn('Auto action missing lastMoveAt, skipping timer guard', {
+            gameId,
+            userId,
+            moveType: move.type,
+          })
+        }
+      }
     }
 
     // Create move object
@@ -268,6 +316,8 @@ export async function POST(
       })
     }
 
+    const lastMoveAtDate = resolveLastMoveAtDate(newState.lastMoveAt)
+
     // Optimistic concurrency control:
     // apply update only if game row is still at the same revision we loaded.
     const gameUpdateResult = await prisma.games.updateMany({
@@ -280,7 +330,7 @@ export async function POST(
         state: JSON.stringify(newState),
         status: newState.status,
         currentTurn: newState.currentPlayerIndex,
-        lastMoveAt: new Date(), // Track when this move was made
+        ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
         updatedAt: new Date(),
       },
     })

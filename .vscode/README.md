@@ -25,8 +25,9 @@ Model Context Protocol (MCP) server configuration for GitHub Copilot integration
 
 **Configured MCP Servers:**
 - **filesystem** - File system access for reading/writing project files
-- **postgres** - Database access via `scripts/mcp-postgres.sh`
-- **github** - GitHub API integration (requires `GITHUB_TOKEN` in `.env`)
+- **postgres** - Database access via `scripts/mcp-postgres.sh` (`DATABASE_URL` from `.env`/`.env.local`)
+- **github** - GitHub API integration (requires `GITHUB_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN`)
+- **supabase** - Hosted Supabase MCP endpoint (`https://mcp.supabase.com/mcp`)
 - **memory** - Persistent memory across Copilot sessions
 
 **Required Setup:**
@@ -34,6 +35,7 @@ Model Context Protocol (MCP) server configuration for GitHub Copilot integration
 2. Add your `GITHUB_TOKEN` to `.env` (get from https://github.com/settings/tokens)
    - Required scopes: `repo`, `workflow`, `read:org`, `read:user`
 3. Ensure `DATABASE_URL` is set in `.env`
+4. Optional: use `.env.local` for machine-specific MCP credentials
 
 ### `settings.json`
 **Status**: ✅ Safe to commit
@@ -93,7 +95,7 @@ You'll have the **exact same development environment** as on your other machines
 ⚠️ **What IS committed:**
 - `extensions.json` - extension recommendations (safe)
 - `settings.json` - workspace settings (no secrets)
-- `mcp.json` - MCP configuration (uses `${env:GITHUB_TOKEN}` reference, not actual token)
+- `mcp.json` - MCP server wiring only (scripts/endpoints, no actual tokens)
 
 ✅ **What is NOT committed:**
 - `.env` - your actual secrets and API keys
@@ -106,7 +108,7 @@ You'll have the **exact same development environment** as on your other machines
 **Problem**: GitHub Copilot can't access database or GitHub API
 
 **Solution**:
-1. Check `.env` file exists and has `DATABASE_URL` and `GITHUB_TOKEN`
+1. Check `.env`/`.env.local` has `DATABASE_URL` and `GITHUB_TOKEN` (or `GITHUB_PERSONAL_ACCESS_TOKEN`)
 2. Restart VSCode to reload MCP servers
 3. Check Output panel → "GitHub Copilot Chat" for errors
 
@@ -125,8 +127,23 @@ You'll have the **exact same development environment** as on your other machines
 
 **Solution**:
 1. Make script executable: `chmod +x scripts/mcp-postgres.sh`
-2. Verify `DATABASE_URL` in `.env` is correct
+2. Verify `DATABASE_URL` in `.env` or `.env.local` is correct
 3. Test connection: `npm run db:studio`
+
+### Supabase MCP Fails With `unknown command "mcp" for "supabase"`
+
+**Problem**: MCP config still launches Supabase CLI command (`supabase mcp`) instead of hosted endpoint.
+
+**Solution**:
+1. Open `.vscode/mcp.json`
+2. Ensure Supabase server is configured as:
+   ```jsonc
+   "supabase": {
+     "type": "http",
+     "url": "https://mcp.supabase.com/mcp"
+   }
+   ```
+3. Restart VSCode or run MCP server restart command
 
 ## Additional Resources
 

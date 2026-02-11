@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { Prisma } from '@prisma/client'
 import { logger } from './logger'
+import { DatabaseTimeoutError } from './database-errors'
 
 export class AppError extends Error {
   constructor(
@@ -106,6 +107,20 @@ export function handleApiError(error: unknown): NextResponse {
   }
 
   // Handle Prisma errors
+  if (error instanceof DatabaseTimeoutError) {
+    return NextResponse.json(
+      {
+        error: 'Database request timed out',
+        code: error.code,
+        details: {
+          timeoutMs: error.timeoutMs,
+          operation: error.operation,
+        },
+      },
+      { status: 503 }
+    )
+  }
+
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     return handlePrismaError(error)
   }
@@ -191,6 +206,20 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
           code: 'RELATION_VIOLATION',
         },
         { status: 400 }
+      )
+
+    case 'P1001':
+    case 'P1002':
+    case 'P1008':
+    case 'P1017':
+    case 'P2024':
+      return NextResponse.json(
+        {
+          error: 'Database is temporarily unavailable',
+          code: 'DATABASE_UNAVAILABLE',
+          details: { retryable: true, prismaCode: error.code },
+        },
+        { status: 503 }
       )
 
     default:

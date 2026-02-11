@@ -329,8 +329,8 @@ function CreateLobbyPage() {
                         {gameInfo.allowedPlayers[0]}
                       </span>
                       <span className="text-lg text-white/90 font-semibold">
-                        {gameInfo.allowedPlayers[0] === 1 
-                          ? t('lobby.create.player') 
+                        {gameInfo.allowedPlayers[0] === 1
+                          ? t('lobby.create.player')
                           : t('lobby.create.players')
                         }
                       </span>

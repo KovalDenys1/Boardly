@@ -3,6 +3,12 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import {
+  AuthenticationError,
+  NotFoundError,
+  ValidationError,
+  withErrorHandler,
+} from '@/lib/error-handler'
 
 const log = apiLogger('Merge Accounts')
 
@@ -10,109 +16,85 @@ const log = apiLogger('Merge Accounts')
  * POST /api/user/merge-accounts
  * Merges OAuth account from one user to another (current logged-in user)
  */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+async function mergeAccountsHandler(request: NextRequest) {
+  const session = await getServerSession(authOptions)
 
-    const body = await request.json()
-    const { provider, providerAccountId, confirmed } = body
-
-    if (!provider || !providerAccountId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-
-    if (!confirmed) {
-      return NextResponse.json(
-        { error: 'Merge must be confirmed' },
-        { status: 400 }
-      )
-    }
-
-    const currentUserId = session.user.id
-
-    // Find the OAuth account
-    const oauthAccount = await prisma.accounts.findUnique({
-      where: {
-        provider_providerAccountId: {
-          provider,
-          providerAccountId
-        }
-      },
-      include: {
-        user: true
-      }
-    })
-
-    if (!oauthAccount) {
-      return NextResponse.json(
-        { error: 'OAuth account not found' },
-        { status: 404 }
-      )
-    }
-
-    const sourceUserId = oauthAccount.userId
-    
-    if (sourceUserId === currentUserId) {
-      return NextResponse.json(
-        { error: 'Account is already linked to your profile' },
-        { status: 400 }
-      )
-    }
-
-    // Start transaction to merge accounts
-    await prisma.$transaction(async (tx) => {
-      // 1. Move all accounts from source user to current user
-      await tx.accounts.updateMany({
-        where: { userId: sourceUserId },
-        data: { userId: currentUserId }
-      })
-
-      // 2. Move all players from source user to current user
-      await tx.players.updateMany({
-        where: { userId: sourceUserId },
-        data: { userId: currentUserId }
-      })
-
-      // 3. Update lobbies where source user was creator
-      await tx.lobbies.updateMany({
-        where: { creatorId: sourceUserId },
-        data: { creatorId: currentUserId }
-      })
-
-      // 4. Delete the source user (cascade will handle remaining relations)
-      await tx.users.delete({
-        where: { id: sourceUserId }
-      })
-    })
-
-    log.info('Successfully merged accounts', {
-      fromUserId: sourceUserId,
-      toUserId: currentUserId,
-      provider
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Accounts merged successfully'
-    })
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    log.error('Failed to merge accounts')
-    console.error('Account merge error:', errorMessage)
-    return NextResponse.json(
-      { error: 'Failed to merge accounts' },
-      { status: 500 }
-    )
+  if (!session?.user?.id) {
+    throw new AuthenticationError('Unauthorized')
   }
+
+  const body = await request.json()
+  const { provider, providerAccountId, confirmed } = body
+
+  if (!provider || !providerAccountId) {
+    throw new ValidationError('Missing required fields')
+  }
+
+  if (!confirmed) {
+    throw new ValidationError('Merge must be confirmed')
+  }
+
+  const currentUserId = session.user.id
+
+  // Find the OAuth account
+  const oauthAccount = await prisma.accounts.findUnique({
+    where: {
+      provider_providerAccountId: {
+        provider,
+        providerAccountId,
+      },
+    },
+    include: {
+      user: true,
+    },
+  })
+
+  if (!oauthAccount) {
+    throw new NotFoundError('OAuth account')
+  }
+
+  const sourceUserId = oauthAccount.userId
+
+  if (sourceUserId === currentUserId) {
+    throw new ValidationError('Account is already linked to your profile')
+  }
+
+  // Start transaction to merge accounts
+  await prisma.$transaction(async (tx) => {
+    // 1. Move all accounts from source user to current user
+    await tx.accounts.updateMany({
+      where: { userId: sourceUserId },
+      data: { userId: currentUserId },
+    })
+
+    // 2. Move all players from source user to current user
+    await tx.players.updateMany({
+      where: { userId: sourceUserId },
+      data: { userId: currentUserId },
+    })
+
+    // 3. Update lobbies where source user was creator
+    await tx.lobbies.updateMany({
+      where: { creatorId: sourceUserId },
+      data: { creatorId: currentUserId },
+    })
+
+    // 4. Delete the source user (cascade will handle remaining relations)
+    await tx.users.delete({
+      where: { id: sourceUserId },
+    })
+  })
+
+  log.info('Successfully merged accounts', {
+    fromUserId: sourceUserId,
+    toUserId: currentUserId,
+    provider,
+  })
+
+  return NextResponse.json({
+    success: true,
+    message: 'Accounts merged successfully',
+  })
 }
+
+export const POST = withErrorHandler(mergeAccountsHandler)

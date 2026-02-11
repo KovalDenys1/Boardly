@@ -2,21 +2,20 @@
 set -euo pipefail
 
 workspace_dir="$(cd "$(dirname "$0")/.." && pwd)"
-env_file="${workspace_dir}/.env"
+# shellcheck disable=SC1091
+source "${workspace_dir}/scripts/mcp-common.sh"
 
-# Load workspace env file for MCP servers started by VS Code.
-if [[ -f "$env_file" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$env_file"
-  set +a
-fi
+load_workspace_env "$workspace_dir"
 
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  echo "GITHUB_TOKEN is not set. Add it to .env or your shell environment." >&2
+require_command "npx" "Install Node.js and ensure it is available in your PATH."
+
+if [[ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]]; then
+  export GITHUB_PERSONAL_ACCESS_TOKEN
+elif [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  export GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN"
+else
+  echo "Set GITHUB_TOKEN or GITHUB_PERSONAL_ACCESS_TOKEN in .env/.env.local." >&2
   exit 1
 fi
-
-export GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_TOKEN"
 
 exec npx -y @modelcontextprotocol/server-github
