@@ -18,7 +18,7 @@
         "${workspaceFolder}/scripts/mcp-postgres.sh"
       ]
     },
-    // ─── GitHub (Issues, PRs, Repos) ───────────────────────
+    // ─── GitHub (Issues, PRs, Repos; token from .env/.env.local) ──
     "github": {
       "type": "stdio",
       "command": "bash",
@@ -48,19 +48,10 @@
         "STRIPE_SECRET_KEY": "${env:STRIPE_SECRET_KEY}"
       }
     },
-    // ─── Supabase (DB management, migrations, edge functions)
+    // ─── Supabase (hosted MCP endpoint; OAuth via MCP client)
     "supabase": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "supabase",
-        "--experimental",
-        "mcp"
-      ],
-      "env": {
-        "SUPABASE_ACCESS_TOKEN": "${env:SUPABASE_ACCESS_TOKEN}"
-      }
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
     },
     // ─── Chrome DevTools MCP ───────────────────────────────
     "chrome-devtools": {

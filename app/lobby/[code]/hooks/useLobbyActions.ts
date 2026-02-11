@@ -284,9 +284,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       engine.restoreState(data.game.state)
       setGameEngine(engine)
 
+      // Set game state with players data (needed for bot detection)
+      setGame(data.game)
+
       // Track game start
       const players = data.game.players || []
-      const botCount = players.filter((p: any) => p.user?.isBot).length
+      const botCount = players.filter((p: any) => p.user?.bot).length
       trackGameStarted({
         lobbyCode: code,
         gameType: lobby?.gameType || 'yahtzee',
@@ -345,7 +348,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
+  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
 
   return {
     loadLobby,

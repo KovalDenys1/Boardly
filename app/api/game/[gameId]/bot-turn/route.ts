@@ -199,6 +199,9 @@ export async function POST(
           const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as any, botUserIds)
           const statusChanged = game.status !== newState.status
           const oldStatus = game.status
+          const lastMoveAtDate = typeof newState.lastMoveAt === 'number' && Number.isFinite(newState.lastMoveAt)
+            ? new Date(newState.lastMoveAt)
+            : undefined
 
           log.info('Saving bot move to database...', {
             moveType: botMove.type,
@@ -212,7 +215,7 @@ export async function POST(
                 state: JSON.stringify(newState),
                 status: newState.status,
                 currentTurn: newState.currentPlayerIndex,
-                lastMoveAt: new Date(),
+                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
               },
             }).catch(async (dbError) => {
@@ -225,7 +228,7 @@ export async function POST(
                   state: JSON.stringify(newState),
                   status: newState.status,
                   currentTurn: newState.currentPlayerIndex,
-                  lastMoveAt: new Date(),
+                  ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                   updatedAt: new Date(),
                 },
               })

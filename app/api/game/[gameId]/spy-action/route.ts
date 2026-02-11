@@ -86,6 +86,9 @@ export async function POST(
 
     // Get updated state
     const updatedState = spyGame.getState()
+    const lastMoveAtDate = typeof updatedState.lastMoveAt === 'number' && Number.isFinite(updatedState.lastMoveAt)
+      ? new Date(updatedState.lastMoveAt)
+      : undefined
 
     // Check if game status changed (e.g., finished)
     const statusChanged = game.status !== updatedState.status
@@ -98,7 +101,7 @@ export async function POST(
         state: JSON.stringify(updatedState),
         status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
-        lastMoveAt: new Date(),
+        ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
       },
     })
 

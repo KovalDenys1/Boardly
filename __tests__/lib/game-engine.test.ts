@@ -114,6 +114,16 @@ describe('GameEngine', () => {
       expect(game.getState().status).toBe('playing')
     })
 
+    it('should set lastMoveAt when game starts', () => {
+      const beforeStart = Date.now()
+      game.startGame()
+      const state = game.getState()
+
+      expect(state.lastMoveAt).toBeDefined()
+      expect(state.lastMoveAt).toBeGreaterThanOrEqual(beforeStart)
+      expect(state.lastMoveAt).toBeLessThanOrEqual(Date.now())
+    })
+
     it('should track current player', () => {
       game.startGame()
       

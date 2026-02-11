@@ -114,6 +114,7 @@ export abstract class GameEngine {
     }
     this.state.status = 'playing';
     this.state.updatedAt = new Date();
+    this.state.lastMoveAt = Date.now();
     return true;
   }
 

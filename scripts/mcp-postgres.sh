@@ -2,19 +2,12 @@
 set -euo pipefail
 
 workspace_dir="$(cd "$(dirname "$0")/.." && pwd)"
-env_file="${workspace_dir}/.env"
+# shellcheck disable=SC1091
+source "${workspace_dir}/scripts/mcp-common.sh"
 
-# Load workspace env file for MCP servers started by VS Code.
-if [[ -f "$env_file" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$env_file"
-  set +a
-fi
+load_workspace_env "$workspace_dir"
 
-if [[ -z "${DATABASE_URL:-}" ]]; then
-  echo "DATABASE_URL is not set. Add it to .env or your shell environment." >&2
-  exit 1
-fi
+require_command "npx" "Install Node.js and ensure it is available in your PATH."
+require_env_var "DATABASE_URL" "DATABASE_URL is not set. Add it to .env/.env.local or your shell environment."
 
 exec npx -y @modelcontextprotocol/server-postgres "$DATABASE_URL"
