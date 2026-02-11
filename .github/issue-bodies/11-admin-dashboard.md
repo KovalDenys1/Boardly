@@ -39,6 +39,7 @@ Provide administrators with tools to manage the platform, handle user support re
 ## 📝 Implementation Notes
 
 **Schema Update**:
+
 ```prisma
 model Users {
   // ... existing fields
@@ -69,6 +70,7 @@ model AdminAuditLog {
 ```
 
 **Admin Middleware**:
+
 ```typescript
 // middleware/admin.ts
 export function requireAdmin(req, res) {
@@ -80,6 +82,7 @@ export function requireAdmin(req, res) {
 ```
 
 **Admin Routes**:
+
 - GET `/admin` - Dashboard overview
 - GET `/admin/users` - User list
 - GET `/admin/users/[id]` - User details
@@ -90,6 +93,7 @@ export function requireAdmin(req, res) {
 - GET `/admin/audit-logs` - View admin actions
 
 **Dashboard Widgets**:
+
 - Active users (last 24h)
 - Games in progress
 - Total registered users
@@ -99,6 +103,7 @@ export function requireAdmin(req, res) {
 - System health indicators
 
 **UI Components**:
+
 - `components/Admin/UserTable.tsx`
 - `components/Admin/GameTable.tsx`
 - `components/Admin/StatsCards.tsx`
@@ -116,6 +121,7 @@ export function requireAdmin(req, res) {
 ## 📊 Estimated Complexity
 
 **L (Large - 2-3 sprints / 2-3 weeks)**
+
 - Week 1: Schema, middleware, user management
 - Week 2: Game management, moderation tools
 - Week 3: Monitoring, audit log, polish
@@ -141,11 +147,13 @@ export function requireAdmin(req, res) {
 **Admin Users**: Initially just project owner, expand as needed
 
 **Design Inspiration**:
+
 - WordPress admin panel
 - Supabase dashboard
 - Firebase console
 
 **Future Enhancements**:
+
 - Content moderation queue
 - User analytics (cohort analysis)
 - A/B testing controls

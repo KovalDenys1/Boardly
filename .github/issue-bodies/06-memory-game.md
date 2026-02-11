@@ -26,6 +26,7 @@ Add Memory game to expand casual game offerings with a simple turn-based matchin
 ## 📝 Implementation Notes
 
 **Game Rules**:
+
 - 2-4 players
 - Grid of facedown cards (pairs of matching cards)
 - Players take turns flipping 2 cards
@@ -35,6 +36,7 @@ Add Memory game to expand casual game offerings with a simple turn-based matchin
 - Winner = most pairs collected
 
 **State Structure**:
+
 ```typescript
 interface MemoryState {
   cards: {
@@ -52,11 +54,13 @@ interface MemoryState {
 ```
 
 **Card Values**: Use emojis for simplicity
+
 - Easy (4x4): 🍎🍊🍋🍌🍇🍓🍒🥝 (8 unique, 16 cards)
 - Medium (5x4): Add 🥥🍑 (10 unique, 20 cards)
 - Hard (6x6): Add 🍐🍉🥭🍍🥑🫐🍈🥥 (18 unique, 36 cards)
 
 **Match Logic**:
+
 1. Player clicks card → flip animation
 2. If 2 cards flipped:
    - Compare values
@@ -65,6 +69,7 @@ interface MemoryState {
 3. Check win condition after each match
 
 **Files to Create**:
+
 - `lib/games/memory-game.ts`
 - `__tests__/lib/games/memory-game.test.ts`
 - `app/games/memory/lobbies/page.tsx`
@@ -82,6 +87,7 @@ interface MemoryState {
 ## 📊 Estimated Complexity
 
 **M (Medium - 2-3 days)**
+
 - Day 1: Game logic, card generation, tests
 - Day 2: UI with flip animations, grid layouts
 - Day 3: Polish, difficulty modes, deployment
@@ -103,6 +109,7 @@ interface MemoryState {
 ## 📚 Additional Context
 
 **Design Considerations**:
+
 - Card flip animation is critical for UX
 - Delay before flipping back allows memorization
 - Responsive grid (3 cards wide on mobile, 4+ on desktop)
