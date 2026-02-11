@@ -90,6 +90,7 @@
     "prisma": "^5.22.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.6",
+    "undici": "^6.23.0",
     "whatwg-fetch": "^3.6.20"
   }
 }
