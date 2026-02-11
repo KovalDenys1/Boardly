@@ -1,3 +1,9 @@
+---
+status: done
+priority: high
+type: game
+---
+
 ## 📋 Game Description
 
 Implement Tic-Tac-Toe (Хрестики-Нулики) - a classic two-player game where players take turns marking spaces in a 3×3 grid, trying to get three in a row.
@@ -8,16 +14,16 @@ Add the first simple game from the "Coming Soon" list to expand game offerings a
 
 ## ✅ Acceptance Criteria
 
-- [ ] Create `TicTacToeGame` class extending `GameEngine` in `lib/games/tic-tac-toe-game.ts`
-- [ ] Implement core methods: `validateMove()`, `processMove()`, `getInitialGameData()`, `checkWinCondition()`
-- [ ] Add `ticTacToe` to `GameType` enum in `prisma/schema.prisma`
-- [ ] Create lobby page at `app/games/tic-tac-toe/lobbies/page.tsx`
-- [ ] Implement game board UI component with 3×3 grid
-- [ ] Add win condition detection (rows, columns, diagonals)
-- [ ] Implement draw detection (board full, no winner)
-- [ ] Add translations to `messages/en.json` and `messages/uk.json`
-- [ ] Write unit tests with 80%+ coverage
-- [ ] Add game to `/games` page listing
+- [x] Create `TicTacToeGame` class extending `GameEngine` in `lib/games/tic-tac-toe-game.ts`
+- [x] Implement core methods: `validateMove()`, `processMove()`, `getInitialGameData()`, `checkWinCondition()`
+- [x] Add `ticTacToe` to `GameType` enum in `prisma/schema.prisma`
+- [x] Create lobby page at `app/games/tic-tac-toe/lobbies/page.tsx`
+- [x] Implement game board UI component with 3×3 grid
+- [x] Add win condition detection (rows, columns, diagonals)
+- [x] Implement draw detection (board full, no winner)
+- [x] Add translations to `messages/en.json` and `messages/uk.json`
+- [x] Write unit tests with 80%+ coverage
+- [x] Add game to `/games` page listing
 - [ ] Test multiplayer with 2 real players
 - [ ] Deploy to production
 
