@@ -1,5 +1,6 @@
 {
   "servers": {
+    // ─── File System ───────────────────────────────────────
     "filesystem": {
       "type": "stdio",
       "command": "npx",
@@ -9,6 +10,7 @@
         "${workspaceFolder}"
       ]
     },
+    // ─── PostgreSQL (Supabase DB) ──────────────────────────
     "postgres": {
       "type": "stdio",
       "command": "bash",
@@ -16,24 +18,93 @@
         "${workspaceFolder}/scripts/mcp-postgres.sh"
       ]
     },
+    // ─── GitHub (Issues, PRs, Repos) ───────────────────────
     "github": {
       "type": "stdio",
-      "command": "npx",
+      "command": "bash",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
-      "envFile": "${workspaceFolder}/.env",
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_TOKEN}"
-      }
+        "${workspaceFolder}/scripts/mcp-github.sh"
+      ]
     },
+    // ─── Memory (Knowledge Graph) ──────────────────────────
     "memory": {
       "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-memory"
+      ]
+    },
+    // ─── Stripe (Payments) ─────────────────────────────────
+    "stripe": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@stripe/mcp",
+        "--tools=all"
+      ],
+      "env": {
+        "STRIPE_SECRET_KEY": "${env:STRIPE_SECRET_KEY}"
+      }
+    },
+    // ─── Supabase (DB management, migrations, edge functions)
+    "supabase": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "supabase",
+        "--experimental",
+        "mcp"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${env:SUPABASE_ACCESS_TOKEN}"
+      }
+    },
+    // ─── Chrome DevTools MCP ───────────────────────────────
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp"
+      ]
+    },
+    // ─── Context7 (Library documentation) ──────────────────
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    // ─── Vercel Next.js Dev Tools ──────────────────────────
+    "vercel-next": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "next-devtools-mcp"
+      ]
+    },
+    // ─── Markitdown (URL/file → markdown) ──────────────────
+    "markitdown": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "markitdown-mcp-npx"
+      ]
+    },
+    // ─── Playwright (Browser automation/testing) ───────────
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp"
       ]
     }
   }
