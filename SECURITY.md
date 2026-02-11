@@ -58,7 +58,7 @@ While we work hard to ensure the security of Boardly, you can help protect your 
 
 ### Environment Variables
 - Never commit `.env` or `.env.local` files
-- Use strong, random values for `JWT_SECRET` and `NEXTAUTH_SECRET`
+- Use a strong, random value for `NEXTAUTH_SECRET` (single source for session/auth JWT signing)
 - Rotate secrets regularly (every 90 days recommended)
 - Use different secrets for development and production
 

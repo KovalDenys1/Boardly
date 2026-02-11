@@ -17,6 +17,12 @@ import { socketLogger, logger } from './lib/logger'
 import { validateEnv, printEnvInfo } from './lib/env'
 import { socketMonitor } from './lib/socket-monitoring'
 import { dbMonitor } from './lib/db-monitoring'
+import { verifyGuestToken } from './lib/guest-auth'
+import {
+  advanceTurnPastDisconnectedPlayers,
+  setPlayerConnectionInState,
+  TurnState,
+} from './lib/disconnected-turn'
 import {
   SocketEvents,
   GameActionPayload,
@@ -168,6 +174,12 @@ const socketRateLimits = new Map<string, { count: number; resetTime: number }>()
 const MAX_EVENTS_PER_SECOND = 10
 const RATE_LIMIT_CLEANUP_INTERVAL = 60000 // Clean up every 60 seconds
 
+// Deduplicate identical state-change notifications to prevent duplicate UI processing
+// during reconnect/cold-start bursts.
+const stateChangeNotifyDebounce = new Map<string, number>()
+const STATE_CHANGE_NOTIFY_DEBOUNCE_MS = 1500
+const STATE_CHANGE_NOTIFY_TTL_MS = 30000
+
 function checkRateLimit(socketId: string): boolean {
   const now = Date.now()
   const limit = socketRateLimits.get(socketId)
@@ -183,6 +195,285 @@ function checkRateLimit(socketId: string): boolean {
 
   limit.count++
   return true
+}
+
+function buildStateChangeNotifyKey(room: string, event: string, data: any): string | null {
+  if (event !== SocketEvents.GAME_UPDATE || data?.action !== 'state-change') {
+    return null
+  }
+
+  const payload = data?.payload
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const currentPlayerIndex =
+    typeof payload.currentPlayerIndex === 'number' ? payload.currentPlayerIndex : 'na'
+  const lastMoveAt = typeof payload.lastMoveAt === 'number' ? payload.lastMoveAt : 'na'
+  const rollsLeft = typeof payload?.data?.rollsLeft === 'number' ? payload.data.rollsLeft : 'na'
+  const updatedAt = payload.updatedAt ? String(payload.updatedAt) : 'na'
+
+  return `${room}:${currentPlayerIndex}:${lastMoveAt}:${rollsLeft}:${updatedAt}`
+}
+
+function isDuplicateStateChangeNotify(key: string): boolean {
+  const now = Date.now()
+  const lastSeen = stateChangeNotifyDebounce.get(key)
+  if (lastSeen && now - lastSeen < STATE_CHANGE_NOTIFY_DEBOUNCE_MS) {
+    return true
+  }
+
+  stateChangeNotifyDebounce.set(key, now)
+
+  for (const [storedKey, timestamp] of stateChangeNotifyDebounce.entries()) {
+    if (now - timestamp > STATE_CHANGE_NOTIFY_TTL_MS) {
+      stateChangeNotifyDebounce.delete(storedKey)
+    }
+  }
+
+  return false
+}
+
+interface ActiveGamePlayerRecord {
+  userId: string
+  position: number
+  user: {
+    username: string | null
+    email: string | null
+    bot: unknown
+  }
+}
+
+interface ActiveLobbyGameRecord {
+  id: string
+  state: string
+  currentTurn: number
+  updatedAt: Date
+  players: ActiveGamePlayerRecord[]
+}
+
+interface ConnectionSyncResult {
+  updated: boolean
+  turnAdvanced: boolean
+  skippedPlayerIds: string[]
+  gameId?: string
+  updatedState?: TurnState
+}
+
+const LOBBY_ROOM_PREFIX = SocketRooms.lobby('')
+const CONNECTION_STATE_SYNC_MAX_RETRIES = 3
+
+function getLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
+  const lobbyCodes: string[] = []
+  for (const room of rooms) {
+    if (!room.startsWith(LOBBY_ROOM_PREFIX)) continue
+    const lobbyCode = room.slice(LOBBY_ROOM_PREFIX.length)
+    if (lobbyCode) {
+      lobbyCodes.push(lobbyCode)
+    }
+  }
+  return lobbyCodes
+}
+
+function hasAnotherActiveSocketForUser(userId: string, excludingSocketId: string): boolean {
+  for (const [socketId, activeSocket] of io.sockets.sockets.entries()) {
+    if (socketId === excludingSocketId) continue
+    if (!activeSocket.connected) continue
+    if (activeSocket.data?.user?.id === userId) {
+      return true
+    }
+  }
+  return false
+}
+
+function getUserDisplayName(user: { username?: string | null; email?: string | null } | undefined): string {
+  return user?.username || user?.email || 'Player'
+}
+
+async function loadActiveGameForLobby(lobbyCode: string): Promise<ActiveLobbyGameRecord | null> {
+  return prisma.games.findFirst({
+    where: {
+      status: 'playing',
+      lobby: {
+        code: lobbyCode,
+      },
+    },
+    select: {
+      id: true,
+      state: true,
+      currentTurn: true,
+      updatedAt: true,
+      players: {
+        orderBy: {
+          position: 'asc',
+        },
+        select: {
+          userId: true,
+          position: true,
+          user: {
+            select: {
+              username: true,
+              email: true,
+              bot: true,
+            },
+          },
+        },
+      },
+    },
+  })
+}
+
+async function syncPlayerConnectionStateInLobby(
+  lobbyCode: string,
+  userId: string,
+  isActive: boolean,
+  options: { advanceTurnIfCurrent: boolean }
+): Promise<ConnectionSyncResult> {
+  for (let attempt = 1; attempt <= CONNECTION_STATE_SYNC_MAX_RETRIES; attempt += 1) {
+    const activeGame = await loadActiveGameForLobby(lobbyCode)
+    if (!activeGame) {
+      return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+    }
+
+    let parsedState: TurnState
+    try {
+      parsedState = JSON.parse(activeGame.state) as TurnState
+    } catch (error) {
+      logger.warn('Failed to parse game state during connection sync', {
+        lobbyCode,
+        gameId: activeGame.id,
+        userId,
+      })
+      return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+    }
+
+    if (!Array.isArray(parsedState.players) || parsedState.players.length === 0) {
+      return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+    }
+
+    const now = Date.now()
+    const connectionChanged = setPlayerConnectionInState(parsedState, userId, isActive, now)
+
+    let turnAdvanced = false
+    let skippedPlayerIds: string[] = []
+
+    if (options.advanceTurnIfCurrent) {
+      const botUserIds = new Set(
+        activeGame.players
+          .filter((player) => !!player.user.bot)
+          .map((player) => player.userId)
+      )
+      const turnResult = advanceTurnPastDisconnectedPlayers(parsedState, botUserIds, now)
+      turnAdvanced = turnResult.changed
+      skippedPlayerIds = turnResult.skippedPlayerIds
+    }
+
+    if (!connectionChanged && !turnAdvanced) {
+      return {
+        updated: false,
+        turnAdvanced: false,
+        skippedPlayerIds: [],
+        gameId: activeGame.id,
+      }
+    }
+
+    const nextCurrentTurn =
+      typeof parsedState.currentPlayerIndex === 'number' && Number.isFinite(parsedState.currentPlayerIndex)
+        ? parsedState.currentPlayerIndex
+        : activeGame.currentTurn
+
+    const updateData: {
+      state: string
+      currentTurn: number
+      updatedAt: Date
+      lastMoveAt?: Date
+    } = {
+      state: JSON.stringify(parsedState),
+      currentTurn: nextCurrentTurn,
+      updatedAt: new Date(),
+    }
+
+    if (turnAdvanced) {
+      updateData.lastMoveAt = new Date(now)
+    }
+
+    const updateResult = await prisma.games.updateMany({
+      where: {
+        id: activeGame.id,
+        currentTurn: activeGame.currentTurn,
+        updatedAt: activeGame.updatedAt,
+      },
+      data: updateData,
+    })
+
+    if (updateResult.count > 0) {
+      return {
+        updated: true,
+        turnAdvanced,
+        skippedPlayerIds,
+        gameId: activeGame.id,
+        updatedState: parsedState,
+      }
+    }
+
+    logger.warn('Connection state sync conflict, retrying', {
+      lobbyCode,
+      gameId: activeGame.id,
+      userId,
+      attempt,
+      isActive,
+    })
+  }
+
+  return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+}
+
+async function handleAbruptDisconnectForLobby(
+  lobbyCode: string,
+  user: { id: string; username?: string | null; email?: string | null }
+) {
+  const syncResult = await syncPlayerConnectionStateInLobby(lobbyCode, user.id, false, {
+    advanceTurnIfCurrent: true,
+  })
+
+  if (!syncResult.updated || !syncResult.updatedState) {
+    return
+  }
+
+  const playerName = getUserDisplayName(user)
+
+  emitWithMetadata(io, SocketRooms.lobby(lobbyCode), SocketEvents.PLAYER_LEFT, {
+    lobbyCode,
+    userId: user.id,
+    username: playerName,
+    reason: 'error',
+  })
+
+  emitWithMetadata(io, SocketRooms.lobby(lobbyCode), SocketEvents.LOBBY_UPDATE, {
+    lobbyCode,
+    type: 'state-refresh',
+    data: {
+      userId: user.id,
+      disconnected: true,
+      reason: 'abrupt-disconnect',
+    },
+  })
+
+  emitWithMetadata(io, SocketRooms.lobby(lobbyCode), SocketEvents.GAME_UPDATE, {
+    action: 'state-change',
+    payload: syncResult.updatedState,
+    lobbyCode,
+  })
+
+  io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+
+  logger.info('Applied disconnect state sync', {
+    lobbyCode,
+    gameId: syncResult.gameId,
+    userId: user.id,
+    turnAdvanced: syncResult.turnAdvanced,
+    skippedPlayerIds: syncResult.skippedPlayerIds,
+  })
 }
 
 // Clean up expired rate limit entries to prevent memory leaks
@@ -214,17 +505,46 @@ io.use(async (socket, next) => {
       queryKeys: Object.keys(socket.handshake.query)
     })
 
-    // Allow guests without token validation
+    // Require signed guest JWTs to prevent header/token spoofing.
     if (isGuest) {
-      const guestId = token || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      const guestName = socket.handshake.auth.guestName || socket.handshake.query.guestName || 'Guest'
+      if (!token || token === 'null' || token === 'undefined' || token === '') {
+        logger.warn('Socket connection rejected: Missing guest token')
+        return next(new Error('Guest authentication required'))
+      }
+
+      const guestClaims = verifyGuestToken(String(token))
+      if (!guestClaims) {
+        logger.warn('Socket connection rejected: Invalid guest token')
+        return next(new Error('Invalid guest token'))
+      }
+
+      const guestUser = await prisma.users.findUnique({
+        where: { id: guestClaims.guestId },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          isGuest: true,
+          bot: true,
+        },
+      })
+
+      if (!guestUser || !guestUser.isGuest) {
+        logger.warn('Socket connection rejected: Guest user not found', {
+          guestId: guestClaims.guestId,
+        })
+        return next(new Error('Guest user not found'))
+      }
 
       socket.data.user = {
-        id: guestId,
-        username: guestName,
+        ...guestUser,
+        username: guestUser.username || guestClaims.guestName,
         isGuest: true,
       }
-      logger.info('Guest socket authenticated', { guestId, guestName })
+      logger.info('Guest socket authenticated', {
+        guestId: guestUser.id,
+        guestName: guestUser.username || guestClaims.guestName,
+      })
       return next()
     }
 
@@ -243,7 +563,7 @@ io.use(async (socket, next) => {
     }
 
     // Try to verify as JWT first
-    const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
+    const secret = process.env.NEXTAUTH_SECRET
     let userId: string | null = null
 
     if (secret) {
@@ -261,7 +581,7 @@ io.use(async (socket, next) => {
         userId = String(token)
       }
     } else {
-      logger.warn('No NEXTAUTH_SECRET or JWT_SECRET configured, treating token as userId')
+      logger.warn('No NEXTAUTH_SECRET configured, treating token as userId')
       // No secret configured, treat token as userId
       userId = String(token)
     }
@@ -376,6 +696,10 @@ io.on('connection', (socket) => {
         lobbyCode,
         userId: socket.data.user.id,
         username: socket.data.user.username
+      })
+
+      await syncPlayerConnectionStateInLobby(lobbyCode, socket.data.user.id, true, {
+        advanceTurnIfCurrent: false,
       })
 
       // Send success confirmation
@@ -545,6 +869,30 @@ io.on('connection', (socket) => {
     })
   })
 
+  socket.on('disconnecting', (reason) => {
+    const disconnectingUser = socket.data.user
+    if (!disconnectingUser?.id) {
+      return
+    }
+
+    if (hasAnotherActiveSocketForUser(disconnectingUser.id, socket.id)) {
+      logger.info('Skipping disconnect state sync because another socket is active', {
+        userId: disconnectingUser.id,
+        socketId: socket.id,
+      })
+      return
+    }
+
+    const lobbyCodes = getLobbyCodesFromRooms(socket.rooms)
+    if (lobbyCodes.length === 0) {
+      return
+    }
+
+    for (const lobbyCode of lobbyCodes) {
+      void handleAbruptDisconnectForLobby(lobbyCode, disconnectingUser)
+    }
+  })
+
   socket.on('disconnect', (reason) => {
     logger.info('Client disconnected', { socketId: socket.id, reason })
 
@@ -607,6 +955,13 @@ server.on('request', (req, res) => {
 
         if (!room || !event) {
           sendResponse(400, { error: 'Missing room or event' })
+          return
+        }
+
+        const stateChangeKey = buildStateChangeNotifyKey(room, event, data)
+        if (stateChangeKey && isDuplicateStateChangeNotify(stateChangeKey)) {
+          logger.info('Duplicate state-change notification ignored', { room, event, stateChangeKey })
+          sendResponse(200, { success: true, deduped: true })
           return
         }
 

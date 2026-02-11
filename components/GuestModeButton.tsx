@@ -96,7 +96,7 @@ export default function GuestModeButton() {
 
         setIsLoading(true)
         try {
-            setGuestMode(name.trim())
+            await setGuestMode(name.trim())
             showToast.success('guest.welcome', undefined, { name: name.trim() })
 
             // Redirect to games page immediately

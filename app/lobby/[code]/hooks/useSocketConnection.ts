@@ -11,6 +11,7 @@ interface UseSocketConnectionProps {
   isGuest: boolean
   guestId: string | null
   guestName: string | null
+  guestToken: string | null
   onGameUpdate: (data: any) => void
   onChatMessage: (message: any) => void
   onPlayerTyping: (data: any) => void
@@ -30,6 +31,7 @@ export function useSocketConnection({
   isGuest,
   guestId,
   guestName,
+  guestToken,
   onGameUpdate,
   onChatMessage,
   onPlayerTyping,
@@ -91,6 +93,12 @@ export function useSocketConnection({
       return
     }
 
+    if (isGuest && !guestToken) {
+      clientLogger.log('⏳ Waiting for guest token before connecting socket...')
+      authFailedRef.current = false
+      return
+    }
+
     // For authenticated users, wait for session to load
     if (!isGuest && !session?.user?.id) {
       clientLogger.log('⏳ Waiting for session to load before connecting socket...', {
@@ -135,9 +143,13 @@ export function useSocketConnection({
 
     // Get authentication token
     const getAuthToken = () => {
-      if (isGuest && guestId) {
-        clientLogger.log('🔐 Using guest authentication:', { guestId, guestName })
-        return guestId
+      if (isGuest && guestToken) {
+        clientLogger.log('🔐 Using guest authentication token', {
+          guestId,
+          guestName,
+          hasToken: true,
+        })
+        return guestToken
       }
       const userId = session?.user?.id
       if (userId) {
@@ -177,12 +189,10 @@ export function useSocketConnection({
     const authPayload: Record<string, unknown> = {}
     if (token) authPayload.token = token
     if (isGuest) authPayload.isGuest = true
-    if (isGuest && guestName) authPayload.guestName = guestName
 
     const queryPayload: Record<string, string> = {}
     if (token) queryPayload.token = String(token)
     if (isGuest) queryPayload.isGuest = 'true'
-    if (isGuest && guestName) queryPayload.guestName = String(guestName)
 
     const newSocket = io(url, {
       // Optimized for Render free tier (cold starts can take up to 60s)
@@ -456,7 +466,7 @@ export function useSocketConnection({
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, session?.user?.id])
+  }, [code, isGuest, guestId, guestName, guestToken, session?.user?.id])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
     if (!socket) return

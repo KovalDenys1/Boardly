@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = req.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || process.env.JWT_SECRET
+    const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
 
     if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
       log.error('Unauthorized cron request', undefined, {

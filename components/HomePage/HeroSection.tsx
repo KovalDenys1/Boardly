@@ -29,7 +29,7 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
 
     setIsLoading(true)
     try {
-      setGuestMode(name.trim())
+      await setGuestMode(name.trim())
       showToast.success('guest.welcome', undefined, { name: name.trim() })
       router.push('/games')
     } catch (error) {

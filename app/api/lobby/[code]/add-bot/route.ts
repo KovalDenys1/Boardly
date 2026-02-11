@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { createBot } from '@/lib/bot-helpers'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    const guestId = request.headers.get('X-Guest-Id')
-    const userId = session?.user?.id || guestId
+    const requestUser = await getRequestAuthUser(request)
+    const userId = requestUser?.id
 
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

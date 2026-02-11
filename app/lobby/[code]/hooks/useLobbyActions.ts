@@ -166,14 +166,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const handleJoinLobby = useCallback(async () => {
     try {
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      }
-
-      if (isGuest && guestId && guestName) {
-        headers['X-Guest-Id'] = guestId
-        headers['X-Guest-Name'] = guestName
-      }
+      const headers = getAuthHeaders(isGuest, guestId, guestName)
 
       const res = await fetch(`/api/lobby/${code}`, {
         method: 'POST',

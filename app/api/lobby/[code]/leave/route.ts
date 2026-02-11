@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getServerSocketUrl } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -17,9 +16,8 @@ export async function POST(
     const rateLimitResult = await limiter(req)
     if (rateLimitResult) return rateLimitResult
 
-    const session = await getServerSession(authOptions)
-    const guestId = req.headers.get('X-Guest-Id')
-    const userId = session?.user?.id || guestId
+    const requestUser = await getRequestAuthUser(req)
+    const userId = requestUser?.id
 
     if (!userId) {
       return NextResponse.json(

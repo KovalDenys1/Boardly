@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { notifySocket } from '@/lib/socket-url'
-import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
@@ -80,21 +78,11 @@ export async function POST(
 
     const { code } = await params
 
-    // Check for authenticated user or guest
-    const session = await getServerSession(authOptions)
-    const guestId = request.headers.get('X-Guest-Id')
-    const guestName = request.headers.get('X-Guest-Name')
-
-    let userId: string
-    if (session?.user?.id) {
-      userId = session.user.id
-    } else if (guestId && guestName) {
-      // Create or get guest user
-      const guestUser = await getOrCreateGuestUser(guestId, guestName)
-      userId = guestUser.id
-    } else {
+    const requestUser = await getRequestAuthUser(request)
+    if (!requestUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = requestUser.id
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
