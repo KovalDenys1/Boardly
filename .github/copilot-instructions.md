@@ -1,473 +1,80 @@
+# Boardly AI Agent Instructions
 
+Use this file as the execution guide for automated contributors.
 
-# Boardly – Copilot Instructions (February 2026)
+## Mission
 
-## 2026: Production & Database Migration Complete
+Improve Boardly as a reliable real-time multiplayer platform with minimal regressions in game integrity, sync, and security.
 
-- **Status**: Production live at [boardly.online](https://boardly.online)
-- **Architecture**: Next.js (API, SSR) + standalone Socket.IO server (real-time) + PostgreSQL (Supabase/Prisma)
-- **Games**: Yahtzee (with AI bots), Guess the Spy, Uno and more planned
-- **Latest Update**: Database restructured (Feb 2026) - all tables plural, Bots separate table, RLS migration prepared
-- **Test Coverage**: 131 tests, 96% on GameEngine core
-- **Security**: Row Level Security (RLS) migration prepared, pending deployment (docs ready)
+## Canonical docs
 
-### Key Recommendations
+Read these first before major changes:
 
-1. **Adding New Games/Features**
-  - Use the GameEngine pattern (`lib/game-engine.ts`).
-  - For each game, create a separate class in `lib/games/`, implement `validateMove`, `processMove`, `getInitialGameData`.
-  - UI: separate components and pages for lobby and game board.
-  - All new texts must use i18n (react-i18next, showToast).
-  - Cover business logic with unit tests (`__tests__/lib/`).
-  - Update TODO.md.
+- `README.md`
+- `docs/PROJECT_VISION.md`
+- `docs/ARCHITECTURE.md`
+- `docs/OPERATIONS.md`
+- `docs/ROADMAP.md`
+- `docs/CONTRIBUTING.md`
+- `docs/SECURITY_MODEL.md`
 
-2. **Scaling Code and Infrastructure**
-  - Maintain modularity: business logic in classes and hooks, UI in components.
-  - Avoid code duplication, use abstractions.
-  - New real-time features should extend the socket server.
-  - Monitor performance: use debounces, rate limiting, DB indexes.
+## Current architecture
 
-3. **Scaling the Team**
-  - Follow code style, write comments (English only), cover code with tests.
-  - Use pull request review, CI/CD.
-  - **All code comments must be in English** - maintain consistency across the entire codebase.
+- Next.js app server: API/auth/pages (`:3000`)
+- Socket.IO realtime server: `socket-server.ts` (`:3001`)
+- PostgreSQL + Prisma (pluralized schema tables)
 
-### Checklist for New Game/Feature
+State flow:
+`Client action -> API route -> DB update -> notify socket server -> room broadcast -> client reconcile`
 
-1. Create a class in `lib/games/your-game.ts` extending GameEngine
-2. Implement methods: `validateMove`, `processMove`, `getInitialGameData`, `checkWinCondition`
-3. Add game type to enum in `prisma/schema.prisma`
-4. Create UI for lobby and game board
-5. Add keys to both messages/en.json and messages/uk.json
-6. Write unit tests for business logic
-7. Update documentation and TODO.md
+## Non-negotiable rules
 
-# Boardly - AI Agent Instructions
+- **Server-authoritative gameplay**: optimistic UI is allowed, but final state must reconcile from server snapshots. Do not rely on client-only timer/action decisions.
+- **Auth and guest identity**: use `NEXTAUTH_SECRET` as primary signing secret. `JWT_SECRET` is deprecated; do not introduce new logic based on it. Guest identity must use signed tokens (`X-Guest-Token`), not raw client IDs/names.
+- **Realtime robustness**: protect timer/auto-action paths against duplicate processing, handle reconnect/out-of-order events defensively, and advance turn safely when the current player disconnects.
+- **Code quality**: keep TypeScript strictness and minimal readable changes. Keep comments in English and never put secrets in code or docs.
 
-## Project Status
+## High-priority areas when touching code
 
-**Stage**: ✅ Production Live at [boardly.online](https://boardly.online)  
-**Available Games**: Yahtzee (fully implemented with AI bots)    
-**Planned**: Guess the Spy, Uno, and more casual multiplayer games
+- `socket-server.ts` (connection lifecycle, room events, turn integrity)
+- `app/lobby/[code]/hooks/useSocketConnection.ts` (client sync/reconnect)
+- `app/api/game/[gameId]/state/route.ts` (move validation/state transitions)
+- `lib/game-engine.ts` + `lib/games/*` (game correctness)
+- `lib/guest-auth.ts` + auth routes (identity and token validation)
 
-## Architecture Overview
+## Adding a new game
 
-**Dual-Server Real-Time Architecture**: Next.js frontend (port 3000) + standalone Socket.IO server (port 3001)
+Minimum required path:
 
-```
-┌─────────────┐     HTTP/API      ┌──────────────┐     WebSocket    ┌──────────────┐
-│   Client    │ ──────────────────>│  Next.js     │<─────────────────>│  Socket.IO   │
-│  (Browser)  │<──────────────────│  (port 3000) │                   │  (port 3001) │
-└─────────────┘                   └──────────────┘                   └──────────────┘
-                                          │                                   │
-                                          v                                   v
-                                   ┌──────────────────────────────────────────┐
-                                   │      PostgreSQL (Supabase/Prisma)       │
-                                   └──────────────────────────────────────────┘
-```
+1. Add game engine class in `lib/games/` extending `GameEngine`.
+2. Register game type in `prisma/schema.prisma` and lobby creation API.
+3. Add board UI and lobby routing integration.
+4. Add translations in `locales/en.ts` and `locales/uk.ts`.
+5. Add unit tests in `__tests__/lib/games/`.
+6. Update relevant docs if architecture/workflow changed.
 
-- **Next.js**: Handles HTTP/API routes, SSR, static pages via App Router
-- **Socket.IO Server**: Manages WebSocket connections, room broadcasting, real-time state sync
-- **Communication Pattern**: Client → API Route → DB Update → POST `/api/notify` → Socket Server → Broadcast to Room
+## Testing and verification
 
-**Game State Flow**:
-```
-Client Action → API Route → Database Update → Socket Notification (/api/notify) → 
-Socket Server Broadcast → All Clients in Room → UI Update
-```
+Before finalizing changes:
 
-## Critical Patterns
-
-### 1. Database Schema (February 2026 Migration)
-
-**Important**: All table names are now PLURAL
-
-- ✅ **Users** (not User) - User accounts and profiles
-- ✅ **Bots** (separate table) - Bot player records with `userId` foreign key
-- ✅ **Games**, **Players**, **Lobbies** - All game-related tables
-- ✅ **Accounts**, **Sessions** - NextAuth tables
-- ✅ **Friendships**, **FriendRequests** - Social features
-- ✅ **EmailVerificationTokens**, **PasswordResetTokens**, **VerificationTokens**
-- ✅ **SpyLocations** - Game-specific data
-
-**Prisma Patterns**:
-```typescript
-// ✅ Correct (plural)
-await prisma.users.findMany()
-await prisma.games.create()
-await prisma.lobbies.findUnique()
-
-// ❌ Wrong (singular - old pattern)
-await prisma.user.findMany()  // Don't use!
-await prisma.game.create()     // Don't use!
-```
-
-**Bot System** (changed from `isBot` field to separate table):
-```typescript
-// ✅ New pattern (after Feb 2026)
-const user = await prisma.users.findUnique({
-  where: { id: userId },
-  include: { bot: true }  // One-to-one relation
-})
-const isBot = !!user.bot
-const botType = user.bot?.botType  // 'yahtzee', 'chess', 'spy'
-
-// ❌ Old pattern (removed)
-const isBot = user.isBot  // Field no longer exists!
-```
-
-**Creating Bots**:
-```typescript
-// Create user with bot relation
-const botUser = await prisma.users.create({
-  data: {
-    username: 'Bot Player',
-    email: `bot-${Date.now()}@boardly.bot`,
-    bot: {
-      create: {
-        botType: 'yahtzee',
-        difficulty: 'medium'
-      }
-    }
-  },
-  include: { bot: true }
-})
-```
-
-### 2. Row Level Security (RLS)
-
-**Status**: 🔄 Migration prepared, awaiting testing and deployment (Issue #33 completed Feb 2026)
-
-- **Security Model**: Multi-layer defense
-  - Layer 1: NextAuth (session, JWT)
-  - Layer 2: API routes (business logic)
-  - Layer 3: RLS (database safety net) ← Migration ready but not applied
-  
-- **Implementation**: Service role policies allow full access for Prisma
-- **Migration**: `prisma/migrations/20260209000000_fix_rls_plural_tables/` - 13 tables, 40+ policies
-- **Impact**: Zero breaking changes when deployed
-- **Docs**: See `docs/RLS_CONFIGURATION.md` for complete testing and deployment guide
-
-**Next Steps**: Test in staging → Monitor 24hrs → Deploy to production
-
-**Database Connection**:
-```env
-# Connection pooler (port 6543) - uses service_role
-DATABASE_URL="postgresql://...@project.supabase.co:6543/postgres"
-
-# Direct connection (port 5432) - for migrations only
-DIRECT_URL="postgresql://...@project.supabase.co:5432/postgres"
-```
-
-### 3. Guest vs Authenticated Users
-- **Guests**: Identified via `X-Guest-Id` and `X-Guest-Name` headers (set client-side)
-- **Authenticated**: Use NextAuth session + JWT tokens
-- Both can play games; guest data stored temporarily in game state, not Users table
-- Check: `app/api/game/[gameId]/state/route.ts` for header handling
-
-### 4. Socket.IO Room Management
-- Lobby rooms: `lobby:${lobbyCode}` - all players in a specific game lobby
-- Lobby list: `lobby-list` - users browsing available lobbies
-- Always `socket.join()` before emitting to rooms
-- Events flow: `socket.emit()` (client → server) → `io.to(room).emit()` (server → clients)
-
-**Example** (`socket-server.ts:238`):
-```typescript
-socket.on('join-lobby', async (lobbyCode: string) => {
-  socket.join(`lobby:${lobbyCode}`)
-  // Now this socket receives broadcasts to this lobby
-})
-```
-
-### 5. Game Engine Pattern
-- **Abstract**: `lib/game-engine.ts` - base class for all games
-- **Concrete**: `lib/games/yahtzee-game.ts` - extends GameEngine
-- Each game implements: `validateMove()`, `processMove()`, `getInitialGameData()`
-- State stored as JSON in `Games.state` (PostgreSQL JSONB)
-- Load engine: `new YahtzeeGame(gameId).loadState(JSON.parse(game.state))`
-
-### 6. Custom Hooks Architecture (Lobby Page)
-Modular hooks split complex lobby logic (`app/lobby/[code]/hooks/`):
-- `useLobbyActions.ts` - join, start game, add bots
-- `useSocketConnection.ts` - WebSocket setup and event handlers
-- `useGameActions.ts` - roll dice, hold, score
-- `useGameTimer.ts` - turn timer management
-- `useBotTurn.ts` - AI opponent automation
-
-**Hook dependency**: Socket must be initialized before actions (use `emitWhenConnected`)
-
-### 7. Bot Player System
-- Bots are Users with one-to-one relation to Bots table
-- Created on-demand via `lib/bot-executor.ts`
-- AI logic in `lib/yahtzee-bot.ts` - probability-based decision making
-- Bot turns automated via `useBotTurn` hook when `currentPlayer.bot !== null`
-- Check bot status: `!!user.bot`, get bot type: `user.bot?.botType`
-
-## Development Workflows
-
-### Running Locally
 ```bash
-npm run dev:all          # Both servers (uses concurrently) - RECOMMENDED
-# OR separate terminals:
-npm run socket:dev       # Terminal 1: Socket.IO on :3001
-npm run dev              # Terminal 2: Next.js on :3000
+npm run lint
+npm test
 ```
 
-**Critical**: Both servers must run simultaneously for real-time features to work.
+For realtime/auth changes, also manually verify:
 
-### Database Changes
-```bash
-npx prisma migrate dev --name description   # Create migration
-npm run db:push          # Push schema (dev only, no migration)
-npm run db:generate      # Regenerate Prisma Client (after schema changes)
-npm run db:studio        # GUI for database inspection
-```
+- create/join/start/finish game flow
+- reconnect after disconnect
+- guest join/play flow
+- no duplicate auto-actions on turn timeout
 
-### Testing
-```bash
-npm test                 # Run all tests (131 tests, ~1.3s)
-npm run test:watch       # Watch mode for TDD
-npm run test:coverage    # Generate coverage report
-```
+## Deployment guardrails
 
-**Test Coverage** (Feb 2026):
-- Game logic: `lib/game-engine.ts` (96%), `lib/yahtzee.ts` (80%), `lib/games/yahtzee-game.ts` (80%)
-- Total: 131 tests passing, 20 skipped
-- Focus: Unit tests for business logic (not API routes - too complex to mock Edge Runtime)
-- See: Test files in `__tests__/lib/` and `__tests__/api/`
+- Do not run migrations in socket service build.
+- Keep migration execution in a dedicated deploy step/job.
+- Ensure env vars are configured for both app and socket services.
 
-### Adding a New Game
-1. Create game class in `lib/games/your-game.ts` extending `GameEngine`
-2. Implement required methods: `validateMove`, `processMove`, `getInitialGameData`, `checkWinCondition`
-3. Add game type to `gameType` enum in `prisma/schema.prisma`
-4. Create lobby UI in `app/games/your-game/lobbies/`
-5. Handle game-specific rendering in `app/lobby/[code]/components/GameBoard.tsx`
-6. Write unit tests in `__tests__/lib/games/your-game.test.ts`
+## Documentation discipline
 
-## Key Conventions
-
-### API Route Patterns
-- **Guest headers**: Always check `X-Guest-Id` and `X-Guest-Name` for unauthenticated requests
-- **Rate limiting**: Use `rateLimit()` from `lib/rate-limit.ts` - preset configs in `rateLimitPresets`
-- **Logging**: Import `apiLogger` from `lib/logger.ts`, use `log.info()`, `log.error()` with context objects
-- **Socket notification**: After DB updates, POST to `/api/notify` endpoint to trigger Socket broadcasts
-
-**Example** (`app/api/lobby/[code]/route.ts:194`):
-```typescript
-await fetch(`${socketUrl}/api/notify`, {
-  method: 'POST',
-  body: JSON.stringify({
-    room: `lobby:${params.code}`,
-    event: 'player-joined',
-    data: { username, userId }
-  })
-})
-```
-
-### Client-Side Logging
-Use `clientLogger` from `lib/client-logger.ts` (not `console.log`)
-- Automatically disabled in production
-- Consistent format across app
-- `clientLogger.log()`, `clientLogger.warn()`, `clientLogger.error()`
-
-### Code Style and Comments
-**Critical**: All code comments must be written in English only
-- Maintain consistency across the entire codebase
-- Use clear, descriptive English comments for functions, complex logic, and edge cases
-- Never use non-English languages in comments (including Ukrainian, Russian, etc.)
-
-### Internationalization (i18n)
-**System**: `react-i18next` with client-side language detection (English, Ukrainian)
-- **Components**: Use `useTranslation()` hook: `const { t } = useTranslation(); t('key.path')`
-- **Toast notifications**: Use `showToast` from `lib/i18n-toast.ts` instead of `toast` directly
-  - `showToast.success('toast.saved')`, `showToast.error('errors.network')`
-- **Translation files**: `messages/en.json`, `messages/uk.json` - flat structure with dot notation
-- **Adding keys**: Add to both files with same structure, use descriptive keys
-- **Language switcher**: `components/LanguageSwitcher.tsx` handles UI
-- **Storage**: Language preference saved in localStorage
-
-**Example**:
-```tsx
-// ❌ Don't use toast directly
-toast.success('Saved!')
-
-// ✅ Use localized toast
-showToast.success('toast.saved')
-
-// ✅ With parameters
-showToast.error('errors.invalidMove', undefined, { player: name })
-```
-
-See: `docs/I18N_GUIDE.md` for complete guide
-
-### Socket Event Naming
-- **Client → Server**: `join-lobby`, `send-chat-message`, `game-action`, `player-joined`
-- **Server → Client**: `game-update`, `chat-message`, `lobby-update`, `player-typing`
-- **Bidirectional**: Always validate input on server; rate-limit aggressive events
-
-### State Synchronization
-- **Source of truth**: PostgreSQL database
-- **Optimistic updates**: Update local state immediately, sync with DB via API
-- **Conflict resolution**: Socket broadcasts trigger full lobby reload (`loadLobby()`)
-- **Refetch on events**: `player-joined`, `game-started` → call `loadLobby()` to get latest state
-
-## Integration Points
-
-### External Services
-- **Supabase**: PostgreSQL database (connection pooler for serverless)
-- **NextAuth**: Session management (JWT strategy, `lib/next-auth.ts`)
-- **Resend**: Email service (verification, password reset via `lib/email.ts`)
-- **Sentry**: Error tracking (configured in `instrumentation.ts`, `sentry.*.config.ts`)
-
-### Environment Variables
-- **Required**: `DATABASE_URL`, `JWT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-- **Socket**: `CORS_ORIGIN` (comma-separated), `PORT` (default 3001), `HOSTNAME`
-- **Optional**: `RESEND_API_KEY`, `GOOGLE_CLIENT_ID/SECRET`, `NEXT_PUBLIC_SENTRY_DSN`
-- **Dev**: Sentry disabled by default (save quota) - enable with `NEXT_PUBLIC_SENTRY_ENABLED=true`
-
-### Cross-Component Communication
-- **Props drilling avoided**: Use custom hooks to encapsulate logic
-- **Socket context**: Socket instance passed via props to hooks (see `useLobbyActions`)
-- **Event emitters**: Use React state + callbacks, not EventEmitter pattern
-- **Toast notifications**: `react-hot-toast` for user feedback (imported as `toast`)
-
-## Common Tasks
-
-### Debugging Socket Issues
-1. Check both servers running (`npm run dev:all`)
-2. Verify `CORS_ORIGIN` includes localhost
-3. Browser console: Look for "Socket connected" logs
-4. Server logs: Check `socket-server.ts` output for connection events
-5. Use `clientLogger.log('Socket status:', socket?.connected)`
-
-### Testing with Bots
-- Add bot via UI "Add Bot" button in lobby
-- Bots auto-play when their turn arrives (see `useBotTurn.ts`)
-- Bot decisions logged with 🤖 emoji - check client logs
-- Adjust bot difficulty: Bots table has `difficulty` field ('easy', 'medium', 'hard')
-- Check if user is bot: `!!user.bot`, get bot type: `user.bot?.botType`
-
-### Working with Game State
-```typescript
-// Load current game state
-const gameEngine = new YahtzeeGame(gameId)
-gameEngine.loadState(JSON.parse(game.state))
-
-// Validate and process move
-if (gameEngine.validateMove(move)) {
-  gameEngine.processMove(move)
-  const newState = gameEngine.getState()
-  // Save newState.data to database
-}
-```
-
-## Performance Optimization
-
-### Socket.IO Best Practices
-- **Debouncing rapid events**: Use debounce for `player-typing` events (500ms)
-- **Rate limiting**: All socket endpoints use rate limiting (see `socket-server.ts:line 193`)
-- **Connection pooling**: Database uses Supabase connection pooler for serverless
-- **Selective broadcasts**: Use `socket.to(room)` to exclude sender when appropriate
-
-### Client-Side Optimization
-```typescript
-// Debounce typing indicator
-const debouncedTyping = debounce((message: string) => {
-  socket?.emit('player-typing', { lobbyCode, userId, username })
-}, 500)
-
-// Prevent unnecessary re-renders
-const gameEngine = useMemo(() => 
-  new YahtzeeGame(gameId), [gameId]
-)
-
-// Cleanup on unmount
-useEffect(() => {
-  return () => {
-    socket?.disconnect()
-    clearInterval(timerRef.current)
-  }
-}, [socket])
-```
-
-### Database Optimization
-- **Indexed fields**: All foreign keys and frequently queried fields indexed
-- **Select specific fields**: Avoid `select *`, use Prisma `select` clause
-- **Batch operations**: Use `createMany`/`updateMany` when possible
-- **JSONB for game state**: Flexible schema without migrations for game-specific data
-
-### API Route Optimization
-- **Early returns**: Validate and return errors before database queries
-- **Parallel queries**: Use `Promise.all()` for independent database calls
-- **Caching headers**: Set appropriate cache headers for static data (lobby lists)
-- **Streaming responses**: Use `NextResponse.json()` for immediate response
-
-**Example** (`app/api/lobby/route.ts`):
-```typescript
-// Parallel queries instead of sequential
-const [lobbies, activeGamesCount] = await Promise.all([
-  prisma.lobbies.findMany({ /* ... */ }),
-  prisma.games.count({ where: { status: 'playing' } })
-])
-```
-
-### Bundle Size
-- Dynamic imports for heavy components: `const Chart = dynamic(() => import('chart.js'))`
-- Tree-shaking: Import specific functions from libraries
-- Image optimization: Use Next.js `<Image>` component with proper sizing
-- Code splitting: Automatic per-route in Next.js App Router
-
-## Testing Patterns
-
-### Unit Tests (Current Focus)
-- **Location**: `__tests__/lib/` and `__tests__/lib/games/`
-- **Framework**: Jest with ts-jest
-- **Coverage**: 96% on `GameEngine`, 80%+ on game-specific logic
-- **Run**: `npm test` (131 tests, ~1.3s execution)
-
-**Pattern Example** (`__tests__/lib/games/yahtzee-game.test.ts`):
-```typescript
-describe('YahtzeeGame', () => {
-  let game: YahtzeeGame
-  beforeEach(() => {
-    game = new YahtzeeGame('test-id')
-    // Add players and setup state
-  })
-
-  it('should validate move correctly', () => {
-    const move = { playerId: 'p1', type: 'roll', data: {} }
-    expect(game.validateMove(move)).toBe(true)
-  })
-})
-```
-
-**Testing Strategy**:
-- ✅ **Test**: Game logic, state management, move validation
-- ❌ **Skip**: API routes (Edge Runtime mocking too complex), UI components (focus on logic)
-- **Future**: Integration tests with supertest for API routes + test database
-
-### Mocking Patterns
-```typescript
-// Mock Prisma client (use PLURAL table names)
-jest.mock('@/lib/db', () => ({
-  prisma: {
-    games: { findUnique: jest.fn(), update: jest.fn() },
-    players: { create: jest.fn() },
-    users: { findUnique: jest.fn() }
-  }
-}))
-
-// Mock game engine methods
-const mockValidateMove = jest.spyOn(game, 'validateMove')
-mockValidateMove.mockReturnValue(true)
-```
-
-## File References
-- Architecture: `socket-server.ts`, `app/lobby/[code]/page.tsx`
-- Game logic: `lib/game-engine.ts`, `lib/games/yahtzee-game.ts`, `lib/yahtzee.ts`
-- Database: `prisma/schema.prisma`, `lib/db.ts`
-- Security: `docs/RLS_CONFIGURATION.md`, `prisma/migrations/20260209000000_fix_rls_plural_tables/`
-- Socket patterns: `app/lobby/[code]/hooks/useSocketConnection.ts`
-- API examples: `app/api/lobby/[code]/route.ts`, `app/api/game/[gameId]/state/route.ts`
-- Bot AI: `lib/yahtzee-bot.ts`, `lib/bot-executor.ts`
-- Rate limiting: `lib/rate-limit.ts`
+When behavior changes, update canonical docs only. Avoid creating one-off "summary/fix" markdown files unless explicitly requested.

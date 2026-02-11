@@ -74,6 +74,10 @@ export function validateEnv(): Env {
       if (!env.CORS_ORIGIN) {
         console.warn('⚠️  CORS_ORIGIN not set. Using NEXTAUTH_URL as origin.')
       }
+
+      if (!env.NEXTAUTH_SECRET) {
+        console.warn('⚠️  NEXTAUTH_SECRET not set. Auth token validation and guest socket auth may fail.')
+      }
     }
     
     // Check OAuth provider pairs

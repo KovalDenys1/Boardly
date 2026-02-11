@@ -1,163 +1,49 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-We release patches for security vulnerabilities. Which versions are eligible for receiving such patches depends on the CVSS v3.0 Rating:
+Security fixes are applied to the latest active `1.x` line.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.x.x   | :white_check_mark: |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Do not open public issues for security reports.
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+Report privately to: `security@boardly.online`
 
-If you discover a security vulnerability within Boardly, please send an email to [security@boardly.online](mailto:security@boardly.online). All security vulnerabilities will be promptly addressed.
+Please include:
 
-Please include the following information in your report:
+- affected endpoint/file/flow
+- reproduction steps
+- expected vs actual behavior
+- impact assessment
+- proof-of-concept (if available)
 
-- Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting, etc.)
-- Full paths of source file(s) related to the manifestation of the issue
-- The location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit it
+## Response targets
 
-This information will help us triage your report more quickly.
+- Initial acknowledgment: within 48 hours
+- Triage update: within 7 days
+- Fix release timeline: based on severity
 
-## Response Timeline
+## Security baseline for deployers
 
-- **Initial Response**: Within 48 hours of receiving your report
-- **Status Update**: Within 7 days with assessment and planned fix timeline
-- **Fix Release**: Depends on severity
-  - **Critical**: Within 24-48 hours
-  - **High**: Within 7 days
-  - **Medium**: Within 30 days
-  - **Low**: Next regular release
+- Do not commit `.env` or `.env.local`.
+- Use a strong `NEXTAUTH_SECRET` (single auth/session signing secret).
+- Set strict `CORS_ORIGIN` values.
+- Keep dependencies updated (`npm audit`).
+- Use HTTPS in production.
 
-## Security Update Process
+## Guest and auth model
 
-1. The security report is received and assigned a primary handler
-2. The problem is confirmed and a list of affected versions is determined
-3. Code is audited to find any similar problems
-4. Fixes are prepared for all supported releases
-5. New versions are released and security advisory is published
+- Registered sessions: NextAuth.
+- Guest sessions: signed server-issued token (`X-Guest-Token`).
+- Avoid trusting raw client identifiers for guest identity.
 
-## Public Disclosure
+## Database and RLS
 
-We practice coordinated disclosure. Once a fix is available:
+RLS is used as defense-in-depth at DB level. Application behavior should still enforce authorization in API routes.
 
-1. We will publish a security advisory on GitHub
-2. The vulnerability details will be shared with credit to the reporter (unless anonymity is requested)
-3. A CVE ID will be requested if applicable
+See technical model: `docs/SECURITY_MODEL.md`
 
-## Security Best Practices
+## Disclosure process
 
-While we work hard to ensure the security of Boardly, you can help protect your deployment:
-
-### Environment Variables
-- Never commit `.env` or `.env.local` files
-- Use a strong, random value for `NEXTAUTH_SECRET` (single source for session/auth JWT signing)
-- Rotate secrets regularly (every 90 days recommended)
-- Use different secrets for development and production
-
-### Database
-- Use SSL/TLS for database connections
-- Implement regular database backups
-- Use connection pooling with limits
-- Never expose database credentials in client-side code
-
-### Authentication
-- Enable two-factor authentication for admin accounts
-- Implement rate limiting on auth endpoints (already configured)
-- Monitor for suspicious login patterns
-- Use secure password hashing (bcrypt with salt, already implemented)
-
-### API Security
-- Rate limiting is enabled by default on all API routes
-- CSRF protection is enabled via middleware
-- Keep dependencies up to date with `npm audit`
-- Validate and sanitize all user inputs
-
-### Deployment
-- Always use HTTPS in production (enforced on Vercel)
-- Set appropriate CORS origins (configured in `socket-server.ts`)
-- Enable Sentry error tracking for monitoring
-- Keep Node.js and npm/yarn versions updated
-
-### Data Protection
-- User passwords are hashed with bcrypt
-- JWT tokens expire and are stored securely
-- Personal data follows GDPR principles (minimal collection)
-- Regular security audits of dependencies
-
-### Row Level Security (RLS)
-**Status**: Migration prepared, pending production deployment
-
-Boardly implements PostgreSQL Row Level Security to enforce data access controls at the database level:
-
-- **Protection**: Users can only access their own sensitive data (accounts, sessions, tokens)
-- **Game Access**: Players can only view games they participate in
-- **Lobby Privacy**: Only lobby creators can modify their lobbies
-- **Friend System**: Users can only view their own friend requests and friendships
-- **Service Role**: Backend operations use elevated privileges for authorized actions only
-
-**Documentation**:
-- [RLS Architecture](docs/RLS_ARCHITECTURE.md) - Complete security model
-- [Setup Guide](docs/RLS_SETUP_GUIDE.md) - Implementation instructions
-- [SQL Reference](docs/RLS_SQL_CHEATSHEET.md) - Testing and debugging
-
-**Key Benefits**:
-- Defense in depth: Security enforced at database level, not just application
-- Protection against SQL injection and unauthorized queries
-- Automatic filtering of unauthorized data
-- Support for authenticated users, guests, and service role operations
-
-**Migration**: `prisma/migrations/20260205000000_enable_rls/`
-
-## Known Security Considerations
-
-### Guest Mode
-- Guest users have limited privileges
-- Guest data is temporary and not persisted in User table
-- Guest IDs are client-generated (consider server-side generation for enhanced security)
-
-### Socket.IO
-- Real-time connections are rate-limited
-- Room access is validated server-side
-- Socket events are authenticated
-- Consider adding connection encryption for sensitive data
-
-### Third-Party Services
-We use the following third-party services:
-- **Supabase** (Database) - SOC 2 Type II certified
-- **Vercel** (Frontend hosting) - Enterprise security standards
-- **Render** (Socket.IO server) - Regular security updates
-- **Resend** (Emails) - GDPR compliant
-- **Sentry** (Error tracking) - Data encryption in transit and at rest
-
-## Security Contact
-
-For any security-related questions or concerns, contact:
-- **Email**: security@boardly.online
-- **Response Time**: Within 48 hours
-
-## Bug Bounty Program
-
-We currently do not have a formal bug bounty program. However, we greatly appreciate security researchers who responsibly disclose vulnerabilities and will:
-
-- Acknowledge your contribution in our security advisories
-- Provide credit in release notes
-- Consider compensation for critical vulnerabilities on a case-by-case basis
-
-## Compliance
-
-Boardly follows these security standards:
-- OWASP Top 10 Web Application Security Risks
-- CWE/SANS Top 25 Most Dangerous Software Errors
-- General Data Protection Regulation (GDPR) principles
-
----
-
-*Last Updated: February 5, 2026*
+We follow coordinated disclosure and publish advisories after fixes are available.

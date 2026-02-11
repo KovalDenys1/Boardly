@@ -34,7 +34,7 @@ export default function GamesPage() {
       players: '2-8',
       difficultyKey: 'games.yahtzee.difficulty',
       status: 'available',
-      route: '/games/yahtzee/lobbies',
+      route: '/lobby/create?gameType=yahtzee',
       color: 'from-blue-500 to-purple-600'
     },
     {
@@ -45,7 +45,7 @@ export default function GamesPage() {
       players: '3-10',
       difficultyKey: 'games.spy.difficulty',
       status: 'available',
-      route: '/games/spy/lobbies',
+      route: '/lobby/create?gameType=guess_the_spy',
       color: 'from-red-500 to-pink-600'
     },
     {
@@ -55,7 +55,8 @@ export default function GamesPage() {
       descriptionKey: 'games.tictactoe.description',
       players: '2',
       difficultyKey: 'games.tictactoe.difficulty',
-      status: 'coming-soon',
+      status: 'available',
+      route: '/lobby/create?gameType=tic_tac_toe',
       color: 'from-yellow-400 to-orange-500'
     },
     {
@@ -70,13 +71,14 @@ export default function GamesPage() {
     },
     {
       id: 'rps',
-      nameKey: 'games.rps.name',
-      emoji: '✊',
-      descriptionKey: 'games.rps.description',
+      nameKey: 'games.rock_paper_scissors.name',
+      emoji: '🍂',
+      descriptionKey: 'games.rock_paper_scissors.description',
       players: '2',
-      difficultyKey: 'games.rps.difficulty',
-      status: 'coming-soon',
-      color: 'from-pink-400 to-purple-500'
+      difficultyKey: 'games.rock_paper_scissors.difficulty',
+      status: 'available',
+      route: '/lobby/create?gameType=rock_paper_scissors',
+      color: 'from-indigo-400 to-purple-500'
     },
     {
       id: 'alias',
@@ -178,8 +180,8 @@ export default function GamesPage() {
           <button
             onClick={() => setSelectedFilter('all')}
             className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'all'
-                ? 'bg-white text-blue-600 shadow-lg scale-105'
-                : 'bg-white/20 text-white hover:bg-white/30'
+              ? 'bg-white text-blue-600 shadow-lg scale-105'
+              : 'bg-white/20 text-white hover:bg-white/30'
               }`}
           >
             {t('common.filter')} - {t('common.all', 'All')}
@@ -187,8 +189,8 @@ export default function GamesPage() {
           <button
             onClick={() => setSelectedFilter('available')}
             className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'available'
-                ? 'bg-white text-blue-600 shadow-lg scale-105'
-                : 'bg-white/20 text-white hover:bg-white/30'
+              ? 'bg-white text-blue-600 shadow-lg scale-105'
+              : 'bg-white/20 text-white hover:bg-white/30'
               }`}
           >
             {t('games.available')}
@@ -196,8 +198,8 @@ export default function GamesPage() {
           <button
             onClick={() => setSelectedFilter('coming-soon')}
             className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'coming-soon'
-                ? 'bg-white text-blue-600 shadow-lg scale-105'
-                : 'bg-white/20 text-white hover:bg-white/30'
+              ? 'bg-white text-blue-600 shadow-lg scale-105'
+              : 'bg-white/20 text-white hover:bg-white/30'
               }`}
           >
             {t('games.comingSoon')}

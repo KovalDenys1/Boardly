@@ -99,7 +99,7 @@ From implementation:
 
 - Game implemented in December 2025
 - 15/15 tests passing (unit tests)
-- Documentation: `docs/SPY_GAME_IMPLEMENTATION.md`, `docs/GUESS_THE_SPY_DESIGN.md`
+- Documentation: `docs/ARCHITECTURE.md`, `docs/PROJECT_VISION.md`
 
 ## 📚 Additional Context
 

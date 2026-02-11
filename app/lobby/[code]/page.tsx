@@ -22,6 +22,8 @@ import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, Lobby
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
+import TicTacToeLobbyPage from './tic-tac-toe-page'
+import RockPaperScissorsLobbyPage from './rock-paper-scissors-page'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -62,7 +64,6 @@ interface DBPlayer {
 }
 
 // New modular imports
-import { useGuestMode } from './hooks/useGuestMode'
 import { useSocketConnection } from './hooks/useSocketConnection'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
@@ -1455,6 +1456,64 @@ function LobbyPageContent() {
 }
 
 export default function LobbyPage() {
+  const params = useParams()
+  const { data: session, status } = useSession()
+  const { isGuest, guestToken } = useGuest()
+  const code = params.code as string
+  const [gameType, setGameType] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Detect game type on mount
+  useEffect(() => {
+    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
+      return
+    }
+
+    if (isGuest && !guestToken) {
+      return
+    }
+
+    (async () => {
+      try {
+        const res = await fetchWithGuest(`/api/lobby/${code}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          setGameType(data.lobby?.gameType || 'yahtzee')
+        } else {
+          setGameType('yahtzee') // Default to Yahtzee
+        }
+      } catch (error) {
+        clientLogger.log('Error detecting game type:', error)
+        setGameType('yahtzee') // Default to Yahtzee
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [code, status, isGuest, guestToken])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  // Route to Tic-Tac-Toe page if game type is tic_tac_toe
+  if (gameType === 'tic_tac_toe') {
+    return <TicTacToeLobbyPage code={code} />
+  }
+
+  // Route to Rock Paper Scissors page if game type is rock_paper_scissors
+  if (gameType === 'rock_paper_scissors') {
+    return <RockPaperScissorsLobbyPage code={code} />
+  }
+
+  // Default to Yahtzee (for yahtzee, spy, and other games)
   return (
     <ErrorBoundary
       fallback={

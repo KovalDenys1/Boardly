@@ -42,17 +42,7 @@ const hostname = process.env.HOSTNAME || '0.0.0.0'
 // Event sequence counter for ordering and deduplication (must be declared before server creation)
 let eventSequence = 0
 
-const server = createServer((req, res) => {
-  // Note: /api/notify endpoint is handled in server.on('request') after io initialization
-  // This handler is just for basic health checks
-
-  const url = parse(req.url || '/')
-
-  // Minimal root response for sanity checks
-  res.statusCode = 200
-  res.setHeader('Content-Type', 'text/plain')
-  res.end('Socket.IO server is running')
-})
+const server = createServer()
 
 // Parse allowed origins from env into an array. Use ['*'] as fallback
 // but handle '*' safely by echoing the request origin when credentials are used.
@@ -197,21 +187,42 @@ function checkRateLimit(socketId: string): boolean {
   return true
 }
 
-function buildStateChangeNotifyKey(room: string, event: string, data: any): string | null {
-  if (event !== SocketEvents.GAME_UPDATE || data?.action !== 'state-change') {
-    return null
-  }
-
+function extractStatePayload(data: any): Record<string, unknown> | null {
   const payload = data?.payload
   if (!payload || typeof payload !== 'object') {
     return null
   }
 
+  const wrappedState = (payload as Record<string, unknown>).state
+  if (wrappedState && typeof wrappedState === 'object') {
+    return wrappedState as Record<string, unknown>
+  }
+
+  return payload as Record<string, unknown>
+}
+
+function buildStateChangeNotifyKey(room: string, event: string, data: any): string | null {
+  if (event !== SocketEvents.GAME_UPDATE || data?.action !== 'state-change') {
+    return null
+  }
+
+  const state = extractStatePayload(data)
+  if (!state) {
+    return null
+  }
+
   const currentPlayerIndex =
-    typeof payload.currentPlayerIndex === 'number' ? payload.currentPlayerIndex : 'na'
-  const lastMoveAt = typeof payload.lastMoveAt === 'number' ? payload.lastMoveAt : 'na'
-  const rollsLeft = typeof payload?.data?.rollsLeft === 'number' ? payload.data.rollsLeft : 'na'
-  const updatedAt = payload.updatedAt ? String(payload.updatedAt) : 'na'
+    typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : 'na'
+  const lastMoveAt =
+    typeof state.lastMoveAt === 'number' || typeof state.lastMoveAt === 'string'
+      ? String(state.lastMoveAt)
+      : 'na'
+  const stateData = state.data
+  const rollsLeft =
+    stateData && typeof stateData === 'object' && typeof (stateData as Record<string, unknown>).rollsLeft === 'number'
+      ? (stateData as Record<string, unknown>).rollsLeft
+      : 'na'
+  const updatedAt = state.updatedAt ? String(state.updatedAt) : 'na'
 
   return `${room}:${currentPlayerIndex}:${lastMoveAt}:${rollsLeft}:${updatedAt}`
 }
@@ -634,7 +645,8 @@ io.use(async (socket, next) => {
 if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
   const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000 // 10 minutes
   setInterval(() => {
-    const url = `http://${hostname}:${port}/health`
+    const keepAliveHost = hostname === '0.0.0.0' ? '127.0.0.1' : hostname
+    const url = `http://${keepAliveHost}:${port}/health`
     logger.info('Keep-alive ping to prevent sleep')
     fetch(url).catch(err => logger.error('Keep-alive ping failed', err))
   }, KEEP_ALIVE_INTERVAL)
@@ -918,19 +930,31 @@ io.on('connection', (socket) => {
 socketMonitor.initialize(io, 30000) // Log metrics every 30 seconds
 dbMonitor.initialize(60000) // Log DB metrics every 60 seconds
 
-// Health check endpoint for metrics
+// HTTP endpoints for health checks, server notifications, and metrics.
+// Important: do not pre-respond to every request before /api/notify is processed,
+// otherwise state-change notifications may be acknowledged without broadcasting.
 server.on('request', (req, res) => {
   const url = parse(req.url || '/')
+  const pathname = url.pathname || '/'
 
-  if (url.pathname === '/health') {
+  // Let Socket.IO internal handlers process Engine.IO transport requests.
+  if (pathname.startsWith('/socket.io')) {
+    return
+  }
+
+  if (res.headersSent || res.writableEnded) {
+    return
+  }
+
+  if (pathname === '/health') {
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({ ok: true }))
     return
   }
 
-  // API endpoint for server-side bot notifications (moved here after io initialization)
-  if (url.pathname === '/api/notify' && req.method === 'POST') {
+  // API endpoint for server-side notifications from Next.js API routes
+  if (pathname === '/api/notify' && req.method === 'POST') {
     let body = ''
     let responseSent = false // Track if response has been sent
 
@@ -999,7 +1023,7 @@ server.on('request', (req, res) => {
     return
   }
 
-  if (url.pathname === '/metrics') {
+  if (pathname === '/metrics') {
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
 
@@ -1018,6 +1042,17 @@ server.on('request', (req, res) => {
     }, null, 2))
     return
   }
+
+  if (pathname === '/') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/plain')
+    res.end('Socket.IO server is running')
+    return
+  }
+
+  res.statusCode = 404
+  res.setHeader('Content-Type', 'application/json')
+  res.end(JSON.stringify({ error: 'Not found' }))
 })
 
 server.listen(port, hostname, () => {

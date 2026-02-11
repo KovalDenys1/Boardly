@@ -4,7 +4,9 @@ services:
     env: node
     region: frankfurt
     plan: free
-    buildCommand: npm install && npx prisma migrate deploy && npm run db:generate
+    # Do not run migrations in this socket service build.
+    # Run `prisma migrate deploy` from one dedicated service/job to avoid build hangs.
+    buildCommand: npm ci && npm run db:generate
     startCommand: npm run socket:start
     envVars:
       - key: NODE_ENV
@@ -16,6 +18,12 @@ services:
       - key: CORS_ORIGIN
         sync: false
       - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: GUEST_JWT_SECRET
         sync: false
     healthCheckPath: /health
     # Performance optimizations for free tier

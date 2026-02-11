@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Users {
@@ -153,6 +154,8 @@ enum GameStatus {
 
 enum GameType {
   yahtzee
+  tic_tac_toe
+  rock_paper_scissors
   chess
   guess_the_spy
   uno
