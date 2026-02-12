@@ -141,9 +141,10 @@ export function useSocketConnection({
       userId: !isGuest ? session?.user?.id : guestId
     })
 
-    // Get authentication token (guest mode only).
-    // Authenticated users rely on NextAuth session cookie.
-    const getAuthToken = () => {
+    // Get authentication token for Socket.IO
+    // For guests: use guest token from context
+    // For authenticated users: fetch short-lived JWT from API
+    const getAuthToken = async () => {
       if (isGuest && guestToken) {
         clientLogger.log('🔐 Using guest authentication token', {
           guestId,
@@ -152,27 +153,66 @@ export function useSocketConnection({
         })
         return guestToken
       }
+      
+      // For authenticated users: fetch Socket.IO token from API
+      if (!isGuest && session?.user?.id) {
+        try {
+          clientLogger.log('🔐 Fetching Socket.IO token for authenticated user...')
+          const response = await fetch('/api/socket/token')
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          }
+          const data = await response.json()
+          if (!data.token) {
+            throw new Error('No token in response')
+          }
+          clientLogger.log('✅ Socket.IO token fetched successfully')
+          return data.token
+        } catch (error) {
+          clientLogger.error('❌ Failed to fetch Socket.IO token:', error)
+          return null
+        }
+      }
+      
       return null
     }
 
-    const token = getAuthToken()
+    const initSocket = async () => {
+      const token = await getAuthToken()
+      
+      if (!isGuest && !token) {
+        clientLogger.error('❌ Failed to get authentication token for socket connection')
+        authFailedRef.current = true
+        showToast.error('errors.authenticationFailed')
+        return null
+      }
 
-    // Exponential backoff calculation: min(1000 * 2^attempt, 30000)
-    const calculateBackoff = (attempt: number) => {
-      const baseDelay = 1000 // 1 second
-      const maxDelay = 30000 // 30 seconds
-      return Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
+      // Exponential backoff calculation: min(1000 * 2^attempt, 30000)
+      const calculateBackoff = (attempt: number) => {
+        const baseDelay = 1000 // 1 second
+        const maxDelay = 30000 // 30 seconds
+        return Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
+      }
+
+      const authPayload: Record<string, unknown> = {}
+      if (token) authPayload.token = token
+      if (isGuest) authPayload.isGuest = true
+
+      const queryPayload: Record<string, string> = {}
+      if (token) queryPayload.token = String(token)
+      if (isGuest) queryPayload.isGuest = 'true'
+
+      return { authPayload, queryPayload, calculateBackoff, token }
     }
 
-    const authPayload: Record<string, unknown> = {}
-    if (token) authPayload.token = token
-    if (isGuest) authPayload.isGuest = true
+    // Initialize socket auth and create connection
+    const initAndConnect = async () => {
+      const authData = await initSocket()
+      if (!authData) return
 
-    const queryPayload: Record<string, string> = {}
-    if (token) queryPayload.token = String(token)
-    if (isGuest) queryPayload.isGuest = 'true'
+      const { authPayload, queryPayload, calculateBackoff, token } = authData
 
-    const newSocket = io(url, {
+      const newSocket = io(url, {
       // Optimized for Render free tier (cold starts can take up to 60s)
       transports: ['polling', 'websocket'], // Polling → WebSocket for stability
       reconnection: true,
@@ -404,6 +444,10 @@ export function useSocketConnection({
     if (isMounted) {
       setSocket(newSocket)
     }
+    }
+
+    // Initialize socket connection with authentication
+    initAndConnect()
 
     return () => {
       isMounted = false
@@ -415,31 +459,34 @@ export function useSocketConnection({
         reconnectTimeoutRef.current = null
       }
 
-      // Remove all listeners first
-      newSocket.off(SocketEvents.CONNECT)
-      newSocket.off(SocketEvents.DISCONNECT)
-      newSocket.off(SocketEvents.CONNECT_ERROR)
-      newSocket.off(SocketEvents.RECONNECT_ATTEMPT)
-      newSocket.off(SocketEvents.RECONNECT_FAILED)
-      newSocket.off(SocketEvents.RECONNECT)
-      newSocket.off(SocketEvents.ERROR)
-      newSocket.off(SocketEvents.SERVER_ERROR)
-      newSocket.off(SocketEvents.GAME_UPDATE)
-      newSocket.off(SocketEvents.CHAT_MESSAGE)
-      newSocket.off(SocketEvents.PLAYER_TYPING)
-      newSocket.off(SocketEvents.LOBBY_UPDATE)
-      newSocket.off(SocketEvents.PLAYER_JOINED)
-      newSocket.off(SocketEvents.GAME_STARTED)
-      newSocket.off(SocketEvents.GAME_ABANDONED)
-      newSocket.off(SocketEvents.PLAYER_LEFT)
-      newSocket.off(SocketEvents.BOT_ACTION)
+      // Cleanup socket if exists
+      if (socket) {
+        // Remove all listeners first
+        socket.off(SocketEvents.CONNECT)
+        socket.off(SocketEvents.DISCONNECT)
+        socket.off(SocketEvents.CONNECT_ERROR)
+        socket.off(SocketEvents.RECONNECT_ATTEMPT)
+        socket.off(SocketEvents.RECONNECT_FAILED)
+        socket.off(SocketEvents.RECONNECT)
+        socket.off(SocketEvents.ERROR)
+        socket.off(SocketEvents.SERVER_ERROR)
+        socket.off(SocketEvents.GAME_UPDATE)
+        socket.off(SocketEvents.CHAT_MESSAGE)
+        socket.off(SocketEvents.PLAYER_TYPING)
+        socket.off(SocketEvents.LOBBY_UPDATE)
+        socket.off(SocketEvents.PLAYER_JOINED)
+        socket.off(SocketEvents.GAME_STARTED)
+        socket.off(SocketEvents.GAME_ABANDONED)
+        socket.off(SocketEvents.PLAYER_LEFT)
+        socket.off(SocketEvents.BOT_ACTION)
 
-      // Gracefully disconnect only if connected
-      if (newSocket.connected) {
-        newSocket.disconnect()
-      } else if (typeof newSocket.close === 'function') {
-        // Force close if not connected yet (prevents WebSocket error)
-        newSocket.close()
+        // Gracefully disconnect only if connected
+        if (socket.connected) {
+          socket.disconnect()
+        } else if (typeof socket.close === 'function') {
+          // Force close if not connected yet (prevents WebSocket error)
+          socket.close()
+        }
       }
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
