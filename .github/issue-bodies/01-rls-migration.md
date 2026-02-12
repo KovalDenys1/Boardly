@@ -15,7 +15,7 @@ Update and apply Row Level Security policies to production database to enable da
 - [ ] Rewrite migration SQL to use plural table names (Users, Games, Lobbies, Players, Accounts, Sessions, Bots, Friendships, FriendRequests, SpyLocations, EmailVerificationTokens, PasswordResetTokens, VerificationTokens)
 - [ ] Test all RLS policies in staging environment with service role
 - [ ] Verify no breaking changes to existing queries (Prisma uses service_role which bypasses RLS)
-- [ ] Create comprehensive documentation: `docs/RLS_CONFIGURATION.md`
+- [ ] Create comprehensive documentation: `docs/SECURITY_MODEL.md`
 - [ ] Apply migration to production after thorough testing
 - [ ] Verify all CRUD operations work correctly post-migration
 
@@ -48,8 +48,8 @@ Update and apply Row Level Security policies to production database to enable da
 
 **Related Docs**:
 
-- Existing: `docs/RLS_ARCHITECTURE.md`, `docs/RLS_SETUP_GUIDE.md`
-- To create: `docs/RLS_CONFIGURATION.md`
+- Existing: `docs/SECURITY_MODEL.md`, `docs/ARCHITECTURE.md`
+- To update: `docs/SECURITY_MODEL.md`
 
 ## 🧪 Testing Requirements
 
@@ -83,4 +83,4 @@ Update and apply Row Level Security policies to production database to enable da
 
 - Migration: `prisma/migrations/20260205000000_enable_rls/migration.sql`
 - Schema: `prisma/schema.prisma`
-- Docs: `docs/RLS_ARCHITECTURE.md`, `docs/RLS_SETUP_GUIDE.md`
+- Docs: `docs/SECURITY_MODEL.md`, `docs/ARCHITECTURE.md`

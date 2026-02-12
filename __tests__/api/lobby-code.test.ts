@@ -90,9 +90,11 @@ describe('GET /api/lobby/[code]', () => {
     expect(response.status).toBe(200)
     expect(data.lobby).toBeDefined()
     expect(data.lobby.code).toBe('ABC123')
+    expect(data.lobby.password).toBeUndefined()
+    expect(data.lobby.isPrivate).toBe(false)
     expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledWith({
       where: { code: 'ABC123' },
-      include: expect.any(Object),
+      select: expect.any(Object),
     })
   })
 

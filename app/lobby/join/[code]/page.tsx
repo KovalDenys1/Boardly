@@ -14,6 +14,7 @@ export default function LobbyInvitePage() {
   const { setGuestMode, guestToken } = useGuest()
   const code = params.code as string
   const [guestName, setGuestName] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,6 +53,7 @@ export default function LobbyInvitePage() {
         body: JSON.stringify({
           guestName: guestName.trim(),
           guestToken: guestToken || undefined,
+          password: password || undefined,
         }),
       })
 
@@ -155,6 +157,20 @@ export default function LobbyInvitePage() {
               <p className="text-xs text-gray-500 mt-1">
                 No account needed - just enter your name and play!
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Lobby Password (if required)
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="input"
+                disabled={loading}
+              />
             </div>
 
             {error && (

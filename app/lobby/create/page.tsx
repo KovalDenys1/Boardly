@@ -10,7 +10,7 @@ import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 
-type GameType = 'yahtzee' | 'guess_the_spy'
+type GameType = 'yahtzee' | 'guess_the_spy' | 'tic_tac_toe' | 'rock_paper_scissors'
 
 type GameSettings = {
   hasTurnTimer?: boolean // Whether this game supports turn timer
@@ -24,6 +24,7 @@ type GameInfo = {
   emoji: string
   description: string
   gradient: string
+  translationKey: string // Translation namespace key (e.g. 'yahtzee', 'tictactoe')
   allowedPlayers: number[]
   defaultMaxPlayers: number
   settings: GameSettings // Game-specific settings configuration
@@ -36,6 +37,7 @@ const GAME_INFO: Record<GameType, GameInfo> = {
     emoji: '🎲',
     description: '', // Set via i18n
     gradient: 'from-purple-600 via-pink-500 to-orange-400',
+    translationKey: 'yahtzee',
     allowedPlayers: [2, 3, 4],
     defaultMaxPlayers: 4,
     settings: {
@@ -50,11 +52,38 @@ const GAME_INFO: Record<GameType, GameInfo> = {
     emoji: '🕵️‍♂️',
     description: '', // Set via i18n
     gradient: 'from-blue-600 via-cyan-500 to-green-400',
+    translationKey: 'guess_the_spy',
     allowedPlayers: [3, 4, 5, 6, 7, 8],
     defaultMaxPlayers: 6,
     settings: {
-      hasTurnTimer: false, // Spy game doesn't need turn timer
-      hasGameModes: false, // Spy game doesn't need game modes yet
+      hasTurnTimer: false,
+      hasGameModes: false,
+    },
+  },
+  tic_tac_toe: {
+    name: 'Tic-Tac-Toe',
+    emoji: '❌',
+    description: '', // Set via i18n
+    gradient: 'from-yellow-500 via-orange-500 to-red-400',
+    translationKey: 'tictactoe',
+    allowedPlayers: [2],
+    defaultMaxPlayers: 2,
+    settings: {
+      hasTurnTimer: false,
+      hasGameModes: false,
+    },
+  },
+  rock_paper_scissors: {
+    name: 'Rock Paper Scissors',
+    emoji: '🍂',
+    description: '', // Set via i18n
+    gradient: 'from-indigo-500 via-purple-500 to-pink-400',
+    translationKey: 'rock_paper_scissors',
+    allowedPlayers: [2],
+    defaultMaxPlayers: 2,
+    settings: {
+      hasTurnTimer: false,
+      hasGameModes: false,
     },
   },
 }
@@ -292,96 +321,115 @@ function CreateLobbyPage() {
                   👥 {t('lobby.create.maxPlayers')} *
                 </label>
 
-                {/* Number Input - Centered above slider */}
-                <div className="flex flex-col items-center mb-2">
-                  <input
-                    type="number"
-                    min={gameInfo.allowedPlayers[0]}
-                    max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                    value={maxPlayersInput}
-                    onChange={(e) => {
-                      const inputValue = e.target.value;
-                      setMaxPlayersInput(inputValue);
+                {gameInfo.allowedPlayers.length === 1 ? (
+                  // Static display for games with fixed player count (e.g., Tic-Tac-Toe, Rock Paper Scissors)
+                  <div className="flex flex-col items-center py-4">
+                    <div className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-white/40">
+                      <span className="text-4xl font-black text-white drop-shadow-lg">
+                        {gameInfo.allowedPlayers[0]}
+                      </span>
+                      <span className="text-lg text-white/90 font-semibold">
+                        {gameInfo.allowedPlayers[0] === 1
+                          ? t('lobby.create.player')
+                          : t('lobby.create.players')
+                        }
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Number Input - Centered above slider */}
+                    <div className="flex flex-col items-center mb-2">
+                      <input
+                        type="number"
+                        min={gameInfo.allowedPlayers[0]}
+                        max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                        value={maxPlayersInput}
+                        onChange={(e) => {
+                          const inputValue = e.target.value;
+                          setMaxPlayersInput(inputValue);
 
-                      // Check for validation warnings
-                      if (inputValue === '') {
-                        setShowPlayerWarning(false);
-                        return;
-                      }
+                          // Check for validation warnings
+                          if (inputValue === '') {
+                            setShowPlayerWarning(false);
+                            return;
+                          }
 
-                      const value = parseInt(inputValue);
-                      if (!isNaN(value)) {
-                        // If value is allowed, sync to formData
-                        if (gameInfo.allowedPlayers.includes(value)) {
-                          setFormData({ ...formData, maxPlayers: value });
+                          const value = parseInt(inputValue);
+                          if (!isNaN(value)) {
+                            // If value is allowed, sync to formData
+                            if (gameInfo.allowedPlayers.includes(value)) {
+                              setFormData({ ...formData, maxPlayers: value });
+                              setShowPlayerWarning(false);
+                            } else {
+                              // If value is out of bounds, show warning
+                              if (value < gameInfo.allowedPlayers[0] || value > gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]) {
+                                setShowPlayerWarning(true);
+                              } else {
+                                // Valid number but not in allowed set (if gaps exist), treat as warning or just ignore
+                                setShowPlayerWarning(false);
+                              }
+                            }
+                          }
+                        }}
+                        onFocus={() => {
                           setShowPlayerWarning(false);
-                        } else {
-                          // If value is out of bounds, show warning
-                          if (value < gameInfo.allowedPlayers[0] || value > gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]) {
-                            setShowPlayerWarning(true);
-                          } else {
-                            // Valid number but not in allowed set (if gaps exist), treat as warning or just ignore
+                        }}
+                        onBlur={() => {
+                          // On blur, reset to the last valid value in formData
+                          setMaxPlayersInput(formData.maxPlayers.toString());
+                          setShowPlayerWarning(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' || e.key === 'Delete') {
                             setShowPlayerWarning(false);
                           }
-                        }
-                      }
-                    }}
-                    onFocus={() => {
-                      setShowPlayerWarning(false);
-                    }}
-                    onBlur={() => {
-                      // On blur, reset to the last valid value in formData
-                      setMaxPlayersInput(formData.maxPlayers.toString());
-                      setShowPlayerWarning(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Backspace' || e.key === 'Delete') {
-                        setShowPlayerWarning(false);
-                      }
-                    }}
-                    className="w-12 px-2 py-1.5 text-center text-base border-2 border-white/30 rounded-md focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white font-bold transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-md"
-                  />
-                  {/* Validation warning */}
-                  {showPlayerWarning && (
-                    <p className="text-xs text-red-300 mt-1 animate-fade-in">
-                      ⚠️ {t('lobby.create.mustBeBetween', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
-                    </p>
-                  )}
-                </div>
+                        }}
+                        className="w-12 px-2 py-1.5 text-center text-base border-2 border-white/30 rounded-md focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white font-bold transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-md"
+                      />
+                      {/* Validation warning */}
+                      {showPlayerWarning && (
+                        <p className="text-xs text-red-300 mt-1 animate-fade-in">
+                          ⚠️ {t('lobby.create.mustBeBetween', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
+                        </p>
+                      )}
+                    </div>
 
-                {/* Range Slider */}
-                <div className="relative">
-                  <input
-                    type="range"
-                    min={gameInfo.allowedPlayers[0]}
-                    max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                    step="1"
-                    value={formData.maxPlayers}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (gameInfo.allowedPlayers.includes(value)) {
-                        setFormData({ ...formData, maxPlayers: value });
-                        setMaxPlayersInput(value.toString());
-                        setShowPlayerWarning(false);
-                      }
-                    }}
-                    className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider-thumb"
-                    style={{
-                      background: `linear-gradient(to right, white 0%, white ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) 100%)`
-                    }}
-                  />
-                  {/* Tick marks for allowed values */}
-                  <div className="flex justify-between mt-1 px-0.5">
-                    {gameInfo.allowedPlayers.map((num) => (
-                      <span
-                        key={num}
-                        className={`text-xs transition-all ${formData.maxPlayers === num ? 'text-white font-bold scale-110' : 'text-white/50'}`}
-                      >
-                        {num}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                    {/* Range Slider */}
+                    <div className="relative">
+                      <input
+                        type="range"
+                        min={gameInfo.allowedPlayers[0]}
+                        max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                        step="1"
+                        value={formData.maxPlayers}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (gameInfo.allowedPlayers.includes(value)) {
+                            setFormData({ ...formData, maxPlayers: value });
+                            setMaxPlayersInput(value.toString());
+                            setShowPlayerWarning(false);
+                          }
+                        }}
+                        className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider-thumb"
+                        style={{
+                          background: `linear-gradient(to right, white 0%, white ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) 100%)`
+                        }}
+                      />
+                      {/* Tick marks for allowed values */}
+                      <div className="flex justify-between mt-1 px-0.5">
+                        {gameInfo.allowedPlayers.map((num) => (
+                          <span
+                            key={num}
+                            className={`text-xs transition-all ${formData.maxPlayers === num ? 'text-white font-bold scale-110' : 'text-white/50'}`}
+                          >
+                            {num}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Helper text */}
                 <p className="text-xs text-white/70 mt-2 text-center">
@@ -452,7 +500,7 @@ function CreateLobbyPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => router.push(`/games/${selectedGameType}/lobbies`)}
+                  onClick={() => router.push('/games')}
                   className="flex-1 px-4 py-2.5 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
                 >
                   {t('lobby.create.cancel')}
@@ -507,7 +555,7 @@ function CreateLobbyPage() {
             <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-4 md:p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
               <div className="text-5xl mb-2">{gameInfo.emoji}</div>
               <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
-              <div className="text-white/80 mb-2 text-sm">{t(`games.${selectedGameType}.description`)}</div>
+              <div className="text-white/80 mb-2 text-sm">{t(`games.${gameInfo.translationKey}.description` as any)}</div>
               <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
                   👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}

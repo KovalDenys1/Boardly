@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { createBot } from '@/lib/bot-helpers'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { notifySocket } from '@/lib/socket-url'
 
 export async function POST(
   request: Request,
@@ -111,6 +112,23 @@ export async function POST(
         score: 0
       }
     })
+
+    await notifySocket(
+      `lobby:${code}`,
+      'player-joined',
+      {
+        lobbyCode: code,
+        username: botUser.username || 'AI Bot',
+        userId: botUser.id,
+        isBot: true,
+      }
+    )
+
+    await notifySocket(
+      `lobby:${code}`,
+      'lobby-update',
+      { lobbyCode: code, type: 'player-joined' }
+    )
 
     // Fetch updated game
     const updatedGame = await prisma.games.findUnique({

@@ -16,15 +16,20 @@ interface RateLimitStore {
 // In-memory store for rate limiting (use Redis in production for multi-instance deployments)
 const store: RateLimitStore = {}
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now()
-  Object.keys(store).forEach(key => {
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
+let lastCleanupAt = 0
+
+function cleanupExpiredEntries(now: number) {
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return
+
+  Object.keys(store).forEach((key) => {
     if (store[key].resetTime < now) {
       delete store[key]
     }
   })
-}, 5 * 60 * 1000)
+
+  lastCleanupAt = now
+}
 
 /**
  * Simple in-memory rate limiter middleware for Next.js API routes
@@ -47,6 +52,7 @@ export function rateLimit(config: RateLimitConfig) {
     const key = `${ip}:${pathname}`
 
     const now = Date.now()
+    cleanupExpiredEntries(now)
     const record = store[key]
 
     if (!record) {

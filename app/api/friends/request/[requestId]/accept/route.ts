@@ -14,7 +14,10 @@ export async function POST(
   { params }: { params: Promise<{ requestId: string }> }
 ) {
   try {
-    await limiter(req)
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
     const { requestId } = await params
 
     const session = await getServerSession(authOptions)

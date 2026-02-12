@@ -21,7 +21,17 @@ export async function GET(
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },
-      include: {
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        maxPlayers: true,
+        turnTimer: true,
+        isActive: true,
+        gameType: true,
+        createdAt: true,
+        creatorId: true,
+        password: true,
         creator: {
           select: {
             id: true,
@@ -53,7 +63,13 @@ export async function GET(
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ lobby })
+    const { password, ...safeLobby } = lobby
+    return NextResponse.json({
+      lobby: {
+        ...safeLobby,
+        isPrivate: !!password,
+      },
+    })
   } catch (error) {
     const log = apiLogger('GET /api/lobby/[code]')
     log.error('Get lobby error', error as Error, {

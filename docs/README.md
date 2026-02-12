@@ -1,55 +1,25 @@
-# 📚 Boardly Documentation
+# Documentation Index
 
-Complete documentation for the Boardly multiplayer gaming platform.
+This folder contains the canonical project documentation.
 
-## 📖 Available Documentation
+## Core docs
 
-### Core Documentation
-- **[README.md](../README.md)** - Project overview and quick start
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
-- **[TODO.md](TODO.md)** - Roadmap and planned features
-- **[MULTI_MACHINE_SETUP.md](MULTI_MACHINE_SETUP.md)** - Work across multiple computers
+- `docs/PROJECT_VISION.md` - product goals, long-term direction, and decision principles
+- `docs/ARCHITECTURE.md` - technical architecture, data model, websocket flow, game engine patterns
+- `docs/OPERATIONS.md` - environment setup, local runbook, deployment, troubleshooting
+- `docs/ROADMAP.md` - active priorities and near-term milestones
+- `docs/CONTRIBUTING.md` - workflow and engineering standards
+- `docs/SECURITY_MODEL.md` - security layers, auth model, RLS posture
 
-### Technical Guides
-- **[WEBSOCKET.md](WEBSOCKET.md)** - Real-time communication (Socket.IO)
-- **[PRODUCTION_DEPLOY_GUIDE.md](PRODUCTION_DEPLOY_GUIDE.md)** - Deployment checklist
-- **[PERFORMANCE_OPTIMIZATIONS_DEC2024.md](PERFORMANCE_OPTIMIZATIONS_DEC2024.md)** - Performance improvements
+## Root-level docs
 
-### Game Implementation
-- **[SPY_GAME_IMPLEMENTATION.md](SPY_GAME_IMPLEMENTATION.md)** - Guess the Spy game
-- **[GUESS_THE_SPY_DESIGN.md](GUESS_THE_SPY_DESIGN.md)** - Game design document
-- **[FRIEND_SYSTEM_API.md](FRIEND_SYSTEM_API.md)** - Friend system endpoints
+- `README.md` - quick start and repo entry point
+- `SECURITY.md` - vulnerability reporting policy
+- `CODE_OF_CONDUCT.md` - community standards
+- `.github/copilot-instructions.md` - AI-agent execution guide for this repo
 
-## 🚀 Quick Start
+## Documentation rules
 
-1. **Setup Project**: See [main README](../README.md)
-2. **WebSocket Guide**: Read [WEBSOCKET.md](WEBSOCKET.md)
-3. **Deploy**: Follow [PRODUCTION_DEPLOY_GUIDE.md](PRODUCTION_DEPLOY_GUIDE.md)
-
-## 🎯 For Different Audiences
-
-### Developers
-- Start with [main README](../README.md) for setup
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
-- Check [WEBSOCKET.md](WEBSOCKET.md) for real-time features
-
-### DevOps
-- Use [PRODUCTION_DEPLOY_GUIDE.md](PRODUCTION_DEPLOY_GUIDE.md)
-- Review [PERFORMANCE_OPTIMIZATIONS_DEC2024.md](PERFORMANCE_OPTIMIZATIONS_DEC2024.md)
-
-### Contributors
-- Read [CONTRIBUTING.md](CONTRIBUTING.md)
-- Check [TODO.md](TODO.md) for what needs work
-- Review [CHANGELOG.md](CHANGELOG.md) to see recent changes
-
-## 📝 Documentation Principles
-
-- ✅ Keep it simple and actionable
-- ✅ Include code examples
-- ✅ No secrets or personal data
-- ✅ Stay up-to-date with code
-
----
-
-*Last updated: February 2026*
+- Keep docs short and source-of-truth oriented.
+- Prefer one canonical page per topic instead of many status snapshots.
+- Remove or merge historical writeups once their decisions are absorbed here.

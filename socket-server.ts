@@ -11,7 +11,8 @@ dotenv.config({ path: resolve(process.cwd(), '.env') })
 import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { parse } from 'url'
-import jwt from 'jsonwebtoken'
+import jwt, { JwtPayload } from 'jsonwebtoken'
+import { getToken } from 'next-auth/jwt'
 import { prisma } from './lib/db'
 import { socketLogger, logger } from './lib/logger'
 import { validateEnv, printEnvInfo } from './lib/env'
@@ -26,9 +27,7 @@ import {
 import {
   SocketEvents,
   GameActionPayload,
-  GameStartedPayload,
   ServerErrorPayload,
-  createEventPayload,
   SocketRooms
 } from './types/socket-events'
 
@@ -42,17 +41,7 @@ const hostname = process.env.HOSTNAME || '0.0.0.0'
 // Event sequence counter for ordering and deduplication (must be declared before server creation)
 let eventSequence = 0
 
-const server = createServer((req, res) => {
-  // Note: /api/notify endpoint is handled in server.on('request') after io initialization
-  // This handler is just for basic health checks
-
-  const url = parse(req.url || '/')
-
-  // Minimal root response for sanity checks
-  res.statusCode = 200
-  res.setHeader('Content-Type', 'text/plain')
-  res.end('Socket.IO server is running')
-})
+const server = createServer()
 
 // Parse allowed origins from env into an array. Use ['*'] as fallback
 // but handle '*' safely by echoing the request origin when credentials are used.
@@ -197,21 +186,42 @@ function checkRateLimit(socketId: string): boolean {
   return true
 }
 
-function buildStateChangeNotifyKey(room: string, event: string, data: any): string | null {
-  if (event !== SocketEvents.GAME_UPDATE || data?.action !== 'state-change') {
-    return null
-  }
-
+function extractStatePayload(data: any): Record<string, unknown> | null {
   const payload = data?.payload
   if (!payload || typeof payload !== 'object') {
     return null
   }
 
+  const wrappedState = (payload as Record<string, unknown>).state
+  if (wrappedState && typeof wrappedState === 'object') {
+    return wrappedState as Record<string, unknown>
+  }
+
+  return payload as Record<string, unknown>
+}
+
+function buildStateChangeNotifyKey(room: string, event: string, data: any): string | null {
+  if (event !== SocketEvents.GAME_UPDATE || data?.action !== 'state-change') {
+    return null
+  }
+
+  const state = extractStatePayload(data)
+  if (!state) {
+    return null
+  }
+
   const currentPlayerIndex =
-    typeof payload.currentPlayerIndex === 'number' ? payload.currentPlayerIndex : 'na'
-  const lastMoveAt = typeof payload.lastMoveAt === 'number' ? payload.lastMoveAt : 'na'
-  const rollsLeft = typeof payload?.data?.rollsLeft === 'number' ? payload.data.rollsLeft : 'na'
-  const updatedAt = payload.updatedAt ? String(payload.updatedAt) : 'na'
+    typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : 'na'
+  const lastMoveAt =
+    typeof state.lastMoveAt === 'number' || typeof state.lastMoveAt === 'string'
+      ? String(state.lastMoveAt)
+      : 'na'
+  const stateData = state.data
+  const rollsLeft =
+    stateData && typeof stateData === 'object' && typeof (stateData as Record<string, unknown>).rollsLeft === 'number'
+      ? (stateData as Record<string, unknown>).rollsLeft
+      : 'na'
+  const updatedAt = state.updatedAt ? String(state.updatedAt) : 'na'
 
   return `${room}:${currentPlayerIndex}:${lastMoveAt}:${rollsLeft}:${updatedAt}`
 }
@@ -262,6 +272,16 @@ interface ConnectionSyncResult {
 
 const LOBBY_ROOM_PREFIX = SocketRooms.lobby('')
 const CONNECTION_STATE_SYNC_MAX_RETRIES = 3
+const SOCKET_INTERNAL_AUTH_HEADER = 'x-socket-internal-secret'
+const SOCKET_INTERNAL_AUTH_BEARER_PREFIX = 'Bearer '
+
+const SOCKET_INTERNAL_SECRET =
+  process.env.SOCKET_SERVER_INTERNAL_SECRET ||
+  process.env.SOCKET_INTERNAL_SECRET
+
+if (process.env.NODE_ENV === 'production' && !SOCKET_INTERNAL_SECRET) {
+  throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production for internal socket endpoints')
+}
 
 function getLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
   const lobbyCodes: string[] = []
@@ -288,6 +308,94 @@ function hasAnotherActiveSocketForUser(userId: string, excludingSocketId: string
 
 function getUserDisplayName(user: { username?: string | null; email?: string | null } | undefined): string {
   return user?.username || user?.email || 'Player'
+}
+
+function getAuthorizedLobbySet(socket: any): Set<string> {
+  if (!(socket.data.authorizedLobbies instanceof Set)) {
+    socket.data.authorizedLobbies = new Set<string>()
+  }
+  return socket.data.authorizedLobbies as Set<string>
+}
+
+function markSocketLobbyAuthorized(socket: any, lobbyCode: string) {
+  const authorizedLobbies = getAuthorizedLobbySet(socket)
+  authorizedLobbies.add(lobbyCode)
+}
+
+function revokeSocketLobbyAuthorization(socket: any, lobbyCode: string) {
+  const authorizedLobbies = getAuthorizedLobbySet(socket)
+  authorizedLobbies.delete(lobbyCode)
+}
+
+function isSocketAuthorizedForLobby(socket: any, lobbyCode: string): boolean {
+  const authorizedLobbies = getAuthorizedLobbySet(socket)
+  return authorizedLobbies.has(lobbyCode) && socket.rooms.has(SocketRooms.lobby(lobbyCode))
+}
+
+async function getSessionUserIdForSocket(socket: any, secret: string): Promise<string | null> {
+  try {
+    const token = await getToken({ req: socket.request as any, secret })
+    if (typeof token?.id === 'string' && token.id) {
+      return token.id
+    }
+    if (typeof token?.sub === 'string' && token.sub) {
+      return token.sub
+    }
+    return null
+  } catch (error) {
+    logger.warn('Failed to decode session token from socket request')
+    return null
+  }
+}
+
+async function isUserActivePlayerInLobby(lobbyCode: string, userId: string): Promise<boolean> {
+  const player = await prisma.players.findFirst({
+    where: {
+      userId,
+      game: {
+        status: {
+          in: ['waiting', 'playing'],
+        },
+        lobby: {
+          code: lobbyCode,
+        },
+      },
+    },
+    select: { id: true },
+  })
+
+  return !!player
+}
+
+function extractInternalRequestSecret(req: any): string | null {
+  const secretHeader = req.headers?.[SOCKET_INTERNAL_AUTH_HEADER]
+  if (typeof secretHeader === 'string' && secretHeader.trim()) {
+    return secretHeader.trim()
+  }
+
+  const authorizationHeader = req.headers?.authorization
+  if (
+    typeof authorizationHeader === 'string' &&
+    authorizationHeader.startsWith(SOCKET_INTERNAL_AUTH_BEARER_PREFIX)
+  ) {
+    return authorizationHeader.slice(SOCKET_INTERNAL_AUTH_BEARER_PREFIX.length).trim() || null
+  }
+
+  return null
+}
+
+function isInternalEndpointAuthorized(req: any): boolean {
+  if (process.env.NODE_ENV !== 'production') {
+    return true
+  }
+
+  if (!SOCKET_INTERNAL_SECRET) {
+    logger.error('Protected socket endpoints are enabled in production without internal secret')
+    return false
+  }
+
+  const providedSecret = extractInternalRequestSecret(req)
+  return !!providedSecret && providedSecret === SOCKET_INTERNAL_SECRET
 }
 
 async function loadActiveGameForLobby(lobbyCode: string): Promise<ActiveLobbyGameRecord | null> {
@@ -493,7 +601,8 @@ setInterval(() => {
 
 // Authentication middleware
 io.use(async (socket, next) => {
-  const token = socket.handshake.auth.token || socket.handshake.query.token
+  const rawToken = socket.handshake.auth.token || socket.handshake.query.token
+  const token = rawToken ? String(rawToken) : ''
   const isGuest = socket.handshake.auth.isGuest === true || socket.handshake.query.isGuest === 'true'
 
   try {
@@ -548,47 +657,44 @@ io.use(async (socket, next) => {
       return next()
     }
 
-    if (!token || token === 'null' || token === 'undefined' || token === '') {
-      logger.warn('Socket connection rejected: No valid token provided', {
-        token: token,
-        isGuest: isGuest,
-        auth: socket.handshake.auth,
-        query: socket.handshake.query,
-        headers: {
-          origin: socket.handshake.headers.origin,
-          userAgent: socket.handshake.headers['user-agent']
-        }
-      })
-      return next(new Error('Authentication required'))
+    const secret = process.env.NEXTAUTH_SECRET
+    if (!secret) {
+      logger.error('Socket connection rejected: NEXTAUTH_SECRET is not configured')
+      return next(new Error('Authentication unavailable'))
     }
 
-    // Try to verify as JWT first
-    const secret = process.env.NEXTAUTH_SECRET
     let userId: string | null = null
 
-    if (secret) {
+    // Prefer explicit signed token when provided.
+    if (token && token !== 'null' && token !== 'undefined') {
       try {
-        const decoded = jwt.verify(token, secret) as any
-        userId = decoded.id || decoded.sub
+        const decoded = jwt.verify(token, secret) as JwtPayload | string
+        if (typeof decoded === 'string') {
+          userId = decoded
+        } else {
+          const claims = decoded as JwtPayload & { id?: string; userId?: string }
+          userId = claims.id || claims.userId || claims.sub || null
+        }
         logger.info('JWT token verified successfully', { userId })
       } catch (jwtError) {
-        // If JWT verification fails, treat token as userId directly
-        // This handles the case where client sends userId instead of JWT
-        logger.info('Token is not a JWT, treating as userId', {
+        logger.warn('Socket token verification failed, trying session cookie auth', {
           tokenPreview: String(token).substring(0, 20) + '...',
           tokenLength: String(token).length
         })
-        userId = String(token)
       }
-    } else {
-      logger.warn('No NEXTAUTH_SECRET configured, treating token as userId')
-      // No secret configured, treat token as userId
-      userId = String(token)
+    }
+
+    // Fallback to NextAuth session cookie for browser clients.
+    if (!userId) {
+      userId = await getSessionUserIdForSocket(socket, secret)
+      if (userId) {
+        logger.info('Socket authenticated via NextAuth session cookie', { userId })
+      }
     }
 
     if (!userId) {
-      logger.warn('Socket connection rejected: Could not extract userId')
-      return next(new Error('Invalid authentication'))
+      logger.warn('Socket connection rejected: Could not extract authenticated user id')
+      return next(new Error('Authentication required'))
     }
 
     logger.info('Attempting to find user in database', { userId })
@@ -634,7 +740,8 @@ io.use(async (socket, next) => {
 if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
   const KEEP_ALIVE_INTERVAL = 10 * 60 * 1000 // 10 minutes
   setInterval(() => {
-    const url = `http://${hostname}:${port}/health`
+    const keepAliveHost = hostname === '0.0.0.0' ? '127.0.0.1' : hostname
+    const url = `http://${keepAliveHost}:${port}/health`
     logger.info('Keep-alive ping to prevent sleep')
     fetch(url).catch(err => logger.error('Keep-alive ping failed', err))
   }, KEEP_ALIVE_INTERVAL)
@@ -665,8 +772,10 @@ io.on('connection', (socket) => {
     // Track event
     socketMonitor.trackEvent('join-lobby')
 
+    const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
+
     // Basic validation
-    if (!lobbyCode || typeof lobbyCode !== 'string' || lobbyCode.length > 20) {
+    if (!normalizedLobbyCode || normalizedLobbyCode.length > 20) {
       logger.warn('Invalid lobby code received', { lobbyCode, socketId: socket.id })
       emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
       return
@@ -675,7 +784,7 @@ io.on('connection', (socket) => {
     try {
       // Verify lobby exists in database (optimized - only check existence)
       const lobby = await prisma.lobbies.findUnique({
-        where: { code: lobbyCode },
+        where: { code: normalizedLobbyCode },
         select: {
           id: true,
           code: true,
@@ -684,36 +793,51 @@ io.on('connection', (socket) => {
       })
 
       if (!lobby) {
-        emitError(socket, 'LOBBY_NOT_FOUND', 'Lobby not found', 'errors.lobbyNotFound', { lobbyCode })
+        emitError(socket, 'LOBBY_NOT_FOUND', 'Lobby not found', 'errors.lobbyNotFound', { lobbyCode: normalizedLobbyCode })
         return
       }
 
-      // Always allow joining the room to receive updates
-      // Access control will be handled at the action level
-      socket.join(SocketRooms.lobby(lobbyCode))
+      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, socket.data.user.id)
+      if (!isLobbyPlayer) {
+        logger.warn('Socket join denied: user is not an active lobby player', {
+          socketId: socket.id,
+          lobbyCode: normalizedLobbyCode,
+          userId: socket.data.user.id,
+        })
+        emitError(socket, 'LOBBY_ACCESS_DENIED', 'You are not a member of this lobby', 'errors.lobbyAccessDenied')
+        return
+      }
+
+      socket.join(SocketRooms.lobby(normalizedLobbyCode))
+      markSocketLobbyAuthorized(socket, normalizedLobbyCode)
       socketLogger('join-lobby').info('Socket joined lobby', {
         socketId: socket.id,
-        lobbyCode,
+        lobbyCode: normalizedLobbyCode,
         userId: socket.data.user.id,
         username: socket.data.user.username
       })
 
-      await syncPlayerConnectionStateInLobby(lobbyCode, socket.data.user.id, true, {
+      await syncPlayerConnectionStateInLobby(normalizedLobbyCode, socket.data.user.id, true, {
         advanceTurnIfCurrent: false,
       })
 
       // Send success confirmation
-      socket.emit(SocketEvents.JOINED_LOBBY, { lobbyCode, success: true })
+      socket.emit(SocketEvents.JOINED_LOBBY, { lobbyCode: normalizedLobbyCode, success: true })
     } catch (error) {
-      logger.error('Error joining lobby', error as Error, { lobbyCode })
+      logger.error('Error joining lobby', error as Error, { lobbyCode: normalizedLobbyCode })
       emitError(socket, 'JOIN_LOBBY_ERROR', 'Failed to join lobby', 'errors.joinLobbyFailed')
     }
   })
 
   socket.on(SocketEvents.LEAVE_LOBBY, (lobbyCode: string) => {
+    const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
+    if (!normalizedLobbyCode) {
+      return
+    }
     socketMonitor.trackEvent('leave-lobby')
-    socket.leave(SocketRooms.lobby(lobbyCode))
-    socketLogger('leave-lobby').debug('Socket left lobby', { socketId: socket.id, lobbyCode })
+    socket.leave(SocketRooms.lobby(normalizedLobbyCode))
+    revokeSocketLobbyAuthorization(socket, normalizedLobbyCode)
+    socketLogger('leave-lobby').debug('Socket left lobby', { socketId: socket.id, lobbyCode: normalizedLobbyCode })
   })
 
   socket.on(SocketEvents.JOIN_LOBBY_LIST, () => {
@@ -728,7 +852,7 @@ io.on('connection', (socket) => {
     socketLogger('leave-lobby-list').debug('Socket left lobby-list', { socketId: socket.id })
   })
 
-  socket.on(SocketEvents.GAME_ACTION, (data: GameActionPayload) => {
+  socket.on(SocketEvents.GAME_ACTION, async (data: GameActionPayload) => {
     socketMonitor.trackEvent('game-action')
 
     // Rate limiting
@@ -744,29 +868,63 @@ io.on('connection', (socket) => {
       return
     }
 
-    // Validate action type
-    const validActions = ['state-change', 'player-left', 'player-joined', 'chat-message', 'game-abandoned']
-    if (!validActions.includes(data.action)) {
-      logger.warn('Invalid action type', { action: data.action, socketId: socket.id })
+    const normalizedLobbyCode = data.lobbyCode.trim()
+    if (!normalizedLobbyCode) {
+      emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
       return
     }
 
-    // Broadcast with metadata to all clients in the lobby EXCEPT the sender
-    // This prevents the sender from processing their own update twice
-    emitWithMetadata(
-      socket.to(SocketRooms.lobby(data.lobbyCode)) as any,
-      SocketRooms.lobby(data.lobbyCode),
-      SocketEvents.GAME_UPDATE,
-      {
-        action: data.action,
-        payload: data.payload,
-        lobbyCode: data.lobbyCode
+    try {
+      if (!isSocketAuthorizedForLobby(socket, normalizedLobbyCode)) {
+        logger.warn('Unauthorized game-action attempt', {
+          socketId: socket.id,
+          lobbyCode: normalizedLobbyCode,
+          userId: socket.data.user?.id,
+        })
+        emitError(socket, 'LOBBY_ACCESS_DENIED', 'Not authorized for this lobby', 'errors.lobbyAccessDenied')
+        return
       }
-    )
 
-    // Notify lobby list page about changes
-    if (data.action === 'player-left' || data.action === 'state-change' || data.action === 'game-abandoned') {
+      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, socket.data.user.id)
+      if (!isLobbyPlayer) {
+        logger.warn('Rejected game-action from non-member', {
+          socketId: socket.id,
+          lobbyCode: normalizedLobbyCode,
+          userId: socket.data.user.id,
+        })
+        emitError(socket, 'LOBBY_ACCESS_DENIED', 'Not authorized for this lobby', 'errors.lobbyAccessDenied')
+        return
+      }
+
+      // Validate action type
+      const validActions = ['state-change']
+      if (!validActions.includes(data.action)) {
+        logger.warn('Invalid action type', { action: data.action, socketId: socket.id })
+        return
+      }
+
+      // Broadcast with metadata to all clients in the lobby EXCEPT the sender
+      // This prevents the sender from processing their own update twice
+      emitWithMetadata(
+        socket.to(SocketRooms.lobby(normalizedLobbyCode)) as any,
+        SocketRooms.lobby(normalizedLobbyCode),
+        SocketEvents.GAME_UPDATE,
+        {
+          action: data.action,
+          payload: data.payload,
+          lobbyCode: normalizedLobbyCode
+        }
+      )
+
+      // Notify lobby list page about changes
       io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+    } catch (error) {
+      logger.error('Error handling game-action', error as Error, {
+        socketId: socket.id,
+        lobbyCode: normalizedLobbyCode,
+        userId: socket.data.user?.id,
+      })
+      emitError(socket, 'GAME_ACTION_ERROR', 'Failed to process game action', 'errors.gameActionFailed')
     }
   })
 
@@ -776,96 +934,107 @@ io.on('connection', (socket) => {
     io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
   })
 
-  socket.on(SocketEvents.PLAYER_JOINED, (data: { lobbyCode: string; username?: string; userId?: string }) => {
-    socketMonitor.trackEvent('player-joined')
-    socketLogger('player-joined').info('Player joined lobby, notifying all players', {
-      lobbyCode: data?.lobbyCode,
-      username: data?.username
+  // Player and game lifecycle broadcasts must come from trusted server routes only (/api/notify).
+  socket.on(SocketEvents.PLAYER_JOINED, () => {
+    socketMonitor.trackEvent('blocked-player-joined')
+    logger.warn('Blocked client-side player-joined event', {
+      socketId: socket.id,
+      userId: socket.data.user?.id,
     })
-
-    // Notify lobby list about update
-    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
-
-    // Notify all players in the lobby about the new player with metadata
-    if (data?.lobbyCode) {
-      emitWithMetadata(
-        io,
-        SocketRooms.lobby(data.lobbyCode),
-        SocketEvents.PLAYER_JOINED,
-        {
-          username: data.username,
-          userId: data.userId,
-          lobbyCode: data.lobbyCode
-        }
-      )
-
-      // Also send lobby-update event to refresh player list
-      emitWithMetadata(
-        io,
-        SocketRooms.lobby(data.lobbyCode),
-        SocketEvents.LOBBY_UPDATE,
-        {
-          lobbyCode: data.lobbyCode,
-          type: 'player-joined'
-        }
-      )
-    }
+    emitError(socket, 'FORBIDDEN_ACTION', 'Use server API to broadcast player events', 'errors.forbidden')
   })
 
-  socket.on(SocketEvents.GAME_STARTED, (data: GameStartedPayload) => {
-    socketMonitor.trackEvent('game-started')
-    socketLogger('game-started').info('Game started, notifying all players', {
-      lobbyCode: data?.lobbyCode
+  socket.on(SocketEvents.GAME_STARTED, () => {
+    socketMonitor.trackEvent('blocked-game-started')
+    logger.warn('Blocked client-side game-started event', {
+      socketId: socket.id,
+      userId: socket.data.user?.id,
     })
-
-    if (data?.lobbyCode) {
-      // Notify all players in the lobby that game has started with metadata
-      emitWithMetadata(
-        io,
-        SocketRooms.lobby(data.lobbyCode),
-        SocketEvents.GAME_STARTED,
-        {
-          lobbyCode: data.lobbyCode,
-          game: data.game
-        }
-      )
-
-      // Also update lobby list
-      io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
-    }
+    emitError(socket, 'FORBIDDEN_ACTION', 'Use server API to broadcast game events', 'errors.forbidden')
   })
 
-  socket.on(SocketEvents.SEND_CHAT_MESSAGE, (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
+  socket.on(SocketEvents.SEND_CHAT_MESSAGE, async (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
     socketMonitor.trackEvent('send-chat-message')
 
-    if (!data?.lobbyCode || !data?.message) {
+    if (!checkRateLimit(socket.id)) {
+      emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
+      return
+    }
+
+    const normalizedLobbyCode = typeof data?.lobbyCode === 'string' ? data.lobbyCode.trim() : ''
+    const normalizedMessage = typeof data?.message === 'string' ? data.message.trim() : ''
+
+    if (!normalizedLobbyCode || !normalizedMessage || normalizedMessage.length > 500) {
       logger.warn('Invalid chat message data', { socketId: socket.id })
       return
     }
 
-    // Broadcast chat message with metadata to all clients in the lobby
-    emitWithMetadata(
-      io,
-      SocketRooms.lobby(data.lobbyCode),
-      SocketEvents.CHAT_MESSAGE,
-      {
-        id: Date.now().toString(),
-        userId: data.userId,
-        username: data.username,
-        message: data.message,
-        lobbyCode: data.lobbyCode
+    try {
+      if (!isSocketAuthorizedForLobby(socket, normalizedLobbyCode)) {
+        logger.warn('Unauthorized chat message attempt', {
+          socketId: socket.id,
+          lobbyCode: normalizedLobbyCode,
+          userId: socket.data.user?.id,
+        })
+        emitError(socket, 'LOBBY_ACCESS_DENIED', 'Not authorized for this lobby', 'errors.lobbyAccessDenied')
+        return
       }
-    )
+
+      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, socket.data.user.id)
+      if (!isLobbyPlayer) {
+        logger.warn('Rejected chat message from non-member', {
+          socketId: socket.id,
+          lobbyCode: normalizedLobbyCode,
+          userId: socket.data.user.id,
+        })
+        emitError(socket, 'LOBBY_ACCESS_DENIED', 'Not authorized for this lobby', 'errors.lobbyAccessDenied')
+        return
+      }
+
+      const senderUserId = socket.data.user.id
+      const senderUsername = getUserDisplayName(socket.data.user)
+
+      // Broadcast chat message with metadata to all clients in the lobby
+      emitWithMetadata(
+        io,
+        SocketRooms.lobby(normalizedLobbyCode),
+        SocketEvents.CHAT_MESSAGE,
+        {
+          id: Date.now().toString(),
+          userId: senderUserId,
+          username: senderUsername,
+          message: normalizedMessage,
+          lobbyCode: normalizedLobbyCode
+        }
+      )
+    } catch (error) {
+      logger.error('Error handling chat message', error as Error, {
+        socketId: socket.id,
+        lobbyCode: normalizedLobbyCode,
+        userId: socket.data.user?.id,
+      })
+      emitError(socket, 'CHAT_MESSAGE_ERROR', 'Failed to process chat message', 'errors.chatMessageFailed')
+    }
   })
 
   socket.on(SocketEvents.PLAYER_TYPING, (data: { lobbyCode: string; userId: string; username: string }) => {
     socketMonitor.trackEvent('player-typing')
-    if (!data?.lobbyCode) return
+
+    if (!checkRateLimit(socket.id)) {
+      return
+    }
+
+    const normalizedLobbyCode = typeof data?.lobbyCode === 'string' ? data.lobbyCode.trim() : ''
+    if (!normalizedLobbyCode) return
+
+    if (!isSocketAuthorizedForLobby(socket, normalizedLobbyCode)) {
+      return
+    }
 
     // Broadcast typing indicator to other clients (not sender)
-    socket.to(SocketRooms.lobby(data.lobbyCode)).emit(SocketEvents.PLAYER_TYPING, {
-      userId: data.userId,
-      username: data.username,
+    socket.to(SocketRooms.lobby(normalizedLobbyCode)).emit(SocketEvents.PLAYER_TYPING, {
+      userId: socket.data.user.id,
+      username: getUserDisplayName(socket.data.user),
     })
   })
 
@@ -918,19 +1087,38 @@ io.on('connection', (socket) => {
 socketMonitor.initialize(io, 30000) // Log metrics every 30 seconds
 dbMonitor.initialize(60000) // Log DB metrics every 60 seconds
 
-// Health check endpoint for metrics
+// HTTP endpoints for health checks, server notifications, and metrics.
+// Important: do not pre-respond to every request before /api/notify is processed,
+// otherwise state-change notifications may be acknowledged without broadcasting.
 server.on('request', (req, res) => {
   const url = parse(req.url || '/')
+  const pathname = url.pathname || '/'
 
-  if (url.pathname === '/health') {
+  // Let Socket.IO internal handlers process Engine.IO transport requests.
+  if (pathname.startsWith('/socket.io')) {
+    return
+  }
+
+  if (res.headersSent || res.writableEnded) {
+    return
+  }
+
+  if (pathname === '/health') {
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
     res.end(JSON.stringify({ ok: true }))
     return
   }
 
-  // API endpoint for server-side bot notifications (moved here after io initialization)
-  if (url.pathname === '/api/notify' && req.method === 'POST') {
+  // API endpoint for server-side notifications from Next.js API routes
+  if (pathname === '/api/notify' && req.method === 'POST') {
+    if (!isInternalEndpointAuthorized(req)) {
+      res.statusCode = 401
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Unauthorized' }))
+      return
+    }
+
     let body = ''
     let responseSent = false // Track if response has been sent
 
@@ -999,7 +1187,14 @@ server.on('request', (req, res) => {
     return
   }
 
-  if (url.pathname === '/metrics') {
+  if (pathname === '/metrics') {
+    if (!isInternalEndpointAuthorized(req)) {
+      res.statusCode = 401
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Unauthorized' }))
+      return
+    }
+
     res.statusCode = 200
     res.setHeader('Content-Type', 'application/json')
 
@@ -1018,6 +1213,17 @@ server.on('request', (req, res) => {
     }, null, 2))
     return
   }
+
+  if (pathname === '/') {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/plain')
+    res.end('Socket.IO server is running')
+    return
+  }
+
+  res.statusCode = 404
+  res.setHeader('Content-Type', 'application/json')
+  res.end(JSON.stringify({ error: 'Not found' }))
 })
 
 server.listen(port, hostname, () => {

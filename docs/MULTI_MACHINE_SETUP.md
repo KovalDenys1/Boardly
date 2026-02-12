@@ -52,7 +52,7 @@ When you open the project in VSCode:
 
 ```bash
 # Database (Supabase)
-DATABASE_URL=postgresql://postgres:PASSWORD@db.PROJECT_ID.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD_HERE@db.YOUR_PROJECT_ID.supabase.co:5432/postgres
 
 # Authentication
 NEXTAUTH_SECRET=$(openssl rand -base64 32)

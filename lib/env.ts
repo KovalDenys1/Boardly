@@ -38,6 +38,9 @@ const envSchema = z.object({
   // Socket.IO
   NEXT_PUBLIC_SOCKET_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().optional(),
+  SOCKET_SERVER_INTERNAL_SECRET: z.string().min(16, 'SOCKET_SERVER_INTERNAL_SECRET must be at least 16 characters').optional(),
+  // Deprecated alias for backward compatibility.
+  SOCKET_INTERNAL_SECRET: z.string().min(16, 'SOCKET_INTERNAL_SECRET must be at least 16 characters').optional(),
   
   // Server Configuration
   HOSTNAME: z.string().default('0.0.0.0'),
@@ -74,6 +77,15 @@ export function validateEnv(): Env {
       if (!env.CORS_ORIGIN) {
         console.warn('⚠️  CORS_ORIGIN not set. Using NEXTAUTH_URL as origin.')
       }
+
+      if (!env.NEXTAUTH_SECRET) {
+        console.warn('⚠️  NEXTAUTH_SECRET not set. Auth token validation and guest socket auth may fail.')
+      }
+
+      const socketInternalSecret = env.SOCKET_SERVER_INTERNAL_SECRET || env.SOCKET_INTERNAL_SECRET
+      if (!socketInternalSecret) {
+        throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production')
+      }
     }
     
     // Check OAuth provider pairs
@@ -89,6 +101,10 @@ export function validateEnv(): Env {
 
     if (env.JWT_SECRET) {
       console.warn('⚠️  JWT_SECRET is deprecated. Use NEXTAUTH_SECRET for auth/session tokens.')
+    }
+
+    if (env.SOCKET_INTERNAL_SECRET && !env.SOCKET_SERVER_INTERNAL_SECRET) {
+      console.warn('⚠️  SOCKET_INTERNAL_SECRET is deprecated. Use SOCKET_SERVER_INTERNAL_SECRET instead.')
     }
     
     return env
@@ -158,6 +174,7 @@ export function printEnvInfo(): void {
   }
   
   console.log(`  - Socket.IO URL: ${env.NEXT_PUBLIC_SOCKET_URL || 'Not set (using default)'}`)
+  console.log(`  - Socket Internal Secret: ${env.SOCKET_SERVER_INTERNAL_SECRET || env.SOCKET_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set'}`)
   console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set'}`)
   console.log(`  - Log Level: ${env.LOG_LEVEL || 'auto'}`)
 }

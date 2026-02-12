@@ -13,7 +13,7 @@ const createLobbySchema = z.object({
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(10).default(6),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
-  gameType: z.enum(['yahtzee', 'guess_the_spy']).default('yahtzee'),
+  gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors']).default('yahtzee'),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -78,6 +78,39 @@ export async function POST(request: NextRequest) {
         location: null,
         categories: [],
         votes: {},
+      }
+    } else if (gameType === 'tic_tac_toe') {
+      initialState = {
+        gameType: 'tic_tac_toe',
+        players: [],
+        currentPlayerIndex: 0,
+        status: 'waiting',
+        data: {
+          board: [
+            [null, null, null],
+            [null, null, null],
+            [null, null, null],
+          ],
+          currentMark: 'X',
+          moveCount: 0,
+          winner: null,
+          isDraw: false,
+        },
+      }
+    } else if (gameType === 'rock_paper_scissors') {
+      initialState = {
+        gameType: 'rock_paper_scissors',
+        players: [],
+        currentPlayerIndex: 0,
+        status: 'waiting',
+        data: {
+          mode: 'best-of-3',
+          rounds: [],
+          playerChoices: {},
+          scores: {},
+          playersReady: [],
+          gameWinner: null,
+        },
       }
     } else {
       // Default to Yahtzee-compatible initial state
@@ -208,7 +241,17 @@ export async function GET(request: NextRequest) {
     const lobbies = await Promise.race([
       prisma.lobbies.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          maxPlayers: true,
+          turnTimer: true,
+          isActive: true,
+          gameType: true,
+          createdAt: true,
+          creatorId: true,
+          password: true,
           creator: {
             select: {
               username: true,
@@ -292,8 +335,16 @@ export async function GET(request: NextRequest) {
       stats
     })
 
+    const sanitizedLobbies = filteredLobbies.map(lobby => {
+      const { password, ...safeLobby } = lobby
+      return {
+        ...safeLobby,
+        isPrivate: !!password,
+      }
+    })
+
     return NextResponse.json({
-      lobbies: filteredLobbies,
+      lobbies: sanitizedLobbies,
       stats
     })
   } catch (error) {

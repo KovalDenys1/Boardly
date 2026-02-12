@@ -7,6 +7,7 @@ const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1', '0.0.0.0']
 type Logger = {
   error: (message: string, error: Error, context?: Record<string, unknown>) => void
   info: (message: string, context?: Record<string, unknown>) => void
+  warn?: (message: string, context?: Record<string, unknown>) => void
 } | null
 
 let logger: Logger = null
@@ -63,7 +64,94 @@ export function getBrowserSocketUrl(): string {
  * (API routes, middleware, etc.).
  */
 export function getServerSocketUrl(): string {
-  return process.env.NEXT_PUBLIC_SOCKET_URL || process.env.SOCKET_SERVER_URL || DEFAULT_LOCAL_SOCKET_URL
+  const socketUrl = process.env.SOCKET_SERVER_URL || process.env.NEXT_PUBLIC_SOCKET_URL
+
+  if (socketUrl) {
+    return socketUrl
+  }
+
+  if (process.env.NODE_ENV === 'production' && logger?.warn) {
+    logger.warn('SOCKET_SERVER_URL/NEXT_PUBLIC_SOCKET_URL not set in production. Falling back to localhost.')
+  }
+
+  return DEFAULT_LOCAL_SOCKET_URL
+}
+
+function getSocketInternalSecret(): string | null {
+  const secret =
+    process.env.SOCKET_SERVER_INTERNAL_SECRET ||
+    process.env.SOCKET_INTERNAL_SECRET
+
+  if (!secret || !secret.trim()) {
+    if (process.env.NODE_ENV === 'production' && logger?.error) {
+      logger.error('SOCKET_SERVER_INTERNAL_SECRET is missing in production', new Error('Missing socket internal secret'))
+    }
+    return null
+  }
+
+  return secret.trim()
+}
+
+export function getSocketInternalAuthHeaders(): Record<string, string> {
+  const secret = getSocketInternalSecret()
+  if (!secret) {
+    return {}
+  }
+
+  return {
+    'x-socket-internal-secret': secret,
+    Authorization: `Bearer ${secret}`,
+  }
+}
+
+type SocketNotificationData = Record<string, unknown>
+
+function extractStateSnapshot(data: SocketNotificationData): Record<string, unknown> | null {
+  const payload = data.payload
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const wrappedState = (payload as Record<string, unknown>).state
+  if (wrappedState && typeof wrappedState === 'object') {
+    return wrappedState as Record<string, unknown>
+  }
+
+  return payload as Record<string, unknown>
+}
+
+function buildNotificationKey(room: string, event: string, data: SocketNotificationData): string {
+  const action = typeof data.action === 'string' ? data.action : ''
+
+  // Use a compact state signature for game state-change events.
+  if (event === 'game-update' && action === 'state-change') {
+    const state = extractStateSnapshot(data)
+    if (state) {
+      const currentPlayerIndex =
+        typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : 'na'
+      const lastMoveAt =
+        typeof state.lastMoveAt === 'number' || typeof state.lastMoveAt === 'string'
+          ? String(state.lastMoveAt)
+          : 'na'
+      const updatedAt = state.updatedAt ? String(state.updatedAt) : 'na'
+      const stateData = state.data
+      const rollsLeft =
+        stateData && typeof stateData === 'object' && typeof (stateData as Record<string, unknown>).rollsLeft === 'number'
+          ? (stateData as Record<string, unknown>).rollsLeft
+          : 'na'
+
+      return `${room}:${event}:${action}:${currentPlayerIndex}:${lastMoveAt}:${rollsLeft}:${updatedAt}`
+    }
+  }
+
+  let serializedData = '[unserializable]'
+  try {
+    serializedData = JSON.stringify(data)
+  } catch {
+    // Keep fallback marker.
+  }
+
+  return `${room}:${event}:${serializedData}`
 }
 
 // Debounce map to prevent duplicate notifications
@@ -78,10 +166,10 @@ const pendingPromises = new Map<string, Promise<boolean>>()
 export async function notifySocket(
   room: string,
   event: string,
-  data: Record<string, unknown>,
+  data: SocketNotificationData,
   debounceMs: number = 100
 ): Promise<boolean> {
-  const key = `${room}:${event}`
+  const key = buildNotificationKey(room, event, data)
 
   // If there's a pending request for this room+event, return that promise
   if (pendingPromises.has(key)) {
@@ -102,7 +190,10 @@ export async function notifySocket(
         const socketUrl = getServerSocketUrl()
         const response = await fetch(`${socketUrl}/api/notify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getSocketInternalAuthHeaders(),
+          },
           body: JSON.stringify({ room, event, data }),
         })
         resolve(response.ok)

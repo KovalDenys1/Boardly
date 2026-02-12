@@ -190,7 +190,11 @@ export async function POST(request: NextRequest) {
       include: {
         players: {
           include: {
-            user: true,
+            user: {
+              include: {
+                bot: true,  // Include bot relation for bot detection
+              },
+            },
           },
         },
       },
@@ -278,9 +282,15 @@ export async function POST(request: NextRequest) {
         status: game.status,
         state: gameEngine.getState(),
         players: game.players.map(p => ({
-          id: p.userId,
+          userId: p.userId,
           name: p.user.username || 'Unknown',
           score: p.score,
+          user: {
+            id: p.user.id,
+            username: p.user.username,
+            email: p.user.email,
+            bot: p.user.bot, // Include bot relation for bot detection
+          },
         })),
       }
     })

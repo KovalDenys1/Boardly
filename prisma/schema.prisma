@@ -19,19 +19,19 @@ model Users {
   lastActiveAt  DateTime  @default(now()) // Track last activity for all users
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
-  
-  accounts      Accounts[]
-  sessions      Sessions[]
-  lobbies       Lobbies[]   @relation("LobbyCreator")
-  players       Players[]
-  bot           Bots?      // One-to-one relation with Bots table
-  
+
+  accounts Accounts[]
+  sessions Sessions[]
+  lobbies  Lobbies[]  @relation("LobbyCreator")
+  players  Players[]
+  bot      Bots? // One-to-one relation with Bots table
+
   // Friend system
   sentFriendRequests     FriendRequests[] @relation("SentRequests")
   receivedFriendRequests FriendRequests[] @relation("ReceivedRequests")
   friendshipsInitiated   Friendships[]    @relation("FriendshipsInitiated")
   friendshipsReceived    Friendships[]    @relation("FriendshipsReceived")
-  
+
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
 }
 
@@ -41,9 +41,9 @@ model Bots {
   userId     String   @unique
   user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
   botType    String   @default("yahtzee") // Game type: "yahtzee", "chess", "spy"
-  difficulty String   @default("medium")  // Difficulty level: "easy", "medium", "hard"
+  difficulty String   @default("medium") // Difficulty level: "easy", "medium", "hard"
   createdAt  DateTime @default(now())
-  
+
   @@index([userId])
   @@index([botType])
 }
@@ -72,7 +72,7 @@ model Sessions {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationTokens {
@@ -89,7 +89,7 @@ model PasswordResetTokens {
   token     String   @unique
   expires   DateTime
   createdAt DateTime @default(now())
-  
+
   @@index([userId])
   @@index([token])
 }
@@ -100,48 +100,48 @@ model EmailVerificationTokens {
   token     String   @unique
   expires   DateTime
   createdAt DateTime @default(now())
-  
+
   @@index([userId])
   @@index([token])
 }
 
 model Lobbies {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  name      String
-  password  String?
-  maxPlayers Int     @default(4)
-  turnTimer Int      @default(60) // Turn time limit in seconds (30, 60, 90, 120)
-  isActive  Boolean  @default(true)
-  gameType  String   @default("yahtzee")
-  createdAt DateTime @default(now())
-  creatorId String
-  creator   Users     @relation("LobbyCreator", fields: [creatorId], references: [id])
-  games     Games[]
-  
+  id         String   @id @default(cuid())
+  code       String   @unique
+  name       String
+  password   String?
+  maxPlayers Int      @default(4)
+  turnTimer  Int      @default(60) // Turn time limit in seconds (30, 60, 90, 120)
+  isActive   Boolean  @default(true)
+  gameType   String   @default("yahtzee")
+  createdAt  DateTime @default(now())
+  creatorId  String
+  creator    Users    @relation("LobbyCreator", fields: [creatorId], references: [id])
+  games      Games[]
+
   @@index([isActive])
   @@index([createdAt])
   @@index([creatorId])
 }
 
 model Games {
-  id        String   @id @default(cuid())
-  lobbyId   String
-  lobby     Lobbies    @relation(fields: [lobbyId], references: [id])
-  state     String   @db.Text // JSON string with game state
-  status    GameStatus   @default(waiting)
-  gameType  GameType     @default(yahtzee)
+  id          String     @id @default(cuid())
+  lobbyId     String
+  lobby       Lobbies    @relation(fields: [lobbyId], references: [id])
+  state       String     @db.Text // JSON string with game state
+  status      GameStatus @default(waiting)
+  gameType    GameType   @default(yahtzee)
   abandonedAt DateTime?
-  currentTurn Int    @default(0)
-  lastMoveAt DateTime @default(now()) // Track when last move was made for timer
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  players   Players[]
+  currentTurn Int        @default(0)
+  lastMoveAt  DateTime   @default(now()) // Track when last move was made for timer
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  players     Players[]
+
   @@index([lobbyId])
   @@index([status])
   @@index([createdAt])
 }
-
 
 enum GameStatus {
   waiting
@@ -153,6 +153,8 @@ enum GameStatus {
 
 enum GameType {
   yahtzee
+  tic_tac_toe
+  rock_paper_scissors
   chess
   guess_the_spy
   uno
@@ -160,20 +162,20 @@ enum GameType {
 }
 
 model Players {
-  id        String   @id @default(cuid())
-  gameId    String
-  game      Games     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  userId    String
-  user      Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  score     Int      @default(0)
-  finalScore Int?    // Final score after game ends
-  placement Int?     // Final placement (1st, 2nd, 3rd, 4th)
-  scorecard String?  @db.Text // JSON string with game-specific scorecard
-  position  Int      // Player position in game (0, 1, 2, 3)
-  isReady   Boolean  @default(false)
-  isWinner  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  gameId     String
+  game       Games    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId     String
+  user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score      Int      @default(0)
+  finalScore Int? // Final score after game ends
+  placement  Int? // Final placement (1st, 2nd, 3rd, 4th)
+  scorecard  String?  @db.Text // JSON string with game-specific scorecard
+  position   Int // Player position in game (0, 1, 2, 3)
+  isReady    Boolean  @default(false)
+  isWinner   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
   @@unique([gameId, userId])
   @@index([gameId])
   @@index([userId])
@@ -183,13 +185,13 @@ model Players {
 model FriendRequests {
   id         String   @id @default(cuid())
   senderId   String
-  sender     Users     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  sender     Users    @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
   receiverId String
-  receiver   Users     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiver   Users    @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
   status     String   @default("pending") // pending, accepted, rejected, cancelled
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
+
   @@unique([senderId, receiverId])
   @@index([senderId])
   @@index([receiverId])
@@ -201,11 +203,11 @@ model FriendRequests {
 model Friendships {
   id        String   @id @default(cuid())
   user1Id   String
-  user1     Users     @relation("FriendshipsInitiated", fields: [user1Id], references: [id], onDelete: Cascade)
+  user1     Users    @relation("FriendshipsInitiated", fields: [user1Id], references: [id], onDelete: Cascade)
   user2Id   String
-  user2     Users     @relation("FriendshipsReceived", fields: [user2Id], references: [id], onDelete: Cascade)
+  user2     Users    @relation("FriendshipsReceived", fields: [user2Id], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  
+
   // user1Id should always be less than user2Id to avoid duplicates
   @@unique([user1Id, user2Id])
   @@index([user1Id])
@@ -217,10 +219,10 @@ model Friendships {
 model SpyLocations {
   id       String   @id @default(cuid())
   name     String   @unique // e.g., "Airport", "Hospital"
-  category String   // e.g., "Travel", "Public", "Entertainment"
+  category String // e.g., "Travel", "Public", "Entertainment"
   roles    String[] // Array of possible roles at this location
   isActive Boolean  @default(true)
-  
+
   @@index([category])
   @@index([isActive])
 }

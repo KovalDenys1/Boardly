@@ -1,3 +1,9 @@
+---
+status: done
+priority: high
+type: game
+---
+
 ## 📋 Game Description
 
 Implement Rock Paper Scissors (Камінь-Ножиці-Папір) - a classic hand game where two players simultaneously form one of three shapes to determine the winner.
@@ -8,17 +14,17 @@ Add second simple game with simultaneous turn mechanics, introducing a new game 
 
 ## ✅ Acceptance Criteria
 
-- [ ] Create `RockPaperScissorsGame` class extending `GameEngine`
-- [ ] Implement simultaneous move submission (both players choose, then reveal)
-- [ ] Add best-of-3 or best-of-5 mode selection
-- [ ] Implement round winner calculation (rock beats scissors, scissors beats paper, paper beats rock)
-- [ ] Add `rockPaperScissors` to `GameType` enum in schema
-- [ ] Create lobby page with mode selection (best-of-3/5)
-- [ ] Implement choice UI (rock/paper/scissors buttons with emoji)
-- [ ] Add reveal animation when both players have chosen
-- [ ] Show round history and current score
-- [ ] Add translations (EN/UK)
-- [ ] Write unit tests with 80%+ coverage
+- [x] Create `RockPaperScissorsGame` class extending `GameEngine`
+- [x] Implement simultaneous move submission (both players choose, then reveal)
+- [x] Add best-of-3 or best-of-5 mode selection
+- [x] Implement round winner calculation (rock beats scissors, scissors beats paper, paper beats rock)
+- [x] Add `rockPaperScissors` to `GameType` enum in schema
+- [x] Create lobby page with mode selection (best-of-3/5)
+- [x] Implement choice UI (rock/paper/scissors buttons with emoji)
+- [x] Add reveal animation when both players have chosen
+- [x] Show round history and current score
+- [x] Add translations (EN/UK)
+- [x] Write unit tests with 80%+ coverage (32 tests, all passing)
 - [ ] Deploy to production
 
 ## 📝 Implementation Notes

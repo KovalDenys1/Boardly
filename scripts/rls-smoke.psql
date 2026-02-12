@@ -1,0 +1,123 @@
+-- RLS smoke checks for CI/local environments.
+-- Fails fast if critical RLS invariants are broken after migrations.
+
+DO $$
+DECLARE
+  required_tables TEXT[] := ARRAY[
+    'Users',
+    'Bots',
+    'Accounts',
+    'Sessions',
+    'VerificationTokens',
+    'PasswordResetTokens',
+    'EmailVerificationTokens',
+    'Lobbies',
+    'Games',
+    'Players',
+    'FriendRequests',
+    'Friendships',
+    'SpyLocations'
+  ];
+  required_functions TEXT[] := ARRAY[
+    'get_current_user_id',
+    'is_authenticated'
+  ];
+  missing_tables TEXT[];
+  tables_without_rls TEXT[];
+  tables_without_policy TEXT[];
+  missing_functions TEXT[];
+  missing_policies TEXT[];
+BEGIN
+  SELECT ARRAY_AGG(t)
+  INTO missing_tables
+  FROM UNNEST(required_tables) AS t
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relname = t
+      AND c.relkind = 'r'
+  );
+
+  IF missing_tables IS NOT NULL THEN
+    RAISE EXCEPTION 'RLS smoke check failed: missing tables: %', array_to_string(missing_tables, ', ');
+  END IF;
+
+  SELECT ARRAY_AGG(t)
+  INTO tables_without_rls
+  FROM UNNEST(required_tables) AS t
+  WHERE EXISTS (
+    SELECT 1
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relname = t
+      AND c.relkind = 'r'
+      AND NOT c.relrowsecurity
+  );
+
+  IF tables_without_rls IS NOT NULL THEN
+    RAISE EXCEPTION 'RLS smoke check failed: RLS disabled on tables: %', array_to_string(tables_without_rls, ', ');
+  END IF;
+
+  SELECT ARRAY_AGG(t)
+  INTO tables_without_policy
+  FROM UNNEST(required_tables) AS t
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_policies p
+    WHERE p.schemaname = 'public'
+      AND p.tablename = t
+  );
+
+  IF tables_without_policy IS NOT NULL THEN
+    RAISE EXCEPTION 'RLS smoke check failed: no policies found on tables: %', array_to_string(tables_without_policy, ', ');
+  END IF;
+
+  SELECT ARRAY_AGG(f)
+  INTO missing_functions
+  FROM UNNEST(required_functions) AS f
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = f
+  );
+
+  IF missing_functions IS NOT NULL THEN
+    RAISE EXCEPTION 'RLS smoke check failed: missing helper functions: %', array_to_string(missing_functions, ', ');
+  END IF;
+
+  WITH required_policy_pairs(table_name, policy_name) AS (
+    VALUES
+      ('Users', 'Users can view own profile'),
+      ('Users', 'Service role can manage users'),
+      ('Bots', 'Anyone can view bots'),
+      ('Games', 'Players can view their games'),
+      ('Games', 'Service role can manage games'),
+      ('Players', 'Users can view players in their games'),
+      ('Lobbies', 'Anyone can view lobbies'),
+      ('FriendRequests', 'Users can view sent friend requests'),
+      ('Friendships', 'Users can view own friendships'),
+      ('SpyLocations', 'Anyone can view active spy locations')
+  )
+  SELECT ARRAY_AGG(format('%s on %s', rp.policy_name, rp.table_name))
+  INTO missing_policies
+  FROM required_policy_pairs rp
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM pg_policies p
+    WHERE p.schemaname = 'public'
+      AND p.tablename = rp.table_name
+      AND p.policyname = rp.policy_name
+  );
+
+  IF missing_policies IS NOT NULL THEN
+    RAISE EXCEPTION 'RLS smoke check failed: missing critical policies: %', array_to_string(missing_policies, '; ');
+  END IF;
+
+  RAISE NOTICE 'RLS smoke checks passed.';
+END
+$$;
