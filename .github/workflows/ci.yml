@@ -21,7 +21,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD || 'test-ci-database-password-placeholder' }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD || 'test-ci-password' }}
           POSTGRES_DB: boardly
         ports:
           - 5432:5432
@@ -33,7 +33,7 @@ jobs:
     env:
       # Use secrets to avoid hardcoded credentials in workflow file
       # DATABASE_URL connects to the postgres service defined above
-      DATABASE_URL: postgresql://postgres:${{ secrets.CI_POSTGRES_PASSWORD || 'test-ci-database-password-placeholder' }}@localhost:5432/boardly
+      DATABASE_URL: ${{ secrets.DATABASE_URL_CI || 'postgresql://postgres:test-ci-password@localhost:5432/boardly' }}
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-min-32-chars-req' }}
       JWT_SECRET: ${{ secrets.JWT_SECRET || 'placeholder-secret-min-32-chars-req' }}

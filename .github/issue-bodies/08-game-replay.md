@@ -81,7 +81,7 @@ model GameStateSnapshot {
 
 ## 📊 Estimated Complexity
 
-**L (Large - 2-3 sprints / 2-3 weeks)**
+### L (Large - 2-3 sprints / 2-3 weeks)
 
 - Week 1: Schema, snapshot creation during games
 - Week 2: Replay viewer UI, playback controls

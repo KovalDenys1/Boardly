@@ -149,16 +149,19 @@ git push origin develop
 ### Best Practices
 
 1. **Always pull before starting work**
+
    ```bash
    git pull origin develop
    npm install
    ```
 
 2. **Check for new environment variables**
+
    - Compare `.env.example` with your `.env`
    - Add any new required variables
 
 3. **Run tests before pushing**
+
    ```bash
    npm test
    npm run build  # Ensure it builds
@@ -175,6 +178,7 @@ git push origin develop
 **Problem**: `DATABASE_URL` is different between machines
 
 **Solution**:
+
 - Each machine can use a different database (local dev)
 - Or share the same Supabase instance (recommended)
 - Ensure connection string is correct in `.env`
@@ -184,6 +188,7 @@ git push origin develop
 **Problem**: VSCode can't access database or GitHub
 
 **Solution**:
+
 1. Check `.env` has all required variables
 2. Restart VSCode (`Cmd+Q` → reopen)
 3. Check Output panel → "GitHub Copilot Chat" for errors
@@ -194,6 +199,7 @@ git push origin develop
 **Problem**: Project won't run, missing packages
 
 **Solution**:
+
 ```bash
 rm -rf node_modules package-lock.json
 npm install
@@ -204,6 +210,7 @@ npm install
 **Problem**: Database queries fail with type errors
 
 **Solution**:
+
 ```bash
 npx prisma generate
 npm run dev
@@ -214,6 +221,7 @@ npm run dev
 **Problem**: Ports 3000 or 3001 are occupied
 
 **Solution**:
+
 ```bash
 # Kill processes using ports
 lsof -ti:3000 | xargs kill -9
@@ -252,6 +260,7 @@ npm start                # Run production build
 ### Daily Development Routine
 
 1. **Morning** (or when starting work):
+
    ```bash
    git pull origin develop
    npm install
@@ -259,11 +268,13 @@ npm start                # Run production build
    ```
 
 2. **During Development**:
+
    - Make changes
    - Test locally: `npm test`
    - Commit frequently with clear messages
 
 3. **Before Finishing**:
+
    ```bash
    npm test                # Ensure tests pass
    npm run build           # Ensure it builds
@@ -273,6 +284,7 @@ npm start                # Run production build
 ### When Switching Machines
 
 1. **On Machine A** (before leaving):
+
    ```bash
    git add .
    git commit -m "WIP: current progress"
@@ -280,6 +292,7 @@ npm start                # Run production build
    ```
 
 2. **On Machine B** (when arriving):
+
    ```bash
    git pull origin develop
    npm install
@@ -304,11 +317,13 @@ git worktree add ../boardly-feature feature-branch
 ### Share Database Instance
 
 **Recommended**: Use the same Supabase instance across all machines
+
 - Same `DATABASE_URL` in `.env` on all machines
 - Consistent data for testing
 - No need to sync database dumps
 
 **Alternative**: Local Postgres instances
+
 - Different `DATABASE_URL` per machine
 - Requires running migrations separately
 - More isolation, but less convenient
@@ -316,6 +331,7 @@ git worktree add ../boardly-feature feature-branch
 ### Use Cloud Storage for Large Files
 
 If you have large assets (images, sounds) not in git:
+
 - Use Supabase Storage or AWS S3
 - Keep URLs in environment variables
 - Never commit large binary files to git
@@ -331,6 +347,7 @@ Before committing, always verify:
 - [ ] `.gitignore` is up to date
 
 Check with:
+
 ```bash
 git status                    # See what's staged
 git diff --staged             # Review exact changes

@@ -104,7 +104,7 @@ interface UserStats {
 
 ## 📊 Estimated Complexity
 
-**M (Medium - 1-2 sprints / 1-2 weeks)**
+### M (Medium - 1-2 sprints / 1-2 weeks)
 
 - Week 1: Stats calculation, caching, API endpoints
 - Week 2: UI, charts, polish

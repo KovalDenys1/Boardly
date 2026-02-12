@@ -63,7 +63,7 @@ Update and apply Row Level Security policies to production database to enable da
 
 ## 📊 Estimated Complexity
 
-**L (Large - 3-5 days)**
+### L (Large - 3-5 days)
 
 ## 🔗 Related Issues
 

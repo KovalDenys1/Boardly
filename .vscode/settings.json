@@ -26,5 +26,28 @@
   "chat.tools.terminal.autoApprove": {
     "nc": true,
     "npx prisma": true
-  }
+  },
+  "cSpell.words": [
+    "Boardly",
+    "crawlable",
+    "creatorid",
+    "cuid",
+    "Duolingo",
+    "gameid",
+    "googleusercontent",
+    "isready",
+    "lobbyid",
+    "NEXTAUTH",
+    "rolname",
+    "Supabase",
+    "visx",
+    "worktree",
+    "Worktrees",
+    "Збери",
+    "Нулики",
+    "перемогти",
+    "Проста",
+    "Хрестики",
+    "швидка"
+  ]
 }

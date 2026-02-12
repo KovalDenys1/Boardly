@@ -90,7 +90,7 @@ model NotificationPreferences {
 
 ## 📊 Estimated Complexity
 
-**M (Medium - 1 sprint / 1 week)**
+### M (Medium - 1 sprint / 1 week)
 
 - Day 1-2: Schema, preferences, API endpoints
 - Day 3-4: Email templates, queue system
