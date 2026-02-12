@@ -13,7 +13,10 @@ DECLARE
     'EmailVerificationTokens',
     'Lobbies',
     'Games',
-    'Players'
+    'Players',
+    'FriendRequests',
+    'Friendships',
+    'SpyLocations'
   ];
   required_functions TEXT[] := ARRAY[
     'get_current_user_id',
@@ -95,7 +98,10 @@ BEGIN
       ('Games', 'Players can view their games'),
       ('Games', 'Service role can manage games'),
       ('Players', 'Users can view players in their games'),
-      ('Lobbies', 'Anyone can view lobbies')
+      ('Lobbies', 'Anyone can view lobbies'),
+      ('FriendRequests', 'Users can view sent friend requests'),
+      ('Friendships', 'Users can view own friendships'),
+      ('SpyLocations', 'Anyone can view active spy locations')
   )
   SELECT ARRAY_AGG(format('%s on %s', rp.policy_name, rp.table_name))
   INTO missing_policies
