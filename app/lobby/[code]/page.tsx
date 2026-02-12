@@ -72,7 +72,7 @@ import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
-import GameBoard from './components/GameBoard'
+import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
@@ -960,7 +960,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onSoundToggle={() => {
               soundManager.toggle()
               setSoundEnabled(soundManager.isEnabled())
-              showToast.success(soundManager.isEnabled() ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff')
+              showToast.success(soundManager.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
             }}
             onLeave={handleLeaveLobby}
           />
@@ -1025,14 +1025,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            {t('yahtzee.ui.round')}: {roundInfo.current}/{roundInfo.total}
+                            {t('game.ui.round')}: {roundInfo.current}/{roundInfo.total}
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
                         <div className="flex items-center gap-1 max-w-[120px]">
                           <span className="text-base">👤</span>
                           <span className="text-sm font-bold truncate">
-                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
+                            {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </span>
                         </div>
                       </div>
@@ -1050,28 +1050,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          showToast.success(newState ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff', undefined, undefined, {
+                          showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
                             position: 'top-center',
                           })
                         }}
-                        aria-label={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
+                        aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                         className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        title={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
+                        title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                       >
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(t('yahtzee.ui.leaveConfirm'))) {
+                          if (confirm(t('game.ui.leaveConfirm'))) {
                             handleLeaveLobby()
                           }
                         }}
-                        aria-label={t('yahtzee.ui.leave')}
+                        aria-label={t('game.ui.leave')}
                         className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
-                        <span>{t('yahtzee.ui.leave')}</span>
+                        <span>{t('game.ui.leave')}</span>
                       </button>
                     </div>
                   </div>
@@ -1082,7 +1082,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.round')}</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('game.ui.round')}</div>
                           <div className="text-base font-bold leading-tight">
                             {roundInfo.current}/{roundInfo.total}
                           </div>
@@ -1092,9 +1092,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">👤</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.turn')}</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('game.ui.turn')}</div>
                           <div className="text-base font-bold leading-tight truncate max-w-[150px]">
-                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
+                            {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </div>
                         </div>
                       </div>
@@ -1115,7 +1115,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          showToast.success(newState ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff', undefined, undefined, {
+                          showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
                             position: 'top-center',
                           })

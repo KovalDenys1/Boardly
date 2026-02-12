@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, Move } from '@/lib/game-engine'
+import { restoreGameEngine } from '@/lib/game-registry'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
@@ -206,8 +207,7 @@ export function useGameActions(props: UseGameActionsProps) {
       // Replace optimistic update with real server data
       let newEngine: YahtzeeGame | null = null
       if (gameEngine) {
-        newEngine = new YahtzeeGame(gameEngine.getState().id)
-        newEngine.restoreState(data.game.state)
+        newEngine = restoreGameEngine('yahtzee', gameEngine.getState().id, data.game.state) as YahtzeeGame
         setGameEngine(newEngine)
 
         // Update local held state from server (source of truth)
@@ -380,8 +380,7 @@ export function useGameActions(props: UseGameActionsProps) {
         if (isAutoAction) return null
         throw new Error('Invalid server response')
       }
-      const newEngine = new YahtzeeGame(gameEngine.getState().id)
-      newEngine.restoreState(data.game.state)
+      const newEngine = restoreGameEngine('yahtzee', gameEngine.getState().id, data.game.state) as YahtzeeGame
       setGameEngine(newEngine)
 
       // Reset local held state for next turn

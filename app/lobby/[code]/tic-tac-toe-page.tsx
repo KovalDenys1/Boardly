@@ -139,7 +139,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 if (winner) {
                     showToast.success('common.success')
                 } else {
-                    showToast.info('yahtzee.ui.gameFinished')
+                    showToast.info('game.ui.gameFinished')
                 }
             }
         } catch (error) {
@@ -285,7 +285,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         }}
                         className="btn btn-danger"
                     >
-                        {t('yahtzee.ui.leave')}
+                        {t('game.ui.leave')}
                     </button>
                 </div>
 
@@ -304,10 +304,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     ) : (
                         <>
                             <p className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                {t('yahtzee.ui.turn')}: {currentPlayer?.name || 'Unknown'}
+                                {t('game.ui.turn')}: {currentPlayer?.name || 'Unknown'}
                             </p>
                             <p className="text-sm text-blue-800 dark:text-blue-200">
-                                {isMyTurn() ? '👉 ' + t('yahtzee.ui.yourTurn') : '⏳ ' + t('yahtzee.ui.waiting')}
+                                {isMyTurn() ? '👉 ' + t('game.ui.yourTurn') : '⏳ ' + t('game.ui.waiting')}
                             </p>
                         </>
                     )}

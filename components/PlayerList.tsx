@@ -94,8 +94,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
             const playerName = isBot
-              ? t('yahtzee.ui.aiBot')
-              : player.user.name || player.user.username || player.user.email || t('yahtzee.ui.player')
+              ? t('game.ui.aiBot')
+              : player.user.name || player.user.username || player.user.email || t('game.ui.player')
 
             return (
               <button
@@ -139,7 +139,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         )}
                         {isCurrentUser && !isBot && (
                           <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
-                            {t('yahtzee.ui.you')}
+                            {t('game.ui.you')}
                           </span>
                         )}
                         {isCurrentTurn && (
@@ -149,7 +149,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         )}
                       </div>
                       <div className="flex items-center" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
-                        <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(9px, 0.7vw, 11px)' }}>{t('yahtzee.actions.score')}:</span>
+                        <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(9px, 0.7vw, 11px)' }}>{t('game.ui.score')}:</span>
                         <span className={`font-bold ${animatingScores[player.id]
                             ? 'text-green-600 dark:text-green-400 animate-pulse'
                             : 'text-gray-900 dark:text-white'
@@ -190,8 +190,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
             const playerName = isBot
-              ? t('yahtzee.ui.aiBot')
-              : player.user.name || player.user.username || player.user.email || t('yahtzee.ui.player')
+              ? t('game.ui.aiBot')
+              : player.user.name || player.user.username || player.user.email || t('game.ui.player')
 
             return (
               <div
@@ -234,7 +234,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         )}
                         {isCurrentUser && !isBot && (
                           <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
-                            {t('yahtzee.ui.you')}
+                            {t('game.ui.you')}
                           </span>
                         )}
                         {isCurrentTurn && (
@@ -262,7 +262,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                   <div className="flex items-center gap-4">
                     {/* Score Display */}
                     <div className="text-right">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('yahtzee.actions.score')}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('game.ui.score')}</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">
                         {player.score}
                       </div>
