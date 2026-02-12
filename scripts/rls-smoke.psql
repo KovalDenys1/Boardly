@@ -13,10 +13,7 @@ DECLARE
     'EmailVerificationTokens',
     'Lobbies',
     'Games',
-    'Players',
-    'FriendRequests',
-    'Friendships',
-    'SpyLocations'
+    'Players'
   ];
   required_functions TEXT[] := ARRAY[
     'get_current_user_id',
