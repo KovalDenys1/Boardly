@@ -1,11 +1,9 @@
-import { YahtzeeCategory } from './yahtzee'
-
 export interface CelebrationEvent {
   type: 'yahtzee' | 'largeStraight' | 'fullHouse' | 'highScore' | 'perfectRoll'
   title: string
   emoji: string
   score: number
-  category?: YahtzeeCategory
+  category?: string
 }
 
 /**
@@ -13,7 +11,7 @@ export interface CelebrationEvent {
  */
 export function detectCelebration(
   dice: number[],
-  category?: YahtzeeCategory,
+  category?: string,
   score?: number
 ): CelebrationEvent | null {
   // Check for specific patterns in dice
@@ -148,8 +146,8 @@ export function detectPatternOnRoll(dice: number[]): CelebrationEvent | null {
 /**
  * Get a friendly display name for a category
  */
-export function getCategoryDisplayName(category: YahtzeeCategory): string {
-  const names: Record<YahtzeeCategory, string> = {
+export function getCategoryDisplayName(category: string): string {
+  const names: Record<string, string> = {
     ones: 'Ones',
     twos: 'Twos',
     threes: 'Threes',

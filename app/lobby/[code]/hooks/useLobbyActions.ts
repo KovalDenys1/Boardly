@@ -1,7 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
-import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
+import { restoreGameEngine } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -93,18 +91,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
             // Create the correct engine based on game type
             const gt = data.lobby.gameType || 'yahtzee'
-            let engine: any
-            switch (gt) {
-              case 'tic_tac_toe':
-                engine = new TicTacToeGame(activeGame.id)
-                break
-              case 'rock_paper_scissors':
-                engine = new RockPaperScissorsGame(activeGame.id)
-                break
-              default:
-                engine = new YahtzeeGame(activeGame.id)
-            }
-            engine.restoreState(parsedState)
+            const engine = restoreGameEngine(gt, activeGame.id, parsedState)
             setGameEngine(engine)
           } catch (parseError) {
             clientLogger.error('Failed to parse game state:', parseError)
@@ -285,18 +272,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       // Create the correct engine based on game type
       const gameType = lobby?.gameType || 'yahtzee'
-      let engine: any
-      switch (gameType) {
-        case 'tic_tac_toe':
-          engine = new TicTacToeGame(data.game.id)
-          break
-        case 'rock_paper_scissors':
-          engine = new RockPaperScissorsGame(data.game.id)
-          break
-        default:
-          engine = new YahtzeeGame(data.game.id)
-      }
-      engine.restoreState(data.game.state)
+      const engine = restoreGameEngine(gameType, data.game.id, data.game.state)
       setGameEngine(engine)
 
       // Set game state with players data (needed for bot detection)

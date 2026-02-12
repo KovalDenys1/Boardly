@@ -1,5 +1,6 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
+import { hasBotSupport } from '@/lib/game-registry'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface WaitingRoomProps {
@@ -321,7 +322,7 @@ export default function WaitingRoom({
             )}
 
             {/* Add Bot Button */}
-            {lobby.gameType === 'yahtzee' && canAddMorePlayers && (
+            {hasBotSupport(lobby.gameType) && canAddMorePlayers && (
               <button
                 onClick={() => {
                   soundManager.play('click')

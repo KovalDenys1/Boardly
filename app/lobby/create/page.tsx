@@ -9,8 +9,9 @@ import { io } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { RegisteredGameType } from '@/lib/game-registry'
 
-type GameType = 'yahtzee' | 'guess_the_spy' | 'tic_tac_toe' | 'rock_paper_scissors'
+type GameType = RegisteredGameType
 
 type GameSettings = {
   hasTurnTimer?: boolean // Whether this game supports turn timer

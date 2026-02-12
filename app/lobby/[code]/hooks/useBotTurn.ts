@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { GameEngine } from '@/lib/game-engine'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
@@ -17,7 +18,7 @@ interface Game {
 
 interface UseBotTurnProps {
   game: Game | null
-  gameEngine: YahtzeeGame | null
+  gameEngine: GameEngine | null
   code: string
   isGameStarted: boolean
 }
@@ -131,18 +132,18 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
       isBot,
       hasBotRelation: !!currentGamePlayer.user.bot,
       botData: currentGamePlayer.user.bot,
-      rollsLeft: gameEngine.getRollsLeft()
+      rollsLeft: gameEngine instanceof YahtzeeGame ? gameEngine.getRollsLeft() : 'N/A'
     })
 
     if (isBot) {
-      // Check that bot has rolls available (new turn)
-      const rollsLeft = gameEngine.getRollsLeft()
-
-      // Only trigger if it's the START of a new turn (all 3 rolls available)
-      if (rollsLeft !== 3) {
-        clientLogger.log('🤖 Bot turn already in progress (rollsLeft:', rollsLeft, '), skipping trigger')
-        // DO NOT update tracking - wait for the turn to complete
-        return
+      // For Yahtzee: only trigger at start of new turn (rollsLeft === 3)
+      // For other games: trigger immediately on bot's turn
+      if (gameEngine instanceof YahtzeeGame) {
+        const rollsLeft = gameEngine.getRollsLeft()
+        if (rollsLeft !== 3) {
+          clientLogger.log('🤖 Bot turn already in progress (rollsLeft:', rollsLeft, '), skipping trigger')
+          return
+        }
       }
 
       clientLogger.log('🤖 Bot turn detected, triggering bot move...')
