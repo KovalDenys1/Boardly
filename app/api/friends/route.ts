@@ -14,7 +14,10 @@ const log = apiLogger('/api/friends')
 // GET /api/friends - Get user's friends list
 export async function GET(req: NextRequest) {
   try {
-    await limiter(req)
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

@@ -56,7 +56,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     isGuest,
     guestId,
     guestName,
-    userId,
     username,
     setError,
     setLoading,
@@ -151,8 +150,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   }, [code, isGuest, guestId, guestName])
 
   const announceBotJoined = useCallback(() => {
-    socket?.emit('player-joined')
-
     const botJoinMessage = {
       id: Date.now().toString() + '_botjoin',
       userId: 'system',
@@ -162,7 +159,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       type: 'system'
     }
     setChatMessages(prev => [...prev, botJoinMessage])
-  }, [socket, setChatMessages])
+  }, [setChatMessages])
 
   const handleJoinLobby = useCallback(async () => {
     try {
@@ -187,34 +184,26 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await loadLobbyRef.current()
       }
 
-      const emitPlayerJoined = () => {
+      const ensureLobbyRoomJoin = () => {
         if (socket && socket.connected) {
-          clientLogger.log('📡 Emitting player-joined event')
-          socket.emit('player-joined', {
-            lobbyCode: code,
-            username: username,
-            userId: userId,
-          })
+          clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
+          socket.emit('join-lobby', code)
         } else if (socket) {
-          clientLogger.log('⏳ Waiting for socket connection to emit player-joined...')
+          clientLogger.log('⏳ Waiting for socket connection to join lobby room...')
           socket.once('connect', () => {
-            clientLogger.log('📡 Socket connected, emitting player-joined event')
-            socket.emit('player-joined', {
-              lobbyCode: code,
-              username: username,
-              userId: userId,
-            })
+            clientLogger.log('📡 Socket connected, joining lobby room')
+            socket.emit('join-lobby', code)
           })
         }
       }
 
-      emitPlayerJoined()
+      ensureLobbyRoomJoin()
 
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
         gameType: lobby?.gameType || 'yahtzee',
-        isPrivate: !!lobby?.password,
+        isPrivate: !!lobby?.isPrivate,
       })
 
       const joinMessage = {
@@ -229,7 +218,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: any) {
       setError(err.message)
     }
-  }, [code, password, isGuest, guestId, guestName, socket, username, userId, setGame, setChatMessages, setError, lobby?.gameType, lobby?.password])
+  }, [code, password, isGuest, guestId, guestName, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
@@ -293,7 +282,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       trackGameStarted({
         lobbyCode: code,
         gameType: lobby?.gameType || 'yahtzee',
-        isPrivate: !!lobby?.password,
+        isPrivate: !!lobby?.isPrivate,
         maxPlayers: lobby?.maxPlayers || 4,
         playerCount: players.length,
         hasBot: botCount > 0,
@@ -308,21 +297,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setCelebrationEvent(null)
 
       const firstPlayerName = data.game.players[0]?.name || 'Player 1'
-
-      // Emit events in parallel for faster update
-      if (socket) {
-        socket.emit('game-started', {
-          lobbyCode: code,
-          game: data.game,
-          firstPlayerName: firstPlayerName,
-        })
-
-        socket.emit('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
-      }
 
       showToast.success('toast.gameStarted', undefined, { player: firstPlayerName }, { id: 'start-game' })
 
@@ -348,7 +322,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, socket, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
+  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
 
   return {
     loadLobby,

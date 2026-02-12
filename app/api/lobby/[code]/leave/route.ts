@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { getServerSocketUrl } from '@/lib/socket-url'
+import { getServerSocketUrl, getSocketInternalAuthHeaders } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 
@@ -142,7 +142,10 @@ export async function POST(
         const socketUrl = getServerSocketUrl()
         await fetch(`${socketUrl}/api/notify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getSocketInternalAuthHeaders(),
+          },
           body: JSON.stringify({
             room: `lobby:${code}`,
             event: 'game-abandoned',
@@ -183,7 +186,10 @@ export async function POST(
         const socketUrl = getServerSocketUrl()
         await fetch(`${socketUrl}/api/notify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getSocketInternalAuthHeaders(),
+          },
           body: JSON.stringify({
             room: `lobby:${code}`,
             event: 'game-abandoned',
@@ -208,7 +214,10 @@ export async function POST(
       const socketUrl = getServerSocketUrl()
       await fetch(`${socketUrl}/api/notify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getSocketInternalAuthHeaders(),
+        },
         body: JSON.stringify({
           room: `lobby:${code}`,
           event: 'player-left',

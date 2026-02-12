@@ -14,7 +14,10 @@ export async function DELETE(
   { params }: { params: Promise<{ friendshipId: string }> }
 ) {
   try {
-    await limiter(req)
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
     
     const { friendshipId } = await params
 

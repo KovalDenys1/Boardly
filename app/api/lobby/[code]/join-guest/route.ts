@@ -15,6 +15,7 @@ const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
   guestName: z.string().trim().min(2).max(20),
   guestToken: z.string().optional(),
+  password: z.string().optional(),
 })
 
 export async function POST(
@@ -56,6 +57,10 @@ export async function POST(
 
     if (!lobby) {
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
+    }
+
+    if (lobby.password && parsedBody.data.password !== lobby.password) {
+      return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
     }
 
     const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName)

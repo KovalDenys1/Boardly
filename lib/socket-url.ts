@@ -77,6 +77,33 @@ export function getServerSocketUrl(): string {
   return DEFAULT_LOCAL_SOCKET_URL
 }
 
+function getSocketInternalSecret(): string | null {
+  const secret =
+    process.env.SOCKET_SERVER_INTERNAL_SECRET ||
+    process.env.SOCKET_INTERNAL_SECRET
+
+  if (!secret || !secret.trim()) {
+    if (process.env.NODE_ENV === 'production' && logger?.error) {
+      logger.error('SOCKET_SERVER_INTERNAL_SECRET is missing in production', new Error('Missing socket internal secret'))
+    }
+    return null
+  }
+
+  return secret.trim()
+}
+
+export function getSocketInternalAuthHeaders(): Record<string, string> {
+  const secret = getSocketInternalSecret()
+  if (!secret) {
+    return {}
+  }
+
+  return {
+    'x-socket-internal-secret': secret,
+    Authorization: `Bearer ${secret}`,
+  }
+}
+
 type SocketNotificationData = Record<string, unknown>
 
 function extractStateSnapshot(data: SocketNotificationData): Record<string, unknown> | null {
@@ -163,7 +190,10 @@ export async function notifySocket(
         const socketUrl = getServerSocketUrl()
         const response = await fetch(`${socketUrl}/api/notify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...getSocketInternalAuthHeaders(),
+          },
           body: JSON.stringify({ room, event, data }),
         })
         resolve(response.ok)

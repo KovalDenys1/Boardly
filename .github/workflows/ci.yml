@@ -33,11 +33,11 @@ jobs:
     env:
       # Use secrets to avoid hardcoded credentials in workflow file
       # DATABASE_URL connects to the postgres service defined above
-      # Using simple template with fallback password
       DATABASE_URL: postgresql://postgres:${{ secrets.CI_POSTGRES_PASSWORD || 'test-ci-database-password-placeholder' }}@localhost:5432/boardly
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-min-32-chars-req' }}
       JWT_SECRET: ${{ secrets.JWT_SECRET || 'placeholder-secret-min-32-chars-req' }}
+      SOCKET_SERVER_INTERNAL_SECRET: ${{ secrets.SOCKET_SERVER_INTERNAL_SECRET || 'socket-internal-secret-placeholder-32' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

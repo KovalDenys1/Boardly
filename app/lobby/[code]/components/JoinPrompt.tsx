@@ -46,7 +46,7 @@ export default function JoinPrompt({
         </p>
 
         {/* Password Input */}
-        {lobby.password && (
+        {lobby.isPrivate && (
           <div
             className="text-left"
             style={{ marginBottom: `clamp(20px, 2vh, 32px)` }}

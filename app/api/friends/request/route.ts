@@ -11,7 +11,10 @@ const log = apiLogger('/api/friends/request')
 // POST /api/friends/request - Send friend request
 export async function POST(req: NextRequest) {
   try {
-    await limiter(req)
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -149,7 +152,10 @@ export async function POST(req: NextRequest) {
 // GET /api/friends/request - Get pending friend requests
 export async function GET(req: NextRequest) {
   try {
-    await limiter(req)
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {

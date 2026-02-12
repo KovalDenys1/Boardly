@@ -12,7 +12,10 @@ const log = apiLogger('/api/auth/resend-verification')
 
 export async function POST(request: NextRequest) {
   try {
-    await limiter(request)
+    const rateLimitResult = await limiter(request)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
 
     // Try to get session first (for logged-in users)
     const session = await getServerSession(authOptions)

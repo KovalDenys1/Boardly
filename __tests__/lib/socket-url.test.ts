@@ -13,6 +13,9 @@ describe('notifySocket deduplication', () => {
       configurable: true,
     })
     process.env.SOCKET_SERVER_URL = 'http://localhost:3001'
+    delete process.env.SOCKET_SERVER_INTERNAL_SECRET
+    delete process.env.SOCKET_INTERNAL_SECRET
+    delete process.env.CRON_SECRET
     delete process.env.NEXT_PUBLIC_SOCKET_URL
   })
 
@@ -94,5 +97,38 @@ describe('notifySocket deduplication', () => {
     await Promise.all([first, second])
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('sends internal auth header for socket notify requests when configured', async () => {
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'internal-secret'
+
+    const request = notifySocket(
+      'lobby:ABC123',
+      'game-update',
+      {
+        action: 'state-change',
+        payload: {
+          currentPlayerIndex: 0,
+          lastMoveAt: 1000,
+          updatedAt: '2026-02-11T10:00:00.000Z',
+          data: { rollsLeft: 2 },
+        },
+      },
+      25
+    )
+
+    jest.advanceTimersByTime(30)
+    await request
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3001/api/notify',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'x-socket-internal-secret': 'internal-secret',
+          Authorization: 'Bearer internal-secret',
+        }),
+      })
+    )
   })
 })

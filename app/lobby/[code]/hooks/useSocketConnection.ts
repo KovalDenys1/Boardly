@@ -141,7 +141,8 @@ export function useSocketConnection({
       userId: !isGuest ? session?.user?.id : guestId
     })
 
-    // Get authentication token
+    // Get authentication token (guest mode only).
+    // Authenticated users rely on NextAuth session cookie.
     const getAuthToken = () => {
       if (isGuest && guestToken) {
         clientLogger.log('🔐 Using guest authentication token', {
@@ -151,33 +152,10 @@ export function useSocketConnection({
         })
         return guestToken
       }
-      const userId = session?.user?.id
-      if (userId) {
-        clientLogger.log('🔐 Using authenticated user:', { userId, userEmail: session?.user?.email })
-      } else {
-        clientLogger.error('⚠️ No user ID found in session:', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id,
-          userEmail: session?.user?.email,
-          sessionKeys: session ? Object.keys(session) : [],
-          userKeys: session?.user ? Object.keys(session.user) : []
-        })
-      }
-      return userId || null
+      return null
     }
 
     const token = getAuthToken()
-
-    if (!token && !isGuest) {
-      clientLogger.error('❌ Cannot connect socket: No authentication token available', {
-        isGuest,
-        hasSession: !!session,
-        hasUserId: !!session?.user?.id,
-        token
-      })
-      return
-    }
 
     // Exponential backoff calculation: min(1000 * 2^attempt, 30000)
     const calculateBackoff = (attempt: number) => {
@@ -210,7 +188,7 @@ export function useSocketConnection({
       path: '/socket.io/', // Explicit path
       // Additional stability settings
       closeOnBeforeunload: false, // Don't close on page reload
-      withCredentials: false, // Not needed for token-based auth
+      withCredentials: true, // Required for NextAuth cookie-based socket auth
       auth: authPayload,
       query: queryPayload,
     })

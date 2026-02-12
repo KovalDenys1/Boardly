@@ -241,7 +241,17 @@ export async function GET(request: NextRequest) {
     const lobbies = await Promise.race([
       prisma.lobbies.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          maxPlayers: true,
+          turnTimer: true,
+          isActive: true,
+          gameType: true,
+          createdAt: true,
+          creatorId: true,
+          password: true,
           creator: {
             select: {
               username: true,
@@ -325,8 +335,16 @@ export async function GET(request: NextRequest) {
       stats
     })
 
+    const sanitizedLobbies = filteredLobbies.map(lobby => {
+      const { password, ...safeLobby } = lobby
+      return {
+        ...safeLobby,
+        isPrivate: !!password,
+      }
+    })
+
     return NextResponse.json({
-      lobbies: filteredLobbies,
+      lobbies: sanitizedLobbies,
       stats
     })
   } catch (error) {

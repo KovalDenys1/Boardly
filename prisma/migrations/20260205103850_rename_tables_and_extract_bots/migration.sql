@@ -56,7 +56,7 @@ ALTER TABLE "Bots" ADD CONSTRAINT "Bots_userId_fkey"
 -- Find all users with isBot=true and create corresponding records in Bots table
 INSERT INTO "Bots" ("id", "userId", "botType", "difficulty", "createdAt")
 SELECT 
-    gen_random_uuid()::text,
+    id,
     id,
     'yahtzee',  -- All existing bots are Yahtzee bots
     'medium',   -- Default difficulty
