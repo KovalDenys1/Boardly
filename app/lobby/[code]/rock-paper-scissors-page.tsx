@@ -141,12 +141,18 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
         setIsSubmitting(true)
         try {
-            const res = await fetchWithGuest(`/api/game/${lobby.game.id}/move`, {
+            const userId = getCurrentUserId()
+            const res = await fetchWithGuest(`/api/game/${lobby.game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    type: 'submit-choice',
-                    data: { choice },
+                    gameId: lobby.game.id,
+                    move: {
+                        type: 'submit-choice',
+                        playerId: userId,
+                        data: { choice },
+                    },
+                    userId,
                 }),
             })
 

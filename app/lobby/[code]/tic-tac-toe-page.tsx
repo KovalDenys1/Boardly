@@ -97,13 +97,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             gameEngine.processMove(move)
             const newState = gameEngine.getState()
 
-            // Send to server
-            const res = await fetchWithGuest(`/api/game/${game.id}/move`, {
+            // Send to server using main state route
+            const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    gameId: game.id,
                     move,
-                    state: JSON.stringify(newState),
                     userId: getCurrentUserId(),
                 }),
             })

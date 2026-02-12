@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { Move } from '@/lib/game-engine'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
+import { Move, Player } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
@@ -193,12 +195,20 @@ export async function POST(
       }, { status: 500 })
     }
 
-    let gameEngine: YahtzeeGame
+    let gameEngine: any
 
     switch (game.lobby.gameType) {
       case 'yahtzee':
         gameEngine = new YahtzeeGame(game.id)
         // Restore state (gameState is validated JSON from DB)
+        gameEngine.restoreState(gameState as any)
+        break
+      case 'tic_tac_toe':
+        gameEngine = new TicTacToeGame(game.id)
+        gameEngine.restoreState(gameState as any)
+        break
+      case 'rock_paper_scissors':
+        gameEngine = new RockPaperScissorsGame(game.id)
         gameEngine.restoreState(gameState as any)
         break
       default:
@@ -386,7 +396,7 @@ export async function POST(
     // Update player scores
     const enginePlayers = gameEngine.getPlayers()
     await Promise.all(
-      enginePlayers.map(async (player) => {
+      enginePlayers.map(async (player: Player) => {
         const dbPlayer = updatedGame.players.find(p => p.userId === player.id)
         if (dbPlayer) {
           await prisma.players.update({

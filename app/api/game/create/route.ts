@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { SpyGame } from '@/lib/games/spy-game'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
 import { GameEngine, GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
@@ -143,6 +145,22 @@ export async function POST(request: NextRequest) {
           ...config
         }
         gameEngine = new SpyGame(`game_${Date.now()}`)
+        break
+      case 'tic_tac_toe':
+        gameConfig = {
+          maxPlayers: 2,
+          minPlayers: 2,
+          ...config
+        }
+        gameEngine = new TicTacToeGame(`game_${Date.now()}`, gameConfig)
+        break
+      case 'rock_paper_scissors':
+        gameConfig = {
+          maxPlayers: 2,
+          minPlayers: 2,
+          ...config
+        }
+        gameEngine = new RockPaperScissorsGame(`game_${Date.now()}`, gameConfig)
         break
       default:
         return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })

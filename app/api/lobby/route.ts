@@ -91,10 +91,10 @@ export async function POST(request: NextRequest) {
             [null, null, null],
             [null, null, null],
           ],
-          currentMark: 'X',
-          moveCount: 0,
+          currentSymbol: 'X',
           winner: null,
-          isDraw: false,
+          winningLine: null,
+          moveCount: 0,
         },
       }
     } else if (gameType === 'rock_paper_scissors') {
