@@ -73,19 +73,51 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
             })
         }
 
-        // Create new guest user
-        const newGuest = await prisma.users.create({
-            data: {
-                id: guestId,
-                username: uniqueUsername,
-                email: `guest-${guestId}@boardly.guest`, // Temporary email for guests
-                isGuest: true,
-                lastActiveAt: new Date(),
-            },
-        })
+        // Create new guest user with retry logic for race conditions
+        try {
+            const newGuest = await prisma.users.create({
+                data: {
+                    id: guestId,
+                    username: uniqueUsername,
+                    email: `guest-${guestId}@boardly.guest`, // Temporary email for guests
+                    isGuest: true,
+                    lastActiveAt: new Date(),
+                },
+            })
 
-        log.info('Created new guest user', { guestId, username: newGuest.username })
-        return newGuest
+            log.info('Created new guest user', { guestId, username: newGuest.username })
+            return newGuest
+        } catch (createError: any) {
+            // Handle race condition: if username was taken between check and create
+            if (createError?.code === 'P2002') {
+                log.warn('Race condition detected during guest user creation, retrying with unique suffix', {
+                    guestId,
+                    attemptedUsername: uniqueUsername
+                })
+                
+                // Force unique username by appending guest ID and timestamp
+                const fallbackUsername = `${guestName}-${guestId.slice(0, 6)}-${Date.now().toString().slice(-4)}`
+                
+                const retryGuest = await prisma.users.create({
+                    data: {
+                        id: guestId,
+                        username: fallbackUsername,
+                        email: `guest-${guestId}@boardly.guest`,
+                        isGuest: true,
+                        lastActiveAt: new Date(),
+                    },
+                })
+                
+                log.info('Created guest user with fallback username after race condition', {
+                    guestId,
+                    username: retryGuest.username
+                })
+                return retryGuest
+            }
+            
+            // Re-throw other errors
+            throw createError
+        }
     } catch (error) {
         log.error('Error creating/getting guest user', error as Error, { guestId, guestName })
         throw error

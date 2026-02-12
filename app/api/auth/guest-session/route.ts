@@ -9,6 +9,8 @@ import {
   verifyGuestToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { handleApiError } from '@/lib/error-handler'
+import { Prisma } from '@prisma/client'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 
@@ -46,10 +48,20 @@ export async function POST(request: NextRequest) {
       guestToken,
     })
   } catch (error) {
+    // Handle Prisma unique constraint violations specifically
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      log.warn('Username conflict during guest session creation', { error })
+      return NextResponse.json(
+        { 
+          error: 'Username is already taken',
+          translationKey: 'errors.userSignup.username.taken',
+          code: 'USERNAME_TAKEN' 
+        },
+        { status: 409 }
+      )
+    }
+
     log.error('Failed to create guest session', error as Error)
-    return NextResponse.json(
-      { error: 'Failed to create guest session' },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
