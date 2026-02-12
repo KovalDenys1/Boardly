@@ -23,15 +23,15 @@ ALTER TABLE "VerificationToken" RENAME TO "VerificationTokens";
 ALTER TABLE "PasswordResetToken" RENAME TO "PasswordResetTokens";
 ALTER TABLE "EmailVerificationToken" RENAME TO "EmailVerificationTokens";
 
--- Rename friendship tables
-ALTER TABLE "Friendship" RENAME TO "Friendships";
-ALTER TABLE "FriendRequest" RENAME TO "FriendRequests";
+-- Skip friendship tables (not created yet in previous migrations)
+-- ALTER TABLE "Friendship" RENAME TO "Friendships";
+-- ALTER TABLE "FriendRequest" RENAME TO "FriendRequests";
 
 -- Rename game tables
 ALTER TABLE "Lobby" RENAME TO "Lobbies";
 ALTER TABLE "Game" RENAME TO "Games";
 ALTER TABLE "Player" RENAME TO "Players";
-ALTER TABLE "SpyLocation" RENAME TO "SpyLocations";
+-- ALTER TABLE "SpyLocation" RENAME TO "SpyLocations"; -- Not created yet
 
 -- STEP 2: Create Bots table
 CREATE TABLE "Bots" (
