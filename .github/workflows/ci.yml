@@ -31,12 +31,12 @@ jobs:
           --health-timeout=5s
           --health-retries=10
     env:
-      # CI uses ephemeral test database from service container above
+      # CI uses ephemeral test environment - hardcoded credentials are safe here
       DATABASE_URL: postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'placeholder-secret-min-32-chars-req' }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET || 'placeholder-secret-min-32-chars-req' }}
-      SOCKET_SERVER_INTERNAL_SECRET: ${{ secrets.SOCKET_SERVER_INTERNAL_SECRET || 'socket-internal-secret-placeholder-32' }}
+      NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
+      JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
+      SOCKET_SERVER_INTERNAL_SECRET: test-socket-secret-32chars-min-required-key
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
