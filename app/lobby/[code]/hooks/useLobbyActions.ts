@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -22,7 +22,7 @@ interface UseLobbyActionsProps {
   game: any | null
   setGame: (game: any) => void
   setLobby: (lobby: any) => void
-  setGameEngine: (engine: YahtzeeGame | null) => void
+  setGameEngine: (engine: any) => void
   setTimerActive: (active: boolean) => void
   setTimeLeft: (time: number) => void
   setRollHistory: (history: any[]) => void
@@ -89,8 +89,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           try {
             const parsedState = JSON.parse(activeGame.state)
 
-            const engine = new YahtzeeGame(activeGame.id)
-            engine.restoreState(parsedState)
+            // Create the correct engine based on game type
+            const gt = data.lobby.gameType || DEFAULT_GAME_TYPE
+            const engine = restoreGameEngine(gt, activeGame.id, parsedState)
             setGameEngine(engine)
           } catch (parseError) {
             clientLogger.error('Failed to parse game state:', parseError)
@@ -202,7 +203,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
-        gameType: lobby?.gameType || 'yahtzee',
+        gameType: lobby?.gameType || DEFAULT_GAME_TYPE,
         isPrivate: !!lobby?.isPrivate,
       })
 
@@ -255,7 +256,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          gameType: lobby.gameType || 'yahtzee',
+          gameType: lobby.gameType || DEFAULT_GAME_TYPE,
           lobbyId: lobby.id,
           config: { maxPlayers: lobby.maxPlayers, minPlayers: 1 }
         }),
@@ -269,8 +270,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       const data = await res.json()
 
-      const engine = new YahtzeeGame(data.game.id)
-      engine.restoreState(data.game.state)
+      // Create the correct engine based on game type
+      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
+      const engine = restoreGameEngine(gameType, data.game.id, data.game.state)
       setGameEngine(engine)
 
       // Set game state with players data (needed for bot detection)
@@ -281,7 +283,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const botCount = players.filter((p: any) => p.user?.bot).length
       trackGameStarted({
         lobbyCode: code,
-        gameType: lobby?.gameType || 'yahtzee',
+        gameType: lobby?.gameType || DEFAULT_GAME_TYPE,
         isPrivate: !!lobby?.isPrivate,
         maxPlayers: lobby?.maxPlayers || 4,
         playerCount: players.length,

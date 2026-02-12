@@ -87,7 +87,7 @@ io.to(`lobby:${code}:spectators`).emit('spectator-chat', { username, message })
 
 ## 📊 Estimated Complexity
 
-**M (Medium - 1-2 sprints / 1-2 weeks)**
+### M (Medium - 1-2 sprints / 1-2 weeks)
 
 - Week 1: Backend (socket rooms, state filtering, API endpoints)
 - Week 2: Frontend (spectator UI, chat, join flow)

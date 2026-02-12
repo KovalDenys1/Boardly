@@ -86,7 +86,7 @@ interface MemoryState {
 
 ## 📊 Estimated Complexity
 
-**M (Medium - 2-3 days)**
+### M (Medium - 2-3 days)
 
 - Day 1: Game logic, card generation, tests
 - Day 2: UI with flip animations, grid layouts

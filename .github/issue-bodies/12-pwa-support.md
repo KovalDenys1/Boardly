@@ -103,7 +103,7 @@ Option 2: Manual service worker registration
 
 ## 📊 Estimated Complexity
 
-**S-M (Small-Medium - 1 sprint / 3-5 days)**
+### S-M (Small-Medium - 1 sprint / 3-5 days)
 
 - Day 1-2: Manifest, icons, next-pwa setup
 - Day 3: Service worker, offline support

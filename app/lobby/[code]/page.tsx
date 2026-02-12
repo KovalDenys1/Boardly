@@ -20,6 +20,8 @@ import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
+import { GameEngine } from '@/lib/game-engine'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import TicTacToeLobbyPage from './tic-tac-toe-page'
@@ -70,7 +72,7 @@ import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
-import GameBoard from './components/GameBoard'
+import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
@@ -80,7 +82,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
-function LobbyPageContent() {
+function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
@@ -96,7 +98,7 @@ function LobbyPageContent() {
   // Core state
   const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
   const [game, setGame] = useState<Game | null>(null)
-  const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
+  const [gameEngine, setGameEngine] = useState<GameEngine | null>(null)
   const [loading, setLoading] = useState(true)
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
@@ -105,7 +107,7 @@ function LobbyPageContent() {
   const { t } = useTranslation()
 
   const roundInfo = React.useMemo(() => {
-    if (!gameEngine) return { current: 1, total: 13 }
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: 13 }
     const players = gameEngine.getPlayers()
     const filledCounts = players.map(p => {
       const scorecard = gameEngine.getScorecard(p.id)
@@ -272,8 +274,8 @@ function LobbyPageContent() {
           : state
 
         if (game?.id) {
-          const newEngine = new YahtzeeGame(game.id)
-          newEngine.restoreState(parsedState)
+          const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
+          const newEngine = restoreGameEngine(gt, game.id, parsedState)
           setGameEngine(newEngine)
 
           // Update game object with new state
@@ -334,7 +336,7 @@ function LobbyPageContent() {
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId])
+  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -413,7 +415,7 @@ function LobbyPageContent() {
 
     // Add bot action to roll history ONLY if dice are present (after roll, not before)
     if (event.type === 'roll' && event.data?.dice && gameEngine) {
-      const currentRound = gameEngine.getRound()
+      const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
       const playerCount = game?.players?.length || 1
       const turnNumber = Math.floor(currentRound / playerCount) + 1
 
@@ -465,9 +467,9 @@ function LobbyPageContent() {
 
     // Navigate back to lobby list after a short delay
     setTimeout(() => {
-      router.push('/games/yahtzee/lobbies')
+      router.push(`/games/${lobby?.gameType as string || DEFAULT_GAME_TYPE}/lobbies`)
     }, 3000)
-  }, [router])
+  }, [router, lobby])
 
   const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
@@ -553,11 +555,11 @@ function LobbyPageContent() {
   }, [])
 
   // Create refs for game actions to use in timer callback
-  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<YahtzeeGame | null>) | null>(null)
-  const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<YahtzeeGame | null>) | null>(null)
+  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
+  const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
 
   const buildAutoActionContext = React.useCallback(
-    (engine: YahtzeeGame, playerId: string, existingDebounceKey?: string): AutoActionContext => {
+    (engine: GameEngine, playerId: string, existingDebounceKey?: string): AutoActionContext => {
       const state = engine.getState()
       const debounceKey =
         existingDebounceKey ||
@@ -570,7 +572,7 @@ function LobbyPageContent() {
           currentPlayerId: playerId,
           currentPlayerIndex: state.currentPlayerIndex,
           lastMoveAt: typeof state.lastMoveAt === 'number' ? state.lastMoveAt : null,
-          rollsLeft: engine.getRollsLeft(),
+          rollsLeft: engine instanceof YahtzeeGame ? engine.getRollsLeft() : 0,
           updatedAt: state.updatedAt ? String(state.updatedAt) : null,
         },
       }
@@ -579,13 +581,13 @@ function LobbyPageContent() {
   )
 
   // Game timer hook - pass turnTimerLimit from lobby settings
-  const turnTimerLimit = (lobby as any)?.turnTimer || 60 // Get from lobby or default to 60
+  const turnTimerLimit = (lobby?.turnTimer as number) || 60
   const { timeLeft, timerActive } = useGameTimer({
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState() || null,
     turnTimerLimit,
     onTimeout: async () => {
-      if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
+      if (!isMyTurn() || !gameEngine || !(gameEngine instanceof YahtzeeGame) || !handleScoreRef.current) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
           isMyTurn: isMyTurn(),
           hasGameEngine: !!gameEngine,
@@ -596,7 +598,7 @@ function LobbyPageContent() {
 
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
 
-      let workingEngine = gameEngine
+      let workingEngine: YahtzeeGame = gameEngine
       const currentPlayer = workingEngine.getCurrentPlayer()
 
       if (!currentPlayer) {
@@ -622,6 +624,10 @@ function LobbyPageContent() {
           const rolledEngine = await handleRollDiceRef.current(autoActionContext)
           if (!rolledEngine) {
             clientLogger.log('⏰ Auto-roll skipped by server guard')
+            return
+          }
+          if (!(rolledEngine instanceof YahtzeeGame)) {
+            clientLogger.log('⏰ Auto-roll returned non-Yahtzee engine')
             return
           }
           workingEngine = rolledEngine
@@ -771,7 +777,7 @@ function LobbyPageContent() {
 
   // Handle celebration detection on game updates
   useEffect(() => {
-    if (!gameEngine || !game) return
+    if (!gameEngine || !game || !(gameEngine instanceof YahtzeeGame)) return
 
     if (gameEngine.isGameFinished()) {
       const dice = gameEngine.getDice()
@@ -823,7 +829,7 @@ function LobbyPageContent() {
       }
 
       // Redirect
-      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
+      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
     } catch (error) {
       clientLogger.error('Error leaving lobby:', error)
       showToast.error('errors.unexpected')
@@ -833,7 +839,7 @@ function LobbyPageContent() {
         socket.emit('leave-lobby', code)
         socket.disconnect()
       }
-      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
+      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
     }
   }
 
@@ -878,6 +884,16 @@ function LobbyPageContent() {
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+
+  // When TTT/RPS game starts, notify parent to switch to dedicated page
+  useEffect(() => {
+    if (isGameStarted && lobby?.gameType && onSwitchToDedicatedPage) {
+      const gt = lobby.gameType as string
+      if (gt === 'tic_tac_toe' || gt === 'rock_paper_scissors') {
+        onSwitchToDedicatedPage(gt)
+      }
+    }
+  }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
 
   // Force layout recalculation when game starts (mobile browser fix)
   useEffect(() => {
@@ -944,7 +960,7 @@ function LobbyPageContent() {
             onSoundToggle={() => {
               soundManager.toggle()
               setSoundEnabled(soundManager.isEnabled())
-              showToast.success(soundManager.isEnabled() ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff')
+              showToast.success(soundManager.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
             }}
             onLeave={handleLeaveLobby}
           />
@@ -985,7 +1001,7 @@ function LobbyPageContent() {
             height: 'calc(100dvh - 5rem)', // Dynamic viewport height for mobile with fallback
           }}
         >
-          {gameEngine?.isGameFinished() ? (
+          {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
             <YahtzeeResults
               results={analyzeResults(
                 gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
@@ -996,7 +1012,7 @@ function LobbyPageContent() {
               onPlayAgain={handleStartGame}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
-          ) : gameEngine ? (
+          ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <>
               {/* Top Status Bar - Responsive */}
               <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
@@ -1009,14 +1025,14 @@ function LobbyPageContent() {
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
                           <span className="text-sm font-bold">
-                            {t('yahtzee.ui.round')}: {roundInfo.current}/{roundInfo.total}
+                            {t('game.ui.round')}: {roundInfo.current}/{roundInfo.total}
                           </span>
                         </div>
                         <div className="h-4 w-px bg-white/30"></div>
                         <div className="flex items-center gap-1 max-w-[120px]">
                           <span className="text-base">👤</span>
                           <span className="text-sm font-bold truncate">
-                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
+                            {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </span>
                         </div>
                       </div>
@@ -1034,28 +1050,28 @@ function LobbyPageContent() {
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          showToast.success(newState ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff', undefined, undefined, {
+                          showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
                             position: 'top-center',
                           })
                         }}
-                        aria-label={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
+                        aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                         className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                        title={soundEnabled ? t('yahtzee.ui.disableSound') : t('yahtzee.ui.enableSound')}
+                        title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                       >
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(t('yahtzee.ui.leaveConfirm'))) {
+                          if (confirm(t('game.ui.leaveConfirm'))) {
                             handleLeaveLobby()
                           }
                         }}
-                        aria-label={t('yahtzee.ui.leave')}
+                        aria-label={t('game.ui.leave')}
                         className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
-                        <span>{t('yahtzee.ui.leave')}</span>
+                        <span>{t('game.ui.leave')}</span>
                       </button>
                     </div>
                   </div>
@@ -1066,7 +1082,7 @@ function LobbyPageContent() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.round')}</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('game.ui.round')}</div>
                           <div className="text-base font-bold leading-tight">
                             {roundInfo.current}/{roundInfo.total}
                           </div>
@@ -1076,9 +1092,9 @@ function LobbyPageContent() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">👤</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">{t('yahtzee.ui.turn')}</div>
+                          <div className="text-[10px] opacity-75 leading-tight">{t('game.ui.turn')}</div>
                           <div className="text-base font-bold leading-tight truncate max-w-[150px]">
-                            {gameEngine.getCurrentPlayer()?.name || t('yahtzee.ui.playerFallback')}
+                            {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </div>
                         </div>
                       </div>
@@ -1099,7 +1115,7 @@ function LobbyPageContent() {
                         onClick={() => {
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
-                          showToast.success(newState ? 'yahtzee.ui.soundOn' : 'yahtzee.ui.soundOff', undefined, undefined, {
+                          showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
                             position: 'top-center',
                           })
@@ -1461,9 +1477,10 @@ export default function LobbyPage() {
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
   const [gameType, setGameType] = useState<string | null>(null)
+  const [gameStatus, setGameStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Detect game type on mount
+  // Detect game type and status on mount
   useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
       return
@@ -1482,18 +1499,30 @@ export default function LobbyPage() {
 
         if (res.ok) {
           const data = await res.json()
-          setGameType(data.lobby?.gameType || 'yahtzee')
+          const lobbyData = data.lobby
+          setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
+          // Check active game status
+          const activeGame = lobbyData?.games?.[0]
+          setGameStatus(activeGame?.status || null)
         } else {
-          setGameType('yahtzee') // Default to Yahtzee
+          setGameType(DEFAULT_GAME_TYPE) 
+          setGameStatus(null)
         }
       } catch (error) {
         clientLogger.log('Error detecting game type:', error)
-        setGameType('yahtzee') // Default to Yahtzee
+        setGameType(DEFAULT_GAME_TYPE) 
+        setGameStatus(null)
       } finally {
         setLoading(false)
       }
     })()
   }, [code, status, isGuest, guestToken])
+
+  // Callback when LobbyPageContent detects game started for TTT/RPS
+  const handleGameStarted = useCallback((startedGameType: string) => {
+    setGameType(startedGameType)
+    setGameStatus('playing')
+  }, [])
 
   if (loading) {
     return (
@@ -1503,17 +1532,16 @@ export default function LobbyPage() {
     )
   }
 
-  // Route to Tic-Tac-Toe page if game type is tic_tac_toe
-  if (gameType === 'tic_tac_toe') {
+  // Route to dedicated pages ONLY when game is actively playing
+  if (gameType === 'tic_tac_toe' && gameStatus === 'playing') {
     return <TicTacToeLobbyPage code={code} />
   }
 
-  // Route to Rock Paper Scissors page if game type is rock_paper_scissors
-  if (gameType === 'rock_paper_scissors') {
+  if (gameType === 'rock_paper_scissors' && gameStatus === 'playing') {
     return <RockPaperScissorsLobbyPage code={code} />
   }
 
-  // Default to Yahtzee (for yahtzee, spy, and other games)
+  // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
   return (
     <ErrorBoundary
       fallback={
@@ -1527,7 +1555,7 @@ export default function LobbyPage() {
               Something went wrong with the game lobby. Please try again.
             </p>
             <button
-              onClick={() => window.location.href = '/games/yahtzee/lobbies'}
+              onClick={() => window.location.href = '/games'}
               className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
               Back to Lobbies
@@ -1537,7 +1565,7 @@ export default function LobbyPage() {
       }
     >
       <Suspense fallback={<LoadingSpinner size="lg" />}>
-        <LobbyPageContent />
+        <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
       </Suspense>
     </ErrorBoundary>
   )

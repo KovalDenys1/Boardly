@@ -74,7 +74,7 @@ interface TicTacToeState {
 
 ## 📊 Estimated Complexity
 
-**M (Medium - 1-2 days)**
+### M (Medium - 1-2 days)
 
 - Day 1: Game logic, tests, schema update
 - Day 2: UI components, integration, deployment

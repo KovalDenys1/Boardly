@@ -26,5 +26,42 @@
   "chat.tools.terminal.autoApprove": {
     "nc": true,
     "npx prisma": true
-  }
+  },
+  // Prisma settings - suppress false positive warnings
+  "prisma.showPrismaDataPlatformNotification": false,
+  // GitHub Actions - suppress secret warnings (they exist on GitHub, not locally)
+  "yaml.customTags": [
+    "!reference sequence"
+  ],
+  "cSpell.words": [
+    "Boardly",
+    "botjoin",
+    "crawlable",
+    "creatorid",
+    "cuid",
+    "Duolingo",
+    "gameid",
+    "gamestart",
+    "googleusercontent",
+    "isready",
+    "lobbyid",
+    "NEXTAUTH",
+    "pooler",
+    "rolname",
+    "Supabase",
+    "tictactoe",
+    "unheld",
+    "visx",
+    "worktree",
+    "Worktrees",
+    "Збери",
+    "Нулики",
+    "перемогти",
+    "Проста",
+    "Хрестики",
+    "швидка"
+  ],
+  "WillLuke.nextjs.hasPrompted": true,
+  "github-actions.validate.secrets": false,
+  "yaml.validate": false
 }

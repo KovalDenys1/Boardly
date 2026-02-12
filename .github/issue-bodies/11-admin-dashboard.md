@@ -120,7 +120,7 @@ export function requireAdmin(req, res) {
 
 ## 📊 Estimated Complexity
 
-**L (Large - 2-3 sprints / 2-3 weeks)**
+### L (Large - 2-3 sprints / 2-3 weeks)
 
 - Week 1: Schema, middleware, user management
 - Week 2: Game management, moderation tools

@@ -90,7 +90,7 @@ interface RPSState {
 
 ## 📊 Estimated Complexity
 
-**M (Medium - 1-2 days)**
+### M (Medium - 1-2 days)
 
 - Day 1: Game logic with simultaneous moves, tests
 - Day 2: UI with reveal animation, integration

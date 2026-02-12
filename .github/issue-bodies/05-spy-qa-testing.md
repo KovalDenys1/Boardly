@@ -23,25 +23,25 @@ Conduct thorough QA testing with real players to ensure Spy game is production-r
 
 ## 📝 Testing Scenarios
 
-**Test Case 1: Small Group (3-4 players)**
+### Test Case 1: Small Group (3-4 players)
 
 - Quick rounds
 - Easy to identify spy
 - Test voting with few players
 
-**Test Case 2: Medium Group (5-7 players)**
+### Test Case 2: Medium Group (5-7 players)
 
 - More discussion needed
 - Balanced gameplay
 - Test majority voting
 
-**Test Case 3: Large Group (8-10 players)**
+### Test Case 3: Large Group (8-10 players)
 
 - Complex social deduction
 - Longer questioning phase
 - Test with maximum players
 
-**Test Case 4: Edge Cases**
+### Test Case 4: Edge Cases
 
 - Player disconnects mid-game
 - Spy tries to blend in
@@ -49,7 +49,7 @@ Conduct thorough QA testing with real players to ensure Spy game is production-r
 - Tied votes (need tiebreaker logic?)
 - Multiple rounds with same players
 
-**Test Case 5: Mobile Experience**
+### Test Case 5: Mobile Experience
 
 - Touch UI for voting
 - Chat on mobile
@@ -80,7 +80,7 @@ Conduct thorough QA testing with real players to ensure Spy game is production-r
 
 ## 📊 Estimated Complexity
 
-**S (Small - 3-5 hours)**
+### S (Small - 3-5 hours)
 
 - 2-3 testing sessions with different group sizes
 - 1 hour documenting findings

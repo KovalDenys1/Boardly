@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { restoreGameEngine } from '@/lib/game-registry'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { Move } from '@/lib/game-engine'
+import { Move, Player } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
@@ -193,16 +194,13 @@ export async function POST(
       }, { status: 500 })
     }
 
-    let gameEngine: YahtzeeGame
+    let gameEngine: any
 
-    switch (game.lobby.gameType) {
-      case 'yahtzee':
-        gameEngine = new YahtzeeGame(game.id)
-        // Restore state (gameState is validated JSON from DB)
-        gameEngine.restoreState(gameState as any)
-        break
-      default:
-        return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    // Use registry to restore the correct engine for this game type
+    try {
+      gameEngine = restoreGameEngine(game.lobby.gameType, game.id, gameState)
+    } catch {
+      return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
 
     if (isAutoAction) {
@@ -225,11 +223,18 @@ export async function POST(
         snapshot.currentPlayerId === serverCurrentPlayer?.id &&
         snapshotLastMoveAt === serverLastMoveAt
 
-      const isSameMoveWindow =
-        snapshot.rollsLeft === gameEngine.getRollsLeft() &&
-        snapshotUpdatedAt !== null &&
-        serverStateUpdatedAt !== null &&
-        snapshotUpdatedAt === serverStateUpdatedAt
+      // For Yahtzee, also compare rollsLeft; for other games just compare updatedAt
+      const isYahtzeeEngine = gameEngine instanceof YahtzeeGame
+      const serverRollsLeft = isYahtzeeEngine ? gameEngine.getRollsLeft() : 0
+
+      const isSameMoveWindow = isYahtzeeEngine
+        ? (snapshot.rollsLeft === serverRollsLeft &&
+           snapshotUpdatedAt !== null &&
+           serverStateUpdatedAt !== null &&
+           snapshotUpdatedAt === serverStateUpdatedAt)
+        : (snapshotUpdatedAt !== null &&
+           serverStateUpdatedAt !== null &&
+           snapshotUpdatedAt === serverStateUpdatedAt)
 
       if (!isSameTurn || !isSameMoveWindow) {
         log.info('Auto action skipped: turn already ended or state changed', {
@@ -241,7 +246,7 @@ export async function POST(
             currentPlayerId: serverCurrentPlayer?.id,
             currentPlayerIndex: serverState.currentPlayerIndex,
             lastMoveAt: serverLastMoveAt,
-            rollsLeft: gameEngine.getRollsLeft(),
+            rollsLeft: serverRollsLeft,
             updatedAt: serverStateUpdatedAt,
           },
         })
@@ -383,17 +388,20 @@ export async function POST(
       })
     }
 
-    // Update player scores
+    // Update player scores — getScorecard only exists on YahtzeeGame
+    const isYahtzeeEngine = gameEngine instanceof YahtzeeGame
     const enginePlayers = gameEngine.getPlayers()
     await Promise.all(
-      enginePlayers.map(async (player) => {
+      enginePlayers.map(async (player: Player) => {
         const dbPlayer = updatedGame.players.find(p => p.userId === player.id)
         if (dbPlayer) {
           await prisma.players.update({
             where: { id: dbPlayer.id },
             data: {
               score: player.score || 0,
-              scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
+              scorecard: JSON.stringify(
+                isYahtzeeEngine ? gameEngine.getScorecard(player.id) : {}
+              ),
             },
           })
         }

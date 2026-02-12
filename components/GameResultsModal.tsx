@@ -116,6 +116,10 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
         return 'Chess'
       case 'guess_the_spy':
         return 'Guess the Spy'
+      case 'tic_tac_toe':
+        return 'Tic Tac Toe'
+      case 'rock_paper_scissors':
+        return 'Rock Paper Scissors'
       case 'uno':
         return 'Uno'
       default:

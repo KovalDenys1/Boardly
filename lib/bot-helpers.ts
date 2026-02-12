@@ -36,7 +36,7 @@ export async function checkMultipleBots(userIds: string[]): Promise<Map<string, 
  */
 export async function createBot(
   username: string,
-  botType: string = 'yahtzee',
+  botType: string = 'generic',
   difficulty: string = 'medium'
 ) {
   return await prisma.$transaction(async (tx) => {
