@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine, hasBotSupport } from '@/lib/game-registry'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import type { RegisteredGameType } from '@/lib/game-registry'
 import { Move } from '@/lib/game-engine'
-import { YahtzeeBotExecutor, getBotDifficulty } from '@/lib/bots'
+import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
@@ -182,18 +182,8 @@ export async function POST(
     }
 
     // Dispatch to the appropriate bot executor based on game type
-    if (!(gameEngine instanceof YahtzeeGame)) {
-      // Future: add bot executors for other game types here
-      log.error('No bot executor for game type', undefined, { gameType })
-      botTurnLocks.delete(lockKey)
-      return NextResponse.json({
-        error: 'No bot executor available for this game type',
-        code: 'NO_BOT_EXECUTOR'
-      }, { status: 501 })
-    }
-
-    // Execute Yahtzee bot's turn with visual feedback
-    await YahtzeeBotExecutor.executeBotTurn(
+    await executeBot(
+      gameType as RegisteredGameType,
       gameEngine,
       botUserId,
       botDifficulty,
@@ -294,7 +284,7 @@ export async function POST(
                   where: { id: dbPlayer.id },
                   data: {
                     score: player.score || 0,
-                    scorecard: JSON.stringify(gameEngine.getScorecard(player.id) || {}),
+                    scorecard: JSON.stringify((gameEngine as any).getScorecard?.(player.id) ?? {}),
                   },
                 }).catch(async (retryError) => {
                   // Retry once on connection error
@@ -304,7 +294,7 @@ export async function POST(
                     where: { id: dbPlayer.id },
                     data: {
                       score: player.score || 0,
-                      scorecard: JSON.stringify(gameEngine.getScorecard(player.id) || {}),
+                      scorecard: JSON.stringify((gameEngine as any).getScorecard?.(player.id) ?? {}),
                     },
                   })
                 })

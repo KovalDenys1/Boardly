@@ -4,6 +4,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
@@ -123,16 +124,9 @@ export async function POST(
     let game = lobby.games.find((g) => g.status === 'waiting')
 
     if (!game) {
-      // Create new game with initial Yahtzee state
-      const initialState = {
-        round: 0,
-        currentPlayerIndex: 0, // Start with first player
-        dice: [1, 1, 1, 1, 1],
-        held: [false, false, false, false, false],
-        rollsLeft: 3,
-        scores: [], // Will be initialized when players join
-        finished: false,
-      }
+      // Create a new game with initial state from the game registry
+      const engine = createGameEngine(lobby.gameType || DEFAULT_GAME_TYPE, 'temp')
+      const initialState = engine.getState()
 
       game = await prisma.games.create({
         data: {

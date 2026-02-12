@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { restoreGameEngine } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -90,7 +90,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
             const parsedState = JSON.parse(activeGame.state)
 
             // Create the correct engine based on game type
-            const gt = data.lobby.gameType || 'yahtzee'
+            const gt = data.lobby.gameType || DEFAULT_GAME_TYPE
             const engine = restoreGameEngine(gt, activeGame.id, parsedState)
             setGameEngine(engine)
           } catch (parseError) {
@@ -203,7 +203,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
-        gameType: lobby?.gameType || 'yahtzee',
+        gameType: lobby?.gameType || DEFAULT_GAME_TYPE,
         isPrivate: !!lobby?.isPrivate,
       })
 
@@ -256,7 +256,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          gameType: lobby.gameType || 'yahtzee',
+          gameType: lobby.gameType || DEFAULT_GAME_TYPE,
           lobbyId: lobby.id,
           config: { maxPlayers: lobby.maxPlayers, minPlayers: 1 }
         }),
@@ -271,7 +271,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const data = await res.json()
 
       // Create the correct engine based on game type
-      const gameType = lobby?.gameType || 'yahtzee'
+      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
       const engine = restoreGameEngine(gameType, data.game.id, data.game.state)
       setGameEngine(engine)
 
@@ -283,7 +283,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const botCount = players.filter((p: any) => p.user?.bot).length
       trackGameStarted({
         lobbyCode: code,
-        gameType: lobby?.gameType || 'yahtzee',
+        gameType: lobby?.gameType || DEFAULT_GAME_TYPE,
         isPrivate: !!lobby?.isPrivate,
         maxPlayers: lobby?.maxPlayers || 4,
         playerCount: players.length,

@@ -21,7 +21,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import TicTacToeLobbyPage from './tic-tac-toe-page'
@@ -274,7 +274,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           : state
 
         if (game?.id) {
-          const gt = (lobby as any)?.gameType || 'yahtzee'
+          const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
           const newEngine = restoreGameEngine(gt, game.id, parsedState)
           setGameEngine(newEngine)
 
@@ -336,7 +336,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId, (lobby as any)?.gameType])
+  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -467,7 +467,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     // Navigate back to lobby list after a short delay
     setTimeout(() => {
-      router.push(`/games/${(lobby as any)?.gameType || 'yahtzee'}/lobbies`)
+      router.push(`/games/${lobby?.gameType as string || DEFAULT_GAME_TYPE}/lobbies`)
     }, 3000)
   }, [router, lobby])
 
@@ -581,7 +581,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
 
   // Game timer hook - pass turnTimerLimit from lobby settings
-  const turnTimerLimit = (lobby as any)?.turnTimer || 60 // Get from lobby or default to 60
+  const turnTimerLimit = (lobby?.turnTimer as number) || 60
   const { timeLeft, timerActive } = useGameTimer({
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState() || null,
@@ -829,7 +829,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
 
       // Redirect
-      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
+      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
     } catch (error) {
       clientLogger.error('Error leaving lobby:', error)
       showToast.error('errors.unexpected')
@@ -839,7 +839,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         socket.emit('leave-lobby', code)
         socket.disconnect()
       }
-      router.push(`/games/${lobby?.gameType || 'yahtzee'}/lobbies`)
+      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
     }
   }
 
@@ -1500,17 +1500,17 @@ export default function LobbyPage() {
         if (res.ok) {
           const data = await res.json()
           const lobbyData = data.lobby
-          setGameType(lobbyData?.gameType || 'yahtzee')
+          setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
           // Check active game status
           const activeGame = lobbyData?.games?.[0]
           setGameStatus(activeGame?.status || null)
         } else {
-          setGameType('yahtzee') // Default to Yahtzee
+          setGameType(DEFAULT_GAME_TYPE) 
           setGameStatus(null)
         }
       } catch (error) {
         clientLogger.log('Error detecting game type:', error)
-        setGameType('yahtzee') // Default to Yahtzee
+        setGameType(DEFAULT_GAME_TYPE) 
         setGameStatus(null)
       } finally {
         setLoading(false)

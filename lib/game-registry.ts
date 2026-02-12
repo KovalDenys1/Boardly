@@ -18,6 +18,9 @@ import { SpyGame } from './games/spy-game'
 
 export type RegisteredGameType = 'yahtzee' | 'guess_the_spy' | 'tic_tac_toe' | 'rock_paper_scissors'
 
+/** Fallback game type used when DB value is null (legacy lobbies). */
+export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
+
 export interface GameMetadata {
   type: RegisteredGameType
   name: string

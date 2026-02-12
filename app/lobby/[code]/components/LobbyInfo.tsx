@@ -1,5 +1,6 @@
 import { useRouter } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
+import { getGameMetadata } from '@/lib/game-registry'
 
 interface LobbyInfoProps {
   lobby: any
@@ -10,6 +11,7 @@ interface LobbyInfoProps {
 
 export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave }: LobbyInfoProps) {
   const router = useRouter()
+  const gameMeta = lobby.gameType ? getGameMetadata(lobby.gameType) : null
 
   const handleCopyInvite = () => {
     if (typeof window !== 'undefined') {
@@ -49,11 +51,11 @@ export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave 
         <span aria-hidden="true">›</span>
         <button
           onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)}
-          aria-label="Navigate to Yahtzee lobbies"
+          aria-label={`Navigate to ${gameMeta?.name ?? 'game'} lobbies`}
           className="hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
           style={{ padding: `clamp(2px, 0.2vh, 4px)` }}
         >
-          🎲 Yahtzee
+          {gameMeta?.icon ?? '🎮'} {gameMeta?.name ?? 'Game'}
         </button>
         <span aria-hidden="true">›</span>
         <span className="text-white font-semibold">{lobby.code}</span>
