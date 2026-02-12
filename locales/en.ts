@@ -1094,6 +1094,15 @@ const en = {
     welcomeBack: 'Welcome back, {{name}}!',
     nameTooShort: 'Name must be at least 2 characters',
   },
+  maintenance: {
+    title: 'Site Maintenance',
+    heading: 'We\'ll be back soon!',
+    message: 'Boardly is currently undergoing scheduled maintenance to improve your gaming experience.',
+    estimate: 'Estimated completion: within 24 hours',
+    contact: 'Questions or concerns?',
+    github: 'Check our GitHub',
+    apology: 'We apologize for any inconvenience.',
+  },
 } as const
 
 export default en

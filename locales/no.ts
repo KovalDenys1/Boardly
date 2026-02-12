@@ -937,6 +937,16 @@ const no = {
     success: 'Konto slettet',
     successMessage: 'Kontoen din er slettet. Omdirigerer til hjem...',
   },
+
+  maintenance: {
+    title: 'Vedlikehold pågår',
+    heading: 'Vi er snart tilbake!',
+    message: 'Boardly er for øyeblikket utilgjengelig grunnet planlagt vedlikehold for å forbedre spillopplevelsen.',
+    estimate: 'Estimert ferdig: innen 24 timer',
+    contact: 'Spørsmål eller tilbakemeldinger?',
+    github: 'Vår GitHub',
+    apology: 'Beklager ulempen.',
+  },
 } as const
 
 export default no
