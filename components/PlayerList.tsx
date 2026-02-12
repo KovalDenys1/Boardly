@@ -99,7 +99,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
             return (
               <button
-                key={player.id}
+                key={`player-${player.id}-${player.userId}`}
                 onClick={() => onPlayerClick?.(player.userId)}
                 className={`
                 w-full text-left p-2 rounded-lg transition-all duration-200 shadow-sm snap-start
@@ -195,7 +195,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
             return (
               <div
-                key={player.id}
+                key={`player-modal-${player.id}-${player.userId}`}
                 className={`
                 p-4 rounded-xl transition-all shadow-md border-2
                 ${isCurrentTurn
