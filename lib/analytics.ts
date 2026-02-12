@@ -6,7 +6,7 @@ import { clientLogger } from './client-logger'
  * Uses Vercel Analytics for production, logs to console in development
  */
 
-type GameType = 'yahtzee' | 'chess' | 'guess-the-spy'
+type GameType = 'yahtzee' | 'tic_tac_toe' | 'rock_paper_scissors' | 'guess_the_spy'
 
 interface LobbyEvent {
   lobbyCode: string

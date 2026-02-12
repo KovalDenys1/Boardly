@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { generateLobbyCode } from '@/lib/lobby'
+import { createGameEngine } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
@@ -66,68 +67,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create lobby with initial game and add creator as first player
-    // Build initial state depending on selected game type
-    let initialState: any
-    if (gameType === 'guess_the_spy') {
-      initialState = {
-        gameType: 'guess_the_spy',
-        players: [],
-        status: 'waiting',
-        currentRound: 0,
-        spyIndex: null,
-        location: null,
-        categories: [],
-        votes: {},
-      }
-    } else if (gameType === 'tic_tac_toe') {
-      initialState = {
-        gameType: 'tic_tac_toe',
-        players: [],
-        currentPlayerIndex: 0,
-        status: 'waiting',
-        data: {
-          board: [
-            [null, null, null],
-            [null, null, null],
-            [null, null, null],
-          ],
-          currentSymbol: 'X',
-          winner: null,
-          winningLine: null,
-          moveCount: 0,
-        },
-      }
-    } else if (gameType === 'rock_paper_scissors') {
-      initialState = {
-        gameType: 'rock_paper_scissors',
-        players: [],
-        currentPlayerIndex: 0,
-        status: 'waiting',
-        data: {
-          mode: 'best-of-3',
-          rounds: [],
-          playerChoices: {},
-          scores: {},
-          playersReady: [],
-          gameWinner: null,
-        },
-      }
-    } else {
-      // Default to Yahtzee-compatible initial state
-      initialState = {
-        gameType: 'yahtzee',
-        players: [],
-        currentPlayerIndex: 0,
-        status: 'waiting',
-        data: {
-          round: 0,
-          dice: [1, 1, 1, 1, 1],
-          held: [false, false, false, false, false],
-          rollsLeft: 3,
-          scores: [{}],
-        },
-      }
-    }
+    // Build initial state via game engine registry
+    const tempEngine = createGameEngine(gameType, 'temp_lobby_init')
+    const initialState = tempEngine.getState()
 
     const lobby = await prisma.lobbies.create({
       data: {

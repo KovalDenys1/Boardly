@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { SpyGame } from '@/lib/games/spy-game'
-import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
-import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
-import { GameEngine, GameConfig } from '@/lib/game-engine'
+import { createGameEngine, isRegisteredGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
@@ -34,6 +30,10 @@ export async function POST(request: NextRequest) {
 
     if (!gameType || !lobbyId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    if (!isRegisteredGameType(gameType)) {
+      return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
 
     // Verify lobby exists and user is the creator
@@ -125,46 +125,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Create game instance based on type
-    let gameEngine: any
-    let gameConfig: GameConfig
-
-    switch (gameType) {
-      case 'yahtzee':
-        gameConfig = {
-          maxPlayers: config?.maxPlayers || 4,
-          minPlayers: config?.minPlayers || 1,
-          ...config
-        }
-        gameEngine = new YahtzeeGame(`game_${Date.now()}`, gameConfig)
-        break
-      case 'guess_the_spy':
-        gameConfig = {
-          maxPlayers: config?.maxPlayers || 10,
-          minPlayers: config?.minPlayers || 3,
-          ...config
-        }
-        gameEngine = new SpyGame(`game_${Date.now()}`)
-        break
-      case 'tic_tac_toe':
-        gameConfig = {
-          maxPlayers: 2,
-          minPlayers: 2,
-          ...config
-        }
-        gameEngine = new TicTacToeGame(`game_${Date.now()}`, gameConfig)
-        break
-      case 'rock_paper_scissors':
-        gameConfig = {
-          maxPlayers: 2,
-          minPlayers: 2,
-          ...config
-        }
-        gameEngine = new RockPaperScissorsGame(`game_${Date.now()}`, gameConfig)
-        break
-      default:
-        return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
-    }
+    // Create game instance via registry
+    const gameEngine = createGameEngine(gameType, `game_${Date.now()}`, config)
 
     // Add players to the game - sort so bots go last
     const sortedPlayers = [...waitingGame.players].sort((a, b) => {

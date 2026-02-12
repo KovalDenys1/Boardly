@@ -1,6 +1,10 @@
 import { YahtzeeCategory } from './yahtzee'
 import { clientLogger } from './client-logger'
 
+// Re-export BotMoveStep from the shared types for backward compatibility
+export type { BotMoveStep } from '@/types/game'
+import type { BotMoveStep } from '@/types/game'
+
 // Bot visualization types
 interface BotPlayer {
   userId: string
@@ -17,18 +21,6 @@ interface BotVisualizationStep {
   message?: string
 }
 
-export interface BotMoveStep {
-  type: 'thinking' | 'roll' | 'hold' | 'score'
-  data?: {
-    dice?: number[]
-    held?: number[]
-    category?: YahtzeeCategory
-    score?: number
-    rollNumber?: number
-  }
-  message: string
-}
-
 /**
  * Create a simplified visualization of what the bot did
  * Based on the final game state after bot's turn
@@ -36,7 +28,7 @@ export interface BotMoveStep {
 export function createBotMoveVisualization(
   botName: string,
   finalDice: number[],
-  selectedCategory: YahtzeeCategory,
+  selectedCategory: string,
   score: number
 ): BotMoveStep[] {
   const steps: BotMoveStep[] = []

@@ -3,18 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { YahtzeeCategory } from '@/lib/yahtzee'
-
-interface BotMoveStep {
-  type: 'roll' | 'hold' | 'score' | 'thinking'
-  data?: {
-    dice?: number[]
-    held?: number[] // Indices of held dice
-    category?: YahtzeeCategory
-    score?: number
-    rollNumber?: number
-  }
-  message: string
-}
+import type { BotMoveStep } from '@/types/game'
 
 interface BotMoveOverlayProps {
   steps: BotMoveStep[]
@@ -174,7 +163,7 @@ export default function BotMoveOverlay({
                   className="font-bold text-green-800 dark:text-green-200 text-center"
                   style={{ fontSize: `clamp(18px, 1.8vw, 28px)` }}
                 >
-                  {CATEGORY_DISPLAY_NAMES[currentStep.data.category]}
+                  {CATEGORY_DISPLAY_NAMES[currentStep.data.category as YahtzeeCategory] || currentStep.data.category}
                 </p>
                 <p
                   className="font-bold text-green-600 dark:text-green-400 text-center"

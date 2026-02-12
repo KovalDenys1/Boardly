@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { restoreGameEngine, hasBotSupport } from '@/lib/game-registry'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move } from '@/lib/game-engine'
 import { YahtzeeBotExecutor, getBotDifficulty } from '@/lib/bots'
@@ -100,6 +101,18 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    const gameType = game.lobby.gameType
+
+    // Check if this game type supports bots
+    if (!hasBotSupport(gameType)) {
+      log.warn('Game type does not support bots', { gameType, gameId: game.id })
+      botTurnLocks.delete(lockKey)
+      return NextResponse.json({
+        error: 'This game type does not support bots',
+        code: 'BOTS_NOT_SUPPORTED'
+      }, { status: 400 })
+    }
+
     // Verify bot player exists and it's actually a bot
     const botPlayer = game.players.find(p => p.userId === botUserId)
     if (!botPlayer) {
@@ -114,6 +127,7 @@ export async function POST(
 
     log.info('Game found, processing bot turn', {
       gameId: game.id,
+      gameType,
       statePreview: game.state?.substring(0, 100)
     })
 
@@ -133,8 +147,7 @@ export async function POST(
       }, { status: 500 })
     }
 
-    const gameEngine = new YahtzeeGame(game.id)
-    gameEngine.restoreState(gameState)
+    const gameEngine = restoreGameEngine(gameType, game.id, gameState)
 
     // Verify it's the bot's turn
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
@@ -168,7 +181,18 @@ export async function POST(
       await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event)
     }
 
-    // Execute bot's turn with visual feedback using new modular system
+    // Dispatch to the appropriate bot executor based on game type
+    if (!(gameEngine instanceof YahtzeeGame)) {
+      // Future: add bot executors for other game types here
+      log.error('No bot executor for game type', undefined, { gameType })
+      botTurnLocks.delete(lockKey)
+      return NextResponse.json({
+        error: 'No bot executor available for this game type',
+        code: 'NO_BOT_EXECUTOR'
+      }, { status: 501 })
+    }
+
+    // Execute Yahtzee bot's turn with visual feedback
     await YahtzeeBotExecutor.executeBotTurn(
       gameEngine,
       botUserId,
@@ -270,7 +294,7 @@ export async function POST(
                   where: { id: dbPlayer.id },
                   data: {
                     score: player.score || 0,
-                    scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
+                    scorecard: JSON.stringify(gameEngine.getScorecard(player.id) || {}),
                   },
                 }).catch(async (retryError) => {
                   // Retry once on connection error
@@ -280,7 +304,7 @@ export async function POST(
                     where: { id: dbPlayer.id },
                     data: {
                       score: player.score || 0,
-                      scorecard: JSON.stringify(gameEngine.getScorecard?.(player.id) || {}),
+                      scorecard: JSON.stringify(gameEngine.getScorecard(player.id) || {}),
                     },
                   })
                 })

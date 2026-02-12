@@ -84,16 +84,50 @@ Core tables (pluralized schema):
 
 Game state is persisted as JSON in `Games.state` and treated as source of truth for replay/recovery.
 
-## Failure modes to design for
 
-- Socket cold starts on free infrastructure.
-- Client/server timer race conditions.
-- Duplicate/late events after reconnect.
-- Mid-turn disconnects.
+---
 
-Mitigation direction:
+# Boardly: Modular Monolith & Quality Standards
 
-- idempotent server actions
-- turn-ended guards before auto-actions
-- server-side debounce for timer-triggered actions
-- forced state resync after reconnect or failed optimistic actions
+## Mission
+
+Boardly is a platform for playing various board games online with friends. The core values are performance, accessibility, maintainability, and high code quality.
+
+## Architectural Approach
+
+- **Modular monolith**: Each game is implemented as a separate module under `lib/games/`, with all game-specific logic isolated.
+- **Functional-declarative style**: Prefer pure functions, explicit data flow, and minimal side effects.
+- **TypeScript strict**: Use strict typing, avoid `any`, and document all public interfaces.
+- **Single Responsibility Principle (SRP)**: Each module/file should have one clear responsibility.
+- **Testability and documentation**: All critical modules must be covered by unit/integration tests and have clear documentation.
+
+## Key Principles
+
+- All game logic is isolated in its own module (e.g., `lib/games/yahtzee.ts`).
+- Shared interfaces for state, move validation, initial state generation, and serialization are defined in `lib/game-engine.ts`.
+- Shared services (auth, lobby, chat, sync) are in dedicated modules.
+- No hardcoded logic for a single game in shared handlers, API, or UI.
+- All new features and fixes must follow the quality checklist below.
+
+## Quality Checklist for Changes
+
+- [ ] Game logic is separated into its own module
+- [ ] Universal interfaces are used for game interaction
+- [ ] No hardcoded logic for a specific game in shared code
+- [ ] All critical modules are covered by unit/integration tests
+- [ ] Public APIs and interfaces are documented
+- [ ] Changes pass `npm run lint` and `npm test`
+- [ ] Documentation is updated if behavior changes
+
+## Error Detection and Refactoring
+
+- If game logic is not separated — refactor required
+- If critical parts lack tests — add coverage
+- If SRP is violated — decompose into smaller modules
+- All violations must be fixed according to this plan
+
+## Verification
+
+- Automated tests must pass
+- Manual scenario checks: create game, play, finish, reconnect
+- Documentation must be up to date

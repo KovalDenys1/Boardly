@@ -1,11 +1,11 @@
-import { YahtzeeGameState } from './yahtzee'
+import { GameState } from './game-engine'
 
 /**
  * Save game state to the database via API
  */
 export async function saveGameState(
   gameId: string,
-  state: YahtzeeGameState,
+  state: GameState<unknown>,
   status?: 'waiting' | 'playing' | 'finished'
 ): Promise<boolean> {
   try {

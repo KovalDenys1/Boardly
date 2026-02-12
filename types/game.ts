@@ -1,14 +1,15 @@
 /**
  * Game-related TypeScript types
  * Shared across components and hooks
+ *
+ * NOTE: These types are game-agnostic. Game-specific types live in
+ * their respective engine files (e.g. lib/games/yahtzee-game.ts).
  */
 
 import { GameState } from '@/lib/game-engine'
-import { YahtzeeGameData } from '@/lib/games/yahtzee-game'
-import { YahtzeeCategory } from '@/lib/yahtzee'
 
-// Type for Yahtzee game with specific data structure
-export type YahtzeeGameState = GameState<YahtzeeGameData>
+/** Generic game state — use when the specific TGameData is irrelevant. */
+export type AnyGameState = GameState<unknown>
 
 // Player in game context (includes user info)
 export interface GamePlayer {
@@ -48,8 +49,8 @@ export interface Game {
 // Socket event payloads
 export interface GameUpdatePayload {
   action: string
-  payload: YahtzeeGameState | { state: YahtzeeGameState } | Record<string, unknown>
-  state?: YahtzeeGameState
+  payload: AnyGameState | { state: AnyGameState } | Record<string, unknown>
+  state?: AnyGameState
 }
 
 export interface PlayerJoinedPayload {
@@ -82,14 +83,14 @@ export interface PlayerTypingPayload {
   username: string
 }
 
-// Bot move visualization
+// Bot move visualization (game-agnostic)
 export interface BotMoveStep {
   type: 'roll' | 'hold' | 'score' | 'thinking'
   message: string
   data?: {
     dice?: number[]
     held?: number[]
-    category?: YahtzeeCategory
+    category?: string   // game-specific category key
     score?: number
     rollNumber?: number
   }
