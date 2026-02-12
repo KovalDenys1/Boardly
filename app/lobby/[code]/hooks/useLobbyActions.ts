@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -22,7 +24,7 @@ interface UseLobbyActionsProps {
   game: any | null
   setGame: (game: any) => void
   setLobby: (lobby: any) => void
-  setGameEngine: (engine: YahtzeeGame | null) => void
+  setGameEngine: (engine: any) => void
   setTimerActive: (active: boolean) => void
   setTimeLeft: (time: number) => void
   setRollHistory: (history: any[]) => void
@@ -89,7 +91,19 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           try {
             const parsedState = JSON.parse(activeGame.state)
 
-            const engine = new YahtzeeGame(activeGame.id)
+            // Create the correct engine based on game type
+            const gt = data.lobby.gameType || 'yahtzee'
+            let engine: any
+            switch (gt) {
+              case 'tic_tac_toe':
+                engine = new TicTacToeGame(activeGame.id)
+                break
+              case 'rock_paper_scissors':
+                engine = new RockPaperScissorsGame(activeGame.id)
+                break
+              default:
+                engine = new YahtzeeGame(activeGame.id)
+            }
             engine.restoreState(parsedState)
             setGameEngine(engine)
           } catch (parseError) {
@@ -269,7 +283,19 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       const data = await res.json()
 
-      const engine = new YahtzeeGame(data.game.id)
+      // Create the correct engine based on game type
+      const gameType = lobby?.gameType || 'yahtzee'
+      let engine: any
+      switch (gameType) {
+        case 'tic_tac_toe':
+          engine = new TicTacToeGame(data.game.id)
+          break
+        case 'rock_paper_scissors':
+          engine = new RockPaperScissorsGame(data.game.id)
+          break
+        default:
+          engine = new YahtzeeGame(data.game.id)
+      }
       engine.restoreState(data.game.state)
       setGameEngine(engine)
 

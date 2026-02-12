@@ -80,7 +80,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
-function LobbyPageContent() {
+function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
@@ -879,6 +879,16 @@ function LobbyPageContent() {
   )
   const isGameStarted = game?.status === 'playing'
 
+  // When TTT/RPS game starts, notify parent to switch to dedicated page
+  useEffect(() => {
+    if (isGameStarted && lobby?.gameType && onSwitchToDedicatedPage) {
+      const gt = lobby.gameType as string
+      if (gt === 'tic_tac_toe' || gt === 'rock_paper_scissors') {
+        onSwitchToDedicatedPage(gt)
+      }
+    }
+  }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
+
   // Force layout recalculation when game starts (mobile browser fix)
   useEffect(() => {
     if (isGameStarted && typeof window !== 'undefined') {
@@ -1461,9 +1471,10 @@ export default function LobbyPage() {
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
   const [gameType, setGameType] = useState<string | null>(null)
+  const [gameStatus, setGameStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Detect game type on mount
+  // Detect game type and status on mount
   useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
       return
@@ -1482,18 +1493,30 @@ export default function LobbyPage() {
 
         if (res.ok) {
           const data = await res.json()
-          setGameType(data.lobby?.gameType || 'yahtzee')
+          const lobbyData = data.lobby
+          setGameType(lobbyData?.gameType || 'yahtzee')
+          // Check active game status
+          const activeGame = lobbyData?.games?.[0]
+          setGameStatus(activeGame?.status || null)
         } else {
           setGameType('yahtzee') // Default to Yahtzee
+          setGameStatus(null)
         }
       } catch (error) {
         clientLogger.log('Error detecting game type:', error)
         setGameType('yahtzee') // Default to Yahtzee
+        setGameStatus(null)
       } finally {
         setLoading(false)
       }
     })()
   }, [code, status, isGuest, guestToken])
+
+  // Callback when LobbyPageContent detects game started for TTT/RPS
+  const handleGameStarted = useCallback((startedGameType: string) => {
+    setGameType(startedGameType)
+    setGameStatus('playing')
+  }, [])
 
   if (loading) {
     return (
@@ -1503,17 +1526,16 @@ export default function LobbyPage() {
     )
   }
 
-  // Route to Tic-Tac-Toe page if game type is tic_tac_toe
-  if (gameType === 'tic_tac_toe') {
+  // Route to dedicated pages ONLY when game is actively playing
+  if (gameType === 'tic_tac_toe' && gameStatus === 'playing') {
     return <TicTacToeLobbyPage code={code} />
   }
 
-  // Route to Rock Paper Scissors page if game type is rock_paper_scissors
-  if (gameType === 'rock_paper_scissors') {
+  if (gameType === 'rock_paper_scissors' && gameStatus === 'playing') {
     return <RockPaperScissorsLobbyPage code={code} />
   }
 
-  // Default to Yahtzee (for yahtzee, spy, and other games)
+  // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
   return (
     <ErrorBoundary
       fallback={
@@ -1537,7 +1559,7 @@ export default function LobbyPage() {
       }
     >
       <Suspense fallback={<LoadingSpinner size="lg" />}>
-        <LobbyPageContent />
+        <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
       </Suspense>
     </ErrorBoundary>
   )
