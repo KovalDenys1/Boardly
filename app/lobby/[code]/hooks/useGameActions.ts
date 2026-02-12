@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import { Move } from '@/lib/game-engine'
+import { GameEngine, Move } from '@/lib/game-engine'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
@@ -13,8 +13,8 @@ import { trackPlayerAction, trackGameCompleted } from '@/lib/analytics'
 
 interface UseGameActionsProps {
   game: Game | null
-  gameEngine: YahtzeeGame | null
-  setGameEngine: (engine: YahtzeeGame | null) => void
+  gameEngine: GameEngine | null
+  setGameEngine: (engine: GameEngine | null) => void
   isGuest: boolean
   guestId: string | null
   guestName: string | null
@@ -114,7 +114,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
   // Sync held state when game state changes
   useEffect(() => {
-    if (!gameEngine) return
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return
 
     const serverHeld = gameEngine.getHeld()
     const rollsLeft = gameEngine.getRollsLeft()
@@ -130,7 +130,7 @@ export function useGameActions(props: UseGameActionsProps) {
     }
   }, [gameEngine, isMyTurn])
 
-  const handleRollDice = useCallback(async (autoActionContext?: AutoActionContext): Promise<YahtzeeGame | null> => {
+  const handleRollDice = useCallback(async (autoActionContext?: AutoActionContext): Promise<GameEngine | null> => {
     const isAutoAction = !!autoActionContext
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return null
 
@@ -316,7 +316,7 @@ export function useGameActions(props: UseGameActionsProps) {
     // Sound is now played in Dice component for instant feedback
   }, [gameEngine, game, isMyTurn, isRolling, isScoring])
 
-  const handleScore = useCallback(async (category: YahtzeeCategory, autoActionContext?: AutoActionContext): Promise<YahtzeeGame | null> => {
+  const handleScore = useCallback(async (category: YahtzeeCategory, autoActionContext?: AutoActionContext): Promise<GameEngine | null> => {
     const isAutoAction = !!autoActionContext
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return null
 

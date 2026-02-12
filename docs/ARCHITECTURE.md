@@ -84,10 +84,9 @@ Core tables (pluralized schema):
 
 Game state is persisted as JSON in `Games.state` and treated as source of truth for replay/recovery.
 
-
 ---
 
-# Boardly: Modular Monolith & Quality Standards
+## Boardly: Modular Monolith & Quality Standards
 
 ## Mission
 

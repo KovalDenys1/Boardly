@@ -20,6 +20,8 @@ import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
+import { GameEngine } from '@/lib/game-engine'
+import { restoreGameEngine } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import TicTacToeLobbyPage from './tic-tac-toe-page'
@@ -96,7 +98,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Core state
   const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
   const [game, setGame] = useState<Game | null>(null)
-  const [gameEngine, setGameEngine] = useState<YahtzeeGame | null>(null)
+  const [gameEngine, setGameEngine] = useState<GameEngine | null>(null)
   const [loading, setLoading] = useState(true)
   const [startingGame, setStartingGame] = useState(false)
   const [error, setError] = useState('')
@@ -105,7 +107,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const { t } = useTranslation()
 
   const roundInfo = React.useMemo(() => {
-    if (!gameEngine) return { current: 1, total: 13 }
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: 13 }
     const players = gameEngine.getPlayers()
     const filledCounts = players.map(p => {
       const scorecard = gameEngine.getScorecard(p.id)
@@ -272,8 +274,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           : state
 
         if (game?.id) {
-          const newEngine = new YahtzeeGame(game.id)
-          newEngine.restoreState(parsedState)
+          const gt = (lobby as any)?.gameType || 'yahtzee'
+          const newEngine = restoreGameEngine(gt, game.id, parsedState)
           setGameEngine(newEngine)
 
           // Update game object with new state
@@ -334,7 +336,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId])
+  }, [game?.id, game?.players, getCurrentUserId, (lobby as any)?.gameType])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -413,7 +415,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     // Add bot action to roll history ONLY if dice are present (after roll, not before)
     if (event.type === 'roll' && event.data?.dice && gameEngine) {
-      const currentRound = gameEngine.getRound()
+      const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
       const playerCount = game?.players?.length || 1
       const turnNumber = Math.floor(currentRound / playerCount) + 1
 
@@ -465,9 +467,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     // Navigate back to lobby list after a short delay
     setTimeout(() => {
-      router.push('/games/yahtzee/lobbies')
+      router.push(`/games/${(lobby as any)?.gameType || 'yahtzee'}/lobbies`)
     }, 3000)
-  }, [router])
+  }, [router, lobby])
 
   const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
@@ -553,11 +555,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [])
 
   // Create refs for game actions to use in timer callback
-  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<YahtzeeGame | null>) | null>(null)
-  const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<YahtzeeGame | null>) | null>(null)
+  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
+  const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
 
   const buildAutoActionContext = React.useCallback(
-    (engine: YahtzeeGame, playerId: string, existingDebounceKey?: string): AutoActionContext => {
+    (engine: GameEngine, playerId: string, existingDebounceKey?: string): AutoActionContext => {
       const state = engine.getState()
       const debounceKey =
         existingDebounceKey ||
@@ -570,7 +572,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           currentPlayerId: playerId,
           currentPlayerIndex: state.currentPlayerIndex,
           lastMoveAt: typeof state.lastMoveAt === 'number' ? state.lastMoveAt : null,
-          rollsLeft: engine.getRollsLeft(),
+          rollsLeft: engine instanceof YahtzeeGame ? engine.getRollsLeft() : 0,
           updatedAt: state.updatedAt ? String(state.updatedAt) : null,
         },
       }
@@ -585,7 +587,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     gameState: gameEngine?.getState() || null,
     turnTimerLimit,
     onTimeout: async () => {
-      if (!isMyTurn() || !gameEngine || !handleScoreRef.current) {
+      if (!isMyTurn() || !gameEngine || !(gameEngine instanceof YahtzeeGame) || !handleScoreRef.current) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
           isMyTurn: isMyTurn(),
           hasGameEngine: !!gameEngine,
@@ -596,7 +598,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
 
-      let workingEngine = gameEngine
+      let workingEngine: YahtzeeGame = gameEngine
       const currentPlayer = workingEngine.getCurrentPlayer()
 
       if (!currentPlayer) {
@@ -622,6 +624,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           const rolledEngine = await handleRollDiceRef.current(autoActionContext)
           if (!rolledEngine) {
             clientLogger.log('⏰ Auto-roll skipped by server guard')
+            return
+          }
+          if (!(rolledEngine instanceof YahtzeeGame)) {
+            clientLogger.log('⏰ Auto-roll returned non-Yahtzee engine')
             return
           }
           workingEngine = rolledEngine
@@ -771,7 +777,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Handle celebration detection on game updates
   useEffect(() => {
-    if (!gameEngine || !game) return
+    if (!gameEngine || !game || !(gameEngine instanceof YahtzeeGame)) return
 
     if (gameEngine.isGameFinished()) {
       const dice = gameEngine.getDice()
@@ -995,7 +1001,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             height: 'calc(100dvh - 5rem)', // Dynamic viewport height for mobile with fallback
           }}
         >
-          {gameEngine?.isGameFinished() ? (
+          {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
             <YahtzeeResults
               results={analyzeResults(
                 gameEngine.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
@@ -1006,7 +1012,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
-          ) : gameEngine ? (
+          ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <>
               {/* Top Status Bar - Responsive */}
               <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
@@ -1549,7 +1555,7 @@ export default function LobbyPage() {
               Something went wrong with the game lobby. Please try again.
             </p>
             <button
-              onClick={() => window.location.href = '/games/yahtzee/lobbies'}
+              onClick={() => window.location.href = '/games'}
               className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
               Back to Lobbies

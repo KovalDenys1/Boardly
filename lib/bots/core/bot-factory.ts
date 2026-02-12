@@ -6,7 +6,6 @@ import { GameEngine } from '@/lib/game-engine'
 import { BaseBot } from './base-bot'
 import { BotDifficulty } from './bot-types'
 import { YahtzeeBot } from '../yahtzee/yahtzee-bot'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 // Future imports:
 // import { SpyBot } from '../spy/spy-bot'
 // import { UnoBot } from '../uno/uno-bot'
