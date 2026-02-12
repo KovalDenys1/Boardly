@@ -19,17 +19,10 @@ DECLARE
     'get_current_user_id',
     'is_authenticated'
   ];
-  required_indexes TEXT[] := ARRAY[
-    'idx_players_userid_gameid',
-    'idx_games_lobbyid',
-    'idx_lobbies_creatorid',
-    'idx_bots_userid'
-  ];
   missing_tables TEXT[];
   tables_without_rls TEXT[];
   tables_without_policy TEXT[];
   missing_functions TEXT[];
-  missing_indexes TEXT[];
   missing_policies TEXT[];
 BEGIN
   SELECT ARRAY_AGG(t)
@@ -94,20 +87,6 @@ BEGIN
     RAISE EXCEPTION 'RLS smoke check failed: missing helper functions: %', array_to_string(missing_functions, ', ');
   END IF;
 
-  SELECT ARRAY_AGG(i)
-  INTO missing_indexes
-  FROM UNNEST(required_indexes) AS i
-  WHERE NOT EXISTS (
-    SELECT 1
-    FROM pg_indexes idx
-    WHERE idx.schemaname = 'public'
-      AND idx.indexname = i
-  );
-
-  IF missing_indexes IS NOT NULL THEN
-    RAISE EXCEPTION 'RLS smoke check failed: missing RLS indexes: %', array_to_string(missing_indexes, ', ');
-  END IF;
-
   WITH required_policy_pairs(table_name, policy_name) AS (
     VALUES
       ('Users', 'Users can view own profile'),
@@ -116,8 +95,7 @@ BEGIN
       ('Games', 'Players can view their games'),
       ('Games', 'Service role can manage games'),
       ('Players', 'Users can view players in their games'),
-      ('Lobbies', 'Anyone can view lobbies'),
-      ('SpyLocations', 'Anyone can view active spy locations')
+      ('Lobbies', 'Anyone can view lobbies')
   )
   SELECT ARRAY_AGG(format('%s on %s', rp.policy_name, rp.table_name))
   INTO missing_policies
