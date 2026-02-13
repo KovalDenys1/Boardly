@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GameType } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
@@ -131,6 +132,7 @@ export async function POST(
       game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
+          gameType: (lobby.gameType || DEFAULT_GAME_TYPE) as GameType,
           state: JSON.stringify(initialState),
           status: 'waiting',
         },

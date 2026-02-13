@@ -37,6 +37,11 @@ export async function GET(
             user: true,
           },
         },
+        lobby: {
+          select: {
+            gameType: true,
+          },
+        },
       },
     })
 
@@ -44,7 +49,8 @@ export async function GET(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    if (game.gameType !== 'guess_the_spy') {
+    const resolvedGameType = game.gameType || game.lobby?.gameType
+    if (resolvedGameType !== 'guess_the_spy') {
       return NextResponse.json({ error: 'Invalid game type' }, { status: 400 })
     }
 

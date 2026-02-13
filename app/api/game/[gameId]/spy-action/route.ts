@@ -54,7 +54,8 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    if (game.gameType !== 'guess_the_spy') {
+    const resolvedGameType = game.gameType || game.lobby?.gameType
+    if (resolvedGameType !== 'guess_the_spy') {
       return NextResponse.json({ error: 'Invalid game type' }, { status: 400 })
     }
 
@@ -76,13 +77,12 @@ export async function POST(
       timestamp: new Date(),
     }
 
-    // Validate and process move
-    if (!spyGame.validateMove(move)) {
+    // Validate + process through engine so win-condition/status updates are applied.
+    const moveAccepted = spyGame.makeMove(move)
+    if (!moveAccepted) {
       log.warn('Invalid Spy game move', { userId, action, gameId })
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
-
-    spyGame.processMove(move)
 
     // Get updated state
     const updatedState = spyGame.getState()

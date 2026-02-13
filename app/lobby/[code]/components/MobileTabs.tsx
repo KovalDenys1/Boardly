@@ -20,7 +20,7 @@ interface MobileTabsProps {
 
 export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCount }: MobileTabsProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-xl border-t border-white/20 shadow-lg z-40 md:hidden">
       <div className="grid grid-cols-4 gap-0">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
@@ -32,8 +32,8 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
               onClick={() => onTabChange(tab.id)}
               className={`relative flex flex-col items-center justify-center py-2 px-1 transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-t from-blue-50 to-transparent dark:from-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/50 hover:bg-white/5 hover:text-white/70'
               }`}
             >
               {/* Badge */}
@@ -55,7 +55,7 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
               
               {/* Active indicator */}
               {isActive && (
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-600 dark:bg-blue-400 rounded-b-full" />
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-white rounded-b-full" />
               )}
             </button>
           )

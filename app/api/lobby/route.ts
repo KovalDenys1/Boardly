@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         games: {
           create: {
             status: 'waiting',
+            gameType,
             state: JSON.stringify(initialState),
             players: {
               create: {

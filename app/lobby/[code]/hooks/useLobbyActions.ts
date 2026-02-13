@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -230,9 +230,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     try {
       setStartingGame(true)
+      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
+      const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+      const supportsBots = hasBotSupport(gameType)
+      const desiredPlayerCount = supportsBots
+        ? Math.max(2, requiredMinPlayers)
+        : requiredMinPlayers
+      let playerCount = game?.players?.length || 0
 
-      // Check if we need to add a bot first
-      if ((game?.players?.length || 0) < 2) {
+      // Auto-add one bot for bot-supported games when we are below minimum.
+      if (playerCount < desiredPlayerCount && supportsBots) {
         showToast.loading('toast.addingBot', undefined, undefined, { id: 'add-bot' })
         const botAdded = await addBotToLobby({ auto: true })
         showToast.dismiss('add-bot')
@@ -253,6 +260,18 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
         // Small delay to ensure state is updated
         await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Refresh local count after reconciliation
+        playerCount = game?.players?.length || playerCount + 1
+      }
+
+      if (playerCount < requiredMinPlayers) {
+        setStartingGame(false)
+        showToast.error(
+          'toast.gameStartFailed',
+          `Need at least ${requiredMinPlayers} players to start ${gameType.replaceAll('_', ' ')}.`
+        )
+        return
       }
 
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -260,9 +279,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          gameType: lobby.gameType || DEFAULT_GAME_TYPE,
+          gameType,
           lobbyId: lobby.id,
-          config: { maxPlayers: lobby.maxPlayers, minPlayers: 1 }
+          config: { maxPlayers: lobby.maxPlayers, minPlayers: requiredMinPlayers }
         }),
       })
 
@@ -275,7 +294,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const data = await res.json()
 
       // Create the correct engine based on game type
-      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
       const engine = restoreGameEngine(gameType, data.game.id, data.game.state)
       setGameEngine(engine)
 
