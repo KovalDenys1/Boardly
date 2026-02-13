@@ -5,6 +5,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -66,23 +67,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const [password, setPassword] = useState('')
 
-  const pickRelevantActiveGame = useCallback((games: any[]) => {
-    if (!Array.isArray(games) || games.length === 0) return null
-
-    return [...games]
-      .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
-      .sort((a, b) => {
-        const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-        const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-
-        if (aPriority !== bPriority) return bPriority - aPriority
-
-        const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
-        const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-        return bUpdatedAt - aUpdatedAt
-      })[0] || null
-  }, [])
-
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
 
@@ -92,16 +76,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         includeContentType: false,
       })
 
-      const res = await fetch(`/api/lobby/${code}`, { headers })
+      const res = await fetch(`/api/lobby/${code}?includeFinished=true`, { headers })
       const data = await res.json()
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to load lobby')
       }
 
-      setLobby(data.lobby)
+      const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data)
+      setLobby(lobbyPayload)
 
-      const activeGame = pickRelevantActiveGame(data.lobby?.games || [])
       if (activeGame) {
         setGame(activeGame)
         if (activeGame.state) {
@@ -125,7 +109,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
     // setState functions are stable and don't need to be in dependencies
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken, pickRelevantActiveGame])
+  }, [code, isGuest, guestId, guestName, guestToken])
 
   // Update ref when loadLobby changes
   useEffect(() => {
@@ -204,20 +188,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await loadLobbyRef.current()
       }
 
-      const ensureLobbyRoomJoin = () => {
-        if (socket && socket.connected) {
-          clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
-          socket.emit('join-lobby', code)
-        } else if (socket) {
-          clientLogger.log('⏳ Waiting for socket connection to join lobby room...')
-          socket.once('connect', () => {
-            clientLogger.log('📡 Socket connected, joining lobby room')
-            socket.emit('join-lobby', code)
-          })
-        }
+      // useSocketConnection joins room on each connect/reconnect.
+      // Emit only when already connected to avoid duplicate JOIN_LOBBY emissions.
+      if (socket && socket.connected) {
+        clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
+        socket.emit('join-lobby', code)
       }
-
-      ensureLobbyRoomJoin()
 
       // Track lobby join
       trackLobbyJoined({

@@ -83,6 +83,7 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -1623,22 +1624,6 @@ export default function LobbyPage() {
   const [gameStatus, setGameStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const pickRelevantActiveGame = useCallback((games: any[]) => {
-    if (!Array.isArray(games) || games.length === 0) return null
-
-    return [...games]
-      .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
-      .sort((a, b) => {
-        const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-        const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-        if (aPriority !== bPriority) return bPriority - aPriority
-
-        const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
-        const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-        return bUpdatedAt - aUpdatedAt
-      })[0] || null
-  }, [])
-
   // Detect game type and status on mount
   useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
@@ -1651,19 +1636,15 @@ export default function LobbyPage() {
 
     (async () => {
       try {
-        const res = await fetchWithGuest(`/api/lobby/${code}`, {
+        const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })
 
         if (res.ok) {
           const data = await res.json()
-          const lobbyData = data.lobby
+          const { lobby: lobbyData, activeGame } = normalizeLobbySnapshotResponse(data)
           setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
-          // Use the most relevant active game (prefer playing).
-          const activeGame = pickRelevantActiveGame(
-            [data?.game, ...(Array.isArray(lobbyData?.games) ? lobbyData.games : [])].filter(Boolean)
-          )
           setGameStatus(activeGame?.status || null)
         } else {
           setGameType(DEFAULT_GAME_TYPE) 
@@ -1677,7 +1658,7 @@ export default function LobbyPage() {
         setLoading(false)
       }
     })()
-  }, [code, status, isGuest, guestToken, pickRelevantActiveGame])
+  }, [code, status, isGuest, guestToken])
 
   // Callback when LobbyPageContent detects game started for TTT/RPS
   const handleGameStarted = useCallback((startedGameType: string) => {
@@ -1693,12 +1674,12 @@ export default function LobbyPage() {
     )
   }
 
-  // Route to dedicated pages ONLY when game is actively playing
-  if (gameType === 'tic_tac_toe' && gameStatus === 'playing') {
+  // Route to dedicated pages when game is active or just finished
+  if (gameType === 'tic_tac_toe' && (gameStatus === 'playing' || gameStatus === 'finished')) {
     return <TicTacToeLobbyPage code={code} />
   }
 
-  if (gameType === 'rock_paper_scissors' && gameStatus === 'playing') {
+  if (gameType === 'rock_paper_scissors' && (gameStatus === 'playing' || gameStatus === 'finished')) {
     return <RockPaperScissorsLobbyPage code={code} />
   }
 

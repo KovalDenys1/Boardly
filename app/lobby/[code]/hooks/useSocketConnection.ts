@@ -57,8 +57,10 @@ export function useSocketConnection({
   const hasConnectedOnceRef = useRef(false)
   const authFailedRef = useRef(false) // Track authentication failures
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const joinRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastProcessedSequenceRef = useRef(0) // Track event sequence to prevent duplicates
   const isRejoiningRef = useRef(false) // Prevent multiple rejoin attempts
+  const connectionRunIdRef = useRef(0) // Guards against async init races creating orphan sockets
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -115,11 +117,16 @@ export function useSocketConnection({
 
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
+    const runId = ++connectionRunIdRef.current
 
     // Clear any existing reconnect timeouts
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
+    }
+    if (joinRetryTimeoutRef.current) {
+      clearTimeout(joinRetryTimeoutRef.current)
+      joinRetryTimeoutRef.current = null
     }
 
     if (!code) {
@@ -249,7 +256,9 @@ export function useSocketConnection({
     // Initialize socket auth and create connection
     const initAndConnect = async () => {
       const authData = await initSocket()
-      if (!authData) return
+      if (!authData || !isMounted || runId !== connectionRunIdRef.current) {
+        return
+      }
 
       const { authPayload, queryPayload, calculateBackoff, token } = authData
 
@@ -274,8 +283,17 @@ export function useSocketConnection({
       query: queryPayload,
     })
 
+    if (!isMounted || runId !== connectionRunIdRef.current) {
+      if (typeof newSocket.close === 'function') {
+        newSocket.close()
+      } else {
+        newSocket.disconnect()
+      }
+      return
+    }
+
     newSocket.on('connect', async () => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
 
       const isReconnect = hasConnectedOnceRef.current
       clientLogger.log(isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:', code)
@@ -287,6 +305,10 @@ export function useSocketConnection({
       setIsConnected(true)
       setIsReconnecting(false)
       setReconnectAttempt(0) // Reset counter on successful connection
+      if (joinRetryTimeoutRef.current) {
+        clearTimeout(joinRetryTimeoutRef.current)
+        joinRetryTimeoutRef.current = null
+      }
 
       // Always rejoin room on connect/reconnect
       if (!isRejoiningRef.current) {
@@ -318,7 +340,7 @@ export function useSocketConnection({
     })
 
     newSocket.on('disconnect', (reason) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       setIsConnected(false)
 
       // Only show reconnecting if we've connected before
@@ -330,27 +352,27 @@ export function useSocketConnection({
     })
 
     newSocket.on('reconnect_attempt', (attempt) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       setReconnectAttempt(attempt)
       const backoff = calculateBackoff(attempt - 1)
       clientLogger.log(`🔄 Reconnection attempt #${attempt} (waiting ${backoff}ms)`)
     })
 
     newSocket.on('reconnect_failed', () => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       clientLogger.error('❌ Failed to reconnect after maximum attempts')
       setIsReconnecting(false)
     })
 
     newSocket.on('reconnect', (attempt) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       clientLogger.log(`✅ Reconnected successfully after ${attempt} attempts`)
       setIsReconnecting(false)
       setReconnectAttempt(0)
     })
 
     newSocket.on('connect_error', (error) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
 
       const errorMsg = error.message || String(error)
       clientLogger.error('🔴 Socket connection error:', errorMsg, {
@@ -422,29 +444,47 @@ export function useSocketConnection({
 
     // Add generic error handler
     newSocket.on(SocketEvents.ERROR, (error) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       clientLogger.error('🔴 Socket error:', error)
     })
 
     // Add server error handler with structured errors
     newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       const normalizedError = normalizeServerError(data)
       if (!normalizedError) {
         clientLogger.warn('⚠️ Received malformed server error payload, ignoring:', data)
         return
       }
 
-      // For guests with lobby access denied error, retry joining after delay (race condition fix)
-      if (isGuest && normalizedError.code === 'LOBBY_ACCESS_DENIED' && !hasConnectedOnceRef.current) {
-        clientLogger.log('⏳ Guest lobby access denied on first connect - retrying after 1s...')
-        setTimeout(() => {
-          if (isMounted && newSocket.connected) {
-            clientLogger.log('🔄 Retrying guest lobby join...')
-            newSocket.emit(SocketEvents.JOIN_LOBBY, code)
+      if (normalizedError.code === 'LOBBY_ACCESS_DENIED') {
+        // Guests can briefly hit membership races while HTTP join and socket connect overlap.
+        if (isGuest && !hasConnectedOnceRef.current) {
+          clientLogger.log('⏳ Guest lobby access denied on first connect - retrying after 1s...')
+          if (joinRetryTimeoutRef.current) {
+            clearTimeout(joinRetryTimeoutRef.current)
           }
-        }, 1000)
-        return // Don't show error toast for first attempt
+          joinRetryTimeoutRef.current = setTimeout(() => {
+            joinRetryTimeoutRef.current = null
+            if (isMounted && runId === connectionRunIdRef.current && newSocket.connected) {
+              clientLogger.log('🔄 Retrying guest lobby join...')
+              newSocket.emit(SocketEvents.JOIN_LOBBY, code)
+            }
+          }, 1000)
+          return
+        }
+
+        if (isGuest) {
+          clientLogger.warn('⚠️ Guest lobby access denied after connect - requesting state sync', {
+            lobbyCode: code,
+          })
+          if (onStateSyncRef.current) {
+            void onStateSyncRef.current().catch((syncError) => {
+              clientLogger.warn('⚠️ Guest state sync after access denied failed:', syncError)
+            })
+          }
+          return
+        }
       }
 
       clientLogger.error('🔴 Server error:', normalizedError)
@@ -522,12 +562,17 @@ export function useSocketConnection({
 
     return () => {
       isMounted = false
+      connectionRunIdRef.current += 1
       clientLogger.log('🔌 Cleaning up socket connection')
 
       // Clear reconnect timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = null
+      }
+      if (joinRetryTimeoutRef.current) {
+        clearTimeout(joinRetryTimeoutRef.current)
+        joinRetryTimeoutRef.current = null
       }
 
       // Cleanup socket if exists

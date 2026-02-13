@@ -4,6 +4,7 @@ import { apiLogger } from '@/lib/logger'
 import { getServerSocketUrl, getSocketInternalAuthHeaders } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -60,10 +61,11 @@ export async function POST(
       )
     }
 
-    const activeGame =
+    const playerOwnedGame =
       lobby.games.find((game: any) =>
         game.players.some((p: any) => p.userId === userId)
-      ) || lobby.games[0]
+      ) || null
+    const activeGame = playerOwnedGame || pickRelevantLobbyGame(lobby.games as any[])
 
     if (!activeGame) {
       return NextResponse.json(

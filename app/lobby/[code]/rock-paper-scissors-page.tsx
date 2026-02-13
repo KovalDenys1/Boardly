@@ -13,6 +13,7 @@ import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 
 interface RPSGame {
     id: string
@@ -50,27 +51,9 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const socketRef = useRef<Socket | null>(null)
-    const loadedRef = useRef(false)
-
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
-
-    const pickRelevantActiveGame = useCallback((games: any[]) => {
-        if (!Array.isArray(games) || games.length === 0) return null
-
-        return [...games]
-            .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
-            .sort((a, b) => {
-                const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-                const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-                if (aPriority !== bPriority) return bPriority - aPriority
-
-                const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
-                const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-                return bUpdatedAt - aUpdatedAt
-            })[0] || null
-    }, [])
 
     const parseRpsState = useCallback((state: unknown): RockPaperScissorsGameData => {
         const defaultState: RockPaperScissorsGameData = {
@@ -109,14 +92,13 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     }, [])
 
     const normalizeLobbyResponse = useCallback((payload: any): LobbyData | null => {
-        const lobbyPayload = payload?.lobby || payload
+        const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(payload, {
+            includeFinished: true,
+        })
+
         if (!lobbyPayload?.id || !lobbyPayload?.code) {
             return null
         }
-
-        const activeGame = pickRelevantActiveGame(
-            [payload?.game, ...(Array.isArray(lobbyPayload?.games) ? lobbyPayload.games : [])].filter(Boolean)
-        )
 
         if (!activeGame) {
             return {
@@ -154,7 +136,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             gameType: lobbyPayload.gameType,
             game: normalizedGame,
         }
-    }, [parseRpsState, pickRelevantActiveGame])
+    }, [parseRpsState])
 
     // Load lobby from API
     const loadLobbyData = useCallback(async () => {
@@ -181,37 +163,54 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
     // Initialize Socket.IO connection
     useEffect(() => {
-        if (loadedRef.current) return
-        loadedRef.current = true
+        if (status === 'loading') return
+        if (!isGuest && status === 'unauthenticated') {
+            router.push('/')
+            return
+        }
+        if (isGuest && !guestToken) return
+
+        let isMounted = true
 
         const initSocket = async () => {
             try {
-                // Wait for session/guest to be ready
-                if (status === 'loading') return
-                if (!isGuest && status === 'unauthenticated') {
-                    router.push('/login')
-                    return
-                }
-                if (isGuest && !guestToken) return
-
                 // Load initial lobby data
                 await loadLobbyData()
+                if (!isMounted) return
 
                 // Initialize Socket.IO
                 const socketUrl = getBrowserSocketUrl()
+                const token = session?.user?.id || guestToken || null
+                const authPayload: Record<string, unknown> = {}
+                if (token) authPayload.token = token
+                if (isGuest) authPayload.isGuest = true
+                const queryPayload: Record<string, string> = {}
+                if (token) queryPayload.token = String(token)
+                if (isGuest) queryPayload.isGuest = 'true'
+
                 const newSocket = io(socketUrl, {
+                    transports: ['websocket', 'polling'],
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionDelayMax: 5000,
                     reconnectionAttempts: 5,
+                    auth: authPayload,
+                    query: queryPayload,
                 })
+
+                if (!isMounted) {
+                    newSocket.close()
+                    return
+                }
 
                 socketRef.current = newSocket
                 setSocket(newSocket)
 
-                // Join lobby room
-                newSocket.emit('join-lobby', code)
-                clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
+                newSocket.on('connect', () => {
+                    if (!isMounted) return
+                    newSocket.emit('join-lobby', code)
+                    clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
+                })
 
                 // Listen for updates
                 newSocket.on('game-update', async () => {
@@ -235,11 +234,14 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         initSocket()
 
         return () => {
+            isMounted = false
             if (socketRef.current) {
+                socketRef.current.emit('leave-lobby', code)
                 socketRef.current.disconnect()
+                socketRef.current = null
             }
         }
-    }, [code, status, isGuest, guestToken, loadLobbyData, router, t])
+    }, [code, status, isGuest, guestToken, loadLobbyData, router, session?.user?.id])
 
     const handleSubmitChoice = async (choice: RPSChoice) => {
         if (!lobby?.game) return

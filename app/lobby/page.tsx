@@ -166,9 +166,15 @@ export default function LobbyListPage() {
       void loadLobbiesRef.current()
     }, 5000)
 
+    // Run periodic cleanup so stale waiting lobbies disappear without full page reload.
+    const cleanupInterval = setInterval(() => {
+      void triggerCleanup()
+    }, 60000)
+
     return () => {
       cancelled = true
       clearInterval(refreshInterval)
+      clearInterval(cleanupInterval)
       loadAbortControllerRef.current?.abort()
     }
   }, [triggerCleanup])

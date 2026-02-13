@@ -359,6 +359,35 @@ describe('useSocketConnection', () => {
   })
 
   describe('Cleanup', () => {
+    it('should not create a socket after unmount when auth token fetch resolves late', async () => {
+      const { io } = jest.requireMock('socket.io-client') as { io: jest.Mock }
+
+      mockFetch.mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  status: 200,
+                  statusText: 'OK',
+                  json: async () => ({ token: 'late.socket.jwt' }),
+                }),
+              40
+            )
+          ) as any
+      )
+
+      const { unmount } = renderHook(() => useSocketConnection(defaultProps))
+      unmount()
+
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 80))
+      })
+
+      expect(io).not.toHaveBeenCalled()
+    })
+
     it('should cleanup active socket on unmount without requiring rerender', async () => {
       mockSocket.connected = true
 

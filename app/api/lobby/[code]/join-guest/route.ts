@@ -12,6 +12,7 @@ import {
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -50,6 +51,9 @@ export async function POST(
               in: ['waiting', 'playing'],
             },
           },
+          orderBy: {
+            updatedAt: 'desc',
+          },
           include: {
             players: true,
           },
@@ -69,7 +73,7 @@ export async function POST(
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
-    const activeGame = lobby.games[0]
+    const activeGame = pickRelevantLobbyGame(lobby.games as any[])
 
     // Check if guest is already in the lobby
     if (activeGame) {

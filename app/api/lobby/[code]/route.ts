@@ -6,33 +6,10 @@ import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
-
-type LobbyGameRecord = {
-  status: string
-  updatedAt?: Date | string | null
-}
-
-function pickRelevantActiveGame<T extends LobbyGameRecord>(games: T[]): T | null {
-  if (!Array.isArray(games) || games.length === 0) {
-    return null
-  }
-
-  return [...games].sort((a, b) => {
-    const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-    const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-
-    if (aPriority !== bPriority) {
-      return bPriority - aPriority
-    }
-
-    const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
-    const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-    return bUpdatedAt - aUpdatedAt
-  })[0] || null
-}
 
 export async function GET(
   request: NextRequest,
@@ -101,14 +78,17 @@ export async function GET(
     }
 
     const { password, ...safeLobby } = lobby
-    const activeGame = pickRelevantActiveGame(safeLobby.games as any[])
+    const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished })
 
     return NextResponse.json({
       lobby: {
         ...safeLobby,
         games: activeGame ? [activeGame] : [],
+        activeGame,
         isPrivate: !!password,
       },
+      activeGame,
+      // Backward compatibility for older clients.
       game: activeGame,
     })
   } catch (error) {

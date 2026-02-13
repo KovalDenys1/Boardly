@@ -6,6 +6,7 @@ import { createGameEngine } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const log = apiLogger('/api/lobby')
 
@@ -19,29 +20,6 @@ const createLobbySchema = z.object({
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
-
-type LobbyGameRecord = {
-  id: string
-  status: string
-  updatedAt?: Date
-  _count?: { players?: number }
-  players?: Array<{ user?: { bot?: unknown } }>
-}
-
-function pickRelevantActiveGame(games: LobbyGameRecord[]): LobbyGameRecord | null {
-  if (!Array.isArray(games) || games.length === 0) return null
-
-  return [...games].sort((a, b) => {
-    const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-    const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-
-    if (aPriority !== bPriority) return bPriority - aPriority
-
-    const aUpdatedAt = a.updatedAt instanceof Date ? a.updatedAt.getTime() : 0
-    const bUpdatedAt = b.updatedAt instanceof Date ? b.updatedAt.getTime() : 0
-    return bUpdatedAt - aUpdatedAt
-  })[0] || null
-}
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting for lobby creation
@@ -262,7 +240,7 @@ export async function GET(request: NextRequest) {
     // Normalize lobbies to a single relevant active game record.
     const lobbiesWithRelevantGame = lobbies
       .map((lobby) => {
-        const game = pickRelevantActiveGame(lobby.games || [])
+        const game = pickRelevantLobbyGame(lobby.games || [])
         if (!game) return null
         return {
           ...lobby,

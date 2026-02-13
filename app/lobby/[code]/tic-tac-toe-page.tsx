@@ -12,6 +12,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { Game } from '@/types/game'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import TicTacToeGameBoard from '@/components/TicTacToeGameBoard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
@@ -46,22 +47,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
 
-    const pickRelevantActiveGame = useCallback((games: any[]) => {
-        if (!Array.isArray(games) || games.length === 0) return null
-
-        return [...games]
-            .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
-            .sort((a, b) => {
-                const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-                const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-                if (aPriority !== bPriority) return bPriority - aPriority
-
-                const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
-                const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-                return bUpdatedAt - aUpdatedAt
-            })[0] || null
-    }, [])
-
     // Load lobby data
     const loadLobby = useCallback(async () => {
         try {
@@ -79,13 +64,16 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 return
             }
 
-            const lobbyPayload = data?.lobby || data
-            const activeGame = pickRelevantActiveGame(
-                [data?.game, ...(Array.isArray(lobbyPayload?.games) ? lobbyPayload.games : [])].filter(Boolean)
-            )
+            const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, {
+                includeFinished: true,
+            })
 
-            setLobby(lobbyPayload)
-            setGame(activeGame)
+            if (!lobbyPayload) {
+                throw new Error('Invalid lobby response')
+            }
+
+            setLobby(lobbyPayload as Lobby)
+            setGame(activeGame as Game | null)
 
             // Initialize game engine if game exists
             if (activeGame?.state) {
@@ -114,7 +102,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             showToast.error('errors.unexpected')
             setLoading(false)
         }
-    }, [code, router, pickRelevantActiveGame])
+    }, [code, router])
 
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {

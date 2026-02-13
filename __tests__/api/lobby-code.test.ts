@@ -101,6 +101,7 @@ describe('GET /api/lobby/[code]', () => {
     expect(data.lobby.code).toBe('ABC123')
     expect(data.lobby.password).toBeUndefined()
     expect(data.lobby.isPrivate).toBe(false)
+    expect(data.activeGame).toBeNull()
     expect(data.game).toBeNull()
     expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledWith({
       where: { code: 'ABC123' },
@@ -134,6 +135,7 @@ describe('GET /api/lobby/[code]', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
+    expect(data.activeGame?.id).toBe('game-playing')
     expect(data.game?.id).toBe('game-playing')
     expect(data.lobby?.games).toHaveLength(1)
     expect(data.lobby?.games?.[0]?.id).toBe('game-playing')

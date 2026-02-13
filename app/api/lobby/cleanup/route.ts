@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const WAITING_LOBBY_STALE_HOURS = 1
 const ACTIVE_GAME_STALE_HOURS = 2
 
-type CleanupGameRecord = {
-  id: string
+type CleanupLobbyGame = {
   status: string
   updatedAt: Date
   players: Array<{
@@ -14,18 +14,6 @@ type CleanupGameRecord = {
       bot: unknown
     }
   }>
-}
-
-function pickRelevantActiveGame(games: CleanupGameRecord[]): CleanupGameRecord | null {
-  if (!Array.isArray(games) || games.length === 0) return null
-
-  return [...games].sort((a, b) => {
-    const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
-    const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
-
-    if (aPriority !== bPriority) return bPriority - aPriority
-    return b.updatedAt.getTime() - a.updatedAt.getTime()
-  })[0] || null
 }
 
 // This endpoint is called automatically when users visit the lobby page
@@ -68,7 +56,7 @@ export async function POST(req: NextRequest) {
     const lobbiesToDeactivate: string[] = []
 
     for (const lobby of lobbiesWithGames) {
-      const activeGame = pickRelevantActiveGame(lobby.games as CleanupGameRecord[])
+      const activeGame = pickRelevantLobbyGame<CleanupLobbyGame>(lobby.games as CleanupLobbyGame[])
       
       // If no active game, deactivate lobby
       if (!activeGame) {
