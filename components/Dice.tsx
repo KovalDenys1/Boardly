@@ -68,7 +68,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
         relative w-14 h-14 md:w-16 md:h-16 max-w-[64px] max-h-[64px] rounded-xl shadow-lg transition-all duration-200
         ${held 
           ? 'bg-gradient-to-br from-yellow-400 to-amber-500 border-4 border-yellow-600 scale-95 ring-4 ring-yellow-300' 
-          : 'bg-white dark:bg-gray-100 border-4 border-gray-800 dark:border-gray-700 hover:scale-105 hover:shadow-xl active:scale-95'
+          : 'bg-white dark:bg-gray-100 border-4 border-gray-800 dark:border-gray-700 hover:shadow-2xl hover:brightness-105 active:scale-95'
         }
         ${isRolling ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}

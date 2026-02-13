@@ -83,17 +83,17 @@ function getCategoryState(
 // Styling configuration for each category state
 const stateStyles: Record<CategoryState, { container: string; score: string; icon: string | null }> = {
   'high-value': {
-    container: 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 border-l-4 border-green-500 cursor-pointer transform hover:scale-[1.02] transition-all duration-200',
+    container: 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 border-l-4 border-green-500 hover:border-green-600 cursor-pointer transition-all duration-200 hover:shadow-lg hover:translate-x-0.5',
     score: 'text-green-600 dark:text-green-400 font-bold text-base',
     icon: '⭐'
   },
   'low-value': {
-    container: 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 hover:from-blue-100 hover:to-cyan-100 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20 border-l-4 border-blue-400 cursor-pointer transform hover:scale-[1.02] transition-all duration-200',
+    container: 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 hover:from-blue-100 hover:to-cyan-100 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20 border-l-4 border-blue-400 hover:border-blue-500 cursor-pointer transition-all duration-200 hover:shadow-lg hover:translate-x-0.5',
     score: 'text-blue-600 dark:text-blue-400 font-semibold',
     icon: null
   },
   'sacrifice': {
-    container: 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/10 dark:to-slate-900/10 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-900/20 dark:hover:to-slate-900/20 border-l-4 border-gray-400 cursor-pointer transform hover:scale-[1.02] transition-all duration-200',
+    container: 'bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-900/10 dark:to-slate-900/10 hover:from-gray-100 hover:to-slate-100 dark:hover:from-gray-900/20 dark:hover:to-slate-900/20 border-l-4 border-gray-400 hover:border-gray-500 cursor-pointer transition-all duration-200 hover:shadow-md hover:translate-x-0.5',
     score: 'text-gray-600 dark:text-gray-400 font-semibold',
     icon: null
   },
@@ -199,7 +199,7 @@ const Scorecard = React.memo(function Scorecard({
   const total = upperTotal + bonus + lowerTotal
 
   return (
-    <div className={`h-full flex flex-col bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${
+    <div className={`h-full flex flex-col bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 overflow-x-hidden ${
       !isCurrentPlayer ? 'opacity-90' : ''
     }`} style={{ borderRadius: 'clamp(12px, 1.2vw, 24px)' }}>
       {/* TWO COLUMN LAYOUT - ADAPTIVE WITH SCROLL - Single column on mobile */}
@@ -226,7 +226,7 @@ const Scorecard = React.memo(function Scorecard({
             
             <div className="flex-1 flex flex-col min-h-0">
               {/* Categories - full height */}
-              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
                 {upperSection.map(renderCategory)}
               </div>
             </div>
@@ -265,7 +265,7 @@ const Scorecard = React.memo(function Scorecard({
             
             <div className="flex-1 flex flex-col min-h-0">
               {/* Categories - full height */}
-              <div className="flex-1 overflow-y-auto pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
                 {lowerSection.map(renderCategory)}
               </div>
             </div>
