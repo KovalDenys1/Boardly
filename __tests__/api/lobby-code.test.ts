@@ -44,6 +44,8 @@ jest.mock('@/lib/next-auth', () => ({
 
 jest.mock('@/lib/socket-url', () => ({
   notifySocket: jest.fn(),
+  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
+  getSocketInternalAuthHeaders: jest.fn(() => ({})),
 }))
 
 jest.mock('@/lib/logger', () => ({
@@ -56,6 +58,9 @@ jest.mock('@/lib/logger', () => ({
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockFetch = jest.fn()
+
+global.fetch = mockFetch as any
 
 describe('GET /api/lobby/[code]', () => {
   const mockLobby = {
@@ -78,6 +83,10 @@ describe('GET /api/lobby/[code]', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    })
   })
 
   it('should return lobby data when lobby exists', async () => {
@@ -92,10 +101,44 @@ describe('GET /api/lobby/[code]', () => {
     expect(data.lobby.code).toBe('ABC123')
     expect(data.lobby.password).toBeUndefined()
     expect(data.lobby.isPrivate).toBe(false)
+    expect(data.activeGame).toBeNull()
+    expect(data.game).toBeNull()
     expect(mockPrisma.lobbies.findUnique).toHaveBeenCalledWith({
       where: { code: 'ABC123' },
       select: expect.any(Object),
     })
+  })
+
+  it('should prioritize playing game when multiple active games exist', async () => {
+    const lobbyWithMultipleGames = {
+      ...mockLobby,
+      games: [
+        {
+          id: 'game-waiting',
+          status: 'waiting',
+          updatedAt: new Date('2026-02-13T10:00:00.000Z'),
+          players: [],
+        },
+        {
+          id: 'game-playing',
+          status: 'playing',
+          updatedAt: new Date('2026-02-13T09:00:00.000Z'),
+          players: [],
+        },
+      ],
+    }
+
+    mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithMultipleGames as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123')
+    const response = await GET(request, { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.activeGame?.id).toBe('game-playing')
+    expect(data.game?.id).toBe('game-playing')
+    expect(data.lobby?.games).toHaveLength(1)
+    expect(data.lobby?.games?.[0]?.id).toBe('game-playing')
   })
 
   it('should return 404 when lobby not found', async () => {
@@ -158,6 +201,10 @@ describe('POST /api/lobby/[code]', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    })
   })
 
   it('should return 401 when user not authenticated', async () => {
@@ -284,6 +331,10 @@ describe('POST /api/lobby/[code]/leave', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    })
   })
 
   it('should return 401 when user not authenticated', async () => {
@@ -318,7 +369,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     })
   })
 
-  it('should return 400 when player not in lobby', async () => {
+  it('should return success when player is already absent from lobby', async () => {
     const lobbyWithoutPlayer = {
       ...mockLobby,
       games: [
@@ -338,7 +389,50 @@ describe('POST /api/lobby/[code]/leave', () => {
     const response = await LEAVE(request, { params: { code: 'ABC123' } })
     const data = await response.json()
 
-    expect(response.status).toBe(400)
-    expect(data.error).toBe('You are not in this game')
+    expect(response.status).toBe(200)
+    expect(data.message).toBe('You already left the lobby')
+  })
+
+  it('should remove player from the game that actually contains them', async () => {
+    const lobbyWithMultipleGames = {
+      ...mockLobby,
+      games: [
+        {
+          id: 'game-waiting',
+          status: 'waiting',
+          players: [],
+        },
+        {
+          id: 'game-playing',
+          status: 'playing',
+          players: [
+            {
+              id: 'player-123',
+              userId: 'user-123',
+              gameId: 'game-playing',
+              user: {
+                id: 'user-123',
+                username: 'testuser',
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithMultipleGames as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.count.mockResolvedValue(1)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
+      method: 'POST',
+    })
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.players.delete).toHaveBeenCalledWith({
+      where: { id: 'player-123' },
+    })
   })
 })

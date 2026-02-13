@@ -12,8 +12,10 @@ import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { Game } from '@/types/game'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import TicTacToeGameBoard from '@/components/TicTacToeGameBoard'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 
 interface Lobby {
@@ -39,6 +41,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [game, setGame] = useState<Game | null>(null)
     const [gameEngine, setGameEngine] = useState<TicTacToeGame | null>(null)
     const [socket, setSocket] = useState<Socket | null>(null)
+    const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -47,7 +50,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     // Load lobby data
     const loadLobby = useCallback(async () => {
         try {
-            const res = await fetchWithGuest(`/api/lobby/${code}`, {
+            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
             })
@@ -61,18 +64,36 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 return
             }
 
-            setLobby(data.lobby)
-            setGame(data.game)
+            const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data, {
+                includeFinished: true,
+            })
+
+            if (!lobbyPayload) {
+                throw new Error('Invalid lobby response')
+            }
+
+            setLobby(lobbyPayload as Lobby)
+            setGame(activeGame as Game | null)
 
             // Initialize game engine if game exists
-            if (data.game) {
-                const engine = new TicTacToeGame(data.game.id)
-                const gameState = JSON.parse(data.game.state || '{}')
+            if (activeGame?.state) {
+                const engine = new TicTacToeGame(activeGame.id)
+                const parsedState = typeof activeGame.state === 'string'
+                    ? JSON.parse(activeGame.state || '{}')
+                    : activeGame.state
 
-                if (gameState.data) {
-                    engine.restoreState(gameState)
+                if (parsedState && typeof parsedState === 'object') {
+                    engine.restoreState(parsedState)
                 }
+
                 setGameEngine(engine)
+            } else {
+                setGameEngine((previous) => {
+                    if (previous?.getState().status === 'finished') {
+                        return previous
+                    }
+                    return null
+                })
             }
 
             setLoading(false)
@@ -245,7 +266,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         )
     }
 
-    if (!gameEngine || game?.status !== 'playing') {
+    const resolvedStatus = game?.status || gameEngine?.getState().status
+    const isFinished = resolvedStatus === 'finished' || gameEngine?.getState().status === 'finished'
+
+    if (!gameEngine || (resolvedStatus !== 'playing' && resolvedStatus !== 'finished')) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
@@ -253,21 +277,28 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
                         The game hasn't started yet.
                     </p>
-                    <button
-                        onClick={() => router.push('/games/tic-tac-toe/lobbies')}
-                        className="btn btn-primary"
-                    >
-                        Back to Lobbies
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                            onClick={() => router.push('/games/tic-tac-toe/lobbies')}
+                            className="btn btn-primary"
+                        >
+                            Back to Lobbies
+                        </button>
+                        <button
+                            onClick={() => router.push('/games')}
+                            className="btn btn-secondary"
+                        >
+                            Back to Games
+                        </button>
+                    </div>
                 </div>
             </div>
         )
     }
 
-    const players = game.players || []
+    const players = game?.players || []
     const currentPlayer = gameEngine.getCurrentPlayer()
     const winner = gameEngine.checkWinCondition()
-    const isFinished = gameEngine.getState().status === 'finished'
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -278,11 +309,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         <span>❌⭕</span> {t('games.tictactoe.name')}
                     </h1>
                     <button
-                        onClick={() => {
-                            if (confirm('Are you sure you want to leave the game?')) {
-                                handleLeave()
-                            }
-                        }}
+                        onClick={() => setShowLeaveConfirmModal(true)}
                         className="btn btn-danger"
                     >
                         {t('game.ui.leave')}
@@ -352,17 +379,38 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     {/* Results */}
                     {isFinished && (
                         <div className="mt-6 pt-6 border-t border-gray-300 dark:border-gray-600">
-                            <h3 className="text-lg font-bold mb-3">{t('lobby.title')}</h3>
-                            <button
-                                onClick={() => router.push('/games/tic-tac-toe/lobbies')}
-                                className="w-full btn btn-primary"
-                            >
-                                {t('lobby.backToGames')}
-                            </button>
+                            <h3 className="text-lg font-bold mb-3">Game Actions</h3>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={() => router.push('/games/tic-tac-toe/lobbies')}
+                                    className="w-full btn btn-primary"
+                                >
+                                    Play Again
+                                </button>
+                                <button
+                                    onClick={() => router.push('/games')}
+                                    className="w-full btn btn-secondary"
+                                >
+                                    Back to Games
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* Leave Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showLeaveConfirmModal}
+                onClose={() => setShowLeaveConfirmModal(false)}
+                onConfirm={handleLeave}
+                title={t('game.ui.leave')}
+                message={t('game.ui.leaveConfirm')}
+                confirmText={t('common.confirm')}
+                cancelText={t('common.cancel')}
+                variant="danger"
+                icon="🚪"
+            />
         </div>
     )
 }

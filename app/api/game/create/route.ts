@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { createGameEngine, isRegisteredGameType } from '@/lib/game-registry'
+import { createGameEngine, getGameMetadata, isRegisteredGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { SpyGame } from '@/lib/games/spy-game'
+import { getActiveSpyLocations } from '@/lib/spy-locations'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -64,6 +66,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
     }
 
+    const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+
     // Get or create waiting game
     let waitingGame = lobby.games.find(g => g.status === 'waiting')
 
@@ -76,12 +80,15 @@ export async function POST(request: NextRequest) {
           playerCount: finishedGame.players?.length || 0
         })
 
+        const initialWaitingState = createGameEngine(gameType, `waiting_${Date.now()}`).getState()
+
         // Create new waiting game with same players
         waitingGame = await prisma.games.create({
           data: {
             lobbyId: lobbyId,
             status: 'waiting',
-            state: JSON.stringify({}),
+            gameType,
+            state: JSON.stringify(initialWaitingState),
             players: {
               create: finishedGame.players.map((p, index) => ({
                 userId: p.userId,
@@ -114,13 +121,14 @@ export async function POST(request: NextRequest) {
 
     // Validate minimum players
     const playerCount = waitingGame.players?.length || 0
-    if (playerCount < 2) {
+    if (playerCount < requiredMinPlayers) {
       log.warn('Attempted to start game with insufficient players', {
         playerCount,
+        requiredMinPlayers,
         gameId: waitingGame.id
       })
       return NextResponse.json({
-        error: 'At least 2 players are required to start the game',
+        error: `At least ${requiredMinPlayers} players are required to start this game`,
         details: 'Please add a bot or wait for another player to join'
       }, { status: 400 })
     }
@@ -149,7 +157,39 @@ export async function POST(request: NextRequest) {
     // Start the game
     const gameStarted = gameEngine.startGame()
     if (!gameStarted) {
-      return NextResponse.json({ error: 'Not enough players to start the game' }, { status: 400 })
+      return NextResponse.json({
+        error: `At least ${requiredMinPlayers} players are required to start this game`
+      }, { status: 400 })
+    }
+
+    // Guess the Spy requires an initialized round (roles/location) before clients can interact.
+    if (gameType === 'guess_the_spy' && gameEngine instanceof SpyGame) {
+      let activeLocations
+      try {
+        activeLocations = await getActiveSpyLocations()
+      } catch (error) {
+        log.error('Cannot start Spy game: failed to resolve locations', error as Error, {
+          gameId: waitingGame.id,
+          lobbyCode: lobby.code,
+        })
+        return NextResponse.json(
+          {
+            error: 'Spy locations are not configured',
+            details: error instanceof Error ? error.message : 'Unable to resolve Spy locations',
+          },
+          { status: 500 }
+        )
+      }
+
+      if (activeLocations.source === 'fallback') {
+        log.warn('No active Spy locations configured in DB, using fallback set', {
+          gameId: waitingGame.id,
+          lobbyCode: lobby.code,
+          fallbackCount: activeLocations.locations.length,
+        })
+      }
+
+      gameEngine.initializeRound(activeLocations.locations)
     }
 
     log.info('Game starting', {
@@ -165,6 +205,7 @@ export async function POST(request: NextRequest) {
       data: {
         state: JSON.stringify(gameEngine.getState()),
         status: 'playing',
+        gameType,
         updatedAt: new Date(),
       },
       include: {

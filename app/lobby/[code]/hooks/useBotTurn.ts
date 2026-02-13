@@ -21,12 +21,33 @@ interface UseBotTurnProps {
   gameEngine: GameEngine | null
   code: string
   isGameStarted: boolean
+  reconcileWithServerSnapshot?: () => Promise<void> | void
 }
 
-export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurnProps) {
+export function useBotTurn({
+  game,
+  gameEngine,
+  code,
+  isGameStarted,
+  reconcileWithServerSnapshot,
+}: UseBotTurnProps) {
   const botTurnInProgress = useRef(false)
   const lastBotPlayerId = useRef<string | null>(null)
   const lastPlayerIndex = useRef<number | null>(null)
+
+  const reconcileAfterBotTurn = useCallback(async (reason: string) => {
+    if (!reconcileWithServerSnapshot) return
+
+    try {
+      clientLogger.debug('🤖 Reconciling state after bot turn request', { reason })
+      await Promise.resolve(reconcileWithServerSnapshot())
+    } catch (error) {
+      clientLogger.warn('🤖 Failed to reconcile state after bot turn request', {
+        reason,
+        error,
+      })
+    }
+  }, [reconcileWithServerSnapshot])
 
   const triggerBotTurn = useCallback(async (botUserId: string, gameId: string) => {
     if (botTurnInProgress.current) {
@@ -45,14 +66,20 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
         body: JSON.stringify({ botUserId, lobbyCode: code }),
       })
 
+      const responseData = await response.json().catch(() => ({} as Record<string, unknown>))
       if (!response.ok) {
-        const error = await response.json()
+        const error = responseData as { error?: string }
 
         // Don't show error toast or log for expected race conditions:
         // - 409: Bot turn already in progress (lock prevented duplicate)
         // - "Not bot's turn": Race condition timing issue
         if (response.status === 409 || error.error === "Not bot's turn") {
-          clientLogger.log('🤖 Bot turn request skipped (expected race condition):', { status: response.status, error: error.error })
+          clientLogger.debug('🤖 Bot turn request skipped (expected race condition):', { status: response.status, error: error.error })
+          if (error.error === "Not bot's turn") {
+            // Allow a retry after snapshot reconciliation if local state was ahead.
+            lastBotPlayerId.current = null
+            lastPlayerIndex.current = null
+          }
           return // Silent return, no error thrown
         }
 
@@ -61,19 +88,23 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
         throw new Error(error.error || 'Bot turn failed')
       }
 
-      const data = await response.json()
+      const data = responseData
       clientLogger.log('🤖 Bot turn completed:', data)
     } catch (error) {
       clientLogger.error('🤖 Bot turn error:', error)
+      // Allow retry on the same turn after transport/runtime failures.
+      lastBotPlayerId.current = null
+      lastPlayerIndex.current = null
+      await reconcileAfterBotTurn('bot-turn-error')
     } finally {
       botTurnInProgress.current = false
     }
-  }, [code])
+  }, [code, reconcileAfterBotTurn])
 
   // Monitor for bot turns
   useEffect(() => {
     if (!isGameStarted || !gameEngine || !game?.id || !game?.players || !Array.isArray(game.players)) {
-      clientLogger.log('🤖 [BOT-TURN-MONITOR] Skipping - preconditions not met:', {
+      clientLogger.debug('🤖 [BOT-TURN-MONITOR] Skipping - preconditions not met:', {
         isGameStarted,
         hasGameEngine: !!gameEngine,
         hasGameId: !!game?.id,
@@ -126,7 +157,7 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
     // Check if current player is a bot (using bot relation)
     const isBot = !!currentGamePlayer.user.bot
 
-    clientLogger.log('🤖 [BOT-TURN-MONITOR] Turn check:', {
+    clientLogger.debug('🤖 [BOT-TURN-MONITOR] Turn check:', {
       currentPlayerId: currentPlayer.id,
       currentPlayerIndex,
       isBot,
@@ -136,13 +167,21 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
     })
 
     if (isBot) {
-      // For Yahtzee: only trigger at start of new turn (rollsLeft === 3)
-      // For other games: trigger immediately on bot's turn
+      // Trigger immediately on bot turn.
+      // For Yahtzee we still log non-initial roll states, but don't block the request:
+      // local state can be stale after reconnect/refresh while server state is already
+      // ready for bot execution.
       if (gameEngine instanceof YahtzeeGame) {
         const rollsLeft = gameEngine.getRollsLeft()
         if (rollsLeft !== 3) {
-          clientLogger.log('🤖 Bot turn already in progress (rollsLeft:', rollsLeft, '), skipping trigger')
-          return
+          clientLogger.debug(
+            '🤖 Bot turn detected with non-initial Yahtzee rollsLeft, triggering anyway',
+            {
+              rollsLeft,
+              currentPlayerId: currentPlayer.id,
+              currentPlayerIndex,
+            }
+          )
         }
       }
 
@@ -152,11 +191,9 @@ export function useBotTurn({ game, gameEngine, code, isGameStarted }: UseBotTurn
       lastBotPlayerId.current = currentPlayer.id
       lastPlayerIndex.current = currentPlayerIndex
 
-      // Small delay to allow UI to update
-      const timer = setTimeout(() => {
-        triggerBotTurn(currentPlayer.id, game.id)
-      }, 1000)
-      return () => clearTimeout(timer)
+      // Trigger immediately when turn starts.
+      // We keep in-hook locking/race guards in triggerBotTurn for safety.
+      void triggerBotTurn(currentPlayer.id, game.id)
     } else {
       // Not a bot turn, reset tracking
       lastBotPlayerId.current = null

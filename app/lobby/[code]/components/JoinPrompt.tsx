@@ -15,58 +15,29 @@ export default function JoinPrompt({
 }: JoinPromptProps) {
   return (
     <div className="max-w-lg mx-auto">
-      <div className="card text-center animate-scale-in">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center animate-scale-in">
         {/* Icon */}
-        <div
-          className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-blue-600 shadow-xl"
-          style={{
-            width: `clamp(72px, 7.5vw, 100px)`,
-            height: `clamp(72px, 7.5vw, 100px)`,
-            marginBottom: `clamp(20px, 2vh, 32px)`,
-          }}
-        >
-          <span style={{ fontSize: `clamp(32px, 3.5vw, 48px)` }}>🎮</span>
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6 shadow-xl">
+          <span className="text-4xl">🎮</span>
         </div>
 
         {/* Title */}
-        <h2
-          className="font-bold"
-          style={{
-            fontSize: `clamp(24px, 2.5vw, 36px)`,
-            marginBottom: `clamp(6px, 0.6vh, 10px)`,
-          }}
-        >
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2 drop-shadow-sm">
           Join the Game
         </h2>
-        <p
-          className="text-gray-600 dark:text-gray-400"
-          style={{ marginBottom: `clamp(20px, 2vh, 32px)` }}
-        >
-          Enter the password to join <span className="font-semibold">{lobby.name}</span>
+        <p className="text-white/60 text-sm sm:text-base mb-6">
+          Enter the password to join <span className="font-semibold text-white/90">{lobby.name}</span>
         </p>
 
         {/* Password Input */}
         {lobby.isPrivate && (
-          <div
-            className="text-left"
-            style={{ marginBottom: `clamp(20px, 2vh, 32px)` }}
-          >
-            <label
-              className="block font-semibold text-gray-700 dark:text-gray-300"
-              style={{
-                fontSize: `clamp(11px, 1vw, 14px)`,
-                marginBottom: `clamp(6px, 0.6vh, 10px)`,
-              }}
-            >
+          <div className="text-left mb-6">
+            <label className="block font-semibold text-white/80 text-sm mb-2">
               🔒 Lobby Password
             </label>
             <input
               type="password"
-              className="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              style={{
-                padding: `clamp(10px, 1vh, 16px) clamp(12px, 1.2vw, 20px)`,
-                borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-              }}
+              className="w-full bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/30 px-4 py-3 focus:ring-2 focus:ring-white/40 focus:border-transparent transition-all focus-visible:outline-none"
               placeholder="Enter password..."
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -82,20 +53,10 @@ export default function JoinPrompt({
 
         {/* Error Message */}
         {error && (
-          <div
-            className="bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg animate-shake"
-            style={{
-              borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-              padding: `clamp(10px, 1vh, 16px) clamp(12px, 1.2vw, 20px)`,
-              marginBottom: `clamp(20px, 2vh, 32px)`,
-            }}
-          >
-            <div
-              className="flex items-center"
-              style={{ gap: `clamp(6px, 0.6vw, 10px)` }}
-            >
-              <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>⚠️</span>
-              <p className="font-semibold">{error}</p>
+          <div className="bg-red-500/10 border border-red-400/30 text-red-200 rounded-xl px-4 py-3 mb-6 animate-shake">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <p className="font-semibold text-sm">{error}</p>
             </div>
           </div>
         )}
@@ -103,31 +64,14 @@ export default function JoinPrompt({
         {/* Join Button */}
         <button
           onClick={onJoin}
-          className="btn btn-primary w-full shadow-xl hover:shadow-2xl transition-shadow"
-          style={{
-            fontSize: `clamp(14px, 1.4vw, 20px)`,
-            padding: `clamp(10px, 1vh, 16px) clamp(24px, 2.4vw, 40px)`,
-          }}
+          className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:bg-blue-50 hover:scale-[1.02] transition-all duration-300"
         >
-          <span
-            style={{
-              fontSize: `clamp(16px, 1.6vw, 24px)`,
-              marginRight: `clamp(6px, 0.6vw, 10px)`,
-            }}
-          >
-            🚺
-          </span>
+          <span className="mr-2 text-xl">🚀</span>
           Join Lobby
         </button>
 
         {/* Info */}
-        <p
-          className="text-gray-500 dark:text-gray-400"
-          style={{
-            fontSize: `clamp(10px, 0.9vw, 12px)`,
-            marginTop: `clamp(12px, 1.2vh, 20px)`,
-          }}
-        >
+        <p className="text-white/40 text-xs mt-4">
           💡 You'll be added to the game once you join
         </p>
       </div>

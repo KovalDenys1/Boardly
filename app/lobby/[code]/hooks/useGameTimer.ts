@@ -11,13 +11,15 @@ interface UseGameTimerProps {
   isMyTurn: boolean
   gameState: GameState | null
   turnTimerLimit: number // Turn time limit from lobby settings (in seconds)
-  onTimeout: () => void
+  // Return `false` to request retry (e.g. transient race while state is syncing).
+  onTimeout: () => boolean | Promise<boolean>
 }
 
 export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }: UseGameTimerProps) {
   const [timeLeft, setTimeLeft] = useState<number>(turnTimerLimit)
   const [timerActive, setTimerActive] = useState<boolean>(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [timeoutRetryTick, setTimeoutRetryTick] = useState(0)
   
   // Use ref to avoid recreating timer on every onTimeout change
   const onTimeoutRef = useRef(onTimeout)
@@ -105,26 +107,58 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
     }
   }, [timerActive, timeLeft])
 
-  // Handle timeout separately in useEffect to avoid state updates during render
+  // Handle timeout separately in useEffect to avoid state updates during render.
+  // If timeout handler returns `false`, we re-arm this effect and retry.
   useEffect(() => {
     if (timerActive && timeLeft === 0 && !timeoutCalledRef.current && gameState?.status === 'playing') {
       const now = Date.now()
+
+      // Guard against stale zero state right after turn switch.
+      // This can happen when effects run out of order on mobile/dev refresh cycles.
+      const lastMoveAt =
+        typeof gameState.lastMoveAt === 'number' && Number.isFinite(gameState.lastMoveAt)
+          ? gameState.lastMoveAt
+          : null
+      if (lastMoveAt && turnTimerLimit > 0) {
+        const elapsedMs = now - lastMoveAt
+        const limitMs = turnTimerLimit * 1000
+        if (elapsedMs < limitMs) {
+          const remainingSeconds = Math.max(0, Math.ceil((limitMs - elapsedMs) / 1000))
+          if (remainingSeconds > 0) {
+            setTimeLeft(remainingSeconds)
+          }
+          return
+        }
+      }
+
       if (now - lastTimeoutInvocationAtRef.current < TIMEOUT_CALLBACK_DEBOUNCE_MS) {
         return
       }
 
       clientLogger.warn('⏰ Timer expired, calling onTimeout')
-      timeoutCalledRef.current = true
       lastTimeoutInvocationAtRef.current = now
       
       // Use setTimeout to defer the callback to next tick
       const timeoutId = setTimeout(() => {
-        onTimeoutRef.current()
+        Promise.resolve(onTimeoutRef.current())
+          .then((handled) => {
+            if (handled === false) {
+              timeoutCalledRef.current = false
+              setTimeoutRetryTick((prev) => prev + 1)
+              return
+            }
+            timeoutCalledRef.current = true
+          })
+          .catch((error) => {
+            clientLogger.error('⏰ Timeout handler failed, scheduling retry', error)
+            timeoutCalledRef.current = false
+            setTimeoutRetryTick((prev) => prev + 1)
+          })
       }, 0)
       
       return () => clearTimeout(timeoutId)
     }
-  }, [timerActive, timeLeft, gameState?.status])
+  }, [timerActive, timeLeft, gameState?.status, gameState?.lastMoveAt, turnTimerLimit, timeoutRetryTick])
 
   return { timeLeft, timerActive }
 }

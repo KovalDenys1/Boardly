@@ -21,7 +21,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import TicTacToeLobbyPage from './tic-tac-toe-page'
@@ -74,13 +74,16 @@ import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
 import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
+import SpyGameBoard from './components/SpyGameBoard'
 import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
 import FriendsListModal from '@/components/FriendsListModal'
+import ConfirmModal from '@/components/ConfirmModal'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -155,6 +158,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Friends invite modal state
   const [showFriendsModal, setShowFriendsModal] = useState(false)
+
+  // Leave confirmation modal state
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
@@ -484,6 +490,27 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
+  const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
+  const canJoinSocketLobbyRoom = React.useMemo(() => {
+    if (!lobby || !currentUserIdForMembership) {
+      return false
+    }
+
+    const lobbyData = lobby as any
+    if (lobbyData.creatorId === currentUserIdForMembership) {
+      return true
+    }
+
+    const activeGameFromState = game
+    const activeGameFromLobby = Array.isArray(lobbyData.games)
+      ? lobbyData.games.find((candidate: any) => ['waiting', 'playing'].includes(candidate?.status))
+      : null
+    const activeGame = activeGameFromState || activeGameFromLobby
+    const players = Array.isArray(activeGame?.players) ? activeGame.players : []
+
+    return players.some((player: any) => player?.userId === currentUserIdForMembership)
+  }, [lobby, game, currentUserIdForMembership])
+
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
     code,
@@ -492,6 +519,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     guestId,
     guestName,
     guestToken,
+    shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
     onChatMessage,
     onPlayerTyping,
@@ -537,6 +565,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isGuest,
     guestId,
     guestName,
+    guestToken,
     userId,
     username,
     setError,
@@ -553,6 +582,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (!loadLobbyRef.current) return
     await loadLobbyRef.current()
   }, [])
+
+  // Bot turn automation hook
+  const { triggerBotTurn } = useBotTurn({
+    game,
+    gameEngine,
+    code,
+    isGameStarted: game?.status === 'playing',
+    reconcileWithServerSnapshot,
+  })
 
   // Create refs for game actions to use in timer callback
   const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
@@ -586,14 +624,50 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState() || null,
     turnTimerLimit,
-    onTimeout: async () => {
-      if (!isMyTurn() || !gameEngine || !(gameEngine instanceof YahtzeeGame) || !handleScoreRef.current) {
+    onTimeout: async (): Promise<boolean> => {
+      if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) {
+        return true
+      }
+
+      const mine = isMyTurn()
+      const hasYahtzeeEngine = true
+      const scoreHandler = handleScoreRef.current
+      const hasScoreHandler = !!scoreHandler
+
+      if (!mine) {
+        if (hasYahtzeeEngine && game?.id && Array.isArray(game?.players)) {
+          const currentPlayer = gameEngine.getCurrentPlayer()
+          const currentGamePlayer = currentPlayer
+            ? game.players.find((player) => player.userId === currentPlayer.id)
+            : null
+          const isBotTurn = !!currentGamePlayer?.user?.bot
+          const rollsLeft = gameEngine.getRollsLeft()
+
+          // Fail-safe: if bot turn is stuck, force-trigger bot logic.
+          // This is safe with server-side locking/idempotency guards.
+          if (isBotTurn && currentPlayer?.id) {
+            clientLogger.warn('⏰ Timer expired on bot turn, triggering fallback bot action', {
+              botUserId: currentPlayer.id,
+              gameId: game.id,
+              currentPlayerIndex: gameEngine.getState().currentPlayerIndex,
+              rollsLeft,
+            })
+            void triggerBotTurn(currentPlayer.id, game.id)
+            return false
+          }
+        }
+
+        return true
+      }
+
+      if (!hasYahtzeeEngine || !hasScoreHandler) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
-          isMyTurn: isMyTurn(),
+          isMyTurn: mine,
           hasGameEngine: !!gameEngine,
-          hasHandleScore: !!handleScoreRef.current
+          hasHandleScore: hasScoreHandler
         })
-        return
+        // Transient state race (engine/handler not ready) - retry.
+        return false
       }
 
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
@@ -603,7 +677,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       if (!currentPlayer) {
         clientLogger.error('⏰ No current player found')
-        return
+        return false
       }
 
       const initialContext = buildAutoActionContext(workingEngine, currentPlayer.id)
@@ -615,7 +689,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         if (!handleRollDiceRef.current) {
           clientLogger.error('⏰ Player hasn\'t rolled but handleRollDice not available')
           showToast.error('toast.timerRollFirst')
-          return
+          return false
         }
 
         clientLogger.log('⏰ Player hasn\'t rolled - auto-rolling once before scoring')
@@ -624,11 +698,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           const rolledEngine = await handleRollDiceRef.current(autoActionContext)
           if (!rolledEngine) {
             clientLogger.log('⏰ Auto-roll skipped by server guard')
-            return
+            return false
           }
           if (!(rolledEngine instanceof YahtzeeGame)) {
             clientLogger.log('⏰ Auto-roll returned non-Yahtzee engine')
-            return
+            return false
           }
           workingEngine = rolledEngine
 
@@ -636,12 +710,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           const postRollPlayer = workingEngine.getCurrentPlayer()
           if (!postRollPlayer || postRollPlayer.id !== currentPlayer.id) {
             clientLogger.log('⏰ Turn changed after auto-roll, skipping auto-score')
-            return
+            return true
           }
           autoActionContext = buildAutoActionContext(workingEngine, postRollPlayer.id, initialContext.debounceKey)
         } catch (error) {
           clientLogger.error('⏰ Failed to auto-roll:', error)
-          return
+          return false
         }
       }
 
@@ -651,7 +725,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       if (!scorecard) {
         clientLogger.error('⏰ No scorecard found')
-        return
+        return false
       }
 
       // Use smart category selection
@@ -686,12 +760,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
 
       try {
-        const scoredEngine = await handleScoreRef.current(bestCategory, autoActionContext)
+        const scoredEngine = await scoreHandler(bestCategory, autoActionContext)
         if (!scoredEngine) {
           clientLogger.log('⏰ Auto-score skipped by server guard')
+          return false
         }
+        return true
       } catch (error) {
         clientLogger.error('⏰ Failed to auto-score:', error)
+        return false
       }
     },
   })
@@ -713,6 +790,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isGuest,
     guestId,
     guestName,
+    guestToken,
     userId,
     username,
     isMyTurn: isMyTurn(),
@@ -731,14 +809,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     handleScoreRef.current = handleScore
     handleRollDiceRef.current = handleRollDice
   }, [handleScore, handleRollDice])
-
-  // Bot turn automation hook
-  const { triggerBotTurn } = useBotTurn({
-    game,
-    gameEngine,
-    code,
-    isGameStarted: game?.status === 'playing',
-  })
 
   // Load lobby on mount
   useEffect(() => {
@@ -877,6 +947,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
   const playerCount = game?.players?.length || 0
+  const minPlayersRequired = React.useMemo(() => {
+    try {
+      return Math.max(2, getGameMetadata((lobby?.gameType as string) || DEFAULT_GAME_TYPE).minPlayers)
+    } catch {
+      return 2
+    }
+  }, [lobby?.gameType])
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
   const isInGame = game?.players?.some(p =>
@@ -895,36 +972,55 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
 
-  // Force layout recalculation when game starts (mobile browser fix)
+  // Stabilize viewport/layout when game view mounts on mobile/tablet.
+  // Avoid hard reflow hacks (e.g. toggling body display) that can cause horizontal drift on iOS.
   useEffect(() => {
-    if (isGameStarted && typeof window !== 'undefined') {
-      // Small delay to ensure DOM has updated
-      const timer = setTimeout(() => {
-        // Trigger resize event to recalculate viewport
+    if (!isGameStarted || typeof window === 'undefined') return
+
+    const { documentElement, body } = document
+    const prevHtmlOverflowX = documentElement.style.overflowX
+    const prevBodyOverflowX = body.style.overflowX
+
+    // Prevent horizontal page scroll while the fixed full-screen game viewport is active.
+    documentElement.style.overflowX = 'hidden'
+    body.style.overflowX = 'hidden'
+
+    let raf1 = 0
+    let raf2 = 0
+
+    // Wait until layout settles, then normalize viewport scroll and notify listeners.
+    raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+        documentElement.scrollLeft = 0
+        body.scrollLeft = 0
         window.dispatchEvent(new Event('resize'))
-        // Force repaint
-        document.body.style.display = 'none'
-        // Trigger reflow
-        document.body.offsetHeight
-        document.body.style.display = ''
-      }, 100)
-      return () => clearTimeout(timer)
+      })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(raf1)
+      window.cancelAnimationFrame(raf2)
+      documentElement.style.overflowX = prevHtmlOverflowX
+      body.style.overflowX = prevBodyOverflowX
     }
   }, [isGameStarted])
 
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingSpinner size="lg" />
-        <p className="ml-4 text-gray-600 dark:text-gray-400">Loading session...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-white/70">Loading session...</p>
+        </div>
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -932,15 +1028,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (!lobby) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="card max-w-md mx-auto text-center">
-          <h1 className="text-2xl font-bold mb-4">Lobby Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl max-w-md w-full p-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-5">
+            <span className="text-3xl">🔍</span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-white mb-3">Lobby Not Found</h1>
+          <p className="text-white/60 text-sm mb-6">
             The lobby you're looking for doesn't exist or has been closed.
           </p>
           <button
             onClick={() => router.push('/games')}
-            className="btn btn-primary"
+            className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
           >
             Back to Games
           </button>
@@ -950,10 +1049,24 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Show lobby info only if game hasn't started */}
-      {!isGameStarted && (
-        <div className="mb-6">
+    <div className={`${!isGameStarted ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500' : ''}`}>
+     <div className={`max-w-7xl mx-auto ${!isGameStarted ? 'h-[calc(100vh-64px)] flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
+
+      {!isInGame && !isGameStarted ? (
+        /* Join Prompt - centered in full height */
+        <div className="flex-1 flex items-center justify-center">
+          <JoinPrompt
+            lobby={lobby}
+            password={password}
+            setPassword={setPassword}
+            error={error}
+            onJoin={handleJoinLobby}
+          />
+        </div>
+      ) : !isGameStarted ? (
+        /* Waiting Room - natural layout without outer card */
+        <>
+          {/* Sticky header bar */}
           <LobbyInfo
             lobby={lobby}
             soundEnabled={soundEnabled}
@@ -964,30 +1077,23 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             }}
             onLeave={handleLeaveLobby}
           />
-        </div>
-      )}
 
-      {!isInGame ? (
-        <JoinPrompt
-          lobby={lobby}
-          password={password}
-          setPassword={setPassword}
-          error={error}
-          onJoin={handleJoinLobby}
-        />
-      ) : !isGameStarted ? (
-        // Waiting Room - Centered Layout
-        <WaitingRoom
-          game={game}
-          lobby={lobby}
-          gameEngine={gameEngine}
-          canStartGame={canStartGame}
-          startingGame={startingGame}
-          onStartGame={handleStartGame}
-          onAddBot={handleAddBot}
-          onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
-          getCurrentUserId={getCurrentUserId}
-        />
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto px-1">
+            <WaitingRoom
+              game={game}
+              lobby={lobby}
+              gameEngine={gameEngine}
+              minPlayers={minPlayersRequired}
+              canStartGame={canStartGame}
+              startingGame={startingGame}
+              onStartGame={handleStartGame}
+              onAddBot={handleAddBot}
+              onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
+              getCurrentUserId={getCurrentUserId}
+            />
+          </div>
+        </>
       ) : (
         // Game Started - Mobile-optimized viewport
         <div
@@ -1016,11 +1122,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             <>
               {/* Top Status Bar - Responsive */}
               <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
-                <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-xl px-2 sm:px-4 py-2 shadow-lg">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl px-3 sm:px-5 py-2.5 shadow-lg">
                   {/* Mobile: Compact 2-row layout */}
                   <div className="md:hidden">
                     {/* Row 1: Game Info */}
-                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/20">
+                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
@@ -1028,7 +1134,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                             {t('game.ui.round')}: {roundInfo.current}/{roundInfo.total}
                           </span>
                         </div>
-                        <div className="h-4 w-px bg-white/30"></div>
+                        <div className="h-4 w-px bg-white/20"></div>
                         <div className="flex items-center gap-1 max-w-[120px]">
                           <span className="text-base">👤</span>
                           <span className="text-sm font-bold truncate">
@@ -1056,19 +1162,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           })
                         }}
                         aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        className="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-sm flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                         title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                       >
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(t('game.ui.leaveConfirm'))) {
-                            handleLeaveLobby()
-                          }
-                        }}
+                        onClick={() => setShowLeaveConfirmModal(true)}
                         aria-label={t('game.ui.leave')}
-                        className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
                         <span>{t('game.ui.leave')}</span>
@@ -1082,27 +1184,27 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">{t('game.ui.round')}</div>
+                          <div className="text-[10px] text-white/50 leading-tight">{t('game.ui.round')}</div>
                           <div className="text-base font-bold leading-tight">
                             {roundInfo.current}/{roundInfo.total}
                           </div>
                         </div>
                       </div>
-                      <div className="h-6 w-px bg-white/30"></div>
+                      <div className="h-6 w-px bg-white/20"></div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">👤</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">{t('game.ui.turn')}</div>
+                          <div className="text-[10px] text-white/50 leading-tight">{t('game.ui.turn')}</div>
                           <div className="text-base font-bold leading-tight truncate max-w-[150px]">
                             {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </div>
                         </div>
                       </div>
-                      <div className="h-6 w-px bg-white/30"></div>
+                      <div className="h-6 w-px bg-white/20"></div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🏆</span>
                         <div>
-                          <div className="text-[10px] opacity-75 leading-tight">Your Score</div>
+                          <div className="text-[10px] text-white/50 leading-tight">Your Score</div>
                           <div className="text-base font-bold leading-tight">
                             {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
                           </div>
@@ -1121,20 +1223,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           })
                         }}
                         aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
-                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base font-medium flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base font-medium flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                         title={soundEnabled ? 'Disable sound' : 'Enable sound'}
                       >
                         <span className="text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
                         <span className="hidden sm:inline text-xs">Sound</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to leave the game?')) {
-                            handleLeaveLobby()
-                          }
-                        }}
+                        onClick={() => setShowLeaveConfirmModal(true)}
                         aria-label="Leave game"
-                        className="px-3 py-1.5 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+                        className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
                         <span>Leave</span>
@@ -1145,11 +1243,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               </div>
 
               {/* Main Game Area - More spacing between columns */}
-              <div className="flex-1 relative" style={{ minHeight: 0, height: '100%' }}>
+              <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
                 <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                  <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full overflow-hidden">
                     <GameBoard
                       gameEngine={gameEngine}
                       game={game}
@@ -1171,7 +1269,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-6 h-full overflow-hidden">
+                  <div className="lg:col-span-6 min-w-0 h-full overflow-hidden">
                     {(() => {
                       // Show selected player's scorecard or current player's scorecard
                       const currentUserId = getCurrentUserId()
@@ -1214,7 +1312,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
+                  <div className="lg:col-span-3 min-w-0 h-full overflow-hidden flex flex-col gap-3">
                     {/* Players List - 40% of space */}
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <PlayerList
@@ -1438,6 +1536,38 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 unreadChatCount={unreadMessageCount}
               />
             </>
+          ) : gameEngine && (lobby?.gameType as string) === 'guess_the_spy' && game?.id ? (
+            <SpyGameBoard
+              gameId={game.id}
+              lobbyCode={code}
+              lobbyCreatorId={typeof lobby?.creatorId === 'string' ? lobby.creatorId : null}
+              players={Array.isArray(game.players) ? game.players : []}
+              state={gameEngine.getState()}
+              currentUserId={getCurrentUserId()}
+              isGuest={isGuest}
+              guestId={guestId}
+              guestName={guestName}
+              guestToken={guestToken}
+              onRefresh={async () => {
+                if (loadLobbyRef.current) {
+                  await loadLobbyRef.current()
+                }
+              }}
+              onPlayAgain={handleStartGame}
+              onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+            />
+          ) : gameEngine ? (
+            <div className="flex h-full items-center justify-center p-4">
+              <div className="w-full max-w-2xl bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
+                <h2 className="mb-3 text-2xl font-extrabold text-white">Game Started</h2>
+                <p className="text-white/70">
+                  The game type <code className="rounded bg-white/10 px-2 py-0.5 text-white">{String(lobby?.gameType || DEFAULT_GAME_TYPE)}</code> is active.
+                </p>
+                <p className="mt-2 text-sm text-white/50">
+                  This lobby view currently has no dedicated in-game renderer for it.
+                </p>
+              </div>
+            </div>
           ) : null}
         </div>
       )}
@@ -1467,6 +1597,20 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           lobbyCode={code}
         />
       )}
+
+      {/* Leave Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLeaveConfirmModal}
+        onClose={() => setShowLeaveConfirmModal(false)}
+        onConfirm={handleLeaveLobby}
+        title={t('game.ui.leave')}
+        message={t('game.ui.leaveConfirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        variant="danger"
+        icon="🚪"
+      />
+     </div>
     </div>
   )
 }
@@ -1492,17 +1636,15 @@ export default function LobbyPage() {
 
     (async () => {
       try {
-        const res = await fetchWithGuest(`/api/lobby/${code}`, {
+        const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })
 
         if (res.ok) {
           const data = await res.json()
-          const lobbyData = data.lobby
+          const { lobby: lobbyData, activeGame } = normalizeLobbySnapshotResponse(data)
           setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
-          // Check active game status
-          const activeGame = lobbyData?.games?.[0]
           setGameStatus(activeGame?.status || null)
         } else {
           setGameType(DEFAULT_GAME_TYPE) 
@@ -1526,18 +1668,18 @@ export default function LobbyPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
-  // Route to dedicated pages ONLY when game is actively playing
-  if (gameType === 'tic_tac_toe' && gameStatus === 'playing') {
+  // Route to dedicated pages when game is active or just finished
+  if (gameType === 'tic_tac_toe' && (gameStatus === 'playing' || gameStatus === 'finished')) {
     return <TicTacToeLobbyPage code={code} />
   }
 
-  if (gameType === 'rock_paper_scissors' && gameStatus === 'playing') {
+  if (gameType === 'rock_paper_scissors' && (gameStatus === 'playing' || gameStatus === 'finished')) {
     return <RockPaperScissorsLobbyPage code={code} />
   }
 
@@ -1545,18 +1687,20 @@ export default function LobbyPage() {
   return (
     <ErrorBoundary
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
-            <div className="text-red-500 text-6xl mb-4">🎲</div>
-            <h1 className="text-2xl font-bold text-white mb-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4">
+          <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-5">
+              <span className="text-3xl">🎲</span>
+            </div>
+            <h1 className="text-2xl font-extrabold text-white mb-3">
               Game Error
             </h1>
-            <p className="text-gray-400 mb-6">
+            <p className="text-white/60 text-sm mb-6">
               Something went wrong with the game lobby. Please try again.
             </p>
             <button
               onClick={() => window.location.href = '/games'}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
             >
               Back to Lobbies
             </button>

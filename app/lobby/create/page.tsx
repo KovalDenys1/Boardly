@@ -188,7 +188,21 @@ function CreateLobbyPage() {
 
       // Notify lobby list about new lobby via WebSocket
       const socketUrl = getBrowserSocketUrl()
-      const token = session?.user?.id || guestToken || null
+      let token: string | null = guestToken || null
+
+      if (!isGuest) {
+        try {
+          const tokenResponse = await fetch('/api/socket/token')
+          if (!tokenResponse.ok) {
+            throw new Error(`HTTP ${tokenResponse.status}`)
+          }
+          const tokenData = await tokenResponse.json()
+          token = tokenData?.token || null
+        } catch (tokenError) {
+          clientLogger.warn('Failed to fetch socket token for lobby-created event (non-critical):', tokenError)
+          token = null
+        }
+      }
 
       const authPayload: Record<string, unknown> = {}
       if (token) authPayload.token = token
@@ -202,6 +216,7 @@ function CreateLobbyPage() {
         transports: ['websocket', 'polling'],
         reconnection: false, // Don't reconnect for this one-time notification
         timeout: 5000,
+        withCredentials: true,
         auth: authPayload,
         query: queryPayload,
       })

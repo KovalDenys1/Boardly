@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -13,7 +13,7 @@ import { clientLogger } from '@/lib/client-logger'
 import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
 
-let socket: Socket
+let socket: Socket | null = null
 
 interface Lobby {
   id: string
@@ -48,6 +48,8 @@ export default function LobbyListPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const { isGuest, guestToken } = useGuest()
+  const authenticatedUserId = session?.user?.id || null
+  const hasAuthenticatedSession = Boolean(authenticatedUserId)
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [stats, setStats] = useState({
     totalLobbies: 0,
@@ -62,8 +64,34 @@ export default function LobbyListPage() {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   })
+  const loadRequestIdRef = useRef(0)
+  const loadAbortControllerRef = useRef<AbortController | null>(null)
+  const loadLobbiesRef = useRef<() => Promise<void>>(async () => {})
+  const initializedRef = useRef(false)
+
+  const triggerCleanup = useCallback(async () => {
+    try {
+      // Silently cleanup inactive lobbies in background
+      const res = await fetch('/api/lobby/cleanup', {
+        method: 'POST',
+        cache: 'no-store',
+      })
+
+      if (!res.ok) {
+        clientLogger.warn('Cleanup returned non-ok status:', res.status)
+      }
+    } catch (error) {
+      // Ignore errors - cleanup is not critical for user experience
+      clientLogger.log('Background cleanup skipped (non-critical):', error)
+    }
+  }, [])
 
   const loadLobbies = useCallback(async () => {
+    const requestId = ++loadRequestIdRef.current
+    loadAbortControllerRef.current?.abort()
+    const controller = new AbortController()
+    loadAbortControllerRef.current = controller
+
     try {
       // Build query string
       const params = new URLSearchParams()
@@ -75,13 +103,20 @@ export default function LobbyListPage() {
       if (filters.sortBy) params.append('sortBy', filters.sortBy)
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
 
-      const res = await fetch(`/api/lobby?${params.toString()}`)
+      const res = await fetch(`/api/lobby?${params.toString()}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      })
       
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`)
       }
       
       const data: LobbyListResponse = await res.json()
+
+      if (controller.signal.aborted || requestId !== loadRequestIdRef.current) {
+        return
+      }
       
       // Handle case where API returns error but with 200 status
       if ('error' in data) {
@@ -91,29 +126,58 @@ export default function LobbyListPage() {
       setLobbies(data.lobbies || [])
       setStats(data.stats || { totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
     } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        return
+      }
       clientLogger.error('Failed to load lobbies:', error)
       // Set empty array to prevent UI from breaking
       setLobbies([])
       setStats({ totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
     } finally {
-      setLoading(false)
+      if (requestId === loadRequestIdRef.current) {
+        setLoading(false)
+      }
     }
   }, [filters])
 
   useEffect(() => {
-    loadLobbies()
-    // Trigger automatic cleanup of inactive lobbies
-    triggerCleanup()
+    loadLobbiesRef.current = loadLobbies
+    if (initializedRef.current) {
+      void loadLobbies()
+    }
+  }, [loadLobbies])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const initializeLobbyList = async () => {
+      // Clean first to avoid showing stale waiting lobbies on initial render.
+      await triggerCleanup()
+      if (!cancelled) {
+        await loadLobbiesRef.current()
+        initializedRef.current = true
+      }
+    }
+
+    void initializeLobbyList()
 
     // Auto-refresh lobbies every 5 seconds
     const refreshInterval = setInterval(() => {
-      loadLobbies()
+      void loadLobbiesRef.current()
     }, 5000)
 
+    // Run periodic cleanup so stale waiting lobbies disappear without full page reload.
+    const cleanupInterval = setInterval(() => {
+      void triggerCleanup()
+    }, 60000)
+
     return () => {
+      cancelled = true
       clearInterval(refreshInterval)
+      clearInterval(cleanupInterval)
+      loadAbortControllerRef.current?.abort()
     }
-  }, [loadLobbies])
+  }, [triggerCleanup])
 
   // Socket connection effect
   useEffect(() => {
@@ -121,22 +185,22 @@ export default function LobbyListPage() {
       return
     }
 
-    // Setup WebSocket for real-time updates
-    if (!socket) {
-      const url = getBrowserSocketUrl()
-      clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
-      
-      // Get auth token - use userId for authenticated users or guest JWT.
-      const token = session?.user?.id || guestToken || null
+    const url = getBrowserSocketUrl()
+    clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
 
-      const authPayload: Record<string, unknown> = {}
-      if (token) authPayload.token = token
-      if (!session?.user && isGuest) authPayload.isGuest = true
+    // Get auth token - use userId for authenticated users or guest JWT.
+    const token = authenticatedUserId || guestToken || null
 
-      const queryPayload: Record<string, string> = {}
-      if (token) queryPayload.token = String(token)
-      if (!session?.user && isGuest) queryPayload.isGuest = 'true'
+    const authPayload: Record<string, unknown> = {}
+    if (token) authPayload.token = token
+    if (!hasAuthenticatedSession && isGuest) authPayload.isGuest = true
 
+    const queryPayload: Record<string, string> = {}
+    if (token) queryPayload.token = String(token)
+    if (!hasAuthenticatedSession && isGuest) queryPayload.isGuest = 'true'
+
+    // Re-create socket when disconnected or absent.
+    if (!socket || socket.disconnected) {
       socket = io(url, {
         transports: ['websocket', 'polling'],
         reconnection: true,
@@ -145,47 +209,48 @@ export default function LobbyListPage() {
         auth: authPayload,
         query: queryPayload,
       })
+    }
 
-      socket.on('connect', () => {
-        clientLogger.log('✅ Socket connected for lobby list')
-        socket.emit('join-lobby-list')
-      })
+    const handleConnect = () => {
+      clientLogger.log('✅ Socket connected for lobby list')
+      socket?.emit('join-lobby-list')
+    }
 
-      socket.on('lobby-list-update', () => {
-        clientLogger.log('📡 Lobby list update received')
-        loadLobbies()
-      })
+    const handleLobbyListUpdate = () => {
+      clientLogger.log('📡 Lobby list update received')
+      void loadLobbiesRef.current()
+    }
 
-      socket.on('disconnect', () => {
-        clientLogger.log('❌ Socket disconnected from lobby list')
-      })
+    const handleDisconnect = () => {
+      clientLogger.log('❌ Socket disconnected from lobby list')
+    }
+
+    socket.off('connect', handleConnect)
+    socket.off('lobby-list-update', handleLobbyListUpdate)
+    socket.off('disconnect', handleDisconnect)
+
+    socket.on('connect', handleConnect)
+    socket.on('lobby-list-update', handleLobbyListUpdate)
+    socket.on('disconnect', handleDisconnect)
+
+    if (socket.connected) {
+      handleConnect()
     }
 
     return () => {
-      if (socket && socket.connected) {
+      if (socket) {
         clientLogger.log('🔌 Disconnecting socket from lobby list')
-        socket.emit('leave-lobby-list')
+        if (socket.connected) {
+          socket.emit('leave-lobby-list')
+        }
+        socket.off('connect', handleConnect)
+        socket.off('lobby-list-update', handleLobbyListUpdate)
+        socket.off('disconnect', handleDisconnect)
         socket.disconnect()
-        socket = null as any
+        socket = null
       }
     }
-  }, [loadLobbies, session?.user, isGuest, guestToken])
-
-  const triggerCleanup = async () => {
-    try {
-      // Silently cleanup inactive lobbies in background
-      const res = await fetch('/api/lobby/cleanup', {
-        method: 'POST',
-      })
-      
-      if (!res.ok) {
-        clientLogger.warn('Cleanup returned non-ok status:', res.status)
-      }
-    } catch (error) {
-      // Ignore errors - cleanup is not critical for user experience
-      clientLogger.log('Background cleanup skipped (non-critical):', error)
-    }
-  }
+  }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken])
 
   const handleJoinByCode = () => {
     if (joinCode) {

@@ -12,6 +12,11 @@ interface UseSocketConnectionProps {
   guestId: string | null
   guestName: string | null
   guestToken: string | null
+  /**
+   * Connect and join lobby room only after user is confirmed as a lobby member.
+   * Prevents transient "access denied" errors before HTTP join completes.
+   */
+  shouldJoinLobbyRoom?: boolean
   onGameUpdate: (data: any) => void
   onChatMessage: (message: any) => void
   onPlayerTyping: (data: any) => void
@@ -32,6 +37,7 @@ export function useSocketConnection({
   guestId,
   guestName,
   guestToken,
+  shouldJoinLobbyRoom = true,
   onGameUpdate,
   onChatMessage,
   onPlayerTyping,
@@ -44,14 +50,17 @@ export function useSocketConnection({
   onStateSync,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
+  const socketRef = useRef<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const hasConnectedOnceRef = useRef(false)
   const authFailedRef = useRef(false) // Track authentication failures
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const joinRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastProcessedSequenceRef = useRef(0) // Track event sequence to prevent duplicates
   const isRejoiningRef = useRef(false) // Prevent multiple rejoin attempts
+  const connectionRunIdRef = useRef(0) // Guards against async init races creating orphan sockets
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -64,6 +73,33 @@ export function useSocketConnection({
   const onPlayerLeftRef = useRef(onPlayerLeft)
   const onBotActionRef = useRef(onBotAction)
   const onStateSyncRef = useRef(onStateSync)
+
+  const normalizeServerError = useCallback((data: unknown): ServerErrorPayload | null => {
+    if (!data || typeof data !== 'object') {
+      return null
+    }
+
+    const payload = data as Partial<ServerErrorPayload>
+    const code = typeof payload.code === 'string' ? payload.code : ''
+    const message = typeof payload.message === 'string' ? payload.message : ''
+    const translationKey = typeof payload.translationKey === 'string' ? payload.translationKey : undefined
+    const details = payload.details && typeof payload.details === 'object'
+      ? payload.details
+      : undefined
+    const stack = typeof payload.stack === 'string' ? payload.stack : undefined
+
+    if (!code && !message && !translationKey) {
+      return null
+    }
+
+    return {
+      code: code || 'UNKNOWN_SOCKET_ERROR',
+      message: message || 'Unknown server error',
+      translationKey,
+      details,
+      stack,
+    }
+  }, [])
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -81,15 +117,27 @@ export function useSocketConnection({
 
   useEffect(() => {
     let isMounted = true // Prevent state updates after unmount
+    const runId = ++connectionRunIdRef.current
 
     // Clear any existing reconnect timeouts
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
       reconnectTimeoutRef.current = null
     }
+    if (joinRetryTimeoutRef.current) {
+      clearTimeout(joinRetryTimeoutRef.current)
+      joinRetryTimeoutRef.current = null
+    }
 
     if (!code) {
       clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
+      return
+    }
+
+    if (!shouldJoinLobbyRoom) {
+      clientLogger.log('⏳ Waiting for lobby membership before joining socket room...')
+      setIsConnected(false)
+      setIsReconnecting(false)
       return
     }
 
@@ -208,7 +256,9 @@ export function useSocketConnection({
     // Initialize socket auth and create connection
     const initAndConnect = async () => {
       const authData = await initSocket()
-      if (!authData) return
+      if (!authData || !isMounted || runId !== connectionRunIdRef.current) {
+        return
+      }
 
       const { authPayload, queryPayload, calculateBackoff, token } = authData
 
@@ -233,19 +283,43 @@ export function useSocketConnection({
       query: queryPayload,
     })
 
+    if (!isMounted || runId !== connectionRunIdRef.current) {
+      if (typeof newSocket.close === 'function') {
+        newSocket.close()
+      } else {
+        newSocket.disconnect()
+      }
+      return
+    }
+
     newSocket.on('connect', async () => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
 
       const isReconnect = hasConnectedOnceRef.current
       clientLogger.log(isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:', code)
 
+      // Reset dedup cursor on each fresh transport session.
+      // Server sequence counters are in-memory and can reset on restart/redeploy.
+      lastProcessedSequenceRef.current = 0
+
       setIsConnected(true)
       setIsReconnecting(false)
       setReconnectAttempt(0) // Reset counter on successful connection
+      if (joinRetryTimeoutRef.current) {
+        clearTimeout(joinRetryTimeoutRef.current)
+        joinRetryTimeoutRef.current = null
+      }
 
       // Always rejoin room on connect/reconnect
       if (!isRejoiningRef.current) {
         isRejoiningRef.current = true
+        
+        // For guests on first connect, add small delay to allow HTTP join to complete
+        if (isGuest && !isReconnect) {
+          clientLogger.log('⏳ Guest first connect - waiting 500ms for HTTP join to complete...')
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        
         newSocket.emit(SocketEvents.JOIN_LOBBY, code)
 
         // On reconnect, sync state to catch up on missed events
@@ -266,7 +340,7 @@ export function useSocketConnection({
     })
 
     newSocket.on('disconnect', (reason) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       setIsConnected(false)
 
       // Only show reconnecting if we've connected before
@@ -278,27 +352,27 @@ export function useSocketConnection({
     })
 
     newSocket.on('reconnect_attempt', (attempt) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       setReconnectAttempt(attempt)
       const backoff = calculateBackoff(attempt - 1)
       clientLogger.log(`🔄 Reconnection attempt #${attempt} (waiting ${backoff}ms)`)
     })
 
     newSocket.on('reconnect_failed', () => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       clientLogger.error('❌ Failed to reconnect after maximum attempts')
       setIsReconnecting(false)
     })
 
     newSocket.on('reconnect', (attempt) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       clientLogger.log(`✅ Reconnected successfully after ${attempt} attempts`)
       setIsReconnecting(false)
       setReconnectAttempt(0)
     })
 
     newSocket.on('connect_error', (error) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
 
       const errorMsg = error.message || String(error)
       clientLogger.error('🔴 Socket connection error:', errorMsg, {
@@ -370,20 +444,56 @@ export function useSocketConnection({
 
     // Add generic error handler
     newSocket.on(SocketEvents.ERROR, (error) => {
-      if (!isMounted) return
+      if (!isMounted || runId !== connectionRunIdRef.current) return
       clientLogger.error('🔴 Socket error:', error)
     })
 
     // Add server error handler with structured errors
     newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
-      if (!isMounted) return
-      clientLogger.error('🔴 Server error:', data)
+      if (!isMounted || runId !== connectionRunIdRef.current) return
+      const normalizedError = normalizeServerError(data)
+      if (!normalizedError) {
+        clientLogger.warn('⚠️ Received malformed server error payload, ignoring:', data)
+        return
+      }
+
+      if (normalizedError.code === 'LOBBY_ACCESS_DENIED') {
+        // Guests can briefly hit membership races while HTTP join and socket connect overlap.
+        if (isGuest && !hasConnectedOnceRef.current) {
+          clientLogger.log('⏳ Guest lobby access denied on first connect - retrying after 1s...')
+          if (joinRetryTimeoutRef.current) {
+            clearTimeout(joinRetryTimeoutRef.current)
+          }
+          joinRetryTimeoutRef.current = setTimeout(() => {
+            joinRetryTimeoutRef.current = null
+            if (isMounted && runId === connectionRunIdRef.current && newSocket.connected) {
+              clientLogger.log('🔄 Retrying guest lobby join...')
+              newSocket.emit(SocketEvents.JOIN_LOBBY, code)
+            }
+          }, 1000)
+          return
+        }
+
+        if (isGuest) {
+          clientLogger.warn('⚠️ Guest lobby access denied after connect - requesting state sync', {
+            lobbyCode: code,
+          })
+          if (onStateSyncRef.current) {
+            void onStateSyncRef.current().catch((syncError) => {
+              clientLogger.warn('⚠️ Guest state sync after access denied failed:', syncError)
+            })
+          }
+          return
+        }
+      }
+
+      clientLogger.error('🔴 Server error:', normalizedError)
 
       // Show user-friendly error message
-      if (data.translationKey) {
-        showToast.error(data.translationKey)
+      if (normalizedError.translationKey) {
+        showToast.error(normalizedError.translationKey)
       } else {
-        showToast.error('errors.general', undefined, { message: data.message })
+        showToast.error('errors.general', undefined, { message: normalizedError.message })
       }
     })
 
@@ -442,6 +552,7 @@ export function useSocketConnection({
     }
 
     if (isMounted) {
+      socketRef.current = newSocket
       setSocket(newSocket)
     }
     }
@@ -451,6 +562,7 @@ export function useSocketConnection({
 
     return () => {
       isMounted = false
+      connectionRunIdRef.current += 1
       clientLogger.log('🔌 Cleaning up socket connection')
 
       // Clear reconnect timeout
@@ -458,52 +570,59 @@ export function useSocketConnection({
         clearTimeout(reconnectTimeoutRef.current)
         reconnectTimeoutRef.current = null
       }
+      if (joinRetryTimeoutRef.current) {
+        clearTimeout(joinRetryTimeoutRef.current)
+        joinRetryTimeoutRef.current = null
+      }
 
       // Cleanup socket if exists
-      if (socket) {
+      const socketToCleanup = socketRef.current
+      socketRef.current = null
+      if (socketToCleanup) {
         // Remove all listeners first
-        socket.off(SocketEvents.CONNECT)
-        socket.off(SocketEvents.DISCONNECT)
-        socket.off(SocketEvents.CONNECT_ERROR)
-        socket.off(SocketEvents.RECONNECT_ATTEMPT)
-        socket.off(SocketEvents.RECONNECT_FAILED)
-        socket.off(SocketEvents.RECONNECT)
-        socket.off(SocketEvents.ERROR)
-        socket.off(SocketEvents.SERVER_ERROR)
-        socket.off(SocketEvents.GAME_UPDATE)
-        socket.off(SocketEvents.CHAT_MESSAGE)
-        socket.off(SocketEvents.PLAYER_TYPING)
-        socket.off(SocketEvents.LOBBY_UPDATE)
-        socket.off(SocketEvents.PLAYER_JOINED)
-        socket.off(SocketEvents.GAME_STARTED)
-        socket.off(SocketEvents.GAME_ABANDONED)
-        socket.off(SocketEvents.PLAYER_LEFT)
-        socket.off(SocketEvents.BOT_ACTION)
+        socketToCleanup.off(SocketEvents.CONNECT)
+        socketToCleanup.off(SocketEvents.DISCONNECT)
+        socketToCleanup.off(SocketEvents.CONNECT_ERROR)
+        socketToCleanup.off(SocketEvents.RECONNECT_ATTEMPT)
+        socketToCleanup.off(SocketEvents.RECONNECT_FAILED)
+        socketToCleanup.off(SocketEvents.RECONNECT)
+        socketToCleanup.off(SocketEvents.ERROR)
+        socketToCleanup.off(SocketEvents.SERVER_ERROR)
+        socketToCleanup.off(SocketEvents.GAME_UPDATE)
+        socketToCleanup.off(SocketEvents.CHAT_MESSAGE)
+        socketToCleanup.off(SocketEvents.PLAYER_TYPING)
+        socketToCleanup.off(SocketEvents.LOBBY_UPDATE)
+        socketToCleanup.off(SocketEvents.PLAYER_JOINED)
+        socketToCleanup.off(SocketEvents.GAME_STARTED)
+        socketToCleanup.off(SocketEvents.GAME_ABANDONED)
+        socketToCleanup.off(SocketEvents.PLAYER_LEFT)
+        socketToCleanup.off(SocketEvents.BOT_ACTION)
 
         // Gracefully disconnect only if connected
-        if (socket.connected) {
-          socket.disconnect()
-        } else if (typeof socket.close === 'function') {
+        if (socketToCleanup.connected) {
+          socketToCleanup.disconnect()
+        } else if (typeof socketToCleanup.close === 'function') {
           // Force close if not connected yet (prevents WebSocket error)
-          socket.close()
+          socketToCleanup.close()
         }
       }
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken, session?.user?.id])
+  }, [code, isGuest, guestId, guestName, guestToken, shouldJoinLobbyRoom, session?.user?.id, normalizeServerError])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
-    if (!socket) return
+    const currentSocket = socketRef.current
+    if (!currentSocket) return
 
     if (isConnected) {
-      socket.emit(event, data)
+      currentSocket.emit(event, data)
     } else {
-      socket.once('connect', () => {
-        socket.emit(event, data)
+      currentSocket.once('connect', () => {
+        currentSocket.emit(event, data)
       })
     }
-  }, [socket, isConnected])
+  }, [isConnected])
 
   return {
     socket,

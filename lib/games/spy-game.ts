@@ -82,6 +82,20 @@ export class SpyGame extends GameEngine {
       throw new Error('No locations available for Spy game')
     }
 
+    // Starting a new round from results should advance round counter first.
+    if (data.phase === SpyGamePhase.RESULTS) {
+      if (data.currentRound >= data.totalRounds) {
+        const winner = this.checkWinCondition()
+        if (winner) {
+          this.state.status = 'finished'
+          this.state.winner = winner.id
+        }
+        this.state.updatedAt = new Date()
+        return
+      }
+      data.currentRound += 1
+    }
+
     const randomLocation = locations[Math.floor(Math.random() * locations.length)]
     data.location = randomLocation.name
     data.locationCategory = randomLocation.category
@@ -106,9 +120,9 @@ export class SpyGame extends GameEngine {
       }
     }
 
-    // Initialize scores if first round
-    if (data.currentRound === 1) {
-      for (const player of this.state.players) {
+    // Initialize/preserve scores across rounds.
+    for (const player of this.state.players) {
+      if (typeof data.scores[player.id] !== 'number') {
         data.scores[player.id] = 0
       }
     }

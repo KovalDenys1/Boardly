@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SpyGame } from '@/lib/games/spy-game'
+import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { getActiveSpyLocations } from '@/lib/spy-locations'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -47,7 +48,8 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    if (game.gameType !== 'guess_the_spy') {
+    const resolvedGameType = game.gameType || game.lobby?.gameType
+    if (resolvedGameType !== 'guess_the_spy') {
       return NextResponse.json({ error: 'Invalid game type' }, { status: 400 })
     }
 
@@ -62,14 +64,68 @@ export async function POST(
     // Load game engine
     const spyGame = new SpyGame(gameId)
     spyGame.loadState(JSON.parse(game.state))
+    const state = spyGame.getState()
+    const stateData = (state.data ?? {}) as {
+      phase?: SpyGamePhase
+      currentRound?: number
+      totalRounds?: number
+    }
+
+    if (state.status === 'finished' || game.status === 'finished') {
+      return NextResponse.json(
+        { error: 'Game already finished' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      stateData.phase !== SpyGamePhase.WAITING &&
+      stateData.phase !== SpyGamePhase.RESULTS
+    ) {
+      return NextResponse.json(
+        { error: 'Round can only be initialized from waiting/results phase' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      stateData.phase === SpyGamePhase.RESULTS &&
+      typeof stateData.currentRound === 'number' &&
+      typeof stateData.totalRounds === 'number' &&
+      stateData.currentRound >= stateData.totalRounds
+    ) {
+      return NextResponse.json(
+        { error: 'All rounds are already completed' },
+        { status: 400 }
+      )
+    }
 
     // Fetch locations from DB
-    const locations = await prisma.spyLocations.findMany({
-      where: { isActive: true },
-    })
+    let activeLocations
+    try {
+      activeLocations = await getActiveSpyLocations()
+    } catch (error) {
+      log.error('Cannot initialize Spy round: failed to resolve locations', error as Error, {
+        gameId,
+      })
+      return NextResponse.json(
+        {
+          error: 'Spy locations are not configured',
+          details: error instanceof Error ? error.message : 'Unable to resolve Spy locations',
+        },
+        { status: 500 }
+      )
+    }
+
+    if (activeLocations.source === 'fallback') {
+      log.warn('No active Spy locations configured in DB, using fallback set', {
+        gameId,
+        fallbackCount: activeLocations.locations.length,
+      })
+    }
 
     // Initialize round (assigns roles, selects location)
-    spyGame.initializeRound(locations)
+    spyGame.initializeRound(activeLocations.locations)
 
     // Get updated state
     const updatedState = spyGame.getState()
@@ -101,6 +157,12 @@ export async function POST(
     // Notify all clients via WebSocket
     await notifySocket(`lobby:${game.lobby.code}`, 'spy-round-start', {
       state: updatedState,
+    })
+
+    // Broadcast canonical game update so generic game listeners reconcile immediately.
+    await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
+      action: 'state-change',
+      payload: { state: updatedState },
     })
 
     return NextResponse.json({

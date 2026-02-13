@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GameType } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -10,6 +11,8 @@ import {
   verifyGuestToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
+import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -48,6 +51,9 @@ export async function POST(
               in: ['waiting', 'playing'],
             },
           },
+          orderBy: {
+            updatedAt: 'desc',
+          },
           include: {
             players: true,
           },
@@ -67,7 +73,7 @@ export async function POST(
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
-    const activeGame = lobby.games[0]
+    const activeGame = pickRelevantLobbyGame(lobby.games as any[])
 
     // Check if guest is already in the lobby
     if (activeGame) {
@@ -96,11 +102,14 @@ export async function POST(
     // Create or get the active game
     let game
     if (!activeGame) {
+      const gameType = (lobby.gameType || DEFAULT_GAME_TYPE) as GameType
+      const initialState = createGameEngine(gameType, 'temp').getState()
       game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
+          gameType,
           status: 'waiting',
-          state: JSON.stringify({}), // Empty initial state
+          state: JSON.stringify(initialState),
           players: {
             create: {
               userId: guestUser.id,

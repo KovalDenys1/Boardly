@@ -4,6 +4,7 @@ import { apiLogger } from '@/lib/logger'
 import { getServerSocketUrl, getSocketInternalAuthHeaders } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -39,6 +40,9 @@ export async function POST(
               { status: 'playing' }
             ]
           },
+          orderBy: {
+            updatedAt: 'desc',
+          },
           include: {
             players: {
               include: {
@@ -57,7 +61,11 @@ export async function POST(
       )
     }
 
-    const activeGame = lobby.games[0]
+    const playerOwnedGame =
+      lobby.games.find((game: any) =>
+        game.players.some((p: any) => p.userId === userId)
+      ) || null
+    const activeGame = playerOwnedGame || pickRelevantLobbyGame(lobby.games as any[])
 
     if (!activeGame) {
       return NextResponse.json(
@@ -70,10 +78,11 @@ export async function POST(
     const player = activeGame.players.find((p: any) => p.userId === userId)
 
     if (!player) {
-      return NextResponse.json(
-        { error: 'You are not in this game' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        message: 'You already left the lobby',
+        gameEnded: false,
+        lobbyDeactivated: false
+      })
     }
 
     // Remove player from the game
@@ -99,8 +108,8 @@ export async function POST(
     // Different behavior based on game status
     if (activeGame.status === 'waiting') {
       // In waiting state, just remove player
-      // If no players left, deactivate the lobby
-      if (remainingPlayers === 0) {
+      // If no players or no human players left, deactivate the lobby
+      if (remainingPlayers === 0 || remainingHumanPlayers === 0) {
         await prisma.lobbies.update({
           where: { id: lobby.id },
           data: { isActive: false }

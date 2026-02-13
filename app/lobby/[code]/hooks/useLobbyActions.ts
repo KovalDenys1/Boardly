@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -32,6 +33,7 @@ interface UseLobbyActionsProps {
   isGuest: boolean
   guestId: string | null
   guestName: string | null
+  guestToken: string | null
   userId: string | null | undefined
   username: string | null
   setError: (error: string) => void
@@ -56,6 +58,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     isGuest,
     guestId,
     guestName,
+    guestToken,
     username,
     setError,
     setLoading,
@@ -69,20 +72,20 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const loadLobby = useCallback(async () => {
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken, {
+        includeContentType: false,
+      })
 
-      const res = await fetch(`/api/lobby/${code}`, { headers })
+      const res = await fetch(`/api/lobby/${code}?includeFinished=true`, { headers })
       const data = await res.json()
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to load lobby')
       }
 
-      setLobby(data.lobby)
+      const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data)
+      setLobby(lobbyPayload)
 
-      const activeGame = data.lobby.games.find((g: any) =>
-        ['waiting', 'playing'].includes(g.status)
-      )
       if (activeGame) {
         setGame(activeGame)
         if (activeGame.state) {
@@ -106,7 +109,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
     // setState functions are stable and don't need to be in dependencies
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName])
+  }, [code, isGuest, guestId, guestName, guestToken])
 
   // Update ref when loadLobby changes
   useEffect(() => {
@@ -115,7 +118,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const addBotToLobby = useCallback(async (options?: { auto?: boolean }) => {
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch(`/api/lobby/${code}/add-bot`, {
         method: 'POST',
         headers,
@@ -148,7 +151,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       showToast.error('toast.botAddFailed', err.message)
       return false
     }
-  }, [code, isGuest, guestId, guestName])
+  }, [code, isGuest, guestId, guestName, guestToken])
 
   const announceBotJoined = useCallback(() => {
     const botJoinMessage = {
@@ -164,7 +167,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const handleJoinLobby = useCallback(async () => {
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
 
       const res = await fetch(`/api/lobby/${code}`, {
         method: 'POST',
@@ -185,20 +188,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await loadLobbyRef.current()
       }
 
-      const ensureLobbyRoomJoin = () => {
-        if (socket && socket.connected) {
-          clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
-          socket.emit('join-lobby', code)
-        } else if (socket) {
-          clientLogger.log('⏳ Waiting for socket connection to join lobby room...')
-          socket.once('connect', () => {
-            clientLogger.log('📡 Socket connected, joining lobby room')
-            socket.emit('join-lobby', code)
-          })
-        }
+      // useSocketConnection joins room on each connect/reconnect.
+      // Emit only when already connected to avoid duplicate JOIN_LOBBY emissions.
+      if (socket && socket.connected) {
+        clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
+        socket.emit('join-lobby', code)
       }
-
-      ensureLobbyRoomJoin()
 
       // Track lobby join
       trackLobbyJoined({
@@ -219,16 +214,23 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: any) {
       setError(err.message)
     }
-  }, [code, password, isGuest, guestId, guestName, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
+  }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
 
     try {
       setStartingGame(true)
+      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
+      const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+      const supportsBots = hasBotSupport(gameType)
+      const desiredPlayerCount = supportsBots
+        ? Math.max(2, requiredMinPlayers)
+        : requiredMinPlayers
+      let playerCount = game?.players?.length || 0
 
-      // Check if we need to add a bot first
-      if ((game?.players?.length || 0) < 2) {
+      // Auto-add one bot for bot-supported games when we are below minimum.
+      if (playerCount < desiredPlayerCount && supportsBots) {
         showToast.loading('toast.addingBot', undefined, undefined, { id: 'add-bot' })
         const botAdded = await addBotToLobby({ auto: true })
         showToast.dismiss('add-bot')
@@ -249,29 +251,59 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
         // Small delay to ensure state is updated
         await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Refresh local count after reconciliation
+        playerCount = game?.players?.length || playerCount + 1
       }
 
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      if (playerCount < requiredMinPlayers) {
+        setStartingGame(false)
+        showToast.error(
+          'toast.gameStartFailed',
+          `Need at least ${requiredMinPlayers} players to start ${gameType.replaceAll('_', ' ')}.`
+        )
+        return
+      }
+
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch('/api/game/create', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          gameType: lobby.gameType || DEFAULT_GAME_TYPE,
+          gameType,
           lobbyId: lobby.id,
-          config: { maxPlayers: lobby.maxPlayers, minPlayers: 1 }
+          config: { maxPlayers: lobby.maxPlayers, minPlayers: requiredMinPlayers }
         }),
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        clientLogger.error('Failed to start game - server response:', error)
-        throw new Error(error.error || error.details || 'Failed to start game')
+        let errorPayload: any = null
+
+        try {
+          errorPayload = await res.json()
+        } catch {
+          // Ignore JSON parse errors and use status text fallback below.
+        }
+
+        const hasMessage =
+          typeof errorPayload?.error === 'string' ||
+          typeof errorPayload?.details === 'string'
+
+        const diagnosticPayload = hasMessage || (errorPayload && Object.keys(errorPayload).length > 0)
+          ? errorPayload
+          : { status: res.status, statusText: res.statusText }
+
+        clientLogger.error('Failed to start game - server response:', diagnosticPayload)
+        throw new Error(
+          errorPayload?.error ||
+          errorPayload?.details ||
+          `Failed to start game (HTTP ${res.status})`
+        )
       }
 
       const data = await res.json()
 
       // Create the correct engine based on game type
-      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
       const engine = restoreGameEngine(gameType, data.game.id, data.game.state)
       setGameEngine(engine)
 
@@ -324,7 +356,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
+  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken])
 
   return {
     loadLobby,

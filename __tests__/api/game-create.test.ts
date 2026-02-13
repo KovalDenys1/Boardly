@@ -7,13 +7,13 @@ import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/game/create/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
   prisma: {
     lobbies: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     games: {
       create: jest.fn(),
@@ -21,6 +21,9 @@ jest.mock('@/lib/db', () => ({
     },
     players: {
       create: jest.fn(),
+    },
+    spyLocations: {
+      findMany: jest.fn(),
     },
   },
 }))
@@ -195,8 +198,7 @@ describe('POST /api/game/create', () => {
     expect(data.error).toBe('Only lobby creator can start the game')
   })
 
-  it.skip('should successfully create and start game', async () => {
-    // TODO: Fix this test - needs proper mock setup for YahtzeeGame and all Prisma operations
+  it('should successfully create and start game', async () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
@@ -206,6 +208,14 @@ describe('POST /api/game/create', () => {
     const updatedGame = {
       ...mockWaitingGame,
       status: 'playing',
+      gameType: 'yahtzee',
+      players: mockWaitingGame.players.map((p) => ({
+        ...p,
+        user: {
+          ...p.user,
+          bot: null,
+        },
+      })),
       state: JSON.stringify({
         id: 'game-123',
         gameType: 'yahtzee',
@@ -243,6 +253,12 @@ describe('POST /api/game/create', () => {
     expect(data.game).toBeDefined()
     expect(data.game.status).toBe('playing')
     expect(mockPrisma.games.update).toHaveBeenCalled()
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'lobby-123' },
+        data: { isActive: false },
+      })
+    )
   })
 
   it('should return 400 when not enough players', async () => {
@@ -269,7 +285,104 @@ describe('POST /api/game/create', () => {
     const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('At least 2 players are required to start the game')
+    expect(data.error).toBe('At least 2 players are required to start this game')
+  })
+
+  it('should require 3 players for guess_the_spy', async () => {
+    const spyLobby = {
+      ...mockLobby,
+      gameType: 'guess_the_spy',
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...spyLobby,
+      games: [mockWaitingGame], // only 2 players
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'guess_the_spy',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 10, minPlayers: 3 },
+      }),
+    })
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('At least 3 players are required to start this game')
+  })
+
+  it('should start guess_the_spy with fallback locations when DB locations are empty', async () => {
+    const spyLobby = {
+      ...mockLobby,
+      gameType: 'guess_the_spy',
+    }
+
+    const spyWaitingGame = {
+      ...mockWaitingGame,
+      players: [
+        ...mockWaitingGame.players,
+        {
+          id: 'player-3',
+          userId: 'user-789',
+          score: 0,
+          position: 2,
+          user: {
+            id: 'user-789',
+            username: 'player3',
+            email: 'player3@example.com',
+            isBot: false,
+          },
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...spyLobby,
+      games: [spyWaitingGame],
+    } as any)
+    mockPrisma.spyLocations.findMany.mockResolvedValue([] as any)
+
+    let capturedState: any
+    mockPrisma.games.update.mockImplementation((args: any) => {
+      capturedState = JSON.parse(args.data.state)
+      return Promise.resolve({
+        ...spyWaitingGame,
+        status: 'playing',
+        gameType: 'guess_the_spy',
+        state: args.data.state,
+        players: spyWaitingGame.players.map((p: any) => ({
+          ...p,
+          user: {
+            ...p.user,
+            bot: null,
+          },
+        })),
+      } as any)
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'guess_the_spy',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 10, minPlayers: 3 },
+      }),
+    })
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.game).toBeDefined()
+    expect(data.game.status).toBe('playing')
+    expect(mockPrisma.spyLocations.findMany).toHaveBeenCalled()
+    expect(capturedState?.data?.phase).toBe('role_reveal')
+    expect(typeof capturedState?.data?.location).toBe('string')
+    expect(capturedState?.data?.location.length).toBeGreaterThan(0)
   })
 
   it('should create new waiting game after finished game', async () => {

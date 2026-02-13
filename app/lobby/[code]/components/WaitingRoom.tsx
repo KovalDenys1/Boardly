@@ -7,6 +7,7 @@ interface WaitingRoomProps {
   game: any
   lobby: any
   gameEngine: any
+  minPlayers: number
   canStartGame: boolean
   startingGame: boolean
   onStartGame: () => void
@@ -19,6 +20,7 @@ export default function WaitingRoom({
   game,
   lobby,
   gameEngine,
+  minPlayers,
   canStartGame,
   startingGame,
   onStartGame,
@@ -34,41 +36,18 @@ export default function WaitingRoom({
   // Show loading overlay when starting game
   if (startingGame) {
     return (
-      <div style={{ maxWidth: 'min(672px, 90vw)', margin: '0 auto' }}>
-        {/* Loading Card */}
-        <div className="card text-center animate-scale-in">
-          <div
-            className="flex flex-col items-center justify-center"
-            style={{ paddingTop: `clamp(48px, 5vh, 80px)`, paddingBottom: `clamp(48px, 5vh, 80px)` }}
-          >
-            <LoadingSpinner size="lg" />
-            <h3
-              className="font-bold"
-              style={{
-                fontSize: `clamp(24px, 2.5vw, 36px)`,
-                marginTop: `clamp(24px, 2.5vh, 40px)`,
-                marginBottom: `clamp(10px, 1vh, 16px)`,
-              }}
-            >
-              {t('game.ui.startingGame')}
-            </h3>
-            <p
-              className="text-gray-600 dark:text-gray-400"
-              style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
-            >
-              {playerCount === 1 ? t('game.ui.addingBot') : t('game.ui.preparingDice')}
-            </p>
-            <div
-              className="flex items-center text-gray-500"
-              style={{
-                marginTop: `clamp(24px, 2.5vh, 40px)`,
-                gap: `clamp(6px, 0.6vw, 10px)`,
-                fontSize: `clamp(12px, 1.1vw, 14px)`,
-              }}
-            >
-              <div className="animate-pulse">⏳</div>
-              <span>{t('game.ui.willTakeAMoment')}</span>
-            </div>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <h3 className="text-2xl font-extrabold text-white mt-6 mb-2 drop-shadow-lg">
+            {t('game.ui.startingGame')}
+          </h3>
+          <p className="text-white/60 text-sm">
+            {playerCount === 1 ? t('game.ui.addingBot') : t('game.ui.preparingDice')}
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-4 text-white/40 text-sm">
+            <div className="animate-pulse">⏳</div>
+            <span>{t('game.ui.willTakeAMoment')}</span>
           </div>
         </div>
       </div>
@@ -76,134 +55,84 @@ export default function WaitingRoom({
   }
 
   return (
-    <div style={{ maxWidth: 'min(672px, 90vw)', margin: '0 auto' }}>
-      {/* Main Waiting Card */}
-      <div className="card text-center animate-scale-in">
+    <div className="max-w-2xl mx-auto w-full px-4 py-6 space-y-6">
         {/* Header Section */}
-        <div style={{ marginBottom: `clamp(24px, 2.5vh, 40px)` }}>
-          <div
-            className="inline-flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 animate-pulse shadow-2xl"
-            style={{
-              width: `clamp(80px, 8vw, 120px)`,
-              height: `clamp(80px, 8vw, 120px)`,
-              marginBottom: `clamp(20px, 2vh, 32px)`,
-            }}
-          >
-            <span style={{ fontSize: `clamp(36px, 4vw, 60px)` }}>🎲</span>
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/15 backdrop-blur-sm mb-4 animate-pulse shadow-2xl">
+            <span className="text-5xl">🎲</span>
           </div>
-          <h2
-            className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-            style={{
-              fontSize: `clamp(28px, 3vw, 44px)`,
-              marginBottom: `clamp(10px, 1vh, 16px)`,
-            }}
-          >
+          <h2 className="text-3xl font-extrabold text-white mb-2 drop-shadow-lg">
             {t('game.ui.readyToPlay')}
           </h2>
-          <p
-            className="text-gray-600 dark:text-gray-400"
-            style={{
-              fontSize: `clamp(14px, 1.4vw, 20px)`,
-              marginBottom: `clamp(12px, 1.2vh, 20px)`,
-            }}
-          >
+          <p className="text-white/70 text-sm">
             {t('game.ui.addBotOrWait')}
           </p>
         </div>
 
-        {/* Player Count Status */}
-        <div style={{ marginBottom: `clamp(24px, 2.5vh, 40px)` }}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
-            {/* Player Count */}
-            <div
-              className={`inline-flex items-center rounded-full ${playerCount < 2
-                  ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600'
-                  : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600'
-                }`}
-              style={{
-                gap: `clamp(10px, 1vw, 16px)`,
-                padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 32px)`,
-                borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-              }}
-            >
-              <span style={{ fontSize: `clamp(20px, 2vw, 28px)` }}>👥</span>
-              <div className="text-left">
-                <p
-                  className={`font-bold ${playerCount < 2
-                      ? 'text-yellow-700 dark:text-yellow-300'
-                      : 'text-green-700 dark:text-green-300'
-                    }`}
-                  style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
-                >
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {/* Player Count Card */}
+          <div
+            className={`bg-white/10 backdrop-blur-md border rounded-2xl p-4 ${
+              playerCount < minPlayers
+                ? 'border-yellow-400/30'
+                : 'border-green-400/30'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
+                playerCount < minPlayers
+                  ? 'bg-yellow-500/20'
+                  : 'bg-green-500/20'
+              }`}>
+                <span className="text-2xl">👥</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-bold text-sm mb-1 ${
+                  playerCount < minPlayers ? 'text-yellow-200' : 'text-green-200'
+                }`}>
                   {t('game.ui.playersInLobby', { count: playerCount })}
                 </p>
-                {playerCount < 2 ? (
-                  <p
-                    className="text-yellow-600 dark:text-yellow-400"
-                    style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
-                  >
-                    {t('game.ui.addBotOrWait')}
+                {playerCount < minPlayers ? (
+                  <p className="text-xs text-white/60">
+                    Need {minPlayers - playerCount} more player{minPlayers - playerCount === 1 ? '' : 's'} to start
                   </p>
                 ) : (
-                  <p
-                    className="text-green-600 dark:text-green-400"
-                    style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
-                  >
+                  <p className="text-xs text-white/60">
                     {t('game.ui.readyToStart')}
                   </p>
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Turn Timer */}
-            {lobby?.turnTimer && (
-              <div
-                className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
-                style={{
-                  gap: `clamp(10px, 1vw, 16px)`,
-                  padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 32px)`,
-                  borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-                }}
-              >
-                <span style={{ fontSize: `clamp(20px, 2vw, 28px)` }}>⏱️</span>
-                <div className="text-left">
-                  <p
-                    className="font-bold text-blue-700 dark:text-blue-300"
-                    style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}
-                  >
+          {/* Turn Timer Card */}
+          {lobby?.turnTimer && (
+            <div className="bg-white/10 backdrop-blur-md border border-blue-400/30 rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <span className="text-2xl">⏱️</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-blue-200 mb-1">
                     {lobby.turnTimer}s {t('game.ui.perTurn')}
                   </p>
-                  <p
-                    className="text-blue-600 dark:text-blue-400"
-                    style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
-                  >
+                  <p className="text-xs text-white/60">
                     {t('game.ui.timeLimit')}
                   </p>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Players List - Compact View */}
+        {/* Players List */}
         {game?.players && game.players.length > 0 && (
-          <div
-            className="bg-gray-50 dark:bg-gray-800/50 rounded-xl"
-            style={{
-              marginBottom: `clamp(24px, 2.5vh, 40px)`,
-              padding: `clamp(20px, 2vh, 32px)`,
-            }}
-          >
-            <h3
-              className="font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide"
-              style={{
-                fontSize: `clamp(11px, 1vw, 13px)`,
-                marginBottom: `clamp(12px, 1.2vh, 20px)`,
-              }}
-            >
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 mb-6">
+            <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-4">
               {t('game.ui.playersInLobbyTitle')}
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
+            <div className="flex flex-col gap-3">
               {game.players.map((p: any, index: number) => {
                 const isBot = !!p.user?.bot
                 const playerName = isBot
@@ -214,60 +143,36 @@ export default function WaitingRoom({
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center rounded-lg transition-all ${isCurrentUser
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                      } ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20' : ''
-                      }`}
-                    style={{
-                      gap: `clamp(10px, 1vw, 16px)`,
-                      padding: `clamp(12px, 1.2vh, 20px)`,
-                      borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-                    }}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all ${
+                      isCurrentUser
+                        ? 'bg-green-500/15 border border-green-400/40'
+                        : isBot
+                        ? 'bg-purple-500/15 border border-purple-400/40'
+                        : 'bg-white/5 border border-white/10'
+                    }`}
                   >
                     {/* Position */}
                     <div
-                      className={`rounded-full flex items-center justify-center font-bold text-white ${index === 0 ? 'bg-yellow-500' : 'bg-gray-400'
-                        }`}
-                      style={{
-                        width: `clamp(32px, 3.5vw, 48px)`,
-                        height: `clamp(32px, 3.5vw, 48px)`,
-                      }}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white ${
+                        index === 0 ? 'bg-yellow-500' : 'bg-white/20'
+                      }`}
                     >
                       {index + 1}
                     </div>
 
                     {/* Player Info */}
                     <div className="flex-1 text-left">
-                      <div
-                        className="flex items-center"
-                        style={{ gap: `clamp(6px, 0.6vw, 10px)` }}
-                      >
-                        <span
-                          className="font-semibold truncate"
-                          style={{ fontSize: `clamp(13px, 1.3vw, 16px)` }}
-                        >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-white text-sm truncate">
                           {playerName}
                         </span>
                         {isBot && (
-                          <span
-                            className="bg-purple-500 text-white rounded-full"
-                            style={{
-                              fontSize: `clamp(9px, 0.85vw, 11px)`,
-                              padding: `clamp(2px, 0.2vh, 3px) clamp(6px, 0.6vw, 10px)`,
-                            }}
-                          >
+                          <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             AI
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
-                          <span
-                            className="bg-green-500 text-white rounded-full"
-                            style={{
-                              fontSize: `clamp(9px, 0.85vw, 11px)`,
-                              padding: `clamp(2px, 0.2vh, 3px) clamp(6px, 0.6vw, 10px)`,
-                            }}
-                          >
+                          <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             {t('game.ui.you')}
                           </span>
                         )}
@@ -275,12 +180,7 @@ export default function WaitingRoom({
                     </div>
 
                     {/* Ready Status */}
-                    <div
-                      className="text-green-500"
-                      style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}
-                    >
-                      ✓
-                    </div>
+                    <span className="text-green-400 text-lg">✓</span>
                   </div>
                 )
               })}
@@ -288,34 +188,25 @@ export default function WaitingRoom({
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Section */}
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5">
         {canStartGame ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(12px, 1.2vh, 20px)` }}>
+          <div className="flex flex-col gap-3">
             <button
               onClick={() => {
                 soundManager.play('click')
                 onStartGame()
               }}
-              disabled={playerCount < 1}
-              className="btn btn-success animate-bounce-in disabled:opacity-50 disabled:cursor-not-allowed w-full shadow-xl hover:shadow-2xl transition-shadow"
-              style={{
-                fontSize: `clamp(16px, 1.6vw, 24px)`,
-                padding: `clamp(12px, 1.2vh, 20px) clamp(32px, 3.2vw, 52px)`,
-              }}
+              disabled={playerCount < minPlayers}
+              className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-600 disabled:to-gray-700"
             >
-              <span style={{ fontSize: `clamp(20px, 2vw, 28px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>🎮</span>
+              <span className="mr-2 text-xl">🎮</span>
               {t('game.ui.startGame')}
             </button>
 
-            {playerCount === 1 && !hasBot && (
-              <div
-                className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-600 rounded-lg"
-                style={{ padding: `clamp(10px, 1vh, 16px)` }}
-              >
-                <p
-                  className="text-blue-700 dark:text-blue-300"
-                  style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
-                >
+            {hasBotSupport(lobby.gameType) && playerCount < minPlayers && !hasBot && (
+              <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl px-4 py-2.5">
+                <p className="text-blue-200 text-xs">
                   💡 <strong>{t('game.ui.tip')}:</strong> {t('game.ui.botAutoAddTip')}
                 </p>
               </div>
@@ -329,17 +220,13 @@ export default function WaitingRoom({
                   onAddBot()
                 }}
                 disabled={!canAddMorePlayers}
-                className="btn btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  fontSize: `clamp(14px, 1.4vw, 20px)`,
-                  padding: `clamp(10px, 1vh, 16px) clamp(24px, 2.4vw, 40px)`,
-                }}
+                className="w-full px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20"
                 title={!canAddMorePlayers ? t('game.ui.lobbyFull') : t('game.ui.addAiOpponent')}
               >
-                <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>🤖</span>
+                <span className="mr-2 text-lg">🤖</span>
                 {t('game.ui.addBotPlayer')}
                 {canAddMorePlayers && (
-                  <span style={{ marginLeft: `clamp(6px, 0.6vw, 10px)`, fontSize: `clamp(11px, 1vw, 14px)`, opacity: 0.75 }}>
+                  <span className="ml-2 text-xs opacity-60">
                     ({playerCount}/{lobby?.maxPlayers || 4})
                   </span>
                 )}
@@ -354,17 +241,13 @@ export default function WaitingRoom({
                   onInviteFriends()
                 }}
                 disabled={!canAddMorePlayers}
-                className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  fontSize: `clamp(14px, 1.4vw, 20px)`,
-                  padding: `clamp(10px, 1vh, 16px) clamp(24px, 2.4vw, 40px)`,
-                }}
+                className="w-full px-6 py-3.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20"
                 title={!canAddMorePlayers ? t('game.ui.lobbyFull') : t('game.ui.inviteFriendsToJoin')}
               >
-                <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, marginRight: `clamp(6px, 0.6vw, 10px)` }}>👥</span>
+                <span className="mr-2 text-lg">👥</span>
                 {t('game.ui.inviteFriends')}
                 {canAddMorePlayers && (
-                  <span style={{ marginLeft: `clamp(6px, 0.6vw, 10px)`, fontSize: `clamp(11px, 1vw, 14px)`, opacity: 0.75 }}>
+                  <span className="ml-2 text-xs opacity-60">
                     ({playerCount}/{lobby?.maxPlayers || 4})
                   </span>
                 )}
@@ -372,40 +255,19 @@ export default function WaitingRoom({
             )}
           </div>
         ) : (
-          <div
-            className="bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600 rounded-xl"
-            style={{
-              borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-              padding: `clamp(20px, 2vh, 32px)`,
-            }}
-          >
-            <div
-              className="flex items-center justify-center"
-              style={{
-                gap: `clamp(10px, 1vw, 16px)`,
-                marginBottom: `clamp(10px, 1vh, 16px)`,
-              }}
-            >
-              <span
-                className="animate-bounce"
-                style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}
-              >⌛</span>
-              <p
-                className="text-blue-700 dark:text-blue-300 font-bold"
-                style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}
-              >
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-2xl animate-bounce">⌛</span>
+              <p className="text-white font-bold text-base">
                 {t('game.ui.waitingForHost')}
               </p>
             </div>
-            <p
-              className="text-blue-600 dark:text-blue-400"
-              style={{ fontSize: `clamp(11px, 1vw, 14px)` }}
-            >
-              {t('game.ui.host')}: <span className="font-semibold">{lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}</span>
+            <p className="text-white/60 text-sm">
+              {t('game.ui.host')}: <span className="font-semibold text-white/80">{lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}</span>
             </p>
           </div>
         )}
+        </div>
       </div>
-    </div>
   )
 }
