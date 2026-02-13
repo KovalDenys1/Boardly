@@ -14,6 +14,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { Game } from '@/types/game'
 import TicTacToeGameBoard from '@/components/TicTacToeGameBoard'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 
 interface Lobby {
@@ -39,6 +40,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [game, setGame] = useState<Game | null>(null)
     const [gameEngine, setGameEngine] = useState<TicTacToeGame | null>(null)
     const [socket, setSocket] = useState<Socket | null>(null)
+    const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -278,11 +280,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         <span>❌⭕</span> {t('games.tictactoe.name')}
                     </h1>
                     <button
-                        onClick={() => {
-                            if (confirm('Are you sure you want to leave the game?')) {
-                                handleLeave()
-                            }
-                        }}
+                        onClick={() => setShowLeaveConfirmModal(true)}
                         className="btn btn-danger"
                     >
                         {t('game.ui.leave')}
@@ -363,6 +361,19 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     )}
                 </div>
             </div>
+
+            {/* Leave Confirmation Modal */}
+            <ConfirmModal
+                isOpen={showLeaveConfirmModal}
+                onClose={() => setShowLeaveConfirmModal(false)}
+                onConfirm={handleLeave}
+                title={t('game.ui.leave')}
+                message={t('game.ui.leaveConfirm')}
+                confirmText={t('common.confirm')}
+                cancelText={t('common.cancel')}
+                variant="danger"
+                icon="🚪"
+            />
         </div>
     )
 }

@@ -44,6 +44,7 @@ export function useSocketConnection({
   onStateSync,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
+  const socketRef = useRef<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [isReconnecting, setIsReconnecting] = useState(false)
@@ -238,6 +239,10 @@ export function useSocketConnection({
 
       const isReconnect = hasConnectedOnceRef.current
       clientLogger.log(isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:', code)
+
+      // Reset dedup cursor on each fresh transport session.
+      // Server sequence counters are in-memory and can reset on restart/redeploy.
+      lastProcessedSequenceRef.current = 0
 
       setIsConnected(true)
       setIsReconnecting(false)
@@ -442,6 +447,7 @@ export function useSocketConnection({
     }
 
     if (isMounted) {
+      socketRef.current = newSocket
       setSocket(newSocket)
     }
     }
@@ -460,32 +466,34 @@ export function useSocketConnection({
       }
 
       // Cleanup socket if exists
-      if (socket) {
+      const socketToCleanup = socketRef.current
+      socketRef.current = null
+      if (socketToCleanup) {
         // Remove all listeners first
-        socket.off(SocketEvents.CONNECT)
-        socket.off(SocketEvents.DISCONNECT)
-        socket.off(SocketEvents.CONNECT_ERROR)
-        socket.off(SocketEvents.RECONNECT_ATTEMPT)
-        socket.off(SocketEvents.RECONNECT_FAILED)
-        socket.off(SocketEvents.RECONNECT)
-        socket.off(SocketEvents.ERROR)
-        socket.off(SocketEvents.SERVER_ERROR)
-        socket.off(SocketEvents.GAME_UPDATE)
-        socket.off(SocketEvents.CHAT_MESSAGE)
-        socket.off(SocketEvents.PLAYER_TYPING)
-        socket.off(SocketEvents.LOBBY_UPDATE)
-        socket.off(SocketEvents.PLAYER_JOINED)
-        socket.off(SocketEvents.GAME_STARTED)
-        socket.off(SocketEvents.GAME_ABANDONED)
-        socket.off(SocketEvents.PLAYER_LEFT)
-        socket.off(SocketEvents.BOT_ACTION)
+        socketToCleanup.off(SocketEvents.CONNECT)
+        socketToCleanup.off(SocketEvents.DISCONNECT)
+        socketToCleanup.off(SocketEvents.CONNECT_ERROR)
+        socketToCleanup.off(SocketEvents.RECONNECT_ATTEMPT)
+        socketToCleanup.off(SocketEvents.RECONNECT_FAILED)
+        socketToCleanup.off(SocketEvents.RECONNECT)
+        socketToCleanup.off(SocketEvents.ERROR)
+        socketToCleanup.off(SocketEvents.SERVER_ERROR)
+        socketToCleanup.off(SocketEvents.GAME_UPDATE)
+        socketToCleanup.off(SocketEvents.CHAT_MESSAGE)
+        socketToCleanup.off(SocketEvents.PLAYER_TYPING)
+        socketToCleanup.off(SocketEvents.LOBBY_UPDATE)
+        socketToCleanup.off(SocketEvents.PLAYER_JOINED)
+        socketToCleanup.off(SocketEvents.GAME_STARTED)
+        socketToCleanup.off(SocketEvents.GAME_ABANDONED)
+        socketToCleanup.off(SocketEvents.PLAYER_LEFT)
+        socketToCleanup.off(SocketEvents.BOT_ACTION)
 
         // Gracefully disconnect only if connected
-        if (socket.connected) {
-          socket.disconnect()
-        } else if (typeof socket.close === 'function') {
+        if (socketToCleanup.connected) {
+          socketToCleanup.disconnect()
+        } else if (typeof socketToCleanup.close === 'function') {
           // Force close if not connected yet (prevents WebSocket error)
-          socket.close()
+          socketToCleanup.close()
         }
       }
     }
@@ -494,16 +502,17 @@ export function useSocketConnection({
   }, [code, isGuest, guestId, guestName, guestToken, session?.user?.id])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
-    if (!socket) return
+    const currentSocket = socketRef.current
+    if (!currentSocket) return
 
     if (isConnected) {
-      socket.emit(event, data)
+      currentSocket.emit(event, data)
     } else {
-      socket.once('connect', () => {
-        socket.emit(event, data)
+      currentSocket.once('connect', () => {
+        currentSocket.emit(event, data)
       })
     }
-  }, [socket, isConnected])
+  }, [isConnected])
 
   return {
     socket,

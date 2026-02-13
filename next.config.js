@@ -1,8 +1,33 @@
 const { withSentryConfig } = require("@sentry/nextjs")
 
+const envDevOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)
+  .map((origin) => {
+    try {
+      return new URL(origin).hostname
+    } catch {
+      return origin
+        .replace(/^https?:\/\//, '')
+        .replace(/^wss?:\/\//, '')
+        .split('/')[0]
+        .split(':')[0]
+    }
+  })
+
+const allowedDevOrigins = Array.from(new Set([
+  'localhost',
+  '127.0.0.1',
+  ...envDevOrigins,
+]))
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Allow local host variants in development to prevent HMR/CORS failures
+  // when opening the app via localhost, 127.0.0.1, or LAN IP.
+  allowedDevOrigins,
   
   // Performance optimizations
   poweredByHeader: false,

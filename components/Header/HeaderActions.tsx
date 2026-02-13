@@ -16,7 +16,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
-    router.push('/auth/login')
+    router.replace('/')
   }
 
   if (!isAuthenticated) {
@@ -66,4 +66,3 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
     </div>
   )
 }
-

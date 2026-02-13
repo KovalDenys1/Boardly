@@ -78,6 +78,7 @@ import JoinPrompt from './components/JoinPrompt'
 import MobileTabs, { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
 import FriendsListModal from '@/components/FriendsListModal'
+import ConfirmModal from '@/components/ConfirmModal'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -155,6 +156,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Friends invite modal state
   const [showFriendsModal, setShowFriendsModal] = useState(false)
+
+  // Leave confirmation modal state
+  const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
@@ -537,6 +541,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isGuest,
     guestId,
     guestName,
+    guestToken,
     userId,
     username,
     setError,
@@ -553,6 +558,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (!loadLobbyRef.current) return
     await loadLobbyRef.current()
   }, [])
+
+  // Bot turn automation hook
+  const { triggerBotTurn } = useBotTurn({
+    game,
+    gameEngine,
+    code,
+    isGameStarted: game?.status === 'playing',
+    reconcileWithServerSnapshot,
+  })
 
   // Create refs for game actions to use in timer callback
   const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
@@ -586,14 +600,46 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isMyTurn: isMyTurn(),
     gameState: gameEngine?.getState() || null,
     turnTimerLimit,
-    onTimeout: async () => {
-      if (!isMyTurn() || !gameEngine || !(gameEngine instanceof YahtzeeGame) || !handleScoreRef.current) {
+    onTimeout: async (): Promise<boolean> => {
+      const mine = isMyTurn()
+      const hasYahtzeeEngine = !!gameEngine && gameEngine instanceof YahtzeeGame
+      const scoreHandler = handleScoreRef.current
+      const hasScoreHandler = !!scoreHandler
+
+      if (!mine) {
+        if (hasYahtzeeEngine && game?.id && Array.isArray(game?.players)) {
+          const currentPlayer = gameEngine.getCurrentPlayer()
+          const currentGamePlayer = currentPlayer
+            ? game.players.find((player) => player.userId === currentPlayer.id)
+            : null
+          const isBotTurn = !!currentGamePlayer?.user?.bot
+          const rollsLeft = gameEngine.getRollsLeft()
+
+          // Fail-safe: if bot turn is stuck, force-trigger bot logic.
+          // This is safe with server-side locking/idempotency guards.
+          if (isBotTurn && currentPlayer?.id) {
+            clientLogger.warn('⏰ Timer expired on bot turn, triggering fallback bot action', {
+              botUserId: currentPlayer.id,
+              gameId: game.id,
+              currentPlayerIndex: gameEngine.getState().currentPlayerIndex,
+              rollsLeft,
+            })
+            void triggerBotTurn(currentPlayer.id, game.id)
+            return false
+          }
+        }
+
+        return true
+      }
+
+      if (!hasYahtzeeEngine || !hasScoreHandler) {
         clientLogger.warn('⏰ Timer expired but conditions not met', {
-          isMyTurn: isMyTurn(),
+          isMyTurn: mine,
           hasGameEngine: !!gameEngine,
-          hasHandleScore: !!handleScoreRef.current
+          hasHandleScore: hasScoreHandler
         })
-        return
+        // Transient state race (engine/handler not ready) - retry.
+        return false
       }
 
       clientLogger.warn('⏰ Timer expired, auto-selecting best available category')
@@ -603,7 +649,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       if (!currentPlayer) {
         clientLogger.error('⏰ No current player found')
-        return
+        return false
       }
 
       const initialContext = buildAutoActionContext(workingEngine, currentPlayer.id)
@@ -615,7 +661,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         if (!handleRollDiceRef.current) {
           clientLogger.error('⏰ Player hasn\'t rolled but handleRollDice not available')
           showToast.error('toast.timerRollFirst')
-          return
+          return false
         }
 
         clientLogger.log('⏰ Player hasn\'t rolled - auto-rolling once before scoring')
@@ -624,11 +670,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           const rolledEngine = await handleRollDiceRef.current(autoActionContext)
           if (!rolledEngine) {
             clientLogger.log('⏰ Auto-roll skipped by server guard')
-            return
+            return false
           }
           if (!(rolledEngine instanceof YahtzeeGame)) {
             clientLogger.log('⏰ Auto-roll returned non-Yahtzee engine')
-            return
+            return false
           }
           workingEngine = rolledEngine
 
@@ -636,12 +682,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           const postRollPlayer = workingEngine.getCurrentPlayer()
           if (!postRollPlayer || postRollPlayer.id !== currentPlayer.id) {
             clientLogger.log('⏰ Turn changed after auto-roll, skipping auto-score')
-            return
+            return true
           }
           autoActionContext = buildAutoActionContext(workingEngine, postRollPlayer.id, initialContext.debounceKey)
         } catch (error) {
           clientLogger.error('⏰ Failed to auto-roll:', error)
-          return
+          return false
         }
       }
 
@@ -651,7 +697,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       if (!scorecard) {
         clientLogger.error('⏰ No scorecard found')
-        return
+        return false
       }
 
       // Use smart category selection
@@ -686,12 +732,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
 
       try {
-        const scoredEngine = await handleScoreRef.current(bestCategory, autoActionContext)
+        const scoredEngine = await scoreHandler(bestCategory, autoActionContext)
         if (!scoredEngine) {
           clientLogger.log('⏰ Auto-score skipped by server guard')
+          return false
         }
+        return true
       } catch (error) {
         clientLogger.error('⏰ Failed to auto-score:', error)
+        return false
       }
     },
   })
@@ -713,6 +762,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     isGuest,
     guestId,
     guestName,
+    guestToken,
     userId,
     username,
     isMyTurn: isMyTurn(),
@@ -731,14 +781,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     handleScoreRef.current = handleScore
     handleRollDiceRef.current = handleRollDice
   }, [handleScore, handleRollDice])
-
-  // Bot turn automation hook
-  const { triggerBotTurn } = useBotTurn({
-    game,
-    gameEngine,
-    code,
-    isGameStarted: game?.status === 'playing',
-  })
 
   // Load lobby on mount
   useEffect(() => {
@@ -895,20 +937,37 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
 
-  // Force layout recalculation when game starts (mobile browser fix)
+  // Stabilize viewport/layout when game view mounts on mobile/tablet.
+  // Avoid hard reflow hacks (e.g. toggling body display) that can cause horizontal drift on iOS.
   useEffect(() => {
-    if (isGameStarted && typeof window !== 'undefined') {
-      // Small delay to ensure DOM has updated
-      const timer = setTimeout(() => {
-        // Trigger resize event to recalculate viewport
+    if (!isGameStarted || typeof window === 'undefined') return
+
+    const { documentElement, body } = document
+    const prevHtmlOverflowX = documentElement.style.overflowX
+    const prevBodyOverflowX = body.style.overflowX
+
+    // Prevent horizontal page scroll while the fixed full-screen game viewport is active.
+    documentElement.style.overflowX = 'hidden'
+    body.style.overflowX = 'hidden'
+
+    let raf1 = 0
+    let raf2 = 0
+
+    // Wait until layout settles, then normalize viewport scroll and notify listeners.
+    raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+        documentElement.scrollLeft = 0
+        body.scrollLeft = 0
         window.dispatchEvent(new Event('resize'))
-        // Force repaint
-        document.body.style.display = 'none'
-        // Trigger reflow
-        document.body.offsetHeight
-        document.body.style.display = ''
-      }, 100)
-      return () => clearTimeout(timer)
+      })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(raf1)
+      window.cancelAnimationFrame(raf2)
+      documentElement.style.overflowX = prevHtmlOverflowX
+      body.style.overflowX = prevBodyOverflowX
     }
   }, [isGameStarted])
 
@@ -1062,11 +1121,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm(t('game.ui.leaveConfirm'))) {
-                            handleLeaveLobby()
-                          }
-                        }}
+                        onClick={() => setShowLeaveConfirmModal(true)}
                         aria-label={t('game.ui.leave')}
                         className="px-2 py-1 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
@@ -1128,11 +1183,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="hidden sm:inline text-xs">Sound</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to leave the game?')) {
-                            handleLeaveLobby()
-                          }
-                        }}
+                        onClick={() => setShowLeaveConfirmModal(true)}
                         aria-label="Leave game"
                         className="px-3 py-1.5 bg-red-500/90 hover:bg-red-600 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                       >
@@ -1145,11 +1196,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               </div>
 
               {/* Main Game Area - More spacing between columns */}
-              <div className="flex-1 relative" style={{ minHeight: 0, height: '100%' }}>
+              <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
                 <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                  <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full overflow-hidden">
                     <GameBoard
                       gameEngine={gameEngine}
                       game={game}
@@ -1171,7 +1222,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-6 h-full overflow-hidden">
+                  <div className="lg:col-span-6 min-w-0 h-full overflow-hidden">
                     {(() => {
                       // Show selected player's scorecard or current player's scorecard
                       const currentUserId = getCurrentUserId()
@@ -1214,7 +1265,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-3 h-full overflow-hidden flex flex-col gap-3">
+                  <div className="lg:col-span-3 min-w-0 h-full overflow-hidden flex flex-col gap-3">
                     {/* Players List - 40% of space */}
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <PlayerList
@@ -1467,6 +1518,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           lobbyCode={code}
         />
       )}
+
+      {/* Leave Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLeaveConfirmModal}
+        onClose={() => setShowLeaveConfirmModal(false)}
+        onConfirm={handleLeaveLobby}
+        title={t('game.ui.leave')}
+        message={t('game.ui.leaveConfirm')}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        variant="danger"
+        icon="🚪"
+      />
     </div>
   )
 }

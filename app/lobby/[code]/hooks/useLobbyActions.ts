@@ -32,6 +32,7 @@ interface UseLobbyActionsProps {
   isGuest: boolean
   guestId: string | null
   guestName: string | null
+  guestToken: string | null
   userId: string | null | undefined
   username: string | null
   setError: (error: string) => void
@@ -56,6 +57,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     isGuest,
     guestId,
     guestName,
+    guestToken,
     username,
     setError,
     setLoading,
@@ -69,7 +71,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const loadLobby = useCallback(async () => {
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken, {
+        includeContentType: false,
+      })
 
       const res = await fetch(`/api/lobby/${code}`, { headers })
       const data = await res.json()
@@ -106,7 +110,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
     // setState functions are stable and don't need to be in dependencies
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName])
+  }, [code, isGuest, guestId, guestName, guestToken])
 
   // Update ref when loadLobby changes
   useEffect(() => {
@@ -115,7 +119,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const addBotToLobby = useCallback(async (options?: { auto?: boolean }) => {
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch(`/api/lobby/${code}/add-bot`, {
         method: 'POST',
         headers,
@@ -148,7 +152,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       showToast.error('toast.botAddFailed', err.message)
       return false
     }
-  }, [code, isGuest, guestId, guestName])
+  }, [code, isGuest, guestId, guestName, guestToken])
 
   const announceBotJoined = useCallback(() => {
     const botJoinMessage = {
@@ -164,7 +168,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const handleJoinLobby = useCallback(async () => {
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
 
       const res = await fetch(`/api/lobby/${code}`, {
         method: 'POST',
@@ -219,7 +223,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } catch (err: any) {
       setError(err.message)
     }
-  }, [code, password, isGuest, guestId, guestName, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
+  }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
@@ -251,7 +255,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch('/api/game/create', {
         method: 'POST',
         headers,
@@ -324,7 +328,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName])
+  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken])
 
   return {
     loadLobby,

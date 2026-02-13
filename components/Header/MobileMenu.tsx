@@ -30,7 +30,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
-    router.push('/auth/login')
+    router.replace('/')
   }
 
   // Prevent body scroll when menu is open

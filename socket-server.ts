@@ -283,6 +283,12 @@ if (process.env.NODE_ENV === 'production' && !SOCKET_INTERNAL_SECRET) {
   throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production for internal socket endpoints')
 }
 
+const ABRUPT_DISCONNECT_GRACE_MS = Math.max(
+  0,
+  Number(process.env.SOCKET_DISCONNECT_GRACE_MS || 8000)
+)
+const pendingAbruptDisconnects = new Map<string, NodeJS.Timeout>()
+
 function getLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
   const lobbyCodes: string[] = []
   for (const room of rooms) {
@@ -304,6 +310,37 @@ function hasAnotherActiveSocketForUser(userId: string, excludingSocketId: string
     }
   }
   return false
+}
+
+function hasAnyActiveSocketForUser(userId: string): boolean {
+  for (const activeSocket of io.sockets.sockets.values()) {
+    if (!activeSocket.connected) continue
+    if (activeSocket.data?.user?.id === userId) {
+      return true
+    }
+  }
+  return false
+}
+
+function getAbruptDisconnectKey(lobbyCode: string, userId: string): string {
+  return `${lobbyCode}:${userId}`
+}
+
+function clearPendingAbruptDisconnect(lobbyCode: string, userId: string, reason?: string) {
+  const key = getAbruptDisconnectKey(lobbyCode, userId)
+  const timer = pendingAbruptDisconnects.get(key)
+  if (!timer) {
+    return
+  }
+
+  clearTimeout(timer)
+  pendingAbruptDisconnects.delete(key)
+
+  logger.info('Cancelled pending disconnect sync', {
+    lobbyCode,
+    userId,
+    reason: reason || 'unknown',
+  })
 }
 
 function getUserDisplayName(user: { username?: string | null; email?: string | null } | undefined): string {
@@ -584,6 +621,38 @@ async function handleAbruptDisconnectForLobby(
   })
 }
 
+function scheduleAbruptDisconnectForLobby(
+  lobbyCode: string,
+  user: { id: string; username?: string | null; email?: string | null }
+) {
+  const key = getAbruptDisconnectKey(lobbyCode, user.id)
+  const existingTimer = pendingAbruptDisconnects.get(key)
+  if (existingTimer) {
+    clearTimeout(existingTimer)
+  }
+
+  const timeoutId = setTimeout(() => {
+    pendingAbruptDisconnects.delete(key)
+
+    if (hasAnyActiveSocketForUser(user.id)) {
+      logger.info('Skipping delayed disconnect sync because user reconnected', {
+        lobbyCode,
+        userId: user.id,
+      })
+      return
+    }
+
+    void handleAbruptDisconnectForLobby(lobbyCode, user)
+  }, ABRUPT_DISCONNECT_GRACE_MS)
+
+  pendingAbruptDisconnects.set(key, timeoutId)
+  logger.info('Scheduled delayed disconnect sync', {
+    lobbyCode,
+    userId: user.id,
+    delayMs: ABRUPT_DISCONNECT_GRACE_MS,
+  })
+}
+
 // Clean up expired rate limit entries to prevent memory leaks
 setInterval(() => {
   const now = Date.now()
@@ -810,6 +879,7 @@ io.on('connection', (socket) => {
 
       socket.join(SocketRooms.lobby(normalizedLobbyCode))
       markSocketLobbyAuthorized(socket, normalizedLobbyCode)
+      clearPendingAbruptDisconnect(normalizedLobbyCode, socket.data.user.id, 'rejoined-lobby')
       socketLogger('join-lobby').info('Socket joined lobby', {
         socketId: socket.id,
         lobbyCode: normalizedLobbyCode,
@@ -837,6 +907,9 @@ io.on('connection', (socket) => {
     socketMonitor.trackEvent('leave-lobby')
     socket.leave(SocketRooms.lobby(normalizedLobbyCode))
     revokeSocketLobbyAuthorization(socket, normalizedLobbyCode)
+    if (socket.data.user?.id) {
+      clearPendingAbruptDisconnect(normalizedLobbyCode, socket.data.user.id, 'left-lobby-explicitly')
+    }
     socketLogger('leave-lobby').debug('Socket left lobby', { socketId: socket.id, lobbyCode: normalizedLobbyCode })
   })
 
@@ -1058,7 +1131,7 @@ io.on('connection', (socket) => {
     }
 
     for (const lobbyCode of lobbyCodes) {
-      void handleAbruptDisconnectForLobby(lobbyCode, disconnectingUser)
+      scheduleAbruptDisconnectForLobby(lobbyCode, disconnectingUser)
     }
   })
 
