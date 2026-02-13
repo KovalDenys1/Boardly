@@ -91,7 +91,17 @@ export async function POST(
     const requestUser = await getRequestAuthUser(request)
     const userId = requestUser?.id
 
+    log.info('Game state update attempt', {
+      gameId,
+      userId,
+      isGuest: requestUser?.isGuest,
+      username: requestUser?.username,
+      hasToken: !!request.headers.get('X-Guest-Token'),
+      hasAuth: !!request.headers.get('authorization')
+    })
+
     if (!userId) {
+      log.warn('Unauthorized game state update attempt', { gameId })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -123,6 +133,8 @@ export async function POST(
     }
 
     // Get game from database - optimize by selecting only needed fields
+    log.info('Fetching game from database', { gameId, userId })
+    
     const game = await prisma.games.findUnique({
       where: { id: gameId },
       select: {
@@ -153,11 +165,17 @@ export async function POST(
           },
         },
       },
+    }).catch((dbError) => {
+      log.error('Database query failed', dbError as Error, { gameId, userId })
+      throw dbError
     })
 
     if (!game) {
+      log.warn('Game not found', { gameId, userId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
+    
+    log.info('Game fetched successfully', { gameId, status: game.status })
 
     interface GamePlayer {
       id: string

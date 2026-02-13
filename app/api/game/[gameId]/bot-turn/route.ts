@@ -19,6 +19,7 @@ export async function POST(
 ) {
   const log = apiLogger('POST /api/game/[gameId]/bot-turn')
   let lockKey: string | null = null
+  let lockAcquired = false
   let gameId: string | undefined
 
   try {
@@ -36,8 +37,8 @@ export async function POST(
     })
 
     // Check if bot turn is already in progress for this game
-    lockKey = `${gameId}:${botUserId}`
-    if (botTurnLocks.get(lockKey)) {
+    const candidateLockKey = `${gameId}:${botUserId}`
+    if (botTurnLocks.get(candidateLockKey)) {
       log.warn('Bot turn already in progress, ignoring duplicate request')
       return NextResponse.json({
         error: 'Bot turn already in progress',
@@ -46,7 +47,9 @@ export async function POST(
     }
 
     // Acquire lock
+    lockKey = candidateLockKey
     botTurnLocks.set(lockKey, true)
+    lockAcquired = true
 
     // Load game state with retry on connection errors - optimized query
     let game
@@ -102,11 +105,14 @@ export async function POST(
     }
 
     const gameType = game.lobby.gameType
+    const resolvedLobbyCode =
+      typeof lobbyCode === 'string' && lobbyCode.trim().length > 0
+        ? lobbyCode.trim()
+        : game.lobby.code
 
     // Check if this game type supports bots
     if (!hasBotSupport(gameType)) {
       log.warn('Game type does not support bots', { gameType, gameId: game.id })
-      botTurnLocks.delete(lockKey)
       return NextResponse.json({
         error: 'This game type does not support bots',
         code: 'BOTS_NOT_SUPPORTED'
@@ -178,7 +184,7 @@ export async function POST(
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: any) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${lobbyCode}`, 'bot-action', event)
+      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', event)
     }
 
     // Dispatch to the appropriate bot executor based on game type
@@ -312,7 +318,7 @@ export async function POST(
           // Broadcast state update after each move - fire-and-forget
           const currentState = gameEngine.getState()
           await notifySocket(
-            `lobby:${lobbyCode}`,
+            `lobby:${resolvedLobbyCode}`,
             'game-update',
             {
               action: 'state-change',
@@ -332,9 +338,6 @@ export async function POST(
 
     log.info('Bot turn execution completed')
 
-    // Release lock
-    botTurnLocks.delete(lockKey)
-
     // Final notification removed - already sent after each move
     const finalState = gameEngine.getState()
 
@@ -352,14 +355,13 @@ export async function POST(
       errorMessage: error instanceof Error ? error.message : String(error)
     })
 
-    // Release lock on error
-    if (lockKey) {
-      botTurnLocks.delete(lockKey)
-    }
-
     return NextResponse.json({
       error: 'Failed to execute bot turn',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
+  } finally {
+    if (lockAcquired && lockKey) {
+      botTurnLocks.delete(lockKey)
+    }
   }
 }

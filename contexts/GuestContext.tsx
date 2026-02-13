@@ -61,7 +61,11 @@ export function GuestProvider({ children }: { children: ReactNode }) {
 
         const data = await response.json()
         if (!response.ok) {
-            throw new Error(data?.error || 'Failed to initialize guest session')
+            // Create error with translationKey if available
+            const error = new Error(data?.error || 'Failed to initialize guest session') as Error & { translationKey?: string; statusCode?: number }
+            error.translationKey = data?.translationKey
+            error.statusCode = response.status
+            throw error
         }
 
         return data as GuestSessionResponse

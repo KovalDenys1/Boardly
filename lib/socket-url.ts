@@ -27,12 +27,10 @@ if (typeof window === 'undefined') {
 export function getBrowserSocketUrl(): string {
   // Explicit URL from environment variables has highest priority
   if (process.env.NEXT_PUBLIC_SOCKET_URL) {
-    console.log('🔌 Using explicit Socket URL from env:', process.env.NEXT_PUBLIC_SOCKET_URL)
     return process.env.NEXT_PUBLIC_SOCKET_URL
   }
 
   if (typeof window === 'undefined') {
-    console.log('🔌 SSR mode: Using default local socket URL')
     return DEFAULT_LOCAL_SOCKET_URL
   }
 
@@ -47,16 +45,12 @@ export function getBrowserSocketUrl(): string {
   const isDevPort = numericPort === 3000 || numericPort === 5173
 
   if (isLocalHostname || isDevPort) {
-    const localUrl = `${protocol}//${hostname}:3001`
-    console.log('🔌 Local development detected, using:', localUrl)
-    return localUrl
+    return `${protocol}//${hostname}:3001`
   }
 
   // Production: Socket.IO on the same domain as the app
   const derivedPort = port ? `:${port}` : ''
-  const productionUrl = `${protocol}//${hostname}${derivedPort}`
-  console.log('🔌 Production mode, using same origin:', productionUrl)
-  return productionUrl
+  return `${protocol}//${hostname}${derivedPort}`
 }
 
 /**
@@ -221,11 +215,15 @@ export function getAuthHeaders(
   isGuest: boolean,
   _guestId?: string | null,
   _guestName?: string | null,
-  guestToken?: string | null
-): HeadersInit {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+  guestToken?: string | null,
+  options?: {
+    includeContentType?: boolean
   }
+): HeadersInit {
+  const includeContentType = options?.includeContentType !== false
+  const headers: HeadersInit = includeContentType
+    ? { 'Content-Type': 'application/json' }
+    : {}
 
   if (isGuest) {
     const tokenFromStorage =

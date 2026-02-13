@@ -15,6 +15,42 @@ export function middleware(request: NextRequest) {
   // Add CSP (Content Security Policy) header
   const isDevelopment = process.env.NODE_ENV === 'development'
   const socketUrl = getServerSocketUrl()
+  const allowedOriginsFromEnv = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((value) => value.trim()).filter(Boolean)
+    : []
+
+  const connectSrcCandidates = new Set<string>([
+    "'self'",
+    socketUrl,
+    'wss://*.onrender.com',
+    'ws://localhost:*',
+    'ws://127.0.0.1:*',
+    'http://localhost:*',
+    'http://127.0.0.1:*',
+    'https://vercel.live',
+    'https://*.ingest.sentry.io',
+    'https://*.ingest.de.sentry.io',
+  ])
+
+  const addSocketVariant = (origin: string) => {
+    try {
+      const parsed = new URL(origin)
+      connectSrcCandidates.add(parsed.origin)
+      if (parsed.protocol === 'http:') {
+        connectSrcCandidates.add(`ws://${parsed.host}`)
+      } else if (parsed.protocol === 'https:') {
+        connectSrcCandidates.add(`wss://${parsed.host}`)
+      }
+    } catch {
+      // Ignore invalid origin values
+    }
+  }
+
+  addSocketVariant(socketUrl)
+  for (const origin of allowedOriginsFromEnv) {
+    addSocketVariant(origin)
+  }
+  const connectSrcValue = Array.from(connectSrcCandidates).join(' ')
   
   const cspHeader = `
     default-src 'self';
@@ -22,7 +58,7 @@ export function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
-    connect-src 'self' ${socketUrl} wss://*.onrender.com ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://vercel.live https://*.ingest.sentry.io https://*.ingest.de.sentry.io;
+    connect-src ${connectSrcValue};
     worker-src 'self' blob:;
     frame-src 'self' https://accounts.google.com https://vercel.live;
     object-src 'none';

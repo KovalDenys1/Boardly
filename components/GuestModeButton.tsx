@@ -102,7 +102,16 @@ export default function GuestModeButton() {
             // Redirect to games page immediately
             router.push('/games')
         } catch (error) {
-            showToast.error('errors.generic')
+            // Show specific error message if available
+            const err = error as Error & { translationKey?: string; statusCode?: number }
+            if (err.translationKey) {
+                showToast.error(err.translationKey)
+            } else if (err.statusCode === 409) {
+                // Username conflict
+                showToast.error('errors.userSignup.username.taken')
+            } else {
+                showToast.error('errors.generic')
+            }
         } finally {
             setIsLoading(false)
         }

@@ -19,6 +19,7 @@ interface UseGameActionsProps {
   isGuest: boolean
   guestId: string | null
   guestName: string | null
+  guestToken: string | null
   userId: string | null | undefined
   username: string | null
   isMyTurn: boolean
@@ -44,6 +45,18 @@ export interface AutoActionContext {
   }
 }
 
+function isAutoActionContext(value: unknown): value is AutoActionContext {
+  if (!value || typeof value !== 'object') return false
+
+  const candidate = value as Partial<AutoActionContext>
+  return (
+    candidate.source === 'turn-timeout' &&
+    typeof candidate.debounceKey === 'string' &&
+    !!candidate.turnSnapshot &&
+    typeof candidate.turnSnapshot.currentPlayerId === 'string'
+  )
+}
+
 function isExpectedAutoActionSkip(status: number, error: any): boolean {
   if (status === 202) return true
   if (status === 409) return true
@@ -60,6 +73,7 @@ export function useGameActions(props: UseGameActionsProps) {
     isGuest,
     guestId,
     guestName,
+    guestToken,
     userId,
     username,
     isMyTurn,
@@ -131,8 +145,11 @@ export function useGameActions(props: UseGameActionsProps) {
     }
   }, [gameEngine, isMyTurn])
 
-  const handleRollDice = useCallback(async (autoActionContext?: AutoActionContext): Promise<GameEngine | null> => {
-    const isAutoAction = !!autoActionContext
+  const handleRollDice = useCallback(async (autoActionContext?: unknown): Promise<GameEngine | null> => {
+    const normalizedAutoActionContext = isAutoActionContext(autoActionContext)
+      ? autoActionContext
+      : undefined
+    const isAutoAction = !!normalizedAutoActionContext
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return null
 
     const preMoveHeld = [...gameEngine.getHeld()]
@@ -176,12 +193,12 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
 
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ move, autoActionContext }),
+        body: JSON.stringify({ move, autoActionContext: normalizedAutoActionContext }),
       })
 
       // Auto-actions can be debounced/ignored server-side by design.
@@ -262,7 +279,7 @@ export function useGameActions(props: UseGameActionsProps) {
           playerCount: game.players.length,
           isBot: false,
           metadata: {
-            rollNumber: 3 - newEngine.getRollsLeft() + 1,
+            rollNumber: 3 - newEngine.getRollsLeft(),
             diceHeld: held.filter(Boolean).length,
           },
         })
@@ -291,7 +308,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -316,8 +333,11 @@ export function useGameActions(props: UseGameActionsProps) {
     // Sound is now played in Dice component for instant feedback
   }, [gameEngine, game, isMyTurn, isRolling, isScoring])
 
-  const handleScore = useCallback(async (category: YahtzeeCategory, autoActionContext?: AutoActionContext): Promise<GameEngine | null> => {
-    const isAutoAction = !!autoActionContext
+  const handleScore = useCallback(async (category: YahtzeeCategory, autoActionContext?: unknown): Promise<GameEngine | null> => {
+    const normalizedAutoActionContext = isAutoActionContext(autoActionContext)
+      ? autoActionContext
+      : undefined
+    const isAutoAction = !!normalizedAutoActionContext
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return null
 
     const preMoveHeld = [...gameEngine.getHeld()]
@@ -353,12 +373,12 @@ export function useGameActions(props: UseGameActionsProps) {
     }
 
     try {
-      const headers = getAuthHeaders(isGuest, guestId, guestName)
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
 
       const res = await fetch(`/api/game/${game.id}/state`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ move, autoActionContext }),
+        body: JSON.stringify({ move, autoActionContext: normalizedAutoActionContext }),
       })
 
       // Auto-actions can be debounced/ignored server-side by design.
@@ -487,7 +507,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   return {
     handleRollDice,
