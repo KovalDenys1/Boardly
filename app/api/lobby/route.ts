@@ -18,6 +18,30 @@ const createLobbySchema = z.object({
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
+const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
+
+type LobbyGameRecord = {
+  id: string
+  status: string
+  updatedAt?: Date
+  _count?: { players?: number }
+  players?: Array<{ user?: { bot?: unknown } }>
+}
+
+function pickRelevantActiveGame(games: LobbyGameRecord[]): LobbyGameRecord | null {
+  if (!Array.isArray(games) || games.length === 0) return null
+
+  return [...games].sort((a, b) => {
+    const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
+    const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
+
+    if (aPriority !== bPriority) return bPriority - aPriority
+
+    const aUpdatedAt = a.updatedAt instanceof Date ? a.updatedAt.getTime() : 0
+    const bUpdatedAt = b.updatedAt instanceof Date ? b.updatedAt.getTime() : 0
+    return bUpdatedAt - aUpdatedAt
+  })[0] || null
+}
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting for lobby creation
@@ -206,6 +230,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               status: true,
+              updatedAt: true,
               _count: {
                 select: {
                   players: true
@@ -234,10 +259,27 @@ export async function GET(request: NextRequest) {
       )
     ]) as any[]
 
+    // Normalize lobbies to a single relevant active game record.
+    const lobbiesWithRelevantGame = lobbies
+      .map((lobby) => {
+        const game = pickRelevantActiveGame(lobby.games || [])
+        if (!game) return null
+        return {
+          ...lobby,
+          games: [game],
+        }
+      })
+      .filter(Boolean) as any[]
+
     // Filter by player count if specified AND filter out games with only bots or no human players
-    let filteredLobbies = lobbies.filter(lobby => {
+    let filteredLobbies = lobbiesWithRelevantGame.filter(lobby => {
       const game = lobby.games[0]
-      if (!game) return false
+      const updatedAtMs = game.updatedAt instanceof Date ? game.updatedAt.getTime() : 0
+
+      // Avoid listing waiting lobbies that have been inactive for too long.
+      if (game.status === 'waiting' && updatedAtMs > 0 && Date.now() - updatedAtMs > WAITING_LOBBY_STALE_MS) {
+        return false
+      }
 
       // Count human (non-bot) players using bot relation
       const humanPlayerCount = game.players?.filter((p: any) => !p.user.bot).length || 0
@@ -286,10 +328,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
-      lobbies: sanitizedLobbies,
-      stats
-    })
+    return NextResponse.json(
+      {
+        lobbies: sanitizedLobbies,
+        stats
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
+    )
   } catch (error) {
     log.error('Get lobbies error', error as Error, {
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
@@ -297,15 +346,23 @@ export async function GET(request: NextRequest) {
     })
 
     // Return empty array instead of error to prevent UI from breaking
-    return NextResponse.json({
-      lobbies: [],
-      stats: {
-        totalLobbies: 0,
-        waitingLobbies: 0,
-        playingLobbies: 0,
-        totalPlayers: 0,
+    return NextResponse.json(
+      {
+        lobbies: [],
+        stats: {
+          totalLobbies: 0,
+          waitingLobbies: 0,
+          playingLobbies: 0,
+          totalPlayers: 0,
+        },
+        error: 'Failed to load lobbies. Please try again.',
       },
-      error: 'Failed to load lobbies. Please try again.',
-    }, { status: 200 })
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
+    )
   }
 }

@@ -5,6 +5,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { getActiveSpyLocations } from '@/lib/spy-locations'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -100,12 +101,31 @@ export async function POST(
     }
 
     // Fetch locations from DB
-    const locations = await prisma.spyLocations.findMany({
-      where: { isActive: true },
-    })
+    let activeLocations
+    try {
+      activeLocations = await getActiveSpyLocations()
+    } catch (error) {
+      log.error('Cannot initialize Spy round: failed to resolve locations', error as Error, {
+        gameId,
+      })
+      return NextResponse.json(
+        {
+          error: 'Spy locations are not configured',
+          details: error instanceof Error ? error.message : 'Unable to resolve Spy locations',
+        },
+        { status: 500 }
+      )
+    }
+
+    if (activeLocations.source === 'fallback') {
+      log.warn('No active Spy locations configured in DB, using fallback set', {
+        gameId,
+        fallbackCount: activeLocations.locations.length,
+      })
+    }
 
     // Initialize round (assigns roles, selects location)
-    spyGame.initializeRound(locations)
+    spyGame.initializeRound(activeLocations.locations)
 
     // Get updated state
     const updatedState = spyGame.getState()

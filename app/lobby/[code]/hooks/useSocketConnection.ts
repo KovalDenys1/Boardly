@@ -12,6 +12,11 @@ interface UseSocketConnectionProps {
   guestId: string | null
   guestName: string | null
   guestToken: string | null
+  /**
+   * Connect and join lobby room only after user is confirmed as a lobby member.
+   * Prevents transient "access denied" errors before HTTP join completes.
+   */
+  shouldJoinLobbyRoom?: boolean
   onGameUpdate: (data: any) => void
   onChatMessage: (message: any) => void
   onPlayerTyping: (data: any) => void
@@ -32,6 +37,7 @@ export function useSocketConnection({
   guestId,
   guestName,
   guestToken,
+  shouldJoinLobbyRoom = true,
   onGameUpdate,
   onChatMessage,
   onPlayerTyping,
@@ -66,6 +72,33 @@ export function useSocketConnection({
   const onBotActionRef = useRef(onBotAction)
   const onStateSyncRef = useRef(onStateSync)
 
+  const normalizeServerError = useCallback((data: unknown): ServerErrorPayload | null => {
+    if (!data || typeof data !== 'object') {
+      return null
+    }
+
+    const payload = data as Partial<ServerErrorPayload>
+    const code = typeof payload.code === 'string' ? payload.code : ''
+    const message = typeof payload.message === 'string' ? payload.message : ''
+    const translationKey = typeof payload.translationKey === 'string' ? payload.translationKey : undefined
+    const details = payload.details && typeof payload.details === 'object'
+      ? payload.details
+      : undefined
+    const stack = typeof payload.stack === 'string' ? payload.stack : undefined
+
+    if (!code && !message && !translationKey) {
+      return null
+    }
+
+    return {
+      code: code || 'UNKNOWN_SOCKET_ERROR',
+      message: message || 'Unknown server error',
+      translationKey,
+      details,
+      stack,
+    }
+  }, [])
+
   // Update refs when callbacks change
   useEffect(() => {
     onGameUpdateRef.current = onGameUpdate
@@ -91,6 +124,13 @@ export function useSocketConnection({
 
     if (!code) {
       clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
+      return
+    }
+
+    if (!shouldJoinLobbyRoom) {
+      clientLogger.log('⏳ Waiting for lobby membership before joining socket room...')
+      setIsConnected(false)
+      setIsReconnecting(false)
       return
     }
 
@@ -251,6 +291,13 @@ export function useSocketConnection({
       // Always rejoin room on connect/reconnect
       if (!isRejoiningRef.current) {
         isRejoiningRef.current = true
+        
+        // For guests on first connect, add small delay to allow HTTP join to complete
+        if (isGuest && !isReconnect) {
+          clientLogger.log('⏳ Guest first connect - waiting 500ms for HTTP join to complete...')
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+        
         newSocket.emit(SocketEvents.JOIN_LOBBY, code)
 
         // On reconnect, sync state to catch up on missed events
@@ -382,13 +429,31 @@ export function useSocketConnection({
     // Add server error handler with structured errors
     newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
       if (!isMounted) return
-      clientLogger.error('🔴 Server error:', data)
+      const normalizedError = normalizeServerError(data)
+      if (!normalizedError) {
+        clientLogger.warn('⚠️ Received malformed server error payload, ignoring:', data)
+        return
+      }
+
+      // For guests with lobby access denied error, retry joining after delay (race condition fix)
+      if (isGuest && normalizedError.code === 'LOBBY_ACCESS_DENIED' && !hasConnectedOnceRef.current) {
+        clientLogger.log('⏳ Guest lobby access denied on first connect - retrying after 1s...')
+        setTimeout(() => {
+          if (isMounted && newSocket.connected) {
+            clientLogger.log('🔄 Retrying guest lobby join...')
+            newSocket.emit(SocketEvents.JOIN_LOBBY, code)
+          }
+        }, 1000)
+        return // Don't show error toast for first attempt
+      }
+
+      clientLogger.error('🔴 Server error:', normalizedError)
 
       // Show user-friendly error message
-      if (data.translationKey) {
-        showToast.error(data.translationKey)
+      if (normalizedError.translationKey) {
+        showToast.error(normalizedError.translationKey)
       } else {
-        showToast.error('errors.general', undefined, { message: data.message })
+        showToast.error('errors.general', undefined, { message: normalizedError.message })
       }
     })
 
@@ -499,7 +564,7 @@ export function useSocketConnection({
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken, session?.user?.id])
+  }, [code, isGuest, guestId, guestName, guestToken, shouldJoinLobbyRoom, session?.user?.id, normalizeServerError])
 
   const emitWhenConnected = useCallback((event: string, data: any) => {
     const currentSocket = socketRef.current

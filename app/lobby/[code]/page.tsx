@@ -489,6 +489,27 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
+  const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
+  const canJoinSocketLobbyRoom = React.useMemo(() => {
+    if (!lobby || !currentUserIdForMembership) {
+      return false
+    }
+
+    const lobbyData = lobby as any
+    if (lobbyData.creatorId === currentUserIdForMembership) {
+      return true
+    }
+
+    const activeGameFromState = game
+    const activeGameFromLobby = Array.isArray(lobbyData.games)
+      ? lobbyData.games.find((candidate: any) => ['waiting', 'playing'].includes(candidate?.status))
+      : null
+    const activeGame = activeGameFromState || activeGameFromLobby
+    const players = Array.isArray(activeGame?.players) ? activeGame.players : []
+
+    return players.some((player: any) => player?.userId === currentUserIdForMembership)
+  }, [lobby, game, currentUserIdForMembership])
+
   // Socket connection hook - must be before useLobbyActions
   const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
     code,
@@ -497,6 +518,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     guestId,
     guestName,
     guestToken,
+    shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
     onChatMessage,
     onPlayerTyping,
@@ -1601,6 +1623,22 @@ export default function LobbyPage() {
   const [gameStatus, setGameStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const pickRelevantActiveGame = useCallback((games: any[]) => {
+    if (!Array.isArray(games) || games.length === 0) return null
+
+    return [...games]
+      .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
+      .sort((a, b) => {
+        const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
+        const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
+        if (aPriority !== bPriority) return bPriority - aPriority
+
+        const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+        const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+        return bUpdatedAt - aUpdatedAt
+      })[0] || null
+  }, [])
+
   // Detect game type and status on mount
   useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
@@ -1622,8 +1660,10 @@ export default function LobbyPage() {
           const data = await res.json()
           const lobbyData = data.lobby
           setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
-          // Check active game status
-          const activeGame = lobbyData?.games?.[0]
+          // Use the most relevant active game (prefer playing).
+          const activeGame = pickRelevantActiveGame(
+            [data?.game, ...(Array.isArray(lobbyData?.games) ? lobbyData.games : [])].filter(Boolean)
+          )
           setGameStatus(activeGame?.status || null)
         } else {
           setGameType(DEFAULT_GAME_TYPE) 
@@ -1637,7 +1677,7 @@ export default function LobbyPage() {
         setLoading(false)
       }
     })()
-  }, [code, status, isGuest, guestToken])
+  }, [code, status, isGuest, guestToken, pickRelevantActiveGame])
 
   // Callback when LobbyPageContent detects game started for TTT/RPS
   const handleGameStarted = useCallback((startedGameType: string) => {

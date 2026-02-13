@@ -66,6 +66,23 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const [password, setPassword] = useState('')
 
+  const pickRelevantActiveGame = useCallback((games: any[]) => {
+    if (!Array.isArray(games) || games.length === 0) return null
+
+    return [...games]
+      .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
+      .sort((a, b) => {
+        const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
+        const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
+
+        if (aPriority !== bPriority) return bPriority - aPriority
+
+        const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+        const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+        return bUpdatedAt - aUpdatedAt
+      })[0] || null
+  }, [])
+
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
 
@@ -84,9 +101,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       setLobby(data.lobby)
 
-      const activeGame = data.lobby.games.find((g: any) =>
-        ['waiting', 'playing'].includes(g.status)
-      )
+      const activeGame = pickRelevantActiveGame(data.lobby?.games || [])
       if (activeGame) {
         setGame(activeGame)
         if (activeGame.state) {
@@ -110,7 +125,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
     // setState functions are stable and don't need to be in dependencies
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken])
+  }, [code, isGuest, guestId, guestName, guestToken, pickRelevantActiveGame])
 
   // Update ref when loadLobby changes
   useEffect(() => {
@@ -286,9 +301,28 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        clientLogger.error('Failed to start game - server response:', error)
-        throw new Error(error.error || error.details || 'Failed to start game')
+        let errorPayload: any = null
+
+        try {
+          errorPayload = await res.json()
+        } catch {
+          // Ignore JSON parse errors and use status text fallback below.
+        }
+
+        const hasMessage =
+          typeof errorPayload?.error === 'string' ||
+          typeof errorPayload?.details === 'string'
+
+        const diagnosticPayload = hasMessage || (errorPayload && Object.keys(errorPayload).length > 0)
+          ? errorPayload
+          : { status: res.status, statusText: res.statusText }
+
+        clientLogger.error('Failed to start game - server response:', diagnosticPayload)
+        throw new Error(
+          errorPayload?.error ||
+          errorPayload?.details ||
+          `Failed to start game (HTTP ${res.status})`
+        )
       }
 
       const data = await res.json()

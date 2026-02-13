@@ -39,6 +39,7 @@
     "crawlable",
     "creatorid",
     "cuid",
+    "dedup",
     "Duolingo",
     "gameid",
     "gamestart",

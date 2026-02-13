@@ -175,6 +175,24 @@ describe('useSocketConnection', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
+    it('should defer socket connection until lobby membership is confirmed', () => {
+      const { result } = renderHook(() =>
+        useSocketConnection({
+          ...defaultProps,
+          isGuest: true,
+          guestId: 'guest-123',
+          guestName: 'Guest User',
+          guestToken: 'guest.jwt.token',
+          session: null,
+          shouldJoinLobbyRoom: false,
+        })
+      )
+
+      expect(result.current.socket).toBeNull()
+      expect(result.current.isConnected).toBe(false)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
     it('should create socket for authenticated users with valid session', async () => {
       const { result } = renderHook(() => useSocketConnection(defaultProps))
 

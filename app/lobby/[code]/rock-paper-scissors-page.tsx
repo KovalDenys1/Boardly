@@ -29,6 +29,7 @@ interface LobbyData {
     code: string
     status: 'waiting' | 'playing' | 'finished'
     gameId?: string
+    gameType?: string
     game?: RPSGame
 }
 
@@ -55,24 +56,128 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
 
+    const pickRelevantActiveGame = useCallback((games: any[]) => {
+        if (!Array.isArray(games) || games.length === 0) return null
+
+        return [...games]
+            .filter((candidate) => ['waiting', 'playing'].includes(candidate?.status))
+            .sort((a, b) => {
+                const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
+                const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
+                if (aPriority !== bPriority) return bPriority - aPriority
+
+                const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+                const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+                return bUpdatedAt - aUpdatedAt
+            })[0] || null
+    }, [])
+
+    const parseRpsState = useCallback((state: unknown): RockPaperScissorsGameData => {
+        const defaultState: RockPaperScissorsGameData = {
+            mode: 'best-of-3',
+            rounds: [],
+            playerChoices: {},
+            scores: {},
+            playersReady: [],
+            gameWinner: null,
+        }
+
+        if (!state) return defaultState
+
+        let parsed: any = state
+        if (typeof state === 'string') {
+            try {
+                parsed = JSON.parse(state)
+            } catch {
+                return defaultState
+            }
+        }
+
+        const data = parsed?.data
+        if (!data || typeof data !== 'object') {
+            return defaultState
+        }
+
+        return {
+            ...defaultState,
+            ...data,
+            scores: typeof data.scores === 'object' && data.scores ? data.scores : {},
+            playerChoices: typeof data.playerChoices === 'object' && data.playerChoices ? data.playerChoices : {},
+            rounds: Array.isArray(data.rounds) ? data.rounds : [],
+            playersReady: Array.isArray(data.playersReady) ? data.playersReady : [],
+        }
+    }, [])
+
+    const normalizeLobbyResponse = useCallback((payload: any): LobbyData | null => {
+        const lobbyPayload = payload?.lobby || payload
+        if (!lobbyPayload?.id || !lobbyPayload?.code) {
+            return null
+        }
+
+        const activeGame = pickRelevantActiveGame(
+            [payload?.game, ...(Array.isArray(lobbyPayload?.games) ? lobbyPayload.games : [])].filter(Boolean)
+        )
+
+        if (!activeGame) {
+            return {
+                id: lobbyPayload.id,
+                code: lobbyPayload.code,
+                status: 'waiting',
+                gameType: lobbyPayload.gameType,
+            }
+        }
+
+        const players = Array.isArray(activeGame.players)
+            ? activeGame.players.map((player: any) => ({
+                id: player?.userId || player?.id || '',
+                name: player?.user?.username || player?.name || 'Unknown',
+            }))
+            : []
+
+        const normalizedGame: RPSGame = {
+            id: activeGame.id,
+            lobbyCode: lobbyPayload.code,
+            gameType: activeGame.gameType || lobbyPayload.gameType || 'rock_paper_scissors',
+            status: activeGame.status,
+            currentPlayerIndex: typeof activeGame.currentPlayerIndex === 'number'
+                ? activeGame.currentPlayerIndex
+                : 0,
+            players,
+            data: parseRpsState(activeGame.state),
+        }
+
+        return {
+            id: lobbyPayload.id,
+            code: lobbyPayload.code,
+            status: normalizedGame.status,
+            gameId: normalizedGame.id,
+            gameType: lobbyPayload.gameType,
+            game: normalizedGame,
+        }
+    }, [parseRpsState, pickRelevantActiveGame])
+
     // Load lobby from API
     const loadLobbyData = useCallback(async () => {
         try {
-            const res = await fetchWithGuest(`/api/lobby/${code}`, {
+            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
             })
 
             if (!res.ok) throw new Error('Failed to load lobby')
             const data = await res.json()
-            setLobby(data)
+            const normalizedLobby = normalizeLobbyResponse(data)
+            if (!normalizedLobby) {
+                throw new Error('Invalid lobby response')
+            }
+            setLobby(normalizedLobby)
         } catch (err) {
             clientLogger.error('Failed to load lobby:', err)
             setError(t('errors.failed_to_load_lobby'))
         } finally {
             setLoading(false)
         }
-    }, [code, t])
+    }, [code, t, normalizeLobbyResponse])
 
     // Initialize Socket.IO connection
     useEffect(() => {

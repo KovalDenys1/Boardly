@@ -10,6 +10,30 @@ import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
 
+type LobbyGameRecord = {
+  status: string
+  updatedAt?: Date | string | null
+}
+
+function pickRelevantActiveGame<T extends LobbyGameRecord>(games: T[]): T | null {
+  if (!Array.isArray(games) || games.length === 0) {
+    return null
+  }
+
+  return [...games].sort((a, b) => {
+    const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
+    const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
+
+    if (aPriority !== bPriority) {
+      return bPriority - aPriority
+    }
+
+    const aUpdatedAt = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+    const bUpdatedAt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+    return bUpdatedAt - aUpdatedAt
+  })[0] || null
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -19,6 +43,8 @@ export async function GET(
     const rateLimitResult = await apiLimiter(request)
     if (rateLimitResult) return rateLimitResult
 
+    const { searchParams } = new URL(request.url)
+    const includeFinished = searchParams.get('includeFinished') === 'true'
     const { code } = await params
 
     const lobby = await prisma.lobbies.findUnique({
@@ -42,7 +68,16 @@ export async function GET(
           },
         },
         games: {
-          where: { status: { in: ['waiting', 'playing'] } },
+          where: {
+            status: {
+              in: includeFinished
+                ? ['waiting', 'playing', 'finished']
+                : ['waiting', 'playing'],
+            },
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
           include: {
             players: {
               include: {
@@ -66,11 +101,15 @@ export async function GET(
     }
 
     const { password, ...safeLobby } = lobby
+    const activeGame = pickRelevantActiveGame(safeLobby.games as any[])
+
     return NextResponse.json({
       lobby: {
         ...safeLobby,
+        games: activeGame ? [activeGame] : [],
         isPrivate: !!password,
       },
+      game: activeGame,
     })
   } catch (error) {
     const log = apiLogger('GET /api/lobby/[code]')

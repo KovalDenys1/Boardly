@@ -16,7 +16,9 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
-  const { isGuest, guestName } = useGuest()
+  const { isGuest, guestName, clearGuestMode } = useGuest()
+  const isGuestSession = isGuest && !isAuthenticated
+  const canAccessGames = isAuthenticated || isGuestSession
 
   const isActive = (path: string) => pathname === path
 
@@ -30,6 +32,11 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
+    router.replace('/')
+  }
+
+  const handleGuestExit = () => {
+    clearGuestMode()
     router.replace('/')
   }
 
@@ -51,7 +58,8 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
     if (mobileMenuOpen) {
       closeMenu()
     }
-  }, [pathname, mobileMenuOpen, closeMenu])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   return (
     <>
@@ -129,8 +137,8 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
               </button>
             </div>
 
-            {/* User info section (if authenticated) */}
-            {isAuthenticated && (
+            {/* User info section (authenticated or guest session) */}
+            {(isAuthenticated || isGuestSession) && (
               <div
                 className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-500/5 to-purple-500/5 dark:from-blue-500/10 dark:to-purple-500/10"
                 style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
@@ -144,20 +152,22 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                       fontSize: 'clamp(20px, 2vw, 26px)'
                     }}
                   >
-                    {userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?'}
+                    {isGuestSession
+                      ? (guestName?.[0]?.toUpperCase() || 'G')
+                      : (userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?')}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
                       className="font-semibold text-gray-900 dark:text-white truncate"
                       style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
                     >
-                      {userName || 'User'}
+                      {isGuestSession ? (guestName || 'Guest') : (userName || 'User')}
                     </p>
                     <p
                       className="text-gray-600 dark:text-gray-400 truncate"
                       style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
                     >
-                      {userEmail}
+                      {isGuestSession ? 'Guest session' : userEmail}
                     </p>
                   </div>
                 </div>
@@ -182,7 +192,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                   <span>Home</span>
                 </button>
 
-                {isAuthenticated && (
+                {canAccessGames && (
                   <>
                     <button
                       onClick={() => router.push('/games')}
@@ -217,20 +227,22 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                     {/* Divider */}
                     <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
 
-                    <button
-                      onClick={() => router.push('/profile')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/profile')
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                      style={{
-                        padding: 'clamp(12px, 1.2vh, 16px)',
-                        fontSize: 'clamp(15px, 1.5vw, 17px)'
-                      }}
-                    >
-                      <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>👤</span>
-                      <span>Profile Settings</span>
-                    </button>
+                    {isAuthenticated && (
+                      <button
+                        onClick={() => router.push('/profile')}
+                        className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/profile')
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        style={{
+                          padding: 'clamp(12px, 1.2vh, 16px)',
+                          fontSize: 'clamp(15px, 1.5vw, 17px)'
+                        }}
+                      >
+                        <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>👤</span>
+                        <span>Profile Settings</span>
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -253,6 +265,31 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                   <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
                   <span>Logout</span>
                 </button>
+              ) : isGuestSession ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
+                  <button
+                    onClick={() => router.push('/auth/login')}
+                    className="w-full rounded-xl font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 flex items-center justify-center gap-3"
+                    style={{
+                      padding: 'clamp(12px, 1.2vh, 16px)',
+                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                    }}
+                  >
+                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🔐</span>
+                    <span>Login</span>
+                  </button>
+                  <button
+                    onClick={handleGuestExit}
+                    className="w-full rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                    style={{
+                      padding: 'clamp(14px, 1.4vh, 18px)',
+                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                    }}
+                  >
+                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
+                    <span>Exit Guest</span>
+                  </button>
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
                   <button

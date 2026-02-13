@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 
+const WAITING_LOBBY_STALE_HOURS = 1
+const ACTIVE_GAME_STALE_HOURS = 2
+
+type CleanupGameRecord = {
+  id: string
+  status: string
+  updatedAt: Date
+  players: Array<{
+    user: {
+      bot: unknown
+    }
+  }>
+}
+
+function pickRelevantActiveGame(games: CleanupGameRecord[]): CleanupGameRecord | null {
+  if (!Array.isArray(games) || games.length === 0) return null
+
+  return [...games].sort((a, b) => {
+    const aPriority = a.status === 'playing' ? 2 : a.status === 'waiting' ? 1 : 0
+    const bPriority = b.status === 'playing' ? 2 : b.status === 'waiting' ? 1 : 0
+
+    if (aPriority !== bPriority) return bPriority - aPriority
+    return b.updatedAt.getTime() - a.updatedAt.getTime()
+  })[0] || null
+}
+
 // This endpoint is called automatically when users visit the lobby page
 // No authentication required - it's a public cleanup utility
 export async function POST(req: NextRequest) {
@@ -22,7 +48,15 @@ export async function POST(req: NextRequest) {
             ]
           },
           include: {
-            players: true
+            players: {
+              include: {
+                user: {
+                  select: {
+                    bot: true,
+                  },
+                },
+              },
+            },
           }
         }
       }
@@ -34,7 +68,7 @@ export async function POST(req: NextRequest) {
     const lobbiesToDeactivate: string[] = []
 
     for (const lobby of lobbiesWithGames) {
-      const activeGame = lobby.games[0]
+      const activeGame = pickRelevantActiveGame(lobby.games as CleanupGameRecord[])
       
       // If no active game, deactivate lobby
       if (!activeGame) {
@@ -48,11 +82,23 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      // Check if lobby has been inactive for more than 2 hours (reduced from 24)
+      // Waiting lobbies with no human players should never stay public.
+      const humanPlayers = activeGame.players.filter((player) => !player.user.bot).length
+      if (activeGame.status === 'waiting' && humanPlayers === 0) {
+        lobbiesToDeactivate.push(lobby.id)
+        continue
+      }
+
+      // Check inactivity thresholds by status.
       const lastUpdated = new Date(activeGame.updatedAt)
       const hoursSinceUpdate = (Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60)
-      
-      if (hoursSinceUpdate > 2) {
+
+      if (activeGame.status === 'waiting' && hoursSinceUpdate > WAITING_LOBBY_STALE_HOURS) {
+        lobbiesToDeactivate.push(lobby.id)
+        continue
+      }
+
+      if (hoursSinceUpdate > ACTIVE_GAME_STALE_HOURS) {
         lobbiesToDeactivate.push(lobby.id)
       }
     }
