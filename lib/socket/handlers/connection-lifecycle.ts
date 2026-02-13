@@ -1,5 +1,7 @@
+import { ConnectionLifecycleSocket } from './types'
+
 type LoggerLike = {
-  info: (...args: any[]) => void
+  info: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -36,7 +38,7 @@ export function createConnectionLifecycleHandlers({
   getLobbyCodesFromRooms,
   disconnectSyncManager,
 }: ConnectionLifecycleDependencies) {
-  function handleDisconnecting(socket: any) {
+  function handleDisconnecting(socket: ConnectionLifecycleSocket) {
     const disconnectingUser = socket.data.user
     if (!disconnectingUser?.id) {
       return
@@ -60,7 +62,7 @@ export function createConnectionLifecycleHandlers({
     }
   }
 
-  function handleDisconnect(socket: any, reason: string) {
+  function handleDisconnect(socket: ConnectionLifecycleSocket, reason: string) {
     logger.info('Client disconnected', { socketId: socket.id, reason })
 
     socketMonitor.onDisconnect(socket.id)

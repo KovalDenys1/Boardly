@@ -1,7 +1,8 @@
 import { SocketRooms } from '../../../types/socket-events'
+import { LeaveLobbySocket } from './types'
 
 type SocketLoggerFactory = (scope: string) => {
-  debug: (...args: any[]) => void
+  debug: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -15,7 +16,7 @@ interface DisconnectSyncManagerLike {
 interface LeaveLobbyDependencies {
   socketMonitor: SocketMonitorLike
   socketLogger: SocketLoggerFactory
-  revokeSocketLobbyAuthorization: (socket: any, lobbyCode: string) => void
+  revokeSocketLobbyAuthorization: (socket: LeaveLobbySocket, lobbyCode: string) => void
   disconnectSyncManager: DisconnectSyncManagerLike
 }
 
@@ -25,7 +26,7 @@ export function createLeaveLobbyHandler({
   revokeSocketLobbyAuthorization,
   disconnectSyncManager,
 }: LeaveLobbyDependencies) {
-  return (socket: any, lobbyCode: string) => {
+  return (socket: LeaveLobbySocket, lobbyCode: string) => {
     const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
     if (!normalizedLobbyCode) {
       return

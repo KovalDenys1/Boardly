@@ -1,8 +1,9 @@
 import { GameActionPayload } from '../../../types/socket-events'
+import { EmitSocketErrorFn, GameActionSocket } from './types'
 
 type LoggerLike = {
-  warn: (...args: any[]) => void
-  error: (...args: any[]) => void
+  warn: (message: string, context?: Record<string, unknown>) => void
+  error: (message: string, error?: Error, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -13,11 +14,11 @@ interface GameActionDependencies {
   logger: LoggerLike
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (socket: any, code: string, message: string, translationKey?: string, details?: any) => void
-  isSocketAuthorizedForLobby: (socket: any, lobbyCode: string) => boolean
+  emitError: EmitSocketErrorFn
+  isSocketAuthorizedForLobby: (socket: GameActionSocket, lobbyCode: string) => boolean
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
   emitGameUpdateToOthers: (
-    socket: any,
+    socket: GameActionSocket,
     lobbyCode: string,
     payload: { action: string; payload: unknown; lobbyCode: string }
   ) => void
@@ -34,7 +35,7 @@ export function createGameActionHandler({
   emitGameUpdateToOthers,
   notifyLobbyListUpdate,
 }: GameActionDependencies) {
-  return async (socket: any, data: GameActionPayload) => {
+  return async (socket: GameActionSocket, data: GameActionPayload) => {
     socketMonitor.trackEvent('game-action')
 
     if (!checkRateLimit(socket.id)) {
@@ -99,4 +100,3 @@ export function createGameActionHandler({
     }
   }
 }
-

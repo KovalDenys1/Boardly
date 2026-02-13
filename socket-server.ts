@@ -8,7 +8,7 @@ dotenv.config({ path: resolve(process.cwd(), '.env.local'), override: true })
 dotenv.config({ path: resolve(process.cwd(), '.env') })
 
 // Now import modules that use environment variables
-import { createServer } from 'http'
+import { createServer, IncomingMessage } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { prisma } from './lib/db'
 import { socketLogger, logger } from './lib/logger'
@@ -27,6 +27,10 @@ import { createPlayerTypingHandler } from './lib/socket/handlers/player-typing'
 import { createConnectionLifecycleHandlers } from './lib/socket/handlers/connection-lifecycle'
 import { createLeaveLobbyHandler } from './lib/socket/handlers/leave-lobby'
 import { createLobbyListMembershipHandlers } from './lib/socket/handlers/lobby-list-membership'
+import { createLobbyCreatedHandler } from './lib/socket/handlers/lobby-created'
+import { createForbiddenClientEventsHandlers } from './lib/socket/handlers/forbidden-client-events'
+import { createSocketErrorHandler } from './lib/socket/handlers/socket-error'
+import { EmitsToSelf } from './lib/socket/handlers/types'
 import {
   SocketEvents,
   GameActionPayload,
@@ -100,19 +104,44 @@ const io = new SocketIOServer(server, {
 const onlinePresence = createOnlinePresence(io, logger)
 
 // Helper to create event with metadata
-function emitWithMetadata(io: SocketIOServer, room: string, event: string, data: any) {
+type RoomEmitter = {
+  to: (room: string) => {
+    emit: (event: string, payload?: unknown) => void
+  }
+}
+
+type DirectEmitter = {
+  emit: (event: string, payload?: unknown) => void
+}
+
+function emitWithMetadata(
+  target: RoomEmitter | DirectEmitter,
+  room: string,
+  event: string,
+  data: Record<string, unknown>
+) {
   const payload = {
     ...data,
     sequenceId: ++eventSequence,
     timestamp: Date.now(),
     version: '1.0.0'
   }
-  io.to(room).emit(event, payload)
+  if ('to' in target) {
+    target.to(room).emit(event, payload)
+  } else {
+    target.emit(event, payload)
+  }
   return payload
 }
 
 // Helper function to emit structured errors
-function emitError(socket: any, code: string, message: string, translationKey?: string, details?: any) {
+function emitError(
+  socket: EmitsToSelf,
+  code: string,
+  message: string,
+  translationKey?: string,
+  details?: Record<string, unknown>
+) {
   const error: ServerErrorPayload = {
     code,
     message,
@@ -195,24 +224,34 @@ function getUserDisplayName(user: { username?: string | null; email?: string | n
   return user?.username || user?.email || 'Player'
 }
 
-function getAuthorizedLobbySet(socket: any): Set<string> {
+type AuthorizedLobbySocket = {
+  data: {
+    authorizedLobbies?: Set<string>
+  }
+}
+
+type LobbyAuthorizationSocket = AuthorizedLobbySocket & {
+  rooms: Set<string>
+}
+
+function getAuthorizedLobbySet(socket: AuthorizedLobbySocket): Set<string> {
   if (!(socket.data.authorizedLobbies instanceof Set)) {
     socket.data.authorizedLobbies = new Set<string>()
   }
   return socket.data.authorizedLobbies as Set<string>
 }
 
-function markSocketLobbyAuthorized(socket: any, lobbyCode: string) {
+function markSocketLobbyAuthorized(socket: AuthorizedLobbySocket, lobbyCode: string) {
   const authorizedLobbies = getAuthorizedLobbySet(socket)
   authorizedLobbies.add(lobbyCode)
 }
 
-function revokeSocketLobbyAuthorization(socket: any, lobbyCode: string) {
+function revokeSocketLobbyAuthorization(socket: AuthorizedLobbySocket, lobbyCode: string) {
   const authorizedLobbies = getAuthorizedLobbySet(socket)
   authorizedLobbies.delete(lobbyCode)
 }
 
-function isSocketAuthorizedForLobby(socket: any, lobbyCode: string): boolean {
+function isSocketAuthorizedForLobby(socket: LobbyAuthorizationSocket, lobbyCode: string): boolean {
   const authorizedLobbies = getAuthorizedLobbySet(socket)
   return authorizedLobbies.has(lobbyCode) && socket.rooms.has(SocketRooms.lobby(lobbyCode))
 }
@@ -236,13 +275,25 @@ async function isUserActivePlayerInLobby(lobbyCode: string, userId: string): Pro
   return !!player
 }
 
-function extractInternalRequestSecret(req: any): string | null {
-  const secretHeader = req.headers?.[SOCKET_INTERNAL_AUTH_HEADER]
-  if (typeof secretHeader === 'string' && secretHeader.trim()) {
-    return secretHeader.trim()
+function extractHeaderValue(header: string | string[] | undefined): string | null {
+  if (typeof header === 'string') {
+    return header.trim() || null
+  }
+  if (Array.isArray(header) && header.length > 0) {
+    const first = header[0]
+    return typeof first === 'string' ? first.trim() || null : null
+  }
+  return null
+}
+
+function extractInternalRequestSecret(req: IncomingMessage): string | null {
+  const secretHeader = extractHeaderValue(req.headers?.[SOCKET_INTERNAL_AUTH_HEADER])
+  if (secretHeader) {
+    return secretHeader
   }
 
-  const authorizationHeader = req.headers?.authorization
+  const authorizationHeader = extractHeaderValue(req.headers?.authorization)
+
   if (
     typeof authorizationHeader === 'string' &&
     authorizationHeader.startsWith(SOCKET_INTERNAL_AUTH_BEARER_PREFIX)
@@ -253,7 +304,7 @@ function extractInternalRequestSecret(req: any): string | null {
   return null
 }
 
-function isInternalEndpointAuthorized(req: any): boolean {
+function isInternalEndpointAuthorized(req: IncomingMessage): boolean {
   if (process.env.NODE_ENV !== 'production') {
     return true
   }
@@ -286,7 +337,16 @@ io.use(
 const handleJoinLobby = createJoinLobbyHandler({
   logger,
   socketLogger,
-  prisma,
+  findLobbyByCode: (lobbyCode) => {
+    return prisma.lobbies.findUnique({
+      where: { code: lobbyCode },
+      select: {
+        id: true,
+        code: true,
+        isActive: true,
+      },
+    })
+  },
   socketMonitor,
   checkRateLimit,
   emitError,
@@ -304,7 +364,7 @@ const handleGameAction = createGameActionHandler({
   isUserActivePlayerInLobby,
   emitGameUpdateToOthers: (socket, lobbyCode, payload) => {
     emitWithMetadata(
-      socket.to(SocketRooms.lobby(lobbyCode)) as any,
+      socket.to(SocketRooms.lobby(lobbyCode)),
       SocketRooms.lobby(lobbyCode),
       SocketEvents.GAME_UPDATE,
       payload
@@ -359,6 +419,24 @@ const { handleJoinLobbyList, handleLeaveLobbyList } = createLobbyListMembershipH
   socketLogger,
 })
 
+const handleLobbyCreated = createLobbyCreatedHandler({
+  socketMonitor,
+  socketLogger,
+  notifyLobbyListUpdate: () => {
+    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+  },
+})
+
+const { handleBlockedPlayerJoined, handleBlockedGameStarted } = createForbiddenClientEventsHandlers({
+  logger,
+  socketMonitor,
+  emitError,
+})
+
+const handleSocketError = createSocketErrorHandler({
+  logger,
+})
+
 // Keep-alive mechanism to prevent Render.com free tier from sleeping
 // Ping self every 10 minutes (within the 15 min sleep window)
 if (process.env.NODE_ENV === 'production' && process.env.RENDER) {
@@ -407,28 +485,16 @@ io.on('connection', (socket) => {
   })
 
   socket.on(SocketEvents.LOBBY_CREATED, () => {
-    socketMonitor.trackEvent('lobby-created')
-    socketLogger('lobby-created').info('New lobby created, notifying lobby list')
-    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+    handleLobbyCreated()
   })
 
   // Player and game lifecycle broadcasts must come from trusted server routes only (/api/notify).
   socket.on(SocketEvents.PLAYER_JOINED, () => {
-    socketMonitor.trackEvent('blocked-player-joined')
-    logger.warn('Blocked client-side player-joined event', {
-      socketId: socket.id,
-      userId: socket.data.user?.id,
-    })
-    emitError(socket, 'FORBIDDEN_ACTION', 'Use server API to broadcast player events', 'errors.forbidden')
+    handleBlockedPlayerJoined(socket)
   })
 
   socket.on(SocketEvents.GAME_STARTED, () => {
-    socketMonitor.trackEvent('blocked-game-started')
-    logger.warn('Blocked client-side game-started event', {
-      socketId: socket.id,
-      userId: socket.data.user?.id,
-    })
-    emitError(socket, 'FORBIDDEN_ACTION', 'Use server API to broadcast game events', 'errors.forbidden')
+    handleBlockedGameStarted(socket)
   })
 
   socket.on(
@@ -451,7 +517,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('error', (error) => {
-    logger.error('Socket error', error, { socketId: socket.id })
+    handleSocketError(socket, error as Error)
   })
 })
 
@@ -522,7 +588,7 @@ process.on('uncaughtException', (error: Error) => {
 })
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
   const err = reason instanceof Error ? reason : new Error(String(reason))
   logger.error('Unhandled Promise Rejection - server will continue running', err, {
     promise: String(promise)

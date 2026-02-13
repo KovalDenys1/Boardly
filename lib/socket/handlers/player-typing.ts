@@ -1,4 +1,5 @@
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
+import { PlayerTypingSocket } from './types'
 
 interface SocketMonitorLike {
   trackEvent: (event: string) => void
@@ -13,7 +14,7 @@ interface PlayerTypingPayload {
 interface PlayerTypingDependencies {
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  isSocketAuthorizedForLobby: (socket: any, lobbyCode: string) => boolean
+  isSocketAuthorizedForLobby: (socket: PlayerTypingSocket, lobbyCode: string) => boolean
   getUserDisplayName: (user: { username?: string | null; email?: string | null } | undefined) => string
 }
 
@@ -23,7 +24,7 @@ export function createPlayerTypingHandler({
   isSocketAuthorizedForLobby,
   getUserDisplayName,
 }: PlayerTypingDependencies) {
-  return (socket: any, data: PlayerTypingPayload) => {
+  return (socket: PlayerTypingSocket, data: PlayerTypingPayload) => {
     socketMonitor.trackEvent('player-typing')
 
     if (!checkRateLimit(socket.id)) {

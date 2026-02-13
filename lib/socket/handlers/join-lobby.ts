@@ -1,19 +1,14 @@
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
+import { EmitSocketErrorFn, JoinLobbySocket } from './types'
 
 type LoggerLike = {
-  info: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  error: (...args: any[]) => void
+  info: (message: string, context?: Record<string, unknown>) => void
+  warn: (message: string, context?: Record<string, unknown>) => void
+  error: (message: string, error?: Error, context?: Record<string, unknown>) => void
 }
 
 type SocketLoggerFactory = (scope: string) => {
-  info: (...args: any[]) => void
-}
-
-interface PrismaLike {
-  lobbies: {
-    findUnique: (args: any) => Promise<any>
-  }
+  info: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -33,19 +28,19 @@ interface DisconnectSyncManagerLike {
 interface JoinLobbyDependencies {
   logger: LoggerLike
   socketLogger: SocketLoggerFactory
-  prisma: PrismaLike
+  findLobbyByCode: (lobbyCode: string) => Promise<{ id: string; code: string; isActive: boolean } | null>
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (socket: any, code: string, message: string, translationKey?: string, details?: any) => void
+  emitError: EmitSocketErrorFn
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
-  markSocketLobbyAuthorized: (socket: any, lobbyCode: string) => void
+  markSocketLobbyAuthorized: (socket: JoinLobbySocket, lobbyCode: string) => void
   disconnectSyncManager: DisconnectSyncManagerLike
 }
 
 export function createJoinLobbyHandler({
   logger,
   socketLogger,
-  prisma,
+  findLobbyByCode,
   socketMonitor,
   checkRateLimit,
   emitError,
@@ -53,7 +48,7 @@ export function createJoinLobbyHandler({
   markSocketLobbyAuthorized,
   disconnectSyncManager,
 }: JoinLobbyDependencies) {
-  return async (socket: any, lobbyCode: string) => {
+  return async (socket: JoinLobbySocket, lobbyCode: string) => {
     if (!checkRateLimit(socket.id)) {
       emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
       return
@@ -70,14 +65,7 @@ export function createJoinLobbyHandler({
     }
 
     try {
-      const lobby = await prisma.lobbies.findUnique({
-        where: { code: normalizedLobbyCode },
-        select: {
-          id: true,
-          code: true,
-          isActive: true,
-        },
-      })
+      const lobby = await findLobbyByCode(normalizedLobbyCode)
 
       if (!lobby) {
         emitError(socket, 'LOBBY_NOT_FOUND', 'Lobby not found', 'errors.lobbyNotFound', { lobbyCode: normalizedLobbyCode })
@@ -116,4 +104,3 @@ export function createJoinLobbyHandler({
     }
   }
 }
-

@@ -1,8 +1,9 @@
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
+import { EmitSocketErrorFn, SendChatMessageSocket } from './types'
 
 type LoggerLike = {
-  warn: (...args: any[]) => void
-  error: (...args: any[]) => void
+  warn: (message: string, context?: Record<string, unknown>) => void
+  error: (message: string, error?: Error, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -20,11 +21,11 @@ interface SendChatMessageDependencies {
   logger: LoggerLike
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (socket: any, code: string, message: string, translationKey?: string, details?: any) => void
-  isSocketAuthorizedForLobby: (socket: any, lobbyCode: string) => boolean
+  emitError: EmitSocketErrorFn
+  isSocketAuthorizedForLobby: (socket: SendChatMessageSocket, lobbyCode: string) => boolean
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
   getUserDisplayName: (user: { username?: string | null; email?: string | null } | undefined) => string
-  emitWithMetadata: (room: string, event: string, data: any) => void
+  emitWithMetadata: (room: string, event: string, data: Record<string, unknown>) => void
 }
 
 export function createSendChatMessageHandler({
@@ -37,7 +38,7 @@ export function createSendChatMessageHandler({
   getUserDisplayName,
   emitWithMetadata,
 }: SendChatMessageDependencies) {
-  return async (socket: any, data: SendChatMessagePayload) => {
+  return async (socket: SendChatMessageSocket, data: SendChatMessagePayload) => {
     socketMonitor.trackEvent('send-chat-message')
 
     if (!checkRateLimit(socket.id)) {
@@ -95,4 +96,3 @@ export function createSendChatMessageHandler({
     }
   }
 }
-

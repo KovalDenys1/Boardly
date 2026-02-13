@@ -24,6 +24,7 @@ describe('createPlayerTypingHandler', () => {
     const to = jest.fn().mockReturnValue({ emit })
     const socket = {
       id: 'socket-1',
+      rooms: new Set<string>(['socket-1', 'lobby:LOBBY1']),
       data: {
         user: {
           id: 'user-1',
