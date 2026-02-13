@@ -24,7 +24,7 @@
     "postinstall": "prisma generate",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage --coverageProvider=v8",
     "check:env": "tsx scripts/check-env.ts",
     "check:db": "tsx scripts/test-db-connection.ts",
     "cleanup:abandoned-games": "tsx scripts/cleanup-abandoned-games.ts",

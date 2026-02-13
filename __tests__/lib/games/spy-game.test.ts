@@ -131,6 +131,36 @@ describe('SpyGame', () => {
 
       expect(data.phase).toBe(SpyGamePhase.ROLE_REVEAL)
     })
+
+    it('should advance round and preserve scores when re-initialized from results', () => {
+      game.initializeRound(mockLocations)
+
+      const state = game.getState()
+      const data = state.data as any
+
+      data.phase = SpyGamePhase.RESULTS
+      data.currentRound = 1
+      data.scores = {
+        p1: 150,
+        p2: 80,
+        p3: 30,
+        p4: 10,
+      }
+
+      game.initializeRound(mockLocations)
+
+      const nextState = game.getState()
+      const nextData = nextState.data as any
+
+      expect(nextData.currentRound).toBe(2)
+      expect(nextData.phase).toBe(SpyGamePhase.ROLE_REVEAL)
+      expect(nextData.scores).toEqual({
+        p1: 150,
+        p2: 80,
+        p3: 30,
+        p4: 10,
+      })
+    })
   })
 
   describe('Move Validation', () => {
@@ -258,6 +288,49 @@ describe('SpyGame', () => {
       const winner = game.checkWinCondition()
       expect(winner).toBeTruthy()
       expect(winner?.id).toBe('p2') // Highest score
+    })
+
+    it('should mark game as finished after final-round voting resolves', () => {
+      const state = game.getState()
+      const data = state.data as any
+
+      data.phase = SpyGamePhase.VOTING
+      data.currentRound = data.totalRounds
+      data.spyPlayerId = 'p1'
+      data.scores = { p1: 0, p2: 0, p3: 0 }
+      data.votes = {}
+
+      expect(
+        game.makeMove({
+          playerId: 'p1',
+          type: 'vote',
+          data: { targetId: 'p2' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      expect(
+        game.makeMove({
+          playerId: 'p2',
+          type: 'vote',
+          data: { targetId: 'p1' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      expect(
+        game.makeMove({
+          playerId: 'p3',
+          type: 'vote',
+          data: { targetId: 'p1' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      const finalState = game.getState()
+      expect(finalState.status).toBe('finished')
+      expect(finalState.winner).toBeTruthy()
+      expect((finalState.data as any).phase).toBe(SpyGamePhase.RESULTS)
     })
   })
 })

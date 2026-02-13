@@ -1,159 +1,167 @@
-## 📝 Description
-<!-- Provide a detailed description of your changes -->
+## Description
 
-## 🎯 Type of Change
-<!-- Mark the relevant option with an 'x' -->
-- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
-- [ ] ✨ New feature (non-breaking change which adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📝 Documentation update
-- [ ] 🎨 UI/UX improvement
-- [ ] ⚡ Performance improvement
-- [ ] ♻️ Code refactoring
-- [ ] 🧪 Test addition/update
-- [ ] 🔧 Configuration change
+<!-- Provide a clear summary of what changed and why -->
 
-## 🎮 Game Context (if applicable)
-<!-- Which game does this PR affect? -->
+## Type of Change
+
+<!-- Mark relevant options with an "x" -->
+
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (change that can alter existing behavior)
+- [ ] Documentation update
+- [ ] UI/UX improvement
+- [ ] Performance improvement
+- [ ] Code refactoring
+- [ ] Test addition/update
+- [ ] Configuration change
+
+## Game Context (if applicable)
+
+<!-- Which game(s) does this PR affect? -->
+
 - [ ] Yahtzee
-- [ ] Chess
 - [ ] Guess the Spy
+- [ ] Tic-Tac-Toe
+- [ ] Rock Paper Scissors
 - [ ] Platform/Infrastructure
 - [ ] All games
 - [ ] N/A
 
-## 🔗 Related Issue
-<!-- Link the related issue(s) -->
-Fixes #(issue number)
-Closes #(issue number)
-Related to #(issue number)
+## Related Issue
 
-## 📋 Changes Made
-<!-- List the main changes in bullet points -->
-- 
-- 
-- 
+<!-- Reference issue numbers if available -->
 
-## 🖼️ Screenshots/Videos (if applicable)
-<!-- Add screenshots or videos demonstrating the changes -->
+- Fixes #
+- Closes #
+- Related to #
 
-**Before:**
-<!-- Screenshot of old behavior -->
+## Changes Made
 
-**After:**
-<!-- Screenshot of new behavior -->
+<!-- List the main changes -->
 
-## ✅ Testing Checklist
-<!-- Mark completed items with an 'x' -->
+- [ ] Change 1
+- [ ] Change 2
+- [ ] Change 3
+
+## Screenshots / Videos (if applicable)
+
+### Before
+
+<!-- Screenshot/video of previous behavior -->
+
+### After
+
+<!-- Screenshot/video of new behavior -->
+
+## Testing Checklist
 
 ### Code Quality
-- [ ] Code follows the project's style guidelines
-- [ ] Self-review of code completed
-- [ ] Code is commented, particularly in complex areas
-- [ ] No console.log statements left in code (use clientLogger/apiLogger)
-- [ ] All new code is in English (comments, variables, functions)
+
+- [ ] Code follows project style guidelines
+- [ ] Self-review completed
+- [ ] Complex logic is documented
+- [ ] No `console.log` statements left in production paths
+- [ ] New code is in English (identifiers/comments)
 
 ### Functionality
+
 - [ ] Changes work as expected locally
-- [ ] No breaking changes to existing features
+- [ ] No unintended regressions
 - [ ] Error handling is implemented
-- [ ] Edge cases are handled
+- [ ] Edge cases are covered
 
 ### Build & Tests
+
 - [ ] `npm run build` completes successfully
-- [ ] `npm run lint` passes without errors
-- [ ] TypeScript compilation (`npx tsc --noEmit`) passes
+- [ ] `npm run lint` passes
+- [ ] `npm run typecheck` passes
 - [ ] Manual testing completed
-- [ ] Tested with different browsers (if UI change)
-- [ ] Tested on mobile (if applicable)
+- [ ] Cross-browser testing completed (if UI changed)
+- [ ] Mobile testing completed (if applicable)
 
 ### Game Testing (if applicable)
-- [ ] Tested with 2 players
+
+- [ ] Tested with minimum players
 - [ ] Tested with maximum players
-- [ ] Tested with bot opponents
+- [ ] Tested with bot opponents (if supported)
 - [ ] Tested guest mode
 - [ ] Tested authenticated mode
 - [ ] Turn timer works correctly
-- [ ] Chat functionality works
-- [ ] Game state persists correctly
+- [ ] Chat works correctly
+- [ ] Game state recovery/persistence verified
 
 ### Documentation
-- [ ] Updated relevant documentation (README, CONTRIBUTING, etc.)
-- [ ] Added/updated code comments
-- [ ] Updated TypeScript types if needed
-- [ ] Added JSDoc comments for public APIs
+
+- [ ] Updated relevant documentation
+- [ ] Updated comments/types where needed
+- [ ] Added docs for public APIs when applicable
 
 ### Security
-- [ ] No sensitive data exposed
-- [ ] Input validation implemented
-- [ ] No SQL injection vulnerabilities
-- [ ] No XSS vulnerabilities
-- [ ] Authentication/authorization checked
 
-## 🚀 Deployment Notes
-<!-- Any special considerations for deployment? -->
+- [ ] No sensitive data is exposed
+- [ ] Input validation added/updated
+- [ ] Auth/authz checks verified
+- [ ] No obvious XSS/SQL injection vectors introduced
+
+## Deployment Notes
+
 - [ ] Requires database migration
 - [ ] Requires environment variables update
 - [ ] Requires dependency installation
 - [ ] Requires server restart
 - [ ] No special deployment steps
 
-### Environment Variables (if new ones added)
+### Environment Variables (if added)
+
 ```env
 NEW_VARIABLE_NAME=description
 ```
 
 ### Database Changes (if applicable)
+
 ```bash
 npx prisma migrate dev --name migration_name
 ```
 
-## ⚡ Performance Impact
-<!-- Does this PR affect performance? -->
+## Performance Impact
+
 - [ ] No performance impact
 - [ ] Improves performance
-- [ ] May impact performance (explain below)
+- [ ] May impact performance (details below)
 
-**Details:**
+### Details
 
+## Breaking Changes
 
-## 🔄 Breaking Changes
-<!-- List any breaking changes and migration steps -->
 - [ ] No breaking changes
-- [ ] Breaking changes (list below)
+- [ ] Breaking changes (describe below)
 
-**Breaking Changes:**
+### Change Details
 
+### Migration Guide
 
-**Migration Guide:**
+## Demo (optional)
 
+- Demo URL:
+- Video walkthrough:
 
-## 📸 Demo
-<!-- If possible, provide a live demo or video -->
-- Demo URL: 
-- Video walkthrough: 
+## Reviewers
 
-## 👥 Reviewers
-<!-- Tag specific reviewers if needed -->
+<!-- Tag reviewers if needed -->
+
 @KovalDenys1
 
-## 📝 Additional Notes
-<!-- Any additional information for reviewers -->
+## Additional Notes
 
+<!-- Anything reviewers should know -->
 
-## ✅ Final Checklist
-<!-- Before submitting, ensure all items are checked -->
+## Final Checklist
+
 - [ ] I have read the [CONTRIBUTING](../docs/CONTRIBUTING.md) guidelines
-- [ ] My code follows the project's coding standards
-- [ ] I have performed a self-review of my own code
-- [ ] I have tested my changes thoroughly
-- [ ] I have updated the documentation accordingly
-- [ ] My changes generate no new warnings or errors
-- [ ] I have checked my code for security vulnerabilities
-
----
-
-<!-- 
-Thank you for contributing to Boardly! 🎮
-Your efforts help make multiplayer board games accessible and fun for everyone.
--->
+- [ ] My code follows project standards
+- [ ] I have self-reviewed my changes
+- [ ] I tested changes thoroughly
+- [ ] I updated relevant documentation
+- [ ] My changes introduce no new warnings/errors
+- [ ] I reviewed changes for security risks
