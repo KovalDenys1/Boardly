@@ -148,10 +148,21 @@ export default function GamesPage() {
     )
   }
 
-  const filteredGames = games.filter(game => {
-    if (selectedFilter === 'all') return true
-    return game.status === selectedFilter
-  })
+  const filteredGames = games
+    .filter(game => {
+      if (selectedFilter === 'all') return true
+      return game.status === selectedFilter
+    })
+    .sort((a, b) => {
+      // First, sort by status: available games first
+      if (a.status !== b.status) {
+        return a.status === 'available' ? -1 : 1
+      }
+      // Within the same status group, sort alphabetically by translated name
+      const nameA = t(a.nameKey as any).toLowerCase()
+      const nameB = t(b.nameKey as any).toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
 
   const handleGameClick = (game: Game) => {
     if (game.status === 'available' && game.route) {

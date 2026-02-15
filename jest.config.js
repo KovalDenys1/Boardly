@@ -27,6 +27,12 @@ const customJestConfig = {
     '/node_modules/',
     '/.next/',
   ],
+  modulePathIgnorePatterns: [
+    '<rootDir>/.next/standalone/',
+  ],
+  watchPathIgnorePatterns: [
+    '<rootDir>/.next/',
+  ],
   transformIgnorePatterns: [
     '/node_modules/(?!(nanoid)/)',
     '^.+\\.module\\.(css|sass|scss)$',

@@ -6,6 +6,7 @@ import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
@@ -19,6 +20,8 @@ export async function GET(
     const rateLimitResult = await apiLimiter(request)
     if (rateLimitResult) return rateLimitResult
 
+    const { searchParams } = new URL(request.url)
+    const includeFinished = searchParams.get('includeFinished') === 'true'
     const { code } = await params
 
     const lobby = await prisma.lobbies.findUnique({
@@ -42,7 +45,16 @@ export async function GET(
           },
         },
         games: {
-          where: { status: { in: ['waiting', 'playing'] } },
+          where: {
+            status: {
+              in: includeFinished
+                ? ['waiting', 'playing', 'finished']
+                : ['waiting', 'playing'],
+            },
+          },
+          orderBy: {
+            updatedAt: 'desc',
+          },
           include: {
             players: {
               include: {
@@ -66,11 +78,18 @@ export async function GET(
     }
 
     const { password, ...safeLobby } = lobby
+    const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished })
+
     return NextResponse.json({
       lobby: {
         ...safeLobby,
+        games: activeGame ? [activeGame] : [],
+        activeGame,
         isPrivate: !!password,
       },
+      activeGame,
+      // Backward compatibility for older clients.
+      game: activeGame,
     })
   } catch (error) {
     const log = apiLogger('GET /api/lobby/[code]')

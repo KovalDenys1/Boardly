@@ -519,7 +519,7 @@ const no = {
       lobbyFull: 'Lobbyen er full',
       addAiOpponent: 'Legg til AI-motstander',
       inviteFriendsToJoin: 'Inviter vennene dine til å bli med',
-      botAutoAddTip: 'En bot vil bli automatisk lagt til når du starter hvis du fortsatt er alene',
+      botAutoAddTip: 'En bot blir automatisk lagt til hvis du starter alene',
       tip: 'Tips',
       waitingForHost: 'Venter på at verten skal starte...',
       host: 'Vert',

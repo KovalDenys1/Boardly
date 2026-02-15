@@ -7,6 +7,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { SpyGame } from '@/lib/games/spy-game'
+import { getActiveSpyLocations } from '@/lib/spy-locations'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -65,7 +66,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
     }
 
-    const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+    const metadata = getGameMetadata(gameType)
+    // For games with bot support, allow starting with the actual minPlayers (e.g., 1 for Yahtzee)
+    // The client-side logic will auto-add a bot if needed
+    const supportsBots = metadata.supportsBots
+    const requiredMinPlayers = supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
 
     // Get or create waiting game
     let waitingGame = lobby.games.find(g => g.status === 'waiting')
@@ -163,26 +168,32 @@ export async function POST(request: NextRequest) {
 
     // Guess the Spy requires an initialized round (roles/location) before clients can interact.
     if (gameType === 'guess_the_spy' && gameEngine instanceof SpyGame) {
-      const locations = await prisma.spyLocations.findMany({
-        where: { isActive: true },
-      })
-
-      if (!locations.length) {
-        log.error(
-          'Cannot start Spy game: no active locations configured',
-          undefined,
-          {
-            gameId: waitingGame.id,
-            lobbyCode: lobby.code,
-          }
-        )
+      let activeLocations
+      try {
+        activeLocations = await getActiveSpyLocations()
+      } catch (error) {
+        log.error('Cannot start Spy game: failed to resolve locations', error as Error, {
+          gameId: waitingGame.id,
+          lobbyCode: lobby.code,
+        })
         return NextResponse.json(
-          { error: 'No active Spy locations configured' },
+          {
+            error: 'Spy locations are not configured',
+            details: error instanceof Error ? error.message : 'Unable to resolve Spy locations',
+          },
           { status: 500 }
         )
       }
 
-      gameEngine.initializeRound(locations)
+      if (activeLocations.source === 'fallback') {
+        log.warn('No active Spy locations configured in DB, using fallback set', {
+          gameId: waitingGame.id,
+          lobbyCode: lobby.code,
+          fallbackCount: activeLocations.locations.length,
+        })
+      }
+
+      gameEngine.initializeRound(activeLocations.locations)
     }
 
     log.info('Game starting', {

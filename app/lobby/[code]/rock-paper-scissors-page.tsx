@@ -13,6 +13,7 @@ import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 
 interface RPSGame {
     id: string
@@ -29,6 +30,7 @@ interface LobbyData {
     code: string
     status: 'waiting' | 'playing' | 'finished'
     gameId?: string
+    gameType?: string
     game?: RPSGame
 }
 
@@ -49,64 +51,166 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const socketRef = useRef<Socket | null>(null)
-    const loadedRef = useRef(false)
-
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
 
+    const parseRpsState = useCallback((state: unknown): RockPaperScissorsGameData => {
+        const defaultState: RockPaperScissorsGameData = {
+            mode: 'best-of-3',
+            rounds: [],
+            playerChoices: {},
+            scores: {},
+            playersReady: [],
+            gameWinner: null,
+        }
+
+        if (!state) return defaultState
+
+        let parsed: any = state
+        if (typeof state === 'string') {
+            try {
+                parsed = JSON.parse(state)
+            } catch {
+                return defaultState
+            }
+        }
+
+        const data = parsed?.data
+        if (!data || typeof data !== 'object') {
+            return defaultState
+        }
+
+        return {
+            ...defaultState,
+            ...data,
+            scores: typeof data.scores === 'object' && data.scores ? data.scores : {},
+            playerChoices: typeof data.playerChoices === 'object' && data.playerChoices ? data.playerChoices : {},
+            rounds: Array.isArray(data.rounds) ? data.rounds : [],
+            playersReady: Array.isArray(data.playersReady) ? data.playersReady : [],
+        }
+    }, [])
+
+    const normalizeLobbyResponse = useCallback((payload: any): LobbyData | null => {
+        const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(payload, {
+            includeFinished: true,
+        })
+
+        if (!lobbyPayload?.id || !lobbyPayload?.code) {
+            return null
+        }
+
+        if (!activeGame) {
+            return {
+                id: lobbyPayload.id,
+                code: lobbyPayload.code,
+                status: 'waiting',
+                gameType: lobbyPayload.gameType,
+            }
+        }
+
+        const players = Array.isArray(activeGame.players)
+            ? activeGame.players.map((player: any) => ({
+                id: player?.userId || player?.id || '',
+                name: player?.user?.username || player?.name || 'Unknown',
+            }))
+            : []
+
+        const normalizedGame: RPSGame = {
+            id: activeGame.id,
+            lobbyCode: lobbyPayload.code,
+            gameType: activeGame.gameType || lobbyPayload.gameType || 'rock_paper_scissors',
+            status: activeGame.status,
+            currentPlayerIndex: typeof activeGame.currentPlayerIndex === 'number'
+                ? activeGame.currentPlayerIndex
+                : 0,
+            players,
+            data: parseRpsState(activeGame.state),
+        }
+
+        return {
+            id: lobbyPayload.id,
+            code: lobbyPayload.code,
+            status: normalizedGame.status,
+            gameId: normalizedGame.id,
+            gameType: lobbyPayload.gameType,
+            game: normalizedGame,
+        }
+    }, [parseRpsState])
+
     // Load lobby from API
     const loadLobbyData = useCallback(async () => {
         try {
-            const res = await fetchWithGuest(`/api/lobby/${code}`, {
+            const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
             })
 
             if (!res.ok) throw new Error('Failed to load lobby')
             const data = await res.json()
-            setLobby(data)
+            const normalizedLobby = normalizeLobbyResponse(data)
+            if (!normalizedLobby) {
+                throw new Error('Invalid lobby response')
+            }
+            setLobby(normalizedLobby)
         } catch (err) {
             clientLogger.error('Failed to load lobby:', err)
             setError(t('errors.failed_to_load_lobby'))
         } finally {
             setLoading(false)
         }
-    }, [code, t])
+    }, [code, t, normalizeLobbyResponse])
 
     // Initialize Socket.IO connection
     useEffect(() => {
-        if (loadedRef.current) return
-        loadedRef.current = true
+        if (status === 'loading') return
+        if (!isGuest && status === 'unauthenticated') {
+            router.push('/')
+            return
+        }
+        if (isGuest && !guestToken) return
+
+        let isMounted = true
 
         const initSocket = async () => {
             try {
-                // Wait for session/guest to be ready
-                if (status === 'loading') return
-                if (!isGuest && status === 'unauthenticated') {
-                    router.push('/login')
-                    return
-                }
-                if (isGuest && !guestToken) return
-
                 // Load initial lobby data
                 await loadLobbyData()
+                if (!isMounted) return
 
                 // Initialize Socket.IO
                 const socketUrl = getBrowserSocketUrl()
+                const token = session?.user?.id || guestToken || null
+                const authPayload: Record<string, unknown> = {}
+                if (token) authPayload.token = token
+                if (isGuest) authPayload.isGuest = true
+                const queryPayload: Record<string, string> = {}
+                if (token) queryPayload.token = String(token)
+                if (isGuest) queryPayload.isGuest = 'true'
+
                 const newSocket = io(socketUrl, {
+                    transports: ['websocket', 'polling'],
                     reconnection: true,
                     reconnectionDelay: 1000,
                     reconnectionDelayMax: 5000,
                     reconnectionAttempts: 5,
+                    auth: authPayload,
+                    query: queryPayload,
                 })
+
+                if (!isMounted) {
+                    newSocket.close()
+                    return
+                }
 
                 socketRef.current = newSocket
                 setSocket(newSocket)
 
-                // Join lobby room
-                newSocket.emit('join-lobby', code)
-                clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
+                newSocket.on('connect', () => {
+                    if (!isMounted) return
+                    newSocket.emit('join-lobby', code)
+                    clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
+                })
 
                 // Listen for updates
                 newSocket.on('game-update', async () => {
@@ -130,11 +234,14 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         initSocket()
 
         return () => {
+            isMounted = false
             if (socketRef.current) {
+                socketRef.current.emit('leave-lobby', code)
                 socketRef.current.disconnect()
+                socketRef.current = null
             }
         }
-    }, [code, status, isGuest, guestToken, loadLobbyData, router, t])
+    }, [code, status, isGuest, guestToken, loadLobbyData, router, session?.user?.id])
 
     const handleSubmitChoice = async (choice: RPSChoice) => {
         if (!lobby?.game) return

@@ -5,6 +5,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
+import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -75,18 +76,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         includeContentType: false,
       })
 
-      const res = await fetch(`/api/lobby/${code}`, { headers })
+      const res = await fetch(`/api/lobby/${code}?includeFinished=true`, { headers })
       const data = await res.json()
 
       if (!res.ok) {
         throw new Error(data.error || 'Failed to load lobby')
       }
 
-      setLobby(data.lobby)
+      const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data)
+      setLobby(lobbyPayload)
 
-      const activeGame = data.lobby.games.find((g: any) =>
-        ['waiting', 'playing'].includes(g.status)
-      )
       if (activeGame) {
         setGame(activeGame)
         if (activeGame.state) {
@@ -189,20 +188,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await loadLobbyRef.current()
       }
 
-      const ensureLobbyRoomJoin = () => {
-        if (socket && socket.connected) {
-          clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
-          socket.emit('join-lobby', code)
-        } else if (socket) {
-          clientLogger.log('⏳ Waiting for socket connection to join lobby room...')
-          socket.once('connect', () => {
-            clientLogger.log('📡 Socket connected, joining lobby room')
-            socket.emit('join-lobby', code)
-          })
-        }
+      // useSocketConnection joins room on each connect/reconnect.
+      // Emit only when already connected to avoid duplicate JOIN_LOBBY emissions.
+      if (socket && socket.connected) {
+        clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
+        socket.emit('join-lobby', code)
       }
-
-      ensureLobbyRoomJoin()
 
       // Track lobby join
       trackLobbyJoined({
@@ -231,8 +222,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     try {
       setStartingGame(true)
       const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
-      const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+      const metadata = getGameMetadata(gameType)
       const supportsBots = hasBotSupport(gameType)
+      // For games with bot support, allow starting with the actual minPlayers (e.g., 1 for Yahtzee)
+      // For games without bots, enforce minimum of 2 players
+      const requiredMinPlayers = supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
       const desiredPlayerCount = supportsBots
         ? Math.max(2, requiredMinPlayers)
         : requiredMinPlayers
@@ -286,9 +280,28 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        clientLogger.error('Failed to start game - server response:', error)
-        throw new Error(error.error || error.details || 'Failed to start game')
+        let errorPayload: any = null
+
+        try {
+          errorPayload = await res.json()
+        } catch {
+          // Ignore JSON parse errors and use status text fallback below.
+        }
+
+        const hasMessage =
+          typeof errorPayload?.error === 'string' ||
+          typeof errorPayload?.details === 'string'
+
+        const diagnosticPayload = hasMessage || (errorPayload && Object.keys(errorPayload).length > 0)
+          ? errorPayload
+          : { status: res.status, statusText: res.statusText }
+
+        clientLogger.error('Failed to start game - server response:', diagnosticPayload)
+        throw new Error(
+          errorPayload?.error ||
+          errorPayload?.details ||
+          `Failed to start game (HTTP ${res.status})`
+        )
       }
 
       const data = await res.json()

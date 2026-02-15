@@ -348,7 +348,7 @@ export default function YahtzeeResults({
           <button
             onClick={onPlayAgain}
             disabled={!canStartGame}
-            className="btn btn-success flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-success flex items-center justify-center hover:shadow-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
             style={{
               fontSize: `clamp(13px, 1.3vw, 20px)`,
               padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 40px)`,
@@ -372,7 +372,7 @@ export default function YahtzeeResults({
         </div>
         <button
           onClick={onBackToLobby}
-          className="btn btn-secondary flex items-center justify-center hover:scale-105 transition-transform"
+          className="btn btn-secondary flex items-center justify-center hover:shadow-xl hover:brightness-110 transition-all"
           style={{
             fontSize: `clamp(13px, 1.3vw, 20px)`,
             padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 40px)`,
