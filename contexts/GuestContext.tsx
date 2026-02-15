@@ -1,6 +1,7 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 
 interface SetGuestModeOptions {
     guestId?: string
@@ -31,11 +32,18 @@ interface GuestSessionResponse {
 }
 
 export function GuestProvider({ children }: { children: ReactNode }) {
+    const { status } = useSession()
     const [guestId, setGuestId] = useState<string | null>(null)
     const [guestName, setGuestName] = useState<string | null>(null)
     const [guestToken, setGuestToken] = useState<string | null>(null)
+    const guestStateGenerationRef = useRef(0)
 
-    const applyGuestSession = (session: GuestSessionResponse) => {
+    const applyGuestSession = useCallback((session: GuestSessionResponse, generation = guestStateGenerationRef.current) => {
+        // Ignore stale async results from previous guest sessions.
+        if (generation !== guestStateGenerationRef.current) {
+            return
+        }
+
         setGuestId(session.guestId)
         setGuestName(session.guestName)
         setGuestToken(session.guestToken)
@@ -45,9 +53,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             localStorage.setItem(GUEST_NAME_KEY, session.guestName)
             localStorage.setItem(GUEST_TOKEN_KEY, session.guestToken)
         }
-    }
+    }, [])
 
-    const requestGuestSession = async (name: string, token?: string): Promise<GuestSessionResponse> => {
+    const requestGuestSession = useCallback(async (name: string, token?: string): Promise<GuestSessionResponse> => {
         const response = await fetch('/api/auth/guest-session', {
             method: 'POST',
             headers: {
@@ -69,7 +77,22 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         }
 
         return data as GuestSessionResponse
-    }
+    }, [])
+
+    const clearGuestMode = useCallback(() => {
+        // Invalidate any in-flight guest refresh requests.
+        guestStateGenerationRef.current += 1
+
+        setGuestId(null)
+        setGuestName(null)
+        setGuestToken(null)
+
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(GUEST_ID_KEY)
+            localStorage.removeItem(GUEST_NAME_KEY)
+            localStorage.removeItem(GUEST_TOKEN_KEY)
+        }
+    }, [])
 
     // Load guest data from localStorage on mount
     useEffect(() => {
@@ -87,8 +110,9 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             setGuestToken(storedToken)
 
             // Refresh token on startup to recover from expiration seamlessly.
+            const generation = guestStateGenerationRef.current
             requestGuestSession(storedName, storedToken)
-                .then(applyGuestSession)
+                .then((session) => applyGuestSession(session, generation))
                 .catch(() => {
                     localStorage.removeItem(GUEST_ID_KEY)
                     localStorage.removeItem(GUEST_NAME_KEY)
@@ -101,27 +125,51 @@ export function GuestProvider({ children }: { children: ReactNode }) {
         }
 
         // Migrate legacy guest sessions without token to signed token flow.
+        const generation = guestStateGenerationRef.current
         requestGuestSession(storedName)
-            .then(applyGuestSession)
+            .then((session) => applyGuestSession(session, generation))
             .catch(() => {
                 localStorage.removeItem(GUEST_ID_KEY)
                 localStorage.removeItem(GUEST_NAME_KEY)
                 localStorage.removeItem(GUEST_TOKEN_KEY)
             })
-    }, [])
+    }, [applyGuestSession, requestGuestSession])
 
-    const setGuestMode = async (name: string, options?: SetGuestModeOptions) => {
+    // Never keep guest mode active when authenticated user session exists.
+    useEffect(() => {
+        if (status !== 'authenticated') return
+
+        if (guestId || guestName || guestToken) {
+            clearGuestMode()
+            return
+        }
+
+        if (typeof window !== 'undefined') {
+            const hasStoredGuest =
+                Boolean(localStorage.getItem(GUEST_ID_KEY)) ||
+                Boolean(localStorage.getItem(GUEST_NAME_KEY)) ||
+                Boolean(localStorage.getItem(GUEST_TOKEN_KEY))
+
+            if (hasStoredGuest) {
+                clearGuestMode()
+            }
+        }
+    }, [status, guestId, guestName, guestToken, clearGuestMode])
+
+    const setGuestMode = useCallback(async (name: string, options?: SetGuestModeOptions) => {
         const normalizedName = name.trim()
         if (normalizedName.length < 2) {
             throw new Error('Guest name must be at least 2 characters')
         }
+
+        const generation = guestStateGenerationRef.current
 
         if (options?.guestId && options?.guestToken) {
             applyGuestSession({
                 guestId: options.guestId,
                 guestName: options.guestName || normalizedName,
                 guestToken: options.guestToken,
-            })
+            }, generation)
             return
         }
 
@@ -131,22 +179,14 @@ export function GuestProvider({ children }: { children: ReactNode }) {
             (typeof window !== 'undefined' ? localStorage.getItem(GUEST_TOKEN_KEY) || undefined : undefined)
 
         const session = await requestGuestSession(normalizedName, activeToken)
-        applyGuestSession(session)
-    }
-
-    const clearGuestMode = () => {
-        setGuestId(null)
-        setGuestName(null)
-        setGuestToken(null)
-
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem(GUEST_ID_KEY)
-            localStorage.removeItem(GUEST_NAME_KEY)
-            localStorage.removeItem(GUEST_TOKEN_KEY)
-        }
-    }
+        applyGuestSession(session, generation)
+    }, [guestToken, requestGuestSession, applyGuestSession])
 
     const getHeaders = (): Record<string, string> => {
+        if (status === 'authenticated') {
+            return {}
+        }
+
         if (guestToken) {
             return {
                 'X-Guest-Token': guestToken,
@@ -156,7 +196,7 @@ export function GuestProvider({ children }: { children: ReactNode }) {
     }
 
     const value: GuestContextType = {
-        isGuest: Boolean(guestId && guestName && guestToken),
+        isGuest: status !== 'authenticated' && Boolean(guestId && guestName && guestToken),
         guestId,
         guestName,
         guestToken,

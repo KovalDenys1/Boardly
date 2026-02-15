@@ -97,7 +97,7 @@ const nextConfig = {
   },
 }
 
-module.exports = withSentryConfig(nextConfig, {
+const sentryWebpackOptions = {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
@@ -135,4 +135,12 @@ module.exports = withSentryConfig(nextConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   automaticVercelMonitors: true,
-})
+}
+
+// Sentry webpack plugin is only needed for production builds.
+// Keeping it disabled in local development avoids flaky `.next` manifest lookups
+// (e.g. edge-instrumentation/routes-manifest ENOENT) during hot reload.
+module.exports =
+  process.env.NODE_ENV === 'production'
+    ? withSentryConfig(nextConfig, sentryWebpackOptions)
+    : nextConfig

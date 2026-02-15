@@ -24,7 +24,6 @@ describe('createPlayerTypingHandler', () => {
     const to = jest.fn().mockReturnValue({ emit })
     const socket = {
       id: 'socket-1',
-      rooms: new Set<string>(['socket-1', 'lobby:LOBBY1']),
       data: {
         user: {
           id: 'user-1',
@@ -90,7 +89,7 @@ describe('createPlayerTypingHandler', () => {
     const handler = createPlayerTypingHandler(deps)
     const { socket, to } = createSocket()
 
-    handler(socket, { userId: 'u', username: 'n' } as unknown as { lobbyCode: string })
+    handler(socket, { userId: 'u', username: 'n' } as any)
 
     expect(deps.isSocketAuthorizedForLobby).not.toHaveBeenCalled()
     expect(to).not.toHaveBeenCalled()

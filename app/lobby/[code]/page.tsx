@@ -187,6 +187,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
+  const isLeavingLobbyRef = React.useRef(false)
+  const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -200,6 +202,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   useEffect(() => {
     setSoundEnabled(soundManager.isEnabled())
   }, [])
+
+  const playAmbientSound = useCallback(
+    (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
+      if (isInitialLoadRef.current) return
+      if (!soundManager.hasUserInteracted()) return
+      soundManager.play(soundName, options)
+    },
+    []
+  )
 
   // Helper functions
   const getCurrentUserId = useCallback(() => {
@@ -256,14 +267,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       // Play sound for turn change
       if (currentPlayerId === currentUserId) {
         // It's now our turn - play turn change sound
-        soundManager.play('turnChange')
+        playAmbientSound('turnChange')
       } else if (prevPlayerIdRef.current === currentUserId) {
         // Turn moved away from us to another player - play turn change sound
-        soundManager.play('turnChange')
+        playAmbientSound('turnChange')
       }
     }
     prevPlayerIdRef.current = currentPlayerId
-  }, [currentPlayerId, getCurrentUserId])
+  }, [currentPlayerId, getCurrentUserId, playAmbientSound])
 
   // Create ref for loadLobby to avoid circular dependency
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
@@ -325,7 +336,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 // Play dice roll sound for other players' rolls (not our own)
                 if (lastRoll.playerId !== currentUserId) {
-                  soundManager.play('diceRoll')
+                  playAmbientSound('diceRoll')
                 }
 
                 return [...prev, {
@@ -351,7 +362,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType])
+  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType, playAmbientSound])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -397,11 +408,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
       showToast.success('toast.playerJoined', undefined, { player: data.username })
-      if (!isInitialLoadRef.current) {
-        soundManager.play('playerJoin')
-      }
+      playAmbientSound('playerJoin')
     }
-  }, [isGuest, guestId, session?.user?.id])
+  }, [isGuest, guestId, session?.user?.id, playAmbientSound])
 
   const onGameStarted = useCallback((data: GameStartedPayload) => {
     clientLogger.log('📡 Game started:', data)
@@ -417,11 +426,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       showToast.success('toast.gameStarted', undefined, { player: data.firstPlayerName })
     }
 
-    // Only play sound if not initial load
-    if (!isInitialLoadRef.current) {
-      soundManager.play('gameStart')
-    }
-  }, [isGuest, guestId, session?.user?.id, lobby?.creatorId])
+    playAmbientSound('gameStart')
+  }, [isGuest, guestId, session?.user?.id, lobby?.creatorId, playAmbientSound])
 
   const onBotAction = useCallback((event: any) => {
     clientLogger.log('🤖 Received bot-action:', event)
@@ -447,26 +453,26 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       // Play sound ONLY after roll completes AND not during initial load
       // Use force option to ensure sound plays even if previous roll sound is still playing
-      if (!isInitialLoadRef.current) {
-        soundManager.play('diceRoll', { force: true })
-      }
+      playAmbientSound('diceRoll', { force: true })
     }
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
       showToast.success('toast.success', event.message)
-      // Play sound only if not initial load
-      if (!isInitialLoadRef.current) {
-        soundManager.play('score')
-      }
+      playAmbientSound('score')
     }
 
     // Log all actions to console for debugging
     clientLogger.log(`🤖 ${event.message}`)
-  }, [gameEngine, game?.players?.length])
+  }, [gameEngine, game?.players?.length, playAmbientSound])
 
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
+
+    if (isLeavingLobbyRef.current) {
+      clientLogger.log('Skipping game-abandoned handling during manual leave')
+      return
+    }
 
     const reason = data.reason
     if (reason === 'no_human_players') {
@@ -488,6 +494,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
+
+    if (isLeavingLobbyRef.current) {
+      return
+    }
 
     if (data.username) {
       showToast.info('toast.playerLeft', undefined, { player: data.username })
@@ -859,14 +869,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (!gameEngine || !game || !(gameEngine instanceof YahtzeeGame)) return
 
     if (gameEngine.isGameFinished()) {
+      if (finishedGameSoundPlayedForRef.current === game.id) {
+        return
+      }
+
       const dice = gameEngine.getDice()
       const celebration = detectCelebration(dice)
       if (celebration) {
         setCelebrationEvent(celebration)
-        soundManager.play('celebration')
+        playAmbientSound('celebration')
+        finishedGameSoundPlayedForRef.current = game.id
       }
     }
-  }, [gameEngine, game])
+  }, [gameEngine, game, playAmbientSound])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -878,6 +893,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [])
 
   const handleLeaveLobby = async () => {
+    if (isLeavingLobbyRef.current) {
+      return
+    }
+    isLeavingLobbyRef.current = true
+    setShowLeaveConfirmModal(false)
+
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}/leave`, {
         method: 'POST',
@@ -891,6 +912,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       if (!res.ok) {
         showToast.error('errors.unexpected')
         clientLogger.error('Failed to leave lobby:', data.error)
+        isLeavingLobbyRef.current = false
         return
       }
 
@@ -902,9 +924,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       // Show appropriate message
       if (data.gameAbandoned) {
-        showToast.info('lobby.gameAbandoned')
+        showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
       } else {
-        showToast.success('lobby.leftLobby')
+        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
       }
 
       // Redirect

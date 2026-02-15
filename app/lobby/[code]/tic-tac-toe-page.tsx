@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
@@ -174,45 +175,68 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
         if (isGuest && !guestToken) return
 
-        loadLobby()
+        let isMounted = true
+        let activeSocket: Socket | null = null
 
-        // Setup Socket
-        const url = getBrowserSocketUrl()
-        const token = session?.user?.id || guestToken || null
+        void loadLobby()
 
-        const newSocket = io(url, {
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 1000,
-            auth: { token, isGuest },
-            query: { token: String(token), isGuest: String(isGuest) },
-        })
+        const initSocket = async () => {
+            const url = getBrowserSocketUrl()
+            const useGuestAuth = isGuest && status !== 'authenticated'
+            const socketAuth = await resolveSocketClientAuth({
+                isGuest: useGuestAuth,
+                guestToken: useGuestAuth ? guestToken : null,
+            })
 
-        newSocket.on('connect', () => {
-            clientLogger.log('✅ Socket connected for Tic-Tac-Toe')
-            newSocket.emit('join-lobby', code)
-        })
+            if (!socketAuth) {
+                clientLogger.warn('Skipping Tic-Tac-Toe socket connection: auth payload unavailable')
+                return
+            }
 
-        newSocket.on('game-update', (payload: any) => {
-            clientLogger.log('📡 Game update received:', payload)
-            // Reload to get latest state from server
-            loadLobby()
-        })
+            if (!isMounted) {
+                return
+            }
 
-        newSocket.on('disconnect', () => {
-            clientLogger.log('❌ Socket disconnected from Tic-Tac-Toe')
-        })
+            const newSocket = io(url, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 1000,
+                auth: socketAuth.authPayload,
+                query: socketAuth.queryPayload,
+            })
+            activeSocket = newSocket
 
-        setSocket(newSocket)
+            newSocket.on('connect', () => {
+                clientLogger.log('✅ Socket connected for Tic-Tac-Toe')
+                newSocket.emit('join-lobby', code)
+            })
+
+            newSocket.on('game-update', (payload: any) => {
+                clientLogger.log('📡 Game update received:', payload)
+                // Reload to get latest state from server
+                loadLobby()
+            })
+
+            newSocket.on('disconnect', () => {
+                clientLogger.log('❌ Socket disconnected from Tic-Tac-Toe')
+            })
+
+            setSocket(newSocket)
+        }
+
+        void initSocket()
 
         return () => {
-            if (newSocket?.connected) {
-                newSocket.emit('leave-lobby', code)
-                newSocket.disconnect()
+            isMounted = false
+            if (activeSocket?.connected) {
+                activeSocket.emit('leave-lobby', code)
+                activeSocket.disconnect()
+            } else {
+                activeSocket?.close()
             }
         }
-    }, [status, isGuest, guestToken, code, loadLobby, session?.user?.id])
+    }, [status, isGuest, guestToken, code, loadLobby])
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false

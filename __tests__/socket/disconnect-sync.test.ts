@@ -34,7 +34,7 @@ describe('createDisconnectSyncManager', () => {
       prisma: prisma as unknown as DisconnectSyncOptions['prisma'],
       logger,
       emitWithMetadata: jest.fn(),
-      hasAnyActiveSocketForUser: jest.fn().mockReturnValue(false),
+      hasAnyActiveSocketForUserInLobby: jest.fn().mockReturnValue(false),
       disconnectGraceMs: 200,
     }
 
@@ -86,8 +86,8 @@ describe('createDisconnectSyncManager', () => {
 
   it('skips delayed cleanup when user reconnects before grace timeout', async () => {
     jest.useFakeTimers()
-    const hasAnyActiveSocketForUser = jest.fn().mockReturnValue(true)
-    const deps = createDeps({ hasAnyActiveSocketForUser })
+    const hasAnyActiveSocketForUserInLobby = jest.fn().mockReturnValue(true)
+    const deps = createDeps({ hasAnyActiveSocketForUserInLobby })
     const manager = createDisconnectSyncManager(deps)
 
     manager.scheduleAbruptDisconnectForLobby('ABCD', user)
@@ -95,7 +95,7 @@ describe('createDisconnectSyncManager', () => {
     jest.advanceTimersByTime(250)
     await Promise.resolve()
 
-    expect(hasAnyActiveSocketForUser).toHaveBeenCalledWith(user.id)
+    expect(hasAnyActiveSocketForUserInLobby).toHaveBeenCalledWith(user.id, 'ABCD')
     expect(deps.prisma.games.findFirst).not.toHaveBeenCalled()
     expect(deps.logger.info).toHaveBeenCalledWith(
       'Skipping delayed disconnect sync because user reconnected',

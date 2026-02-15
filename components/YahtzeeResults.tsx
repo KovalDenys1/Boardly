@@ -1,9 +1,7 @@
 ﻿'use client'
 
-import { useEffect } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
@@ -21,21 +19,14 @@ export default function YahtzeeResults({
   onBackToLobby
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
-  
-  // Play victory sound when results are shown
-  useEffect(() => {
-    if (results.length > 0) {
-      sounds.play('celebration')
-    }
-  }, [results.length])
-  
+
   if (results.length === 0) {
     return null
   }
-  
+
   const winner = results[0]
   const isWinner = winner.playerId === currentUserId
-  
+
   return (
     <div
       className="fixed inset-0 top-20 overflow-y-auto bg-gray-50 dark:bg-gray-900"

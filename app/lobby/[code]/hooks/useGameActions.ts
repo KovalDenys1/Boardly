@@ -477,7 +477,6 @@ export function useGameActions(props: UseGameActionsProps) {
         })
 
         if (winner) {
-          soundManager.play('win')
           fireworks()
           showToast.success('toast.gameOver', undefined, { player: winner.name })
         }

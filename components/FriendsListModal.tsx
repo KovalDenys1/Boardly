@@ -8,6 +8,7 @@ import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 
 interface Friend {
   id: string
@@ -42,43 +43,48 @@ export default function FriendsListModal({
   useEffect(() => {
     if (!isOpen || !session?.user?.id) return
 
-    const socketUrl = getBrowserSocketUrl()
-    const token = session.user.id
+    let isMounted = true
+    let activeSocket: Socket | null = null
 
-    const authPayload: Record<string, unknown> = {}
-    if (token) authPayload.token = token
-    authPayload.isGuest = false
+    const connectSocket = async () => {
+      const socketUrl = getBrowserSocketUrl()
+      const socketAuth = await resolveSocketClientAuth({ isGuest: false })
 
-    const queryPayload: Record<string, string> = {}
-    if (token) queryPayload.token = String(token)
-    queryPayload.isGuest = 'false'
+      if (!socketAuth || !isMounted) {
+        return
+      }
 
-    const newSocket = io(socketUrl, {
-      auth: authPayload,
-      query: queryPayload,
-      transports: ['polling', 'websocket'],
-    })
-
-    newSocket.on('online-users', (data: { userIds: string[] }) => {
-      setOnlineUsers(new Set(data.userIds))
-    })
-
-    newSocket.on('user-online', (data: { userId: string }) => {
-      setOnlineUsers(prev => new Set(prev).add(data.userId))
-    })
-
-    newSocket.on('user-offline', (data: { userId: string }) => {
-      setOnlineUsers(prev => {
-        const next = new Set(prev)
-        next.delete(data.userId)
-        return next
+      const newSocket = io(socketUrl, {
+        auth: socketAuth.authPayload,
+        query: socketAuth.queryPayload,
+        transports: ['polling', 'websocket'],
       })
-    })
+      activeSocket = newSocket
 
-    setSocket(newSocket)
+      newSocket.on('online-users', (data: { userIds: string[] }) => {
+        setOnlineUsers(new Set(data.userIds))
+      })
+
+      newSocket.on('user-online', (data: { userId: string }) => {
+        setOnlineUsers(prev => new Set(prev).add(data.userId))
+      })
+
+      newSocket.on('user-offline', (data: { userId: string }) => {
+        setOnlineUsers(prev => {
+          const next = new Set(prev)
+          next.delete(data.userId)
+          return next
+        })
+      })
+
+      setSocket(newSocket)
+    }
+
+    void connectSocket()
 
     return () => {
-      newSocket.close()
+      isMounted = false
+      activeSocket?.close()
     }
   }, [isOpen, session?.user?.id])
 

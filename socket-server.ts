@@ -118,10 +118,15 @@ function emitWithMetadata(
   target: RoomEmitter | DirectEmitter,
   room: string,
   event: string,
-  data: Record<string, unknown>
+  data: unknown
 ) {
+  const metadataBase =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : {}
+
   const payload = {
-    ...data,
+    ...metadataBase,
     sequenceId: ++eventSequence,
     timestamp: Date.now(),
     version: '1.0.0'
@@ -188,21 +193,29 @@ function getLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
   return lobbyCodes
 }
 
-function hasAnotherActiveSocketForUser(userId: string, excludingSocketId: string): boolean {
+function hasAnotherActiveSocketForUserInLobby(
+  userId: string,
+  excludingSocketId: string,
+  lobbyCode: string
+): boolean {
+  const lobbyRoom = SocketRooms.lobby(lobbyCode)
   for (const [socketId, activeSocket] of io.sockets.sockets.entries()) {
     if (socketId === excludingSocketId) continue
     if (!activeSocket.connected) continue
-    if (activeSocket.data?.user?.id === userId) {
+    if (activeSocket.data?.user?.id !== userId) continue
+    if (activeSocket.rooms?.has(lobbyRoom)) {
       return true
     }
   }
   return false
 }
 
-function hasAnyActiveSocketForUser(userId: string): boolean {
+function hasAnyActiveSocketForUserInLobby(userId: string, lobbyCode: string): boolean {
+  const lobbyRoom = SocketRooms.lobby(lobbyCode)
   for (const activeSocket of io.sockets.sockets.values()) {
     if (!activeSocket.connected) continue
-    if (activeSocket.data?.user?.id === userId) {
+    if (activeSocket.data?.user?.id !== userId) continue
+    if (activeSocket.rooms?.has(lobbyRoom)) {
       return true
     }
   }
@@ -216,7 +229,7 @@ const disconnectSyncManager = createDisconnectSyncManager({
   emitWithMetadata: (room, event, data) => {
     emitWithMetadata(io, room, event, data)
   },
-  hasAnyActiveSocketForUser,
+  hasAnyActiveSocketForUserInLobby,
   disconnectGraceMs: Math.max(0, Number(process.env.SOCKET_DISCONNECT_GRACE_MS || 8000)),
 })
 
@@ -402,7 +415,7 @@ const { handleDisconnecting, handleDisconnect } = createConnectionLifecycleHandl
   clearSocketRateLimit: (socketId) => {
     socketRateLimiter.clearSocket(socketId)
   },
-  hasAnotherActiveSocketForUser,
+  hasAnotherActiveSocketForUserInLobby,
   getLobbyCodesFromRooms,
   disconnectSyncManager,
 })

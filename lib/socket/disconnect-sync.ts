@@ -82,7 +82,7 @@ interface DisconnectSyncOptions {
   prisma: PrismaLike
   logger: LoggerLike
   emitWithMetadata: (room: string, event: string, data: unknown) => void
-  hasAnyActiveSocketForUser: (userId: string) => boolean
+  hasAnyActiveSocketForUserInLobby: (userId: string, lobbyCode: string) => boolean
   disconnectGraceMs: number
   connectionStateSyncMaxRetries?: number
 }
@@ -100,7 +100,7 @@ export function createDisconnectSyncManager({
   prisma,
   logger,
   emitWithMetadata,
-  hasAnyActiveSocketForUser,
+  hasAnyActiveSocketForUserInLobby,
   disconnectGraceMs,
   connectionStateSyncMaxRetries = 3,
 }: DisconnectSyncOptions) {
@@ -430,7 +430,7 @@ export function createDisconnectSyncManager({
     const timeoutId = setTimeout(() => {
       pendingAbruptDisconnects.delete(key)
 
-      if (hasAnyActiveSocketForUser(user.id)) {
+      if (hasAnyActiveSocketForUserInLobby(user.id, lobbyCode)) {
         logger.info('Skipping delayed disconnect sync because user reconnected', {
           lobbyCode,
           userId: user.id,
@@ -455,4 +455,3 @@ export function createDisconnectSyncManager({
     syncPlayerConnectionStateInLobby,
   }
 }
-
