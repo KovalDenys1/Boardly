@@ -100,3 +100,8 @@ jest.mock('socket.io-client', () => ({
     disconnect: jest.fn(),
   })),
 }))
+
+afterEach(() => {
+  jest.clearAllTimers()
+  jest.useRealTimers()
+})

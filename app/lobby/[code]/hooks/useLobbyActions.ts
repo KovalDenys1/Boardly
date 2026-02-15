@@ -222,8 +222,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     try {
       setStartingGame(true)
       const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
-      const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+      const metadata = getGameMetadata(gameType)
       const supportsBots = hasBotSupport(gameType)
+      // For games with bot support, allow starting with the actual minPlayers (e.g., 1 for Yahtzee)
+      // For games without bots, enforce minimum of 2 players
+      const requiredMinPlayers = supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
       const desiredPlayerCount = supportsBots
         ? Math.max(2, requiredMinPlayers)
         : requiredMinPlayers

@@ -1,6 +1,10 @@
 import { createConnectionLifecycleHandlers } from '../../../lib/socket/handlers/connection-lifecycle'
 
 describe('createConnectionLifecycleHandlers', () => {
+  type HandlerSocket = Parameters<
+    ReturnType<typeof createConnectionLifecycleHandlers>['handleDisconnecting']
+  >[0]
+
   function createDeps(
     overrides?: Partial<Parameters<typeof createConnectionLifecycleHandlers>[0]>
   ): Parameters<typeof createConnectionLifecycleHandlers>[0] {
@@ -24,7 +28,7 @@ describe('createConnectionLifecycleHandlers', () => {
     }
   }
 
-  function createSocket(overrides?: Partial<any>) {
+  function createSocket(overrides?: Partial<HandlerSocket>): HandlerSocket {
     return {
       id: 'socket-1',
       rooms: new Set<string>(['socket-1', 'lobby:ABCD']),
@@ -36,7 +40,7 @@ describe('createConnectionLifecycleHandlers', () => {
         },
       },
       ...overrides,
-    }
+    } as HandlerSocket
   }
 
   it('schedules delayed disconnect sync for each lobby on disconnecting', () => {

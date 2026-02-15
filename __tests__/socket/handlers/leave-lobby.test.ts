@@ -2,6 +2,8 @@ import { createLeaveLobbyHandler } from '../../../lib/socket/handlers/leave-lobb
 import { SocketRooms } from '../../../types/socket-events'
 
 describe('createLeaveLobbyHandler', () => {
+  type HandlerSocket = Parameters<ReturnType<typeof createLeaveLobbyHandler>>[0]
+
   function createDeps(overrides?: Partial<Parameters<typeof createLeaveLobbyHandler>[0]>) {
     return {
       socketMonitor: {
@@ -18,7 +20,7 @@ describe('createLeaveLobbyHandler', () => {
     }
   }
 
-  function createSocket(overrides?: Partial<any>) {
+  function createSocket(overrides?: Partial<HandlerSocket>): HandlerSocket {
     return {
       id: 'socket-1',
       leave: jest.fn(),
@@ -28,7 +30,7 @@ describe('createLeaveLobbyHandler', () => {
         },
       },
       ...overrides,
-    }
+    } as HandlerSocket
   }
 
   it('leaves lobby room and clears auth/disconnect state', () => {

@@ -21,7 +21,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 import TicTacToeLobbyPage from './tic-tac-toe-page'
@@ -949,7 +949,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const playerCount = game?.players?.length || 0
   const minPlayersRequired = React.useMemo(() => {
     try {
-      return Math.max(2, getGameMetadata((lobby?.gameType as string) || DEFAULT_GAME_TYPE).minPlayers)
+      const gameType = (lobby?.gameType as string) || DEFAULT_GAME_TYPE
+      const metadata = getGameMetadata(gameType)
+      // For games with bot support (e.g., Yahtzee), use actual minPlayers to allow solo start with auto-bot
+      const supportsBots = hasBotSupport(gameType)
+      return supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
     } catch {
       return 2
     }

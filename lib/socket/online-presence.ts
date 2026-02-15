@@ -1,11 +1,15 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { SocketEvents } from '../../types/socket-events'
 
+type LogContext = Record<string, unknown>
+
 type LoggerLike = {
-  info: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
 }
 
-export function createOnlinePresence(io: SocketIOServer, logger: LoggerLike) {
+type BroadcastEmitterLike = Pick<SocketIOServer, 'emit'>
+
+export function createOnlinePresence(io: BroadcastEmitterLike, logger: LoggerLike) {
   // userId -> socketIds
   const onlineUsers = new Map<string, Set<string>>()
 

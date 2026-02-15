@@ -66,7 +66,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only lobby creator can start the game' }, { status: 403 })
     }
 
-    const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
+    const metadata = getGameMetadata(gameType)
+    // For games with bot support, allow starting with the actual minPlayers (e.g., 1 for Yahtzee)
+    // The client-side logic will auto-add a bot if needed
+    const supportsBots = metadata.supportsBots
+    const requiredMinPlayers = supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
 
     // Get or create waiting game
     let waitingGame = lobby.games.find(g => g.status === 'waiting')
