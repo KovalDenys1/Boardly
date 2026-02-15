@@ -56,12 +56,35 @@ describe('createConnectionLifecycleHandlers', () => {
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledTimes(2)
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledWith(
       'ABCD',
-      socket.data.user
+      expect.objectContaining({
+        id: 'user-1',
+        username: 'Alice',
+      })
     )
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledWith(
       'WXYZ',
-      socket.data.user
+      expect.objectContaining({
+        id: 'user-1',
+        username: 'Alice',
+      })
     )
+  })
+
+  it('skips disconnect sync when user id is missing on disconnecting', () => {
+    const deps = createDeps({
+      getLobbyCodesFromRooms: jest.fn().mockReturnValue(['ABCD']),
+    })
+    const { handleDisconnecting } = createConnectionLifecycleHandlers(deps)
+    const socket = createSocket({
+      data: {
+        user: {},
+      },
+    })
+
+    handleDisconnecting(socket)
+
+    expect(deps.hasAnotherActiveSocketForUser).not.toHaveBeenCalled()
+    expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).not.toHaveBeenCalled()
   })
 
   it('skips disconnect sync when another socket for user is active', () => {

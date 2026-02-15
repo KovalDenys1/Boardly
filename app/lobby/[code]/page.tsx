@@ -1,21 +1,17 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import PlayerList from '@/components/PlayerList'
-import Scorecard from '@/components/Scorecard'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import Chat from '@/components/Chat'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { soundManager } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import { createBotMoveVisualization, detectBotMove, findFilledCategory } from '@/lib/bot-visualization'
-import BotMoveOverlay from '@/components/BotMoveOverlay'
-import RollHistory, { RollHistoryEntry } from '@/components/RollHistory'
+import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
-import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
@@ -24,8 +20,6 @@ import { GameEngine } from '@/lib/game-engine'
 import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
-import TicTacToeLobbyPage from './tic-tac-toe-page'
-import RockPaperScissorsLobbyPage from './rock-paper-scissors-page'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -74,21 +68,34 @@ import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
 import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
-import SpyGameBoard from './components/SpyGameBoard'
 import JoinPrompt from './components/JoinPrompt'
-import MobileTabs, { TabId } from './components/MobileTabs'
+import type { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
-import FriendsListModal from '@/components/FriendsListModal'
-import ConfirmModal from '@/components/ConfirmModal'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 
+const PlayerList = dynamic(() => import('@/components/PlayerList'))
+const Scorecard = dynamic(() => import('@/components/Scorecard'))
+const Chat = dynamic(() => import('@/components/Chat'))
+const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'))
+const RollHistory = dynamic(() => import('@/components/RollHistory'))
+const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
+const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
+const MobileTabs = dynamic(() => import('./components/MobileTabs'))
+const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
+const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
+const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
+  loading: () => <LoadingSpinner size="lg" />,
+})
+const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-page'), {
+  loading: () => <LoadingSpinner size="lg" />,
+})
+
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
   const params = useParams()
-  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const { isGuest, guestId, guestName, guestToken } = useGuest()
   const code = params.code as string
@@ -966,6 +973,33 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
   const isGameStarted = game?.status === 'playing'
 
+  const playersForLeaderboard = React.useMemo(() => {
+    if (!gameEngine || !Array.isArray(game?.players)) {
+      return []
+    }
+
+    const enginePlayers = gameEngine.getPlayers()
+    const positionByUserId = new Map<string, number>()
+
+    enginePlayers.forEach((player, index) => {
+      positionByUserId.set(player.id, index)
+    })
+
+    return game.players.map((player) => ({
+      id: player.id,
+      userId: player.userId,
+      user: {
+        name: player.user?.username || null,
+        username: player.user?.username || null,
+        email: null,
+        bot: player.user?.bot || null,
+      },
+      score: enginePlayers.find((enginePlayer) => enginePlayer.id === player.userId)?.score || 0,
+      position: positionByUserId.get(player.userId) ?? 0,
+      isReady: true,
+    }))
+  }, [game?.players, gameEngine])
+
   // When TTT/RPS game starts, notify parent to switch to dedicated page
   useEffect(() => {
     if (isGameStarted && lobby?.gameType && onSwitchToDedicatedPage) {
@@ -1320,25 +1354,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     {/* Players List - 40% of space */}
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <PlayerList
-                        players={game?.players?.map(p => {
-                          // Find the player's actual position in the game engine
-                          const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
-                          const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-
-                          return {
-                            id: p.id,
-                            userId: p.userId,
-                            user: {
-                              name: p.user?.username || null,
-                              username: p.user?.username || null,
-                              email: null,
-                              bot: p.user?.bot || null,
-                            },
-                            score: enginePlayer?.score || 0,
-                            position: actualPosition, // Use position from game engine, not DB
-                            isReady: true,
-                          }
-                        }) || []}
+                        players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
                         currentUserId={getCurrentUserId()}
                         onPlayerClick={(userId) => {
@@ -1433,24 +1449,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
                     <div className="p-4 space-y-4">
                       <PlayerList
-                        players={game?.players?.map(p => {
-                          const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
-                          const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-
-                          return {
-                            id: p.id,
-                            userId: p.userId,
-                            user: {
-                              name: p.user?.username || null,
-                              username: p.user?.username || null,
-                              email: null,
-                              bot: p.user?.bot || null,
-                            },
-                            score: enginePlayer?.score || 0,
-                            position: actualPosition,
-                            isReady: true,
-                          }
-                        }) || []}
+                        players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
                         currentUserId={getCurrentUserId()}
                         onPlayerClick={(userId) => {

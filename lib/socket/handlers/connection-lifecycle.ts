@@ -1,5 +1,7 @@
+type LogContext = Record<string, unknown>
+
 type LoggerLike = {
-  info: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
 }
 
 interface SocketMonitorLike {
@@ -15,6 +17,19 @@ interface DisconnectSyncManagerLike {
     lobbyCode: string,
     user: { id: string; username?: string | null; email?: string | null }
   ) => void
+}
+
+interface ConnectionLifecycleSocket {
+  id: string
+  rooms: Set<string>
+  data: {
+    user?: {
+      id?: string
+      username?: string | null
+      email?: string | null
+      isGuest?: boolean
+    }
+  }
 }
 
 interface ConnectionLifecycleDependencies {
@@ -36,7 +51,7 @@ export function createConnectionLifecycleHandlers({
   getLobbyCodesFromRooms,
   disconnectSyncManager,
 }: ConnectionLifecycleDependencies) {
-  function handleDisconnecting(socket: any) {
+  function handleDisconnecting(socket: ConnectionLifecycleSocket) {
     const disconnectingUser = socket.data.user
     if (!disconnectingUser?.id) {
       return
@@ -55,12 +70,18 @@ export function createConnectionLifecycleHandlers({
       return
     }
 
+    const activeUser = {
+      id: disconnectingUser.id,
+      username: disconnectingUser.username,
+      email: disconnectingUser.email,
+    }
+
     for (const lobbyCode of lobbyCodes) {
-      disconnectSyncManager.scheduleAbruptDisconnectForLobby(lobbyCode, disconnectingUser)
+      disconnectSyncManager.scheduleAbruptDisconnectForLobby(lobbyCode, activeUser)
     }
   }
 
-  function handleDisconnect(socket: any, reason: string) {
+  function handleDisconnect(socket: ConnectionLifecycleSocket, reason: string) {
     logger.info('Client disconnected', { socketId: socket.id, reason })
 
     socketMonitor.onDisconnect(socket.id)

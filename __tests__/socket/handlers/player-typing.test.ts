@@ -30,6 +30,7 @@ describe('createPlayerTypingHandler', () => {
           username: 'Alice',
         },
       },
+      rooms: new Set<string>(['socket-1', 'lobby:LOBBY1']),
       to,
     }
     return { socket, to, emit }
@@ -80,6 +81,17 @@ describe('createPlayerTypingHandler', () => {
     handler(socket, { lobbyCode: 'LOBBY1', userId: 'u', username: 'n' })
 
     expect(deps.isSocketAuthorizedForLobby).toHaveBeenCalledTimes(1)
+    expect(to).not.toHaveBeenCalled()
+  })
+
+  it('ignores malformed payload before auth checks', () => {
+    const deps = createDeps()
+    const handler = createPlayerTypingHandler(deps)
+    const { socket, to } = createSocket()
+
+    handler(socket, { userId: 'u', username: 'n' } as unknown as { lobbyCode: string })
+
+    expect(deps.isSocketAuthorizedForLobby).not.toHaveBeenCalled()
     expect(to).not.toHaveBeenCalled()
   })
 })

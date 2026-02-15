@@ -1,19 +1,37 @@
+import type { PrismaClient } from '@prisma/client'
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
+import { parseJoinLobbyCode } from './payload-validation'
+
+type LogContext = Record<string, unknown>
 
 type LoggerLike = {
-  info: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  error: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
+  warn: (message: string, context?: LogContext) => void
+  error: (message: string, error?: Error, context?: LogContext) => void
 }
 
 type SocketLoggerFactory = (scope: string) => {
-  info: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
+}
+
+interface JoinLobbySocketUser {
+  id: string
+  username?: string | null
+}
+
+interface JoinLobbySocket {
+  id: string
+  data: {
+    user: JoinLobbySocketUser
+    authorizedLobbies?: Set<string>
+  }
+  rooms: Set<string>
+  join: (room: string) => void
+  emit: (event: string, payload: unknown) => void
 }
 
 interface PrismaLike {
-  lobbies: {
-    findUnique: (args: any) => Promise<any>
-  }
+  lobbies: Pick<PrismaClient['lobbies'], 'findUnique'>
 }
 
 interface SocketMonitorLike {
@@ -36,9 +54,15 @@ interface JoinLobbyDependencies {
   prisma: PrismaLike
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (socket: any, code: string, message: string, translationKey?: string, details?: any) => void
+  emitError: (
+    socket: JoinLobbySocket,
+    code: string,
+    message: string,
+    translationKey?: string,
+    details?: unknown
+  ) => void
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
-  markSocketLobbyAuthorized: (socket: any, lobbyCode: string) => void
+  markSocketLobbyAuthorized: (socket: JoinLobbySocket, lobbyCode: string) => void
   disconnectSyncManager: DisconnectSyncManagerLike
 }
 
@@ -53,7 +77,7 @@ export function createJoinLobbyHandler({
   markSocketLobbyAuthorized,
   disconnectSyncManager,
 }: JoinLobbyDependencies) {
-  return async (socket: any, lobbyCode: string) => {
+  return async (socket: JoinLobbySocket, lobbyCode: unknown) => {
     if (!checkRateLimit(socket.id)) {
       emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
       return
@@ -61,9 +85,8 @@ export function createJoinLobbyHandler({
 
     socketMonitor.trackEvent('join-lobby')
 
-    const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
-
-    if (!normalizedLobbyCode || normalizedLobbyCode.length > 20) {
+    const normalizedLobbyCode = parseJoinLobbyCode(lobbyCode)
+    if (!normalizedLobbyCode) {
       logger.warn('Invalid lobby code received', { lobbyCode, socketId: socket.id })
       emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
       return
@@ -110,8 +133,9 @@ export function createJoinLobbyHandler({
       })
 
       socket.emit(SocketEvents.JOINED_LOBBY, { lobbyCode: normalizedLobbyCode, success: true })
-    } catch (error) {
-      logger.error('Error joining lobby', error as Error, { lobbyCode: normalizedLobbyCode })
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.error('Error joining lobby', err, { lobbyCode: normalizedLobbyCode })
       emitError(socket, 'JOIN_LOBBY_ERROR', 'Failed to join lobby', 'errors.joinLobbyFailed')
     }
   }
