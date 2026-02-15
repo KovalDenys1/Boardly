@@ -17,7 +17,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -71,10 +71,12 @@ import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import type { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
+import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 
 const PlayerList = dynamic(() => import('@/components/PlayerList'))
 const Scorecard = dynamic(() => import('@/components/Scorecard'))
@@ -955,15 +957,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && lobby?.creatorId === guestId)
   const playerCount = game?.players?.length || 0
   const minPlayersRequired = React.useMemo(() => {
-    try {
-      const gameType = (lobby?.gameType as string) || DEFAULT_GAME_TYPE
-      const metadata = getGameMetadata(gameType)
-      // For games with bot support (e.g., Yahtzee), use actual minPlayers to allow solo start with auto-bot
-      const supportsBots = hasBotSupport(gameType)
-      return supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
-    } catch {
-      return 2
-    }
+    return getLobbyPlayerRequirements(lobby?.gameType as string | undefined).minPlayersRequired
   }, [lobby?.gameType])
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
@@ -1620,61 +1614,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const [gameType, setGameType] = useState<string | null>(null)
-  const [gameStatus, setGameStatus] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  // Detect game type and status on mount
-  useEffect(() => {
-    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
-      return
-    }
-
-    if (isGuest && !guestToken) {
-      return
-    }
-
-    (async () => {
-      try {
-        const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
-
-        if (res.ok) {
-          const data = await res.json()
-          const { lobby: lobbyData, activeGame } = normalizeLobbySnapshotResponse(data)
-          setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
-          setGameStatus(activeGame?.status || null)
-        } else {
-          setGameType(DEFAULT_GAME_TYPE) 
-          setGameStatus(null)
-        }
-      } catch (error) {
-        clientLogger.log('Error detecting game type:', error)
-        setGameType(DEFAULT_GAME_TYPE) 
-        setGameStatus(null)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [code, status, isGuest, guestToken])
-
-  // Callback when LobbyPageContent detects game started for TTT/RPS
-  const handleGameStarted = useCallback((startedGameType: string) => {
-    setGameType(startedGameType)
-    setGameStatus('playing')
-  }, [])
+  const { gameType, gameStatus, loading, handleGameStarted } = useLobbyRouteState({
+    code,
+    status,
+    isGuest,
+    guestToken,
+  })
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   // Route to dedicated pages when game is active or just finished
@@ -1688,29 +1639,7 @@ export default function LobbyPage() {
 
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
   return (
-    <ErrorBoundary
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4">
-          <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-5">
-              <span className="text-3xl">🎲</span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-white mb-3">
-              Game Error
-            </h1>
-            <p className="text-white/60 text-sm mb-6">
-              Something went wrong with the game lobby. Please try again.
-            </p>
-            <button
-              onClick={() => window.location.href = '/games'}
-              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
-            >
-              Back to Lobbies
-            </button>
-          </div>
-        </div>
-      }
-    >
+    <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LoadingSpinner size="lg" />}>
         <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
       </Suspense>
