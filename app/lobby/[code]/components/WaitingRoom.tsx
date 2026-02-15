@@ -204,7 +204,7 @@ export default function WaitingRoom({
               {t('game.ui.startGame')}
             </button>
 
-            {hasBotSupport(lobby.gameType) && playerCount < minPlayers && !hasBot && (
+            {hasBotSupport(lobby.gameType) && playerCount === 1 && !hasBot && (
               <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl px-4 py-2.5">
                 <p className="text-blue-200 text-xs">
                   💡 <strong>{t('game.ui.tip')}:</strong> {t('game.ui.botAutoAddTip')}

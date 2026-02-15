@@ -1,16 +1,47 @@
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { getToken } from 'next-auth/jwt'
+import { IncomingMessage } from 'http'
 import { verifyGuestToken } from '../guest-auth'
 
+type LogContext = Record<string, unknown>
+
 type LoggerLike = {
-  info: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  error: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
+  warn: (message: string, context?: LogContext) => void
+  error: (message: string, error?: Error, context?: LogContext) => void
+}
+
+interface SocketUserRecord {
+  id: string
+  username: string | null
+  email: string | null
+  isGuest?: boolean
+  bot: unknown
+}
+
+interface SocketRequestContext {
+  request: IncomingMessage
+  handshake: {
+    auth: Record<string, unknown>
+    query: Record<string, unknown>
+  }
+  data: {
+    user?: SocketUserRecord
+  }
 }
 
 interface PrismaLike {
   users: {
-    findUnique: (args: any) => Promise<any>
+    findUnique: (args: {
+      where: { id: string }
+      select: {
+        id: true
+        username: true
+        email: true
+        isGuest?: true
+        bot: true
+      }
+    }) => Promise<SocketUserRecord | null>
   }
 }
 
@@ -19,13 +50,21 @@ interface CreateSocketAuthMiddlewareOptions {
   prisma: PrismaLike
 }
 
+interface JwtSocketClaims extends JwtPayload {
+  id?: string
+  userId?: string
+}
+
 async function getSessionUserIdForSocket(
-  socket: any,
+  socket: SocketRequestContext,
   secret: string,
   logger: LoggerLike
 ): Promise<string | null> {
   try {
-    const token = await getToken({ req: socket.request as any, secret })
+    const token = await getToken({
+      req: socket.request as Parameters<typeof getToken>[0]['req'],
+      secret,
+    })
     if (typeof token?.id === 'string' && token.id) {
       return token.id
     }
@@ -39,14 +78,26 @@ async function getSessionUserIdForSocket(
   }
 }
 
+function getHandshakeValue(data: Record<string, unknown>, key: string): string {
+  const value = data[key]
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return ''
+}
+
 export function createSocketAuthMiddleware({
   logger,
   prisma,
 }: CreateSocketAuthMiddlewareOptions) {
-  return async (socket: any, next: (error?: Error) => void) => {
-    const rawToken = socket.handshake.auth.token || socket.handshake.query.token
-    const token = rawToken ? String(rawToken) : ''
-    const isGuest = socket.handshake.auth.isGuest === true || socket.handshake.query.isGuest === 'true'
+  return async (socket: SocketRequestContext, next: (error?: Error) => void) => {
+    const token =
+      getHandshakeValue(socket.handshake.auth, 'token') || getHandshakeValue(socket.handshake.query, 'token')
+    const isGuest =
+      socket.handshake.auth.isGuest === true || getHandshakeValue(socket.handshake.query, 'isGuest') === 'true'
 
     try {
       logger.info('Socket authentication attempt', {
@@ -115,7 +166,7 @@ export function createSocketAuthMiddleware({
           if (typeof decoded === 'string') {
             userId = decoded
           } else {
-            const claims = decoded as JwtPayload & { id?: string; userId?: string }
+            const claims = decoded as JwtSocketClaims
             userId = claims.id || claims.userId || claims.sub || null
           }
           logger.info('JWT token verified successfully', { userId })
@@ -167,8 +218,8 @@ export function createSocketAuthMiddleware({
       socket.data.user = user
       logger.info('Socket authenticated', { userId: user.id, username: user.username, isBot: !!user.bot })
       next()
-    } catch (error) {
-      const err = error as Error
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error))
       logger.error('Socket authentication error', err, {
         isGuest,
         hasToken: !!token,

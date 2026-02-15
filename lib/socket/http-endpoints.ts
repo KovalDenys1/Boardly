@@ -1,12 +1,13 @@
 import { IncomingMessage, Server as HttpServer, ServerResponse } from 'http'
 import { parse } from 'url'
-import { Server as SocketIOServer } from 'socket.io'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
 
+type LogContext = Record<string, unknown>
+
 type LoggerLike = {
-  info: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  error: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
+  warn: (message: string, context?: LogContext) => void
+  error: (message: string, error?: Error, context?: LogContext) => void
 }
 
 type SocketMonitorLike = {
@@ -19,9 +20,15 @@ type DbMonitorLike = {
   getMetrics: () => unknown
 }
 
+type RoomBroadcasterLike = {
+  to: (room: string) => {
+    emit: (event: string, payload?: unknown) => void
+  }
+}
+
 interface RegisterSocketHttpEndpointsOptions {
   server: HttpServer
-  io: SocketIOServer
+  io: RoomBroadcasterLike
   logger: LoggerLike
   socketMonitor: SocketMonitorLike
   dbMonitor: DbMonitorLike
@@ -213,8 +220,9 @@ export function registerSocketHttpEndpoints({
           }
 
           sendResponse(200, { success: true, sequenceId: payloadWithMetadata.sequenceId })
-        } catch (error) {
-          logger.error('Error processing notification', error as Error)
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error(String(error))
+          logger.error('Error processing notification', err)
           sendResponse(500, { error: 'Internal server error' })
         }
       })

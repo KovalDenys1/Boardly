@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -221,12 +222,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     try {
       setStartingGame(true)
-      const gameType = lobby?.gameType || DEFAULT_GAME_TYPE
-      const requiredMinPlayers = Math.max(2, getGameMetadata(gameType).minPlayers)
-      const supportsBots = hasBotSupport(gameType)
-      const desiredPlayerCount = supportsBots
-        ? Math.max(2, requiredMinPlayers)
-        : requiredMinPlayers
+      const requirements = getLobbyPlayerRequirements(lobby?.gameType)
+      const gameType = requirements.gameType || DEFAULT_GAME_TYPE
+      const supportsBots = requirements.supportsBots
+      const requiredMinPlayers = requirements.minPlayersRequired
+      const desiredPlayerCount = requirements.desiredPlayerCount
       let playerCount = game?.players?.length || 0
 
       // Auto-add one bot for bot-supported games when we are below minimum.
@@ -257,13 +257,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       if (playerCount < requiredMinPlayers) {
-        setStartingGame(false)
-        showToast.error(
-          'toast.gameStartFailed',
-          `Need at least ${requiredMinPlayers} players to start ${gameType.replaceAll('_', ' ')}.`
-        )
-        return
-      }
+          setStartingGame(false)
+          showToast.error(
+            'toast.gameStartFailed',
+            `Need at least ${requiredMinPlayers} players to start ${gameType.replace(/_/g, ' ')}.`
+          )
+          return
+        }
 
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch('/api/game/create', {

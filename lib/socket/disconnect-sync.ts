@@ -1,4 +1,5 @@
 import { Server as SocketIOServer } from 'socket.io'
+import type { PrismaClient } from '@prisma/client'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
 import {
   advanceTurnPastDisconnectedPlayers,
@@ -6,22 +7,19 @@ import {
   TurnState,
 } from '../disconnected-turn'
 
+type LogContext = Record<string, unknown>
+
 type LoggerLike = {
-  info: (...args: any[]) => void
-  warn: (...args: any[]) => void
+  info: (message: string, context?: LogContext) => void
+  warn: (message: string, context?: LogContext) => void
 }
 
+type RoomBroadcasterLike = Pick<SocketIOServer, 'to'>
+
 interface PrismaLike {
-  games: {
-    findFirst: (args: any) => Promise<any>
-    updateMany: (args: any) => Promise<{ count: number }>
-  }
-  players: {
-    deleteMany: (args: any) => Promise<{ count: number }>
-  }
-  lobbies: {
-    updateMany: (args: any) => Promise<{ count: number }>
-  }
+  games: Pick<PrismaClient['games'], 'findFirst' | 'updateMany'>
+  players: Pick<PrismaClient['players'], 'deleteMany'>
+  lobbies: Pick<PrismaClient['lobbies'], 'updateMany'>
 }
 
 interface ActiveGamePlayerRecord {
@@ -80,10 +78,10 @@ interface DisconnectSyncUser {
 }
 
 interface DisconnectSyncOptions {
-  io: SocketIOServer
+  io: RoomBroadcasterLike
   prisma: PrismaLike
   logger: LoggerLike
-  emitWithMetadata: (room: string, event: string, data: any) => void
+  emitWithMetadata: (room: string, event: string, data: unknown) => void
   hasAnyActiveSocketForUser: (userId: string) => boolean
   disconnectGraceMs: number
   connectionStateSyncMaxRetries?: number
@@ -109,7 +107,7 @@ export function createDisconnectSyncManager({
   const pendingAbruptDisconnects = new Map<string, NodeJS.Timeout>()
 
   async function loadActiveGameForLobby(lobbyCode: string): Promise<ActiveLobbyGameRecord | null> {
-    return prisma.games.findFirst({
+    return (await prisma.games.findFirst({
       where: {
         status: 'playing',
         lobby: {
@@ -138,7 +136,7 @@ export function createDisconnectSyncManager({
           },
         },
       },
-    })
+    })) as ActiveLobbyGameRecord | null
   }
 
   async function syncPlayerConnectionStateInLobby(
@@ -250,7 +248,7 @@ export function createDisconnectSyncManager({
     lobbyCode: string,
     user: DisconnectSyncUser
   ): Promise<WaitingLobbyDisconnectCleanupResult> {
-    const waitingGame = await prisma.games.findFirst({
+    const waitingGame = (await prisma.games.findFirst({
       where: {
         status: 'waiting',
         lobby: {
@@ -281,7 +279,7 @@ export function createDisconnectSyncManager({
           },
         },
       },
-    }) as WaitingLobbyGameRecord | null
+    })) as WaitingLobbyGameRecord | null
 
     if (!waitingGame) {
       return { handled: false }

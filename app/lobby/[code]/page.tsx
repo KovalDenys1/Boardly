@@ -1,31 +1,25 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react'
-import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import dynamic from 'next/dynamic'
+import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
-import PlayerList from '@/components/PlayerList'
-import Scorecard from '@/components/Scorecard'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import Chat from '@/components/Chat'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { soundManager } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import { createBotMoveVisualization, detectBotMove, findFilledCategory } from '@/lib/bot-visualization'
-import BotMoveOverlay from '@/components/BotMoveOverlay'
-import RollHistory, { RollHistoryEntry } from '@/components/RollHistory'
+import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
-import YahtzeeResults from '@/components/YahtzeeResults'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
-import TicTacToeLobbyPage from './tic-tac-toe-page'
-import RockPaperScissorsLobbyPage from './rock-paper-scissors-page'
 
 // Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
@@ -74,21 +68,36 @@ import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
 import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
-import SpyGameBoard from './components/SpyGameBoard'
 import JoinPrompt from './components/JoinPrompt'
-import MobileTabs, { TabId } from './components/MobileTabs'
+import type { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
-import FriendsListModal from '@/components/FriendsListModal'
-import ConfirmModal from '@/components/ConfirmModal'
+import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { useLobbyRouteState } from './hooks/useLobbyRouteState'
+
+const PlayerList = dynamic(() => import('@/components/PlayerList'))
+const Scorecard = dynamic(() => import('@/components/Scorecard'))
+const Chat = dynamic(() => import('@/components/Chat'))
+const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'))
+const RollHistory = dynamic(() => import('@/components/RollHistory'))
+const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
+const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
+const MobileTabs = dynamic(() => import('./components/MobileTabs'))
+const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
+const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
+const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
+  loading: () => <LoadingSpinner size="lg" />,
+})
+const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-page'), {
+  loading: () => <LoadingSpinner size="lg" />,
+})
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
   const params = useParams()
-  const searchParams = useSearchParams()
   const { data: session, status } = useSession()
   const { isGuest, guestId, guestName, guestToken } = useGuest()
   const code = params.code as string
@@ -948,11 +957,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && lobby?.creatorId === guestId)
   const playerCount = game?.players?.length || 0
   const minPlayersRequired = React.useMemo(() => {
-    try {
-      return Math.max(2, getGameMetadata((lobby?.gameType as string) || DEFAULT_GAME_TYPE).minPlayers)
-    } catch {
-      return 2
-    }
+    return getLobbyPlayerRequirements(lobby?.gameType as string | undefined).minPlayersRequired
   }, [lobby?.gameType])
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
@@ -961,6 +966,33 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+
+  const playersForLeaderboard = React.useMemo(() => {
+    if (!gameEngine || !Array.isArray(game?.players)) {
+      return []
+    }
+
+    const enginePlayers = gameEngine.getPlayers()
+    const positionByUserId = new Map<string, number>()
+
+    enginePlayers.forEach((player, index) => {
+      positionByUserId.set(player.id, index)
+    })
+
+    return game.players.map((player) => ({
+      id: player.id,
+      userId: player.userId,
+      user: {
+        name: player.user?.username || null,
+        username: player.user?.username || null,
+        email: null,
+        bot: player.user?.bot || null,
+      },
+      score: enginePlayers.find((enginePlayer) => enginePlayer.id === player.userId)?.score || 0,
+      position: positionByUserId.get(player.userId) ?? 0,
+      isReady: true,
+    }))
+  }, [game?.players, gameEngine])
 
   // When TTT/RPS game starts, notify parent to switch to dedicated page
   useEffect(() => {
@@ -1316,25 +1348,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     {/* Players List - 40% of space */}
                     <div className="flex-1 min-h-0 overflow-hidden">
                       <PlayerList
-                        players={game?.players?.map(p => {
-                          // Find the player's actual position in the game engine
-                          const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
-                          const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-
-                          return {
-                            id: p.id,
-                            userId: p.userId,
-                            user: {
-                              name: p.user?.username || null,
-                              username: p.user?.username || null,
-                              email: null,
-                              bot: p.user?.bot || null,
-                            },
-                            score: enginePlayer?.score || 0,
-                            position: actualPosition, // Use position from game engine, not DB
-                            isReady: true,
-                          }
-                        }) || []}
+                        players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
                         currentUserId={getCurrentUserId()}
                         onPlayerClick={(userId) => {
@@ -1429,24 +1443,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
                     <div className="p-4 space-y-4">
                       <PlayerList
-                        players={game?.players?.map(p => {
-                          const enginePlayer = gameEngine.getPlayers().find(ep => ep.id === p.userId)
-                          const actualPosition = enginePlayer ? gameEngine.getPlayers().indexOf(enginePlayer) : 0
-
-                          return {
-                            id: p.id,
-                            userId: p.userId,
-                            user: {
-                              name: p.user?.username || null,
-                              username: p.user?.username || null,
-                              email: null,
-                              bot: p.user?.bot || null,
-                            },
-                            score: enginePlayer?.score || 0,
-                            position: actualPosition,
-                            isReady: true,
-                          }
-                        }) || []}
+                        players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
                         currentUserId={getCurrentUserId()}
                         onPlayerClick={(userId) => {
@@ -1617,61 +1614,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const [gameType, setGameType] = useState<string | null>(null)
-  const [gameStatus, setGameStatus] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  // Detect game type and status on mount
-  useEffect(() => {
-    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
-      return
-    }
-
-    if (isGuest && !guestToken) {
-      return
-    }
-
-    (async () => {
-      try {
-        const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
-
-        if (res.ok) {
-          const data = await res.json()
-          const { lobby: lobbyData, activeGame } = normalizeLobbySnapshotResponse(data)
-          setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
-          setGameStatus(activeGame?.status || null)
-        } else {
-          setGameType(DEFAULT_GAME_TYPE) 
-          setGameStatus(null)
-        }
-      } catch (error) {
-        clientLogger.log('Error detecting game type:', error)
-        setGameType(DEFAULT_GAME_TYPE) 
-        setGameStatus(null)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [code, status, isGuest, guestToken])
-
-  // Callback when LobbyPageContent detects game started for TTT/RPS
-  const handleGameStarted = useCallback((startedGameType: string) => {
-    setGameType(startedGameType)
-    setGameStatus('playing')
-  }, [])
+  const { gameType, gameStatus, loading, handleGameStarted } = useLobbyRouteState({
+    code,
+    status,
+    isGuest,
+    guestToken,
+  })
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   // Route to dedicated pages when game is active or just finished
@@ -1685,29 +1639,7 @@ export default function LobbyPage() {
 
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
   return (
-    <ErrorBoundary
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4">
-          <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-5">
-              <span className="text-3xl">🎲</span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-white mb-3">
-              Game Error
-            </h1>
-            <p className="text-white/60 text-sm mb-6">
-              Something went wrong with the game lobby. Please try again.
-            </p>
-            <button
-              onClick={() => window.location.href = '/games'}
-              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
-            >
-              Back to Lobbies
-            </button>
-          </div>
-        </div>
-      }
-    >
+    <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LoadingSpinner size="lg" />}>
         <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
       </Suspense>

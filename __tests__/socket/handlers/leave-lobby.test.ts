@@ -2,6 +2,8 @@ import { createLeaveLobbyHandler } from '../../../lib/socket/handlers/leave-lobb
 import { SocketRooms } from '../../../types/socket-events'
 
 describe('createLeaveLobbyHandler', () => {
+  type HandlerSocket = Parameters<ReturnType<typeof createLeaveLobbyHandler>>[0]
+
   function createDeps(overrides?: Partial<Parameters<typeof createLeaveLobbyHandler>[0]>) {
     return {
       socketMonitor: {
@@ -18,9 +20,10 @@ describe('createLeaveLobbyHandler', () => {
     }
   }
 
-  function createSocket(overrides?: Partial<any>) {
+  function createSocket(overrides?: Partial<HandlerSocket>): HandlerSocket {
     return {
       id: 'socket-1',
+      rooms: new Set<string>(['socket-1', 'lobby:ABCD']),
       leave: jest.fn(),
       data: {
         user: {
@@ -28,7 +31,7 @@ describe('createLeaveLobbyHandler', () => {
         },
       },
       ...overrides,
-    }
+    } as HandlerSocket
   }
 
   it('leaves lobby room and clears auth/disconnect state', () => {
@@ -63,6 +66,18 @@ describe('createLeaveLobbyHandler', () => {
     const socket = createSocket()
 
     handler(socket, '   ')
+
+    expect(deps.socketMonitor.trackEvent).not.toHaveBeenCalled()
+    expect(socket.leave).not.toHaveBeenCalled()
+    expect(deps.revokeSocketLobbyAuthorization).not.toHaveBeenCalled()
+  })
+
+  it('ignores non-string lobby code', () => {
+    const deps = createDeps()
+    const handler = createLeaveLobbyHandler(deps)
+    const socket = createSocket()
+
+    handler(socket, 123 as unknown as string)
 
     expect(deps.socketMonitor.trackEvent).not.toHaveBeenCalled()
     expect(socket.leave).not.toHaveBeenCalled()
