@@ -1,477 +1,336 @@
-import { Server as SocketIOServer } from 'socket.io'
-import { Socket as ClientSocket, io as ioc } from 'socket.io-client'
-import { createServer, Server as HttpServer } from 'http'
-import { AddressInfo } from 'net'
-import jwt from 'jsonwebtoken'
+import { IncomingMessage } from 'http'
+import { createJoinLobbyHandler } from '../../lib/socket/handlers/join-lobby'
+import { createGameActionHandler } from '../../lib/socket/handlers/game-action'
+import { createSendChatMessageHandler } from '../../lib/socket/handlers/send-chat-message'
+import { createPlayerTypingHandler } from '../../lib/socket/handlers/player-typing'
+import { createLeaveLobbyHandler } from '../../lib/socket/handlers/leave-lobby'
+import {
+  extractInternalRequestSecret,
+  isInternalEndpointAuthorized,
+  isSocketAuthorizedForLobby,
+  markSocketLobbyAuthorized,
+  revokeSocketLobbyAuthorization,
+} from '../../lib/socket/socket-server-helpers'
+import { SocketEvents, SocketRooms } from '../../types/socket-events'
 
-// Mock Prisma
-jest.mock('@/lib/db', () => ({
-  prisma: {
-    users: {
-      findUnique: jest.fn(),
-    },
-    lobbies: {
-      findUnique: jest.fn(),
-    },
-  },
-}))
-
-// Mock logger
-jest.mock('@/lib/logger', () => ({
-  logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-  socketLogger: jest.fn(() => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-  })),
-}))
-
-import { prisma } from '@/lib/db'
-
-// Skip integration tests - require complex WebSocket setup
-describe.skip('Socket.IO Events', () => {
-  let httpServer: HttpServer
-  let io: SocketIOServer
-  let clientSocket: ClientSocket
-  let serverPort: number
-  let authToken: string
-
-  const mockUser = {
-    id: 'user-123',
-    username: 'TestUser',
-    email: 'test@example.com',
-    isBot: false,
-  }
-
-  const mockLobby = {
-    id: 'lobby-123',
-    code: 'ABC123',
-    name: 'Test Lobby',
-    status: 'waiting',
-    games: [],
-  }
-
-  beforeAll((done) => {
-    // Create HTTP server
-    httpServer = createServer()
-    
-    // Create Socket.IO server
-    io = new SocketIOServer(httpServer, {
-      cors: { origin: '*' },
-      transports: ['websocket'],
-    })
-
-    // Add authentication middleware (simplified version)
-    io.use(async (socket, next) => {
-      const token = socket.handshake.auth.token
-      
-      if (!token) {
-        return next(new Error('No token provided'))
-      }
-
-      try {
-        // For testing, just extract userId directly
-        const userId = token.startsWith('jwt-') ? token.split('-')[1] : token
-        
-        // Mock user lookup
-        const user = await (prisma.users.findUnique as jest.Mock).mockResolvedValue(mockUser)
-        
-        socket.data.user = mockUser
-        next()
-      } catch (error) {
-        next(new Error('Authentication failed'))
-      }
-    })
-
-    // Add event handlers
-    io.on('connection', (socket) => {
-      socket.on('join-lobby', async (lobbyCode: string) => {
-        if (!lobbyCode || typeof lobbyCode !== 'string') {
-          socket.emit('error', { message: 'Invalid lobby code' })
-          return
-        }
-
-        try {
-          const lobby = await (prisma.lobbies.findUnique as jest.Mock).mockResolvedValue(mockLobby)
-          
-          if (!lobby) {
-            socket.emit('error', { message: 'Lobby not found' })
-            return
-          }
-
-          socket.join(`lobby:${lobbyCode}`)
-          socket.emit('lobby-joined', { lobbyCode })
-          io.to(`lobby:${lobbyCode}`).emit('player-joined', {
-            userId: socket.data.user.id,
-            username: socket.data.user.username,
-          })
-        } catch (error) {
-          socket.emit('error', { message: 'Failed to join lobby' })
-        }
-      })
-
-      socket.on('leave-lobby', (lobbyCode: string) => {
-        socket.leave(`lobby:${lobbyCode}`)
-        socket.emit('lobby-left', { lobbyCode })
-      })
-
-      socket.on('join-lobby-list', () => {
-        socket.join('lobby-list')
-        socket.emit('lobby-list-joined')
-      })
-
-      socket.on('leave-lobby-list', () => {
-        socket.leave('lobby-list')
-        socket.emit('lobby-list-left')
-      })
-
-      socket.on('game-action', (data: { lobbyCode: string; action: string; payload: any }) => {
-        if (!data.lobbyCode || !data.action) {
-          socket.emit('error', { message: 'Invalid game action' })
-          return
-        }
-
-        io.to(`lobby:${data.lobbyCode}`).emit('game-update', {
-          action: data.action,
-          payload: data.payload,
-          userId: socket.data.user.id,
-        })
-      })
-
-      socket.on('send-chat-message', (data: { lobbyCode: string; message: string }) => {
-        if (!data.message || data.message.trim().length === 0) {
-          socket.emit('error', { message: 'Empty message' })
-          return
-        }
-
-        const chatMessage = {
-          id: Date.now().toString(),
-          message: data.message,
-          userId: socket.data.user.id,
-          username: socket.data.user.username,
-          timestamp: new Date().toISOString(),
-        }
-
-        io.to(`lobby:${data.lobbyCode}`).emit('chat-message', chatMessage)
-      })
-
-      socket.on('player-typing', (data: { lobbyCode: string; isTyping: boolean }) => {
-        socket.to(`lobby:${data.lobbyCode}`).emit('player-typing', {
-          userId: socket.data.user.id,
-          username: socket.data.user.username,
-          isTyping: data.isTyping,
-        })
-      })
-
-      socket.on('disconnect', () => {
-        // Cleanup handled by Socket.IO
-      })
-    })
-
-    // Start server on random port
-    httpServer.listen(() => {
-      const address = httpServer.address() as AddressInfo
-      serverPort = address.port
-      done()
-    })
-  })
-
-  afterAll((done) => {
-    io.close()
-    httpServer.close(done)
-  })
-
-  beforeEach((done) => {
-    // Generate auth token
-    authToken = `jwt-${mockUser.id}`
-
-    // Create client socket
-    clientSocket = ioc(`http://localhost:${serverPort}`, {
-      transports: ['websocket'],
-      auth: { token: authToken },
-    })
-
-    clientSocket.on('connect', done)
-  })
-
-  afterEach(() => {
-    if (clientSocket.connected) {
-      clientSocket.disconnect()
+type TestSocket = {
+  id: string
+  data: {
+    user: {
+      id: string
+      username: string
+      email?: string | null
     }
-    jest.clearAllMocks()
+    authorizedLobbies?: Set<string>
+  }
+  rooms: Set<string>
+  emitted: Array<{ event: string; payload: unknown }>
+  roomEmits: Array<{ room: string; event: string; payload: unknown }>
+  join: jest.Mock
+  leave: jest.Mock
+  emit: jest.Mock
+  to: jest.Mock
+}
+
+type SocketWithAuthorizationShape = {
+  data: {
+    authorizedLobbies?: Set<string>
+  }
+  rooms: Set<string>
+}
+
+function createSocket(socketId = 'socket-1'): TestSocket {
+  const rooms = new Set<string>([socketId])
+  const emitted: Array<{ event: string; payload: unknown }> = []
+  const roomEmits: Array<{ room: string; event: string; payload: unknown }> = []
+
+  return {
+    id: socketId,
+    data: {
+      user: {
+        id: 'user-1',
+        username: 'Alice',
+        email: 'alice@example.com',
+      },
+    },
+    rooms,
+    emitted,
+    roomEmits,
+    join: jest.fn((room: string) => {
+      rooms.add(room)
+    }),
+    leave: jest.fn((room: string) => {
+      rooms.delete(room)
+    }),
+    emit: jest.fn((event: string, payload: unknown) => {
+      emitted.push({ event, payload })
+    }),
+    to: jest.fn((room: string) => ({
+      emit: (event: string, payload: unknown) => {
+        roomEmits.push({ room, event, payload })
+      },
+    })),
+  }
+}
+
+function createDependencies(overrides?: Record<string, unknown>) {
+  const logger = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  }
+
+  const socketLogger = jest.fn().mockReturnValue({
+    info: jest.fn(),
+    debug: jest.fn(),
   })
 
-  describe('Connection', () => {
-    it('should connect with valid token', (done) => {
-      expect(clientSocket.connected).toBe(true)
-      done()
-    })
+  const socketMonitor = {
+    trackEvent: jest.fn(),
+  }
 
-    it('should reject connection without token', (done) => {
-      const invalidSocket = ioc(`http://localhost:${serverPort}`, {
-        transports: ['websocket'],
-        auth: {},
-      })
+  const deps = {
+    logger,
+    socketLogger,
+    socketMonitor,
+    checkRateLimit: jest.fn().mockReturnValue(true),
+    emitError: jest.fn(),
+    findLobbyByCode: jest.fn().mockResolvedValue({ id: 'lobby-1', code: 'ABCD', isActive: true }),
+    isUserActivePlayerInLobby: jest.fn().mockResolvedValue(true),
+    disconnectSyncManager: {
+      clearPendingAbruptDisconnect: jest.fn(),
+      syncPlayerConnectionStateInLobby: jest.fn().mockResolvedValue({}),
+    },
+    emitGameUpdateToOthers: jest.fn(),
+    notifyLobbyListUpdate: jest.fn(),
+    getUserDisplayName: jest.fn((user?: { username?: string | null; email?: string | null }) =>
+      user?.username || user?.email || 'Player'
+    ),
+    emitWithMetadata: jest.fn(),
+    ...(overrides || {}),
+  }
 
-      invalidSocket.on('connect_error', (error) => {
-        expect(error.message).toContain('No token provided')
-        invalidSocket.disconnect()
-        done()
-      })
-    })
+  const markAuthorizedLobby = (socket: unknown, lobbyCode: string) => {
+    markSocketLobbyAuthorized(socket as SocketWithAuthorizationShape, lobbyCode)
+  }
+
+  const revokeAuthorizedLobby = (socket: unknown, lobbyCode: string) => {
+    revokeSocketLobbyAuthorization(socket as SocketWithAuthorizationShape, lobbyCode)
+  }
+
+  const joinLobby = createJoinLobbyHandler({
+    logger,
+    socketLogger,
+    findLobbyByCode: deps.findLobbyByCode,
+    socketMonitor,
+    checkRateLimit: deps.checkRateLimit,
+    emitError: deps.emitError,
+    isUserActivePlayerInLobby: deps.isUserActivePlayerInLobby,
+    markSocketLobbyAuthorized: markAuthorizedLobby,
+    disconnectSyncManager: deps.disconnectSyncManager,
   })
 
-  describe('Lobby Management', () => {
-    it('should join lobby successfully', (done) => {
-      clientSocket.emit('join-lobby', 'ABC123')
-
-      clientSocket.on('lobby-joined', (data) => {
-        expect(data.lobbyCode).toBe('ABC123')
-        done()
-      })
-    })
-
-    it('should receive player-joined event after joining', (done) => {
-      clientSocket.emit('join-lobby', 'ABC123')
-
-      clientSocket.on('player-joined', (data) => {
-        expect(data.userId).toBe(mockUser.id)
-        expect(data.username).toBe(mockUser.username)
-        done()
-      })
-    })
-
-    it('should reject invalid lobby code', (done) => {
-      clientSocket.emit('join-lobby', '')
-
-      clientSocket.on('error', (data) => {
-        expect(data.message).toBe('Invalid lobby code')
-        done()
-      })
-    })
-
-    it('should reject non-existent lobby', (done) => {
-      (prisma.lobbies.findUnique as jest.Mock).mockResolvedValueOnce(null)
-
-      clientSocket.emit('join-lobby', 'INVALID')
-
-      clientSocket.on('error', (data) => {
-        expect(data.message).toBe('Lobby not found')
-        done()
-      })
-    })
-
-    it('should leave lobby successfully', (done) => {
-      clientSocket.emit('join-lobby', 'ABC123')
-
-      clientSocket.once('lobby-joined', () => {
-        clientSocket.emit('leave-lobby', 'ABC123')
-
-        clientSocket.on('lobby-left', (data) => {
-          expect(data.lobbyCode).toBe('ABC123')
-          done()
-        })
-      })
-    })
+  const gameAction = createGameActionHandler({
+    logger,
+    socketMonitor,
+    checkRateLimit: deps.checkRateLimit,
+    emitError: deps.emitError,
+    isSocketAuthorizedForLobby,
+    isUserActivePlayerInLobby: deps.isUserActivePlayerInLobby,
+    emitGameUpdateToOthers: deps.emitGameUpdateToOthers,
+    notifyLobbyListUpdate: deps.notifyLobbyListUpdate,
   })
 
-  describe('Lobby List', () => {
-    it('should join lobby list', (done) => {
-      clientSocket.emit('join-lobby-list')
-
-      clientSocket.on('lobby-list-joined', () => {
-        done()
-      })
-    })
-
-    it('should leave lobby list', (done) => {
-      clientSocket.emit('join-lobby-list')
-
-      clientSocket.once('lobby-list-joined', () => {
-        clientSocket.emit('leave-lobby-list')
-
-        clientSocket.on('lobby-list-left', () => {
-          done()
-        })
-      })
-    })
+  const sendChatMessage = createSendChatMessageHandler({
+    logger,
+    socketMonitor,
+    checkRateLimit: deps.checkRateLimit,
+    emitError: deps.emitError,
+    isSocketAuthorizedForLobby,
+    isUserActivePlayerInLobby: deps.isUserActivePlayerInLobby,
+    getUserDisplayName: deps.getUserDisplayName,
+    emitWithMetadata: deps.emitWithMetadata,
   })
 
-  describe('Game Actions', () => {
-    it('should broadcast game action to lobby', (done) => {
-      // Create second client to receive broadcast
-      const client2 = ioc(`http://localhost:${serverPort}`, {
-        transports: ['websocket'],
-        auth: { token: authToken },
-      })
-
-      client2.on('connect', () => {
-        // Both clients join lobby
-        clientSocket.emit('join-lobby', 'ABC123')
-        client2.emit('join-lobby', 'ABC123')
-
-        // Wait for both to join
-        let joinedCount = 0
-        const checkJoined = () => {
-          joinedCount++
-          if (joinedCount === 2) {
-            // Client 1 sends game action
-            clientSocket.emit('game-action', {
-              lobbyCode: 'ABC123',
-              action: 'roll-dice',
-              payload: { dice: [1, 2, 3, 4, 5] },
-            })
-          }
-        }
-
-        clientSocket.on('lobby-joined', checkJoined)
-        client2.on('lobby-joined', checkJoined)
-
-        // Client 2 receives update
-        client2.on('game-update', (data) => {
-          expect(data.action).toBe('roll-dice')
-          expect(data.payload.dice).toEqual([1, 2, 3, 4, 5])
-          expect(data.userId).toBe(mockUser.id)
-          client2.disconnect()
-          done()
-        })
-      })
-    })
-
-    it('should reject invalid game action', (done) => {
-      clientSocket.emit('game-action', {
-        lobbyCode: '',
-        action: '',
-        payload: {},
-      })
-
-      clientSocket.on('error', (data) => {
-        expect(data.message).toBe('Invalid game action')
-        done()
-      })
-    })
+  const playerTyping = createPlayerTypingHandler({
+    socketMonitor,
+    checkRateLimit: deps.checkRateLimit,
+    isSocketAuthorizedForLobby,
+    getUserDisplayName: deps.getUserDisplayName,
   })
 
-  describe('Chat', () => {
-    it('should broadcast chat message to lobby', (done) => {
-      const client2 = ioc(`http://localhost:${serverPort}`, {
-        transports: ['websocket'],
-        auth: { token: authToken },
-      })
-
-      client2.on('connect', () => {
-        clientSocket.emit('join-lobby', 'ABC123')
-        client2.emit('join-lobby', 'ABC123')
-
-        let joinedCount = 0
-        const checkJoined = () => {
-          joinedCount++
-          if (joinedCount === 2) {
-            clientSocket.emit('send-chat-message', {
-              lobbyCode: 'ABC123',
-              message: 'Hello world!',
-            })
-          }
-        }
-
-        clientSocket.on('lobby-joined', checkJoined)
-        client2.on('lobby-joined', checkJoined)
-
-        client2.on('chat-message', (data) => {
-          expect(data.message).toBe('Hello world!')
-          expect(data.username).toBe(mockUser.username)
-          expect(data.userId).toBe(mockUser.id)
-          client2.disconnect()
-          done()
-        })
-      })
-    })
-
-    it('should reject empty chat message', (done) => {
-      clientSocket.emit('send-chat-message', {
-        lobbyCode: 'ABC123',
-        message: '   ',
-      })
-
-      clientSocket.on('error', (data) => {
-        expect(data.message).toBe('Empty message')
-        done()
-      })
-    })
+  const leaveLobby = createLeaveLobbyHandler({
+    socketMonitor,
+    socketLogger,
+    revokeSocketLobbyAuthorization: revokeAuthorizedLobby,
+    disconnectSyncManager: deps.disconnectSyncManager,
   })
 
-  describe('Typing Indicator', () => {
-    it('should broadcast typing status to other players', (done) => {
-      const client2 = ioc(`http://localhost:${serverPort}`, {
-        transports: ['websocket'],
-        auth: { token: authToken },
-      })
+  return {
+    ...deps,
+    joinLobby,
+    gameAction,
+    sendChatMessage,
+    playerTyping,
+    leaveLobby,
+  }
+}
 
-      client2.on('connect', () => {
-        clientSocket.emit('join-lobby', 'ABC123')
-        client2.emit('join-lobby', 'ABC123')
+describe('Socket event critical flow', () => {
+  it('blocks gameplay and chat before lobby authorization', async () => {
+    const socket = createSocket()
+    const deps = createDependencies()
 
-        let joinedCount = 0
-        const checkJoined = () => {
-          joinedCount++
-          if (joinedCount === 2) {
-            clientSocket.emit('player-typing', {
-              lobbyCode: 'ABC123',
-              isTyping: true,
-            })
-          }
-        }
-
-        clientSocket.on('lobby-joined', checkJoined)
-        client2.on('lobby-joined', checkJoined)
-
-        client2.on('player-typing', (data) => {
-          expect(data.userId).toBe(mockUser.id)
-          expect(data.username).toBe(mockUser.username)
-          expect(data.isTyping).toBe(true)
-          client2.disconnect()
-          done()
-        })
-      })
+    await deps.gameAction(socket, {
+      lobbyCode: 'ABCD',
+      action: 'state-change',
+      payload: { turn: 1 },
     })
 
-    it('should not send typing status to sender', (done) => {
-      clientSocket.emit('join-lobby', 'ABC123')
-
-      clientSocket.once('lobby-joined', () => {
-        let typingReceived = false
-
-        clientSocket.on('player-typing', () => {
-          typingReceived = true
-        })
-
-        clientSocket.emit('player-typing', {
-          lobbyCode: 'ABC123',
-          isTyping: true,
-        })
-
-        // Wait to ensure no event is received
-        setTimeout(() => {
-          expect(typingReceived).toBe(false)
-          done()
-        }, 100)
-      })
+    await deps.sendChatMessage(socket, {
+      lobbyCode: 'ABCD',
+      message: 'hello',
+      userId: socket.data.user.id,
+      username: socket.data.user.username,
     })
+
+    deps.playerTyping(socket, {
+      lobbyCode: 'ABCD',
+      userId: socket.data.user.id,
+      username: socket.data.user.username,
+    })
+
+    expect(deps.emitGameUpdateToOthers).not.toHaveBeenCalled()
+    expect(deps.emitWithMetadata).not.toHaveBeenCalled()
+    expect(socket.roomEmits).toEqual([])
+    expect(deps.emitError).toHaveBeenNthCalledWith(
+      1,
+      socket,
+      'LOBBY_ACCESS_DENIED',
+      'Not authorized for this lobby',
+      'errors.lobbyAccessDenied'
+    )
+    expect(deps.emitError).toHaveBeenNthCalledWith(
+      2,
+      socket,
+      'LOBBY_ACCESS_DENIED',
+      'Not authorized for this lobby',
+      'errors.lobbyAccessDenied'
+    )
   })
 
-  describe('Disconnect', () => {
-    it('should handle disconnect gracefully', (done) => {
-      clientSocket.on('disconnect', () => {
-        expect(clientSocket.connected).toBe(false)
-        done()
-      })
+  it('allows join -> action/chat/typing and revokes access after leave', async () => {
+    const socket = createSocket()
+    const deps = createDependencies()
 
-      clientSocket.disconnect()
+    await deps.joinLobby(socket, 'ABCD')
+
+    expect(socket.rooms.has(SocketRooms.lobby('ABCD'))).toBe(true)
+    expect(isSocketAuthorizedForLobby(socket, 'ABCD')).toBe(true)
+    expect(socket.emitted).toContainEqual({
+      event: SocketEvents.JOINED_LOBBY,
+      payload: { lobbyCode: 'ABCD', success: true },
     })
+
+    await deps.gameAction(socket, {
+      lobbyCode: 'ABCD',
+      action: 'state-change',
+      payload: { turn: 2 },
+    })
+
+    expect(deps.emitGameUpdateToOthers).toHaveBeenCalledWith(socket, 'ABCD', {
+      action: 'state-change',
+      payload: { turn: 2 },
+      lobbyCode: 'ABCD',
+    })
+    expect(deps.notifyLobbyListUpdate).toHaveBeenCalledTimes(1)
+
+    await deps.sendChatMessage(socket, {
+      lobbyCode: 'ABCD',
+      message: '  hello team  ',
+      userId: socket.data.user.id,
+      username: socket.data.user.username,
+    })
+
+    expect(deps.emitWithMetadata).toHaveBeenCalledWith(
+      SocketRooms.lobby('ABCD'),
+      SocketEvents.CHAT_MESSAGE,
+      expect.objectContaining({
+        userId: 'user-1',
+        username: 'Alice',
+        message: 'hello team',
+        lobbyCode: 'ABCD',
+      })
+    )
+
+    deps.playerTyping(socket, {
+      lobbyCode: 'ABCD',
+      userId: socket.data.user.id,
+      username: socket.data.user.username,
+    })
+
+    expect(socket.roomEmits).toContainEqual({
+      room: SocketRooms.lobby('ABCD'),
+      event: SocketEvents.PLAYER_TYPING,
+      payload: { userId: 'user-1', username: 'Alice' },
+    })
+
+    deps.leaveLobby(socket, 'ABCD')
+
+    expect(socket.rooms.has(SocketRooms.lobby('ABCD'))).toBe(false)
+    expect(isSocketAuthorizedForLobby(socket, 'ABCD')).toBe(false)
+
+    deps.emitError.mockClear()
+    deps.emitGameUpdateToOthers.mockClear()
+
+    await deps.gameAction(socket, {
+      lobbyCode: 'ABCD',
+      action: 'state-change',
+      payload: { turn: 3 },
+    })
+
+    expect(deps.emitGameUpdateToOthers).not.toHaveBeenCalled()
+    expect(deps.emitError).toHaveBeenCalledWith(
+      socket,
+      'LOBBY_ACCESS_DENIED',
+      'Not authorized for this lobby',
+      'errors.lobbyAccessDenied'
+    )
+  })
+})
+
+describe('Socket server helper auth', () => {
+  it('extracts internal secret from explicit header and bearer token', () => {
+    const headerRequest = {
+      headers: {
+        'x-socket-internal-secret': 'secret-123',
+      },
+    } as unknown as IncomingMessage
+
+    const bearerRequest = {
+      headers: {
+        authorization: 'Bearer bearer-secret',
+      },
+    } as unknown as IncomingMessage
+
+    expect(extractInternalRequestSecret(headerRequest)).toBe('secret-123')
+    expect(extractInternalRequestSecret(bearerRequest)).toBe('bearer-secret')
+  })
+
+  it('authorizes internal endpoint in development, but validates secret in production', () => {
+    const request = {
+      headers: {
+        authorization: 'Bearer expected-secret',
+      },
+    } as unknown as IncomingMessage
+
+    const logger = {
+      warn: jest.fn(),
+      error: jest.fn(),
+    }
+
+    expect(isInternalEndpointAuthorized(request, logger, 'development', undefined)).toBe(true)
+    expect(isInternalEndpointAuthorized(request, logger, 'production', 'expected-secret')).toBe(true)
+    expect(isInternalEndpointAuthorized(request, logger, 'production', 'wrong-secret')).toBe(false)
   })
 })

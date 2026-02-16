@@ -20,13 +20,15 @@ type RecursiveKeyOf<TObj extends object> = {
  * t('invalid.key')    // ❌ TypeScript error
  * ```
  */
+type I18nTranslationHook = ReturnType<typeof useTranslationOriginal>
+type TypedI18nTranslationHook = Omit<I18nTranslationHook, 't'> & {
+  t: (key: TranslationKeys, options?: any) => string
+}
+
 export function useTranslation() {
-  const translation = useTranslationOriginal()
-  
-  return {
-    ...translation,
-    t: (key: TranslationKeys, options?: any): string => translation.t(key, options) as string,
-  }
+  // Preserve the original hook object and `t` reference.
+  // Re-wrapping `t` on every render can make `useEffect` dependencies unstable.
+  return useTranslationOriginal() as unknown as TypedI18nTranslationHook
 }
 
 /**

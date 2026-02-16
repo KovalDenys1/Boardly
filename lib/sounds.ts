@@ -20,24 +20,7 @@ class SoundManager {
     const enableAudio = () => {
       if (!this.userInteracted) {
         this.userInteracted = true
-        // Try to unlock audio context by playing and immediately pausing ONE sound
-        // This is enough to unlock the audio context for all sounds
-        const firstSound = this.sounds.values().next().value
-        if (firstSound) {
-          firstSound.volume = 0
-          const playPromise = firstSound.play()
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              firstSound.pause()
-              firstSound.currentTime = 0
-              firstSound.volume = 0.7
-            }).catch(() => {
-              // Ignore errors during unlock
-              firstSound.volume = 0.7
-            })
-          }
-        }
-        
+
         // Remove listeners after first interaction
         document.removeEventListener('click', enableAudio)
         document.removeEventListener('touchstart', enableAudio)

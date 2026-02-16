@@ -7,6 +7,10 @@ import { clientLogger } from './client-logger'
  */
 
 type GameType = 'yahtzee' | 'tic_tac_toe' | 'rock_paper_scissors' | 'guess_the_spy'
+type ReconnectFailureReason = 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
+
+const REALTIME_TELEMETRY_SAMPLE_RATE = 0.25
+type AnalyticsPropertyValue = string | number | boolean | null
 
 interface LobbyEvent {
   lobbyCode: string
@@ -51,6 +55,22 @@ interface ErrorEvent {
   component: string
   severity?: 'low' | 'medium' | 'high'
   context?: Record<string, unknown>
+}
+
+function trackRealtimeTelemetry(
+  eventName: string,
+  payload: Record<string, AnalyticsPropertyValue>
+): void {
+  if (Math.random() > REALTIME_TELEMETRY_SAMPLE_RATE) {
+    return
+  }
+
+  track(eventName, payload)
+  clientLogger.log('📊 Analytics: Realtime telemetry', {
+    eventName,
+    ...payload,
+    sampleRate: REALTIME_TELEMETRY_SAMPLE_RATE,
+  })
 }
 
 /**
@@ -196,6 +216,85 @@ export function trackFeatureUsage(feature: string, metadata?: Record<string, unk
   })
   
   clientLogger.log('📊 Analytics: Feature used', { feature, metadata })
+}
+
+/**
+ * Realtime reliability telemetry
+ */
+export function trackSocketReconnectAttempt(event: {
+  attempt: number
+  backoffMs: number
+  isGuest: boolean
+  transport?: string
+  reason?: string
+}): void {
+  trackRealtimeTelemetry('socket_reconnect_attempt', {
+    attempt: event.attempt,
+    backoff_ms: event.backoffMs,
+    is_guest: event.isGuest,
+    ...(event.transport ? { transport: event.transport } : {}),
+    ...(event.reason ? { reason: event.reason } : {}),
+  })
+}
+
+export function trackLobbyJoinRetry(event: {
+  attempt: number
+  delayMs: number
+  trigger: string
+  isGuest: boolean
+}): void {
+  trackRealtimeTelemetry('lobby_join_retry', {
+    attempt: event.attempt,
+    delay_ms: event.delayMs,
+    trigger: event.trigger,
+    is_guest: event.isGuest,
+  })
+}
+
+export function trackLobbyJoinAckTimeout(event: {
+  attempt: number
+  isGuest: boolean
+}): void {
+  trackRealtimeTelemetry('lobby_join_ack_timeout', {
+    attempt: event.attempt,
+    is_guest: event.isGuest,
+  })
+}
+
+export function trackSocketAuthRefreshFailed(event: {
+  stage: 'token_fetch' | 'socket_auth_payload'
+  status?: number
+  isGuest: boolean
+}): void {
+  trackRealtimeTelemetry('socket_auth_refresh_failed', {
+    stage: event.stage,
+    is_guest: event.isGuest,
+    ...(typeof event.status === 'number' ? { status: event.status } : {}),
+  })
+}
+
+export function trackSocketReconnectRecovered(event: {
+  attemptsTotal: number
+  timeToRecoverMs: number
+  isGuest: boolean
+}): void {
+  trackRealtimeTelemetry('socket_reconnect_recovered', {
+    attempts_total: event.attemptsTotal,
+    time_to_recover_ms: event.timeToRecoverMs,
+    is_guest: event.isGuest,
+  })
+}
+
+export function trackSocketReconnectFailedFinal(event: {
+  attemptsTotal: number
+  reason: ReconnectFailureReason
+  isGuest: boolean
+}): void {
+  trackRealtimeTelemetry('socket_reconnect_failed_final', {
+    attempts_total: event.attemptsTotal,
+    reason: event.reason,
+    is_guest: event.isGuest,
+  })
 }
 
 /**

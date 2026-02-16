@@ -59,6 +59,7 @@ interface SpyGameBoardProps {
   guestToken: string | null
   onRefresh: () => Promise<void> | void
   onPlayAgain?: () => void
+  onRequestRematch?: () => void
   onBackToLobby?: () => void
 }
 
@@ -93,6 +94,7 @@ export default function SpyGameBoard({
   guestToken,
   onRefresh,
   onPlayAgain,
+  onRequestRematch,
   onBackToLobby,
 }: SpyGameBoardProps) {
   const { t } = useTranslation()
@@ -509,6 +511,7 @@ export default function SpyGameBoard({
                 : undefined
             }
             onPlayAgain={onPlayAgain}
+            onRequestRematch={onRequestRematch}
             onBackToLobby={onBackToLobby}
           />
         )}

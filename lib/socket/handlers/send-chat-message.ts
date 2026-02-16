@@ -1,48 +1,31 @@
-import { SendChatMessagePayload, SocketEvents, SocketRooms } from '../../../types/socket-events'
-import { parseSendChatMessageInput } from './payload-validation'
-
-type LogContext = Record<string, unknown>
+import { SocketEvents, SocketRooms } from '../../../types/socket-events'
+import { EmitSocketErrorFn, SendChatMessageSocket } from './types'
 
 type LoggerLike = {
-  warn: (message: string, context?: LogContext) => void
-  error: (message: string, error?: Error, context?: LogContext) => void
+  warn: (message: string, context?: Record<string, unknown>) => void
+  error: (message: string, error?: Error, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
   trackEvent: (event: string) => void
 }
 
-interface SendChatMessageSocketUser {
-  id: string
-  username?: string | null
-  email?: string | null
-}
-
-interface SendChatMessageSocket {
-  id: string
-  data: {
-    user?: SendChatMessageSocketUser
-    authorizedLobbies?: Set<string>
-  }
-  rooms: Set<string>
-  emit: (event: string, payload: unknown) => void
+interface SendChatMessagePayload {
+  lobbyCode: string
+  message: string
+  userId: string
+  username: string
 }
 
 interface SendChatMessageDependencies {
   logger: LoggerLike
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (
-    socket: SendChatMessageSocket,
-    code: string,
-    message: string,
-    translationKey?: string,
-    details?: unknown
-  ) => void
+  emitError: EmitSocketErrorFn
   isSocketAuthorizedForLobby: (socket: SendChatMessageSocket, lobbyCode: string) => boolean
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
   getUserDisplayName: (user: { username?: string | null; email?: string | null } | undefined) => string
-  emitWithMetadata: (room: string, event: string, data: unknown) => void
+  emitWithMetadata: (room: string, event: string, data: Record<string, unknown>) => void
 }
 
 export function createSendChatMessageHandler({
@@ -63,14 +46,8 @@ export function createSendChatMessageHandler({
       return
     }
 
-    const parsedData = parseSendChatMessageInput(data)
-    if (!parsedData) {
-      logger.warn('Invalid chat message data', { socketId: socket.id })
-      return
-    }
-
-    const normalizedLobbyCode = parsedData.lobbyCode.trim()
-    const normalizedMessage = parsedData.message.trim()
+    const normalizedLobbyCode = typeof data?.lobbyCode === 'string' ? data.lobbyCode.trim() : ''
+    const normalizedMessage = typeof data?.message === 'string' ? data.message.trim() : ''
 
     if (!normalizedLobbyCode || !normalizedMessage || normalizedMessage.length > 500) {
       logger.warn('Invalid chat message data', { socketId: socket.id })
@@ -88,22 +65,18 @@ export function createSendChatMessageHandler({
         return
       }
 
-      const senderUserId = socket.data.user?.id
-      if (!senderUserId) {
-        throw new Error('Socket user is missing')
-      }
-
-      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, senderUserId)
+      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, socket.data.user.id)
       if (!isLobbyPlayer) {
         logger.warn('Rejected chat message from non-member', {
           socketId: socket.id,
           lobbyCode: normalizedLobbyCode,
-          userId: senderUserId,
+          userId: socket.data.user.id,
         })
         emitError(socket, 'LOBBY_ACCESS_DENIED', 'Not authorized for this lobby', 'errors.lobbyAccessDenied')
         return
       }
 
+      const senderUserId = socket.data.user.id
       const senderUsername = getUserDisplayName(socket.data.user)
 
       emitWithMetadata(SocketRooms.lobby(normalizedLobbyCode), SocketEvents.CHAT_MESSAGE, {
@@ -113,9 +86,8 @@ export function createSendChatMessageHandler({
         message: normalizedMessage,
         lobbyCode: normalizedLobbyCode,
       })
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      logger.error('Error handling chat message', err, {
+    } catch (error) {
+      logger.error('Error handling chat message', error as Error, {
         socketId: socket.id,
         lobbyCode: normalizedLobbyCode,
         userId: socket.data.user?.id,
@@ -124,4 +96,3 @@ export function createSendChatMessageHandler({
     }
   }
 }
-

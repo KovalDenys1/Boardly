@@ -4,6 +4,19 @@ import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import { SocketEvents, ServerErrorPayload } from '@/types/socket-events'
 import { showToast } from '@/lib/i18n-toast'
+import {
+  trackLobbyJoinAckTimeout,
+  trackLobbyJoinRetry,
+  trackSocketAuthRefreshFailed,
+  trackSocketReconnectAttempt,
+  trackSocketReconnectFailedFinal,
+  trackSocketReconnectRecovered,
+} from '@/lib/analytics'
+
+const INITIAL_GUEST_JOIN_DELAY_MS = 500
+const JOIN_ACK_TIMEOUT_MS = 4000
+const MAX_JOIN_ATTEMPTS = 4
+const AUTH_FAILURE_RESET_MS = 5000
 
 interface UseSocketConnectionProps {
   code: string
@@ -55,12 +68,22 @@ export function useSocketConnection({
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [isReconnecting, setIsReconnecting] = useState(false)
   const hasConnectedOnceRef = useRef(false)
-  const authFailedRef = useRef(false) // Track authentication failures
+  const authFailedRef = useRef(false)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const joinRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastProcessedSequenceRef = useRef(0) // Track event sequence to prevent duplicates
-  const isRejoiningRef = useRef(false) // Prevent multiple rejoin attempts
-  const connectionRunIdRef = useRef(0) // Guards against async init races creating orphan sockets
+  const joinAckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastProcessedSequenceRef = useRef(0)
+  const isRejoiningRef = useRef(false)
+  const hasJoinedLobbyRef = useRef(false)
+  const shouldSyncAfterJoinRef = useRef(false)
+  const joinAttemptRef = useRef(0)
+  const reconnectAttemptRef = useRef(0)
+  const reconnectStartedAtRef = useRef<number | null>(null)
+  const reconnectAttemptsForCycleRef = useRef(0)
+  const latestAuthTokenRef = useRef<string | null>(null)
+  const authTokenUnauthorizedRef = useRef(false)
+  const authFailureCountRef = useRef(0)
+  const connectionRunIdRef = useRef(0)
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -82,10 +105,9 @@ export function useSocketConnection({
     const payload = data as Partial<ServerErrorPayload>
     const code = typeof payload.code === 'string' ? payload.code : ''
     const message = typeof payload.message === 'string' ? payload.message : ''
-    const translationKey = typeof payload.translationKey === 'string' ? payload.translationKey : undefined
-    const details = payload.details && typeof payload.details === 'object'
-      ? payload.details
-      : undefined
+    const translationKey =
+      typeof payload.translationKey === 'string' ? payload.translationKey : undefined
+    const details = payload.details && typeof payload.details === 'object' ? payload.details : undefined
     const stack = typeof payload.stack === 'string' ? payload.stack : undefined
 
     if (!code && !message && !translationKey) {
@@ -113,21 +135,32 @@ export function useSocketConnection({
     onPlayerLeftRef.current = onPlayerLeft
     onBotActionRef.current = onBotAction
     onStateSyncRef.current = onStateSync
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onStateSync])
+  }, [
+    onGameUpdate,
+    onChatMessage,
+    onPlayerTyping,
+    onLobbyUpdate,
+    onPlayerJoined,
+    onGameStarted,
+    onGameAbandoned,
+    onPlayerLeft,
+    onBotAction,
+    onStateSync,
+  ])
 
   useEffect(() => {
-    let isMounted = true // Prevent state updates after unmount
+    let isMounted = true
     const runId = ++connectionRunIdRef.current
 
-    // Clear any existing reconnect timeouts
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-      reconnectTimeoutRef.current = null
+    const clearTimer = (timerRef: { current: NodeJS.Timeout | null }) => {
+      if (!timerRef.current) return
+      clearTimeout(timerRef.current)
+      timerRef.current = null
     }
-    if (joinRetryTimeoutRef.current) {
-      clearTimeout(joinRetryTimeoutRef.current)
-      joinRetryTimeoutRef.current = null
-    }
+
+    clearTimer(reconnectTimeoutRef)
+    clearTimer(joinRetryTimeoutRef)
+    clearTimer(joinAckTimeoutRef)
 
     if (!code) {
       clientLogger.warn('⚠️ No lobby code provided, skipping socket connection')
@@ -147,27 +180,23 @@ export function useSocketConnection({
       return
     }
 
-    // For authenticated users, wait for session to load
     if (!isGuest && !session?.user?.id) {
       clientLogger.log('⏳ Waiting for session to load before connecting socket...', {
         hasSession: !!session,
         hasUser: !!session?.user,
-        userId: session?.user?.id
+        userId: session?.user?.id,
       })
-      // Reset auth failed flag when waiting for session
       authFailedRef.current = false
       return
     }
 
-    // Additional validation for authenticated users
     if (!isGuest && session?.user?.id) {
       const userId = session.user.id
-      // Validate userId format (should be a CUID or similar)
       if (typeof userId !== 'string' || userId.length < 10) {
         clientLogger.error('❌ Invalid user ID format in session:', {
           userId,
           userIdType: typeof userId,
-          userIdLength: userId ? String(userId).length : 0
+          userIdLength: userId ? String(userId).length : 0,
         })
         authFailedRef.current = true
         showToast.error('errors.authenticationFailed')
@@ -175,7 +204,6 @@ export function useSocketConnection({
       }
     }
 
-    // Don't retry if authentication failed
     if (authFailedRef.current) {
       clientLogger.warn('⚠️ Skipping socket connection - authentication previously failed')
       return
@@ -186,14 +214,14 @@ export function useSocketConnection({
       url,
       code,
       isGuest,
-      userId: !isGuest ? session?.user?.id : guestId
+      userId: !isGuest ? session?.user?.id : guestId,
     })
 
-    // Get authentication token for Socket.IO
-    // For guests: use guest token from context
-    // For authenticated users: fetch short-lived JWT from API
-    const getAuthToken = async () => {
+    const getAuthToken = async (): Promise<string | null> => {
       if (isGuest && guestToken) {
+        authTokenUnauthorizedRef.current = false
+        latestAuthTokenRef.current = guestToken
+
         clientLogger.log('🔐 Using guest authentication token', {
           guestId,
           guestName,
@@ -201,33 +229,46 @@ export function useSocketConnection({
         })
         return guestToken
       }
-      
-      // For authenticated users: fetch Socket.IO token from API
+
       if (!isGuest && session?.user?.id) {
+        let responseStatus: number | undefined
         try {
           clientLogger.log('🔐 Fetching Socket.IO token for authenticated user...')
           const response = await fetch('/api/socket/token')
           if (!response.ok) {
+            responseStatus = response.status
+            if (response.status === 401 || response.status === 403) {
+              authTokenUnauthorizedRef.current = true
+            }
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
-          const data = await response.json()
+
+          const data = (await response.json()) as { token?: string }
           if (!data.token) {
             throw new Error('No token in response')
           }
+
+          authTokenUnauthorizedRef.current = false
+          latestAuthTokenRef.current = data.token
           clientLogger.log('✅ Socket.IO token fetched successfully')
           return data.token
         } catch (error) {
+          trackSocketAuthRefreshFailed({
+            stage: 'token_fetch',
+            status: responseStatus,
+            isGuest: false,
+          })
           clientLogger.error('❌ Failed to fetch Socket.IO token:', error)
           return null
         }
       }
-      
+
       return null
     }
 
     const initSocket = async () => {
       const token = await getAuthToken()
-      
+
       if (!isGuest && !token) {
         clientLogger.error('❌ Failed to get authentication token for socket connection')
         authFailedRef.current = true
@@ -235,329 +276,552 @@ export function useSocketConnection({
         return null
       }
 
-      // Exponential backoff calculation: min(1000 * 2^attempt, 30000)
       const calculateBackoff = (attempt: number) => {
-        const baseDelay = 1000 // 1 second
-        const maxDelay = 30000 // 30 seconds
+        const baseDelay = 1000
+        const maxDelay = 30000
         return Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
       }
 
-      const authPayload: Record<string, unknown> = {}
-      if (token) authPayload.token = token
-      if (isGuest) authPayload.isGuest = true
-
       const queryPayload: Record<string, string> = {}
-      if (token) queryPayload.token = String(token)
-      if (isGuest) queryPayload.isGuest = 'true'
+      if (isGuest) {
+        queryPayload.isGuest = 'true'
+      }
 
-      return { authPayload, queryPayload, calculateBackoff, token }
+      const resolveAuthPayload = async (): Promise<Record<string, unknown>> => {
+        if (isGuest) {
+          const payload: Record<string, unknown> = { isGuest: true }
+          if (guestToken) {
+            latestAuthTokenRef.current = guestToken
+            payload.token = guestToken
+          }
+          return payload
+        }
+
+        const refreshedToken = await getAuthToken()
+        if (refreshedToken) {
+          return { token: refreshedToken }
+        }
+
+        if (latestAuthTokenRef.current) {
+          clientLogger.warn('⚠️ Using cached socket auth token after refresh failure')
+          return { token: latestAuthTokenRef.current }
+        }
+
+        return {}
+      }
+
+      return { queryPayload, calculateBackoff, resolveAuthPayload }
     }
 
-    // Initialize socket auth and create connection
     const initAndConnect = async () => {
       const authData = await initSocket()
       if (!authData || !isMounted || runId !== connectionRunIdRef.current) {
         return
       }
 
-      const { authPayload, queryPayload, calculateBackoff, token } = authData
+      const { queryPayload, calculateBackoff, resolveAuthPayload } = authData
 
       const newSocket = io(url, {
-      // Optimized for Render free tier (cold starts can take up to 60s)
-      transports: ['polling', 'websocket'], // Polling → WebSocket for stability
-      reconnection: true,
-      reconnectionAttempts: 20, // Increased for Render cold starts
-      reconnectionDelay: 3000, // 3 seconds initial delay
-      reconnectionDelayMax: 120000, // Up to 2 minutes between attempts (cold start)
-      timeout: 180000, // 3 minutes - important for Render cold start (increased from 2 min)
-      upgrade: true, // Auto-upgrade polling → websocket
-      rememberUpgrade: true, // Remember successful upgrade
-      autoConnect: true, // Automatic connection
-      forceNew: false, // Use existing connection if possible
-      multiplex: true, // Multiplexing for efficiency
-      path: '/socket.io/', // Explicit path
-      // Additional stability settings
-      closeOnBeforeunload: false, // Don't close on page reload
-      withCredentials: true, // Required for NextAuth cookie-based socket auth
-      auth: authPayload,
-      query: queryPayload,
-    })
-
-    if (!isMounted || runId !== connectionRunIdRef.current) {
-      if (typeof newSocket.close === 'function') {
-        newSocket.close()
-      } else {
-        newSocket.disconnect()
-      }
-      return
-    }
-
-    newSocket.on('connect', async () => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-
-      const isReconnect = hasConnectedOnceRef.current
-      clientLogger.log(isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:', code)
-
-      // Reset dedup cursor on each fresh transport session.
-      // Server sequence counters are in-memory and can reset on restart/redeploy.
-      lastProcessedSequenceRef.current = 0
-
-      setIsConnected(true)
-      setIsReconnecting(false)
-      setReconnectAttempt(0) // Reset counter on successful connection
-      if (joinRetryTimeoutRef.current) {
-        clearTimeout(joinRetryTimeoutRef.current)
-        joinRetryTimeoutRef.current = null
-      }
-
-      // Always rejoin room on connect/reconnect
-      if (!isRejoiningRef.current) {
-        isRejoiningRef.current = true
-        
-        // For guests on first connect, add small delay to allow HTTP join to complete
-        if (isGuest && !isReconnect) {
-          clientLogger.log('⏳ Guest first connect - waiting 500ms for HTTP join to complete...')
-          await new Promise(resolve => setTimeout(resolve, 500))
-        }
-        
-        newSocket.emit(SocketEvents.JOIN_LOBBY, code)
-
-        // On reconnect, sync state to catch up on missed events
-        if (isReconnect && onStateSyncRef.current) {
-          try {
-            clientLogger.log('🔄 Syncing state after reconnect...')
-            await onStateSyncRef.current()
-            clientLogger.log('✅ State synced successfully')
-          } catch (error) {
-            clientLogger.error('❌ Failed to sync state after reconnect:', error)
-          }
-        }
-
-        isRejoiningRef.current = false
-      }
-
-      hasConnectedOnceRef.current = true // Mark that we've connected at least once
-    })
-
-    newSocket.on('disconnect', (reason) => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-      setIsConnected(false)
-
-      // Only show reconnecting if we've connected before
-      // This prevents showing "reconnecting" on initial page load
-      if (reason !== 'io client disconnect' && hasConnectedOnceRef.current) {
-        clientLogger.log('❌ Socket disconnected:', reason)
-        setIsReconnecting(true)
-      }
-    })
-
-    newSocket.on('reconnect_attempt', (attempt) => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-      setReconnectAttempt(attempt)
-      const backoff = calculateBackoff(attempt - 1)
-      clientLogger.log(`🔄 Reconnection attempt #${attempt} (waiting ${backoff}ms)`)
-    })
-
-    newSocket.on('reconnect_failed', () => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-      clientLogger.error('❌ Failed to reconnect after maximum attempts')
-      setIsReconnecting(false)
-    })
-
-    newSocket.on('reconnect', (attempt) => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-      clientLogger.log(`✅ Reconnected successfully after ${attempt} attempts`)
-      setIsReconnecting(false)
-      setReconnectAttempt(0)
-    })
-
-    newSocket.on('connect_error', (error) => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-
-      const errorMsg = error.message || String(error)
-      clientLogger.error('🔴 Socket connection error:', errorMsg, {
-        isGuest,
-        hasToken: !!token,
-        tokenPreview: token ? String(token).substring(0, 10) + '...' : 'none',
-        reconnectAttempt,
-        errorType: (error as any).type,
-        errorDescription: (error as any).description
+        transports: ['polling', 'websocket'],
+        reconnection: true,
+        reconnectionAttempts: 20,
+        reconnectionDelay: 3000,
+        reconnectionDelayMax: 120000,
+        timeout: 180000,
+        upgrade: true,
+        rememberUpgrade: true,
+        autoConnect: true,
+        forceNew: false,
+        multiplex: true,
+        path: '/socket.io/',
+        closeOnBeforeunload: false,
+        withCredentials: true,
+        auth: (callback) => {
+          void resolveAuthPayload()
+            .then((payload) => {
+              callback(payload)
+            })
+            .catch((error) => {
+              trackSocketAuthRefreshFailed({
+                stage: 'socket_auth_payload',
+                isGuest,
+              })
+              clientLogger.error('❌ Failed to resolve socket auth payload:', error)
+              if (!isGuest && latestAuthTokenRef.current) {
+                callback({ token: latestAuthTokenRef.current })
+                return
+              }
+              if (isGuest) {
+                callback({
+                  isGuest: true,
+                  ...(guestToken ? { token: guestToken } : {}),
+                })
+                return
+              }
+              callback({})
+            })
+        },
+        query: queryPayload,
       })
 
-      setIsConnected(false)
-
-      if (errorMsg.includes('timeout')) {
-        clientLogger.warn('⏳ Socket connection timeout - retrying...')
-        // Only show toast after multiple timeout failures
-        if (reconnectAttempt > 3) {
-          showToast.error('errors.connectionTimeout')
-        }
-      } else if (errorMsg.includes('xhr poll error')) {
-        clientLogger.warn('⚠️ XHR poll error detected', {
-          attempt: reconnectAttempt,
-          hasToken: !!token,
-          isGuest,
-          message: 'This usually means the server is unreachable or authentication failed'
-        })
-
-        // For non-guest users, if we get poll error, check if token is valid
-        if (!isGuest && reconnectAttempt === 0) {
-          clientLogger.log('🔍 First poll error for authenticated user - checking token:', {
-            tokenType: typeof token,
-            tokenValue: token,
-            sessionExists: !!session,
-            userIdInSession: session?.user?.id
-          })
-        }
-
-        // Show toast after a few attempts
-        if (reconnectAttempt > 3) {
-          showToast.error('errors.connectionFailed')
-        }
-      } else if (errorMsg.includes('Authentication failed') || errorMsg.includes('Authentication required')) {
-        clientLogger.error('🔐 Authentication failed - stopping reconnection attempts')
-        authFailedRef.current = true // Mark auth as failed
-        setIsReconnecting(false) // Stop showing reconnecting state
-
-        // Show user-friendly error
-        showToast.error('errors.authenticationFailed')
-
-        // Stop any further reconnection attempts
-        if (newSocket) {
-          newSocket.removeAllListeners()
+      if (!isMounted || runId !== connectionRunIdRef.current) {
+        if (typeof newSocket.close === 'function') {
           newSocket.close()
+        } else {
+          newSocket.disconnect()
         }
-
-        // Set timeout to reset auth flag after 5 seconds (allow retry after page refresh/navigation)
-        reconnectTimeoutRef.current = setTimeout(() => {
-          clientLogger.log('🔄 Resetting authentication flag - retry allowed')
-          authFailedRef.current = false
-        }, 5000)
-      } else {
-        // Generic connection error
-        clientLogger.error('❌ Socket error:', error.message)
-        if (reconnectAttempt > 5) {
-          showToast.error('errors.connectionError')
-        }
-      }
-    })
-
-    // Add generic error handler
-    newSocket.on(SocketEvents.ERROR, (error) => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-      clientLogger.error('🔴 Socket error:', error)
-    })
-
-    // Add server error handler with structured errors
-    newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
-      if (!isMounted || runId !== connectionRunIdRef.current) return
-      const normalizedError = normalizeServerError(data)
-      if (!normalizedError) {
-        clientLogger.warn('⚠️ Received malformed server error payload, ignoring:', data)
         return
       }
 
-      if (normalizedError.code === 'LOBBY_ACCESS_DENIED') {
-        // Guests can briefly hit membership races while HTTP join and socket connect overlap.
-        if (isGuest && !hasConnectedOnceRef.current) {
-          clientLogger.log('⏳ Guest lobby access denied on first connect - retrying after 1s...')
-          if (joinRetryTimeoutRef.current) {
-            clearTimeout(joinRetryTimeoutRef.current)
-          }
-          joinRetryTimeoutRef.current = setTimeout(() => {
-            joinRetryTimeoutRef.current = null
-            if (isMounted && runId === connectionRunIdRef.current && newSocket.connected) {
-              clientLogger.log('🔄 Retrying guest lobby join...')
-              newSocket.emit(SocketEvents.JOIN_LOBBY, code)
-            }
-          }, 1000)
+      const clearJoinTimers = () => {
+        if (joinRetryTimeoutRef.current) {
+          clearTimeout(joinRetryTimeoutRef.current)
+          joinRetryTimeoutRef.current = null
+        }
+        if (joinAckTimeoutRef.current) {
+          clearTimeout(joinAckTimeoutRef.current)
+          joinAckTimeoutRef.current = null
+        }
+      }
+
+      const syncStateAfterReconnect = async () => {
+        if (!shouldSyncAfterJoinRef.current || !onStateSyncRef.current) {
           return
         }
 
-        if (isGuest) {
-          clientLogger.warn('⚠️ Guest lobby access denied after connect - requesting state sync', {
-            lobbyCode: code,
+        shouldSyncAfterJoinRef.current = false
+
+        try {
+          clientLogger.log('🔄 Syncing state after reconnect...')
+          await onStateSyncRef.current()
+          clientLogger.log('✅ State synced successfully')
+        } catch (error) {
+          clientLogger.error('❌ Failed to sync state after reconnect:', error)
+        }
+      }
+
+      function scheduleJoinRetry(trigger: string, delayMs: number) {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        if (joinRetryTimeoutRef.current) {
+          clearTimeout(joinRetryTimeoutRef.current)
+        }
+
+        trackLobbyJoinRetry({
+          attempt: joinAttemptRef.current,
+          delayMs,
+          trigger,
+          isGuest,
+        })
+
+        joinRetryTimeoutRef.current = setTimeout(() => {
+          joinRetryTimeoutRef.current = null
+          attemptLobbyJoin(trigger)
+        }, delayMs)
+      }
+
+      function attemptLobbyJoin(trigger: string) {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+        if (!newSocket.connected) return
+        if (hasJoinedLobbyRef.current) return
+        if (isRejoiningRef.current) return
+
+        isRejoiningRef.current = true
+        joinAttemptRef.current += 1
+        const attempt = joinAttemptRef.current
+
+        clientLogger.log('📡 Joining lobby socket room', {
+          lobbyCode: code,
+          attempt,
+          trigger,
+        })
+        newSocket.emit(SocketEvents.JOIN_LOBBY, code)
+
+        if (joinAckTimeoutRef.current) {
+          clearTimeout(joinAckTimeoutRef.current)
+        }
+
+        joinAckTimeoutRef.current = setTimeout(() => {
+          joinAckTimeoutRef.current = null
+          isRejoiningRef.current = false
+
+          if (!isMounted || runId !== connectionRunIdRef.current || !newSocket.connected) return
+          if (hasJoinedLobbyRef.current) return
+
+          trackLobbyJoinAckTimeout({
+            attempt,
+            isGuest,
           })
-          if (onStateSyncRef.current) {
-            void onStateSyncRef.current().catch((syncError) => {
-              clientLogger.warn('⚠️ Guest state sync after access denied failed:', syncError)
+
+          if (attempt >= MAX_JOIN_ATTEMPTS) {
+            clientLogger.error('❌ Lobby join confirmation timeout after max retries', {
+              lobbyCode: code,
+              maxAttempts: MAX_JOIN_ATTEMPTS,
+            })
+            trackSocketReconnectFailedFinal({
+              attemptsTotal: Math.max(reconnectAttemptsForCycleRef.current, attempt),
+              reason: 'rejoin_timeout',
+              isGuest,
+            })
+            showToast.error('errors.connectionFailed')
+            return
+          }
+
+          const retryDelayMs = Math.min(500 * Math.pow(2, attempt - 1), 4000)
+          clientLogger.warn('⚠️ Lobby join confirmation timeout, scheduling retry', {
+            lobbyCode: code,
+            attempt,
+            retryDelayMs,
+          })
+          scheduleJoinRetry('join-ack-timeout', retryDelayMs)
+        }, JOIN_ACK_TIMEOUT_MS)
+      }
+
+      newSocket.on(SocketEvents.JOINED_LOBBY, (payload?: { lobbyCode?: string; success?: boolean }) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+        if (payload?.lobbyCode && payload.lobbyCode !== code) return
+
+        clearJoinTimers()
+        isRejoiningRef.current = false
+        joinAttemptRef.current = 0
+
+        if (hasJoinedLobbyRef.current) {
+          return
+        }
+
+        hasJoinedLobbyRef.current = true
+        clientLogger.log('✅ Lobby join confirmed by server', {
+          lobbyCode: code,
+          success: payload?.success ?? true,
+        })
+
+        if (shouldSyncAfterJoinRef.current && reconnectStartedAtRef.current) {
+          trackSocketReconnectRecovered({
+            attemptsTotal: Math.max(1, reconnectAttemptsForCycleRef.current),
+            timeToRecoverMs: Math.max(0, Date.now() - reconnectStartedAtRef.current),
+            isGuest,
+          })
+          reconnectStartedAtRef.current = null
+          reconnectAttemptsForCycleRef.current = 0
+        }
+
+        void syncStateAfterReconnect()
+      })
+
+      newSocket.on('connect', () => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        const isReconnect = hasConnectedOnceRef.current
+        clientLogger.log(
+          isReconnect ? '🔄 Socket reconnected to lobby:' : '✅ Socket connected to lobby:',
+          code
+        )
+
+        // Reset dedup cursor on each fresh transport session.
+        // Server sequence counters are in-memory and can reset on restart/redeploy.
+        lastProcessedSequenceRef.current = 0
+
+        setIsConnected(true)
+        setIsReconnecting(false)
+        setReconnectAttempt(0)
+        if (!isReconnect) {
+          reconnectAttemptRef.current = 0
+          reconnectAttemptsForCycleRef.current = 0
+          reconnectStartedAtRef.current = null
+        }
+        authFailureCountRef.current = 0
+        authTokenUnauthorizedRef.current = false
+        hasJoinedLobbyRef.current = false
+        shouldSyncAfterJoinRef.current = isReconnect
+        isRejoiningRef.current = false
+        joinAttemptRef.current = 0
+        clearJoinTimers()
+
+        const joinDelayMs = isGuest && !isReconnect ? INITIAL_GUEST_JOIN_DELAY_MS : 0
+        if (joinDelayMs > 0) {
+          clientLogger.log('⏳ Guest first connect - waiting before lobby join confirmation flow...')
+          scheduleJoinRetry('guest-initial-delay', joinDelayMs)
+        } else {
+          attemptLobbyJoin(isReconnect ? 'reconnect' : 'connect')
+        }
+
+        hasConnectedOnceRef.current = true
+      })
+
+      newSocket.on('disconnect', (reason) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        setIsConnected(false)
+        hasJoinedLobbyRef.current = false
+        shouldSyncAfterJoinRef.current = false
+        isRejoiningRef.current = false
+        clearJoinTimers()
+
+        if (reason !== 'io client disconnect' && hasConnectedOnceRef.current) {
+          clientLogger.log('❌ Socket disconnected:', reason)
+          reconnectStartedAtRef.current = Date.now()
+          reconnectAttemptsForCycleRef.current = 0
+          setIsReconnecting(true)
+        } else {
+          reconnectStartedAtRef.current = null
+          reconnectAttemptsForCycleRef.current = 0
+        }
+      })
+
+      newSocket.on('reconnect_attempt', (attempt) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        reconnectAttemptRef.current = attempt
+        reconnectAttemptsForCycleRef.current = attempt
+        setReconnectAttempt(attempt)
+        const backoff = calculateBackoff(attempt - 1)
+        const transport =
+          (newSocket as unknown as { io?: { engine?: { transport?: { name?: unknown } } } }).io?.engine
+            ?.transport?.name
+
+        trackSocketReconnectAttempt({
+          attempt,
+          backoffMs: backoff,
+          isGuest,
+          transport: typeof transport === 'string' ? transport : undefined,
+          reason: 'reconnect_attempt',
+        })
+
+        clientLogger.log(`🔄 Reconnection attempt #${attempt} (waiting ${backoff}ms)`)
+      })
+
+      newSocket.on('reconnect_failed', () => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        trackSocketReconnectFailedFinal({
+          attemptsTotal: Math.max(1, reconnectAttemptsForCycleRef.current),
+          reason: 'reconnect_failed',
+          isGuest,
+        })
+
+        clientLogger.error('❌ Failed to reconnect after maximum attempts')
+        setIsReconnecting(false)
+        reconnectStartedAtRef.current = null
+        reconnectAttemptsForCycleRef.current = 0
+      })
+
+      newSocket.on('reconnect', (attempt) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        clientLogger.log(`✅ Reconnected successfully after ${attempt} attempts`)
+        setIsReconnecting(false)
+        setReconnectAttempt(0)
+        reconnectAttemptRef.current = 0
+      })
+
+      newSocket.on('connect_error', (error: Error & { type?: string; description?: string }) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        const errorMsg = error.message || String(error)
+        const activeToken = latestAuthTokenRef.current
+        const currentAttempt = reconnectAttemptRef.current
+
+        clientLogger.error('🔴 Socket connection error:', errorMsg, {
+          isGuest,
+          hasToken: !!activeToken,
+          tokenPreview: activeToken ? String(activeToken).substring(0, 10) + '...' : 'none',
+          reconnectAttempt: currentAttempt,
+          errorType: error.type,
+          errorDescription: error.description,
+        })
+
+        setIsConnected(false)
+
+        if (errorMsg.includes('timeout')) {
+          clientLogger.warn('⏳ Socket connection timeout - retrying...')
+          if (currentAttempt > 3) {
+            showToast.error('errors.connectionTimeout')
+          }
+          return
+        }
+
+        if (errorMsg.includes('xhr poll error')) {
+          clientLogger.warn('⚠️ XHR poll error detected', {
+            attempt: currentAttempt,
+            hasToken: !!activeToken,
+            isGuest,
+            message: 'This usually means the server is unreachable or authentication failed',
+          })
+
+          if (!isGuest && currentAttempt === 0) {
+            clientLogger.log('🔍 First poll error for authenticated user - checking token:', {
+              tokenType: typeof activeToken,
+              tokenValue: activeToken,
+              sessionExists: !!session,
+              userIdInSession: session?.user?.id,
             })
           }
+
+          if (currentAttempt > 3) {
+            showToast.error('errors.connectionFailed')
+          }
           return
         }
-      }
 
-      clientLogger.error('🔴 Server error:', normalizedError)
+        if (errorMsg.includes('Authentication failed') || errorMsg.includes('Authentication required')) {
+          authFailureCountRef.current += 1
 
-      // Show user-friendly error message
-      if (normalizedError.translationKey) {
-        showToast.error(normalizedError.translationKey)
-      } else {
-        showToast.error('errors.general', undefined, { message: normalizedError.message })
-      }
-    })
+          const shouldStopRetrying =
+            isGuest || authTokenUnauthorizedRef.current || authFailureCountRef.current >= 3
 
-    // Helper to deduplicate events based on sequenceId
-    const handleEventWithDeduplication = (eventName: string, data: any, handler: (data: any) => void) => {
-      try {
-        // Check for sequence ID to prevent duplicate processing
-        if (data?.sequenceId !== undefined) {
-          if (data.sequenceId <= lastProcessedSequenceRef.current) {
-            clientLogger.warn(`⚠️ Dropped duplicate ${eventName} event`, {
-              sequenceId: data.sequenceId,
-              lastProcessed: lastProcessedSequenceRef.current
+          if (!shouldStopRetrying) {
+            clientLogger.warn('⚠️ Socket authentication handshake failed, retrying with refreshed token', {
+              authFailureCount: authFailureCountRef.current,
+              reconnectAttempt: currentAttempt,
             })
             return
           }
-          lastProcessedSequenceRef.current = data.sequenceId
+
+          clientLogger.error('🔐 Authentication failed - stopping reconnection attempts', {
+            isGuest,
+            unauthorizedFromTokenEndpoint: authTokenUnauthorizedRef.current,
+            authFailureCount: authFailureCountRef.current,
+          })
+
+          trackSocketReconnectFailedFinal({
+            attemptsTotal: Math.max(1, reconnectAttemptsForCycleRef.current),
+            reason: 'authentication_failed',
+            isGuest,
+          })
+
+          authFailedRef.current = true
+          setIsReconnecting(false)
+          showToast.error('errors.authenticationFailed')
+
+          newSocket.removeAllListeners()
+          newSocket.close()
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            clientLogger.log('🔄 Resetting authentication flag - retry allowed')
+            authFailedRef.current = false
+            authFailureCountRef.current = 0
+            authTokenUnauthorizedRef.current = false
+          }, AUTH_FAILURE_RESET_MS)
+          return
         }
 
-        handler(data)
-      } catch (error) {
-        clientLogger.error(`❌ Error handling ${eventName} event:`, error)
+        clientLogger.error('❌ Socket error:', error.message)
+        if (currentAttempt > 5) {
+          showToast.error('errors.connectionError')
+        }
+      })
+
+      newSocket.on(SocketEvents.ERROR, (error) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+        clientLogger.error('🔴 Socket error:', error)
+      })
+
+      newSocket.on(SocketEvents.SERVER_ERROR, (data: ServerErrorPayload) => {
+        if (!isMounted || runId !== connectionRunIdRef.current) return
+
+        const normalizedError = normalizeServerError(data)
+        if (!normalizedError) {
+          clientLogger.warn('⚠️ Received malformed server error payload, ignoring:', data)
+          return
+        }
+
+        if (normalizedError.code === 'LOBBY_ACCESS_DENIED') {
+          if (!hasJoinedLobbyRef.current && newSocket.connected) {
+            clientLogger.warn('⚠️ Lobby access denied before join confirmation - retrying join', {
+              lobbyCode: code,
+              isGuest,
+            })
+            isRejoiningRef.current = false
+            scheduleJoinRetry('access-denied', 1000)
+            return
+          }
+
+          if (isGuest) {
+            clientLogger.warn('⚠️ Guest lobby access denied after connect - requesting state sync', {
+              lobbyCode: code,
+            })
+            if (onStateSyncRef.current) {
+              void onStateSyncRef.current().catch((syncError) => {
+                clientLogger.warn('⚠️ Guest state sync after access denied failed:', syncError)
+              })
+            }
+            return
+          }
+        }
+
+        clientLogger.error('🔴 Server error:', normalizedError)
+
+        if (normalizedError.translationKey) {
+          showToast.error(normalizedError.translationKey)
+        } else {
+          showToast.error('errors.general', undefined, { message: normalizedError.message })
+        }
+      })
+
+      const handleEventWithDeduplication = (
+        eventName: string,
+        data: any,
+        handler: (payload: any) => void
+      ) => {
+        try {
+          if (data?.sequenceId !== undefined) {
+            if (data.sequenceId <= lastProcessedSequenceRef.current) {
+              clientLogger.warn(`⚠️ Dropped duplicate ${eventName} event`, {
+                sequenceId: data.sequenceId,
+                lastProcessed: lastProcessedSequenceRef.current,
+              })
+              return
+            }
+            lastProcessedSequenceRef.current = data.sequenceId
+          }
+
+          handler(data)
+        } catch (error) {
+          clientLogger.error(`❌ Error handling ${eventName} event:`, error)
+        }
+      }
+
+      newSocket.on(SocketEvents.GAME_UPDATE, (data) =>
+        handleEventWithDeduplication('game-update', data, onGameUpdateRef.current)
+      )
+      newSocket.on(SocketEvents.CHAT_MESSAGE, (data) =>
+        handleEventWithDeduplication('chat-message', data, onChatMessageRef.current)
+      )
+      newSocket.on(SocketEvents.PLAYER_TYPING, (data) => onPlayerTypingRef.current(data))
+      newSocket.on(SocketEvents.LOBBY_UPDATE, (data) =>
+        handleEventWithDeduplication('lobby-update', data, onLobbyUpdateRef.current)
+      )
+      newSocket.on(SocketEvents.PLAYER_JOINED, (data) =>
+        handleEventWithDeduplication('player-joined', data, onPlayerJoinedRef.current)
+      )
+      newSocket.on(SocketEvents.GAME_STARTED, (data) =>
+        handleEventWithDeduplication('game-started', data, onGameStartedRef.current)
+      )
+
+      if (onGameAbandonedRef.current) {
+        newSocket.on(SocketEvents.GAME_ABANDONED, (data) =>
+          handleEventWithDeduplication('game-abandoned', data, onGameAbandonedRef.current!)
+        )
+      }
+
+      if (onPlayerLeftRef.current) {
+        newSocket.on(SocketEvents.PLAYER_LEFT, (data) =>
+          handleEventWithDeduplication('player-left', data, onPlayerLeftRef.current!)
+        )
+      }
+
+      if (onBotActionRef.current) {
+        newSocket.on(SocketEvents.BOT_ACTION, (data) =>
+          handleEventWithDeduplication('bot-action', data, onBotActionRef.current!)
+        )
+      }
+
+      if (isMounted) {
+        socketRef.current = newSocket
+        setSocket(newSocket)
       }
     }
 
-    // Register event handlers with error handling
-    newSocket.on(SocketEvents.GAME_UPDATE, (data) =>
-      handleEventWithDeduplication('game-update', data, onGameUpdateRef.current)
-    )
-    newSocket.on(SocketEvents.CHAT_MESSAGE, (data) =>
-      handleEventWithDeduplication('chat-message', data, onChatMessageRef.current)
-    )
-    newSocket.on(SocketEvents.PLAYER_TYPING, (data) => onPlayerTypingRef.current(data))
-    newSocket.on(SocketEvents.LOBBY_UPDATE, (data) =>
-      handleEventWithDeduplication('lobby-update', data, onLobbyUpdateRef.current)
-    )
-    newSocket.on(SocketEvents.PLAYER_JOINED, (data) =>
-      handleEventWithDeduplication('player-joined', data, onPlayerJoinedRef.current)
-    )
-    newSocket.on(SocketEvents.GAME_STARTED, (data) =>
-      handleEventWithDeduplication('game-started', data, onGameStartedRef.current)
-    )
-    if (onGameAbandonedRef.current) {
-      newSocket.on(SocketEvents.GAME_ABANDONED, (data) =>
-        handleEventWithDeduplication('game-abandoned', data, onGameAbandonedRef.current!)
-      )
-    }
-    if (onPlayerLeftRef.current) {
-      newSocket.on(SocketEvents.PLAYER_LEFT, (data) =>
-        handleEventWithDeduplication('player-left', data, onPlayerLeftRef.current!)
-      )
-    }
-    if (onBotActionRef.current) {
-      newSocket.on(SocketEvents.BOT_ACTION, (data) =>
-        handleEventWithDeduplication('bot-action', data, onBotActionRef.current!)
-      )
-    }
-
-    if (isMounted) {
-      socketRef.current = newSocket
-      setSocket(newSocket)
-    }
-    }
-
-    // Initialize socket connection with authentication
     initAndConnect()
 
     return () => {
@@ -565,23 +829,16 @@ export function useSocketConnection({
       connectionRunIdRef.current += 1
       clientLogger.log('🔌 Cleaning up socket connection')
 
-      // Clear reconnect timeout
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-        reconnectTimeoutRef.current = null
-      }
-      if (joinRetryTimeoutRef.current) {
-        clearTimeout(joinRetryTimeoutRef.current)
-        joinRetryTimeoutRef.current = null
-      }
+      clearTimer(reconnectTimeoutRef)
+      clearTimer(joinRetryTimeoutRef)
+      clearTimer(joinAckTimeoutRef)
 
-      // Cleanup socket if exists
       const socketToCleanup = socketRef.current
       socketRef.current = null
       if (socketToCleanup) {
-        // Remove all listeners first
         socketToCleanup.off(SocketEvents.CONNECT)
         socketToCleanup.off(SocketEvents.DISCONNECT)
+        socketToCleanup.off(SocketEvents.JOINED_LOBBY)
         socketToCleanup.off(SocketEvents.CONNECT_ERROR)
         socketToCleanup.off(SocketEvents.RECONNECT_ATTEMPT)
         socketToCleanup.off(SocketEvents.RECONNECT_FAILED)
@@ -598,37 +855,49 @@ export function useSocketConnection({
         socketToCleanup.off(SocketEvents.PLAYER_LEFT)
         socketToCleanup.off(SocketEvents.BOT_ACTION)
 
-        // Gracefully disconnect only if connected
         if (socketToCleanup.connected) {
           socketToCleanup.disconnect()
         } else if (typeof socketToCleanup.close === 'function') {
-          // Force close if not connected yet (prevents WebSocket error)
           socketToCleanup.close()
         }
       }
+
+      reconnectAttemptRef.current = 0
+      reconnectStartedAtRef.current = null
+      reconnectAttemptsForCycleRef.current = 0
+      authFailureCountRef.current = 0
+      hasJoinedLobbyRef.current = false
+      shouldSyncAfterJoinRef.current = false
+      joinAttemptRef.current = 0
+      isRejoiningRef.current = false
+      latestAuthTokenRef.current = null
+      authTokenUnauthorizedRef.current = false
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, isGuest, guestId, guestName, guestToken, shouldJoinLobbyRoom, session?.user?.id, normalizeServerError])
 
-  const emitWhenConnected = useCallback((event: string, data: any) => {
-    const currentSocket = socketRef.current
-    if (!currentSocket) return
+  const emitWhenConnected = useCallback(
+    (event: string, data: any) => {
+      const currentSocket = socketRef.current
+      if (!currentSocket) return
 
-    if (isConnected) {
-      currentSocket.emit(event, data)
-    } else {
-      currentSocket.once('connect', () => {
+      if (isConnected) {
         currentSocket.emit(event, data)
-      })
-    }
-  }, [isConnected])
+      } else {
+        currentSocket.once('connect', () => {
+          currentSocket.emit(event, data)
+        })
+      }
+    },
+    [isConnected]
+  )
 
   return {
     socket,
     isConnected,
     isReconnecting,
     reconnectAttempt,
-    emitWhenConnected
+    emitWhenConnected,
   }
 }

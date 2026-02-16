@@ -89,7 +89,7 @@ describe('createPlayerTypingHandler', () => {
     const handler = createPlayerTypingHandler(deps)
     const { socket, to } = createSocket()
 
-    handler(socket, { userId: 'u', username: 'n' } as unknown as { lobbyCode: string })
+    handler(socket, { userId: 'u', username: 'n' } as any)
 
     expect(deps.isSocketAuthorizedForLobby).not.toHaveBeenCalled()
     expect(to).not.toHaveBeenCalled()

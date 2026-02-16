@@ -9,6 +9,7 @@ import LobbyFilters, { LobbyFilterOptions } from '@/components/LobbyFilters'
 import LobbyStats from '@/components/LobbyStats'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
 import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
@@ -185,32 +186,7 @@ export default function LobbyListPage() {
       return
     }
 
-    const url = getBrowserSocketUrl()
-    clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
-
-    // Get auth token - use userId for authenticated users or guest JWT.
-    const token = authenticatedUserId || guestToken || null
-
-    const authPayload: Record<string, unknown> = {}
-    if (token) authPayload.token = token
-    if (!hasAuthenticatedSession && isGuest) authPayload.isGuest = true
-
-    const queryPayload: Record<string, string> = {}
-    if (token) queryPayload.token = String(token)
-    if (!hasAuthenticatedSession && isGuest) queryPayload.isGuest = 'true'
-
-    // Re-create socket when disconnected or absent.
-    if (!socket || socket.disconnected) {
-      socket = io(url, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        auth: authPayload,
-        query: queryPayload,
-      })
-    }
-
+    let cancelled = false
     const handleConnect = () => {
       clientLogger.log('✅ Socket connected for lobby list')
       socket?.emit('join-lobby-list')
@@ -225,19 +201,54 @@ export default function LobbyListPage() {
       clientLogger.log('❌ Socket disconnected from lobby list')
     }
 
-    socket.off('connect', handleConnect)
-    socket.off('lobby-list-update', handleLobbyListUpdate)
-    socket.off('disconnect', handleDisconnect)
+    const initSocket = async () => {
+      const url = getBrowserSocketUrl()
+      clientLogger.log('🔌 Connecting to Socket.IO for lobby list:', url)
 
-    socket.on('connect', handleConnect)
-    socket.on('lobby-list-update', handleLobbyListUpdate)
-    socket.on('disconnect', handleDisconnect)
+      const useGuestAuth = !hasAuthenticatedSession && isGuest
+      const socketAuth = await resolveSocketClientAuth({
+        isGuest: useGuestAuth,
+        guestToken: useGuestAuth ? guestToken : null,
+      })
 
-    if (socket.connected) {
-      handleConnect()
+      if (!socketAuth) {
+        clientLogger.warn('Skipping lobby list socket connection: auth payload unavailable')
+        return
+      }
+
+      if (cancelled) {
+        return
+      }
+
+      // Re-create socket when disconnected or absent.
+      if (!socket || socket.disconnected) {
+        socket = io(url, {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 10,
+          reconnectionDelay: 1000,
+          auth: socketAuth.authPayload,
+          query: socketAuth.queryPayload,
+        })
+      }
+
+      socket.off('connect', handleConnect)
+      socket.off('lobby-list-update', handleLobbyListUpdate)
+      socket.off('disconnect', handleDisconnect)
+
+      socket.on('connect', handleConnect)
+      socket.on('lobby-list-update', handleLobbyListUpdate)
+      socket.on('disconnect', handleDisconnect)
+
+      if (socket.connected) {
+        handleConnect()
+      }
     }
 
+    void initSocket()
+
     return () => {
+      cancelled = true
       if (socket) {
         clientLogger.log('🔌 Disconnecting socket from lobby list')
         if (socket.connected) {

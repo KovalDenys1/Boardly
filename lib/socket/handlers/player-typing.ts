@@ -1,24 +1,14 @@
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
-import { parsePlayerTypingInput } from './payload-validation'
+import { PlayerTypingSocket } from './types'
 
 interface SocketMonitorLike {
   trackEvent: (event: string) => void
 }
 
-interface PlayerTypingSocket {
-  id: string
-  data: {
-    user: {
-      id: string
-      username?: string | null
-      email?: string | null
-    }
-    authorizedLobbies?: Set<string>
-  }
-  rooms: Set<string>
-  to: (room: string) => {
-    emit: (event: string, payload: unknown) => void
-  }
+interface PlayerTypingPayload {
+  lobbyCode: string
+  userId: string
+  username: string
 }
 
 interface PlayerTypingDependencies {
@@ -34,19 +24,14 @@ export function createPlayerTypingHandler({
   isSocketAuthorizedForLobby,
   getUserDisplayName,
 }: PlayerTypingDependencies) {
-  return (socket: PlayerTypingSocket, data: unknown) => {
+  return (socket: PlayerTypingSocket, data: PlayerTypingPayload) => {
     socketMonitor.trackEvent('player-typing')
 
     if (!checkRateLimit(socket.id)) {
       return
     }
 
-    const parsedData = parsePlayerTypingInput(data)
-    if (!parsedData) {
-      return
-    }
-
-    const normalizedLobbyCode = parsedData.lobbyCode.trim()
+    const normalizedLobbyCode = typeof data?.lobbyCode === 'string' ? data.lobbyCode.trim() : ''
     if (!normalizedLobbyCode) {
       return
     }

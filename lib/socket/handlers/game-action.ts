@@ -1,45 +1,20 @@
 import { GameActionPayload } from '../../../types/socket-events'
-import { parseGameActionInput } from './payload-validation'
-
-type LogContext = Record<string, unknown>
+import { EmitSocketErrorFn, GameActionSocket } from './types'
 
 type LoggerLike = {
-  warn: (message: string, context?: LogContext) => void
-  error: (message: string, error?: Error, context?: LogContext) => void
+  warn: (message: string, context?: Record<string, unknown>) => void
+  error: (message: string, error?: Error, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
   trackEvent: (event: string) => void
 }
 
-interface GameActionSocketUser {
-  id: string
-}
-
-interface GameActionSocket {
-  id: string
-  data: {
-    user?: GameActionSocketUser
-    authorizedLobbies?: Set<string>
-  }
-  rooms: Set<string>
-  emit: (event: string, payload: unknown) => void
-  to: (room: string) => {
-    emit: (event: string, payload: unknown) => void
-  }
-}
-
 interface GameActionDependencies {
   logger: LoggerLike
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (
-    socket: GameActionSocket,
-    code: string,
-    message: string,
-    translationKey?: string,
-    details?: unknown
-  ) => void
+  emitError: EmitSocketErrorFn
   isSocketAuthorizedForLobby: (socket: GameActionSocket, lobbyCode: string) => boolean
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
   emitGameUpdateToOthers: (
@@ -68,14 +43,13 @@ export function createGameActionHandler({
       return
     }
 
-    const parsedData = parseGameActionInput(data)
-    if (!parsedData || !parsedData.lobbyCode || !parsedData.action) {
+    if (!data?.lobbyCode || !data?.action || typeof data.lobbyCode !== 'string') {
       logger.warn('Invalid game-action data received', { socketId: socket.id })
       emitError(socket, 'INVALID_ACTION_DATA', 'Invalid action data', 'errors.invalidActionData')
       return
     }
 
-    const normalizedLobbyCode = parsedData.lobbyCode.trim()
+    const normalizedLobbyCode = data.lobbyCode.trim()
     if (!normalizedLobbyCode) {
       emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
       return
@@ -92,38 +66,32 @@ export function createGameActionHandler({
         return
       }
 
-      const userId = socket.data.user?.id
-      if (!userId) {
-        throw new Error('Socket user is missing')
-      }
-
-      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, userId)
+      const isLobbyPlayer = await isUserActivePlayerInLobby(normalizedLobbyCode, socket.data.user.id)
       if (!isLobbyPlayer) {
         logger.warn('Rejected game-action from non-member', {
           socketId: socket.id,
           lobbyCode: normalizedLobbyCode,
-          userId,
+          userId: socket.data.user.id,
         })
         emitError(socket, 'LOBBY_ACCESS_DENIED', 'Not authorized for this lobby', 'errors.lobbyAccessDenied')
         return
       }
 
       const validActions = ['state-change']
-      if (typeof parsedData.action !== 'string' || !validActions.includes(parsedData.action)) {
-        logger.warn('Invalid action type', { action: parsedData.action, socketId: socket.id })
+      if (!validActions.includes(data.action)) {
+        logger.warn('Invalid action type', { action: data.action, socketId: socket.id })
         return
       }
 
       emitGameUpdateToOthers(socket, normalizedLobbyCode, {
-        action: parsedData.action,
-        payload: parsedData.payload,
+        action: data.action,
+        payload: data.payload,
         lobbyCode: normalizedLobbyCode,
       })
 
       notifyLobbyListUpdate()
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      logger.error('Error handling game-action', err, {
+    } catch (error) {
+      logger.error('Error handling game-action', error as Error, {
         socketId: socket.id,
         lobbyCode: normalizedLobbyCode,
         userId: socket.data.user?.id,
@@ -132,4 +100,3 @@ export function createGameActionHandler({
     }
   }
 }
-

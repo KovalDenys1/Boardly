@@ -102,7 +102,6 @@ export function createSocketAuthMiddleware({
     try {
       logger.info('Socket authentication attempt', {
         hasToken: !!token,
-        tokenPreview: token ? String(token).substring(0, 20) + '...' : 'none',
         isGuest,
         authKeys: Object.keys(socket.handshake.auth),
         queryKeys: Object.keys(socket.handshake.query),
@@ -171,10 +170,7 @@ export function createSocketAuthMiddleware({
           }
           logger.info('JWT token verified successfully', { userId })
         } catch (jwtError) {
-          logger.warn('Socket token verification failed, trying session cookie auth', {
-            tokenPreview: String(token).substring(0, 20) + '...',
-            tokenLength: String(token).length,
-          })
+          logger.warn('Socket token verification failed, trying session cookie auth')
         }
       }
 
@@ -207,10 +203,7 @@ export function createSocketAuthMiddleware({
       if (!user) {
         logger.warn('Socket connection rejected: User not found in database', {
           userId,
-          tokenPreview: String(token).substring(0, 20) + '...',
           isGuest,
-          tokenLength: String(token).length,
-          tokenType: typeof token,
         })
         return next(new Error('User not found'))
       }
@@ -229,4 +222,3 @@ export function createSocketAuthMiddleware({
     }
   }
 }
-

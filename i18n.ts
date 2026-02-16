@@ -6,17 +6,67 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { locales, defaultLocale, availableLocales } from './locales'
 import type { Locale } from './locales'
 
+type TranslationRecord = Record<string, unknown>
+
+function deepMergeWithFallback(
+  fallback: TranslationRecord,
+  locale: TranslationRecord
+): TranslationRecord {
+  const merged: TranslationRecord = { ...fallback }
+
+  for (const [key, value] of Object.entries(locale)) {
+    const fallbackValue = fallback[key]
+
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      fallbackValue &&
+      typeof fallbackValue === 'object' &&
+      !Array.isArray(fallbackValue)
+    ) {
+      merged[key] = deepMergeWithFallback(
+        fallbackValue as TranslationRecord,
+        value as TranslationRecord
+      )
+      continue
+    }
+
+    merged[key] = value
+  }
+
+  return merged
+}
+
+const fallbackLocale = locales.en as unknown as TranslationRecord
+const resources = {
+  en: { translation: fallbackLocale },
+  uk: {
+    translation: deepMergeWithFallback(
+      fallbackLocale,
+      locales.uk as unknown as TranslationRecord
+    ),
+  },
+  no: {
+    translation: deepMergeWithFallback(
+      fallbackLocale,
+      locales.no as unknown as TranslationRecord
+    ),
+  },
+  ru: {
+    translation: deepMergeWithFallback(
+      fallbackLocale,
+      locales.ru as unknown as TranslationRecord
+    ),
+  },
+}
+
 // Initialize i18next
 i18n
   .use(LanguageDetector) // Detect user language
   .use(initReactI18next) // Pass i18n instance to react-i18next
   .init({
-    resources: {
-      en: { translation: locales.en },
-      uk: { translation: locales.uk },
-      no: { translation: locales.no },
-      ru: { translation: locales.ru },
-    },
+    resources,
     fallbackLng: defaultLocale,
     supportedLngs: availableLocales,
     interpolation: {
@@ -36,5 +86,4 @@ i18n
 export default i18n
 export { availableLocales, defaultLocale }
 export type { Locale }
-
 

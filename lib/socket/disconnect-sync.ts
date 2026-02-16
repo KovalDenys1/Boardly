@@ -82,7 +82,7 @@ interface DisconnectSyncOptions {
   prisma: PrismaLike
   logger: LoggerLike
   emitWithMetadata: (room: string, event: string, data: unknown) => void
-  hasAnyActiveSocketForUser: (userId: string) => boolean
+  hasAnyActiveSocketForUserInLobby: (userId: string, lobbyCode: string) => boolean
   disconnectGraceMs: number
   connectionStateSyncMaxRetries?: number
 }
@@ -100,7 +100,7 @@ export function createDisconnectSyncManager({
   prisma,
   logger,
   emitWithMetadata,
-  hasAnyActiveSocketForUser,
+  hasAnyActiveSocketForUserInLobby,
   disconnectGraceMs,
   connectionStateSyncMaxRetries = 3,
 }: DisconnectSyncOptions) {
@@ -240,6 +240,13 @@ export function createDisconnectSyncManager({
         isActive,
       })
     }
+
+    logger.warn('Connection state sync failed after max retries', {
+      lobbyCode,
+      userId,
+      isActive,
+      maxRetries: connectionStateSyncMaxRetries,
+    })
 
     return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
   }
@@ -430,7 +437,7 @@ export function createDisconnectSyncManager({
     const timeoutId = setTimeout(() => {
       pendingAbruptDisconnects.delete(key)
 
-      if (hasAnyActiveSocketForUser(user.id)) {
+      if (hasAnyActiveSocketForUserInLobby(user.id, lobbyCode)) {
         logger.info('Skipping delayed disconnect sync because user reconnected', {
           lobbyCode,
           userId: user.id,
@@ -438,7 +445,14 @@ export function createDisconnectSyncManager({
         return
       }
 
-      void handleAbruptDisconnectForLobby(lobbyCode, user)
+      void handleAbruptDisconnectForLobby(lobbyCode, user).catch((error) => {
+        const err = error instanceof Error ? error : new Error(String(error))
+        logger.warn('Delayed disconnect sync failed', {
+          lobbyCode,
+          userId: user.id,
+          error: err.message,
+        })
+      })
     }, disconnectGraceMs)
 
     pendingAbruptDisconnects.set(key, timeoutId)
@@ -449,10 +463,17 @@ export function createDisconnectSyncManager({
     })
   }
 
+  function dispose() {
+    for (const timer of pendingAbruptDisconnects.values()) {
+      clearTimeout(timer)
+    }
+    pendingAbruptDisconnects.clear()
+  }
+
   return {
     clearPendingAbruptDisconnect,
     scheduleAbruptDisconnectForLobby,
     syncPlayerConnectionStateInLobby,
+    dispose,
   }
 }
-

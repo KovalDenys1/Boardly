@@ -19,7 +19,7 @@ describe('createConnectionLifecycleHandlers', () => {
         markUserOffline: jest.fn(),
       },
       clearSocketRateLimit: jest.fn(),
-      hasAnotherActiveSocketForUser: jest.fn().mockReturnValue(false),
+      hasAnotherActiveSocketForUserInLobby: jest.fn().mockReturnValue(false),
       getLobbyCodesFromRooms: jest.fn().mockReturnValue([]),
       disconnectSyncManager: {
         scheduleAbruptDisconnectForLobby: jest.fn(),
@@ -52,7 +52,17 @@ describe('createConnectionLifecycleHandlers', () => {
 
     handleDisconnecting(socket)
 
-    expect(deps.hasAnotherActiveSocketForUser).toHaveBeenCalledWith('user-1', 'socket-1')
+    expect(deps.hasAnotherActiveSocketForUserInLobby).toHaveBeenCalledTimes(2)
+    expect(deps.hasAnotherActiveSocketForUserInLobby).toHaveBeenCalledWith(
+      'user-1',
+      'socket-1',
+      'ABCD'
+    )
+    expect(deps.hasAnotherActiveSocketForUserInLobby).toHaveBeenCalledWith(
+      'user-1',
+      'socket-1',
+      'WXYZ'
+    )
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledTimes(2)
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledWith(
       'ABCD',
@@ -77,19 +87,19 @@ describe('createConnectionLifecycleHandlers', () => {
     const { handleDisconnecting } = createConnectionLifecycleHandlers(deps)
     const socket = createSocket({
       data: {
-        user: {},
+        user: {} as any,
       },
     })
 
     handleDisconnecting(socket)
 
-    expect(deps.hasAnotherActiveSocketForUser).not.toHaveBeenCalled()
+    expect(deps.hasAnotherActiveSocketForUserInLobby).not.toHaveBeenCalled()
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).not.toHaveBeenCalled()
   })
 
-  it('skips disconnect sync when another socket for user is active', () => {
+  it('skips disconnect sync when another socket for user is active in the same lobby', () => {
     const deps = createDeps({
-      hasAnotherActiveSocketForUser: jest.fn().mockReturnValue(true),
+      hasAnotherActiveSocketForUserInLobby: jest.fn().mockReturnValue(true),
       getLobbyCodesFromRooms: jest.fn().mockReturnValue(['ABCD']),
     })
     const { handleDisconnecting } = createConnectionLifecycleHandlers(deps)
@@ -98,11 +108,34 @@ describe('createConnectionLifecycleHandlers', () => {
     handleDisconnecting(socket)
 
     expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).not.toHaveBeenCalled()
+    expect(deps.hasAnotherActiveSocketForUserInLobby).toHaveBeenCalledWith('user-1', 'socket-1', 'ABCD')
     expect(deps.logger.info).toHaveBeenCalledWith(
-      'Skipping disconnect state sync because another socket is active',
+      'Skipping disconnect state sync because another socket is active in lobby',
       expect.objectContaining({
         userId: 'user-1',
         socketId: 'socket-1',
+        lobbyCode: 'ABCD',
+      })
+    )
+  })
+
+  it('schedules disconnect sync only for lobbies where user has no other active socket', () => {
+    const deps = createDeps({
+      hasAnotherActiveSocketForUserInLobby: jest
+        .fn()
+        .mockImplementation((_userId: string, _socketId: string, lobbyCode: string) => lobbyCode === 'ABCD'),
+      getLobbyCodesFromRooms: jest.fn().mockReturnValue(['ABCD', 'WXYZ']),
+    })
+    const { handleDisconnecting } = createConnectionLifecycleHandlers(deps)
+    const socket = createSocket()
+
+    handleDisconnecting(socket)
+
+    expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledTimes(1)
+    expect(deps.disconnectSyncManager.scheduleAbruptDisconnectForLobby).toHaveBeenCalledWith(
+      'WXYZ',
+      expect.objectContaining({
+        id: 'user-1',
       })
     )
   })

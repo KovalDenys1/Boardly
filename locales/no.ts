@@ -14,7 +14,7 @@ const no = {
     previous: 'Forrige',
     submit: 'Send inn',
     search: 'Søk',
-    filter: 'Filter',
+    filter: 'Filtrer',
     sort: 'Sorter',
     all: 'Alle',
     or: 'eller',
@@ -22,10 +22,13 @@ const no = {
     deleting: 'Sletter...',
     goHome: 'Gå til hjem',
     optional: 'valgfritt',
+    coming_soon: 'Kommer snart',
+    rules: 'Regler',
+    in_development: 'Dette spillet er fortsatt under utvikling'
   },
   breadcrumbs: {
     home: 'Hjem',
-    games: 'Spill',
+    games: 'Spill'
   },
   lobby: {
     title: 'Spillobby',
@@ -67,12 +70,12 @@ const no = {
       sent: 'Inviterte {{count}} venn!',
       sent_other: 'Inviterte {{count}} venner!',
       linkCopied: 'Lobbylenke kopiert! Send den til {{count}} venn',
-      linkCopied_other: 'Lobbylenke kopiert! Send den til {{count}} venner',
+      linkCopied_other: 'Lobbylenke kopiert! Send den til {{count}} venner'
     },
     filters: {
       title: 'Filtre',
       gameType: 'Spilltype',
-      status: 'Status',
+      status: 'Lobbystatus',
       playerCount: 'Antall spillere',
       minPlayers: 'Min spillere',
       maxPlayers: 'Maks spillere',
@@ -80,7 +83,7 @@ const no = {
       searchPlaceholder: 'Skriv for å søke...',
       showFilters: 'Vis filtre',
       hideFilters: 'Skjul filtre',
-      clearAll: 'Fjern alle',
+      clearAll: 'Fjern alle'
     },
     sort: {
       title: 'Sorter etter',
@@ -88,19 +91,19 @@ const no = {
       playerCount: 'Antall spillere',
       name: 'Navn',
       asc: 'Stigende',
-      desc: 'Synkende',
+      desc: 'Synkende'
     },
     stats: {
       total: 'Totalt lobbyer',
       waiting: 'Venter på spillere',
       playing: 'Spiller nå',
-      players: 'Totalt spillere',
+      players: 'Totalt spillere'
     },
     status: {
       all: 'Alle lobbyer',
       waiting: 'Venter',
       playing: 'Spiller',
-      finished: 'Ferdig',
+      finished: 'Ferdig'
     },
     players: {
       title: 'Spillere',
@@ -108,7 +111,7 @@ const no = {
       fullList: 'Alle spillere',
       position: 'Posisjon',
       ready: 'Klar',
-      viewCards: 'Se kort',
+      viewCards: 'Se kort'
     },
     playersSection: {
       title: 'Spillere',
@@ -116,7 +119,7 @@ const no = {
       fullList: 'Alle spillere',
       position: 'Posisjon',
       ready: 'Klar',
-      viewCards: 'Se kort',
+      viewCards: 'Se kort'
     },
     create: {
       title: 'Opprett lobby',
@@ -124,6 +127,8 @@ const no = {
       lobbyNamePlaceholder: 'f.eks., Fredagskveldsspill',
       gameType: 'Spilltype',
       maxPlayers: 'Maks spillere',
+      player: 'Spiller',
+      players: 'Spillere',
       turnTimer: 'Turgrense',
       turnTimerHelper: 'Hver spiller har så mye tid til å fullføre sin tur',
       gameMode: 'Spillmodus',
@@ -146,17 +151,17 @@ const no = {
         title: 'Raske tips',
         autoAdd: 'Du blir automatisk lagt til som den første spilleren',
         shareCode: 'Del lobbykoden med venner for å invitere dem',
-        startReady: 'Start spillet når alle er klare!',
+        startReady: 'Start spillet når alle er klare!'
       },
       preview: {
         players: '{{count}} spillere',
         private: 'Privat',
         lobbyName: 'Lobbynavn:',
-        noName: '—',
+        noName: 'Ikke angitt'
       },
       errors: {
-        failedToCreate: 'Kunne ikke opprette lobby',
-      },
+        failedToCreate: 'Kunne ikke opprette lobby'
+      }
     },
     joinSection: {
       title: 'Bli med i lobby',
@@ -167,17 +172,17 @@ const no = {
       join: 'Bli med i lobby',
       invalidCode: 'Ugyldig lobbykode',
       lobbyFull: 'Lobbyen er full',
-      wrongPassword: 'Feil passord',
+      wrongPassword: 'Feil passord'
     },
     noLobbiesDescriptionSection: {
       title: 'Ingen aktive lobbyer',
-      description: 'Bli den første til å opprette en og begynne å spille!',
+      description: 'Bli den første til å opprette en og begynne å spille!'
     },
     quick: {
       join: 'Raskt bli med',
       description: 'Har du en lobbykode? Skriv den inn nedenfor for å bli med umiddelbart!',
       placeholder: 'Skriv inn 4-sifret kode (f.eks. AB12)',
-      button: 'Bli med',
+      button: 'Bli med'
     },
     game: {
       waitingForPlayers: 'Venter på spillere...',
@@ -193,12 +198,36 @@ const no = {
       playAgain: 'Spill igjen',
       soundEnabled: 'Lyd aktivert',
       soundDisabled: 'Lyd deaktivert',
+      code: 'Spillkode',
+      you: 'Du',
+      opponent: 'Motstander',
+      makeyourChoice: 'Gjør ditt valg',
+      waitingForOpponent: 'Venter på at motstanderen skal velge...',
+      best_of: 'Best av',
+      you_won: '🎉 Du vant!',
+      opponent_won: '😔 Motstanderen vant',
+      final_score: 'Sluttresultat',
+      round_won: 'Du vant denne runden!',
+      round_lost: 'Du tapte denne runden',
+      draw: 'Uavgjort - ingen poeng',
+      next_round: 'Neste runde',
+      back_to_lobby: 'Tilbake til lobbyen',
+      round_history: 'Rundehistorikk',
+      win: 'Seier',
+      loss: 'Tap',
+      finished: 'Spillet er ferdig',
+      move_submitted: 'Trekk sendt'
+    },
+    choice: {
+      rock: 'Stein',
+      paper: 'Papir',
+      scissors: 'Saks'
     },
     chat: {
       title: 'Lobbychat',
-      open: 'Chat',
+      open: 'Åpne chat',
       placeholder: 'Skriv en melding... 😊',
-      send: 'Send',
+      send: 'Send melding',
       typing: 'Noen skriver...',
       clear: 'Tøm chat',
       minimize: 'Minimer chat',
@@ -210,15 +239,15 @@ const no = {
       openChat: 'Åpne chat. {{unread}}',
       noUnread: 'Ingen uleste meldinger',
       sendHelp: 'Trykk Enter for å sende',
-      maxLength: '{{current}}/{{max}}',
-    },
+      maxLength: '{{current}} / {{max}}'
+    }
   },
   connection: {
     reconnecting: 'Kobler til på nytt...',
     attempt: 'Forsøk {{count}}',
     disconnected: 'Tilkobling tapt',
     checkNetwork: 'Vennligst sjekk nettverkstilkoblingen din',
-    coldStart: 'Serveren starter opp... Dette kan ta opptil ett minutt.',
+    coldStart: 'Serveren starter opp... Dette kan ta opptil ett minutt.'
   },
   header: {
     home: 'Hjem',
@@ -228,7 +257,7 @@ const no = {
     login: 'Logg inn',
     register: 'Registrer',
     logout: 'Logg ut',
-    menu: 'Meny',
+    menu: 'Meny'
   },
   home: {
     title: 'Spill brettspill på nett med venner',
@@ -242,44 +271,44 @@ const no = {
       title: 'Hvorfor velge Boardly?',
       realTime: {
         title: 'Sanntidsspilling',
-        description: 'Opplev jevn, lag-fri spilling med WebSocket-teknologi',
+        description: 'Opplev jevn, lag-fri spilling med WebSocket-teknologi'
       },
       noDownload: {
         title: 'Ingen nedlasting kreves',
-        description: 'Spill direkte i nettleseren din - ingen installasjon nødvendig',
+        description: 'Spill direkte i nettleseren din - ingen installasjon nødvendig'
       },
       multiplayer: {
         title: 'Flerspillermoro',
-        description: 'Spill med 2-8 venner i private eller offentlige lobbyer',
+        description: 'Spill med 2-8 venner i private eller offentlige lobbyer'
       },
       aiOpponents: {
         title: 'AI-motstandere',
-        description: 'Øv med smarte boter når venner ikke er tilgjengelige',
+        description: 'Øv med smarte boter når venner ikke er tilgjengelige'
       },
       freeToPlay: {
         title: 'Gratis å spille',
-        description: 'Alle spill er helt gratis, ingen skjulte avgifter',
+        description: 'Alle spill er helt gratis, ingen skjulte avgifter'
       },
       responsive: {
         title: 'Mobilvennlig',
-        description: 'Optimalisert for alle enheter - PC, nettbrett og mobil',
-      },
+        description: 'Optimalisert for alle enheter - PC, nettbrett og mobil'
+      }
     },
     howItWorks: {
       title: 'Slik fungerer det',
       step1: {
         title: 'Opprett eller bli med',
-        description: 'Start en ny lobby eller bli med i eksisterende med en kode',
+        description: 'Start en ny lobby eller bli med i eksisterende med en kode'
       },
       step2: {
         title: 'Inviter venner',
-        description: 'Del lobbykoden med vennene dine',
+        description: 'Del lobbykoden med vennene dine'
       },
       step3: {
         title: 'Spill sammen',
-        description: 'Nyt sanntidsspilling med vennene dine',
-      },
-    },
+        description: 'Nyt sanntidsspilling med vennene dine'
+      }
+    }
   },
   games: {
     title: 'Tilgjengelige spill',
@@ -291,10 +320,15 @@ const no = {
     playNow: 'Spill nå',
     viewLobbies: 'Se lobbyer',
     yahtzee: {
-      name: 'Yahtzee',
-      title: 'Yahtzee',
+      name: 'Yatzy',
+      title: 'Yatzy',
       description: 'Klassisk terningspill med strategisk poengberegning. Kast fem terninger for å lage kombinasjoner og score stort!',
-      difficulty: 'Lett',
+      difficulty: 'Lett'
+    },
+    guess_the_spy: {
+      name: 'Gjett spionen',
+      description: 'Sosial deduksjonsspill der én spiller er spionen. Finn spionen før tiden går ut!',
+      difficulty: 'Middels'
     },
     spy: {
       name: 'Gjett spionen',
@@ -322,9 +356,9 @@ const no = {
         host: 'Vert',
         waiting: 'Venter',
         playing: 'Spiller',
-        full: 'Full',
-        newGame: 'NYTT SPILL',
-      },
+        full: 'Fullt',
+        newGame: 'NYTT SPILL'
+      }
     },
     tictactoe: {
       name: 'Tre på rad',
@@ -353,13 +387,29 @@ const no = {
         waiting: 'Venter',
         playing: 'Spiller',
         full: 'Fullt',
-        newGame: 'NYTT SPILL',
+        newGame: 'NYTT SPILL'
       },
+      game: {
+        lobbyNotFoundTitle: 'Lobby ikke funnet',
+        lobbyNotFoundDescription: 'Lobbyen du leter etter finnes ikke eller har blitt stengt.',
+        gameNotStartedTitle: 'Spillet har ikke startet',
+        gameNotStartedDescription: 'Spillet har ikke startet ennå.',
+        backToLobbies: 'Tilbake til lobbyer',
+        backToGames: 'Tilbake til spill',
+        gameWon: '🎉 Vi har en vinner! 🎉',
+        draw: '🤝 Uavgjort!',
+        unknownPlayer: 'Ukjent',
+        currentTurn: '🎮 Nåværende tur',
+        gameActions: 'Spillhandlinger',
+        playAgain: 'Spill igjen',
+        errorTitle: 'Spillfeil',
+        errorDescription: 'Noe gikk galt med spillobbyen. Prøv igjen.',
+      }
     },
     memory: {
-      name: 'Memory',
+      name: 'Hukommelse',
       description: 'Finn alle matchende par. Test hukommelsen din!',
-      difficulty: 'Lett',
+      difficulty: 'Lett'
     },
     rps: {
       name: 'Stein saks papir',
@@ -388,29 +438,86 @@ const no = {
         waiting: 'Venter',
         playing: 'Spiller',
         full: 'Fullt',
-        newGame: 'NYTT SPILL',
-      },
+        newGame: 'NYTT SPILL'
+      }
+    },
+    rock_paper_scissors: {
+      name: 'Stein, saks, papir',
+      description: 'Samtidig valgspill der stein slår saks, saks slår papir, og papir slår stein',
+      difficulty: 'Lett',
+      rule_1: 'Begge spillerne velger stein, papir eller saks samtidig',
+      rule_2: 'Stein slår saks, saks slår papir, papir slår stein',
+      rule_3: 'Hvis begge velger det samme, blir runden uavgjort og spilles om igjen',
+      rule_4: 'Best-av-3 eller best-av-5-format (bestemmes ved spillstart)',
+      rule_5: 'Første spiller som vinner flest runder vinner spillet',
+      feature_quick: 'Raske runder',
+      feature_players: '2 spillere',
+      feature_strategy: 'Ren strategi',
+      feature_instant: 'Øyeblikkelig resultat'
     },
     alias: {
-      name: 'Alias',
+      name: 'Alias-spill',
       description: 'Forklar ord til laget ditt uten å bruke ordet selv!',
-      difficulty: 'Middels',
+      difficulty: 'Middels'
     },
     wordsmines: {
       name: 'Ord-miner',
       description: 'Unngå minene og gjett de riktige ordene!',
-      difficulty: 'Middels',
+      difficulty: 'Middels'
     },
     anagrams: {
       name: 'Anagrammer',
       description: 'Omorganiser bokstavene for å finne det skjulte ordet!',
-      difficulty: 'Middels',
+      difficulty: 'Middels'
     },
     crocodile: {
       name: 'Krokodille',
       description: 'Spill ut eller tegn ordet for at laget ditt skal gjette!',
-      difficulty: 'Middels',
-    },
+      difficulty: 'Middels'
+    }
+  },
+  game: {
+    ui: {
+      yourTurn: 'Din tur',
+      hurry: 'Skynd deg!',
+      waiting: 'Venter...',
+      startingGame: 'Starter spillet...',
+      readyToPlay: 'Klar til å spille?',
+      playersInLobby: '{{count}} spiller i lobbyen',
+      playersInLobby_other: '{{count}} spillere i lobbyen',
+      addBotOrWait: 'Legg til en bot eller vent på at andre blir med',
+      readyToStart: '✅ Klar til å starte spillet!',
+      playersInLobbyTitle: 'Spillere i lobbyen',
+      preparingDice: '🎲 Forbereder spillet...',
+      addingBot: '🤖 Legger til bot-spiller...',
+      willTakeAMoment: 'Dette tar bare et øyeblikk',
+      aiBot: '🤖 AI-bot',
+      player: 'Spiller',
+      you: '(Du)',
+      round: 'Runde',
+      turn: 'Tur',
+      leave: 'Forlat',
+      leaveConfirm: 'Er du sikker på at du vil forlate spillet?',
+      soundOn: '🔊 Lyd på',
+      soundOff: '🔇 Lyd av',
+      enableSound: 'Aktiver lydeffekter',
+      disableSound: 'Deaktiver lydeffekter',
+      playerFallback: 'Spiller',
+      startGame: 'Start spill',
+      addBotPlayer: 'Legg til bot-spiller',
+      inviteFriends: 'Inviter venner',
+      lobbyFull: 'Lobbyen er full',
+      addAiOpponent: 'Legg til AI-motstander',
+      inviteFriendsToJoin: 'Inviter vennene dine til å bli med',
+      botAutoAddTip: 'En bot blir automatisk lagt til hvis du starter alene',
+      tip: 'Tips',
+      waitingForHost: 'Venter på at verten skal starte...',
+      host: 'Vert',
+      perTurn: 'per tur',
+      timeLimit: 'Tidsgrense',
+      gameFinished: 'Spillet er ferdig!',
+      score: 'Poeng'
+    }
   },
   yahtzee: {
     categories: {
@@ -423,24 +530,26 @@ const no = {
       threeOfKind: 'Tre like',
       fourOfKind: 'Fire like',
       fullHouse: 'Hus',
+      onePair: 'Ett par',
+      twoPairs: 'To par',
       smallStraight: 'Liten straight',
       largeStraight: 'Stor straight',
-      yahtzee: 'Yahtzee',
+      yahtzee: 'Yatzy',
       chance: 'Sjanse',
-      bonus: 'Bonus',
+      bonus: 'Bonuspoeng',
       upperTotal: 'Øvre total',
       lowerTotal: 'Nedre total',
       grandTotal: 'Totalsum',
       upperSection: 'Øvre seksjon',
-      lowerSection: 'Nedre seksjon',
+      lowerSection: 'Nedre seksjon'
     },
     actions: {
       roll: 'Kast terninger',
-      hold: 'Hold',
+      hold: 'Behold',
       score: 'Poeng',
       rollsLeft: 'Kast igjen',
       myCards: 'Mine kort',
-      currentTurn: 'Nåværende tur',
+      currentTurn: 'Nåværende tur'
     },
     messages: {
       yourTurn: 'Din tur!',
@@ -455,8 +564,8 @@ const no = {
         yahtzee: '🎉 YAHTZEE! Alle fem terninger matcher!',
         largeStraight: '🎯 Stor straight! Fem på rad!',
         fullHouse: '🏠 Hus! Tre like + par!',
-        fourOfKind: '💎 Fire like! Fire matchende terninger!',
-      },
+        fourOfKind: '💎 Fire like! Fire matchende terninger!'
+      }
     },
     results: {
       gameOver: 'Spillet er over!',
@@ -470,17 +579,19 @@ const no = {
       lowerSection: 'Nedre seksjon',
       finalStandings: 'Sluttresultat',
       you: '(Du)',
-      bonus: '(+{{count}} bonus)',
+      bonus: '(+{{count}} bonuspoeng)',
       upper: 'Øvre:',
       lower: 'Nedre:',
       playAgain: 'Spill igjen',
-      backToLobbies: 'Tilbake til lobbyer',
+      requestRematch: 'Be om revansj',
+      hostCanStartNextRound: 'Bare lobbyverten kan starte neste runde.',
+      backToLobbies: 'Tilbake til lobbyer'
     },
     bot: {
       thinking: '🤖 Bot tenker...',
       rolling: 'Kaster terninger...',
       holding: 'Holder terninger...',
-      scoring: 'Velger kategori...',
+      scoring: 'Velger kategori...'
     },
     ui: {
       yourTurn: 'Din tur',
@@ -488,8 +599,8 @@ const no = {
       waiting: 'Venter...',
       rollDice: 'Kast',
       rolling: 'Kaster...',
-      rollsLeft: '{{count}}/3',
-      timeLeft: '{{time}}s',
+      rollsLeft: '{{count}} / 3',
+      timeLeft: '{{time}} s',
       startingGame: 'Starter spill...',
       readyToPlay: 'Klar til å spille Yahtzee?',
       rollTheDice: 'Kast terningene, score stort og ha det gøy!',
@@ -524,11 +635,11 @@ const no = {
       waitingForHost: 'Venter på at verten skal starte...',
       host: 'Vert',
       perTurn: 'per tur',
-      timeLimit: 'Tidsgrense',
-    },
+      timeLimit: 'Tidsgrense'
+    }
   },
   chat: {
-    open: 'Chat',
+    open: 'Åpne chat',
     title: 'Spillchat',
     openChat: 'Åpne chat',
     unread: 'uleste',
@@ -537,10 +648,10 @@ const no = {
     minimize: 'Minimer chat',
     typing: 'Noen skriver...',
     placeholder: 'Skriv en melding... 😊',
-    send: 'Send',
+    send: 'Send melding',
     noMessages: 'Ingen meldinger ennå',
     startConversation: 'Start samtalen!',
-    sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje',
+    sendHelp: 'Trykk Enter for å sende • Shift+Enter for ny linje'
   },
   auth: {
     login: {
@@ -561,7 +672,7 @@ const no = {
       loggingIn: 'Logger inn...',
       rememberMe: 'Husk meg',
       invited: 'Du er invitert til et spill!',
-      loginToJoin: 'Logg inn for å bli med i lobbyen',
+      loginToJoin: 'Logg inn for å bli med i lobbyen'
     },
     register: {
       title: 'Opprett konto',
@@ -592,7 +703,7 @@ const no = {
       agreeToTerms: 'Jeg godtar',
       termsOfService: 'Vilkårene for bruk',
       privacyPolicy: 'Personvernerklæringen',
-      mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen',
+      mustAgreeToTerms: 'Du må godta vilkårene for bruk og personvernerklæringen'
     },
     forgotPassword: {
       title: 'Glemt passord?',
@@ -609,7 +720,7 @@ const no = {
       checkSpam: 'Fikk du ikke e-post? Sjekk spam-mappen din eller prøv igjen.',
       sendAnother: 'Send en ny e-post',
       remember: 'Husker du passordet ditt?',
-      loginLink: 'Logg inn',
+      loginLink: 'Logg inn'
     },
     resetPassword: {
       title: 'Opprett nytt passord',
@@ -620,7 +731,7 @@ const no = {
       submit: 'Tilbakestill passord',
       success: 'Passord tilbakestilt vellykket!',
       error: 'Kunne ikke tilbakestille passord',
-      invalidToken: 'Ugyldig eller utløpt tilbakestillingslenke',
+      invalidToken: 'Ugyldig eller utløpt tilbakestillingslenke'
     },
     verifyEmail: {
       title: 'Bekreft e-posten din',
@@ -638,7 +749,7 @@ const no = {
       resendSuccess: 'Bekreftelsese-post sendt! Sjekk innboksen din.',
       resendError: 'Kunne ikke sende bekreftelsese-post på nytt',
       loginRequired: 'Vennligst logg inn for å sende bekreftelsese-post på nytt',
-      backToHome: 'Tilbake til hjem',
+      backToHome: 'Tilbake til hjem'
     },
     password: {
       veryWeak: 'Veldig svakt',
@@ -652,8 +763,8 @@ const no = {
         length: 'Minst 8 tegn',
         case: 'Store og små bokstaver',
         number: 'Minst ett tall',
-        special: 'Minst ett spesialtegn (!@#$%^&*)',
-      },
+        special: 'Minst ett spesialtegn (!@#$%^&*)'
+      }
     },
     username: {
       checking: 'Sjekker tilgjengelighet...',
@@ -661,8 +772,8 @@ const no = {
       taken: 'Brukernavn er allerede tatt',
       tooLong: 'Brukernavn må være maksimalt 20 tegn',
       invalidChars: 'Brukernavn kan bare inneholde bokstaver, tall og understrek',
-      suggestions: 'Prøv disse tilgjengelige brukernavnene',
-    },
+      suggestions: 'Prøv disse tilgjengelige brukernavnene'
+    }
   },
   profile: {
     title: 'Profil',
@@ -673,31 +784,25 @@ const no = {
       title: 'Statistikk',
       gamesPlayed: 'Spill spilt',
       gamesWon: 'Spill vunnet',
-      winRate: 'Vinnrate',
+      winRate: 'Vinnrate'
     },
     settings: {
       title: 'Innstillinger',
       subtitle: 'Tilpass din opplevelse',
       changePassword: 'Endre passord',
-      
-      // Language
       language: {
         title: 'Språk',
         subtitle: 'Velg foretrukket språk for grensesnittet',
-        current: 'Gjeldende: {{language}}',
+        current: 'Gjeldende: {{language}}'
       },
-      
-      // Theme
       theme: {
         title: 'Tema',
         subtitle: 'Velg foretrukket fargevalg',
         light: 'Lys',
         dark: 'Mørk',
         system: 'Systemstandard',
-        current: 'Gjeldende: {{theme}}',
+        current: 'Gjeldende: {{theme}}'
       },
-      
-      // Notifications
       notifications: {
         title: 'Varsler',
         subtitle: 'Administrer hvordan du mottar oppdateringer',
@@ -706,10 +811,8 @@ const no = {
         push: 'Push-varsler',
         pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
         sound: 'Lydeffekter',
-        soundDesc: 'Spill av lyder for spillhandlinger og varsler',
+        soundDesc: 'Spill av lyder for spillhandlinger og varsler'
       },
-      
-      // Privacy
       privacy: {
         title: 'Personvern',
         subtitle: 'Kontroller hvem som kan se informasjonen din',
@@ -719,10 +822,8 @@ const no = {
         friendsOnly: 'Bare venner',
         private: 'Privat',
         showOnline: 'Vis online-status',
-        showOnlineDesc: 'La andre se når du er online',
+        showOnlineDesc: 'La andre se når du er online'
       },
-      
-      // Game Preferences
       game: {
         title: 'Spillinnstillinger',
         subtitle: 'Tilpass spillopplevelsen din',
@@ -731,20 +832,19 @@ const no = {
         confirmMoves: 'Bekreft trekk',
         confirmMovesDesc: 'Be om bekreftelse før trekk sendes inn',
         animations: 'Animasjoner',
-        animationsDesc: 'Aktiver jevne animasjoner og overganger',
+        animationsDesc: 'Aktiver jevne animasjoner og overganger'
       },
-      
       saved: 'Innstillinger lagret',
-      error: 'Kunne ikke lagre innstillinger',
+      error: 'Kunne ikke lagre innstillinger'
     },
     edit: {
       title: 'Rediger profil',
       save: 'Lagre endringer',
-      cancel: 'Avbryt',
+      cancel: 'Avbryt'
     },
     gameHistory: {
       title: 'Spillhistorikk',
-      status: 'Status',
+      status: 'Spillstatus',
       gameType: 'Spilltype',
       allStatuses: 'Alle statuser',
       allGames: 'Alle spill',
@@ -755,7 +855,7 @@ const no = {
       waiting: 'Venter',
       noGames: 'Ingen spill funnet',
       showing: 'Viser {{start}}-{{end}} av {{total}} spill',
-      clickToView: 'Klikk for å se detaljerte resultater',
+      clickToView: 'Klikk for å se detaljerte resultater'
     },
     gameResults: {
       title: 'Spillresultater',
@@ -763,14 +863,14 @@ const no = {
       points: 'poeng',
       scorecard: 'Poengkort',
       category: 'Kategori',
-      total: 'Totalt',
+      total: 'Totalt'
     },
     friends: {
       title: 'Venner',
       tabs: {
         friends: 'Venner',
         requests: 'Forespørsler',
-        sent: 'Sendt',
+        sent: 'Sendt'
       },
       addFriend: 'Legg til venn',
       addFriendDescription: 'Koble til med venner ved å bruke brukernavnet eller vennekoden deres',
@@ -811,12 +911,15 @@ const no = {
       copyLink: 'Kopier profillenke',
       friendCodeCopied: 'Vennekode kopiert til utklippstavlen!',
       profileLinkCopied: 'Profillenke kopiert! Del den med venner.',
+      emailVerificationRequired: 'E-postbekreftelse kreves',
+      emailVerificationRequiredDesc: 'Vennligst bekreft e-posten din for å få tilgang til vennekoden og koble til venner.',
+      verifyEmail: 'Bekreft e-post',
       errors: {
         loadFailed: 'Kunne ikke laste venner',
         usernameRequired: 'Brukernavn er påkrevd',
-        invalidFriendCode: 'Ugyldig vennekode. Må være 5 sifre.',
-      },
-    },
+        invalidFriendCode: 'Ugyldig vennekode. Må være 5 sifre.'
+      }
+    }
   },
   notFound: {
     title: 'Siden ikke funnet',
@@ -824,7 +927,7 @@ const no = {
     backHome: 'Tilbake til hjem',
     createLobby: 'Opprett lobby',
     viewGames: 'Se spill',
-    funFact: 'Visste du? Sjansene for å kaste en Yahtzee på første kast er 1 av 1296!',
+    funFact: 'Visste du? Sjansene for å kaste en Yahtzee på første kast er 1 av 1296!'
   },
   errors: {
     generic: 'Noe gikk galt',
@@ -839,6 +942,16 @@ const no = {
     invalidToken: 'Ugyldig eller manglende token',
     failedToLoad: 'Kunne ikke laste data. Vennligst prøv igjen.',
     gameNotFound: 'Spill ikke funnet',
+    connectionTimeout: 'Tidsavbrudd for tilkobling. Sjekk internettforbindelsen.',
+    connectionError: 'Tilkoblingsfeil. Prøver igjen...',
+    connectionFailed: 'Kunne ikke koble til serveren. Sjekk internettforbindelsen.',
+    authenticationFailed: 'Autentisering mislyktes. Oppdater siden.',
+    rateLimitExceeded: 'For mange forespørsler. Vennligst senk farten.',
+    invalidLobbyCode: 'Ugyldig lobbykodeformat',
+    lobbyNotFound: 'Fant ikke lobbyen',
+    joinLobbyFailed: 'Kunne ikke bli med i lobbyen. Prøv igjen.',
+    invalidActionData: 'Ugyldige handlingsdata',
+    general: 'En feil oppstod: {{message}}'
   },
   spy: {
     phases: {
@@ -846,11 +959,11 @@ const no = {
       roleReveal: 'Rolletildeling',
       questioning: 'Spørsmålsrunde',
       voting: 'Stemmetid',
-      results: 'Resultater',
+      results: 'Resultater'
     },
     roles: {
       spy: 'Spion',
-      regular: 'Vanlig spiller',
+      regular: 'Vanlig spiller'
     },
     location: 'Sted',
     yourRole: 'Din rolle',
@@ -877,10 +990,14 @@ const no = {
     locationRevealed: 'Stedet var: {{location}}',
     votes: 'Stemmer',
     votedOut: '{{player}} ble stemt ut!',
+    votedOutShort: 'Stemt ut',
+    voteLabel: 'stemme',
+    votesLabel: 'stemmer',
     scores: 'Poengsum',
     round: 'Runde {{current}}/{{total}}',
     nextRound: 'Neste runde',
     playAgain: 'Spill igjen',
+    requestRematch: 'Be om revansj',
     backToLobby: 'Tilbake til lobby',
     rules: {
       title: 'Hvordan spille',
@@ -903,7 +1020,7 @@ const no = {
       dontBeObvious: 'Ikke vær for åpenbar om stedet',
       watchAnswers: 'Vær oppmerksom på vage eller unnvikende svar',
       spyStrategy: 'Spionen bør stille spørsmål de kan svare på',
-      payAttention: 'Vær oppmerksom på alles oppførsel',
+      payAttention: 'Vær oppmerksom på alles oppførsel'
     },
     messages: {
       questionAsked: '{{asker}} spurte {{target}}: "{{question}}"',
@@ -911,8 +1028,8 @@ const no = {
       playerVoted: '{{player}} har stemt',
       allVoted: 'Alle spillere har stemt!',
       calculating: 'Beregner resultater...',
-      turnSkipped: '{{player}} hoppet over turen sin',
-    },
+      turnSkipped: '{{player}} hoppet over turen sin'
+    }
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',
@@ -922,6 +1039,42 @@ const no = {
     success: 'Handling fullført vellykket',
     accountDeleted: 'Konto slettet vellykket',
     playerLeft: '{{player}} forlot spillet',
+    playerJoined: '{{player}} ble med i lobbyen',
+    addingBot: 'Legger til bot-spiller...',
+    botAddFailed: 'Kunne ikke legge til bot-spiller. Prøv igjen.',
+    gameStarted: '🎲 Spillet startet! {{player}} begynner!',
+    gameStartFailed: 'Kunne ikke starte spillet',
+    botMoveFailed: 'Boten klarte ikke å gjøre et trekk',
+    notYourTurnRoll: '🚫 Det er ikke din tur til å kaste terningene!',
+    noRollsLeft: '🚫 Ingen kast igjen! Velg en kategori for poeng.',
+    notYourTurn: '🚫 Det er ikke din tur!',
+    gameOver: '🎉 Spillet er over! {{player}} vinner!',
+    playerTurn: '{{player}} sin tur!',
+    rollFailed: 'Kunne ikke kaste terningene',
+    scoreFailed: 'Kunne ikke registrere poeng',
+    linkCopied: '📋 Invitasjonslenke kopiert til utklippstavlen!',
+    timerRollFirst: '⏰ Tiden er ute! Kast terningene først.',
+    autoRollFailed: 'Kunne ikke auto-kaste. Kast manuelt.',
+    timerScoredZero: '⏰ Tiden er ute! Fikk 0 poeng i {{category}}',
+    timerScored: '⏰ Tiden er ute! Fikk {{score}} poeng i {{category}}',
+    autoScoreFailed: 'Kunne ikke auto-poengsette. Velg en kategori manuelt.',
+    accountLinked: '🎉 Kontoen er koblet til!',
+    profileUpdated: '✅ Profilen er oppdatert!',
+    emailVerified: '✅ E-post er allerede bekreftet',
+    verificationSent: '✅ Bekreftelses-e-post sendt! Sjekk innboksen.',
+    deletionConfirmSent: '📧 E-post med bekreftelse på sletting sendt! Sjekk innboksen.',
+    providerUnlinked: '✅ {{provider}}-konto koblet fra',
+    linkAccountFailed: 'Kunne ikke koble til konto',
+    invalidProvider: 'Ugyldig leverandør',
+    providerLinked: '🎉 {{provider}}-konto koblet til!',
+    authError: 'Autentiseringsfeil. Prøv igjen.',
+    signInFailed: 'Innlogging mislyktes. Prøv igjen.',
+    passwordReset: 'Passordet er tilbakestilt! Logg inn.',
+    usernameEmpty: 'Brukernavn kan ikke være tomt',
+    usernameTooShort: 'Brukernavn må være minst 3 tegn',
+    usernameTooLong: 'Brukernavn må være under 20 tegn',
+    usernameSame: 'Dette er allerede brukernavnet ditt',
+    usernameUnavailable: 'Dette brukernavnet er ikke tilgjengelig'
   },
   deleteAccount: {
     title: 'Slett konto',
@@ -935,9 +1088,22 @@ const no = {
     confirmDelete: 'Slett kontoen min for alltid',
     error: 'Sletting mislyktes',
     success: 'Konto slettet',
-    successMessage: 'Kontoen din er slettet. Omdirigerer til hjem...',
+    successMessage: 'Kontoen din er slettet. Omdirigerer til hjem...'
   },
-
+  guest: {
+    playAsGuest: 'Spill som gjest',
+    enterName: 'Skriv inn navnet ditt',
+    namePlaceholder: 'Navnet ditt',
+    nameDescription: 'Velg et navn for å starte å spille med en gang',
+    continue: 'Fortsett',
+    startPlaying: 'Start å spille',
+    playingAs: 'Spiller som gjest',
+    limitedFeatures: 'Gjestemodus - ingen statistikk, historikk eller lagret fremdrift',
+    exit: 'Avslutt gjestemodus',
+    welcome: 'Velkommen, {{name}}!',
+    welcomeBack: 'Velkommen tilbake, {{name}}!',
+    nameTooShort: 'Navnet må være minst 2 tegn'
+  },
   maintenance: {
     title: 'Vedlikehold pågår',
     heading: 'Vi er snart tilbake!',
@@ -945,8 +1111,8 @@ const no = {
     estimate: 'Estimert ferdig: innen 24 timer',
     contact: 'Spørsmål eller tilbakemeldinger?',
     github: 'Vår GitHub',
-    apology: 'Beklager ulempen.',
-  },
+    apology: 'Beklager ulempen.'
+  }
 } as const
 
 export default no

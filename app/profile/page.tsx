@@ -38,6 +38,7 @@ export default function ProfilePage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
+  const sessionUserName = session?.user?.name || ''
 
   // Settings state
   const [settingsChanged, setSettingsChanged] = useState(false)
@@ -56,10 +57,9 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
-    if (session?.user?.name) {
-      setUsername(session.user.name)
-    }
-  }, [session])
+    if (!sessionUserName) return
+    setUsername((prev) => (prev === sessionUserName ? prev : sessionUserName))
+  }, [sessionUserName])
 
   useEffect(() => {
     if (status === 'unauthenticated') {

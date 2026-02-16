@@ -89,7 +89,7 @@ describe('createLeaveLobbyHandler', () => {
     const handler = createLeaveLobbyHandler(deps)
     const socket = createSocket({
       data: {
-        user: {},
+        user: {} as any,
       },
     })
 

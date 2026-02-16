@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
-let socket: Socket
+let socket: Socket | null = null
 
 interface Lobby {
   id: string
@@ -34,7 +35,7 @@ interface Lobby {
 
 export default function SpyLobbiesPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const { t } = useTranslation()
   const [lobbies, setLobbies] = useState<Lobby[]>([])
@@ -56,6 +57,7 @@ export default function SpyLobbiesPage() {
     if (status === 'authenticated' || isGuest) {
       loadLobbies()
       triggerCleanup()
+      let isMounted = true
 
       // Auto-refresh lobbies every 5 seconds
       const refreshInterval = setInterval(() => {
@@ -63,33 +65,41 @@ export default function SpyLobbiesPage() {
       }, 5000)
 
       // Setup WebSocket for real-time updates
-      if (!socket) {
+      const initSocket = async () => {
+        if (socket) {
+          return
+        }
+
         const url = getBrowserSocketUrl()
         clientLogger.log('🔌 Connecting to Socket.IO for Spy lobby list:', url)
 
-        // Get auth token - use userId for authenticated users or guest JWT for guests
-        const token = session?.user?.id || guestToken || null
+        const useGuestAuth = isGuest && status !== 'authenticated'
+        const socketAuth = await resolveSocketClientAuth({
+          isGuest: useGuestAuth,
+          guestToken: useGuestAuth ? guestToken : null,
+        })
 
-        const authPayload: Record<string, unknown> = {}
-        if (token) authPayload.token = token
-        authPayload.isGuest = isGuest
+        if (!socketAuth) {
+          clientLogger.warn('Skipping Spy lobby socket connection: auth payload unavailable')
+          return
+        }
 
-        const queryPayload: Record<string, string> = {}
-        if (token) queryPayload.token = String(token)
-        queryPayload.isGuest = String(isGuest)
+        if (!isMounted) {
+          return
+        }
 
         socket = io(url, {
           transports: ['websocket', 'polling'],
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 1000,
-          auth: authPayload,
-          query: queryPayload,
+          auth: socketAuth.authPayload,
+          query: socketAuth.queryPayload,
         })
 
         socket.on('connect', () => {
           clientLogger.log('✅ Socket connected for Spy lobby list')
-          socket.emit('join-lobby-list')
+          socket?.emit('join-lobby-list')
         })
 
         socket.on('lobby-list-update', () => {
@@ -101,15 +111,17 @@ export default function SpyLobbiesPage() {
           clientLogger.log('❌ Socket disconnected from Spy lobby list')
         })
       }
+      void initSocket()
 
       return () => {
+        isMounted = false
         clearInterval(refreshInterval)
         if (socket && socket.connected) {
           clientLogger.log('🔌 Disconnecting socket from Spy lobby list')
           socket.emit('leave-lobby-list')
           socket.disconnect()
-          socket = null as any
         }
+        socket = null
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

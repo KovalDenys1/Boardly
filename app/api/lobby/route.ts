@@ -182,60 +182,70 @@ export async function GET(request: NextRequest) {
       gameStatusFilter.status = { in: ['waiting', 'playing'] }
     }
 
-    // Get active lobbies with timeout protection
-    const lobbies = await Promise.race([
-      prisma.lobbies.findMany({
-        where,
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          maxPlayers: true,
-          turnTimer: true,
-          isActive: true,
-          gameType: true,
-          createdAt: true,
-          creatorId: true,
-          password: true,
-          creator: {
-            select: {
-              username: true,
-              email: true,
-            },
-          },
-          games: {
-            where: gameStatusFilter,
+    // Get active lobbies with timeout protection and clear timeout handle after race settles.
+    let queryTimeout: NodeJS.Timeout | null = null
+    const lobbies = (await (async () => {
+      try {
+        return await Promise.race([
+          prisma.lobbies.findMany({
+            where,
             select: {
               id: true,
-              status: true,
-              updatedAt: true,
-              _count: {
+              code: true,
+              name: true,
+              maxPlayers: true,
+              turnTimer: true,
+              isActive: true,
+              gameType: true,
+              createdAt: true,
+              creatorId: true,
+              password: true,
+              creator: {
                 select: {
-                  players: true
-                }
+                  username: true,
+                  email: true,
+                },
               },
-              players: {
+              games: {
+                where: gameStatusFilter,
                 select: {
-                  user: {
+                  id: true,
+                  status: true,
+                  updatedAt: true,
+                  _count: {
                     select: {
-                      bot: true  // Bot relation
+                      players: true
+                    }
+                  },
+                  players: {
+                    select: {
+                      user: {
+                        select: {
+                          bot: true  // Bot relation
+                        }
+                      }
                     }
                   }
-                }
-              }
+                },
+              },
             },
-          },
-        },
-        orderBy:
-          sortBy === 'name'
-            ? { name: sortOrder as 'asc' | 'desc' }
-            : { createdAt: sortOrder as 'asc' | 'desc' },
-        take: limit,
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Database query timeout')), 5000)
-      )
-    ]) as any[]
+            orderBy:
+              sortBy === 'name'
+                ? { name: sortOrder as 'asc' | 'desc' }
+                : { createdAt: sortOrder as 'asc' | 'desc' },
+            take: limit,
+          }),
+          new Promise<never>((_, reject) => {
+            queryTimeout = setTimeout(() => reject(new Error('Database query timeout')), 5000)
+          }),
+        ])
+      } finally {
+        if (queryTimeout) {
+          clearTimeout(queryTimeout)
+          queryTimeout = null
+        }
+      }
+    })()) as any[]
 
     // Normalize lobbies to a single relevant active game record.
     const lobbiesWithRelevantGame = lobbies

@@ -8,6 +8,7 @@ import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 
 interface Friend {
   id: string
@@ -68,61 +69,71 @@ export default function Friends() {
       return
     }
 
-    const socketUrl = getBrowserSocketUrl()
-    const token = session.user.id
-    
-    clientLogger.log('🔌 Connecting socket for online status', { socketUrl })
+    let isMounted = true
+    let activeSocket: Socket | null = null
 
-    const authPayload: Record<string, unknown> = {}
-    if (token) authPayload.token = token
-    authPayload.isGuest = false
+    const connectSocket = async () => {
+      const socketUrl = getBrowserSocketUrl()
+      const socketAuth = await resolveSocketClientAuth({ isGuest: false })
 
-    const queryPayload: Record<string, string> = {}
-    if (token) queryPayload.token = String(token)
-    queryPayload.isGuest = 'false'
+      if (!socketAuth) {
+        clientLogger.warn('Skipping online status socket connection: auth payload unavailable')
+        return
+      }
 
-    const newSocket = io(socketUrl, {
-      auth: authPayload,
-      query: queryPayload,
-      transports: ['polling', 'websocket'],
-    })
+      if (!isMounted) {
+        return
+      }
 
-    newSocket.on('connect', () => {
-      clientLogger.log('✅ Connected to socket for online status')
-    })
+      clientLogger.log('🔌 Connecting socket for online status', { socketUrl })
 
-    newSocket.on('online-users', (data: { userIds: string[] }) => {
-      setOnlineUsers(new Set(data.userIds))
-      clientLogger.log('👥 Online users received', { count: data.userIds.length })
-    })
-
-    newSocket.on('user-online', (data: { userId: string }) => {
-      setOnlineUsers(prev => new Set(prev).add(data.userId))
-      clientLogger.log('🟢 User came online', { userId: data.userId })
-    })
-
-    newSocket.on('user-offline', (data: { userId: string }) => {
-      setOnlineUsers(prev => {
-        const next = new Set(prev)
-        next.delete(data.userId)
-        return next
+      const newSocket = io(socketUrl, {
+        auth: socketAuth.authPayload,
+        query: socketAuth.queryPayload,
+        transports: ['polling', 'websocket'],
       })
-      clientLogger.log('⚫ User went offline', { userId: data.userId })
-    })
+      activeSocket = newSocket
 
-    newSocket.on('disconnect', () => {
-      clientLogger.log('🔌 Disconnected from socket')
-    })
+      newSocket.on('connect', () => {
+        clientLogger.log('✅ Connected to socket for online status')
+      })
 
-    newSocket.on('connect_error', (error) => {
-      clientLogger.error('❌ Socket connection error', { error: error.message })
-    })
+      newSocket.on('online-users', (data: { userIds: string[] }) => {
+        setOnlineUsers(new Set(data.userIds))
+        clientLogger.log('👥 Online users received', { count: data.userIds.length })
+      })
 
-    setSocket(newSocket)
+      newSocket.on('user-online', (data: { userId: string }) => {
+        setOnlineUsers(prev => new Set(prev).add(data.userId))
+        clientLogger.log('🟢 User came online', { userId: data.userId })
+      })
+
+      newSocket.on('user-offline', (data: { userId: string }) => {
+        setOnlineUsers(prev => {
+          const next = new Set(prev)
+          next.delete(data.userId)
+          return next
+        })
+        clientLogger.log('⚫ User went offline', { userId: data.userId })
+      })
+
+      newSocket.on('disconnect', () => {
+        clientLogger.log('🔌 Disconnected from socket')
+      })
+
+      newSocket.on('connect_error', (error) => {
+        clientLogger.error('❌ Socket connection error', { error: error.message })
+      })
+
+      setSocket(newSocket)
+    }
+
+    void connectSocket()
 
     return () => {
+      isMounted = false
       clientLogger.log('🧹 Cleaning up socket connection')
-      newSocket.close()
+      activeSocket?.close()
     }
   }, [session?.user?.id])
 

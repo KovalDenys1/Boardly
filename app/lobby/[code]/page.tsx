@@ -17,7 +17,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine, DEFAULT_GAME_TYPE, getGameMetadata, hasBotSupport } from '@/lib/game-registry'
+import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -71,10 +71,12 @@ import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import type { TabId } from './components/MobileTabs'
 import MobileTabPanel from './components/MobileTabPanel'
+import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 
 const PlayerList = dynamic(() => import('@/components/PlayerList'))
 const Scorecard = dynamic(() => import('@/components/Scorecard'))
@@ -185,6 +187,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
+  const isLeavingLobbyRef = React.useRef(false)
+  const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -198,6 +202,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   useEffect(() => {
     setSoundEnabled(soundManager.isEnabled())
   }, [])
+
+  const playAmbientSound = useCallback(
+    (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
+      if (isInitialLoadRef.current) return
+      if (!soundManager.hasUserInteracted()) return
+      soundManager.play(soundName, options)
+    },
+    []
+  )
 
   // Helper functions
   const getCurrentUserId = useCallback(() => {
@@ -254,14 +267,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       // Play sound for turn change
       if (currentPlayerId === currentUserId) {
         // It's now our turn - play turn change sound
-        soundManager.play('turnChange')
+        playAmbientSound('turnChange')
       } else if (prevPlayerIdRef.current === currentUserId) {
         // Turn moved away from us to another player - play turn change sound
-        soundManager.play('turnChange')
+        playAmbientSound('turnChange')
       }
     }
     prevPlayerIdRef.current = currentPlayerId
-  }, [currentPlayerId, getCurrentUserId])
+  }, [currentPlayerId, getCurrentUserId, playAmbientSound])
 
   // Create ref for loadLobby to avoid circular dependency
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
@@ -323,7 +336,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 // Play dice roll sound for other players' rolls (not our own)
                 if (lastRoll.playerId !== currentUserId) {
-                  soundManager.play('diceRoll')
+                  playAmbientSound('diceRoll')
                 }
 
                 return [...prev, {
@@ -349,7 +362,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType])
+  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType, playAmbientSound])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -395,11 +408,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
       showToast.success('toast.playerJoined', undefined, { player: data.username })
-      if (!isInitialLoadRef.current) {
-        soundManager.play('playerJoin')
-      }
+      playAmbientSound('playerJoin')
     }
-  }, [isGuest, guestId, session?.user?.id])
+  }, [isGuest, guestId, session?.user?.id, playAmbientSound])
 
   const onGameStarted = useCallback((data: GameStartedPayload) => {
     clientLogger.log('📡 Game started:', data)
@@ -415,11 +426,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       showToast.success('toast.gameStarted', undefined, { player: data.firstPlayerName })
     }
 
-    // Only play sound if not initial load
-    if (!isInitialLoadRef.current) {
-      soundManager.play('gameStart')
-    }
-  }, [isGuest, guestId, session?.user?.id, lobby?.creatorId])
+    playAmbientSound('gameStart')
+  }, [isGuest, guestId, session?.user?.id, lobby?.creatorId, playAmbientSound])
 
   const onBotAction = useCallback((event: any) => {
     clientLogger.log('🤖 Received bot-action:', event)
@@ -445,26 +453,26 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       // Play sound ONLY after roll completes AND not during initial load
       // Use force option to ensure sound plays even if previous roll sound is still playing
-      if (!isInitialLoadRef.current) {
-        soundManager.play('diceRoll', { force: true })
-      }
+      playAmbientSound('diceRoll', { force: true })
     }
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
       showToast.success('toast.success', event.message)
-      // Play sound only if not initial load
-      if (!isInitialLoadRef.current) {
-        soundManager.play('score')
-      }
+      playAmbientSound('score')
     }
 
     // Log all actions to console for debugging
     clientLogger.log(`🤖 ${event.message}`)
-  }, [gameEngine, game?.players?.length])
+  }, [gameEngine, game?.players?.length, playAmbientSound])
 
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
+
+    if (isLeavingLobbyRef.current) {
+      clientLogger.log('Skipping game-abandoned handling during manual leave')
+      return
+    }
 
     const reason = data.reason
     if (reason === 'no_human_players') {
@@ -486,6 +494,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
     clientLogger.log('📡 Player left:', data)
+
+    if (isLeavingLobbyRef.current) {
+      return
+    }
 
     if (data.username) {
       showToast.info('toast.playerLeft', undefined, { player: data.username })
@@ -857,14 +869,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (!gameEngine || !game || !(gameEngine instanceof YahtzeeGame)) return
 
     if (gameEngine.isGameFinished()) {
+      if (finishedGameSoundPlayedForRef.current === game.id) {
+        return
+      }
+
       const dice = gameEngine.getDice()
       const celebration = detectCelebration(dice)
       if (celebration) {
         setCelebrationEvent(celebration)
-        soundManager.play('celebration')
+        playAmbientSound('celebration')
+        finishedGameSoundPlayedForRef.current = game.id
       }
     }
-  }, [gameEngine, game])
+  }, [gameEngine, game, playAmbientSound])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -876,6 +893,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [])
 
   const handleLeaveLobby = async () => {
+    if (isLeavingLobbyRef.current) {
+      return
+    }
+    isLeavingLobbyRef.current = true
+    setShowLeaveConfirmModal(false)
+
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}/leave`, {
         method: 'POST',
@@ -889,6 +912,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       if (!res.ok) {
         showToast.error('errors.unexpected')
         clientLogger.error('Failed to leave lobby:', data.error)
+        isLeavingLobbyRef.current = false
         return
       }
 
@@ -900,9 +924,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
       // Show appropriate message
       if (data.gameAbandoned) {
-        showToast.info('lobby.gameAbandoned')
+        showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
       } else {
-        showToast.success('lobby.leftLobby')
+        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
       }
 
       // Redirect
@@ -930,40 +954,75 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     clientLogger.log('Inviting friends to lobby', { friendIds, lobbyCode: code })
 
     try {
-      // Create lobby join link
-      const lobbyUrl = `${window.location.origin}/lobby/join/${code}`
-
-      // TODO: Implement invitation system (e.g., notifications, direct messages, etc.)
-      // For now, just copy the link to clipboard and show toast
-
-      await navigator.clipboard.writeText(lobbyUrl)
-      showToast.success('lobby.invite.linkCopied', undefined, {
-        count: friendIds.length
+      const response = await fetchWithGuest(`/api/lobby/${code}/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendIds }),
       })
 
-      clientLogger.log('Lobby link copied for friends', { url: lobbyUrl, friendCount: friendIds.length })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to send invites')
+      }
 
-      // Close modal
+      const invitedCount =
+        typeof result?.invitedCount === 'number' ? result.invitedCount : friendIds.length
+
+      if (Array.isArray(result?.skippedFriendIds) && result.skippedFriendIds.length > 0) {
+        showToast.info(
+          'toast.success',
+          `${result.skippedFriendIds.length} selected users were skipped (not friends or invalid).`
+        )
+      }
+
+      clientLogger.log('Lobby invites sent', {
+        lobbyCode: code,
+        invitedCount,
+        skippedCount: Array.isArray(result?.skippedFriendIds) ? result.skippedFriendIds.length : 0,
+      })
+
       setShowFriendsModal(false)
     } catch (error) {
-      clientLogger.error('Failed to invite friends', { error })
-      showToast.error('errors.general')
+      clientLogger.error('Failed to invite friends', error as Error)
+      showToast.error('errors.general', 'Failed to send invites')
     }
   }, [lobby, code])
+
+  const handleRequestRematch = useCallback(async () => {
+    try {
+      const response = await fetchWithGuest(`/api/lobby/${code}/rematch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to request rematch')
+      }
+
+      const notifiedCount =
+        typeof result?.notifiedCount === 'number' ? result.notifiedCount : 0
+
+      if (notifiedCount > 0) {
+        showToast.success('toast.success', `Rematch request sent to ${notifiedCount} player(s).`)
+      } else {
+        showToast.info('toast.success', 'No players were available for rematch notification.')
+      }
+    } catch (error) {
+      clientLogger.error('Failed to request rematch', error as Error)
+      showToast.error('errors.general', 'Failed to request rematch')
+    }
+  }, [code])
 
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
   const playerCount = game?.players?.length || 0
   const minPlayersRequired = React.useMemo(() => {
-    try {
-      const gameType = (lobby?.gameType as string) || DEFAULT_GAME_TYPE
-      const metadata = getGameMetadata(gameType)
-      // For games with bot support (e.g., Yahtzee), use actual minPlayers to allow solo start with auto-bot
-      const supportsBots = hasBotSupport(gameType)
-      return supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
-    } catch {
-      return 2
-    }
+    return getLobbyPlayerRequirements(lobby?.gameType as string | undefined).minPlayersRequired
   }, [lobby?.gameType])
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
@@ -1153,7 +1212,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               )}
               currentUserId={getCurrentUserId() || null}
               canStartGame={!!canStartGame}
+              canRequestRematch={!!isInGame}
               onPlayAgain={handleStartGame}
+              onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
@@ -1557,6 +1618,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 }
               }}
               onPlayAgain={handleStartGame}
+              onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
           ) : gameEngine ? (
@@ -1620,61 +1682,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
 export default function LobbyPage() {
   const params = useParams()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const [gameType, setGameType] = useState<string | null>(null)
-  const [gameStatus, setGameStatus] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  // Detect game type and status on mount
-  useEffect(() => {
-    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
-      return
-    }
-
-    if (isGuest && !guestToken) {
-      return
-    }
-
-    (async () => {
-      try {
-        const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
-
-        if (res.ok) {
-          const data = await res.json()
-          const { lobby: lobbyData, activeGame } = normalizeLobbySnapshotResponse(data)
-          setGameType(lobbyData?.gameType || DEFAULT_GAME_TYPE)
-          setGameStatus(activeGame?.status || null)
-        } else {
-          setGameType(DEFAULT_GAME_TYPE) 
-          setGameStatus(null)
-        }
-      } catch (error) {
-        clientLogger.log('Error detecting game type:', error)
-        setGameType(DEFAULT_GAME_TYPE) 
-        setGameStatus(null)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [code, status, isGuest, guestToken])
-
-  // Callback when LobbyPageContent detects game started for TTT/RPS
-  const handleGameStarted = useCallback((startedGameType: string) => {
-    setGameType(startedGameType)
-    setGameStatus('playing')
-  }, [])
+  const { gameType, gameStatus, loading, handleGameStarted } = useLobbyRouteState({
+    code,
+    status,
+    isGuest,
+    guestToken,
+  })
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
+    return <LobbyPageLoadingFallback />
   }
 
   // Route to dedicated pages when game is active or just finished
@@ -1688,29 +1707,7 @@ export default function LobbyPage() {
 
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
   return (
-    <ErrorBoundary
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4">
-          <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-5">
-              <span className="text-3xl">🎲</span>
-            </div>
-            <h1 className="text-2xl font-extrabold text-white mb-3">
-              Game Error
-            </h1>
-            <p className="text-white/60 text-sm mb-6">
-              Something went wrong with the game lobby. Please try again.
-            </p>
-            <button
-              onClick={() => window.location.href = '/games'}
-              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
-            >
-              Back to Lobbies
-            </button>
-          </div>
-        </div>
-      }
-    >
+    <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LoadingSpinner size="lg" />}>
         <LobbyPageContent onSwitchToDedicatedPage={handleGameStarted} />
       </Suspense>

@@ -10,6 +10,7 @@ import RockPaperScissorsGameBoard from '@/components/RockPaperScissorsGameBoard'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 import { clientLogger } from '@/lib/client-logger'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -180,13 +181,16 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
                 // Initialize Socket.IO
                 const socketUrl = getBrowserSocketUrl()
-                const token = session?.user?.id || guestToken || null
-                const authPayload: Record<string, unknown> = {}
-                if (token) authPayload.token = token
-                if (isGuest) authPayload.isGuest = true
-                const queryPayload: Record<string, string> = {}
-                if (token) queryPayload.token = String(token)
-                if (isGuest) queryPayload.isGuest = 'true'
+                const useGuestAuth = isGuest && status !== 'authenticated'
+                const socketAuth = await resolveSocketClientAuth({
+                    isGuest: useGuestAuth,
+                    guestToken: useGuestAuth ? guestToken : null,
+                })
+
+                if (!socketAuth) {
+                    clientLogger.warn('Skipping RPS socket connection: auth payload unavailable')
+                    return
+                }
 
                 const newSocket = io(socketUrl, {
                     transports: ['websocket', 'polling'],
@@ -194,8 +198,8 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                     reconnectionDelay: 1000,
                     reconnectionDelayMax: 5000,
                     reconnectionAttempts: 5,
-                    auth: authPayload,
-                    query: queryPayload,
+                    auth: socketAuth.authPayload,
+                    query: socketAuth.queryPayload,
                 })
 
                 if (!isMounted) {

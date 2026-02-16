@@ -14,11 +14,7 @@ describe('createJoinLobbyHandler', () => {
       socketLogger: jest.fn().mockReturnValue({
         info: jest.fn(),
       }),
-      prisma: {
-        lobbies: {
-          findUnique: jest.fn(),
-        },
-      } as unknown as Parameters<typeof createJoinLobbyHandler>[0]['prisma'],
+      findLobbyByCode: jest.fn(),
       socketMonitor: {
         trackEvent: jest.fn(),
       },
@@ -43,7 +39,6 @@ describe('createJoinLobbyHandler', () => {
           username: 'Alice',
         },
       },
-      rooms: new Set<string>(['socket-1']),
       join: jest.fn(),
       emit: jest.fn(),
       ...overrides,
@@ -57,7 +52,7 @@ describe('createJoinLobbyHandler', () => {
 
     await handler(socket, '   ')
 
-    expect(deps.prisma.lobbies.findUnique).not.toHaveBeenCalled()
+    expect(deps.findLobbyByCode).not.toHaveBeenCalled()
     expect(deps.emitError).toHaveBeenCalledWith(
       socket,
       'INVALID_LOBBY_CODE',
@@ -70,7 +65,7 @@ describe('createJoinLobbyHandler', () => {
     const deps = createDeps({
       isUserActivePlayerInLobby: jest.fn().mockResolvedValue(false),
     })
-    ;(deps.prisma.lobbies.findUnique as jest.Mock).mockResolvedValue({
+    ;(deps.findLobbyByCode as jest.Mock).mockResolvedValue({
       id: 'lobby-1',
       code: 'ABCD',
       isActive: true,
@@ -92,7 +87,7 @@ describe('createJoinLobbyHandler', () => {
 
   it('joins lobby, authorizes socket and emits success', async () => {
     const deps = createDeps()
-    ;(deps.prisma.lobbies.findUnique as jest.Mock).mockResolvedValue({
+    ;(deps.findLobbyByCode as jest.Mock).mockResolvedValue({
       id: 'lobby-1',
       code: 'ABCD',
       isActive: true,

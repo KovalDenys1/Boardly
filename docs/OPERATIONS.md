@@ -66,6 +66,7 @@ Reason: running migrations in socket build can cause hanging deployments.
 2. Deploy Next.js app.
 3. Deploy socket service.
 4. Verify health endpoint (`/health`) and lobby join flow.
+5. Check reconnect dashboard and alerts from `docs/REALTIME_TELEMETRY.md`.
 
 ## Common troubleshooting
 
@@ -94,3 +95,12 @@ Check:
 - client sends `X-Guest-Token`
 - token is created through `/api/auth/guest-session`
 - `NEXTAUTH_SECRET` or `GUEST_JWT_SECRET` is configured
+
+### Reconnect reliability regressed
+
+Check:
+
+- reconnect telemetry and SLO cards in `docs/REALTIME_TELEMETRY.md`
+- spike in `socket_reconnect_failed_final` by `reason`
+- spike in `socket_auth_refresh_failed` by `stage` or `status`
+- increase in `lobby_join_ack_timeout` after deploys

@@ -10,6 +10,7 @@ This folder contains the canonical project documentation.
 - `docs/ROADMAP.md` - active priorities and near-term milestones
 - `docs/CONTRIBUTING.md` - workflow and engineering standards
 - `docs/SECURITY_MODEL.md` - security layers, auth model, RLS posture
+- `docs/REALTIME_TELEMETRY.md` - reconnect telemetry events, dashboards, SLOs, and alert baseline
 
 ## Root-level docs
 

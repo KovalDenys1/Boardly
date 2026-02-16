@@ -1,37 +1,14 @@
-import type { PrismaClient } from '@prisma/client'
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
-import { parseJoinLobbyCode } from './payload-validation'
-
-type LogContext = Record<string, unknown>
+import { EmitSocketErrorFn, JoinLobbySocket } from './types'
 
 type LoggerLike = {
-  info: (message: string, context?: LogContext) => void
-  warn: (message: string, context?: LogContext) => void
-  error: (message: string, error?: Error, context?: LogContext) => void
+  info: (message: string, context?: Record<string, unknown>) => void
+  warn: (message: string, context?: Record<string, unknown>) => void
+  error: (message: string, error?: Error, context?: Record<string, unknown>) => void
 }
 
 type SocketLoggerFactory = (scope: string) => {
-  info: (message: string, context?: LogContext) => void
-}
-
-interface JoinLobbySocketUser {
-  id: string
-  username?: string | null
-}
-
-interface JoinLobbySocket {
-  id: string
-  data: {
-    user: JoinLobbySocketUser
-    authorizedLobbies?: Set<string>
-  }
-  rooms: Set<string>
-  join: (room: string) => void
-  emit: (event: string, payload: unknown) => void
-}
-
-interface PrismaLike {
-  lobbies: Pick<PrismaClient['lobbies'], 'findUnique'>
+  info: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -51,16 +28,10 @@ interface DisconnectSyncManagerLike {
 interface JoinLobbyDependencies {
   logger: LoggerLike
   socketLogger: SocketLoggerFactory
-  prisma: PrismaLike
+  findLobbyByCode: (lobbyCode: string) => Promise<{ id: string; code: string; isActive: boolean } | null>
   socketMonitor: SocketMonitorLike
   checkRateLimit: (socketId: string) => boolean
-  emitError: (
-    socket: JoinLobbySocket,
-    code: string,
-    message: string,
-    translationKey?: string,
-    details?: unknown
-  ) => void
+  emitError: EmitSocketErrorFn
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
   markSocketLobbyAuthorized: (socket: JoinLobbySocket, lobbyCode: string) => void
   disconnectSyncManager: DisconnectSyncManagerLike
@@ -69,7 +40,7 @@ interface JoinLobbyDependencies {
 export function createJoinLobbyHandler({
   logger,
   socketLogger,
-  prisma,
+  findLobbyByCode,
   socketMonitor,
   checkRateLimit,
   emitError,
@@ -77,7 +48,7 @@ export function createJoinLobbyHandler({
   markSocketLobbyAuthorized,
   disconnectSyncManager,
 }: JoinLobbyDependencies) {
-  return async (socket: JoinLobbySocket, lobbyCode: unknown) => {
+  return async (socket: JoinLobbySocket, lobbyCode: string) => {
     if (!checkRateLimit(socket.id)) {
       emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
       return
@@ -85,22 +56,16 @@ export function createJoinLobbyHandler({
 
     socketMonitor.trackEvent('join-lobby')
 
-    const normalizedLobbyCode = parseJoinLobbyCode(lobbyCode)
-    if (!normalizedLobbyCode) {
+    const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
+
+    if (!normalizedLobbyCode || normalizedLobbyCode.length > 20) {
       logger.warn('Invalid lobby code received', { lobbyCode, socketId: socket.id })
       emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
       return
     }
 
     try {
-      const lobby = await prisma.lobbies.findUnique({
-        where: { code: normalizedLobbyCode },
-        select: {
-          id: true,
-          code: true,
-          isActive: true,
-        },
-      })
+      const lobby = await findLobbyByCode(normalizedLobbyCode)
 
       if (!lobby) {
         emitError(socket, 'LOBBY_NOT_FOUND', 'Lobby not found', 'errors.lobbyNotFound', { lobbyCode: normalizedLobbyCode })
@@ -133,11 +98,9 @@ export function createJoinLobbyHandler({
       })
 
       socket.emit(SocketEvents.JOINED_LOBBY, { lobbyCode: normalizedLobbyCode, success: true })
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      logger.error('Error joining lobby', err, { lobbyCode: normalizedLobbyCode })
+    } catch (error) {
+      logger.error('Error joining lobby', error as Error, { lobbyCode: normalizedLobbyCode })
       emitError(socket, 'JOIN_LOBBY_ERROR', 'Failed to join lobby', 'errors.joinLobbyFailed')
     }
   }
 }
-

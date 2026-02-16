@@ -1,6 +1,5 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
@@ -30,16 +29,6 @@ function HeaderSkeleton() {
 const Header = dynamic(() => import('@/components/Header'), {
   ssr: true, // Enable SSR for better FCP
   loading: () => <HeaderSkeleton />
-})
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  preload: true,
-  variable: '--font-inter',
-  // Optimize font loading for better FCP
-  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-  adjustFontFallback: true,
 })
 
 export const metadata: Metadata = {
@@ -158,7 +147,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={inter.className}>
+      <body className="antialiased">
         <Providers>
           <Suspense fallback={<HeaderSkeleton />}>
             <Header />

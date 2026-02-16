@@ -39,6 +39,18 @@ export function HeaderNavigation({ isAuthenticated, isGuest }: HeaderNavigationP
           🎮 {t('header.games', 'Games')}
         </button>
       )}
+      {isAuthenticated && (
+        <button
+          onClick={() => router.push('/analytics')}
+          className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/analytics')
+            ? 'bg-white/20 text-white'
+            : 'text-white/80 hover:bg-white/10 hover:text-white'
+            }`}
+          style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+        >
+          📊 Analytics
+        </button>
+      )}
       <button
         onClick={() => router.push('/lobby')}
         className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/lobby')
@@ -52,4 +64,3 @@ export function HeaderNavigation({ isAuthenticated, isGuest }: HeaderNavigationP
     </div>
   )
 }
-

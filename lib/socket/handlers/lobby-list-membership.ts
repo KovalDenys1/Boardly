@@ -1,15 +1,8 @@
 import { SocketRooms } from '../../../types/socket-events'
-
-type LogContext = Record<string, unknown>
+import { LobbyListMembershipSocket } from './types'
 
 type SocketLoggerFactory = (scope: string) => {
-  debug: (message: string, context?: LogContext) => void
-}
-
-interface LobbyListMembershipSocket {
-  id: string
-  join: (room: string) => void
-  leave: (room: string) => void
+  debug: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {

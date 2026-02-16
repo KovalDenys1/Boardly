@@ -8,7 +8,7 @@ dotenv.config({ path: resolve(process.cwd(), '.env.local'), override: true })
 dotenv.config({ path: resolve(process.cwd(), '.env') })
 
 // Now import modules that use environment variables
-import { createServer } from 'http'
+import { createServer, IncomingMessage } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { prisma } from './lib/db'
 import { socketLogger, logger } from './lib/logger'
@@ -27,17 +27,14 @@ import { createPlayerTypingHandler } from './lib/socket/handlers/player-typing'
 import { createConnectionLifecycleHandlers } from './lib/socket/handlers/connection-lifecycle'
 import { createLeaveLobbyHandler } from './lib/socket/handlers/leave-lobby'
 import { createLobbyListMembershipHandlers } from './lib/socket/handlers/lobby-list-membership'
-import {
-  emitError as emitSocketError,
-  emitWithMetadata,
-  isInternalEndpointAuthorized,
-  isSocketAuthorizedForLobby,
-  markSocketLobbyAuthorized,
-  revokeSocketLobbyAuthorization,
-} from './lib/socket/socket-server-helpers'
+import { createLobbyCreatedHandler } from './lib/socket/handlers/lobby-created'
+import { createForbiddenClientEventsHandlers } from './lib/socket/handlers/forbidden-client-events'
+import { createSocketErrorHandler } from './lib/socket/handlers/socket-error'
+import { EmitsToSelf } from './lib/socket/handlers/types'
 import {
   SocketEvents,
   GameActionPayload,
+  ServerErrorPayload,
   SocketRooms
 } from './types/socket-events'
 
@@ -106,6 +103,61 @@ const io = new SocketIOServer(server, {
 
 const onlinePresence = createOnlinePresence(io, logger)
 
+// Helper to create event with metadata
+type RoomEmitter = {
+  to: (room: string) => {
+    emit: (event: string, payload?: unknown) => void
+  }
+}
+
+type DirectEmitter = {
+  emit: (event: string, payload?: unknown) => void
+}
+
+function emitWithMetadata(
+  target: RoomEmitter | DirectEmitter,
+  room: string,
+  event: string,
+  data: unknown
+) {
+  const metadataBase =
+    data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : {}
+
+  const payload = {
+    ...metadataBase,
+    sequenceId: ++eventSequence,
+    timestamp: Date.now(),
+    version: '1.0.0'
+  }
+  if ('to' in target) {
+    target.to(room).emit(event, payload)
+  } else {
+    target.emit(event, payload)
+  }
+  return payload
+}
+
+// Helper function to emit structured errors
+function emitError(
+  socket: EmitsToSelf,
+  code: string,
+  message: string,
+  translationKey?: string,
+  details?: Record<string, unknown>
+) {
+  const error: ServerErrorPayload = {
+    code,
+    message,
+    translationKey,
+    details,
+    stack: process.env.NODE_ENV === 'development' ? new Error().stack : undefined
+  }
+  socket.emit(SocketEvents.SERVER_ERROR, error)
+  logger.warn('Socket error emitted', { code, message, socketId: socket.id })
+}
+
 // Rate limiting for socket events
 const socketRateLimiter = createSocketRateLimiter({
   maxEventsPerSecond: 10,
@@ -118,6 +170,9 @@ function checkRateLimit(socketId: string): boolean {
 }
 
 const LOBBY_ROOM_PREFIX = SocketRooms.lobby('')
+const SOCKET_INTERNAL_AUTH_HEADER = 'x-socket-internal-secret'
+const SOCKET_INTERNAL_AUTH_BEARER_PREFIX = 'Bearer '
+
 const SOCKET_INTERNAL_SECRET =
   process.env.SOCKET_SERVER_INTERNAL_SECRET ||
   process.env.SOCKET_INTERNAL_SECRET
@@ -138,21 +193,29 @@ function getLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
   return lobbyCodes
 }
 
-function hasAnotherActiveSocketForUser(userId: string, excludingSocketId: string): boolean {
+function hasAnotherActiveSocketForUserInLobby(
+  userId: string,
+  excludingSocketId: string,
+  lobbyCode: string
+): boolean {
+  const lobbyRoom = SocketRooms.lobby(lobbyCode)
   for (const [socketId, activeSocket] of io.sockets.sockets.entries()) {
     if (socketId === excludingSocketId) continue
     if (!activeSocket.connected) continue
-    if (activeSocket.data?.user?.id === userId) {
+    if (activeSocket.data?.user?.id !== userId) continue
+    if (activeSocket.rooms?.has(lobbyRoom)) {
       return true
     }
   }
   return false
 }
 
-function hasAnyActiveSocketForUser(userId: string): boolean {
+function hasAnyActiveSocketForUserInLobby(userId: string, lobbyCode: string): boolean {
+  const lobbyRoom = SocketRooms.lobby(lobbyCode)
   for (const activeSocket of io.sockets.sockets.values()) {
     if (!activeSocket.connected) continue
-    if (activeSocket.data?.user?.id === userId) {
+    if (activeSocket.data?.user?.id !== userId) continue
+    if (activeSocket.rooms?.has(lobbyRoom)) {
       return true
     }
   }
@@ -164,24 +227,46 @@ const disconnectSyncManager = createDisconnectSyncManager({
   prisma,
   logger,
   emitWithMetadata: (room, event, data) => {
-    emitWithMetadata(io.to(room), event, data, () => ++eventSequence)
+    emitWithMetadata(io, room, event, data)
   },
-  hasAnyActiveSocketForUser,
+  hasAnyActiveSocketForUserInLobby,
   disconnectGraceMs: Math.max(0, Number(process.env.SOCKET_DISCONNECT_GRACE_MS || 8000)),
 })
 
-function emitError(
-  socket: Parameters<typeof emitSocketError>[0],
-  code: string,
-  message: string,
-  translationKey?: string,
-  details?: unknown
-): void {
-  emitSocketError(socket, logger, code, message, translationKey, details)
-}
-
 function getUserDisplayName(user: { username?: string | null; email?: string | null } | undefined): string {
   return user?.username || user?.email || 'Player'
+}
+
+type AuthorizedLobbySocket = {
+  data: {
+    authorizedLobbies?: Set<string>
+  }
+}
+
+type LobbyAuthorizationSocket = AuthorizedLobbySocket & {
+  rooms: Set<string>
+}
+
+function getAuthorizedLobbySet(socket: AuthorizedLobbySocket): Set<string> {
+  if (!(socket.data.authorizedLobbies instanceof Set)) {
+    socket.data.authorizedLobbies = new Set<string>()
+  }
+  return socket.data.authorizedLobbies as Set<string>
+}
+
+function markSocketLobbyAuthorized(socket: AuthorizedLobbySocket, lobbyCode: string) {
+  const authorizedLobbies = getAuthorizedLobbySet(socket)
+  authorizedLobbies.add(lobbyCode)
+}
+
+function revokeSocketLobbyAuthorization(socket: AuthorizedLobbySocket, lobbyCode: string) {
+  const authorizedLobbies = getAuthorizedLobbySet(socket)
+  authorizedLobbies.delete(lobbyCode)
+}
+
+function isSocketAuthorizedForLobby(socket: LobbyAuthorizationSocket, lobbyCode: string): boolean {
+  const authorizedLobbies = getAuthorizedLobbySet(socket)
+  return authorizedLobbies.has(lobbyCode) && socket.rooms.has(SocketRooms.lobby(lobbyCode))
 }
 
 async function isUserActivePlayerInLobby(lobbyCode: string, userId: string): Promise<boolean> {
@@ -203,6 +288,49 @@ async function isUserActivePlayerInLobby(lobbyCode: string, userId: string): Pro
   return !!player
 }
 
+function extractHeaderValue(header: string | string[] | undefined): string | null {
+  if (typeof header === 'string') {
+    return header.trim() || null
+  }
+  if (Array.isArray(header) && header.length > 0) {
+    const first = header[0]
+    return typeof first === 'string' ? first.trim() || null : null
+  }
+  return null
+}
+
+function extractInternalRequestSecret(req: IncomingMessage): string | null {
+  const secretHeader = extractHeaderValue(req.headers?.[SOCKET_INTERNAL_AUTH_HEADER])
+  if (secretHeader) {
+    return secretHeader
+  }
+
+  const authorizationHeader = extractHeaderValue(req.headers?.authorization)
+
+  if (
+    typeof authorizationHeader === 'string' &&
+    authorizationHeader.startsWith(SOCKET_INTERNAL_AUTH_BEARER_PREFIX)
+  ) {
+    return authorizationHeader.slice(SOCKET_INTERNAL_AUTH_BEARER_PREFIX.length).trim() || null
+  }
+
+  return null
+}
+
+function isInternalEndpointAuthorized(req: IncomingMessage): boolean {
+  if (process.env.NODE_ENV !== 'production') {
+    return true
+  }
+
+  if (!SOCKET_INTERNAL_SECRET) {
+    logger.error('Protected socket endpoints are enabled in production without internal secret')
+    return false
+  }
+
+  const providedSecret = extractInternalRequestSecret(req)
+  return !!providedSecret && providedSecret === SOCKET_INTERNAL_SECRET
+}
+
 // Clean up expired rate limit entries to prevent memory leaks
 setInterval(() => {
   const { cleaned, remaining } = socketRateLimiter.cleanupStaleLimits()
@@ -222,7 +350,16 @@ io.use(
 const handleJoinLobby = createJoinLobbyHandler({
   logger,
   socketLogger,
-  prisma,
+  findLobbyByCode: (lobbyCode) => {
+    return prisma.lobbies.findUnique({
+      where: { code: lobbyCode },
+      select: {
+        id: true,
+        code: true,
+        isActive: true,
+      },
+    })
+  },
   socketMonitor,
   checkRateLimit,
   emitError,
@@ -241,9 +378,9 @@ const handleGameAction = createGameActionHandler({
   emitGameUpdateToOthers: (socket, lobbyCode, payload) => {
     emitWithMetadata(
       socket.to(SocketRooms.lobby(lobbyCode)),
+      SocketRooms.lobby(lobbyCode),
       SocketEvents.GAME_UPDATE,
-      payload,
-      () => ++eventSequence
+      payload
     )
   },
   notifyLobbyListUpdate: () => {
@@ -260,7 +397,7 @@ const handleSendChatMessage = createSendChatMessageHandler({
   isUserActivePlayerInLobby,
   getUserDisplayName,
   emitWithMetadata: (room, event, data) => {
-    emitWithMetadata(io.to(room), event, data, () => ++eventSequence)
+    emitWithMetadata(io, room, event, data)
   },
 })
 
@@ -278,7 +415,7 @@ const { handleDisconnecting, handleDisconnect } = createConnectionLifecycleHandl
   clearSocketRateLimit: (socketId) => {
     socketRateLimiter.clearSocket(socketId)
   },
-  hasAnotherActiveSocketForUser,
+  hasAnotherActiveSocketForUserInLobby,
   getLobbyCodesFromRooms,
   disconnectSyncManager,
 })
@@ -293,6 +430,24 @@ const handleLeaveLobby = createLeaveLobbyHandler({
 const { handleJoinLobbyList, handleLeaveLobbyList } = createLobbyListMembershipHandlers({
   socketMonitor,
   socketLogger,
+})
+
+const handleLobbyCreated = createLobbyCreatedHandler({
+  socketMonitor,
+  socketLogger,
+  notifyLobbyListUpdate: () => {
+    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+  },
+})
+
+const { handleBlockedPlayerJoined, handleBlockedGameStarted } = createForbiddenClientEventsHandlers({
+  logger,
+  socketMonitor,
+  emitError,
+})
+
+const handleSocketError = createSocketErrorHandler({
+  logger,
 })
 
 // Keep-alive mechanism to prevent Render.com free tier from sleeping
@@ -315,6 +470,9 @@ io.on('connection', (socket) => {
 
   // Mark user as online if authenticated
   const userId = socket.data.user?.id
+  if (userId) {
+    socket.join(SocketRooms.user(userId))
+  }
   if (userId && !socket.data.user?.isGuest) {
     onlinePresence.markUserOnline(userId, socket.id)
   }
@@ -343,28 +501,16 @@ io.on('connection', (socket) => {
   })
 
   socket.on(SocketEvents.LOBBY_CREATED, () => {
-    socketMonitor.trackEvent('lobby-created')
-    socketLogger('lobby-created').info('New lobby created, notifying lobby list')
-    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+    handleLobbyCreated()
   })
 
   // Player and game lifecycle broadcasts must come from trusted server routes only (/api/notify).
   socket.on(SocketEvents.PLAYER_JOINED, () => {
-    socketMonitor.trackEvent('blocked-player-joined')
-    logger.warn('Blocked client-side player-joined event', {
-      socketId: socket.id,
-      userId: socket.data.user?.id,
-    })
-    emitError(socket, 'FORBIDDEN_ACTION', 'Use server API to broadcast player events', 'errors.forbidden')
+    handleBlockedPlayerJoined(socket)
   })
 
   socket.on(SocketEvents.GAME_STARTED, () => {
-    socketMonitor.trackEvent('blocked-game-started')
-    logger.warn('Blocked client-side game-started event', {
-      socketId: socket.id,
-      userId: socket.data.user?.id,
-    })
-    emitError(socket, 'FORBIDDEN_ACTION', 'Use server API to broadcast game events', 'errors.forbidden')
+    handleBlockedGameStarted(socket)
   })
 
   socket.on(
@@ -387,7 +533,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('error', (error) => {
-    logger.error('Socket error', error, { socketId: socket.id })
+    handleSocketError(socket, error as Error)
   })
 })
 
@@ -401,8 +547,7 @@ registerSocketHttpEndpoints({
   logger,
   socketMonitor,
   dbMonitor,
-  isInternalEndpointAuthorized: (req) =>
-    isInternalEndpointAuthorized(req, logger, process.env.NODE_ENV, SOCKET_INTERNAL_SECRET),
+  isInternalEndpointAuthorized,
   getNextSequenceId: () => ++eventSequence,
 })
 
@@ -427,6 +572,9 @@ const gracefulShutdown = async (signal: string) => {
   server.close(() => {
     logger.info('HTTP server closed')
   })
+
+  // Clear pending delayed disconnect tasks to avoid stale state mutations during shutdown.
+  disconnectSyncManager.dispose()
 
   // Close all socket connections
   io.close(() => {

@@ -276,7 +276,7 @@ export default function GameHistory() {
                     </span>
                     {player.finalScore !== null && (
                       <span className="text-xs text-gray-600 dark:text-gray-400">
-                        {player.finalScore} pts
+                        {player.finalScore} {t('profile.gameResults.points')}
                       </span>
                     )}
                     {player.isWinner && <span className="text-yellow-500">👑</span>}

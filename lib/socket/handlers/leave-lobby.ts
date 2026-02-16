@@ -1,22 +1,8 @@
 import { SocketRooms } from '../../../types/socket-events'
-import { parseJoinLobbyCode } from './payload-validation'
-
-type LogContext = Record<string, unknown>
+import { LeaveLobbySocket } from './types'
 
 type SocketLoggerFactory = (scope: string) => {
-  debug: (message: string, context?: LogContext) => void
-}
-
-interface LeaveLobbySocket {
-  id: string
-  rooms: Set<string>
-  leave: (room: string) => void
-  data: {
-    user?: {
-      id?: string
-    }
-    authorizedLobbies?: Set<string>
-  }
+  debug: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -40,8 +26,8 @@ export function createLeaveLobbyHandler({
   revokeSocketLobbyAuthorization,
   disconnectSyncManager,
 }: LeaveLobbyDependencies) {
-  return (socket: LeaveLobbySocket, lobbyCode: unknown) => {
-    const normalizedLobbyCode = parseJoinLobbyCode(lobbyCode)
+  return (socket: LeaveLobbySocket, lobbyCode: string) => {
+    const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
     if (!normalizedLobbyCode) {
       return
     }

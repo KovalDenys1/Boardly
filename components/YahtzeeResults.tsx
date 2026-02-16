@@ -1,15 +1,15 @@
 ﻿'use client'
 
-import { useEffect } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { sounds } from '@/lib/sounds'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
   currentUserId: string | null
   canStartGame: boolean
+  canRequestRematch?: boolean
   onPlayAgain: () => void
+  onRequestRematch?: () => void
   onBackToLobby: () => void
 }
 
@@ -17,25 +17,20 @@ export default function YahtzeeResults({
   results,
   currentUserId,
   canStartGame,
+  canRequestRematch = false,
   onPlayAgain,
+  onRequestRematch,
   onBackToLobby
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
-  
-  // Play victory sound when results are shown
-  useEffect(() => {
-    if (results.length > 0) {
-      sounds.play('celebration')
-    }
-  }, [results.length])
-  
+
   if (results.length === 0) {
     return null
   }
-  
+
   const winner = results[0]
   const isWinner = winner.playerId === currentUserId
-  
+
   return (
     <div
       className="fixed inset-0 top-20 overflow-y-auto bg-gray-50 dark:bg-gray-900"
@@ -255,7 +250,7 @@ export default function YahtzeeResults({
                             className="text-blue-600 dark:text-blue-400 font-normal"
                             style={{ fontSize: `clamp(10px, 0.9vw, 14px)` }}
                           >
-                            (You)
+                            {t('yahtzee.results.you')}
                           </span>
                         )}
                       </p>
@@ -272,7 +267,7 @@ export default function YahtzeeResults({
                       className="text-gray-500 dark:text-gray-400"
                       style={{ fontSize: `clamp(10px, 0.9vw, 12px)` }}
                     >
-                      points
+                      {t('profile.gameResults.points')}
                     </p>
                   </div>
                 </div>
@@ -287,18 +282,18 @@ export default function YahtzeeResults({
                   }}
                 >
                   <div className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Upper:</span>{' '}
+                    <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
                     <span className="font-semibold text-gray-900 dark:text-gray-100">
                       {player.upperSectionScore}
                     </span>
                     {player.bonusAchieved && (
                       <span className="text-green-600 dark:text-green-400 ml-1">
-                        (+{player.bonusPoints} bonus)
+                        {t('yahtzee.results.bonus', { count: player.bonusPoints })}
                       </span>
                     )}
                   </div>
                   <div className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Lower:</span>{' '}
+                    <span className="font-medium">{t('yahtzee.results.lower')}</span>{' '}
                     <span className="font-semibold text-gray-900 dark:text-gray-100">
                       {player.lowerSectionScore}
                     </span>
@@ -356,7 +351,7 @@ export default function YahtzeeResults({
             }}
           >
             <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>🔄</span>
-            <span>Play Again</span>
+            <span>{t('yahtzee.results.playAgain')}</span>
           </button>
           {!canStartGame && (
             <p
@@ -366,10 +361,24 @@ export default function YahtzeeResults({
                 marginTop: `clamp(6px, 0.6vh, 10px)`,
               }}
             >
-              Only the lobby host can start the next round.
+              {t('yahtzee.results.hostCanStartNextRound')}
             </p>
           )}
         </div>
+        {onRequestRematch && canRequestRematch && (
+          <button
+            onClick={onRequestRematch}
+            className="btn btn-primary flex items-center justify-center hover:shadow-xl hover:brightness-110 transition-all"
+            style={{
+              fontSize: `clamp(13px, 1.3vw, 20px)`,
+              padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 40px)`,
+              gap: `clamp(6px, 0.6vw, 10px)`,
+            }}
+          >
+            <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>📣</span>
+            <span>{t('yahtzee.results.requestRematch')}</span>
+          </button>
+        )}
         <button
           onClick={onBackToLobby}
           className="btn btn-secondary flex items-center justify-center hover:shadow-xl hover:brightness-110 transition-all"
@@ -380,7 +389,7 @@ export default function YahtzeeResults({
           }}
         >
           <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>↩️</span>
-          <span>Back to Lobbies</span>
+          <span>{t('yahtzee.results.backToLobbies')}</span>
         </button>
       </div>
       </div>

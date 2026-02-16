@@ -1,7 +1,7 @@
-type LogContext = Record<string, unknown>
+import { ConnectionLifecycleSocket } from './types'
 
 type LoggerLike = {
-  info: (message: string, context?: LogContext) => void
+  info: (message: string, context?: Record<string, unknown>) => void
 }
 
 interface SocketMonitorLike {
@@ -19,25 +19,16 @@ interface DisconnectSyncManagerLike {
   ) => void
 }
 
-interface ConnectionLifecycleSocket {
-  id: string
-  rooms: Set<string>
-  data: {
-    user?: {
-      id?: string
-      username?: string | null
-      email?: string | null
-      isGuest?: boolean
-    }
-  }
-}
-
 interface ConnectionLifecycleDependencies {
   logger: LoggerLike
   socketMonitor: SocketMonitorLike
   onlinePresence: OnlinePresenceLike
   clearSocketRateLimit: (socketId: string) => void
-  hasAnotherActiveSocketForUser: (userId: string, excludingSocketId: string) => boolean
+  hasAnotherActiveSocketForUserInLobby: (
+    userId: string,
+    excludingSocketId: string,
+    lobbyCode: string
+  ) => boolean
   getLobbyCodesFromRooms: (rooms: Iterable<string>) => string[]
   disconnectSyncManager: DisconnectSyncManagerLike
 }
@@ -47,7 +38,7 @@ export function createConnectionLifecycleHandlers({
   socketMonitor,
   onlinePresence,
   clearSocketRateLimit,
-  hasAnotherActiveSocketForUser,
+  hasAnotherActiveSocketForUserInLobby,
   getLobbyCodesFromRooms,
   disconnectSyncManager,
 }: ConnectionLifecycleDependencies) {
@@ -57,27 +48,22 @@ export function createConnectionLifecycleHandlers({
       return
     }
 
-    if (hasAnotherActiveSocketForUser(disconnectingUser.id, socket.id)) {
-      logger.info('Skipping disconnect state sync because another socket is active', {
-        userId: disconnectingUser.id,
-        socketId: socket.id,
-      })
-      return
-    }
-
     const lobbyCodes = getLobbyCodesFromRooms(socket.rooms)
     if (lobbyCodes.length === 0) {
       return
     }
 
-    const activeUser = {
-      id: disconnectingUser.id,
-      username: disconnectingUser.username,
-      email: disconnectingUser.email,
-    }
-
     for (const lobbyCode of lobbyCodes) {
-      disconnectSyncManager.scheduleAbruptDisconnectForLobby(lobbyCode, activeUser)
+      if (hasAnotherActiveSocketForUserInLobby(disconnectingUser.id, socket.id, lobbyCode)) {
+        logger.info('Skipping disconnect state sync because another socket is active in lobby', {
+          userId: disconnectingUser.id,
+          socketId: socket.id,
+          lobbyCode,
+        })
+        continue
+      }
+
+      disconnectSyncManager.scheduleAbruptDisconnectForLobby(lobbyCode, disconnectingUser)
     }
   }
 

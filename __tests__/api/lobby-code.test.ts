@@ -28,6 +28,9 @@ jest.mock('@/lib/db', () => ({
       delete: jest.fn(),
       count: jest.fn(),
     },
+    lobbyInvites: {
+      updateMany: jest.fn(),
+    },
     users: {
       findUnique: jest.fn(),
     },
