@@ -33,6 +33,7 @@ jobs:
     env:
       # CI uses ephemeral test environment - hardcoded credentials are safe here
       DATABASE_URL: postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly
+      DIRECT_URL: postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
       JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
