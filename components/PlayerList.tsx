@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { BotDifficulty } from '@/lib/bot-profiles'
 import Modal from './Modal'
 
 interface Player {
@@ -35,6 +36,11 @@ interface PlayerListProps {
 const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, selectedPlayerId }: PlayerListProps) {
   const { t } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const difficultyLabelMap: Record<BotDifficulty, string> = {
+    easy: t('game.ui.botDifficultyEasy'),
+    medium: t('game.ui.botDifficultyMedium'),
+    hard: t('game.ui.botDifficultyHard'),
+  }
 
   // Sort by score (descending), then by position (ascending) if scores are equal
   const sortedPlayers = [...players].sort((a, b) => {
@@ -93,9 +99,9 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
-            const playerName = isBot
-              ? t('game.ui.aiBot')
-              : player.user.name || player.user.username || player.user.email || t('game.ui.player')
+            const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+            const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
+            const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
 
             return (
               <button
@@ -135,6 +141,11 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         {isBot && (
                           <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
                             AI
+                          </span>
+                        )}
+                        {isBot && botDifficultyLabel && (
+                          <span className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
+                            {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
@@ -189,9 +200,9 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
-            const playerName = isBot
-              ? t('game.ui.aiBot')
-              : player.user.name || player.user.username || player.user.email || t('game.ui.player')
+            const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+            const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
+            const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
 
             return (
               <div
@@ -230,6 +241,11 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         {isBot && (
                           <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
                             AI
+                          </span>
+                        )}
+                        {isBot && botDifficultyLabel && (
+                          <span className="text-xs bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                            {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (

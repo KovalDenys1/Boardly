@@ -77,6 +77,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
+import type { BotDifficulty } from '@/lib/bot-profiles'
 
 const PlayerList = dynamic(() => import('@/components/PlayerList'))
 const Scorecard = dynamic(() => import('@/components/Scorecard'))
@@ -167,6 +168,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Friends invite modal state
   const [showFriendsModal, setShowFriendsModal] = useState(false)
+  const [selectedBotDifficulty, setSelectedBotDifficulty] = useState<BotDifficulty>('medium')
 
   // Leave confirmation modal state
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
@@ -590,6 +592,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setError,
     setLoading,
     setStartingGame,
+    selectedBotDifficulty,
   })
 
   // Update ref with loadLobby function
@@ -945,7 +948,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   const handleAddBot = async () => {
-    await addBotToLobby()
+    await addBotToLobby({ difficulty: selectedBotDifficulty })
   }
 
   const handleInviteFriends = useCallback(async (friendIds: string[]) => {
@@ -1182,10 +1185,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               lobby={lobby}
               gameEngine={gameEngine}
               minPlayers={minPlayersRequired}
+              botDifficulty={selectedBotDifficulty}
               canStartGame={canStartGame}
               startingGame={startingGame}
               onStartGame={handleStartGame}
               onAddBot={handleAddBot}
+              onBotDifficultyChange={setSelectedBotDifficulty}
               onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
               getCurrentUserId={getCurrentUserId}
             />

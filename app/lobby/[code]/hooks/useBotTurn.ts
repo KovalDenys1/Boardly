@@ -1,6 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { GameEngine } from '@/lib/game-engine'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 
@@ -163,28 +162,9 @@ export function useBotTurn({
       isBot,
       hasBotRelation: !!currentGamePlayer.user.bot,
       botData: currentGamePlayer.user.bot,
-      rollsLeft: gameEngine instanceof YahtzeeGame ? gameEngine.getRollsLeft() : 'N/A'
     })
 
     if (isBot) {
-      // Trigger immediately on bot turn.
-      // For Yahtzee we still log non-initial roll states, but don't block the request:
-      // local state can be stale after reconnect/refresh while server state is already
-      // ready for bot execution.
-      if (gameEngine instanceof YahtzeeGame) {
-        const rollsLeft = gameEngine.getRollsLeft()
-        if (rollsLeft !== 3) {
-          clientLogger.debug(
-            '🤖 Bot turn detected with non-initial Yahtzee rollsLeft, triggering anyway',
-            {
-              rollsLeft,
-              currentPlayerId: currentPlayer.id,
-              currentPlayerIndex,
-            }
-          )
-        }
-      }
-
       clientLogger.log('🤖 Bot turn detected, triggering bot move...')
 
       // Update tracking variables before triggering

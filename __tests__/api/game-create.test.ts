@@ -270,14 +270,14 @@ describe('POST /api/game/create', () => {
     mockGetServerSession.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
-      gameType: 'tic_tac_toe', // Use game without bot support
+      gameType: 'tic_tac_toe',
       games: [gameWithOnePlayer],
     } as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
       method: 'POST',
       body: JSON.stringify({
-        gameType: 'tic_tac_toe', // Tic Tac Toe requires exactly 2 players, no bot support
+        gameType: 'tic_tac_toe',
         lobbyId: 'lobby-123',
         config: { maxPlayers: 2, minPlayers: 2 },
       }),

@@ -10,6 +10,7 @@ import { POST as ADD_BOT } from '@/app/api/lobby/[code]/add-bot/route'
 import { POST as LEAVE_LOBBY } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { createBot } from '@/lib/bot-helpers'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -86,6 +87,7 @@ jest.mock('@/lib/bot-helpers', () => ({
 
 jest.mock('@/lib/game-registry', () => ({
   DEFAULT_GAME_TYPE: 'yahtzee',
+  hasBotSupport: jest.fn(() => true),
   createGameEngine: jest.fn(() => ({
     getState: () => ({ players: [], currentPlayerIndex: 0, status: 'waiting', data: {} }),
   })),
@@ -97,6 +99,7 @@ jest.mock('@/lib/lobby-snapshot', () => ({
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
+const mockCreateBot = createBot as jest.Mock
 
 describe('Guest mode API endpoints', () => {
   const guestUser = {
@@ -224,6 +227,50 @@ describe('Guest mode API endpoints', () => {
 
     const response = await ADD_BOT(req, { params: Promise.resolve({ code: 'TEST123' }) })
     expect(response.status).toBe(200)
+  })
+
+  it('creates bot with selected difficulty profile for supported game', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby_ttt',
+      code: 'TTT123',
+      creatorId: guestUser.id,
+      maxPlayers: 2,
+      gameType: 'tic_tac_toe',
+      games: [
+        {
+          id: 'game_ttt',
+          status: 'waiting',
+          players: [
+            {
+              user: { bot: null },
+            },
+          ],
+        },
+      ],
+    } as any)
+    mockPrisma.users.findFirst.mockResolvedValue(null as any)
+    mockPrisma.players.create.mockResolvedValue({ id: 'bot_player_ttt' } as any)
+    mockPrisma.games.findUnique.mockResolvedValue({
+      id: 'game_ttt',
+      players: [],
+    } as any)
+
+    mockCreateBot.mockResolvedValue({
+      user: { id: 'bot_hard_ttt', username: 'Grid Grandmaster' },
+      bot: { id: 'bot_meta_hard_ttt', botType: 'tic_tac_toe', difficulty: 'hard' },
+    } as any)
+
+    const req = new NextRequest('http://localhost:3000/api/lobby/TTT123/add-bot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ difficulty: 'hard' }),
+    })
+
+    const response = await ADD_BOT(req, { params: Promise.resolve({ code: 'TTT123' }) })
+    expect(response.status).toBe(200)
+    expect(mockCreateBot).toHaveBeenCalledWith('Grid Grandmaster', 'tic_tac_toe', 'hard')
   })
 
   it('allows guest player to leave waiting lobby', async () => {

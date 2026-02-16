@@ -49,10 +49,12 @@ export function botSupportsGame(botType: string | null, gameType: string): boole
     // Map bot types to supported games
     const supportMap: Record<string, string[]> = {
         'yahtzee': ['yahtzee'],
+        'tic_tac_toe': ['tic_tac_toe'],
+        'rock_paper_scissors': ['rock_paper_scissors'],
         'spy': ['guess_the_spy'],
         'uno': ['uno'],
         'chess': ['chess'],
-        'generic': ['yahtzee', 'guess_the_spy', 'uno', 'chess'] // Generic bots support all games
+        'generic': ['yahtzee', 'tic_tac_toe', 'rock_paper_scissors', 'guess_the_spy', 'uno', 'chess'] // Generic bots support all games
     }
 
     return supportMap[botType]?.includes(gameType) ?? false

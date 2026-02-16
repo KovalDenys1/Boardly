@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { Move, Player } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
@@ -241,18 +240,17 @@ export async function POST(
         snapshot.currentPlayerId === serverCurrentPlayer?.id &&
         snapshotLastMoveAt === serverLastMoveAt
 
-      // For Yahtzee, also compare rollsLeft; for other games just compare updatedAt
-      const isYahtzeeEngine = gameEngine instanceof YahtzeeGame
-      const serverRollsLeft = isYahtzeeEngine ? gameEngine.getRollsLeft() : 0
+      const getRollsLeft =
+        typeof (gameEngine as { getRollsLeft?: () => number }).getRollsLeft === 'function'
+          ? (gameEngine as { getRollsLeft: () => number }).getRollsLeft.bind(gameEngine)
+          : null
+      const serverRollsLeft = getRollsLeft ? getRollsLeft() : null
 
-      const isSameMoveWindow = isYahtzeeEngine
-        ? (snapshot.rollsLeft === serverRollsLeft &&
-           snapshotUpdatedAt !== null &&
-           serverStateUpdatedAt !== null &&
-           snapshotUpdatedAt === serverStateUpdatedAt)
-        : (snapshotUpdatedAt !== null &&
-           serverStateUpdatedAt !== null &&
-           snapshotUpdatedAt === serverStateUpdatedAt)
+      const isSameMoveWindow =
+        snapshotUpdatedAt !== null &&
+        serverStateUpdatedAt !== null &&
+        snapshotUpdatedAt === serverStateUpdatedAt &&
+        (serverRollsLeft === null || snapshot.rollsLeft === serverRollsLeft)
 
       if (!isSameTurn || !isSameMoveWindow) {
         log.info('Auto action skipped: turn already ended or state changed', {
@@ -406,8 +404,11 @@ export async function POST(
       })
     }
 
-    // Update player scores — getScorecard only exists on YahtzeeGame
-    const isYahtzeeEngine = gameEngine instanceof YahtzeeGame
+    // Update player scores. Scorecard is optional and available only for games that implement getScorecard().
+    const getScorecard =
+      typeof (gameEngine as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
+        ? (gameEngine as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
+        : null
     const enginePlayers = gameEngine.getPlayers()
     await Promise.all(
       enginePlayers.map(async (player: Player) => {
@@ -418,7 +419,7 @@ export async function POST(
             data: {
               score: player.score || 0,
               scorecard: JSON.stringify(
-                isYahtzeeEngine ? gameEngine.getScorecard(player.id) : {}
+                getScorecard ? getScorecard(player.id) : {}
               ),
             },
           })
@@ -442,6 +443,79 @@ export async function POST(
         lobbyCode: game.lobby.code,
         userId,
       })
+    }
+
+    const requestPlayerIsBot = !!playerRecord.user?.bot
+    const botPlayers = updatedGame.players.filter((player) => !!player.user?.bot)
+    let botUserIdToTrigger: string | null = null
+
+    if (!requestPlayerIsBot && authoritativeState.status === 'playing' && botPlayers.length > 0) {
+      if (game.lobby.gameType === 'tic_tac_toe') {
+        const currentPlayerId = enginePlayers[authoritativeState.currentPlayerIndex]?.id
+        const currentBotPlayer = botPlayers.find((player) => player.userId === currentPlayerId)
+        if (currentBotPlayer) {
+          botUserIdToTrigger = currentBotPlayer.userId
+        }
+      } else if (game.lobby.gameType === 'rock_paper_scissors' && gameMove.type === 'submit-choice') {
+        const rpsData = (authoritativeState as { data?: { playersReady?: string[] } }).data
+        const playersReady = Array.isArray(rpsData?.playersReady) ? rpsData.playersReady : []
+        const pendingBot = botPlayers.find((player) => !playersReady.includes(player.userId))
+        if (pendingBot) {
+          botUserIdToTrigger = pendingBot.userId
+        }
+      }
+    }
+
+    if (botUserIdToTrigger) {
+      const botTurnApiUrl = `${request.nextUrl.origin}/api/game/${gameId}/bot-turn`
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+      log.info('Auto-triggering bot turn after player move', {
+        gameId,
+        gameType: game.lobby.gameType,
+        botUserId: botUserIdToTrigger,
+      })
+
+      void fetch(botTurnApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          botUserId: botUserIdToTrigger,
+          lobbyCode: game.lobby.code,
+        }),
+        signal: controller.signal,
+      })
+        .then(async (botResponse) => {
+          clearTimeout(timeoutId)
+          if (!botResponse.ok) {
+            const errorPayload = await botResponse.json().catch(() => null)
+            log.warn('Auto-triggered bot turn failed', {
+              gameId,
+              botUserId: botUserIdToTrigger,
+              status: botResponse.status,
+              error: errorPayload,
+            })
+          }
+        })
+        .catch((triggerError) => {
+          clearTimeout(timeoutId)
+          if ((triggerError as Error)?.name === 'AbortError') {
+            log.warn('Auto-triggered bot turn request timed out', {
+              gameId,
+              botUserId: botUserIdToTrigger,
+            })
+            return
+          }
+
+          log.warn('Failed to auto-trigger bot turn request', {
+            gameId,
+            botUserId: botUserIdToTrigger,
+            error: triggerError,
+          })
+        })
     }
 
     const response = {

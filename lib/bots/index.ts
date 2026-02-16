@@ -20,3 +20,17 @@ export { isBot, getBotDifficulty, getBotType, botSupportsGame } from './core/bot
 export { YahtzeeBot, type YahtzeeBotDecision } from './yahtzee/yahtzee-bot'
 export { YahtzeeBotExecutor, type YahtzeeBotActionEvent } from './yahtzee/yahtzee-bot-executor'
 export { YahtzeeBotAI, type BotDecision as YahtzeeBotAIDecision } from './yahtzee/yahtzee-bot-ai'
+
+// Tic-Tac-Toe exports
+export { TicTacToeBot, type TicTacToeBotDecision } from './tic-tac-toe/tic-tac-toe-bot'
+export { TicTacToeBotExecutor, type TicTacToeBotActionEvent } from './tic-tac-toe/tic-tac-toe-bot-executor'
+
+// Rock-Paper-Scissors exports
+export {
+    RockPaperScissorsBot,
+    type RockPaperScissorsBotDecision,
+} from './rock-paper-scissors/rock-paper-scissors-bot'
+export {
+    RockPaperScissorsBotExecutor,
+    type RockPaperScissorsBotActionEvent,
+} from './rock-paper-scissors/rock-paper-scissors-bot-executor'

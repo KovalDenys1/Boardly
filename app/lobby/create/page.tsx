@@ -273,7 +273,9 @@ function CreateLobbyPage() {
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
             {/* 1. Game Type Selector - clean scrollable list */}
             <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
-              {Object.entries(GAME_INFO).map(([key, info], index) => (
+              {Object.entries(GAME_INFO)
+                .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+                .map(([key, info]) => (
                 <button
                   key={key}
                   type="button"
@@ -339,12 +341,12 @@ function CreateLobbyPage() {
 
                 {gameInfo.allowedPlayers.length === 1 ? (
                   // Static display for games with fixed player count (e.g., Tic-Tac-Toe, Rock Paper Scissors)
-                  <div className="flex flex-col items-center py-4">
-                    <div className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-white/40">
-                      <span className="text-4xl font-black text-white drop-shadow-lg">
+                  <div className="flex flex-col items-center py-2">
+                    <div className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
+                      <span className="text-2xl font-extrabold text-white">
                         {gameInfo.allowedPlayers[0]}
                       </span>
-                      <span className="text-lg text-white/90 font-semibold">
+                      <span className="text-sm text-white/90 font-semibold">
                         {gameInfo.allowedPlayers[0] === 1
                           ? t('lobby.create.player')
                           : t('lobby.create.players')
@@ -450,8 +452,8 @@ function CreateLobbyPage() {
                 {/* Helper text */}
                 <p className="text-xs text-white/70 mt-2 text-center">
                   {gameInfo.allowedPlayers.length === 1
-                    ? t('lobby.create.playerCountHelper', { count: gameInfo.allowedPlayers[0] })
-                    : t('lobby.create.playerCountHelper', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1], count: 2 })
+                    ? t('lobby.create.playerCountHelperExact', { count: gameInfo.allowedPlayers[0] })
+                    : t('lobby.create.playerCountHelperRange', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })
                   }
                 </p>
               </div>

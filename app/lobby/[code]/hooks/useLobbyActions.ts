@@ -7,6 +7,7 @@ import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -40,6 +41,18 @@ interface UseLobbyActionsProps {
   setError: (error: string) => void
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
+  selectedBotDifficulty: BotDifficulty
+}
+
+interface AddBotOptions {
+  auto?: boolean
+  difficulty?: BotDifficulty
+}
+
+interface AddBotResult {
+  success: boolean
+  botName?: string
+  botDifficulty?: BotDifficulty
 }
 
 export function useLobbyActions(props: UseLobbyActionsProps) {
@@ -64,6 +77,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setError,
     setLoading,
     setStartingGame,
+    selectedBotDifficulty,
   } = props
 
   const [password, setPassword] = useState('')
@@ -117,19 +131,29 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     loadLobbyRef.current = loadLobby
   }, [loadLobby])
 
-  const addBotToLobby = useCallback(async (options?: { auto?: boolean }) => {
+  const addBotToLobby = useCallback(async (options?: AddBotOptions): Promise<AddBotResult> => {
+    const requestedDifficulty = options?.difficulty || selectedBotDifficulty
+    const payload = { difficulty: requestedDifficulty }
+
+    const difficultyLabelMap: Record<BotDifficulty, string> = {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
+    }
+
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch(`/api/lobby/${code}/add-bot`, {
         method: 'POST',
         headers,
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
         if (options?.auto && data?.error === 'Bot already in lobby') {
-          return true
+          return { success: true }
         }
         throw new Error(data.error || 'Failed to add bot')
       }
@@ -138,28 +162,46 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       if (loadLobbyRef.current) {
         await loadLobbyRef.current()
       }
+      const botName = data?.bot?.username || 'AI Bot'
+      const botDifficulty = normalizeBotDifficulty(data?.bot?.difficulty, requestedDifficulty)
+      const difficultyLabel = difficultyLabelMap[botDifficulty]
+
       const successMessage = options?.auto
-        ? '🤖 Added an AI opponent so you can start playing!'
-        : '🤖 Bot added to lobby!'
+        ? `🤖 Added ${botName} (${difficultyLabel}) so you can start playing!`
+        : `🤖 ${botName} (${difficultyLabel}) joined the lobby!`
       showToast.success('toast.success', successMessage)
-      return true
+
+      return {
+        success: true,
+        botName,
+        botDifficulty,
+      }
     } catch (err: any) {
       if (options?.auto) {
         clientLogger.warn('Auto bot addition skipped:', err.message)
-        return false
+        return { success: false }
       }
 
       showToast.error('toast.botAddFailed', err.message)
-      return false
+      return { success: false }
     }
-  }, [code, isGuest, guestId, guestName, guestToken])
+  }, [code, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
 
-  const announceBotJoined = useCallback(() => {
+  const announceBotJoined = useCallback((botName?: string, botDifficulty?: BotDifficulty) => {
+    const difficultyLabelMap: Record<BotDifficulty, string> = {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
+    }
+    const safeDifficulty = botDifficulty ? normalizeBotDifficulty(botDifficulty) : null
+    const difficultySuffix = safeDifficulty ? ` (${difficultyLabelMap[safeDifficulty]})` : ''
+    const resolvedName = botName || 'AI Bot'
+
     const botJoinMessage = {
       id: Date.now().toString() + '_botjoin',
       userId: 'system',
       username: 'System',
-      message: '🤖 AI Bot joined the lobby',
+      message: `🤖 ${resolvedName}${difficultySuffix} joined the lobby`,
       timestamp: Date.now(),
       type: 'system'
     }
@@ -232,17 +274,17 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // Auto-add one bot for bot-supported games when we are below minimum.
       if (playerCount < desiredPlayerCount && supportsBots) {
         showToast.loading('toast.addingBot', undefined, undefined, { id: 'add-bot' })
-        const botAdded = await addBotToLobby({ auto: true })
+        const botResult = await addBotToLobby({ auto: true, difficulty: selectedBotDifficulty })
         showToast.dismiss('add-bot')
 
-        if (!botAdded) {
+        if (!botResult.success) {
           setStartingGame(false)
           showToast.error('toast.botAddFailed')
           return
         }
 
         // Announce bot joined
-        announceBotJoined()
+        announceBotJoined(botResult.botName, botResult.botDifficulty)
 
         // Wait for lobby to reload and get updated player list
         if (loadLobbyRef.current) {
@@ -356,7 +398,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setStartingGame(false)
     }
-  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken])
+  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
 
   return {
     loadLobby,
