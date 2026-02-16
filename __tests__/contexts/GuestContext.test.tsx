@@ -1,160 +1,163 @@
-/**
- * Unit tests for GuestContext
- */
-
 import React from 'react'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { useSession } from 'next-auth/react'
 import { GuestProvider, useGuest } from '@/contexts/GuestContext'
 
-// Mock localStorage
-const localStorageMock = (() => {
-    let store: Record<string, string> = {}
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(),
+}))
 
-    return {
-        getItem: (key: string) => store[key] || null,
-        setItem: (key: string, value: string) => {
-            store[key] = value.toString()
-        },
-        removeItem: (key: string) => {
-            delete store[key]
-        },
-        clear: () => {
-            store = {}
-        },
-    }
-})()
+const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
 
-Object.defineProperty(window, 'localStorage', {
-    value: localStorageMock,
-})
+const GUEST_ID_KEY = 'boardly_guest_id'
+const GUEST_NAME_KEY = 'boardly_guest_name'
+const GUEST_TOKEN_KEY = 'boardly_guest_token'
 
-describe.skip('GuestContext', () => {
-    beforeEach(() => {
-        localStorageMock.clear()
+describe('GuestContext', () => {
+  const originalFetch = global.fetch
+  const mockFetch = jest.fn()
+
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <GuestProvider>{children}</GuestProvider>
+  )
+
+  const setSessionStatus = (status: 'authenticated' | 'unauthenticated' | 'loading') => {
+    mockUseSession.mockReturnValue({
+      data: status === 'authenticated' ? ({ user: { id: 'user-1' } } as any) : null,
+      status,
+      update: jest.fn(),
+    } as any)
+  }
+
+  beforeAll(() => {
+    ;(global as any).fetch = mockFetch
+  })
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    window.localStorage.clear()
+    setSessionStatus('unauthenticated')
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        guestId: 'guest-new',
+        guestName: 'Guest User',
+        guestToken: 'guest.jwt.token',
+      }),
+    })
+  })
+
+  afterAll(() => {
+    ;(global as any).fetch = originalFetch
+  })
+
+  it('initializes with no guest data', () => {
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    expect(result.current.isGuest).toBe(false)
+    expect(result.current.guestId).toBeNull()
+    expect(result.current.guestName).toBeNull()
+    expect(result.current.guestToken).toBeNull()
+  })
+
+  it('loads guest data from localStorage and refreshes token', async () => {
+    window.localStorage.setItem(GUEST_ID_KEY, 'guest-1')
+    window.localStorage.setItem(GUEST_NAME_KEY, 'Stored Guest')
+    window.localStorage.setItem(GUEST_TOKEN_KEY, 'stored.token')
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        guestId: 'guest-1',
+        guestName: 'Stored Guest',
+        guestToken: 'refreshed.token',
+      }),
     })
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <GuestProvider>{children}</GuestProvider>
-    )
+    const { result } = renderHook(() => useGuest(), { wrapper })
 
-    describe('useGuest hook', () => {
-        it('should initialize with no guest data', () => {
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            expect(result.current.isGuest).toBe(false)
-            expect(result.current.guestId).toBeNull()
-            expect(result.current.guestName).toBeNull()
-        })
-
-        it('should load guest data from localStorage on mount', () => {
-            localStorageMock.setItem('boardly_guest_id', 'guest_123')
-            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
-
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            expect(result.current.isGuest).toBe(true)
-            expect(result.current.guestId).toBe('guest_123')
-            expect(result.current.guestName).toBe('Test Guest')
-        })
-
-        it('should set guest mode with setGuestMode', () => {
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            act(() => {
-                result.current.setGuestMode('New Guest')
-            })
-
-            expect(result.current.isGuest).toBe(true)
-            expect(result.current.guestId).toBeTruthy()
-            expect(result.current.guestId).toMatch(/^guest-/)
-            expect(result.current.guestName).toBe('New Guest')
-            expect(localStorageMock.getItem('boardly_guest_id')).toMatch(/^guest-/)
-            expect(localStorageMock.getItem('boardly_guest_name')).toBe('New Guest')
-        })
-
-        it('should clear guest mode with clearGuestMode', () => {
-            localStorageMock.setItem('boardly_guest_id', 'guest_123')
-            localStorageMock.setItem('boardly_guest_name', 'Test Guest')
-
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            act(() => {
-                result.current.clearGuestMode()
-            })
-
-            expect(result.current.isGuest).toBe(false)
-            expect(result.current.guestId).toBeNull()
-            expect(result.current.guestName).toBeNull()
-            expect(localStorageMock.getItem('boardly_guest_id')).toBeNull()
-            expect(localStorageMock.getItem('boardly_guest_name')).toBeNull()
-        })
-
-        it('should return correct headers from getHeaders', () => {
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            act(() => {
-                result.current.setGuestMode('Header Test')
-            })
-
-            const headers = result.current.getHeaders()
-
-            expect(headers['X-Guest-Id']).toMatch(/^guest-/)
-            expect(headers['X-Guest-Name']).toBe('Header Test')
-        })
-
-        it('should return empty headers when not in guest mode', () => {
-            const { result } = renderHook(() => useGuest(), { wrapper })
-
-            const headers = result.current.getHeaders()
-
-            expect(headers).toEqual({})
-        })
-
-        it('should generate unique guest ID with setGuestMode', () => {
-            const { result: result1 } = renderHook(() => useGuest(), { wrapper })
-            const { result: result2 } = renderHook(() => useGuest(), { wrapper })
-
-            act(() => {
-                result1.current.setGuestMode('Guest 1')
-            })
-
-            act(() => {
-                result2.current.setGuestMode('Guest 2')
-            })
-
-            expect(result1.current.guestId).toBeTruthy()
-            expect(result2.current.guestId).toBeTruthy()
-            expect(result1.current.guestId).not.toBe(result2.current.guestId)
-        })
-
-        it('should persist guest data across hook re-renders', () => {
-            const { result, rerender } = renderHook(() => useGuest(), { wrapper })
-
-            act(() => {
-                result.current.setGuestMode('Persistent Guest')
-            })
-
-            const persistedId = result.current.guestId
-
-            rerender()
-
-            expect(result.current.isGuest).toBe(true)
-            expect(result.current.guestId).toBe(persistedId)
-            expect(result.current.guestName).toBe('Persistent Guest')
-        })
+    await waitFor(() => {
+      expect(result.current.isGuest).toBe(true)
     })
 
-    describe('GuestContext error handling', () => {
-        it('should throw error when useGuest is used outside GuestProvider', () => {
-            // Suppress console.error for this test
-            const originalError = console.error
-            console.error = jest.fn()
-
-            expect(() => {
-                renderHook(() => useGuest())
-            }).toThrow('useGuest must be used within a GuestProvider')
-
-            console.error = originalError
-        })
+    await waitFor(() => {
+      expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBe('refreshed.token')
     })
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/auth/guest-session', expect.any(Object))
+  })
+
+  it('creates guest session via setGuestMode and persists it', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        guestId: 'guest-42',
+        guestName: 'New Guest',
+        guestToken: 'token-42',
+      }),
+    })
+
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    await act(async () => {
+      await result.current.setGuestMode('New Guest')
+    })
+
+    expect(result.current.isGuest).toBe(true)
+    expect(result.current.guestId).toBe('guest-42')
+    expect(result.current.guestName).toBe('New Guest')
+    expect(result.current.guestToken).toBe('token-42')
+
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBe('guest-42')
+    expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBe('New Guest')
+    expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBe('token-42')
+  })
+
+  it('returns token header from getHeaders in guest mode', async () => {
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    await act(async () => {
+      await result.current.setGuestMode('Header Guest', {
+        guestId: 'guest-header',
+        guestToken: 'header.token',
+      })
+    })
+
+    expect(result.current.getHeaders()).toEqual({
+      'X-Guest-Token': 'header.token',
+    })
+  })
+
+  it('clears guest mode and local storage', async () => {
+    const { result } = renderHook(() => useGuest(), { wrapper })
+
+    await act(async () => {
+      await result.current.setGuestMode('Clear Guest', {
+        guestId: 'guest-clear',
+        guestToken: 'clear.token',
+      })
+    })
+
+    act(() => {
+      result.current.clearGuestMode()
+    })
+
+    expect(result.current.isGuest).toBe(false)
+    expect(result.current.guestId).toBeNull()
+    expect(result.current.guestName).toBeNull()
+    expect(result.current.guestToken).toBeNull()
+
+    expect(window.localStorage.getItem(GUEST_ID_KEY)).toBeNull()
+    expect(window.localStorage.getItem(GUEST_NAME_KEY)).toBeNull()
+    expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
+  })
+
+  it('throws when useGuest is called outside provider', () => {
+    const originalError = console.error
+    console.error = jest.fn()
+
+    expect(() => renderHook(() => useGuest())).toThrow('useGuest must be used within a GuestProvider')
+
+    console.error = originalError
+  })
 })

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import i18n from '@/i18n'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from '@/app/lobby/[code]/components/LobbyPageFallbacks'
 
 describe('LobbyPage fallback components', () => {
@@ -13,8 +14,8 @@ describe('LobbyPage fallback components', () => {
   it('renders error fallback with action button', () => {
     render(<LobbyPageErrorFallback />)
 
-    expect(screen.queryByText('Game Error')).not.toBeNull()
-    expect(screen.queryByText('Something went wrong with the game lobby. Please try again.')).not.toBeNull()
-    expect(screen.queryByRole('button', { name: 'Back to Lobbies' })).not.toBeNull()
+    expect(screen.queryByText(i18n.t('games.tictactoe.game.errorTitle'))).not.toBeNull()
+    expect(screen.queryByText(i18n.t('games.tictactoe.game.errorDescription'))).not.toBeNull()
+    expect(screen.queryByRole('button', { name: i18n.t('games.tictactoe.game.backToLobbies') })).not.toBeNull()
   })
 })

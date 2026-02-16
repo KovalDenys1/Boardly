@@ -84,10 +84,12 @@ export const SocketEvents = {
   BOT_ACTION: 'bot-action', // Bot performed action (Server → Client)
 
   // ========================================
-  // Friend System Events (future)
+  // Friend & Social Loop Events
   // ========================================
   FRIEND_REQUEST: 'friend-request',
   FRIEND_ACCEPTED: 'friend-accepted',
+  LOBBY_INVITE: 'lobby-invite',
+  REMATCH_REQUEST: 'rematch-request',
   USER_ONLINE: 'user-online',
   USER_OFFLINE: 'user-offline',
   ONLINE_USERS: 'online-users',
@@ -305,6 +307,24 @@ export interface OnlineUsersPayload {
   userIds: string[]
 }
 
+export interface LobbyInvitePayload extends BaseEventPayload {
+  lobbyCode: string
+  lobbyName: string
+  gameType: string
+  invitedById: string
+  invitedByName: string
+  inviteUrl: string
+}
+
+export interface RematchRequestPayload extends BaseEventPayload {
+  lobbyCode: string
+  lobbyName: string
+  gameType: string
+  requestedById: string
+  requestedByName: string
+  inviteUrl: string
+}
+
 // ============================================================================
 // Spectator Event Payloads (future)
 // ============================================================================
@@ -415,6 +435,9 @@ export const SocketRooms = {
 
   /** Room for lobby list subscribers */
   lobbyList: () => 'lobby-list',
+
+  /** Room for direct user-targeted notifications */
+  user: (userId: string) => `user:${userId}`,
 
   /** Room for a specific game (future) */
   game: (gameId: string) => `game:${gameId}`,

@@ -470,6 +470,9 @@ io.on('connection', (socket) => {
 
   // Mark user as online if authenticated
   const userId = socket.data.user?.id
+  if (userId) {
+    socket.join(SocketRooms.user(userId))
+  }
   if (userId && !socket.data.user?.isGuest) {
     onlinePresence.markUserOnline(userId, socket.id)
   }
@@ -569,6 +572,9 @@ const gracefulShutdown = async (signal: string) => {
   server.close(() => {
     logger.info('HTTP server closed')
   })
+
+  // Clear pending delayed disconnect tasks to avoid stale state mutations during shutdown.
+  disconnectSyncManager.dispose()
 
   // Close all socket connections
   io.close(() => {

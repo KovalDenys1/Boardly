@@ -105,4 +105,50 @@ describe('createDisconnectSyncManager', () => {
       })
     )
   })
+
+  it('clears pending delayed disconnect timers on dispose', async () => {
+    jest.useFakeTimers()
+    const deps = createDeps()
+    const manager = createDisconnectSyncManager(deps)
+
+    manager.scheduleAbruptDisconnectForLobby('ABCD', user)
+    manager.dispose()
+
+    jest.advanceTimersByTime(1000)
+    await Promise.resolve()
+
+    expect(deps.prisma.games.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('logs delayed disconnect failures instead of throwing unhandled errors', async () => {
+    const deps = createDeps({
+      disconnectGraceMs: 10,
+      prisma: {
+        games: {
+          findFirst: jest.fn().mockRejectedValue(new Error('db down')),
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        players: {
+          deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+        lobbies: {
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        },
+      } as DisconnectSyncOptions['prisma'],
+    })
+    const manager = createDisconnectSyncManager(deps)
+
+    manager.scheduleAbruptDisconnectForLobby('ABCD', user)
+
+    await new Promise((resolve) => setTimeout(resolve, 40))
+
+    expect(deps.logger.warn).toHaveBeenCalledWith(
+      'Delayed disconnect sync failed',
+      expect.objectContaining({
+        lobbyCode: 'ABCD',
+        userId: user.id,
+        error: 'db down',
+      })
+    )
+  })
 })

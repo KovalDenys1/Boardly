@@ -954,26 +954,69 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     clientLogger.log('Inviting friends to lobby', { friendIds, lobbyCode: code })
 
     try {
-      // Create lobby join link
-      const lobbyUrl = `${window.location.origin}/lobby/join/${code}`
-
-      // TODO: Implement invitation system (e.g., notifications, direct messages, etc.)
-      // For now, just copy the link to clipboard and show toast
-
-      await navigator.clipboard.writeText(lobbyUrl)
-      showToast.success('lobby.invite.linkCopied', undefined, {
-        count: friendIds.length
+      const response = await fetchWithGuest(`/api/lobby/${code}/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendIds }),
       })
 
-      clientLogger.log('Lobby link copied for friends', { url: lobbyUrl, friendCount: friendIds.length })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to send invites')
+      }
 
-      // Close modal
+      const invitedCount =
+        typeof result?.invitedCount === 'number' ? result.invitedCount : friendIds.length
+
+      if (Array.isArray(result?.skippedFriendIds) && result.skippedFriendIds.length > 0) {
+        showToast.info(
+          'toast.success',
+          `${result.skippedFriendIds.length} selected users were skipped (not friends or invalid).`
+        )
+      }
+
+      clientLogger.log('Lobby invites sent', {
+        lobbyCode: code,
+        invitedCount,
+        skippedCount: Array.isArray(result?.skippedFriendIds) ? result.skippedFriendIds.length : 0,
+      })
+
       setShowFriendsModal(false)
     } catch (error) {
-      clientLogger.error('Failed to invite friends', { error })
-      showToast.error('errors.general')
+      clientLogger.error('Failed to invite friends', error as Error)
+      showToast.error('errors.general', 'Failed to send invites')
     }
   }, [lobby, code])
+
+  const handleRequestRematch = useCallback(async () => {
+    try {
+      const response = await fetchWithGuest(`/api/lobby/${code}/rematch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to request rematch')
+      }
+
+      const notifiedCount =
+        typeof result?.notifiedCount === 'number' ? result.notifiedCount : 0
+
+      if (notifiedCount > 0) {
+        showToast.success('toast.success', `Rematch request sent to ${notifiedCount} player(s).`)
+      } else {
+        showToast.info('toast.success', 'No players were available for rematch notification.')
+      }
+    } catch (error) {
+      clientLogger.error('Failed to request rematch', error as Error)
+      showToast.error('errors.general', 'Failed to request rematch')
+    }
+  }, [code])
 
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
@@ -1169,7 +1212,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               )}
               currentUserId={getCurrentUserId() || null}
               canStartGame={!!canStartGame}
+              canRequestRematch={!!isInGame}
               onPlayAgain={handleStartGame}
+              onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
@@ -1573,6 +1618,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 }
               }}
               onPlayAgain={handleStartGame}
+              onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
             />
           ) : gameEngine ? (

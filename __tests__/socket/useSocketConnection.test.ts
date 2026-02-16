@@ -7,6 +7,7 @@ type MockSocket = {
   off: jest.Mock
   emit: jest.Mock
   once: jest.Mock
+  removeAllListeners: jest.Mock
   connected: boolean
   disconnect: jest.Mock
   connect: jest.Mock
@@ -25,6 +26,7 @@ const mockSocket: MockSocket = {
   off: jest.fn(),
   emit: jest.fn(),
   once: jest.fn(),
+  removeAllListeners: jest.fn(),
   connected: true,
   disconnect: jest.fn(),
   connect: jest.fn(),
@@ -63,6 +65,24 @@ jest.mock('@/lib/i18n-toast', () => ({
     success: jest.fn(),
   },
 }))
+
+jest.mock('@/lib/analytics', () => ({
+  trackLobbyJoinAckTimeout: jest.fn(),
+  trackLobbyJoinRetry: jest.fn(),
+  trackSocketAuthRefreshFailed: jest.fn(),
+  trackSocketReconnectAttempt: jest.fn(),
+  trackSocketReconnectFailedFinal: jest.fn(),
+  trackSocketReconnectRecovered: jest.fn(),
+}))
+
+const analytics = jest.requireMock('@/lib/analytics') as {
+  trackLobbyJoinAckTimeout: jest.Mock
+  trackLobbyJoinRetry: jest.Mock
+  trackSocketAuthRefreshFailed: jest.Mock
+  trackSocketReconnectAttempt: jest.Mock
+  trackSocketReconnectFailedFinal: jest.Mock
+  trackSocketReconnectRecovered: jest.Mock
+}
 
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
@@ -124,8 +144,15 @@ describe('useSocketConnection', () => {
     mockSocket.off.mockClear()
     mockSocket.emit.mockClear()
     mockSocket.once.mockClear()
+    mockSocket.removeAllListeners.mockClear()
     mockSocket.disconnect.mockClear()
     mockSocket.close.mockClear()
+    analytics.trackLobbyJoinAckTimeout.mockClear()
+    analytics.trackLobbyJoinRetry.mockClear()
+    analytics.trackSocketAuthRefreshFailed.mockClear()
+    analytics.trackSocketReconnectAttempt.mockClear()
+    analytics.trackSocketReconnectFailedFinal.mockClear()
+    analytics.trackSocketReconnectRecovered.mockClear()
   })
 
   afterAll(() => {
@@ -243,6 +270,116 @@ describe('useSocketConnection', () => {
       })
 
       expect(result.current.isConnected).toBe(false)
+    })
+
+    it('should sync state only after lobby join confirmation on reconnect', async () => {
+      const onStateSync = jest.fn().mockResolvedValue(undefined)
+      renderHook(() =>
+        useSocketConnection({
+          ...defaultProps,
+          onStateSync,
+        })
+      )
+
+      await waitForSocketInit()
+
+      const connectHandler = getHandler<() => void>('connect')
+      const joinedLobbyHandler = getHandler<(payload: { lobbyCode: string; success: boolean }) => void>('joined-lobby')
+
+      await act(async () => {
+        connectHandler?.()
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+      await act(async () => {
+        joinedLobbyHandler?.({ lobbyCode: defaultProps.code, success: true })
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      // First connection should not trigger reconnect sync.
+      expect(onStateSync).not.toHaveBeenCalled()
+
+      const disconnectHandler = getHandler<(reason: string) => void>('disconnect')
+      await act(async () => {
+        disconnectHandler?.('transport close')
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      const reconnectAttemptHandler = getHandler<(attempt: number) => void>('reconnect_attempt')
+      await act(async () => {
+        reconnectAttemptHandler?.(2)
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      await act(async () => {
+        connectHandler?.()
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      // Reconnect should wait for JOINED_LOBBY acknowledgment.
+      expect(onStateSync).not.toHaveBeenCalled()
+
+      await act(async () => {
+        joinedLobbyHandler?.({ lobbyCode: defaultProps.code, success: true })
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      expect(onStateSync).toHaveBeenCalledTimes(1)
+      expect(analytics.trackSocketReconnectRecovered).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attemptsTotal: 2,
+          isGuest: false,
+        })
+      )
+    })
+
+    it('should retry lobby join when join confirmation times out', async () => {
+      jest.useFakeTimers()
+      try {
+        renderHook(() => useSocketConnection(defaultProps))
+        await waitForSocketInit()
+
+        const connectHandler = getHandler<() => void>('connect')
+
+        await act(async () => {
+          connectHandler?.()
+        })
+
+        const getJoinLobbyCalls = () =>
+          mockSocket.emit.mock.calls.filter((call: any[]) => call[0] === 'join-lobby').length
+
+        const initialJoinCalls = getJoinLobbyCalls()
+        expect(initialJoinCalls).toBe(1)
+
+        await act(async () => {
+          jest.advanceTimersByTime(4600)
+        })
+
+        expect(getJoinLobbyCalls()).toBeGreaterThan(initialJoinCalls)
+        expect(analytics.trackLobbyJoinAckTimeout).toHaveBeenCalled()
+        expect(analytics.trackLobbyJoinRetry).toHaveBeenCalled()
+      } finally {
+        jest.useRealTimers()
+      }
+    })
+
+    it('should track reconnect attempt telemetry', async () => {
+      renderHook(() => useSocketConnection(defaultProps))
+      await waitForSocketInit()
+
+      const reconnectAttemptHandler = getHandler<(attempt: number) => void>('reconnect_attempt')
+
+      await act(async () => {
+        reconnectAttemptHandler?.(3)
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      expect(analytics.trackSocketReconnectAttempt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attempt: 3,
+          isGuest: false,
+          reason: 'reconnect_attempt',
+        })
+      )
     })
   })
 

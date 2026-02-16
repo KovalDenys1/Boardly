@@ -53,6 +53,9 @@ jobs:
       - name: Run lint and typecheck
         run: npm run ci:quick
 
+      - name: Check locale key parity
+        run: npm run check:locales
+
       - name: Run tests
         run: npm test -- --ci --runInBand
 

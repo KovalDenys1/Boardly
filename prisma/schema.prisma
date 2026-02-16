@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Users {
@@ -31,6 +32,8 @@ model Users {
   receivedFriendRequests FriendRequests[] @relation("ReceivedRequests")
   friendshipsInitiated   Friendships[]    @relation("FriendshipsInitiated")
   friendshipsReceived    Friendships[]    @relation("FriendshipsReceived")
+  sentLobbyInvites       LobbyInvites[]   @relation("LobbyInvitesSent")
+  receivedLobbyInvites   LobbyInvites[]   @relation("LobbyInvitesReceived")
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
 }
@@ -118,10 +121,32 @@ model Lobbies {
   creatorId  String
   creator    Users    @relation("LobbyCreator", fields: [creatorId], references: [id])
   games      Games[]
+  invites    LobbyInvites[]
 
   @@index([isActive])
   @@index([createdAt])
   @@index([creatorId])
+}
+
+model LobbyInvites {
+  id         String   @id @default(cuid())
+  lobbyId    String
+  lobby      Lobbies  @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  inviterId  String
+  inviter    Users    @relation("LobbyInvitesSent", fields: [inviterId], references: [id], onDelete: Cascade)
+  inviteeId  String
+  invitee    Users    @relation("LobbyInvitesReceived", fields: [inviteeId], references: [id], onDelete: Cascade)
+  channel    String   @default("friends")
+  sentAt     DateTime @default(now())
+  acceptedAt DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([lobbyId])
+  @@index([inviterId])
+  @@index([inviteeId])
+  @@index([sentAt])
+  @@index([acceptedAt])
 }
 
 model Games {

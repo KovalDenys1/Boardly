@@ -1,387 +1,267 @@
 /**
  * @jest-environment @edge-runtime/jest-environment
  */
-// @ts-nocheck - Jest mocks for Prisma are complex to type
+// @ts-nocheck - Jest mocks for Prisma methods are intentionally loose here
 
 import { NextRequest } from 'next/server'
-import { POST } from '@/app/api/lobby/route'
+import { POST as CREATE_LOBBY } from '@/app/api/lobby/route'
 import { POST as JOIN_LOBBY } from '@/app/api/lobby/[code]/route'
 import { POST as ADD_BOT } from '@/app/api/lobby/[code]/add-bot/route'
 import { POST as LEAVE_LOBBY } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
-// Mock dependencies
 jest.mock('@/lib/db', () => ({
-    prisma: {
-        lobbies: {
-            findUnique: jest.fn(),
-            findMany: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-        },
-        games: {
-            findFirst: jest.fn(),
-            findUnique: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-        },
-        players: {
-            create: jest.fn(),
-            findFirst: jest.fn(),
-            findUnique: jest.fn(),
-            delete: jest.fn(),
-            count: jest.fn(),
-        },
-        users: {
-            findUnique: jest.fn(),
-            findFirst: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-        },
+  prisma: {
+    lobbies: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
     },
+    games: {
+      create: jest.fn(),
+      update: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    players: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      count: jest.fn(),
+      delete: jest.fn(),
+    },
+    lobbyInvites: {
+      updateMany: jest.fn(),
+    },
+    users: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+    },
+  },
 }))
 
-jest.mock('next-auth', () => ({
-    getServerSession: jest.fn(),
-}))
-
-jest.mock('@/lib/next-auth', () => ({
-    authOptions: {},
+jest.mock('@/lib/request-auth', () => ({
+  getRequestAuthUser: jest.fn(),
 }))
 
 jest.mock('@/lib/socket-url', () => ({
-    notifySocket: jest.fn(),
-    getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
+  notifySocket: jest.fn().mockResolvedValue(true),
+  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
+  getSocketInternalAuthHeaders: jest.fn(() => ({})),
 }))
 
 jest.mock('@/lib/logger', () => ({
-    apiLogger: jest.fn(() => ({
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-    })),
+  apiLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  })),
 }))
 
 jest.mock('@/lib/lobby', () => ({
-    generateLobbyCode: jest.fn(() => 'TEST123'),
+  generateLobbyCode: jest.fn(() => 'TEST123'),
 }))
 
 jest.mock('@/lib/rate-limit', () => ({
-    rateLimit: jest.fn(() => jest.fn(() => Promise.resolve(null))),
-    rateLimitPresets: {
-        lobbyCreation: {},
-    },
+  rateLimit: jest.fn(() => jest.fn(() => Promise.resolve(null))),
+  rateLimitPresets: {
+    api: {},
+    game: {},
+    lobbyCreation: {},
+  },
 }))
 
 jest.mock('@/lib/bot-helpers', () => ({
-    createBot: jest.fn(() => ({
-        id: 'bot_123',
-        username: 'Bot Player',
-        email: 'bot@boardly.bot',
-        isGuest: false,
-    })),
+  createBot: jest.fn(() => ({
+    user: {
+      id: 'bot_123',
+      username: 'AI Bot',
+    },
+    bot: {
+      id: 'bot_meta_1',
+      botType: 'yahtzee',
+      difficulty: 'medium',
+    },
+  })),
 }))
 
-describe.skip('Guest Mode API Endpoints', () => {
-    beforeEach(() => {
-        jest.clearAllMocks()
+jest.mock('@/lib/game-registry', () => ({
+  DEFAULT_GAME_TYPE: 'yahtzee',
+  createGameEngine: jest.fn(() => ({
+    getState: () => ({ players: [], currentPlayerIndex: 0, status: 'waiting', data: {} }),
+  })),
+}))
+
+jest.mock('@/lib/lobby-snapshot', () => ({
+  pickRelevantLobbyGame: jest.fn((games: any[]) => games[0] || null),
+}))
+
+const mockPrisma = prisma as jest.Mocked<typeof prisma>
+const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
+
+describe('Guest mode API endpoints', () => {
+  const guestUser = {
+    id: 'guest_123',
+    username: 'Guest User',
+    isGuest: true,
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockGetRequestAuthUser.mockResolvedValue(guestUser)
+  })
+
+  it('creates lobby for authenticated guest user', async () => {
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: guestUser.id,
+      username: guestUser.username,
+      isGuest: true,
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValueOnce(null as any)
+    mockPrisma.lobbies.create.mockResolvedValue({
+      id: 'lobby_1',
+      code: 'TEST123',
+      name: 'Guest Lobby',
+      games: [
+        {
+          id: 'game_1',
+          status: 'waiting',
+          players: [
+            { userId: guestUser.id, position: 0 },
+          ],
+        },
+      ],
+    } as any)
+
+    const req = new NextRequest('http://localhost:3000/api/lobby', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Guest Lobby',
+        maxPlayers: 4,
+        gameType: 'yahtzee',
+      }),
     })
 
-    describe('POST /api/lobby - Create Lobby as Guest', () => {
-        it('should create lobby with guest user', async () => {
-            const guestId = 'guest_123'
-            const guestName = 'Test Guest'
+    const response = await CREATE_LOBBY(req)
+    const data = await response.json()
 
-                // Mock no session (guest mode)
-                ; (getServerSession as jest.Mock).mockResolvedValue(null)
+    expect(response.status).toBe(200)
+    expect(data.lobby.code).toBe('TEST123')
+    expect(mockPrisma.lobbies.create).toHaveBeenCalled()
+  })
 
-                // Mock guest user creation (getOrCreateGuestUser uses findFirst)
-                ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(null)
-                ; (prisma.users.create as jest.Mock).mockResolvedValue({
-                    id: guestId,
-                    username: guestName,
-                    email: `${guestId}@guest.boardly.online`,
-                    isGuest: true,
-                })
+  it('joins waiting lobby as guest player', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby_1',
+      code: 'TEST123',
+      maxPlayers: 4,
+      password: null,
+      games: [
+        {
+          id: 'game_1',
+          status: 'waiting',
+          state: JSON.stringify({ scores: [] }),
+        },
+      ],
+    } as any)
+    mockPrisma.players.findUnique.mockResolvedValue(null as any)
+    mockPrisma.players.count.mockResolvedValue(1 as any)
+    mockPrisma.players.create.mockResolvedValue({
+      id: 'player_2',
+      userId: guestUser.id,
+      gameId: 'game_1',
+      user: {
+        id: guestUser.id,
+        username: guestUser.username,
+        isGuest: true,
+      },
+    } as any)
+    mockPrisma.games.update.mockResolvedValue({} as any)
 
-                // Mock lobby creation
-                ; (prisma.lobbies.create as jest.Mock).mockResolvedValue({
-                    id: 'lobby_123',
-                    code: 'TEST123',
-                    name: 'Guest Lobby',
-                    creatorId: guestId,
-                    maxPlayers: 4,
-                })
-
-            const req = new NextRequest('http://localhost:3000/api/lobby', {
-                method: 'POST',
-                headers: {
-                    'X-Guest-Id': guestId,
-                    'X-Guest-Name': guestName,
-                },
-                body: JSON.stringify({
-                    name: 'Guest Lobby',
-                    maxPlayers: 4,
-                    gameType: 'yahtzee',
-                }),
-            })
-
-            const response = await POST(req)
-            const data = await response.json()
-
-            expect(response.status).toBe(200)
-            expect(data.lobby.code).toBe('TEST123')
-            expect(prisma.users.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    id: guestId,
-                    username: guestName,
-                    isGuest: true,
-                }),
-            })
-        })
-
-        it('should return 401 without guest headers', async () => {
-            ; (getServerSession as jest.Mock).mockResolvedValue(null)
-
-            const req = new NextRequest('http://localhost:3000/api/lobby', {
-                method: 'POST',
-                body: JSON.stringify({
-                    name: 'Test Lobby',
-                    maxPlayers: 4,
-                }),
-            })
-
-            const response = await POST(req)
-
-            expect(response.status).toBe(401)
-        })
+    const req = new NextRequest('http://localhost:3000/api/lobby/TEST123', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
     })
 
-    describe('POST /api/lobby/[code] - Join Lobby as Guest', () => {
-        it('should allow guest to join lobby', async () => {
-            const guestId = 'guest_456'
-            const guestName = 'Guest Player'
+    const response = await JOIN_LOBBY(req, { params: Promise.resolve({ code: 'TEST123' }) })
+    const data = await response.json()
 
-                ; (getServerSession as jest.Mock).mockResolvedValue(null)
+    expect(response.status).toBe(200)
+    expect(data.player.userId).toBe(guestUser.id)
+  })
 
-                // Mock guest user (getOrCreateGuestUser uses findFirst then update)
-                ; (prisma.users.findFirst as jest.Mock).mockResolvedValue({
-                    id: guestId,
-                    username: guestName,
-                    email: `${guestId}@guest.boardly.online`,
-                    isGuest: true,
-                })
-                ; (prisma.users.update as jest.Mock).mockResolvedValue({
-                    id: guestId,
-                    username: guestName,
-                    email: `${guestId}@guest.boardly.online`,
-                    isGuest: true,
-                })
+  it('allows guest lobby creator to add bot', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby_1',
+      code: 'TEST123',
+      creatorId: guestUser.id,
+      maxPlayers: 4,
+      gameType: 'yahtzee',
+      games: [
+        {
+          id: 'game_1',
+          status: 'waiting',
+          players: [
+            {
+              user: { bot: null },
+            },
+          ],
+        },
+      ],
+    } as any)
+    mockPrisma.users.findFirst.mockResolvedValue(null as any)
+    mockPrisma.players.create.mockResolvedValue({ id: 'bot_player_1' } as any)
+    mockPrisma.games.findUnique.mockResolvedValue({
+      id: 'game_1',
+      players: [],
+    } as any)
 
-                // Mock lobby (route uses lobbies.findUnique with include: { games })
-                ; (prisma.lobbies.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'lobby_123',
-                    code: 'TEST123',
-                    name: 'Test Lobby',
-                    maxPlayers: 4,
-                    password: null,
-                    games: [
-                        {
-                            id: 'game_123',
-                            status: 'waiting',
-                            state: JSON.stringify({ scores: [] }),
-                        },
-                    ],
-                })
-
-                // Mock player not already in game
-                ; (prisma.players.findUnique as jest.Mock).mockResolvedValue(null)
-
-                // Mock player count
-                ; (prisma.players.count as jest.Mock).mockResolvedValue(1)
-
-                // Mock player creation
-                ; (prisma.players.create as jest.Mock).mockResolvedValue({
-                    id: 'player_123',
-                    userId: guestId,
-                    gameId: 'game_123',
-                    user: {
-                        id: guestId,
-                        username: guestName,
-                        isGuest: true,
-                    },
-                })
-
-                // Mock game state update
-                ; (prisma.games.update as jest.Mock).mockResolvedValue({})
-
-            const req = new NextRequest('http://localhost:3000/api/lobby/TEST123', {
-                method: 'POST',
-                headers: {
-                    'X-Guest-Id': guestId,
-                    'X-Guest-Name': guestName,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({}),
-            })
-
-            const response = await JOIN_LOBBY(req, { params: Promise.resolve({ code: 'TEST123' }) })
-            const data = await response.json()
-
-            expect(response.status).toBe(200)
-            expect(data.player).toBeDefined()
-            expect(data.player.userId).toBe(guestId)
-        })
+    const req = new NextRequest('http://localhost:3000/api/lobby/TEST123/add-bot', {
+      method: 'POST',
     })
 
-    describe('POST /api/lobby/[code]/add-bot - Guest can add bot', () => {
-        it('should allow guest lobby creator to add bot', async () => {
-            const guestId = 'guest_789'
+    const response = await ADD_BOT(req, { params: Promise.resolve({ code: 'TEST123' }) })
+    expect(response.status).toBe(200)
+  })
 
-                ; (getServerSession as jest.Mock).mockResolvedValue(null)
+  it('allows guest player to leave waiting lobby', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby_1',
+      code: 'TEST123',
+      games: [
+        {
+          id: 'game_1',
+          status: 'waiting',
+          players: [
+            {
+              id: 'player_guest',
+              userId: guestUser.id,
+              user: {
+                username: guestUser.username,
+                email: null,
+              },
+            },
+          ],
+        },
+      ],
+    } as any)
+    mockPrisma.players.delete.mockResolvedValue({} as any)
+    mockPrisma.players.count
+      .mockResolvedValueOnce(0 as any)
+      .mockResolvedValueOnce(0 as any)
+    mockPrisma.lobbies.update.mockResolvedValue({} as any)
 
-                // Mock lobby with guest as creator
-                ; (prisma.lobbies.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'lobby_123',
-                    code: 'TEST123',
-                    creatorId: guestId,
-                    maxPlayers: 4,
-                    gameType: 'yahtzee',
-                    games: [
-                        {
-                            id: 'game_123',
-                            status: 'waiting',
-                            players: [
-                                {
-                                    id: 'player_1',
-                                    userId: guestId,
-                                    user: {
-                                        id: guestId,
-                                        username: 'Guest',
-                                        bot: null,
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                })
-
-                // Mock bot user lookup (findFirst returns null → triggers createBot)
-                ; (prisma.users.findFirst as jest.Mock).mockResolvedValue(null)
-
-                // Mock bot creation
-                ; (prisma.players.create as jest.Mock).mockResolvedValue({
-                    id: 'bot_player_123',
-                    userId: 'bot_123',
-                    gameId: 'game_123',
-                })
-
-                // Mock updated game fetch
-                ; (prisma.games.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'game_123',
-                    status: 'waiting',
-                    players: [
-                        {
-                            id: 'player_1',
-                            userId: guestId,
-                            user: { id: guestId, username: 'Guest', bot: null },
-                        },
-                        {
-                            id: 'bot_player_123',
-                            userId: 'bot_123',
-                            user: { id: 'bot_123', username: 'AI Bot', bot: { id: 'b1', botType: 'yahtzee', difficulty: 'medium' } },
-                        },
-                    ],
-                })
-
-            const req = new NextRequest('http://localhost:3000/api/lobby/TEST123/add-bot', {
-                method: 'POST',
-                headers: {
-                    'X-Guest-Id': guestId,
-                },
-            })
-
-            const response = await ADD_BOT(req, { params: Promise.resolve({ code: 'TEST123' }) })
-
-            expect(response.status).toBe(200)
-        })
-
-        it('should return 403 if guest is not lobby creator', async () => {
-            const guestId = 'guest_not_creator'
-
-                ; (getServerSession as jest.Mock).mockResolvedValue(null)
-
-                // Mock lobby with different creator
-                ; (prisma.lobbies.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'lobby_123',
-                    code: 'TEST123',
-                    creatorId: 'other_user',
-                    maxPlayers: 4,
-                    games: [
-                        {
-                            id: 'game_123',
-                            status: 'waiting',
-                            players: [],
-                        },
-                    ],
-                })
-
-            const req = new NextRequest('http://localhost:3000/api/lobby/TEST123/add-bot', {
-                method: 'POST',
-                headers: {
-                    'X-Guest-Id': guestId,
-                },
-            })
-
-            const response = await ADD_BOT(req, { params: Promise.resolve({ code: 'TEST123' }) })
-
-            expect(response.status).toBe(403)
-        })
+    const req = new NextRequest('http://localhost:3000/api/lobby/TEST123/leave', {
+      method: 'POST',
     })
 
-    describe('POST /api/lobby/[code]/leave - Guest can leave lobby', () => {
-        it('should allow guest to leave lobby', async () => {
-            const guestId = 'guest_leave'
+    const response = await LEAVE_LOBBY(req, { params: Promise.resolve({ code: 'TEST123' }) })
+    const data = await response.json()
 
-                ; (getServerSession as jest.Mock).mockResolvedValue(null)
-
-                // Mock lobby with guest player
-                ; (prisma.lobbies.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'lobby_123',
-                    code: 'TEST123',
-                    games: [
-                        {
-                            id: 'game_123',
-                            status: 'waiting',
-                            players: [
-                                {
-                                    id: 'player_guest',
-                                    userId: guestId,
-                                    user: {
-                                        id: guestId,
-                                        username: 'Guest Player',
-                                    },
-                                },
-                            ],
-                        },
-                    ],
-                })
-
-                ; (prisma.players.delete as jest.Mock).mockResolvedValue({})
-                ; (prisma.players.count as jest.Mock).mockResolvedValue(0)
-
-            const req = new NextRequest('http://localhost:3000/api/lobby/TEST123/leave', {
-                method: 'POST',
-                headers: {
-                    'X-Guest-Id': guestId,
-                },
-            })
-
-            const response = await LEAVE_LOBBY(req, { params: Promise.resolve({ code: 'TEST123' }) })
-
-            expect(response.status).toBe(200)
-            expect(prisma.players.delete).toHaveBeenCalled()
-        })
-    })
+    expect(response.status).toBe(200)
+    expect(data.message).toBe('You left the lobby')
+    expect(mockPrisma.players.delete).toHaveBeenCalled()
+  })
 })

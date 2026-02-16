@@ -1,20 +1,20 @@
 /**
  * @jest-environment @edge-runtime/jest-environment
  */
-// @ts-nocheck - Jest mocks for Prisma are complex to type
+// @ts-nocheck - Jest mocks for Prisma methods are intentionally loose here
 
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/game/[gameId]/state/route'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { getRequestAuthUser } from '@/lib/request-auth'
+import { restoreGameEngine } from '@/lib/game-registry'
+import { notifySocket } from '@/lib/socket-url'
 
-// Mock dependencies
 jest.mock('@/lib/db', () => ({
   prisma: {
     games: {
       findUnique: jest.fn(),
-      update: jest.fn(),
+      updateMany: jest.fn(),
     },
     players: {
       update: jest.fn(),
@@ -22,12 +22,12 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn(),
+jest.mock('@/lib/request-auth', () => ({
+  getRequestAuthUser: jest.fn(),
 }))
 
-jest.mock('@/lib/next-auth', () => ({
-  authOptions: {},
+jest.mock('@/lib/game-registry', () => ({
+  restoreGameEngine: jest.fn(),
 }))
 
 jest.mock('@/lib/socket-url', () => ({
@@ -43,372 +43,187 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
+const mockRestoreGameEngine = restoreGameEngine as jest.MockedFunction<typeof restoreGameEngine>
+const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
 
-describe.skip('POST /api/game/[gameId]/state', () => {
-  const mockSession = {
-    user: {
-      id: 'player-1',
-      email: 'player1@example.com',
-    },
+describe('POST /api/game/[gameId]/state', () => {
+  const mockAuthUser = {
+    id: 'player-1',
+    username: 'Player 1',
+    isGuest: false,
   }
 
-  const mockGameState = {
-    id: 'game-123',
-    gameType: 'yahtzee',
+  const persistedState = {
     players: [
-      { id: 'player-1', name: 'Player 1', score: 0 },
-      { id: 'player-2', name: 'Player 2', score: 0 },
+      { id: 'player-1', isActive: true },
+      { id: 'player-2', isActive: true },
     ],
     currentPlayerIndex: 0,
     status: 'playing',
     data: {
-      round: 1,
       rollsLeft: 3,
-      dice: [1, 2, 3, 4, 5],
       held: [false, false, false, false, false],
-      scores: [{}, {}],
     },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    updatedAt: new Date().toISOString(),
   }
 
-  const mockGame = {
+  const dbGame = {
     id: 'game-123',
-    state: JSON.stringify(mockGameState),
+    state: JSON.stringify(persistedState),
     status: 'playing',
     currentTurn: 0,
+    updatedAt: new Date('2026-02-15T10:00:00.000Z'),
+    lastMoveAt: new Date('2026-02-15T10:00:00.000Z'),
     players: [
-      {
-        id: 'db-player-1',
-        userId: 'player-1',
-        user: { id: 'player-1', name: 'Player 1', isBot: false },
-      },
-      {
-        id: 'db-player-2',
-        userId: 'player-2',
-        user: { id: 'player-2', name: 'Player 2', isBot: false },
-      },
+      { id: 'db-player-1', userId: 'player-1', user: { id: 'player-1', bot: null } },
+      { id: 'db-player-2', userId: 'player-2', user: { id: 'player-2', bot: null } },
     ],
     lobby: {
       id: 'lobby-123',
-      code: 'ABC123',
+      code: 'ABCD12',
       gameType: 'yahtzee',
+      turnTimer: 60,
     },
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockNotifySocket.mockResolvedValue(true as any)
   })
 
-  it('should return 401 when user not authenticated', async () => {
-    mockGetServerSession.mockResolvedValue(null)
-
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
+  const buildRequest = (body: unknown) =>
+    new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
+      body: JSON.stringify(body),
     })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
+
+  it('returns 401 when user is unauthorized', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(null)
+
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
 
     expect(response.status).toBe(401)
-    expect(data.error).toBe('Unauthorized')
+    expect(await response.json()).toEqual({ error: 'Unauthorized' })
   })
 
-  it('should return 400 when move data is invalid', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+  it('returns 400 for invalid move payload', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
 
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: {}, // Missing type
-      }),
+    const response = await POST(buildRequest({ move: {} }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
     })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('Invalid move data')
+    expect(await response.json()).toEqual({ error: 'Invalid move data' })
   })
 
-  it('should return 404 when game not found', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue(null)
+  it('returns 404 when game does not exist', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(null as any)
 
-    const request = new NextRequest('http://localhost:3000/api/game/invalid/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'missing' }),
     })
-    const response = await POST(request, { params: { gameId: 'invalid' } })
-    const data = await response.json()
 
     expect(response.status).toBe(404)
-    expect(data.error).toBe('Game not found')
+    expect(await response.json()).toEqual({ error: 'Game not found' })
   })
 
-  it('should return 403 when user not a player in game', async () => {
-    const otherUserSession = {
-      user: { id: 'other-user', email: 'other@example.com' },
-    }
+  it('returns 403 when user is not in game players', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ ...mockAuthUser, id: 'other-user' })
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
 
-    mockGetServerSession.mockResolvedValue(otherUserSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
-
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
     })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
 
     expect(response.status).toBe(403)
-    expect(data.error).toBe('Not a player in this game')
+    expect(await response.json()).toEqual({ error: 'Not a player in this game' })
   })
 
-  it('should successfully process roll move', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
-
-    const updatedState = {
-      ...mockGameState,
-      data: {
-        ...mockGameState.data,
-        dice: [3, 4, 5, 6, 1], // New dice values
-        rollsLeft: 2,
-      },
-    }
-
-    mockPrisma.games.update.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify(updatedState),
+  it('returns 500 on corrupted persisted game state', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce({
+      ...dbGame,
+      state: 'not-json',
     } as any)
-    mockPrisma.players.update.mockResolvedValue({} as any)
 
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
     })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(data.game).toBeDefined()
-    expect(mockPrisma.games.update).toHaveBeenCalled()
-  })
-
-  it('should successfully process hold move', async () => {
-    const stateAfterRoll = {
-      ...mockGameState,
-      data: {
-        ...mockGameState.data,
-        dice: [5, 5, 3, 2, 1],
-        rollsLeft: 2,
-      },
-    }
-
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify(stateAfterRoll),
-    } as any)
-
-    mockPrisma.games.update.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify({
-        ...stateAfterRoll,
-        data: {
-          ...stateAfterRoll.data,
-          held: [true, true, false, false, false], // Holding first two dice
-        },
-      }),
-    } as any)
-    mockPrisma.players.update.mockResolvedValue({} as any)
-
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: {
-          type: 'hold',
-          data: { held: [true, true, false, false, false] },
-        },
-      }),
-    })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-
-    expect(response.status).toBe(200)
-    expect(mockPrisma.games.update).toHaveBeenCalled()
-  })
-
-  it.skip('should successfully process score move', async () => {
-    // TODO: Fix response structure - missing currentTurn field
-    const stateWithRolls = {
-      ...mockGameState,
-      data: {
-        ...mockGameState.data,
-        dice: [5, 5, 5, 2, 1],
-        rollsLeft: 0,
-      },
-    }
-
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify(stateWithRolls),
-    } as any)
-
-    const updatedState = {
-      ...stateWithRolls,
-      currentPlayerIndex: 1, // Turn advances after score
-      data: {
-        ...stateWithRolls.data,
-        rollsLeft: 3,
-        scores: [{ fives: 15 }, {}], // Scored 15 in fives
-      },
-    }
-
-    mockPrisma.games.update.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify(updatedState),
-      currentTurn: 1,
-    } as any)
-    mockPrisma.players.update.mockResolvedValue({} as any)
-
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: {
-          type: 'score',
-          data: { category: 'fives' },
-        },
-      }),
-    })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
-
-    expect(response.status).toBe(200)
-    expect(data.game.currentTurn).toBe(1)
-    expect(mockPrisma.players.update).toHaveBeenCalled()
-  })
-
-  it('should return 400 for invalid move', async () => {
-    const stateWithNoRolls = {
-      ...mockGameState,
-      data: {
-        ...mockGameState.data,
-        rollsLeft: 0,
-      },
-    }
-
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify(stateWithNoRolls),
-    } as any)
-
-    // Try to roll when no rolls left
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
-    })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
-
-    expect(response.status).toBe(400)
-    expect(data.error).toBe('Invalid move')
-  })
-
-  it.skip('should handle guest user with X-Guest-Id header', async () => {
-    // TODO: Fix guest header handling - returns 400
-    mockGetServerSession.mockResolvedValue(null) // No session
-    mockPrisma.games.findUnique.mockResolvedValue({
-      ...mockGame,
-      players: [
-        {
-          id: 'db-player-1',
-          userId: 'guest-123', // Guest ID
-          user: { id: 'guest-123', name: 'Guest', isBot: false },
-        },
-      ],
-    } as any)
-    mockPrisma.games.update.mockResolvedValue(mockGame as any)
-    mockPrisma.players.update.mockResolvedValue({} as any)
-
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      headers: {
-        'X-Guest-Id': 'guest-123',
-      },
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
-    })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-
-    expect(response.status).toBe(200)
-  })
-
-  it('should handle corrupted game state', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue({
-      ...mockGame,
-      state: 'invalid json{{{',
-    } as any)
-
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'roll', data: {} },
-      }),
-    })
-    const response = await POST(request, { params: { gameId: 'game-123' } })
-    const data = await response.json()
 
     expect(response.status).toBe(500)
-    expect(data.error).toContain('Corrupted game state')
+    expect((await response.json()).error).toContain('Corrupted game state')
   })
 
-  it.skip('should update player scores in database', async () => {
-    // TODO: Mock is not being called - investigate route logic
-    const stateWithScores = {
-      ...mockGameState,
-      players: [
-        { id: 'player-1', name: 'Player 1', score: 50 },
-        { id: 'player-2', name: 'Player 2', score: 30 },
-      ],
+  it('processes valid move and updates persisted game snapshot', async () => {
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 1,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
     }
 
-    mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
-    mockPrisma.games.update.mockResolvedValue({
-      ...mockGame,
-      state: JSON.stringify(stateWithScores),
-    } as any)
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-2' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 10 },
+        { id: 'player-2', score: 5 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique
+      .mockResolvedValueOnce(dbGame as any)
+      .mockResolvedValueOnce({
+        id: 'game-123',
+        status: 'playing',
+        players: [
+          {
+            id: 'db-player-1',
+            userId: 'player-1',
+            score: 10,
+            user: { id: 'player-1', username: 'Player 1', bot: null },
+          },
+          {
+            id: 'db-player-2',
+            userId: 'player-2',
+            score: 5,
+            user: { id: 'player-2', username: 'Player 2', bot: null },
+          },
+        ],
+      } as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
     mockPrisma.players.update.mockResolvedValue({} as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
 
-    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
-      method: 'POST',
-      body: JSON.stringify({
-        move: { type: 'score', data: { category: 'ones' } },
-      }),
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
     })
-    await POST(request, { params: { gameId: 'game-123' } })
+    const payload = await response.json()
 
-    expect(mockPrisma.players.update).toHaveBeenCalledWith(
+    expect(response.status).toBe(200)
+    expect(mockRestoreGameEngine).toHaveBeenCalledWith('yahtzee', 'game-123', persistedState)
+    expect(mockPrisma.games.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          score: expect.any(Number),
-        }),
+        where: expect.objectContaining({ id: 'game-123', currentTurn: 0 }),
       })
     )
+    expect(mockPrisma.players.update).toHaveBeenCalledTimes(2)
+    expect(mockNotifySocket).toHaveBeenCalledWith(
+      'lobby:ABCD12',
+      'game-update',
+      expect.objectContaining({
+        action: 'state-change',
+      })
+    )
+    expect(payload.game.id).toBe('game-123')
+    expect(payload.serverBroadcasted).toBe(true)
   })
 })

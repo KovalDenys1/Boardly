@@ -169,6 +169,16 @@ export async function POST(
     })
 
     if (existingPlayer) {
+      await prisma.lobbyInvites.updateMany({
+        where: {
+          lobbyId: lobby.id,
+          inviteeId: userId,
+          acceptedAt: null,
+        },
+        data: {
+          acceptedAt: new Date(),
+        },
+      })
       return NextResponse.json({ game, player: existingPlayer })
     }
 
@@ -242,6 +252,17 @@ export async function POST(
       'lobby-update',
       { lobbyCode: code }
     )
+
+    await prisma.lobbyInvites.updateMany({
+      where: {
+        lobbyId: lobby.id,
+        inviteeId: userId,
+        acceptedAt: null,
+      },
+      data: {
+        acceptedAt: new Date(),
+      },
+    })
 
     return NextResponse.json({ game, player })
   } catch (error) {

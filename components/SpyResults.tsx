@@ -14,6 +14,7 @@ interface SpyResultsProps {
   totalRounds: number
   onNextRound?: () => void
   onPlayAgain?: () => void
+  onRequestRematch?: () => void
   onBackToLobby?: () => void
 }
 
@@ -28,6 +29,7 @@ export default function SpyResults({
   totalRounds,
   onNextRound,
   onPlayAgain,
+  onRequestRematch,
   onBackToLobby,
 }: SpyResultsProps) {
   const { t } = useTranslation()
@@ -112,10 +114,10 @@ export default function SpyResults({
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="bg-purple-500/50 px-3 py-1 rounded text-white">
-                        {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
+                        {voteCount} {voteCount === 1 ? t('spy.voteLabel') : t('spy.votesLabel')}
                       </div>
                       {wasEliminated && (
-                        <span className="text-red-300">← {t('spy.votedOut', { player: '' }).split('{{')[0]}</span>
+                        <span className="text-red-300">← {t('spy.votedOutShort')}</span>
                       )}
                     </div>
                   </div>
@@ -145,7 +147,7 @@ export default function SpyResults({
                   </span>
                 </div>
                 <span className="text-2xl font-bold text-green-300">
-                  {scores[player.id] || 0} pts
+                  {scores[player.id] || 0} {t('profile.gameResults.points')}
                 </span>
               </div>
             ))}
@@ -178,6 +180,14 @@ export default function SpyResults({
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
                 >
                   {t('spy.playAgain')}
+                </button>
+              )}
+              {onRequestRematch && (
+                <button
+                  onClick={onRequestRematch}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg"
+                >
+                  {t('spy.requestRematch')}
                 </button>
               )}
               {onBackToLobby && (

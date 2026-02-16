@@ -275,15 +275,15 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
-                    <h1 className="text-2xl font-bold mb-4">Lobby Not Found</h1>
+                    <h1 className="text-2xl font-bold mb-4">{t('games.tictactoe.game.lobbyNotFoundTitle')}</h1>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        The lobby you're looking for doesn't exist or has been closed.
+                        {t('games.tictactoe.game.lobbyNotFoundDescription')}
                     </p>
                     <button
                         onClick={() => router.push('/games/tic-tac-toe/lobbies')}
                         className="btn btn-primary"
                     >
-                        Back to Lobbies
+                        {t('games.tictactoe.game.backToLobbies')}
                     </button>
                 </div>
             </div>
@@ -297,22 +297,22 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="card max-w-md mx-auto text-center">
-                    <h1 className="text-2xl font-bold mb-4">Game Not Started</h1>
+                    <h1 className="text-2xl font-bold mb-4">{t('games.tictactoe.game.gameNotStartedTitle')}</h1>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        The game hasn't started yet.
+                        {t('games.tictactoe.game.gameNotStartedDescription')}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button
                             onClick={() => router.push('/games/tic-tac-toe/lobbies')}
                             className="btn btn-primary"
                         >
-                            Back to Lobbies
+                            {t('games.tictactoe.game.backToLobbies')}
                         </button>
                         <button
                             onClick={() => router.push('/games')}
                             className="btn btn-secondary"
                         >
-                            Back to Games
+                            {t('games.tictactoe.game.backToGames')}
                         </button>
                     </div>
                 </div>
@@ -346,16 +346,16 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         <div className="text-center">
                             <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                                 {winner ? (
-                                    <>🎉 Game Won! 🎉</>
+                                    <>{t('games.tictactoe.game.gameWon')}</>
                                 ) : (
-                                    <>🤝 It's a Draw!</>
+                                    <>{t('games.tictactoe.game.draw')}</>
                                 )}
                             </p>
                         </div>
                     ) : (
                         <>
                             <p className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                {t('game.ui.turn')}: {currentPlayer?.name || 'Unknown'}
+                                {t('game.ui.turn')}: {currentPlayer?.name || t('games.tictactoe.game.unknownPlayer')}
                             </p>
                             <p className="text-sm text-blue-800 dark:text-blue-200">
                                 {isMyTurn() ? '👉 ' + t('game.ui.yourTurn') : '⏳ ' + t('game.ui.waiting')}
@@ -391,10 +391,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                                     }`}
                             >
                                 <p className="font-semibold text-gray-900 dark:text-white">
-                                    {player.user?.username || player.name || 'Unknown'}
+                                    {player.user?.username || player.name || t('games.tictactoe.game.unknownPlayer')}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {currentPlayer?.id === player.userId && '🎮 Current Turn'}
+                                    {currentPlayer?.id === player.userId && t('games.tictactoe.game.currentTurn')}
                                 </p>
                             </div>
                         ))}
@@ -403,19 +403,19 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     {/* Results */}
                     {isFinished && (
                         <div className="mt-6 pt-6 border-t border-gray-300 dark:border-gray-600">
-                            <h3 className="text-lg font-bold mb-3">Game Actions</h3>
+                            <h3 className="text-lg font-bold mb-3">{t('games.tictactoe.game.gameActions')}</h3>
                             <div className="flex flex-col gap-3">
                                 <button
                                     onClick={() => router.push('/games/tic-tac-toe/lobbies')}
                                     className="w-full btn btn-primary"
                                 >
-                                    Play Again
+                                    {t('games.tictactoe.game.playAgain')}
                                 </button>
                                 <button
                                     onClick={() => router.push('/games')}
                                     className="w-full btn btn-secondary"
                                 >
-                                    Back to Games
+                                    {t('games.tictactoe.game.backToGames')}
                                 </button>
                             </div>
                         </div>
