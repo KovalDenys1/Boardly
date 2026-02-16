@@ -15,7 +15,7 @@ import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
-import { selectBestAvailableCategory, calculateScore, YahtzeeCategory } from '@/lib/yahtzee'
+import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
 import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -38,6 +38,20 @@ const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   largeStraight: 'Large Straight',
   yahtzee: 'Yahtzee',
   chance: 'Chance'
+}
+
+function normalizeHeldIndexes(rawHeld: unknown): number[] {
+  if (!Array.isArray(rawHeld)) return []
+
+  if (rawHeld.length > 0 && typeof rawHeld[0] === 'boolean') {
+    return (rawHeld as boolean[])
+      .map((isHeld, index) => (isHeld ? index : -1))
+      .filter((index) => index !== -1)
+  }
+
+  return rawHeld
+    .filter((value): value is number => Number.isInteger(value) && Number(value) >= 0)
+    .map((value) => Number(value))
 }
 
 // Database player type
@@ -79,6 +93,14 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 
+function CenteredLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <LoadingSpinner size="lg" />
+    </div>
+  )
+}
+
 const PlayerList = dynamic(() => import('@/components/PlayerList'))
 const Scorecard = dynamic(() => import('@/components/Scorecard'))
 const Chat = dynamic(() => import('@/components/Chat'))
@@ -90,10 +112,10 @@ const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
 const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
-  loading: () => <LoadingSpinner size="lg" />,
+  loading: () => <CenteredLoadingFallback />,
 })
 const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-page'), {
-  loading: () => <LoadingSpinner size="lg" />,
+  loading: () => <CenteredLoadingFallback />,
 })
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
@@ -306,6 +328,64 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           const newEngine = restoreGameEngine(gt, game.id, parsedState)
           setGameEngine(newEngine)
 
+          if (
+            newEngine instanceof YahtzeeGame &&
+            gameEngine instanceof YahtzeeGame &&
+            game?.players &&
+            Array.isArray(game.players)
+          ) {
+            const scoreEventTimestamp =
+              typeof parsedState.lastMoveAt === 'number' ? parsedState.lastMoveAt : Date.now()
+            const scoredCategoryEntries: RollHistoryEntry[] = []
+
+            for (const enginePlayer of newEngine.getPlayers()) {
+              const previousScorecard = gameEngine.getScorecard(enginePlayer.id)
+              const nextScorecard = newEngine.getScorecard(enginePlayer.id)
+              const dbPlayer = game.players.find(
+                (candidate) =>
+                  candidate.userId === enginePlayer.id || candidate.id === enginePlayer.id
+              )
+              const playerName =
+                dbPlayer?.user?.username ||
+                dbPlayer?.name ||
+                enginePlayer.name ||
+                'Unknown'
+              const isBot = !!(dbPlayer?.user?.bot || dbPlayer?.bot)
+              const botId = dbPlayer?.user?.bot ? dbPlayer.userId : null
+              const turnNumber = Object.keys(nextScorecard || {}).length
+
+              for (const category of ALL_CATEGORIES) {
+                if (
+                  previousScorecard?.[category] === undefined &&
+                  nextScorecard?.[category] !== undefined
+                ) {
+                  scoredCategoryEntries.push({
+                    id: `score-${enginePlayer.id}-${category}-${scoreEventTimestamp}`,
+                    type: 'score',
+                    playerName,
+                    turnNumber,
+                    category,
+                    scoredPoints: nextScorecard[category] ?? 0,
+                    isBot,
+                    botId,
+                    timestamp: scoreEventTimestamp,
+                  })
+                }
+              }
+            }
+
+            if (scoredCategoryEntries.length > 0) {
+              setRollHistory((prev) => {
+                const existingIds = new Set(prev.map((entry) => entry.id))
+                const uniqueEntries = scoredCategoryEntries.filter(
+                  (entry) => !existingIds.has(entry.id)
+                )
+                if (uniqueEntries.length === 0) return prev
+                return [...prev, ...uniqueEntries].slice(-20)
+              })
+            }
+          }
+
           // Update game object with new state
           setGame((prevGame) => {
             if (!prevGame) return prevGame
@@ -319,10 +399,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           if (parsedState.data?.lastRoll && game?.players && Array.isArray(game.players)) {
             const lastRoll = parsedState.data.lastRoll
             // Find player with proper type checking
-            const player = game.players.find((p) => p.id === lastRoll.playerId)
+            const player = game.players.find(
+              (p) => p.userId === lastRoll.playerId || p.id === lastRoll.playerId
+            )
 
             // Safety check: ensure player exists and has required data
-            if (player?.user?.username && lastRoll.dice && lastRoll.timestamp) {
+            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp) {
               const playerCount = game.players.length
               const currentRound = parsedState.data.round || 1
               const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
@@ -341,17 +423,20 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   playAmbientSound('diceRoll')
                 }
 
-                return [...prev, {
+                const newRollEntry: RollHistoryEntry = {
                   id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
+                  type: 'roll',
                   playerName: player.user?.username || player.name || 'Unknown',
                   dice: lastRoll.dice,
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
-                  held: lastRoll.held,
+                  held: normalizeHeldIndexes(lastRoll.held),
                   isBot: !!(player.user?.bot || player.bot),
                   botId: player.user?.bot ? player.userId : null,
                   timestamp: lastRoll.timestamp,
-                }]
+                }
+
+                return [...prev, newRollEntry].slice(-20)
               })
             }
           }
@@ -364,7 +449,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, getCurrentUserId, lobby?.gameType, playAmbientSound])
+  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -442,16 +527,21 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       const playerCount = game?.players?.length || 1
       const turnNumber = Math.floor(currentRound / playerCount) + 1
 
-      setRollHistory(prev => [...prev, {
-        id: `bot-${Date.now()}-${Math.random()}`,
-        playerName: botName,
-        dice: event.data.dice,
-        rollNumber: event.data.rollNumber || 1,
-        turnNumber: turnNumber,
-        held: event.data.held || [],
-        isBot: true,
-        timestamp: Date.now(),
-      }])
+      setRollHistory(prev => {
+        const newRollEntry: RollHistoryEntry = {
+          id: `bot-${Date.now()}-${Math.random()}`,
+          type: 'roll',
+          playerName: botName,
+          dice: event.data.dice,
+          rollNumber: event.data.rollNumber || 1,
+          turnNumber: turnNumber,
+          held: normalizeHeldIndexes(event.data.held),
+          isBot: true,
+          timestamp: Date.now(),
+        }
+
+        return [...prev, newRollEntry].slice(-20)
+      })
 
       // Play sound ONLY after roll completes AND not during initial load
       // Use force option to ensure sound plays even if previous roll sound is still playing

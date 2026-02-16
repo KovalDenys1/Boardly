@@ -147,9 +147,12 @@ export async function POST(
           select: {
             id: true,
             userId: true,
+            score: true,
+            scorecard: true,
             user: {
               select: {
                 id: true,
+                username: true,
                 bot: true,
               },
             },
@@ -179,8 +182,11 @@ export async function POST(
     interface GamePlayer {
       id: string
       userId: string
+      score: number
+      scorecard: string | null
       user: {
         id: string
+        username: string | null
         bot: unknown
       }
     }
@@ -365,33 +371,6 @@ export async function POST(
       )
     }
 
-    // Load the updated game after successful CAS write
-    const updatedGame = await prisma.games.findUnique({
-      where: { id: gameId },
-      select: {
-        id: true,
-        status: true,
-        players: {
-          select: {
-            id: true,
-            userId: true,
-            score: true,
-            user: {
-              select: {
-                id: true,
-                username: true,
-                bot: true,  // Bot relation
-              },
-            },
-          },
-        },
-      },
-    })
-
-    if (!updatedGame) {
-      return NextResponse.json({ error: 'Game not found after update' }, { status: 404 })
-    }
-
     // Log state transitions for debugging
     if (statusChanged) {
       log.info('Game status changed', {
@@ -410,32 +389,50 @@ export async function POST(
         ? (gameEngine as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
         : null
     const enginePlayers = gameEngine.getPlayers()
-    await Promise.all(
-      enginePlayers.map(async (player: Player) => {
-        const dbPlayer = updatedGame.players.find(p => p.userId === player.id)
-        if (dbPlayer) {
-          await prisma.players.update({
-            where: { id: dbPlayer.id },
-            data: {
-              score: player.score || 0,
-              scorecard: JSON.stringify(
-                getScorecard ? getScorecard(player.id) : {}
-              ),
-            },
-          })
-        }
-      })
-    )
+    const gamePlayers = game.players as GamePlayer[]
+    const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
+    const changedPlayerUpdates: Array<Promise<unknown>> = []
+
+    for (const player of enginePlayers as Player[]) {
+      const dbPlayer = dbPlayersByUserId.get(player.id)
+      if (!dbPlayer) continue
+
+      const nextScore = typeof player.score === 'number' ? player.score : 0
+      const nextScorecard = JSON.stringify(
+        getScorecard ? getScorecard(player.id) : {}
+      )
+
+      if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
+        continue
+      }
+
+      changedPlayerUpdates.push(
+        prisma.players.update({
+          where: { id: dbPlayer.id },
+          data: {
+            score: nextScore,
+            scorecard: nextScorecard,
+          },
+        })
+      )
+    }
 
     const authoritativeState = gameEngine.getState()
-    const serverBroadcasted = await notifySocket(
-      `lobby:${game.lobby.code}`,
-      'game-update',
-      {
-        action: 'state-change',
-        payload: authoritativeState,
-      }
-    )
+    const scoreSyncPromise = changedPlayerUpdates.length > 0
+      ? Promise.all(changedPlayerUpdates)
+      : Promise.resolve([])
+    const [serverBroadcasted] = await Promise.all([
+      notifySocket(
+        `lobby:${game.lobby.code}`,
+        'game-update',
+        {
+          action: 'state-change',
+          payload: authoritativeState,
+        },
+        0
+      ),
+      scoreSyncPromise,
+    ])
 
     if (!serverBroadcasted) {
       log.warn('Failed to broadcast authoritative state snapshot', {
@@ -446,7 +443,7 @@ export async function POST(
     }
 
     const requestPlayerIsBot = !!playerRecord.user?.bot
-    const botPlayers = updatedGame.players.filter((player) => !!player.user?.bot)
+    const botPlayers = gamePlayers.filter((player) => !!player.user?.bot)
     let botUserIdToTrigger: string | null = null
 
     if (!requestPlayerIsBot && authoritativeState.status === 'playing' && botPlayers.length > 0) {
@@ -520,15 +517,18 @@ export async function POST(
 
     const response = {
       game: {
-        id: updatedGame.id,
-        status: updatedGame.status,
+        id: game.id,
+        status: authoritativeState.status,
         state: authoritativeState,
-        players: updatedGame.players.map(p => ({
-          id: p.userId,
-          name: p.user.username || 'Unknown',
-          score: p.score,
-          isBot: !!p.user.bot,
-        })),
+        players: enginePlayers.map((player: Player) => {
+          const dbPlayer = dbPlayersByUserId.get(player.id)
+          return {
+            id: player.id,
+            name: dbPlayer?.user.username || player.name || 'Unknown',
+            score: typeof player.score === 'number' ? player.score : 0,
+            isBot: !!dbPlayer?.user.bot,
+          }
+        }),
       },
       serverBroadcasted,
     }

@@ -186,63 +186,69 @@ function CreateLobbyPage() {
         throw new Error(data.error || 'Failed to create lobby')
       }
 
-      // Notify lobby list about new lobby via WebSocket
-      const socketUrl = getBrowserSocketUrl()
-      let token: string | null = guestToken || null
-
-      if (!isGuest) {
-        try {
-          const tokenResponse = await fetch('/api/socket/token')
-          if (!tokenResponse.ok) {
-            throw new Error(`HTTP ${tokenResponse.status}`)
-          }
-          const tokenData = await tokenResponse.json()
-          token = tokenData?.token || null
-        } catch (tokenError) {
-          clientLogger.warn('Failed to fetch socket token for lobby-created event (non-critical):', tokenError)
-          token = null
-        }
+      const lobbyCode = typeof data?.lobby?.code === 'string' ? data.lobby.code : null
+      if (!lobbyCode) {
+        throw new Error('Lobby code missing in response')
       }
 
-      const authPayload: Record<string, unknown> = {}
-      if (token) authPayload.token = token
-      authPayload.isGuest = isGuest
+      clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
+      router.push(`/lobby/${lobbyCode}`)
 
-      const queryPayload: Record<string, string> = {}
-      if (token) queryPayload.token = String(token)
-      queryPayload.isGuest = String(isGuest)
+      // Notify lobby list about new lobby via WebSocket in background.
+      // This is best-effort and must not block navigation to the created lobby.
+      void (async () => {
+        const socketUrl = getBrowserSocketUrl()
+        let token: string | null = guestToken || null
 
-      const socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        reconnection: false, // Don't reconnect for this one-time notification
-        timeout: 5000,
-        withCredentials: true,
-        auth: authPayload,
-        query: queryPayload,
-      })
-
-      // Set a timeout to force cleanup after 10 seconds
-      const cleanupTimeout = setTimeout(() => {
-        if (socket.connected) {
-          socket.disconnect()
+        if (!isGuest) {
+          try {
+            const tokenResponse = await fetch('/api/socket/token')
+            if (!tokenResponse.ok) {
+              throw new Error(`HTTP ${tokenResponse.status}`)
+            }
+            const tokenData = await tokenResponse.json()
+            token = tokenData?.token || null
+          } catch (tokenError) {
+            clientLogger.warn('Failed to fetch socket token for lobby-created event (non-critical):', tokenError)
+            token = null
+          }
         }
-      }, 10000)
 
-      socket.on('connect', () => {
-        socket.emit('lobby-created')
-        clearTimeout(cleanupTimeout)
-        socket.disconnect()
-      })
+        const authPayload: Record<string, unknown> = {}
+        if (token) authPayload.token = token
+        authPayload.isGuest = isGuest
 
-      socket.on('connect_error', (error) => {
-        clientLogger.warn('Socket notification failed (non-critical):', error.message)
-        clearTimeout(cleanupTimeout)
-        socket.disconnect()
-      })
+        const queryPayload: Record<string, string> = {}
+        if (token) queryPayload.token = String(token)
+        queryPayload.isGuest = String(isGuest)
 
-      clientLogger.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
-      // Redirect to the new lobby
-      router.push(`/lobby/${data.lobby.code}`)
+        const socket = io(socketUrl, {
+          transports: ['websocket', 'polling'],
+          reconnection: false, // Don't reconnect for this one-time notification
+          timeout: 5000,
+          withCredentials: true,
+          auth: authPayload,
+          query: queryPayload,
+        })
+
+        const cleanupTimeout = setTimeout(() => {
+          if (socket.connected) {
+            socket.disconnect()
+          }
+        }, 10000)
+
+        socket.on('connect', () => {
+          socket.emit('lobby-created')
+          clearTimeout(cleanupTimeout)
+          socket.disconnect()
+        })
+
+        socket.on('connect_error', (error) => {
+          clientLogger.warn('Socket notification failed (non-critical):', error.message)
+          clearTimeout(cleanupTimeout)
+          socket.disconnect()
+        })
+      })()
     } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
       const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')

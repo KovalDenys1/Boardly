@@ -44,6 +44,7 @@ export default function GameBoard({
 }: GameBoardProps) {
   const { t } = useTranslation()
   const percentage = turnTimerLimit > 0 ? (timeLeft / turnTimerLimit) * 100 : 100
+  const rollsLeft = gameEngine.getRollsLeft()
 
   return (
     <div className="h-full flex flex-col gap-2 sm:gap-3">
@@ -116,26 +117,33 @@ export default function GameBoard({
         {/* Roll Button */}
         <button
           onClick={onRollDice}
+          aria-label={`${t('yahtzee.ui.rollDice')}. ${t('yahtzee.ui.rollsLeft', { count: rollsLeft })}`}
           disabled={
             !isMyTurn ||
-            gameEngine.getRollsLeft() === 0 ||
+            rollsLeft === 0 ||
             isMoveInProgress
           }
-          className={`w-full px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-lg
-            ${!isMyTurn || gameEngine.getRollsLeft() === 0 || isMoveInProgress
+          className={`w-full overflow-hidden px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-lg
+            ${!isMyTurn || rollsLeft === 0 || isMoveInProgress
               ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transform hover:scale-105 hover:shadow-xl active:scale-95'
+              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white hover:shadow-xl active:scale-95'
             }`}
         >
           {isRolling ? (
-            <span className="flex items-center justify-center gap-1.5 sm:gap-2">
+            <span className="flex items-center justify-center gap-1.5 sm:gap-2 min-w-0">
               <span className="text-lg sm:text-xl animate-spin">🎲</span>
-              <span>{t('yahtzee.ui.rolling')}</span>
+              <span className="truncate">{t('yahtzee.ui.rolling')}</span>
             </span>
           ) : (
-            <span className="flex items-center justify-center gap-1.5 sm:gap-2">
-              <span className="text-lg sm:text-xl">🎲</span>
-              <span>{t('yahtzee.ui.rollDice')} ({t('yahtzee.ui.rollsLeft', { count: gameEngine.getRollsLeft() })})</span>
+            <span className="flex items-center justify-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="text-lg sm:text-xl shrink-0">🎲</span>
+              <span className="truncate">{t('yahtzee.ui.rollDice')}</span>
+              <span
+                title={t('yahtzee.ui.rollsLeft', { count: rollsLeft })}
+                className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs sm:text-sm font-semibold"
+              >
+                {rollsLeft}/3
+              </span>
             </span>
           )}
         </button>

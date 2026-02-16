@@ -96,6 +96,26 @@ describe('TicTacToeBot', () => {
     expect(decision.col).toBe(0)
   })
 
+  it('hard difficulty prefers fork-creating pressure move in balanced positions', async () => {
+    const game = createGame()
+    setBoardState(
+      game,
+      [
+        ['X', null, null],
+        [null, 'O', null],
+        [null, null, 'X'],
+      ],
+      'O',
+      1,
+    )
+
+    const bot = new TicTacToeBot(game, 'hard', 'bot')
+    const decision = await bot.makeDecision()
+
+    expect(decision.row).toBe(0)
+    expect(decision.col).toBe(1)
+  })
+
   it('converts decision to move using configured bot user id', () => {
     const game = createGame()
     const bot = new TicTacToeBot(game, 'medium', 'bot')

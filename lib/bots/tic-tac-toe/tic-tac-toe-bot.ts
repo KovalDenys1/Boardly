@@ -116,8 +116,10 @@ export class TicTacToeBot extends BaseBot<TicTacToeGame, TicTacToeBotDecision> {
     opponentSymbol: PlayerSymbol,
   ): CellPosition {
     const emptyCells = this.getEmptyCells(board)
+    let bestMove: CellPosition | null = null
     let bestScore = Number.NEGATIVE_INFINITY
-    let bestMoves: CellPosition[] = []
+    let bestPressure = Number.NEGATIVE_INFINITY
+    let bestPriority = Number.NEGATIVE_INFINITY
 
     for (const cell of emptyCells) {
       const simulatedBoard = this.cloneBoard(board)
@@ -129,23 +131,34 @@ export class TicTacToeBot extends BaseBot<TicTacToeGame, TicTacToeBotDecision> {
         botSymbol,
         opponentSymbol,
         1,
+        Number.NEGATIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
       )
+      const pressure = this.evaluateStrategicPressure(
+        simulatedBoard,
+        botSymbol,
+        opponentSymbol,
+      )
+      const positionPriority = this.getPositionPriority(cell)
 
-      if (score > bestScore) {
+      const isBetterMove =
+        score > bestScore ||
+        (score === bestScore && pressure > bestPressure) ||
+        (score === bestScore && pressure === bestPressure && positionPriority > bestPriority)
+
+      if (isBetterMove) {
         bestScore = score
-        bestMoves = [cell]
-      } else if (score === bestScore) {
-        bestMoves.push(cell)
+        bestPressure = pressure
+        bestPriority = positionPriority
+        bestMove = cell
       }
     }
 
-    if (bestMoves.length === 0) {
+    if (!bestMove) {
       return this.pickRandomMove(emptyCells)
     }
 
-    return bestMoves
-      .slice()
-      .sort((a, b) => this.getPositionPriority(b) - this.getPositionPriority(a))[0]
+    return bestMove
   }
 
   private minimax(
@@ -154,6 +167,8 @@ export class TicTacToeBot extends BaseBot<TicTacToeGame, TicTacToeBotDecision> {
     botSymbol: PlayerSymbol,
     opponentSymbol: PlayerSymbol,
     depth: number,
+    alpha: number,
+    beta: number,
   ): number {
     const winner = this.evaluateWinner(board)
     if (winner === botSymbol) return 10 - depth
@@ -168,8 +183,20 @@ export class TicTacToeBot extends BaseBot<TicTacToeGame, TicTacToeBotDecision> {
       for (const cell of emptyCells) {
         const nextBoard = this.cloneBoard(board)
         nextBoard[cell.row][cell.col] = symbolToPlay
-        const score = this.minimax(nextBoard, false, botSymbol, opponentSymbol, depth + 1)
+        const score = this.minimax(
+          nextBoard,
+          false,
+          botSymbol,
+          opponentSymbol,
+          depth + 1,
+          alpha,
+          beta,
+        )
         bestScore = Math.max(bestScore, score)
+        alpha = Math.max(alpha, bestScore)
+        if (beta <= alpha) {
+          break
+        }
       }
       return bestScore
     }
@@ -178,10 +205,123 @@ export class TicTacToeBot extends BaseBot<TicTacToeGame, TicTacToeBotDecision> {
     for (const cell of emptyCells) {
       const nextBoard = this.cloneBoard(board)
       nextBoard[cell.row][cell.col] = symbolToPlay
-      const score = this.minimax(nextBoard, true, botSymbol, opponentSymbol, depth + 1)
+      const score = this.minimax(
+        nextBoard,
+        true,
+        botSymbol,
+        opponentSymbol,
+        depth + 1,
+        alpha,
+        beta,
+      )
       bestScore = Math.min(bestScore, score)
+      beta = Math.min(beta, bestScore)
+      if (beta <= alpha) {
+        break
+      }
     }
     return bestScore
+  }
+
+  private evaluateStrategicPressure(
+    board: CellValue[][],
+    botSymbol: PlayerSymbol,
+    opponentSymbol: PlayerSymbol,
+  ): number {
+    const immediateWinningMoves = this.countWinningMoves(board, botSymbol)
+    const opponentImmediateWins = this.countWinningMoves(board, opponentSymbol)
+    const forkMoves = this.countForkMoves(board, botSymbol)
+    const opponentForkMoves = this.countForkMoves(board, opponentSymbol)
+    const linePressure = this.evaluateLinePressure(board, botSymbol, opponentSymbol)
+
+    return (
+      immediateWinningMoves * 120 +
+      forkMoves * 45 +
+      linePressure -
+      opponentImmediateWins * 100 -
+      opponentForkMoves * 35
+    )
+  }
+
+  private countWinningMoves(board: CellValue[][], symbol: PlayerSymbol): number {
+    let winningMoves = 0
+    const emptyCells = this.getEmptyCells(board)
+
+    for (const cell of emptyCells) {
+      const nextBoard = this.cloneBoard(board)
+      nextBoard[cell.row][cell.col] = symbol
+      if (this.evaluateWinner(nextBoard) === symbol) {
+        winningMoves += 1
+      }
+    }
+
+    return winningMoves
+  }
+
+  private countForkMoves(board: CellValue[][], symbol: PlayerSymbol): number {
+    let forkMoves = 0
+    const emptyCells = this.getEmptyCells(board)
+
+    for (const cell of emptyCells) {
+      const nextBoard = this.cloneBoard(board)
+      nextBoard[cell.row][cell.col] = symbol
+      const winningMoves = this.countWinningMoves(nextBoard, symbol)
+      if (winningMoves >= 2) {
+        forkMoves += 1
+      }
+    }
+
+    return forkMoves
+  }
+
+  private evaluateLinePressure(
+    board: CellValue[][],
+    botSymbol: PlayerSymbol,
+    opponentSymbol: PlayerSymbol,
+  ): number {
+    const lines: Array<[CellPosition, CellPosition, CellPosition]> = [
+      [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }],
+      [{ row: 1, col: 0 }, { row: 1, col: 1 }, { row: 1, col: 2 }],
+      [{ row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }],
+      [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 2, col: 0 }],
+      [{ row: 0, col: 1 }, { row: 1, col: 1 }, { row: 2, col: 1 }],
+      [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 2, col: 2 }],
+      [{ row: 0, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 2 }],
+      [{ row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }],
+    ]
+
+    let pressure = 0
+
+    for (const [a, b, c] of lines) {
+      const values = [
+        board[a.row][a.col],
+        board[b.row][b.col],
+        board[c.row][c.col],
+      ]
+
+      const botCount = values.filter((value) => value === botSymbol).length
+      const opponentCount = values.filter((value) => value === opponentSymbol).length
+      const emptyCount = 3 - botCount - opponentCount
+
+      // Mixed lines are blocked for both sides.
+      if (botCount > 0 && opponentCount > 0) {
+        continue
+      }
+
+      if (opponentCount === 0) {
+        if (botCount === 2 && emptyCount === 1) pressure += 12
+        else if (botCount === 1 && emptyCount === 2) pressure += 4
+        else pressure += 1
+      }
+
+      if (botCount === 0) {
+        if (opponentCount === 2 && emptyCount === 1) pressure -= 9
+        else if (opponentCount === 1 && emptyCount === 2) pressure -= 3
+        else pressure -= 1
+      }
+    }
+
+    return pressure
   }
 
   private findWinningMove(board: CellValue[][], symbol: PlayerSymbol): CellPosition | null {

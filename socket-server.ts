@@ -120,13 +120,10 @@ function emitWithMetadata(
   event: string,
   data: unknown
 ) {
-  const metadataBase =
-    data && typeof data === 'object' && !Array.isArray(data)
-      ? (data as Record<string, unknown>)
-      : {}
-
+  const metadataCarrier =
+    data && typeof data === 'object' ? (data as Record<string, unknown>) : {}
   const payload = {
-    ...metadataBase,
+    ...metadataCarrier,
     sequenceId: ++eventSequence,
     timestamp: Date.now(),
     version: '1.0.0'
@@ -203,9 +200,8 @@ function hasAnotherActiveSocketForUserInLobby(
     if (socketId === excludingSocketId) continue
     if (!activeSocket.connected) continue
     if (activeSocket.data?.user?.id !== userId) continue
-    if (activeSocket.rooms?.has(lobbyRoom)) {
-      return true
-    }
+    if (!activeSocket.rooms.has(lobbyRoom)) continue
+    return true
   }
   return false
 }
@@ -215,9 +211,8 @@ function hasAnyActiveSocketForUserInLobby(userId: string, lobbyCode: string): bo
   for (const activeSocket of io.sockets.sockets.values()) {
     if (!activeSocket.connected) continue
     if (activeSocket.data?.user?.id !== userId) continue
-    if (activeSocket.rooms?.has(lobbyRoom)) {
-      return true
-    }
+    if (!activeSocket.rooms.has(lobbyRoom)) continue
+    return true
   }
   return false
 }
@@ -470,9 +465,6 @@ io.on('connection', (socket) => {
 
   // Mark user as online if authenticated
   const userId = socket.data.user?.id
-  if (userId) {
-    socket.join(SocketRooms.user(userId))
-  }
   if (userId && !socket.data.user?.isGuest) {
     onlinePresence.markUserOnline(userId, socket.id)
   }
@@ -572,9 +564,6 @@ const gracefulShutdown = async (signal: string) => {
   server.close(() => {
     logger.info('HTTP server closed')
   })
-
-  // Clear pending delayed disconnect tasks to avoid stale state mutations during shutdown.
-  disconnectSyncManager.dispose()
 
   // Close all socket connections
   io.close(() => {

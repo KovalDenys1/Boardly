@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { io, Socket } from 'socket.io-client'
@@ -34,7 +34,7 @@ interface TicTacToeLobbyPageProps {
 export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
-    const { isGuest, guestToken, guestId, guestName } = useGuest()
+    const { isGuest, guestToken, guestId } = useGuest()
     const { t } = useTranslation()
 
     const [loading, setLoading] = useState(true)
@@ -43,6 +43,8 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [gameEngine, setGameEngine] = useState<TicTacToeGame | null>(null)
     const [socket, setSocket] = useState<Socket | null>(null)
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
+    const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+    const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -107,17 +109,34 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {
-        if (!gameEngine || !game || !socket) return
+        if (!gameEngine || !game || isMoveSubmitting) return
 
         try {
-            // Validate and process move locally first
-            if (!gameEngine.validateMove(move)) {
+            const userId = getCurrentUserId()
+            if (!userId) return
+
+            // Process move on a cloned engine first, then update UI immediately.
+            const optimisticEngine = new TicTacToeGame(game.id)
+            optimisticEngine.restoreState(gameEngine.getState())
+
+            if (!optimisticEngine.validateMove(move)) {
                 showToast.error('tictactoe.ui.invalidMove')
                 return
             }
 
-            gameEngine.processMove(move)
-            const newState = gameEngine.getState()
+            optimisticEngine.processMove(move)
+            const optimisticState = optimisticEngine.getState()
+            setGameEngine(optimisticEngine)
+            setGame((prevGame) => {
+                if (!prevGame) return prevGame
+                return {
+                    ...prevGame,
+                    status: optimisticState.status as Game['status'],
+                    currentTurn: optimisticState.currentPlayerIndex,
+                    state: JSON.stringify(optimisticState),
+                }
+            })
+            setIsMoveSubmitting(true)
 
             // Send to server using main state route
             const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
@@ -126,7 +145,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 body: JSON.stringify({
                     gameId: game.id,
                     move,
-                    userId: getCurrentUserId(),
+                    userId,
                 }),
             })
 
@@ -140,9 +159,21 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 return
             }
 
-            // Update local state
-            setGameEngine(gameEngine)
-            setGame(data.game)
+            const authoritativeState = data?.game?.state
+            if (authoritativeState) {
+                const authoritativeEngine = new TicTacToeGame(game.id)
+                authoritativeEngine.restoreState(authoritativeState)
+                setGameEngine(authoritativeEngine)
+                setGame((prevGame) => {
+                    if (!prevGame) return prevGame
+                    return {
+                        ...prevGame,
+                        status: data?.game?.status ?? prevGame.status,
+                        currentTurn: authoritativeState.currentPlayerIndex,
+                        state: JSON.stringify(authoritativeState),
+                    }
+                })
+            }
 
             // Notify other players via Socket
             if (socket?.connected) {
@@ -150,14 +181,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     lobbyCode: code,
                     gameId: game.id,
                     move,
-                    state: newState,
-                    playerId: getCurrentUserId(),
+                    state: optimisticState,
+                    playerId: userId,
                 })
             }
 
             // Check win condition
-            const winner = gameEngine.checkWinCondition()
-            if (winner || gameEngine.getState().status === 'finished') {
+            const winner = optimisticEngine.checkWinCondition()
+            if (winner || optimisticEngine.getState().status === 'finished') {
                 if (winner) {
                     showToast.success('common.success')
                 } else {
@@ -167,8 +198,11 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         } catch (error) {
             clientLogger.error('Error making move:', error)
             showToast.error('errors.unexpected')
+            await loadLobby()
+        } finally {
+            setIsMoveSubmitting(false)
         }
-    }, [gameEngine, game, socket, code, getCurrentUserId, loadLobby])
+    }, [gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting])
 
     // Socket connection
     useEffect(() => {
@@ -262,6 +296,56 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             showToast.error('errors.unexpected')
         }
     }
+
+    const handlePlayAgain = useCallback(async () => {
+        if (!lobby) {
+            router.push('/games/tic-tac-toe/lobbies')
+            return
+        }
+
+        const userId = getCurrentUserId()
+        if (!userId) {
+            router.push(`/lobby/${code}`)
+            return
+        }
+
+        const isCreator = lobby.creatorId === userId
+        if (!isCreator) {
+            showToast.info('toast.info', 'Waiting for the lobby host to start a rematch')
+            router.push(`/lobby/${code}`)
+            return
+        }
+
+        setIsRematchSubmitting(true)
+        try {
+            const response = await fetchWithGuest('/api/game/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameType: 'tic_tac_toe',
+                    lobbyId: lobby.id,
+                }),
+            })
+
+            const data = await response.json().catch(() => null)
+            if (!response.ok) {
+                const errorMessage =
+                    (typeof data?.details === 'string' && data.details) ||
+                    (typeof data?.error === 'string' && data.error) ||
+                    'Failed to start rematch'
+                throw new Error(errorMessage)
+            }
+
+            await loadLobby()
+            showToast.success('toast.success', 'New match started')
+        } catch (error) {
+            clientLogger.error('Failed to start Tic-Tac-Toe rematch:', error)
+            showToast.error('errors.unexpected')
+            router.push(`/lobby/${code}`)
+        } finally {
+            setIsRematchSubmitting(false)
+        }
+    }, [code, getCurrentUserId, lobby, loadLobby, router])
 
     if (loading) {
         return (
@@ -373,7 +457,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                             game={gameEngine}
                             currentPlayerId={getCurrentUserId() || ''}
                             onMove={handleMove}
-                            disabled={!isMyTurn() || isFinished}
+                            disabled={!isMyTurn() || isFinished || isMoveSubmitting}
                         />
                     </div>
                 </div>
@@ -406,10 +490,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                             <h3 className="text-lg font-bold mb-3">{t('games.tictactoe.game.gameActions')}</h3>
                             <div className="flex flex-col gap-3">
                                 <button
-                                    onClick={() => router.push('/games/tic-tac-toe/lobbies')}
+                                    onClick={handlePlayAgain}
                                     className="w-full btn btn-primary"
+                                    disabled={isRematchSubmitting}
                                 >
-                                    {t('games.tictactoe.game.playAgain')}
+                                    {isRematchSubmitting
+                                        ? t('common.loading')
+                                        : t('games.tictactoe.game.playAgain')}
                                 </button>
                                 <button
                                     onClick={() => router.push('/games')}

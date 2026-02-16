@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
@@ -15,6 +15,17 @@ import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
 
 let socket: Socket | null = null
+const FILTERABLE_GAME_TYPES = new Set([
+  'yahtzee',
+  'guess_the_spy',
+  'tic_tac_toe',
+  'rock_paper_scissors',
+])
+
+function normalizeGameTypeFilter(value: string | null): string | undefined {
+  if (!value) return undefined
+  return FILTERABLE_GAME_TYPES.has(value) ? value : undefined
+}
 
 interface Lobby {
   id: string
@@ -44,9 +55,11 @@ interface LobbyListResponse {
   }
 }
 
-export default function LobbyListPage() {
+function LobbyListPageContent() {
   const { t, ready } = useTranslation()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialGameTypeFilter = normalizeGameTypeFilter(searchParams.get('gameType'))
   const { data: session } = useSession()
   const { isGuest, guestToken } = useGuest()
   const authenticatedUserId = session?.user?.id || null
@@ -61,6 +74,7 @@ export default function LobbyListPage() {
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
   const [filters, setFilters] = useState<LobbyFilterOptions>({
+    gameType: initialGameTypeFilter,
     status: 'all',
     sortBy: 'createdAt',
     sortOrder: 'desc',
@@ -140,6 +154,24 @@ export default function LobbyListPage() {
       }
     }
   }, [filters])
+
+  useEffect(() => {
+    const gameTypeFromQuery = normalizeGameTypeFilter(searchParams.get('gameType'))
+    if (!gameTypeFromQuery) {
+      return
+    }
+
+    setFilters((prev) => {
+      if (prev.gameType === gameTypeFromQuery) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        gameType: gameTypeFromQuery,
+      }
+    })
+  }, [searchParams])
 
   useEffect(() => {
     loadLobbiesRef.current = loadLobbies
@@ -451,5 +483,13 @@ export default function LobbyListPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LobbyListPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <LobbyListPageContent />
+    </Suspense>
   )
 }

@@ -114,12 +114,6 @@ describe('Guest mode API endpoints', () => {
   })
 
   it('creates lobby for authenticated guest user', async () => {
-    mockPrisma.users.findUnique.mockResolvedValue({
-      id: guestUser.id,
-      username: guestUser.username,
-      isGuest: true,
-    } as any)
-    mockPrisma.lobbies.findUnique.mockResolvedValueOnce(null as any)
     mockPrisma.lobbies.create.mockResolvedValue({
       id: 'lobby_1',
       code: 'TEST123',

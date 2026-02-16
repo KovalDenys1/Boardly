@@ -250,9 +250,41 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     const handleSubmitChoice = async (choice: RPSChoice) => {
         if (!lobby?.game) return
 
+        const previousLobby = lobby
         setIsSubmitting(true)
+        setError(null)
         try {
             const userId = getCurrentUserId()
+            if (!userId) {
+                throw new Error('Missing user id')
+            }
+
+            setLobby((prevLobby) => {
+                if (!prevLobby?.game) return prevLobby
+
+                const previousReady = Array.isArray(prevLobby.game.data.playersReady)
+                    ? prevLobby.game.data.playersReady
+                    : []
+                const playersReady = previousReady.includes(userId)
+                    ? previousReady
+                    : [...previousReady, userId]
+
+                return {
+                    ...prevLobby,
+                    game: {
+                        ...prevLobby.game,
+                        data: {
+                            ...prevLobby.game.data,
+                            playerChoices: {
+                                ...prevLobby.game.data.playerChoices,
+                                [userId]: choice,
+                            },
+                            playersReady,
+                        },
+                    },
+                }
+            })
+
             const res = await fetchWithGuest(`/api/game/${lobby.game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -267,17 +299,51 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                 }),
             })
 
+            const payload = await res.json().catch(() => null)
             if (!res.ok) {
-                const error = await res.json()
-                throw new Error(error.message || 'Failed to submit choice')
+                throw new Error(payload?.message || payload?.error || 'Failed to submit choice')
             }
 
-            // Reload lobby to show updated game state
-            await loadLobbyData()
+            const authoritativeState = payload?.game?.state
+            if (authoritativeState) {
+                const parsedState = authoritativeState as { currentPlayerIndex?: unknown }
+                const normalizedData = parseRpsState(authoritativeState)
+
+                setLobby((prevLobby) => {
+                    if (!prevLobby?.game) return prevLobby
+
+                    const responsePlayers = Array.isArray(payload?.game?.players)
+                        ? payload.game.players
+                            .map((player: any) => ({
+                                id: typeof player?.id === 'string' ? player.id : '',
+                                name: typeof player?.name === 'string' ? player.name : 'Unknown',
+                            }))
+                            .filter((player: { id: string }) => player.id.length > 0)
+                        : prevLobby.game.players
+
+                    return {
+                        ...prevLobby,
+                        status: payload?.game?.status ?? prevLobby.status,
+                        game: {
+                            ...prevLobby.game,
+                            status: payload?.game?.status ?? prevLobby.game.status,
+                            currentPlayerIndex: typeof parsedState.currentPlayerIndex === 'number'
+                                ? parsedState.currentPlayerIndex
+                                : prevLobby.game.currentPlayerIndex,
+                            players: responsePlayers,
+                            data: normalizedData,
+                        },
+                    }
+                })
+            } else {
+                void loadLobbyData()
+            }
+
             clientLogger.log(`🎮 RPS: Submitted choice: ${choice}`)
-            showToast.success('game.move_submitted')
+            showToast.success('lobby.game.move_submitted')
         } catch (err) {
             clientLogger.error('Failed to submit choice:', err)
+            setLobby(previousLobby)
             setError(err instanceof Error ? err.message : t('errors.failed_to_submit_move'))
             showToast.error('errors.failed_to_submit_move')
         } finally {
@@ -285,7 +351,13 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         }
     }
 
-    if (loading) return <LoadingSpinner />
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+                <LoadingSpinner size="lg" />
+            </div>
+        )
+    }
 
     if (error || !lobby || !lobby.game) {
         return (
@@ -313,7 +385,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-white mb-2">🍂 {t('games.rock_paper_scissors.name')}</h1>
-                    <p className="text-gray-400">{t('game.code')}: {code.toUpperCase()}</p>
+                    <p className="text-gray-400">{t('lobby.game.code')}: {code.toUpperCase()}</p>
                 </div>
 
                 {/* Players Info */}
@@ -325,11 +397,11 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                                 } rounded-lg p-4 border`}
                         >
                             <p className="text-xs text-gray-400">
-                                {player.id === currentUserId ? `👤 ${t('game.you')}` : `👥 ${t('game.opponent')}`}
+                                {player.id === currentUserId ? `👤 ${t('lobby.game.you')}` : `👥 ${t('lobby.game.opponent')}`}
                             </p>
                             <p className="text-lg font-bold text-white">{player.name}</p>
                             <p className="text-sm text-indigo-300 mt-2">
-                                {t('game.score')}: <span className="font-bold">{gameData.scores[player.id] || 0}</span>
+                                {t('lobby.game.score')}: <span className="font-bold">{gameData.scores[player.id] || 0}</span>
                             </p>
                         </div>
                     ))}
@@ -352,7 +424,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                         onClick={() => router.push(`/lobby/${code}`)}
                         className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-lg transition"
                     >
-                        {t('game.back_to_lobby')}
+                        {t('lobby.game.back_to_lobby')}
                     </button>
                 </div>
             </div>

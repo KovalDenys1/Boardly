@@ -242,7 +242,7 @@ export function useGameActions(props: UseGameActionsProps) {
           timestamp: Date.now(),
           isBot: false,
         }
-        setRollHistory(prev => [...prev.slice(-9), newEntry])
+        setRollHistory(prev => [...prev.slice(-19), newEntry])
 
         const celebration = detectPatternOnRoll(newEngine.getDice())
         if (celebration) {

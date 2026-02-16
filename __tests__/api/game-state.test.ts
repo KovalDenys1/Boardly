@@ -78,8 +78,20 @@ describe('POST /api/game/[gameId]/state', () => {
     updatedAt: new Date('2026-02-15T10:00:00.000Z'),
     lastMoveAt: new Date('2026-02-15T10:00:00.000Z'),
     players: [
-      { id: 'db-player-1', userId: 'player-1', user: { id: 'player-1', bot: null } },
-      { id: 'db-player-2', userId: 'player-2', user: { id: 'player-2', bot: null } },
+      {
+        id: 'db-player-1',
+        userId: 'player-1',
+        score: 0,
+        scorecard: '{}',
+        user: { id: 'player-1', username: 'Player 1', bot: null },
+      },
+      {
+        id: 'db-player-2',
+        userId: 'player-2',
+        score: 0,
+        scorecard: '{}',
+        user: { id: 'player-2', username: 'Player 2', bot: null },
+      },
     ],
     lobby: {
       id: 'lobby-123',
@@ -190,26 +202,7 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
-    mockPrisma.games.findUnique
-      .mockResolvedValueOnce(dbGame as any)
-      .mockResolvedValueOnce({
-        id: 'game-123',
-        status: 'playing',
-        players: [
-          {
-            id: 'db-player-1',
-            userId: 'player-1',
-            score: 10,
-            user: { id: 'player-1', username: 'Player 1', bot: null },
-          },
-          {
-            id: 'db-player-2',
-            userId: 'player-2',
-            score: 5,
-            user: { id: 'player-2', username: 'Player 2', bot: null },
-          },
-        ],
-      } as any)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
     mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
     mockPrisma.players.update.mockResolvedValue({} as any)
     mockRestoreGameEngine.mockReturnValue(mockEngine as any)
@@ -232,10 +225,43 @@ describe('POST /api/game/[gameId]/state', () => {
       'game-update',
       expect.objectContaining({
         action: 'state-change',
-      })
+      }),
+      0
     )
     expect(payload.game.id).toBe('game-123')
     expect(payload.serverBroadcasted).toBe(true)
+  })
+
+  it('skips redundant player score updates when score state is unchanged', async () => {
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 1,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-2' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0 },
+        { id: 'player-2', score: 0 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.players.update).not.toHaveBeenCalled()
   })
 
   it('auto-triggers Tic-Tac-Toe bot turn when next player is bot', async () => {
@@ -284,26 +310,7 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
-    mockPrisma.games.findUnique
-      .mockResolvedValueOnce(tttDbGame as any)
-      .mockResolvedValueOnce({
-        id: 'game-123',
-        status: 'playing',
-        players: [
-          {
-            id: 'db-player-1',
-            userId: 'player-1',
-            score: 0,
-            user: { id: 'player-1', username: 'Player 1', bot: null },
-          },
-          {
-            id: 'db-player-bot',
-            userId: 'bot-1',
-            score: 0,
-            user: { id: 'bot-1', username: 'AI Bot', bot: { id: 'bot-meta-1' } },
-          },
-        ],
-      } as any)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(tttDbGame as any)
     mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
     mockPrisma.players.update.mockResolvedValue({} as any)
     mockRestoreGameEngine.mockReturnValue(mockEngine as any)
@@ -377,26 +384,7 @@ describe('POST /api/game/[gameId]/state', () => {
     }
 
     mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
-    mockPrisma.games.findUnique
-      .mockResolvedValueOnce(rpsDbGame as any)
-      .mockResolvedValueOnce({
-        id: 'game-123',
-        status: 'playing',
-        players: [
-          {
-            id: 'db-player-1',
-            userId: 'player-1',
-            score: 0,
-            user: { id: 'player-1', username: 'Player 1', bot: null },
-          },
-          {
-            id: 'db-player-bot',
-            userId: 'bot-1',
-            score: 0,
-            user: { id: 'bot-1', username: 'AI Bot', bot: { id: 'bot-meta-1' } },
-          },
-        ],
-      } as any)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(rpsDbGame as any)
     mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
     mockPrisma.players.update.mockResolvedValue({} as any)
     mockRestoreGameEngine.mockReturnValue(mockEngine as any)

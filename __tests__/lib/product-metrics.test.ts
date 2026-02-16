@@ -71,16 +71,19 @@ describe('getProductMetricsDashboard', () => {
       {
         id: 'l1',
         createdAt: new Date('2026-02-14T10:00:00.000Z'),
+        gameType: 'tic_tac_toe',
         games: [{ status: 'waiting' }],
       },
       {
         id: 'l2',
         createdAt: new Date('2026-02-15T10:00:00.000Z'),
+        gameType: 'tic_tac_toe',
         games: [{ status: 'playing' }],
       },
       {
         id: 'l3',
         createdAt: new Date('2026-02-16T10:00:00.000Z'),
+        gameType: 'yahtzee',
         games: [{ status: 'finished' }],
       },
     ])
@@ -89,21 +92,29 @@ describe('getProductMetricsDashboard', () => {
       {
         id: 'g1',
         createdAt: new Date('2026-02-15T09:00:00.000Z'),
+        updatedAt: new Date('2026-02-15T09:00:00.000Z'),
+        gameType: 'tic_tac_toe',
         status: 'playing',
       },
       {
         id: 'g2',
         createdAt: new Date('2026-02-15T10:00:00.000Z'),
+        updatedAt: new Date('2026-02-16T10:00:00.000Z'),
+        gameType: 'tic_tac_toe',
         status: 'finished',
       },
       {
         id: 'g3',
         createdAt: new Date('2026-02-16T10:00:00.000Z'),
+        updatedAt: new Date('2026-02-16T10:00:00.000Z'),
+        gameType: 'yahtzee',
         status: 'cancelled',
       },
       {
         id: 'g4',
         createdAt: new Date('2026-02-16T11:00:00.000Z'),
+        updatedAt: new Date('2026-02-16T11:00:00.000Z'),
+        gameType: 'yahtzee',
         status: 'waiting',
       },
     ])
@@ -111,7 +122,7 @@ describe('getProductMetricsDashboard', () => {
     prismaMock.lobbyInvites.findMany.mockResolvedValue([
       {
         sentAt: new Date('2026-02-15T12:00:00.000Z'),
-        acceptedAt: new Date('2026-02-15T14:00:00.000Z'),
+        acceptedAt: new Date('2026-02-16T14:00:00.000Z'),
       },
       {
         sentAt: new Date('2026-02-15T16:00:00.000Z'),
@@ -133,9 +144,9 @@ describe('getProductMetricsDashboard', () => {
       lobbiesCreated: 3,
       lobbiesWithGameStart: 2,
       lobbyToGameStartPct: 66.7,
-      gamesStarted: 3,
+      gamesStarted: 2,
       gamesCompleted: 1,
-      gameStartToCompletePct: 33.3,
+      gameStartToCompletePct: 50,
       invitesSent: 3,
       invitesAccepted: 2,
       inviteConversionPct: 66.7,
@@ -150,9 +161,21 @@ describe('getProductMetricsDashboard', () => {
       lobbiesCreated: 1,
       lobbiesWithGameStart: 1,
       gamesStarted: 2,
-      gamesCompleted: 1,
+      gamesCompleted: 0,
       invitesSent: 2,
-      invitesAccepted: 1,
+      invitesAccepted: 0,
+    })
+
+    const dailyFeb16 = dashboard.daily.find((row) => row.date === '2026-02-16')
+    expect(dailyFeb16).toEqual({
+      date: '2026-02-16',
+      newUsers: 1,
+      lobbiesCreated: 1,
+      lobbiesWithGameStart: 1,
+      gamesStarted: 0,
+      gamesCompleted: 1,
+      invitesSent: 1,
+      invitesAccepted: 2,
     })
 
     const cohortFeb08 = dashboard.cohorts.find((row) => row.date === '2026-02-08')
@@ -177,6 +200,49 @@ describe('getProductMetricsDashboard', () => {
       d7Eligible: 0,
       d7Returned: 0,
       d7RetentionPct: 0,
+    })
+
+    expect(dashboard.gameMetrics).toHaveLength(4)
+
+    const yahtzeeMetrics = dashboard.gameMetrics.find((metrics) => metrics.gameType === 'yahtzee')
+    expect(yahtzeeMetrics?.summary).toEqual({
+      lobbiesCreated: 1,
+      lobbiesWithGameStart: 1,
+      lobbyToGameStartPct: 100,
+      gamesStarted: 0,
+      gamesCompleted: 0,
+      gameStartToCompletePct: 0,
+    })
+
+    const ticTacToeMetrics = dashboard.gameMetrics.find((metrics) => metrics.gameType === 'tic_tac_toe')
+    expect(ticTacToeMetrics?.summary).toEqual({
+      lobbiesCreated: 2,
+      lobbiesWithGameStart: 1,
+      lobbyToGameStartPct: 50,
+      gamesStarted: 2,
+      gamesCompleted: 1,
+      gameStartToCompletePct: 50,
+    })
+
+    const ticTacToeFeb15 = ticTacToeMetrics?.daily.find((row) => row.date === '2026-02-15')
+    expect(ticTacToeFeb15).toEqual({
+      date: '2026-02-15',
+      lobbiesCreated: 1,
+      lobbiesWithGameStart: 1,
+      gamesStarted: 2,
+      gamesCompleted: 0,
+    })
+
+    const guessTheSpyMetrics = dashboard.gameMetrics.find(
+      (metrics) => metrics.gameType === 'guess_the_spy'
+    )
+    expect(guessTheSpyMetrics?.summary).toEqual({
+      lobbiesCreated: 0,
+      lobbiesWithGameStart: 0,
+      lobbyToGameStartPct: 0,
+      gamesStarted: 0,
+      gamesCompleted: 0,
+      gameStartToCompletePct: 0,
     })
 
     expect(prismaMock.users.findMany).toHaveBeenCalledTimes(1)
@@ -211,6 +277,7 @@ describe('getProductMetricsDashboard', () => {
 
     expect(dashboard.daily).toHaveLength(120)
     expect(dashboard.cohorts).toHaveLength(120)
+    expect(dashboard.gameMetrics).toHaveLength(4)
     expect(dashboard.caveats.retentionMethod).toContain('D1/D7')
     expect(dashboard.caveats.inviteConversionMethod).toContain('Invite conversion')
   })

@@ -14,10 +14,16 @@ interface RockPaperScissorsGameBoardProps {
 }
 
 const CHOICES: { choice: RPSChoice; emoji: string; label: string }[] = [
-    { choice: 'rock', emoji: '🪨', label: 'choice.rock' },
-    { choice: 'paper', emoji: '📄', label: 'choice.paper' },
-    { choice: 'scissors', emoji: '✂️', label: 'choice.scissors' },
+    { choice: 'rock', emoji: '🪨', label: 'lobby.choice.rock' },
+    { choice: 'paper', emoji: '📄', label: 'lobby.choice.paper' },
+    { choice: 'scissors', emoji: '✂️', label: 'lobby.choice.scissors' },
 ]
+
+const CHOICE_LABEL_BY_VALUE: Record<RPSChoice, string> = {
+    rock: 'lobby.choice.rock',
+    paper: 'lobby.choice.paper',
+    scissors: 'lobby.choice.scissors',
+}
 
 export default function RockPaperScissorsGameBoard({
     gameData,
@@ -47,10 +53,12 @@ export default function RockPaperScissorsGameBoard({
 
     const handleSubmitChoice = async (choice: RPSChoice) => {
         setSelectedChoice(choice)
+        setIsSubmitted(true)
         try {
             await onSubmitChoice(choice)
         } catch {
             setSelectedChoice(null)
+            setIsSubmitted(false)
         }
     }
 
@@ -68,24 +76,24 @@ export default function RockPaperScissorsGameBoard({
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-center">
                 {gameData.gameWinner ? (
                     <div>
-                        <p className="text-sm text-indigo-100 mb-2">{t('game.finished')}</p>
+                        <p className="text-sm text-indigo-100 mb-2">{t('lobby.game.finished')}</p>
                         <p className="text-3xl font-bold text-white">
-                            {gameData.gameWinner === playerId ? t('game.you_won') : t('game.opponent_won')}
+                            {gameData.gameWinner === playerId ? t('lobby.game.you_won') : t('lobby.game.opponent_won')}
                         </p>
                         <p className="text-lg text-indigo-100 mt-2">
-                            {t('game.final_score')}: {gameData.scores[playerId] || 0} - {otherPlayerScore}
+                            {t('lobby.game.final_score')}: {gameData.scores[playerId] || 0} - {otherPlayerScore}
                         </p>
                     </div>
                 ) : (
                     <div>
                         <p className="text-sm text-indigo-100 mb-2">
-                            {t('game.best_of')}: {gameData.mode === 'best-of-3' ? '3' : '5'}
+                            {t('lobby.game.best_of')}: {gameData.mode === 'best-of-3' ? '3' : '5'}
                         </p>
                         <p className="text-2xl font-bold text-white">
-                            {t('game.round')} {gameData.rounds.length + 1}
+                            {t('lobby.game.round')} {gameData.rounds.length + 1}
                         </p>
                         <p className="text-lg text-indigo-100 mt-2">
-                            {t('game.score')}: {gameData.scores[playerId] || 0} - {otherPlayerScore}
+                            {t('lobby.game.score')}: {gameData.scores[playerId] || 0} - {otherPlayerScore}
                         </p>
                     </div>
                 )}
@@ -96,10 +104,10 @@ export default function RockPaperScissorsGameBoard({
                 <div className="text-center text-sm text-gray-400">
                     {isSubmitted && !bothSubmitted ? (
                         <p className="text-blue-400">
-                            ⏳ {t('game.waiting_for_opponent')}
+                            ⏳ {t('lobby.game.waitingForOpponent')}
                         </p>
                     ) : !isSubmitted ? (
-                        <p>{t('game.make_your_choice')}</p>
+                        <p>{t('lobby.game.makeyourChoice')}</p>
                     ) : null}
                 </div>
             )}
@@ -134,13 +142,13 @@ export default function RockPaperScissorsGameBoard({
                                 {selectedChoice && CHOICES.find((c) => c.choice === selectedChoice)?.emoji}
                             </div>
                             <p className="text-sm font-semibold text-gray-300">
-                                {selectedChoice ? t(`choice.${selectedChoice}`) : ''}
+                                {selectedChoice ? t(CHOICE_LABEL_BY_VALUE[selectedChoice]) : ''}
                             </p>
                         </div>
 
                         {/* Opponent Choice */}
                         <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                            <p className="text-xs text-gray-400 mb-2">{t('game.opponent')}</p>
+                            <p className="text-xs text-gray-400 mb-2">{t('lobby.game.opponent')}</p>
                             <div className="text-4xl mb-2">
                                 {otherPlayerId &&
                                     gameData.playerChoices[otherPlayerId] &&
@@ -148,7 +156,7 @@ export default function RockPaperScissorsGameBoard({
                             </div>
                             <p className="text-sm font-semibold text-gray-300">
                                 {otherPlayerId && gameData.playerChoices[otherPlayerId]
-                                    ? t(`choice.${gameData.playerChoices[otherPlayerId]}`)
+                                    ? t(CHOICE_LABEL_BY_VALUE[gameData.playerChoices[otherPlayerId]])
                                     : ''}
                             </p>
                         </div>
@@ -158,11 +166,11 @@ export default function RockPaperScissorsGameBoard({
                     {currentRound && (
                         <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg p-4 text-center">
                             {currentRound.winner === 'draw' ? (
-                                <p className="text-lg font-bold text-white">🤝 {t('game.draw')}</p>
+                                <p className="text-lg font-bold text-white">🤝 {t('lobby.game.draw')}</p>
                             ) : currentRound.winner === playerId ? (
-                                <p className="text-lg font-bold text-white">🎉 {t('game.round_won')}</p>
+                                <p className="text-lg font-bold text-white">🎉 {t('lobby.game.round_won')}</p>
                             ) : (
-                                <p className="text-lg font-bold text-white">😔 {t('game.round_lost')}</p>
+                                <p className="text-lg font-bold text-white">😔 {t('lobby.game.round_lost')}</p>
                             )}
                         </div>
                     )}
@@ -177,7 +185,7 @@ export default function RockPaperScissorsGameBoard({
                             }}
                             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition"
                         >
-                            {t('game.next_round')}
+                            {t('lobby.game.next_round')}
                         </button>
                     )}
 
@@ -186,7 +194,7 @@ export default function RockPaperScissorsGameBoard({
                             onClick={() => window.location.reload()}
                             className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition"
                         >
-                            {t('game.play_again')}
+                            {t('lobby.game.playAgain')}
                         </button>
                     )}
                 </div>
@@ -195,7 +203,7 @@ export default function RockPaperScissorsGameBoard({
             {/* Round History */}
             {gameData.rounds.length > 0 && (
                 <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                    <h3 className="text-sm font-bold text-gray-300 mb-3">{t('game.round_history')}</h3>
+                    <h3 className="text-sm font-bold text-gray-300 mb-3">{t('lobby.game.round_history')}</h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                         {gameData.rounds.map((round, index) => {
                             const p1Id = Object.keys(gameData.playerChoices)[0]
@@ -208,14 +216,14 @@ export default function RockPaperScissorsGameBoard({
                             return (
                                 <div key={index} className="flex items-center justify-between text-xs text-gray-400 bg-slate-700/50 p-2 rounded">
                                     <span>
-                                        {t('game.round')} {index + 1}: {p1Emoji} vs {p2Emoji}
+                                        {t('lobby.game.round')} {index + 1}: {p1Emoji} vs {p2Emoji}
                                     </span>
                                     <span className="font-bold text-indigo-300">
                                         {round.winner === playerId
-                                            ? '✓ ' + t('game.win')
+                                            ? '✓ ' + t('lobby.game.win')
                                             : round.winner === 'draw'
-                                                ? '= ' + t('game.draw')
-                                                : '✗ ' + t('game.loss')}
+                                                ? '= ' + t('lobby.game.draw')
+                                                : '✗ ' + t('lobby.game.loss')}
                                     </span>
                                 </div>
                             )
