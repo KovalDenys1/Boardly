@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { getProductMetricsDashboard } from '@/lib/product-metrics'
+import { canAccessProductAnalytics } from '@/lib/analytics-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,15 @@ export default async function AnalyticsPage({
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     redirect('/auth/login?returnUrl=%2Fanalytics')
+  }
+
+  if (
+    !canAccessProductAnalytics({
+      id: session.user.id,
+      email: session.user.email,
+    })
+  ) {
+    redirect('/games')
   }
 
   const resolvedSearchParams = await searchParams

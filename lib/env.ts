@@ -51,6 +51,10 @@ const envSchema = z.object({
   
   // Security
   ALLOWED_ORIGINS: z.string().optional(),
+
+  // Analytics access control
+  ANALYTICS_ALLOWED_USER_IDS: z.string().optional(),
+  ANALYTICS_ALLOWED_EMAILS: z.string().optional(),
 })
 
 export type Env = z.infer<typeof envSchema>
@@ -176,6 +180,11 @@ export function printEnvInfo(): void {
   console.log(`  - Socket.IO URL: ${env.NEXT_PUBLIC_SOCKET_URL || 'Not set (using default)'}`)
   console.log(`  - Socket Internal Secret: ${env.SOCKET_SERVER_INTERNAL_SECRET || env.SOCKET_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set'}`)
   console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set'}`)
+  console.log(
+    `  - Analytics Access Allowlist: ${
+      env.ANALYTICS_ALLOWED_USER_IDS || env.ANALYTICS_ALLOWED_EMAILS ? '✅ Configured' : '⚠️  Not set'
+    }`
+  )
   console.log(`  - Log Level: ${env.LOG_LEVEL || 'auto'}`)
 }
 
