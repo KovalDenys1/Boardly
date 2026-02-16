@@ -28,6 +28,7 @@
     "test:coverage": "jest --coverage --coverageProvider=v8",
     "check:locales": "node --import tsx scripts/check-locales.ts",
     "report:locales:untranslated": "node --import tsx scripts/report-untranslated-locales.ts",
+    "ready:build-test": "npm run check:locales && npm run typecheck && npm run lint && npm test && npm run build",
     "check:env": "tsx scripts/check-env.ts",
     "check:bundle-budget": "tsx scripts/check-bundle-budget.ts",
     "check:db": "tsx scripts/test-db-connection.ts",
