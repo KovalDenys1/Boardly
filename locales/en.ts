@@ -1128,7 +1128,7 @@ const en = {
     message: 'Boardly is currently undergoing scheduled maintenance to improve your gaming experience.',
     estimate: 'Estimated completion: within 24 hours',
     contact: 'Questions or concerns?',
-    github: 'Check our GitHub',
+    github: 'Email support',
     apology: 'We apologize for any inconvenience.',
   },
 } as const

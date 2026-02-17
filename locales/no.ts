@@ -1116,7 +1116,7 @@ const no = {
     message: 'Boardly er for øyeblikket utilgjengelig grunnet planlagt vedlikehold for å forbedre spillopplevelsen.',
     estimate: 'Estimert ferdig: innen 24 timer',
     contact: 'Spørsmål eller tilbakemeldinger?',
-    github: 'Vår GitHub',
+    github: 'Send e-post',
     apology: 'Beklager ulempen.'
   }
 } as const
