@@ -137,6 +137,7 @@ describe('Game Registry', () => {
       expect(meta.name).toBe('Tic Tac Toe')
       expect(meta.minPlayers).toBe(2)
       expect(meta.maxPlayers).toBe(2)
+      expect(meta.supportsBots).toBe(true)
     })
 
     it('should return correct metadata for Rock Paper Scissors', () => {
@@ -145,6 +146,7 @@ describe('Game Registry', () => {
       expect(meta.name).toBe('Rock Paper Scissors')
       expect(meta.minPlayers).toBe(2)
       expect(meta.maxPlayers).toBe(2)
+      expect(meta.supportsBots).toBe(true)
     })
 
     it('should throw error for unknown type', () => {
@@ -172,12 +174,12 @@ describe('Game Registry', () => {
   describe('hasBotSupport', () => {
     it('should return true for games with bot support', () => {
       expect(hasBotSupport('yahtzee')).toBe(true)
+      expect(hasBotSupport('tic_tac_toe')).toBe(true)
+      expect(hasBotSupport('rock_paper_scissors')).toBe(true)
     })
 
     it('should return false for games without bot support', () => {
       expect(hasBotSupport('guess_the_spy')).toBe(false)
-      expect(hasBotSupport('tic_tac_toe')).toBe(false)
-      expect(hasBotSupport('rock_paper_scissors')).toBe(false)
     })
 
     it('should return false for unknown game types', () => {

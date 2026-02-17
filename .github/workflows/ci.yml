@@ -1,6 +1,6 @@
 name: CI
 
-on:
+"on":
   push:
     branches:
       - main
@@ -32,20 +32,20 @@ jobs:
           --health-retries=10
     env:
       # CI uses ephemeral test environment - hardcoded credentials are safe here
-      DATABASE_URL: postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly
-      DIRECT_URL: postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly
-      NEXTAUTH_URL: http://localhost:3000
+      DATABASE_URL: "postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly"
+      DIRECT_URL: "postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly"
+      NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
       JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
       SOCKET_SERVER_INTERNAL_SECRET: test-socket-secret-32chars-min-required-key
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
           cache: npm
 
       - name: Install dependencies
@@ -57,7 +57,7 @@ jobs:
       - name: Check locale key parity
         run: npm run check:locales
 
-      - name: Run tests
+      - name: Run tests (pre-migrations)
         run: npm test -- --ci --runInBand
 
       - name: Validate Prisma schema
@@ -87,7 +87,7 @@ jobs:
       - name: Run RLS smoke checks
         run: npm run db:rls:smoke
 
-      - name: Run tests
+      - name: Run tests (post-migrations)
         run: npm test
 
       - name: Build application

@@ -42,6 +42,7 @@ Recommended:
 - `DIRECT_URL` (for migrations)
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
+- `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict `/analytics` and `/api/analytics/product`)
 
 ## Build and deploy
 

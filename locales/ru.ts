@@ -145,6 +145,8 @@ const ru = {
       selectGame: 'Выбрать {{name}}',
       maxCharacters: 'Достигнут максимум {{max}} символов',
       mustBeBetween: 'Должно быть между {{min}} и {{max}}',
+      playerCountHelperExact: 'В этой игре ровно {{count}} участников',
+      playerCountHelperRange: 'Эта игра поддерживает {{min}}-{{max}} игроков',
       playerCountHelper: 'Эта игра требует ровно {{count}} игрока',
       playerCountHelper_other: 'Эта игра поддерживает {{min}}-{{max}} игроков',
       tips: {
@@ -505,6 +507,10 @@ const ru = {
       playerFallback: 'Игрок',
       startGame: 'Начать игру',
       addBotPlayer: 'Добавить бота',
+      botDifficulty: 'Сложность бота',
+      botDifficultyEasy: 'Лёгкая',
+      botDifficultyMedium: 'Средняя',
+      botDifficultyHard: 'Сложная',
       inviteFriends: 'Пригласить друзей',
       lobbyFull: 'Лобби заполнено',
       addAiOpponent: 'Добавить ИИ-соперника',
@@ -1110,7 +1116,7 @@ const ru = {
     message: 'Boardly сейчас проходит плановое техническое обслуживание для улучшения игрового опыта.',
     estimate: 'Ориентировочное завершение: в течение 24 часов',
     contact: 'Вопросы или предложения?',
-    github: 'Наш GitHub',
+    github: 'Написать на почту',
     apology: 'Извините за неудобства.'
   }
 } as const

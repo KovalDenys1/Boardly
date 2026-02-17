@@ -20,6 +20,25 @@ const createLobbySchema = z.object({
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
+const MAX_LOBBY_CODE_ATTEMPTS = 10
+
+function isLobbyCodeConflict(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+
+  const prismaCode = (error as { code?: unknown }).code
+  if (prismaCode !== 'P2002') return false
+
+  const target = (error as { meta?: { target?: unknown } }).meta?.target
+  if (Array.isArray(target)) {
+    return target.some((entry) => String(entry).toLowerCase().includes('code'))
+  }
+
+  if (typeof target === 'string') {
+    return target.toLowerCase().includes('code')
+  }
+
+  return false
+}
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting for lobby creation
@@ -34,18 +53,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.users.findUnique({
-      where: { id: requestUser.id },
-    })
-
-    if (!user) {
-      log.error('User not found in database', undefined, { userId: requestUser.id })
-      return NextResponse.json(
-        { error: 'User not found. Please log in again.' },
-        { status: 404 }
-      )
-    }
-
     if (requestUser.isGuest) {
       log.info('Guest creating lobby', {
         guestId: requestUser.id,
@@ -58,54 +65,84 @@ export async function POST(request: NextRequest) {
 
     log.info('Creating lobby', { gameType, maxPlayers, turnTimer })
 
-    // Generate unique lobby code
-    let code = generateLobbyCode()
-    let attempts = 0
-    while (attempts < 10) {
-      const existing = await prisma.lobbies.findUnique({ where: { code } })
-      if (!existing) break
-      code = generateLobbyCode()
-      attempts++
-    }
-
     // Create lobby with initial game and add creator as first player
     // Build initial state via game engine registry
     const tempEngine = createGameEngine(gameType, 'temp_lobby_init')
     const initialState = tempEngine.getState()
 
-    const lobby = await prisma.lobbies.create({
-      data: {
-        code,
-        name,
-        password,
-        maxPlayers,
-        turnTimer,
-        gameType,
-        creatorId: user.id,
-        games: {
-          create: {
-            status: 'waiting',
+    let lobby:
+      | {
+          id: string
+          code: string
+          name: string
+          maxPlayers: number
+          turnTimer: number
+          gameType: string
+          creatorId: string
+        }
+      | null = null
+
+    for (let attempt = 1; attempt <= MAX_LOBBY_CODE_ATTEMPTS; attempt += 1) {
+      const code = generateLobbyCode()
+
+      try {
+        lobby = await prisma.lobbies.create({
+          data: {
+            code,
+            name,
+            password,
+            maxPlayers,
+            turnTimer,
             gameType,
-            state: JSON.stringify(initialState),
-            players: {
+            creatorId: requestUser.id,
+            games: {
               create: {
-                userId: user.id,
-                position: 0,
-                scorecard: JSON.stringify({}),
+                status: 'waiting',
+                gameType,
+                state: JSON.stringify(initialState),
+                players: {
+                  create: {
+                    userId: requestUser.id,
+                    position: 0,
+                    scorecard: JSON.stringify({}),
+                  },
+                },
               },
             },
           },
-        },
-      },
-      include: {
-        games: {
-          where: { status: 'waiting' },
-          include: {
-            players: true,
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            maxPlayers: true,
+            turnTimer: true,
+            gameType: true,
+            creatorId: true,
           },
-        },
-      },
-    })
+        })
+        break
+      } catch (createError) {
+        if (isLobbyCodeConflict(createError)) {
+          if (attempt === MAX_LOBBY_CODE_ATTEMPTS) {
+            break
+          }
+          continue
+        }
+
+        throw createError
+      }
+    }
+
+    if (!lobby) {
+      log.warn('Failed to create lobby after code generation retries', {
+        userId: requestUser.id,
+        maxAttempts: MAX_LOBBY_CODE_ATTEMPTS,
+      })
+      return NextResponse.json(
+        { error: 'Failed to generate lobby code. Please try again.' },
+        { status: 503 }
+      )
+    }
 
     return NextResponse.json({
       lobby,

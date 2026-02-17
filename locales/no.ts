@@ -145,6 +145,8 @@ const no = {
       selectGame: 'Velg {{name}}',
       maxCharacters: 'Maksimum {{max}} tegn nådd',
       mustBeBetween: 'Må være mellom {{min}} og {{max}}',
+      playerCountHelperExact: 'Dette spillet krever nøyaktig {{count}} spillere',
+      playerCountHelperRange: 'Dette spillet støtter {{min}}-{{max}} spillere',
       playerCountHelper: 'Dette spillet krever nøyaktig {{count}} spiller',
       playerCountHelper_other: 'Dette spillet støtter {{min}}-{{max}} spillere',
       tips: {
@@ -505,6 +507,10 @@ const no = {
       playerFallback: 'Spiller',
       startGame: 'Start spill',
       addBotPlayer: 'Legg til bot-spiller',
+      botDifficulty: 'Bot-vanskelighetsgrad',
+      botDifficultyEasy: 'Lett',
+      botDifficultyMedium: 'Middels',
+      botDifficultyHard: 'Vanskelig',
       inviteFriends: 'Inviter venner',
       lobbyFull: 'Lobbyen er full',
       addAiOpponent: 'Legg til AI-motstander',
@@ -1110,7 +1116,7 @@ const no = {
     message: 'Boardly er for øyeblikket utilgjengelig grunnet planlagt vedlikehold for å forbedre spillopplevelsen.',
     estimate: 'Estimert ferdig: innen 24 timer',
     contact: 'Spørsmål eller tilbakemeldinger?',
-    github: 'Vår GitHub',
+    github: 'Send e-post',
     apology: 'Beklager ulempen.'
   }
 } as const

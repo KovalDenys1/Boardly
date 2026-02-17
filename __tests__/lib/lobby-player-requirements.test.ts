@@ -23,6 +23,17 @@ describe('getLobbyPlayerRequirements', () => {
     })
   })
 
+  it('keeps two-player requirement for bot-enabled duel games', () => {
+    const requirements = getLobbyPlayerRequirements('tic_tac_toe')
+
+    expect(requirements).toEqual({
+      gameType: 'tic_tac_toe',
+      supportsBots: true,
+      minPlayersRequired: 2,
+      desiredPlayerCount: 2,
+    })
+  })
+
   it('uses default game type when input is empty', () => {
     const requirements = getLobbyPlayerRequirements('   ')
 

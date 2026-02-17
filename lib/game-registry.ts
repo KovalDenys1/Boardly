@@ -77,7 +77,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
       icon: '❌⭕',
       minPlayers: 2,
       maxPlayers: 2,
-      supportsBots: false,
+      supportsBots: true,
       translationKey: 'tictactoe',
     },
     create: (id, cfg) =>
@@ -91,7 +91,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
       icon: '✊✋✌️',
       minPlayers: 2,
       maxPlayers: 2,
-      supportsBots: false,
+      supportsBots: true,
       translationKey: 'rps',
     },
     create: (id, cfg) =>

@@ -145,6 +145,8 @@ const en = {
       selectGame: 'Select {{name}}',
       maxCharacters: 'Maximum {{max}} characters reached',
       mustBeBetween: 'Must be between {{min}} and {{max}}',
+      playerCountHelperExact: 'This game requires exactly {{count}} players',
+      playerCountHelperRange: 'This game supports {{min}}-{{max}} players',
       playerCountHelper: 'This game requires exactly {{count}} player',
       playerCountHelper_other: 'This game supports {{min}}-{{max}} players',
       tips: {
@@ -505,6 +507,10 @@ const en = {
       playerFallback: 'Player',
       startGame: 'Start Game',
       addBotPlayer: 'Add Bot Player',
+      botDifficulty: 'Bot difficulty',
+      botDifficultyEasy: 'Easy',
+      botDifficultyMedium: 'Medium',
+      botDifficultyHard: 'Hard',
       inviteFriends: 'Invite Friends',
       lobbyFull: 'Lobby is full',
       addAiOpponent: 'Add AI opponent',
@@ -1122,7 +1128,7 @@ const en = {
     message: 'Boardly is currently undergoing scheduled maintenance to improve your gaming experience.',
     estimate: 'Estimated completion: within 24 hours',
     contact: 'Questions or concerns?',
-    github: 'Check our GitHub',
+    github: 'Email support',
     apology: 'We apologize for any inconvenience.',
   },
 } as const

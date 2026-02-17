@@ -155,27 +155,57 @@ export async function POST(
 
     const gameEngine = restoreGameEngine(gameType, game.id, gameState)
 
-    // Verify it's the bot's turn
-    const currentPlayerIndex = gameEngine.getState().currentPlayerIndex
-    const gamePlayers = gameEngine.getPlayers() // Use game engine's player order (sorted)
-    const currentPlayer = gamePlayers[currentPlayerIndex]
-
-    // Find corresponding database player
-    const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
-
-    if (!dbCurrentPlayer || dbCurrentPlayer.userId !== botUserId) {
-      log.warn('Not bot\'s turn', {
-        currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
-        expectedBot: botUserId
-      })
-      return NextResponse.json({
-        error: 'Not bot\'s turn',
-        currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
-        expectedBot: botUserId
-      }, { status: 400 })
+    const state = gameEngine.getState() as {
+      currentPlayerIndex: number
+      status: string
+      data?: {
+        playersReady?: string[]
+      }
     }
 
-    log.info('Verified it\'s bot\'s turn, executing...')
+    if (gameType === 'rock_paper_scissors') {
+      if (state.status !== 'playing') {
+        return NextResponse.json({
+          error: 'Game is not in playing state',
+          code: 'INVALID_GAME_STATUS',
+        }, { status: 400 })
+      }
+
+      const playersReady = Array.isArray(state.data?.playersReady) ? state.data.playersReady : []
+      if (playersReady.includes(botUserId)) {
+        return NextResponse.json({
+          error: 'Bot already submitted choice this round',
+          code: 'BOT_ALREADY_SUBMITTED',
+        }, { status: 400 })
+      }
+
+      log.info('Verified bot can submit choice for current RPS round', {
+        botUserId,
+        readyPlayers: playersReady.length,
+      })
+    } else {
+      // Verify turn ownership for turn-based games
+      const currentPlayerIndex = state.currentPlayerIndex
+      const gamePlayers = gameEngine.getPlayers() // Use game engine's player order (sorted)
+      const currentPlayer = gamePlayers[currentPlayerIndex]
+
+      // Find corresponding database player
+      const dbCurrentPlayer = game.players.find(p => p.userId === currentPlayer?.id)
+
+      if (!dbCurrentPlayer || dbCurrentPlayer.userId !== botUserId) {
+        log.warn('Not bot\'s turn', {
+          currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
+          expectedBot: botUserId
+        })
+        return NextResponse.json({
+          error: 'Not bot\'s turn',
+          currentPlayer: dbCurrentPlayer?.userId || currentPlayer?.id,
+          expectedBot: botUserId
+        }, { status: 400 })
+      }
+
+      log.info('Verified it\'s bot\'s turn, executing...')
+    }
 
     // Get bot difficulty from bot relation
     const botDifficulty = getBotDifficulty(botPlayer)

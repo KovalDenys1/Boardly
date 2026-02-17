@@ -9,6 +9,12 @@ import { BotDifficulty, MoveCallback } from './bot-types'
 import { YahtzeeBot } from '../yahtzee/yahtzee-bot'
 import { YahtzeeBotExecutor } from '../yahtzee/yahtzee-bot-executor'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
+import { TicTacToeBot } from '../tic-tac-toe/tic-tac-toe-bot'
+import { TicTacToeBotExecutor } from '../tic-tac-toe/tic-tac-toe-bot-executor'
+import { RockPaperScissorsBot } from '../rock-paper-scissors/rock-paper-scissors-bot'
+import { RockPaperScissorsBotExecutor } from '../rock-paper-scissors/rock-paper-scissors-bot-executor'
 import type { RegisteredGameType } from '@/lib/game-registry'
 // Future imports:
 // import { SpyBot } from '../spy/spy-bot'
@@ -24,6 +30,12 @@ export function createBot<T extends GameEngine>(
     switch (gameType) {
         case 'yahtzee':
             return new YahtzeeBot(gameEngine as any, difficulty) as any
+
+        case 'tic_tac_toe':
+            return new TicTacToeBot(gameEngine as any, difficulty) as any
+
+        case 'rock_paper_scissors':
+            return new RockPaperScissorsBot(gameEngine as any, difficulty) as any
 
         // Future game bots:
         // case 'guess_the_spy':
@@ -60,8 +72,34 @@ export async function executeBotTurn(
             )
             return
         }
-        // Future game bots:
-        // case 'tic_tac_toe': { ... }
+
+        case 'tic_tac_toe': {
+            if (!(gameEngine instanceof TicTacToeGame)) {
+                throw new Error('Expected TicTacToeGame engine for tic_tac_toe bot turn')
+            }
+            await TicTacToeBotExecutor.executeBotTurn(
+                gameEngine,
+                botUserId,
+                difficulty,
+                onMove,
+                onBotAction,
+            )
+            return
+        }
+
+        case 'rock_paper_scissors': {
+            if (!(gameEngine instanceof RockPaperScissorsGame)) {
+                throw new Error('Expected RockPaperScissorsGame engine for rock_paper_scissors bot turn')
+            }
+            await RockPaperScissorsBotExecutor.executeBotTurn(
+                gameEngine,
+                botUserId,
+                difficulty,
+                onMove,
+                onBotAction,
+            )
+            return
+        }
 
         default:
             throw new Error(`No bot executor for game type: ${gameType}`)

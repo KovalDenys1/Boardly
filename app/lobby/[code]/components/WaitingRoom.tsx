@@ -1,6 +1,7 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
 import { hasBotSupport } from '@/lib/game-registry'
+import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface WaitingRoomProps {
@@ -8,10 +9,12 @@ interface WaitingRoomProps {
   lobby: any
   gameEngine: any
   minPlayers: number
+  botDifficulty: BotDifficulty
   canStartGame: boolean
   startingGame: boolean
   onStartGame: () => void
   onAddBot: () => void
+  onBotDifficultyChange: (difficulty: BotDifficulty) => void
   onInviteFriends?: () => void
   getCurrentUserId: () => string | null | undefined
 }
@@ -21,10 +24,12 @@ export default function WaitingRoom({
   lobby,
   gameEngine,
   minPlayers,
+  botDifficulty,
   canStartGame,
   startingGame,
   onStartGame,
   onAddBot,
+  onBotDifficultyChange,
   onInviteFriends,
   getCurrentUserId,
 }: WaitingRoomProps) {
@@ -32,6 +37,12 @@ export default function WaitingRoom({
   const playerCount = game?.players?.length || 0
   const hasBot = game?.players?.some((p: any) => !!p.user?.bot)
   const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
+  const canConfigureBots = hasBotSupport(lobby.gameType) && canAddMorePlayers
+  const difficultyLabelMap: Record<BotDifficulty, string> = {
+    easy: t('game.ui.botDifficultyEasy'),
+    medium: t('game.ui.botDifficultyMedium'),
+    hard: t('game.ui.botDifficultyHard'),
+  }
 
   // Show loading overlay when starting game
   if (startingGame) {
@@ -135,10 +146,12 @@ export default function WaitingRoom({
             <div className="flex flex-col gap-3">
               {game.players.map((p: any, index: number) => {
                 const isBot = !!p.user?.bot
-                const playerName = isBot
-                  ? t('game.ui.aiBot')
-                  : p.user.name || p.user.username || p.user.email || t('game.ui.player')
+                const playerName = p.user.name || p.user.username || p.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
                 const isCurrentUser = p.userId === getCurrentUserId()
+                const botDifficultyValue = p.user?.bot?.difficulty as BotDifficulty | undefined
+                const botDifficultyLabel = botDifficultyValue
+                  ? difficultyLabelMap[botDifficultyValue]
+                  : null
 
                 return (
                   <div
@@ -169,6 +182,11 @@ export default function WaitingRoom({
                         {isBot && (
                           <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             AI
+                          </span>
+                        )}
+                        {isBot && botDifficultyLabel && (
+                          <span className="bg-indigo-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
@@ -212,6 +230,34 @@ export default function WaitingRoom({
               </div>
             )}
 
+            {canConfigureBots && (
+              <div className="bg-white/5 border border-white/15 rounded-xl px-4 py-3">
+                <p className="text-white/80 text-xs font-semibold uppercase tracking-wide mb-2">
+                  {t('game.ui.botDifficulty')}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {BOT_DIFFICULTIES.map((difficulty) => (
+                    <button
+                      key={difficulty}
+                      type="button"
+                      onClick={() => {
+                        soundManager.play('click')
+                        onBotDifficultyChange(difficulty)
+                      }}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                        botDifficulty === difficulty
+                          ? 'bg-blue-500/80 border-blue-300 text-white shadow'
+                          : 'bg-white/5 border-white/20 text-white/80 hover:bg-white/15'
+                      }`}
+                      aria-pressed={botDifficulty === difficulty}
+                    >
+                      {difficultyLabelMap[difficulty]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Add Bot Button */}
             {hasBotSupport(lobby.gameType) && canAddMorePlayers && (
               <button
@@ -225,6 +271,9 @@ export default function WaitingRoom({
               >
                 <span className="mr-2 text-lg">🤖</span>
                 {t('game.ui.addBotPlayer')}
+                <span className="ml-2 text-xs opacity-80">
+                  ({difficultyLabelMap[botDifficulty]})
+                </span>
                 {canAddMorePlayers && (
                   <span className="ml-2 text-xs opacity-60">
                     ({playerCount}/{lobby?.maxPlayers || 4})

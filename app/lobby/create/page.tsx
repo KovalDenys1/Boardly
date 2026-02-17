@@ -186,63 +186,69 @@ function CreateLobbyPage() {
         throw new Error(data.error || 'Failed to create lobby')
       }
 
-      // Notify lobby list about new lobby via WebSocket
-      const socketUrl = getBrowserSocketUrl()
-      let token: string | null = guestToken || null
-
-      if (!isGuest) {
-        try {
-          const tokenResponse = await fetch('/api/socket/token')
-          if (!tokenResponse.ok) {
-            throw new Error(`HTTP ${tokenResponse.status}`)
-          }
-          const tokenData = await tokenResponse.json()
-          token = tokenData?.token || null
-        } catch (tokenError) {
-          clientLogger.warn('Failed to fetch socket token for lobby-created event (non-critical):', tokenError)
-          token = null
-        }
+      const lobbyCode = typeof data?.lobby?.code === 'string' ? data.lobby.code : null
+      if (!lobbyCode) {
+        throw new Error('Lobby code missing in response')
       }
 
-      const authPayload: Record<string, unknown> = {}
-      if (token) authPayload.token = token
-      authPayload.isGuest = isGuest
+      clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
+      router.push(`/lobby/${lobbyCode}`)
 
-      const queryPayload: Record<string, string> = {}
-      if (token) queryPayload.token = String(token)
-      queryPayload.isGuest = String(isGuest)
+      // Notify lobby list about new lobby via WebSocket in background.
+      // This is best-effort and must not block navigation to the created lobby.
+      void (async () => {
+        const socketUrl = getBrowserSocketUrl()
+        let token: string | null = guestToken || null
 
-      const socket = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        reconnection: false, // Don't reconnect for this one-time notification
-        timeout: 5000,
-        withCredentials: true,
-        auth: authPayload,
-        query: queryPayload,
-      })
-
-      // Set a timeout to force cleanup after 10 seconds
-      const cleanupTimeout = setTimeout(() => {
-        if (socket.connected) {
-          socket.disconnect()
+        if (!isGuest) {
+          try {
+            const tokenResponse = await fetch('/api/socket/token')
+            if (!tokenResponse.ok) {
+              throw new Error(`HTTP ${tokenResponse.status}`)
+            }
+            const tokenData = await tokenResponse.json()
+            token = tokenData?.token || null
+          } catch (tokenError) {
+            clientLogger.warn('Failed to fetch socket token for lobby-created event (non-critical):', tokenError)
+            token = null
+          }
         }
-      }, 10000)
 
-      socket.on('connect', () => {
-        socket.emit('lobby-created')
-        clearTimeout(cleanupTimeout)
-        socket.disconnect()
-      })
+        const authPayload: Record<string, unknown> = {}
+        if (token) authPayload.token = token
+        authPayload.isGuest = isGuest
 
-      socket.on('connect_error', (error) => {
-        clientLogger.warn('Socket notification failed (non-critical):', error.message)
-        clearTimeout(cleanupTimeout)
-        socket.disconnect()
-      })
+        const queryPayload: Record<string, string> = {}
+        if (token) queryPayload.token = String(token)
+        queryPayload.isGuest = String(isGuest)
 
-      clientLogger.log('✅ Lobby created successfully, redirecting to:', data.lobby.code)
-      // Redirect to the new lobby
-      router.push(`/lobby/${data.lobby.code}`)
+        const socket = io(socketUrl, {
+          transports: ['websocket', 'polling'],
+          reconnection: false, // Don't reconnect for this one-time notification
+          timeout: 5000,
+          withCredentials: true,
+          auth: authPayload,
+          query: queryPayload,
+        })
+
+        const cleanupTimeout = setTimeout(() => {
+          if (socket.connected) {
+            socket.disconnect()
+          }
+        }, 10000)
+
+        socket.on('connect', () => {
+          socket.emit('lobby-created')
+          clearTimeout(cleanupTimeout)
+          socket.disconnect()
+        })
+
+        socket.on('connect_error', (error) => {
+          clientLogger.warn('Socket notification failed (non-critical):', error.message)
+          clearTimeout(cleanupTimeout)
+          socket.disconnect()
+        })
+      })()
     } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
       const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
@@ -273,7 +279,9 @@ function CreateLobbyPage() {
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
             {/* 1. Game Type Selector - clean scrollable list */}
             <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
-              {Object.entries(GAME_INFO).map(([key, info], index) => (
+              {Object.entries(GAME_INFO)
+                .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+                .map(([key, info]) => (
                 <button
                   key={key}
                   type="button"
@@ -339,12 +347,12 @@ function CreateLobbyPage() {
 
                 {gameInfo.allowedPlayers.length === 1 ? (
                   // Static display for games with fixed player count (e.g., Tic-Tac-Toe, Rock Paper Scissors)
-                  <div className="flex flex-col items-center py-4">
-                    <div className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg border-2 border-white/40">
-                      <span className="text-4xl font-black text-white drop-shadow-lg">
+                  <div className="flex flex-col items-center py-2">
+                    <div className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
+                      <span className="text-2xl font-extrabold text-white">
                         {gameInfo.allowedPlayers[0]}
                       </span>
-                      <span className="text-lg text-white/90 font-semibold">
+                      <span className="text-sm text-white/90 font-semibold">
                         {gameInfo.allowedPlayers[0] === 1
                           ? t('lobby.create.player')
                           : t('lobby.create.players')
@@ -450,8 +458,8 @@ function CreateLobbyPage() {
                 {/* Helper text */}
                 <p className="text-xs text-white/70 mt-2 text-center">
                   {gameInfo.allowedPlayers.length === 1
-                    ? t('lobby.create.playerCountHelper', { count: gameInfo.allowedPlayers[0] })
-                    : t('lobby.create.playerCountHelper', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1], count: 2 })
+                    ? t('lobby.create.playerCountHelperExact', { count: gameInfo.allowedPlayers[0] })
+                    : t('lobby.create.playerCountHelperRange', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })
                   }
                 </p>
               </div>

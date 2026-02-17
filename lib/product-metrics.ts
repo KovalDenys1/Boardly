@@ -1,5 +1,12 @@
-import { GameStatus } from '@prisma/client'
+import { GameStatus, GameType } from '@prisma/client'
 import { prisma } from '@/lib/db'
+
+const DEFAULT_ANALYTICS_GAME_TYPES: string[] = [
+  'yahtzee',
+  'guess_the_spy',
+  'tic_tac_toe',
+  'rock_paper_scissors',
+]
 
 export interface ProductMetricsSummary {
   totalNewUsers: number
@@ -38,14 +45,39 @@ export interface ProductRetentionCohortDay {
   d7RetentionPct: number
 }
 
+export interface ProductGameMetricsSummary {
+  lobbiesCreated: number
+  lobbiesWithGameStart: number
+  lobbyToGameStartPct: number
+  gamesStarted: number
+  gamesCompleted: number
+  gameStartToCompletePct: number
+}
+
+export interface ProductGameMetricsDay {
+  date: string
+  lobbiesCreated: number
+  lobbiesWithGameStart: number
+  gamesStarted: number
+  gamesCompleted: number
+}
+
+export interface ProductGameMetrics {
+  gameType: string
+  summary: ProductGameMetricsSummary
+  daily: ProductGameMetricsDay[]
+}
+
 export interface ProductMetricsDashboard {
   generatedAt: string
   rangeDays: number
   summary: ProductMetricsSummary
   daily: ProductMetricsDay[]
   cohorts: ProductRetentionCohortDay[]
+  gameMetrics: ProductGameMetrics[]
   caveats: {
     retentionMethod: string
+    gameCompletionMethod: string
     inviteConversionMethod: string
   }
 }
@@ -93,6 +125,22 @@ function createDailyBuckets(startDate: Date, rangeDays: number): Map<string, Pro
   return buckets
 }
 
+function createGameDailyBuckets(startDate: Date, rangeDays: number): Map<string, ProductGameMetricsDay> {
+  const buckets = new Map<string, ProductGameMetricsDay>()
+  for (let i = 0; i < rangeDays; i += 1) {
+    const date = addUtcDays(startDate, i)
+    const key = dateKeyUtc(date)
+    buckets.set(key, {
+      date: key,
+      lobbiesCreated: 0,
+      lobbiesWithGameStart: 0,
+      gamesStarted: 0,
+      gamesCompleted: 0,
+    })
+  }
+  return buckets
+}
+
 export async function getProductMetricsDashboard(rawRangeDays?: number): Promise<ProductMetricsDashboard> {
   const rangeDays = clampRangeDays(typeof rawRangeDays === 'number' ? rawRangeDays : 30)
   const now = new Date()
@@ -123,6 +171,7 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
       select: {
         id: true,
         createdAt: true,
+        gameType: true,
         games: {
           select: {
             status: true,
@@ -140,6 +189,8 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
       select: {
         id: true,
         createdAt: true,
+        updatedAt: true,
+        gameType: true,
         status: true,
       },
     }),
@@ -159,6 +210,40 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
 
   const dailyBuckets = createDailyBuckets(startDate, rangeDays)
   const cohortBuckets = new Map<string, ProductRetentionCohortDay>()
+
+  const gameTypes = new Set<string>(DEFAULT_ANALYTICS_GAME_TYPES)
+  for (const lobby of lobbies) {
+    if (lobby.gameType) {
+      gameTypes.add(lobby.gameType)
+    }
+  }
+  for (const game of games) {
+    if (game.gameType) {
+      gameTypes.add(game.gameType)
+    }
+  }
+
+  const gameMetricBuckets = new Map<
+    string,
+    {
+      summary: ProductGameMetricsSummary
+      dailyBuckets: Map<string, ProductGameMetricsDay>
+    }
+  >()
+
+  for (const gameType of gameTypes) {
+    gameMetricBuckets.set(gameType, {
+      summary: {
+        lobbiesCreated: 0,
+        lobbiesWithGameStart: 0,
+        lobbyToGameStartPct: 0,
+        gamesStarted: 0,
+        gamesCompleted: 0,
+        gameStartToCompletePct: 0,
+      },
+      dailyBuckets: createGameDailyBuckets(startDate, rangeDays),
+    })
+  }
 
   for (const [date, day] of dailyBuckets.entries()) {
     cohortBuckets.set(date, {
@@ -212,12 +297,7 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
     }
   }
 
-  const startedStatuses = new Set<GameStatus>([
-    'playing',
-    'finished',
-    'abandoned',
-    'cancelled',
-  ])
+  const startedStatuses = new Set<GameStatus>(['playing', 'finished', 'abandoned'])
   let lobbiesWithGameStart = 0
 
   for (const lobby of lobbies) {
@@ -226,10 +306,27 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
     if (!dayBucket) continue
 
     dayBucket.lobbiesCreated += 1
+    const lobbyGameType = lobby.gameType || 'yahtzee'
+    const perGameMetrics = gameMetricBuckets.get(lobbyGameType)
+    if (perGameMetrics) {
+      const perGameDayBucket = perGameMetrics.dailyBuckets.get(key)
+      if (perGameDayBucket) {
+        perGameDayBucket.lobbiesCreated += 1
+      }
+      perGameMetrics.summary.lobbiesCreated += 1
+    }
+
     const hasStartedGame = lobby.games.some((game) => startedStatuses.has(game.status))
     if (hasStartedGame) {
       dayBucket.lobbiesWithGameStart += 1
       lobbiesWithGameStart += 1
+      if (perGameMetrics) {
+        const perGameDayBucket = perGameMetrics.dailyBuckets.get(key)
+        if (perGameDayBucket) {
+          perGameDayBucket.lobbiesWithGameStart += 1
+        }
+        perGameMetrics.summary.lobbiesWithGameStart += 1
+      }
     }
   }
 
@@ -237,17 +334,39 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
   let gamesCompleted = 0
 
   for (const game of games) {
-    const key = dateKeyUtc(game.createdAt)
-    const dayBucket = dailyBuckets.get(key)
-    if (!dayBucket) continue
+    const gameType = (game.gameType as GameType | null) || 'yahtzee'
+    const perGameMetrics = gameMetricBuckets.get(gameType)
 
     if (startedStatuses.has(game.status)) {
-      dayBucket.gamesStarted += 1
       gamesStarted += 1
+      const startedKey = dateKeyUtc(game.createdAt)
+      const startedDayBucket = dailyBuckets.get(startedKey)
+      if (startedDayBucket) {
+        startedDayBucket.gamesStarted += 1
+      }
+      if (perGameMetrics) {
+        const perGameStartedDayBucket = perGameMetrics.dailyBuckets.get(startedKey)
+        if (perGameStartedDayBucket) {
+          perGameStartedDayBucket.gamesStarted += 1
+        }
+        perGameMetrics.summary.gamesStarted += 1
+      }
     }
+
     if (game.status === 'finished') {
-      dayBucket.gamesCompleted += 1
       gamesCompleted += 1
+      const completedKey = dateKeyUtc(game.updatedAt)
+      const completedDayBucket = dailyBuckets.get(completedKey)
+      if (completedDayBucket) {
+        completedDayBucket.gamesCompleted += 1
+      }
+      if (perGameMetrics) {
+        const perGameCompletedDayBucket = perGameMetrics.dailyBuckets.get(completedKey)
+        if (perGameCompletedDayBucket) {
+          perGameCompletedDayBucket.gamesCompleted += 1
+        }
+        perGameMetrics.summary.gamesCompleted += 1
+      }
     }
   }
 
@@ -259,8 +378,12 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
 
     dayBucket.invitesSent += 1
     if (invite.acceptedAt) {
-      dayBucket.invitesAccepted += 1
       invitesAccepted += 1
+      const acceptedKey = dateKeyUtc(invite.acceptedAt)
+      const acceptedDayBucket = dailyBuckets.get(acceptedKey)
+      if (acceptedDayBucket) {
+        acceptedDayBucket.invitesAccepted += 1
+      }
     }
   }
 
@@ -272,6 +395,29 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
       d7RetentionPct: percent(cohort.d7Returned, cohort.d7Eligible),
     }))
     .sort((a, b) => a.date.localeCompare(b.date))
+  const gameOrder = new Map(DEFAULT_ANALYTICS_GAME_TYPES.map((gameType, index) => [gameType, index]))
+  const gameMetrics = Array.from(gameMetricBuckets.entries())
+    .map(([gameType, metrics]) => {
+      const summary = {
+        ...metrics.summary,
+        lobbyToGameStartPct: percent(
+          metrics.summary.lobbiesWithGameStart,
+          metrics.summary.lobbiesCreated
+        ),
+        gameStartToCompletePct: percent(metrics.summary.gamesCompleted, metrics.summary.gamesStarted),
+      }
+      return {
+        gameType,
+        summary,
+        daily: Array.from(metrics.dailyBuckets.values()).sort((a, b) => a.date.localeCompare(b.date)),
+      }
+    })
+    .sort((left, right) => {
+      const leftOrder = gameOrder.get(left.gameType) ?? Number.MAX_SAFE_INTEGER
+      const rightOrder = gameOrder.get(right.gameType) ?? Number.MAX_SAFE_INTEGER
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder
+      return left.gameType.localeCompare(right.gameType)
+    })
 
   const summary: ProductMetricsSummary = {
     totalNewUsers: users.length,
@@ -294,11 +440,14 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
     summary,
     daily,
     cohorts,
+    gameMetrics,
     caveats: {
       retentionMethod:
         'D1/D7 are approximated from users.createdAt and users.lastActiveAt (returned at least once after +1/+7 days).',
+      gameCompletionMethod:
+        'Daily gamesCompleted are grouped by games.updatedAt for finished games (proxy for completion timestamp).',
       inviteConversionMethod:
-        'Invite conversion = accepted invites / sent invites in selected period (accepted if invitee joined the lobby).',
+        'Invite conversion = accepted invites / sent invites in selected period (accepted if invitee joined the lobby). Daily accepts are grouped by acceptedAt date.',
     },
   }
 }

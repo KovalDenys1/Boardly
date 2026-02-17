@@ -4,12 +4,21 @@ import { apiLogger } from '@/lib/logger'
 import { createBot } from '@/lib/bot-helpers'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { notifySocket } from '@/lib/socket-url'
+import { hasBotSupport } from '@/lib/game-registry'
+import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    let requestPayload: { difficulty?: string } = {}
+    try {
+      requestPayload = await request.json()
+    } catch {
+      requestPayload = {}
+    }
+
     const requestUser = await getRequestAuthUser(request)
     const userId = requestUser?.id
 
@@ -58,6 +67,13 @@ export async function POST(
       return NextResponse.json({ error: 'No active game in lobby' }, { status: 400 })
     }
 
+    if (!hasBotSupport(lobby.gameType)) {
+      return NextResponse.json({ error: 'Bots are not supported for this game' }, { status: 400 })
+    }
+
+    const botDifficulty = normalizeBotDifficulty(requestPayload?.difficulty)
+    const botDisplayName = getBotDisplayName(lobby.gameType, botDifficulty)
+
     // Check if game already started
     if (activeGame.status === 'playing') {
       return NextResponse.json({ error: 'Cannot add bot after game has started' }, { status: 400 })
@@ -77,9 +93,12 @@ export async function POST(
     // Create or find bot user
     let botUser = await prisma.users.findFirst({
       where: {
-        username: 'AI Bot',
+        username: botDisplayName,
         bot: {
-          isNot: null  // Has bot relation
+          is: {
+            botType: lobby.gameType,
+            difficulty: botDifficulty,
+          },
         }
       },
       include: {
@@ -88,7 +107,7 @@ export async function POST(
     })
 
     if (!botUser) {
-      const result = await createBot('AI Bot', lobby.gameType, 'medium')
+      const result = await createBot(botDisplayName, lobby.gameType, botDifficulty)
       // Type assertion: result.user includes bot relation
       botUser = {
         ...result.user,
@@ -118,7 +137,7 @@ export async function POST(
       'player-joined',
       {
         lobbyCode: code,
-        username: botUser.username || 'AI Bot',
+        username: botUser.username || botDisplayName,
         userId: botUser.id,
         isBot: true,
       }
@@ -152,7 +171,12 @@ export async function POST(
     return NextResponse.json({
       success: true,
       game: updatedGame,
-      message: 'Bot added to lobby'
+      bot: {
+        userId: botUser.id,
+        username: botUser.username || botDisplayName,
+        difficulty: botDifficulty,
+      },
+      message: 'Bot added to lobby',
     })
   } catch (error) {
     const log = apiLogger('POST /api/lobby/[code]/add-bot')

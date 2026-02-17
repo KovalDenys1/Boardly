@@ -2,9 +2,34 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
-import { getProductMetricsDashboard } from '@/lib/product-metrics'
+import { getProductMetricsDashboard, type ProductGameMetrics } from '@/lib/product-metrics'
+import { canAccessProductAnalytics } from '@/lib/analytics-access'
+import AnalyticsInteractiveTable, { AnalyticsTableColumn } from '@/components/AnalyticsInteractiveTable'
+import GameAnalyticsSection from '@/components/GameAnalyticsSection'
 
 export const dynamic = 'force-dynamic'
+
+const DAILY_COLUMNS: AnalyticsTableColumn[] = [
+  { key: 'date', label: 'Date', type: 'text', defaultSortDirection: 'desc' },
+  { key: 'newUsers', label: 'New users', type: 'number' },
+  { key: 'lobbiesCreated', label: 'Lobbies', type: 'number' },
+  { key: 'lobbiesWithGameStart', label: 'Lobbies started', type: 'number' },
+  { key: 'gamesStarted', label: 'Games started', type: 'number' },
+  { key: 'gamesCompleted', label: 'Games completed', type: 'number' },
+  { key: 'invitesSent', label: 'Invites sent', type: 'number' },
+  { key: 'invitesAccepted', label: 'Invites accepted', type: 'number' },
+]
+
+const COHORT_COLUMNS: AnalyticsTableColumn[] = [
+  { key: 'date', label: 'Cohort date', type: 'text', defaultSortDirection: 'desc' },
+  { key: 'newUsers', label: 'New users', type: 'number' },
+  { key: 'd1Eligible', label: 'D1 eligible', type: 'number' },
+  { key: 'd1Returned', label: 'D1 returned', type: 'number' },
+  { key: 'd1RetentionPct', label: 'D1 %', type: 'percent' },
+  { key: 'd7Eligible', label: 'D7 eligible', type: 'number' },
+  { key: 'd7Returned', label: 'D7 returned', type: 'number' },
+  { key: 'd7RetentionPct', label: 'D7 %', type: 'percent' },
+]
 
 function formatPct(value: number): string {
   return `${value.toFixed(1)}%`
@@ -15,8 +40,8 @@ function formatNumber(value: number): string {
 }
 
 function clampDays(rawDays: string | undefined): number {
-  const parsed = rawDays ? Number(rawDays) : 30
-  if (!Number.isFinite(parsed)) return 30
+  const parsed = rawDays ? Number(rawDays) : 7
+  if (!Number.isFinite(parsed)) return 7
   return Math.min(120, Math.max(7, Math.floor(parsed)))
 }
 
@@ -30,11 +55,39 @@ export default async function AnalyticsPage({
     redirect('/auth/login?returnUrl=%2Fanalytics')
   }
 
+  if (
+    !canAccessProductAnalytics({
+      id: session.user.id,
+      email: session.user.email,
+    })
+  ) {
+    redirect('/games')
+  }
+
   const resolvedSearchParams = await searchParams
   const days = clampDays(resolvedSearchParams.days)
   const dashboard = await getProductMetricsDashboard(days)
 
-  const { summary, daily, cohorts, caveats } = dashboard
+  const { summary, daily, cohorts, gameMetrics, caveats } = dashboard
+  const allGamesMetrics: ProductGameMetrics = {
+    gameType: 'all',
+    summary: {
+      lobbiesCreated: summary.lobbiesCreated,
+      lobbiesWithGameStart: summary.lobbiesWithGameStart,
+      lobbyToGameStartPct: summary.lobbyToGameStartPct,
+      gamesStarted: summary.gamesStarted,
+      gamesCompleted: summary.gamesCompleted,
+      gameStartToCompletePct: summary.gameStartToCompletePct,
+    },
+    daily: daily.map((row) => ({
+      date: row.date,
+      lobbiesCreated: row.lobbiesCreated,
+      lobbiesWithGameStart: row.lobbiesWithGameStart,
+      gamesStarted: row.gamesStarted,
+      gamesCompleted: row.gamesCompleted,
+    })),
+  }
+  const gameMetricsWithAll = [allGamesMetrics, ...gameMetrics]
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 px-4 py-8 sm:px-8">
@@ -45,7 +98,7 @@ export default async function AnalyticsPage({
             Tracks retention, funnel conversions, and invite conversion directly from your DB.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
-            {[14, 30, 60, 90].map((option) => (
+            {[7, 14, 30, 60, 90].map((option) => (
               <Link
                 key={option}
                 href={`/analytics?days=${option}`}
@@ -103,77 +156,26 @@ export default async function AnalyticsPage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-semibold">Daily Funnel</h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-left text-slate-400">
-                  <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">New users</th>
-                  <th className="px-3 py-2">Lobbies</th>
-                  <th className="px-3 py-2">Lobbies started</th>
-                  <th className="px-3 py-2">Games started</th>
-                  <th className="px-3 py-2">Games completed</th>
-                  <th className="px-3 py-2">Invites sent</th>
-                  <th className="px-3 py-2">Invites accepted</th>
-                </tr>
-              </thead>
-              <tbody>
-                {daily.map((row) => (
-                  <tr key={row.date} className="border-b border-white/5">
-                    <td className="px-3 py-2">{row.date}</td>
-                    <td className="px-3 py-2">{formatNumber(row.newUsers)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.lobbiesCreated)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.lobbiesWithGameStart)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.gamesStarted)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.gamesCompleted)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.invitesSent)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.invitesAccepted)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AnalyticsInteractiveTable
+          title="Daily Funnel"
+          columns={DAILY_COLUMNS}
+          rows={daily}
+          rowKey="date"
+        />
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-xl font-semibold">Retention Cohorts</h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-left text-slate-400">
-                  <th className="px-3 py-2">Cohort date</th>
-                  <th className="px-3 py-2">New users</th>
-                  <th className="px-3 py-2">D1 eligible</th>
-                  <th className="px-3 py-2">D1 returned</th>
-                  <th className="px-3 py-2">D1 %</th>
-                  <th className="px-3 py-2">D7 eligible</th>
-                  <th className="px-3 py-2">D7 returned</th>
-                  <th className="px-3 py-2">D7 %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cohorts.map((row) => (
-                  <tr key={row.date} className="border-b border-white/5">
-                    <td className="px-3 py-2">{row.date}</td>
-                    <td className="px-3 py-2">{formatNumber(row.newUsers)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.d1Eligible)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.d1Returned)}</td>
-                    <td className="px-3 py-2">{formatPct(row.d1RetentionPct)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.d7Eligible)}</td>
-                    <td className="px-3 py-2">{formatNumber(row.d7Returned)}</td>
-                    <td className="px-3 py-2">{formatPct(row.d7RetentionPct)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <GameAnalyticsSection gameMetrics={gameMetricsWithAll} />
+
+        <AnalyticsInteractiveTable
+          title="Retention Cohorts"
+          columns={COHORT_COLUMNS}
+          rows={cohorts}
+          rowKey="date"
+        />
 
         <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-5 text-sm text-amber-100">
           <p className="font-semibold">Notes</p>
           <p className="mt-2">{caveats.retentionMethod}</p>
+          <p className="mt-1">{caveats.gameCompletionMethod}</p>
           <p className="mt-1">{caveats.inviteConversionMethod}</p>
           <p className="mt-1 text-amber-200/90">
             Generated at: {new Date(dashboard.generatedAt).toLocaleString('en-US')}
