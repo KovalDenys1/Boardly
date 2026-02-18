@@ -16,6 +16,7 @@ const createLobbySchema = z.object({
   maxPlayers: z.number().min(2).max(10).default(6),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
   gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors']).default('yahtzee'),
+  ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -61,13 +62,29 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, password, maxPlayers, turnTimer, gameType } = createLobbySchema.parse(body)
+    const { name, password, maxPlayers, turnTimer, gameType, ticTacToeRounds } = createLobbySchema.parse(body)
+    const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
 
-    log.info('Creating lobby', { gameType, maxPlayers, turnTimer })
+    log.info('Creating lobby', {
+      gameType,
+      maxPlayers,
+      turnTimer,
+      ...(gameType === 'tic_tac_toe' ? { targetRounds: normalizedTicTacToeRounds } : {}),
+    })
 
     // Create lobby with initial game and add creator as first player
     // Build initial state via game engine registry
-    const tempEngine = createGameEngine(gameType, 'temp_lobby_init')
+    const tempEngine = createGameEngine(
+      gameType,
+      'temp_lobby_init',
+      gameType === 'tic_tac_toe'
+        ? {
+            rules: {
+              targetRounds: normalizedTicTacToeRounds,
+            },
+          }
+        : undefined
+    )
     const initialState = tempEngine.getState()
 
     let lobby:

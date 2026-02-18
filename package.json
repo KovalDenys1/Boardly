@@ -35,6 +35,7 @@
     "check:spy-locations": "tsx scripts/check-spy-locations.ts",
     "cleanup:abandoned-games": "tsx scripts/cleanup-abandoned-games.ts",
     "cleanup:old-guests": "tsx scripts/cleanup-old-guests.ts",
+    "cleanup:unverified": "tsx scripts/cleanup-unverified.ts",
     "find-stuck-games": "tsx scripts/find-stuck-games.ts",
     "fix-stuck-games": "tsx scripts/find-stuck-games.ts --fix",
     "fix-game-statuses": "tsx scripts/fix-game-statuses.ts",

@@ -429,6 +429,90 @@ describe('TicTacToeGame', () => {
         })
     })
 
+    describe('match progression', () => {
+        const playXWinRound = () => {
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 0 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            game.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
+        }
+
+        beforeEach(() => {
+            testPlayers.forEach(player => game.addPlayer(player))
+            game.startGame()
+        })
+
+        it('initializes match state with unlimited rounds by default', () => {
+            const data = getGameData(game)
+            expect(data.match).toEqual({
+                targetRounds: null,
+                roundsPlayed: 0,
+                winsBySymbol: { X: 0, O: 0 },
+                draws: 0,
+            })
+        })
+
+        it('records wins and starts the next round without creating a new game', () => {
+            playXWinRound()
+
+            const finishedData = getGameData(game)
+            expect(finishedData.match?.roundsPlayed).toBe(1)
+            expect(finishedData.match?.winsBySymbol.X).toBe(1)
+            expect(finishedData.match?.winsBySymbol.O).toBe(0)
+            expect(game.getPlayers()[0].score).toBe(1)
+            expect(game.getPlayers()[1].score).toBe(0)
+
+            const nextRoundMove = {
+                playerId: 'player-o',
+                type: 'next-round',
+                data: {},
+                timestamp: new Date(),
+            }
+
+            expect(game.validateMove(nextRoundMove)).toBe(true)
+            expect(game.makeMove(nextRoundMove)).toBe(true)
+
+            const nextRoundData = getGameData(game)
+            expect(game.getState().status).toBe('playing')
+            expect(game.getState().currentPlayerIndex).toBe(1)
+            expect(nextRoundData.currentSymbol).toBe('O')
+            expect(nextRoundData.moveCount).toBe(0)
+            expect(nextRoundData.winner).toBeNull()
+            expect(nextRoundData.board).toEqual([
+                [null, null, null],
+                [null, null, null],
+                [null, null, null]
+            ])
+        })
+
+        it('prevents next-round when configured target rounds are complete', () => {
+            const cappedGame = new TicTacToeGame('capped-game', {
+                maxPlayers: 2,
+                minPlayers: 2,
+                rules: { targetRounds: 1 },
+            })
+            testPlayers.forEach(player => cappedGame.addPlayer(player))
+            cappedGame.startGame()
+
+            cappedGame.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 0 }, timestamp: new Date() })
+            cappedGame.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 0 }, timestamp: new Date() })
+            cappedGame.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 1 }, timestamp: new Date() })
+            cappedGame.makeMove({ playerId: 'player-o', type: 'place', data: { row: 1, col: 1 }, timestamp: new Date() })
+            cappedGame.makeMove({ playerId: 'player-x', type: 'place', data: { row: 0, col: 2 }, timestamp: new Date() })
+
+            const nextRoundMove = {
+                playerId: 'player-x',
+                type: 'next-round',
+                data: {},
+                timestamp: new Date(),
+            }
+
+            expect(cappedGame.validateMove(nextRoundMove)).toBe(false)
+            expect(cappedGame.makeMove(nextRoundMove)).toBe(false)
+        })
+    })
+
     describe('getGameRules', () => {
         it('should return array of game rules', () => {
             const rules = game.getGameRules()

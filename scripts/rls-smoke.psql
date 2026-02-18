@@ -20,7 +20,8 @@ DECLARE
   ];
   required_functions TEXT[] := ARRAY[
     'get_current_user_id',
-    'is_authenticated'
+    'is_authenticated',
+    'is_service_role'
   ];
   missing_tables TEXT[];
   tables_without_rls TEXT[];
@@ -99,7 +100,7 @@ BEGIN
       ('Games', 'Service role can manage games'),
       ('Players', 'Users can view players in their games'),
       ('Lobbies', 'Anyone can view lobbies'),
-      ('FriendRequests', 'Users can view sent friend requests'),
+      ('FriendRequests', 'Users can view own friend requests'),
       ('Friendships', 'Users can view own friendships'),
       ('SpyLocations', 'Anyone can view active spy locations')
   )
