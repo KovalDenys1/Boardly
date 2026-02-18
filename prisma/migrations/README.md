@@ -47,6 +47,30 @@ Complete RLS setup:
 - Performance indexes: idx_players_userid_gameid, idx_games_lobbyid, idx_lobbies_creatorid, idx_bots_userid
 - Granted permissions to authenticated and service_role roles
 
+### 20260218000000_rls_linter_cleanup
+
+Supabase linter hardening pass:
+
+- Added helper function `is_service_role()`
+- Updated helper functions with stable + fixed `search_path`
+- Enabled RLS on `public._prisma_migrations`
+- Removed legacy `Service role full access` policies
+- Scoped service policies to `TO service_role` with explicit checks
+- Consolidated FriendRequests RLS policies to reduce permissive-policy fanout
+
+### 20260218010000_rls_baseline_policy_repair
+
+Baseline policy restoration:
+
+- Recreates missing baseline policies used by app flows and smoke-checks:
+  - `Users can view own profile`
+  - `Users can view public info`
+  - `Anyone can view bots`
+  - `Anyone can view lobbies`
+  - `Players can view their games`
+  - `Users can view players in their games`
+- Uses explicit roles and `(select public.get_current_user_id())` pattern.
+
 ## Row Level Security (RLS)
 
 All tables have RLS enabled with appropriate policies:

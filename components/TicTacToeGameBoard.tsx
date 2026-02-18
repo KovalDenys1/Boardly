@@ -86,7 +86,7 @@ export function TicTacToeGameBoard({
                             <p className="text-2xl font-bold text-yellow-400">Draw!</p>
                         ) : (
                             <p className="text-2xl font-bold text-green-400">
-                                Player {gameData.currentSymbol === 'X' ? 'O' : 'X'} Wins! 🎉
+                                Player {gameData.winner} Wins! 🎉
                             </p>
                         )}
                     </div>

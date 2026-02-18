@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { io } from 'socket.io-client'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { RegisteredGameType } from '@/lib/game-registry'
@@ -16,8 +14,11 @@ type GameType = RegisteredGameType
 type GameSettings = {
   hasTurnTimer?: boolean // Whether this game supports turn timer
   hasGameModes?: boolean // Whether this game supports game modes
+  hasRoundSelection?: boolean // Whether this game supports selecting number of rounds
   turnTimerOptions?: number[] // Available turn timer options (in seconds)
   defaultTurnTimer?: number // Default turn timer value
+  roundOptions?: number[] // Available round count options
+  defaultRounds?: number | null // Default number of rounds (null = unlimited)
 }
 
 type GameInfo = {
@@ -72,6 +73,9 @@ const GAME_INFO: Record<GameType, GameInfo> = {
     settings: {
       hasTurnTimer: false,
       hasGameModes: false,
+      hasRoundSelection: true,
+      roundOptions: [3, 5, 10],
+      defaultRounds: null,
     },
   },
   rock_paper_scissors: {
@@ -97,7 +101,7 @@ function CreateLobbyPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-  const { isGuest, guestToken } = useGuest()
+  const { isGuest } = useGuest()
 
   const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
   const gameInfo = GAME_INFO[selectedGameType]
@@ -107,6 +111,7 @@ function CreateLobbyPage() {
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60, // Use game-specific default or fallback to 60
+    ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     gameType: selectedGameType as GameType,
   })
   const LOBBY_NAME_MAX = 22;
@@ -114,7 +119,6 @@ function CreateLobbyPage() {
   const [maxPlayersInput, setMaxPlayersInput] = useState(GAME_INFO[selectedGameType].defaultMaxPlayers.toString())
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showTips, setShowTips] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
 
   useEffect(() => {
@@ -124,6 +128,7 @@ function CreateLobbyPage() {
         ...prev,
         maxPlayers: gameInfo.defaultMaxPlayers,
         turnTimer: gameInfo.settings.defaultTurnTimer || 60, // Update turn timer when game changes
+        ticTacToeRounds: gameInfo.settings.defaultRounds ?? null,
         gameType: selectedGameType,
       }))
       setMaxPlayersInput(gameInfo.defaultMaxPlayers.toString())
@@ -171,12 +176,21 @@ function CreateLobbyPage() {
 
       clientLogger.log('📤 Sending lobby creation request:', formData)
 
+      const payload = {
+        name: formData.name,
+        password: formData.password,
+        maxPlayers: formData.maxPlayers,
+        turnTimer: formData.turnTimer,
+        gameType: formData.gameType,
+        ...(formData.gameType === 'tic_tac_toe' ? { ticTacToeRounds: formData.ticTacToeRounds } : {}),
+      }
+
       const res = await fetchWithGuest('/api/lobby', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
@@ -193,62 +207,6 @@ function CreateLobbyPage() {
 
       clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
       router.push(`/lobby/${lobbyCode}`)
-
-      // Notify lobby list about new lobby via WebSocket in background.
-      // This is best-effort and must not block navigation to the created lobby.
-      void (async () => {
-        const socketUrl = getBrowserSocketUrl()
-        let token: string | null = guestToken || null
-
-        if (!isGuest) {
-          try {
-            const tokenResponse = await fetch('/api/socket/token')
-            if (!tokenResponse.ok) {
-              throw new Error(`HTTP ${tokenResponse.status}`)
-            }
-            const tokenData = await tokenResponse.json()
-            token = tokenData?.token || null
-          } catch (tokenError) {
-            clientLogger.warn('Failed to fetch socket token for lobby-created event (non-critical):', tokenError)
-            token = null
-          }
-        }
-
-        const authPayload: Record<string, unknown> = {}
-        if (token) authPayload.token = token
-        authPayload.isGuest = isGuest
-
-        const queryPayload: Record<string, string> = {}
-        if (token) queryPayload.token = String(token)
-        queryPayload.isGuest = String(isGuest)
-
-        const socket = io(socketUrl, {
-          transports: ['websocket', 'polling'],
-          reconnection: false, // Don't reconnect for this one-time notification
-          timeout: 5000,
-          withCredentials: true,
-          auth: authPayload,
-          query: queryPayload,
-        })
-
-        const cleanupTimeout = setTimeout(() => {
-          if (socket.connected) {
-            socket.disconnect()
-          }
-        }, 10000)
-
-        socket.on('connect', () => {
-          socket.emit('lobby-created')
-          clearTimeout(cleanupTimeout)
-          socket.disconnect()
-        })
-
-        socket.on('connect_error', (error) => {
-          clientLogger.warn('Socket notification failed (non-critical):', error.message)
-          clearTimeout(cleanupTimeout)
-          socket.disconnect()
-        })
-      })()
     } catch (err) {
       clientLogger.error('❌ Lobby creation error:', err)
       const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
@@ -464,6 +422,43 @@ function CreateLobbyPage() {
                 </p>
               </div>
 
+              {/* Round Settings - Tic-Tac-Toe */}
+              {gameInfo.settings.hasRoundSelection && (
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                    🔁 {t('lobby.create.roundsToPlay')}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(gameInfo.settings.roundOptions || [3, 5, 10]).map((rounds) => (
+                      <button
+                        key={rounds}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, ticTacToeRounds: rounds })}
+                        className={`px-3 py-2 rounded-xl font-semibold transition-all ${formData.ticTacToeRounds === rounds
+                          ? 'bg-white text-blue-600 shadow-lg scale-105'
+                          : 'bg-white/20 text-white hover:bg-white/30'
+                          }`}
+                      >
+                        {rounds}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, ticTacToeRounds: null })}
+                      className={`px-3 py-2 rounded-xl font-semibold transition-all ${formData.ticTacToeRounds === null
+                        ? 'bg-white text-blue-600 shadow-lg scale-105'
+                        : 'bg-white/20 text-white hover:bg-white/30'
+                        }`}
+                    >
+                      ∞
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/70 mt-2 text-center">
+                    {t('lobby.create.roundsHelper')}
+                  </p>
+                </div>
+              )}
+
               {/* Turn Timer Settings - Only for games that support it */}
               {gameInfo.settings.hasTurnTimer && (
                 <div>
@@ -592,6 +587,13 @@ function CreateLobbyPage() {
                 {gameInfo.settings.hasTurnTimer && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
                     ⏱️ {formData.turnTimer}s
+                  </span>
+                )}
+                {gameInfo.settings.hasRoundSelection && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
+                    🔁 {formData.ticTacToeRounds === null
+                      ? t('lobby.create.unlimitedRounds')
+                      : t('lobby.create.rounds', { count: formData.ticTacToeRounds })}
                   </span>
                 )}
               </div>

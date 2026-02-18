@@ -11,6 +11,46 @@ import { getActiveSpyLocations } from '@/lib/spy-locations'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
+function extractTicTacToeTargetRounds(rawState: unknown): number | null | undefined {
+  let parsedState = rawState
+
+  if (typeof rawState === 'string') {
+    try {
+      parsedState = JSON.parse(rawState)
+    } catch {
+      return undefined
+    }
+  }
+
+  if (!parsedState || typeof parsedState !== 'object') {
+    return undefined
+  }
+
+  const stateData = (parsedState as { data?: unknown }).data
+  if (!stateData || typeof stateData !== 'object') {
+    return undefined
+  }
+
+  const matchState = (stateData as { match?: unknown }).match
+  if (!matchState || typeof matchState !== 'object') {
+    return undefined
+  }
+
+  const targetRounds = (matchState as { targetRounds?: unknown }).targetRounds
+  if (targetRounds === null) {
+    return null
+  }
+  if (
+    typeof targetRounds === 'number' &&
+    Number.isInteger(targetRounds) &&
+    targetRounds > 0
+  ) {
+    return targetRounds
+  }
+
+  return undefined
+}
+
 export async function POST(request: NextRequest) {
   // Apply rate limiting
   const rateLimitResult = await limiter(request)
@@ -84,7 +124,19 @@ export async function POST(request: NextRequest) {
           playerCount: finishedGame.players?.length || 0
         })
 
-        const initialWaitingState = createGameEngine(gameType, `waiting_${Date.now()}`).getState()
+        const finishedGameTargetRounds =
+          gameType === 'tic_tac_toe' ? extractTicTacToeTargetRounds(finishedGame.state) : undefined
+        const initialWaitingState = createGameEngine(
+          gameType,
+          `waiting_${Date.now()}`,
+          gameType === 'tic_tac_toe' && finishedGameTargetRounds !== undefined
+            ? {
+                rules: {
+                  targetRounds: finishedGameTargetRounds,
+                },
+              }
+            : undefined
+        ).getState()
 
         // Create new waiting game with same players
         waitingGame = await prisma.games.create({
@@ -137,8 +189,30 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    const startConfig =
+      config && typeof config === 'object' && !Array.isArray(config)
+        ? { ...(config as Record<string, unknown>) }
+        : {}
+    if (gameType === 'tic_tac_toe') {
+      const waitingTargetRounds = extractTicTacToeTargetRounds(waitingGame.state)
+      if (waitingTargetRounds !== undefined) {
+        const existingRules =
+          startConfig.rules && typeof startConfig.rules === 'object' && !Array.isArray(startConfig.rules)
+            ? (startConfig.rules as Record<string, unknown>)
+            : {}
+        startConfig.rules = {
+          ...existingRules,
+          targetRounds: waitingTargetRounds,
+        }
+      }
+    }
+
     // Create game instance via registry
-    const gameEngine = createGameEngine(gameType, `game_${Date.now()}`, config)
+    const gameEngine = createGameEngine(
+      gameType,
+      `game_${Date.now()}`,
+      Object.keys(startConfig).length > 0 ? (startConfig as any) : undefined
+    )
 
     // Add players to the game - sort so bots go last
     const sortedPlayers = [...waitingGame.players].sort((a, b) => {

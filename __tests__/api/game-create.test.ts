@@ -261,6 +261,65 @@ describe('POST /api/game/create', () => {
     )
   })
 
+  it('preserves configured Tic-Tac-Toe target rounds when starting from waiting state', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+
+    const tttWaitingGame = {
+      ...mockWaitingGame,
+      state: JSON.stringify({
+        data: {
+          match: {
+            targetRounds: 5,
+            roundsPlayed: 0,
+            winsBySymbol: { X: 0, O: 0 },
+            draws: 0,
+          },
+        },
+      }),
+    }
+
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      gameType: 'tic_tac_toe',
+      maxPlayers: 2,
+      games: [tttWaitingGame],
+    } as any)
+
+    let persistedState: any
+    mockPrisma.games.update.mockImplementation((args: any) => {
+      persistedState = JSON.parse(args.data.state)
+      return Promise.resolve({
+        ...tttWaitingGame,
+        status: 'playing',
+        gameType: 'tic_tac_toe',
+        state: args.data.state,
+        players: tttWaitingGame.players.map((p: any) => ({
+          ...p,
+          user: {
+            ...p.user,
+            bot: null,
+          },
+        })),
+      } as any)
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'tic_tac_toe',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 2, minPlayers: 2 },
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.game).toBeDefined()
+    expect(persistedState?.data?.match?.targetRounds).toBe(5)
+  })
+
   it('should return 400 when not enough players', async () => {
     const gameWithOnePlayer = {
       ...mockWaitingGame,

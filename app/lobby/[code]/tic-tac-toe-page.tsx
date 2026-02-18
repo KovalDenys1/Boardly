@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { TicTacToeGame, TicTacToeGameData, PlayerSymbol } from '@/lib/games/tic-tac-toe-game'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
@@ -63,7 +63,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             if (!res.ok) {
                 clientLogger.error('Failed to load lobby:', data.error)
                 showToast.error('lobby.loadFailed')
-                router.push('/games/tic-tac-toe/lobbies')
+                router.push('/games')
                 return
             }
 
@@ -290,7 +290,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 socket.disconnect()
             }
 
-            router.push('/games/tic-tac-toe/lobbies')
+            router.push('/games')
         } catch (error) {
             clientLogger.error('Error leaving lobby:', error)
             showToast.error('errors.unexpected')
@@ -298,8 +298,8 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     }
 
     const handlePlayAgain = useCallback(async () => {
-        if (!lobby) {
-            router.push('/games/tic-tac-toe/lobbies')
+        if (!lobby || !game || !gameEngine) {
+            router.push(`/lobby/${code}`)
             return
         }
 
@@ -309,15 +309,64 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             return
         }
 
-        const isCreator = lobby.creatorId === userId
-        if (!isCreator) {
-            showToast.info('toast.info', 'Waiting for the lobby host to start a rematch')
-            router.push(`/lobby/${code}`)
-            return
-        }
+        const gameData = gameEngine.getState().data as TicTacToeGameData
+        const targetRounds = gameData.match?.targetRounds ?? null
+        const roundsPlayed = gameData.match?.roundsPlayed ?? 0
+        const isMatchComplete = targetRounds !== null && roundsPlayed >= targetRounds
 
         setIsRematchSubmitting(true)
         try {
+            if (!isMatchComplete) {
+                const response = await fetchWithGuest(`/api/game/${game.id}/state`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gameId: game.id,
+                        move: {
+                            type: 'next-round',
+                            data: {},
+                        },
+                        userId,
+                    }),
+                })
+
+                const data = await response.json().catch(() => null)
+                if (!response.ok) {
+                    const errorMessage =
+                        (typeof data?.details === 'string' && data.details) ||
+                        (typeof data?.error === 'string' && data.error) ||
+                        'Failed to start next round'
+                    throw new Error(errorMessage)
+                }
+
+                const authoritativeState = data?.game?.state
+                if (authoritativeState) {
+                    const authoritativeEngine = new TicTacToeGame(game.id)
+                    authoritativeEngine.restoreState(authoritativeState)
+                    setGameEngine(authoritativeEngine)
+                    setGame((prevGame) => {
+                        if (!prevGame) return prevGame
+                        return {
+                            ...prevGame,
+                            status: data?.game?.status ?? prevGame.status,
+                            currentTurn: authoritativeState.currentPlayerIndex,
+                            state: JSON.stringify(authoritativeState),
+                        }
+                    })
+                } else {
+                    await loadLobby()
+                }
+
+                showToast.success('toast.success', t('lobby.game.next_round'))
+                return
+            }
+
+            const isCreator = lobby.creatorId === userId
+            if (!isCreator) {
+                showToast.info('toast.info', t('game.ui.waitingForHost'))
+                return
+            }
+
             const response = await fetchWithGuest('/api/game/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -337,15 +386,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             }
 
             await loadLobby()
-            showToast.success('toast.success', 'New match started')
+            showToast.success('toast.success', t('games.tictactoe.game.playAgain'))
         } catch (error) {
-            clientLogger.error('Failed to start Tic-Tac-Toe rematch:', error)
+            clientLogger.error('Failed to continue Tic-Tac-Toe match:', error)
             showToast.error('errors.unexpected')
-            router.push(`/lobby/${code}`)
         } finally {
             setIsRematchSubmitting(false)
         }
-    }, [code, getCurrentUserId, lobby, loadLobby, router])
+    }, [code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router, t])
 
     if (loading) {
         return (
@@ -364,7 +412,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         {t('games.tictactoe.game.lobbyNotFoundDescription')}
                     </p>
                     <button
-                        onClick={() => router.push('/games/tic-tac-toe/lobbies')}
+                        onClick={() => router.push('/games')}
                         className="btn btn-primary"
                     >
                         {t('games.tictactoe.game.backToLobbies')}
@@ -387,7 +435,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <button
-                            onClick={() => router.push('/games/tic-tac-toe/lobbies')}
+                            onClick={() => router.push('/games')}
                             className="btn btn-primary"
                         >
                             {t('games.tictactoe.game.backToLobbies')}
@@ -404,9 +452,24 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         )
     }
 
+    const state = gameEngine.getState()
+    const gameData = state.data as TicTacToeGameData
     const players = game?.players || []
     const currentPlayer = gameEngine.getCurrentPlayer()
     const winner = gameEngine.checkWinCondition()
+    const match = gameData.match
+    const roundsPlayed = match?.roundsPlayed ?? 0
+    const targetRounds = match?.targetRounds ?? null
+    const isMatchComplete = targetRounds !== null && roundsPlayed >= targetRounds
+    const currentUserId = getCurrentUserId()
+    const isLobbyCreator = currentUserId === lobby.creatorId
+    const myPlayerIndex = state.players.findIndex((player) => player.id === currentUserId)
+    const mySymbol: PlayerSymbol | null = myPlayerIndex === 0 ? 'X' : myPlayerIndex === 1 ? 'O' : null
+    const opponentSymbol: PlayerSymbol | null =
+        mySymbol === 'X' ? 'O' : mySymbol === 'O' ? 'X' : null
+    const myWins = mySymbol ? (match?.winsBySymbol[mySymbol] ?? 0) : 0
+    const myLosses = opponentSymbol ? (match?.winsBySymbol[opponentSymbol] ?? 0) : 0
+    const draws = match?.draws ?? 0
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -435,6 +498,19 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                                     <>{t('games.tictactoe.game.draw')}</>
                                 )}
                             </p>
+                            <p className="mt-2 text-sm text-blue-800 dark:text-blue-200">
+                                {targetRounds === null
+                                    ? t('games.tictactoe.game.roundProgressUnlimited', { count: roundsPlayed })
+                                    : t('games.tictactoe.game.roundProgress', {
+                                        current: Math.min(roundsPlayed, targetRounds),
+                                        total: targetRounds,
+                                    })}
+                            </p>
+                            {isMatchComplete && (
+                                <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 mt-1">
+                                    {t('games.tictactoe.game.matchComplete')}
+                                </p>
+                            )}
                         </div>
                     ) : (
                         <>
@@ -443,6 +519,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                             </p>
                             <p className="text-sm text-blue-800 dark:text-blue-200">
                                 {isMyTurn() ? '👉 ' + t('game.ui.yourTurn') : '⏳ ' + t('game.ui.waiting')}
+                            </p>
+                            <p className="text-xs text-blue-800 dark:text-blue-200 mt-2">
+                                {targetRounds === null
+                                    ? t('games.tictactoe.game.roundProgressUnlimited', { count: roundsPlayed })
+                                    : t('games.tictactoe.game.roundProgress', {
+                                        current: Math.min(roundsPlayed + 1, targetRounds),
+                                        total: targetRounds,
+                                    })}
                             </p>
                         </>
                     )}
@@ -464,9 +548,33 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
                 {/* Players List */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                    <div className="mb-5 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/40">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            {t('games.tictactoe.game.matchScore')}
+                        </h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-200">
+                            {targetRounds === null
+                                ? t('games.tictactoe.game.roundProgressUnlimited', { count: roundsPlayed })
+                                : t('games.tictactoe.game.roundProgress', {
+                                    current: Math.min(roundsPlayed, targetRounds),
+                                    total: targetRounds,
+                                })}
+                        </p>
+                        {mySymbol && (
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                {mySymbol}: {t('games.tictactoe.game.wins')} {myWins} · {t('games.tictactoe.game.losses')} {myLosses} · {t('games.tictactoe.game.draws')} {draws}
+                            </p>
+                        )}
+                    </div>
                     <h2 className="text-xl font-bold mb-4">{t('lobby.title')}</h2>
                     <div className="space-y-3">
-                        {players.map((player) => (
+                        {players.map((player) => {
+                            const engineIndex = state.players.findIndex((enginePlayer) => enginePlayer.id === player.userId)
+                            const symbol: PlayerSymbol = engineIndex === 1 ? 'O' : 'X'
+                            const wins = match?.winsBySymbol[symbol] ?? 0
+                            const losses = match?.winsBySymbol[symbol === 'X' ? 'O' : 'X'] ?? 0
+
+                            return (
                             <div
                                 key={player.id}
                                 className={`p-3 rounded-lg border-2 ${currentPlayer?.id === player.userId
@@ -475,13 +583,17 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                                     }`}
                             >
                                 <p className="font-semibold text-gray-900 dark:text-white">
-                                    {player.user?.username || player.name || t('games.tictactoe.game.unknownPlayer')}
+                                    {player.user?.username || player.name || t('games.tictactoe.game.unknownPlayer')} ({symbol})
+                                </p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                    {t('games.tictactoe.game.wins')}: {wins} · {t('games.tictactoe.game.losses')}: {losses}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
                                     {currentPlayer?.id === player.userId && t('games.tictactoe.game.currentTurn')}
                                 </p>
                             </div>
-                        ))}
+                            )
+                        })}
                     </div>
 
                     {/* Results */}
@@ -492,11 +604,15 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                                 <button
                                     onClick={handlePlayAgain}
                                     className="w-full btn btn-primary"
-                                    disabled={isRematchSubmitting}
+                                    disabled={isRematchSubmitting || (isMatchComplete && !isLobbyCreator)}
                                 >
                                     {isRematchSubmitting
                                         ? t('common.loading')
-                                        : t('games.tictactoe.game.playAgain')}
+                                        : isMatchComplete
+                                            ? isLobbyCreator
+                                                ? t('games.tictactoe.game.newMatch')
+                                                : t('game.ui.waitingForHost')
+                                            : t('games.tictactoe.game.nextRound')}
                                 </button>
                                 <button
                                     onClick={() => router.push('/games')}
