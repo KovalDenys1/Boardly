@@ -159,7 +159,7 @@ export default function SpyLobbiesPage() {
       setLobbies(data.lobbies || [])
     } catch (error) {
       clientLogger.error('Failed to load Spy lobbies:', error)
-      showToast.error('errors.loadFailed')
+      showToast.error('errors.failedToLoad')
       // Set empty array to prevent UI from breaking
       setLobbies([])
     } finally {

@@ -299,7 +299,7 @@ export function useGameActions(props: UseGameActionsProps) {
       if (!isAutoAction) {
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()
-        showToast.error('toast.rollFailed', error.message)
+        showToast.errorFrom(error, 'toast.rollFailed')
       } else {
         clientLogger.log('⏱️ Auto roll failed or skipped', { message: error?.message })
       }
@@ -497,7 +497,7 @@ export function useGameActions(props: UseGameActionsProps) {
       if (!isAutoAction) {
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()
-        showToast.error('toast.scoreFailed', error.message)
+        showToast.errorFrom(error, 'toast.scoreFailed')
       } else {
         clientLogger.log('⏱️ Auto score failed or skipped', { message: error?.message })
       }

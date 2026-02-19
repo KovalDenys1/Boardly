@@ -8,6 +8,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
+import i18n from '@/i18n'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -136,9 +137,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     const payload = { difficulty: requestedDifficulty }
 
     const difficultyLabelMap: Record<BotDifficulty, string> = {
-      easy: 'Easy',
-      medium: 'Medium',
-      hard: 'Hard',
+      easy: i18n.t('game.ui.botDifficultyEasy'),
+      medium: i18n.t('game.ui.botDifficultyMedium'),
+      hard: i18n.t('game.ui.botDifficultyHard'),
     }
 
     try {
@@ -166,10 +167,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const botDifficulty = normalizeBotDifficulty(data?.bot?.difficulty, requestedDifficulty)
       const difficultyLabel = difficultyLabelMap[botDifficulty]
 
-      const successMessage = options?.auto
-        ? `🤖 Added ${botName} (${difficultyLabel}) so you can start playing!`
-        : `🤖 ${botName} (${difficultyLabel}) joined the lobby!`
-      showToast.success('toast.success', successMessage)
+      const successKey = options?.auto ? 'toast.botAddedToStart' : 'toast.botJoinedLobby'
+      showToast.success(successKey, undefined, {
+        botName,
+        difficulty: difficultyLabel,
+      })
 
       return {
         success: true,
@@ -182,7 +184,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         return { success: false }
       }
 
-      showToast.error('toast.botAddFailed', err.message)
+      showToast.errorFrom(err, 'toast.botAddFailed')
       return { success: false }
     }
   }, [code, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
@@ -294,8 +296,11 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         // Small delay to ensure state is updated
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        // Refresh local count after reconciliation
-        playerCount = game?.players?.length || playerCount + 1
+        // Refresh local count after reconciliation.
+        // `game` in this closure can be stale until React re-renders, so never
+        // trust it to be lower than the successful bot add we just performed.
+        const observedPlayerCount = game?.players?.length || 0
+        playerCount = Math.max(playerCount + 1, observedPlayerCount)
       }
 
       if (playerCount < requiredMinPlayers) {
@@ -393,7 +398,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // Sound will play automatically via socket event handler
     } catch (error: any) {
       showToast.dismiss('start-game')
-      showToast.error('toast.gameStartFailed', error.message)
+      showToast.errorFrom(error, 'toast.gameStartFailed')
       clientLogger.error('Failed to start game:', error)
     } finally {
       setStartingGame(false)

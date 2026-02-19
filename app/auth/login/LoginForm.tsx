@@ -82,7 +82,7 @@ export default function LoginForm() {
         router.refresh()
       }
     } catch (err: any) {
-      showToast.error('errors.generic', err.message)
+      showToast.errorFrom(err, 'auth.login.error')
     } finally {
       setLoading(false)
     }
@@ -102,7 +102,7 @@ export default function LoginForm() {
       await signIn(provider, { callbackUrl: returnUrl })
     } catch (err: any) {
       setError(err.message)
-      showToast.error('errors.generic', `Failed to sign in with ${provider}`)
+      showToast.errorFrom(err, 'auth.login.oauthError')
       
       trackError({
         errorType: 'auth',

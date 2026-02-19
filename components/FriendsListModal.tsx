@@ -105,7 +105,7 @@ export default function FriendsListModal({
       clientLogger.log('Friends loaded for invite', { count: data.friends?.length })
     } catch (error) {
       clientLogger.error('Error loading friends:', error)
-      showToast.error('friends.errors.loadFailed')
+      showToast.error('profile.friends.errors.loadFailed')
     } finally {
       setLoading(false)
     }
@@ -135,7 +135,7 @@ export default function FriendsListModal({
       onClose()
     } catch (error) {
       clientLogger.error('Error inviting friends:', error)
-      showToast.error('errors.generic')
+      showToast.error('lobby.invite.failed')
     } finally {
       setInviting(false)
     }

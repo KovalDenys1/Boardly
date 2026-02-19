@@ -57,7 +57,7 @@ function ResetPasswordForm() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reset password'
       setError(errorMessage)
-      showToast.error('toast.error', errorMessage)
+      showToast.errorFrom(err, 'toast.error')
     } finally {
       setLoading(false)
     }

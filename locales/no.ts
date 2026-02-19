@@ -65,6 +65,7 @@ const no = {
       noFriends: 'Du har ingen venner ennå',
       addFriendsFirst: 'Legg til venner i profilen din først',
       selectFriends: 'Vennligst velg minst én venn',
+      failed: 'Kunne ikke sende invitasjoner. Prøv igjen.',
       send: 'Inviter {{count}} venn',
       send_other: 'Inviter {{count}} venner',
       sent: 'Inviterte {{count}} venn!',
@@ -419,6 +420,10 @@ const no = {
         roundProgressUnlimited: 'Runder spilt: {{count}}',
         errorTitle: 'Spillfeil',
         errorDescription: 'Noe gikk galt med spillobbyen. Prøv igjen.',
+        loadFailed: 'Kunne ikke laste spillstatus for Tre på rad.',
+        moveFailed: 'Kunne ikke sende trekk.',
+        leaveFailed: 'Kunne ikke forlate Tre på rad-lobbyen.',
+        continueFailed: 'Kunne ikke fortsette Tre på rad-kampen.',
       }
     },
     memory: {
@@ -688,6 +693,7 @@ const no = {
       register: 'Registrer deg nå',
       success: 'Logget inn vellykket!',
       error: 'Ugyldige legitimasjoner',
+      oauthError: 'Kunne ikke logge inn med leverandør',
       loggingIn: 'Logger inn...',
       rememberMe: 'Husk meg',
       invited: 'Du er invitert til et spill!',
@@ -936,7 +942,13 @@ const no = {
       errors: {
         loadFailed: 'Kunne ikke laste venner',
         usernameRequired: 'Brukernavn er påkrevd',
-        invalidFriendCode: 'Ugyldig vennekode. Må være 5 sifre.'
+        invalidFriendCode: 'Ugyldig vennekode. Må være 5 sifre.',
+        sendRequestFailed: 'Kunne ikke sende venneforespørsel',
+        acceptFailed: 'Kunne ikke godta venneforespørsel',
+        rejectFailed: 'Kunne ikke avslå venneforespørsel',
+        removeFailed: 'Kunne ikke fjerne venn',
+        copyCodeFailed: 'Kunne ikke kopiere vennekode',
+        copyLinkFailed: 'Kunne ikke kopiere profillenke'
       }
     }
   },
@@ -1018,6 +1030,7 @@ const no = {
     playAgain: 'Spill igjen',
     requestRematch: 'Be om revansj',
     backToLobby: 'Tilbake til lobby',
+    roundInitialized: 'Spionrunde initialisert',
     rules: {
       title: 'Hvordan spille',
       setup: 'Oppsett',
@@ -1052,6 +1065,7 @@ const no = {
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',
+    info: 'Info',
     saved: 'Lagret vellykket',
     deleted: 'Slettet vellykket',
     error: 'En feil oppstod',
@@ -1061,6 +1075,8 @@ const no = {
     playerJoined: '{{player}} ble med i lobbyen',
     addingBot: 'Legger til bot-spiller...',
     botAddFailed: 'Kunne ikke legge til bot-spiller. Prøv igjen.',
+    botAddedToStart: '🤖 La til {{botName}} ({{difficulty}}) så du kan starte med en gang!',
+    botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) ble med i lobbyen!',
     gameStarted: '🎲 Spillet startet! {{player}} begynner!',
     gameStartFailed: 'Kunne ikke starte spillet',
     botMoveFailed: 'Boten klarte ikke å gjøre et trekk',
@@ -1093,7 +1109,14 @@ const no = {
     usernameTooShort: 'Brukernavn må være minst 3 tegn',
     usernameTooLong: 'Brukernavn må være under 20 tegn',
     usernameSame: 'Dette er allerede brukernavnet ditt',
-    usernameUnavailable: 'Dette brukernavnet er ikke tilgjengelig'
+    usernameUnavailable: 'Dette brukernavnet er ikke tilgjengelig',
+    inviteSkippedUsers: '{{count}} valgte brukere ble hoppet over (ikke venner eller ugyldige).',
+    rematchRequestSent: 'Revansjforespørsel sendt til {{count}} spiller(e).',
+    rematchNoPlayers: 'Ingen spillere var tilgjengelige for revansjvarsling.',
+    socialInviteMessage: '{{player}} inviterte deg til {{lobby}}',
+    socialRematchMessage: '{{player}} ba om revansj i {{lobby}}',
+    socialJoinAction: 'Bli med',
+    socialOpenAction: 'Åpne'
   },
   deleteAccount: {
     title: 'Slett konto',
@@ -1121,7 +1144,8 @@ const no = {
     exit: 'Avslutt gjestemodus',
     welcome: 'Velkommen, {{name}}!',
     welcomeBack: 'Velkommen tilbake, {{name}}!',
-    nameTooShort: 'Navnet må være minst 2 tegn'
+    nameTooShort: 'Navnet må være minst 2 tegn',
+    startFailed: 'Kunne ikke starte gjestemodus'
   },
   maintenance: {
     title: 'Vedlikehold pågår',
