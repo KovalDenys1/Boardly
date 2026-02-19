@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io } from 'socket.io-client'
 import toast from 'react-hot-toast'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
@@ -19,6 +20,7 @@ const EVENT_TTL_MS = 60000
 
 export default function SocialLoopListener() {
   const router = useRouter()
+  const { t } = useTranslation()
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const seenEventKeysRef = useRef<Map<string, number>>(new Map())
@@ -76,7 +78,10 @@ export default function SocialLoopListener() {
           return
         }
 
-        const message = `${payload.invitedByName} invited you to ${payload.lobbyName}`
+        const message = t('toast.socialInviteMessage', {
+          player: payload.invitedByName,
+          lobby: payload.lobbyName,
+        })
         toast((toastRef) => (
           <div className="flex items-center gap-3">
             <span className="text-sm">{message}</span>
@@ -88,7 +93,7 @@ export default function SocialLoopListener() {
                 router.push(`/lobby/join/${payload.lobbyCode}`)
               }}
             >
-              Join
+              {t('toast.socialJoinAction')}
             </button>
           </div>
         ))
@@ -100,7 +105,10 @@ export default function SocialLoopListener() {
           return
         }
 
-        const message = `${payload.requestedByName} asked for a rematch in ${payload.lobbyName}`
+        const message = t('toast.socialRematchMessage', {
+          player: payload.requestedByName,
+          lobby: payload.lobbyName,
+        })
         toast((toastRef) => (
           <div className="flex items-center gap-3">
             <span className="text-sm">{message}</span>
@@ -112,7 +120,7 @@ export default function SocialLoopListener() {
                 router.push(`/lobby/${payload.lobbyCode}`)
               }}
             >
-              Open
+              {t('toast.socialOpenAction')}
             </button>
           </div>
         ))
@@ -132,7 +140,7 @@ export default function SocialLoopListener() {
       activeSocket?.disconnect()
       activeSocket = null
     }
-  }, [canConnect, guestToken, isGuest, router, status])
+  }, [canConnect, guestToken, isGuest, router, status, t])
 
   return null
 }

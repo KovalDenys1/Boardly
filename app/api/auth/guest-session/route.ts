@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Username is already taken',
-          translationKey: 'errors.userSignup.username.taken',
+          translationKey: 'auth.username.taken',
           code: 'USERNAME_TAKEN' 
         },
         { status: 409 }

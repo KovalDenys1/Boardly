@@ -550,7 +550,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
-      showToast.success('toast.success', event.message)
+      showToast.successText(event.message)
       playAmbientSound('score')
     }
 
@@ -1003,7 +1003,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       const data = await res.json()
 
       if (!res.ok) {
-        showToast.error('errors.unexpected')
+        showToast.error('errors.general', undefined, {
+          message: (typeof data?.error === 'string' && data.error) || 'Failed to leave lobby',
+        })
         clientLogger.error('Failed to leave lobby:', data.error)
         isLeavingLobbyRef.current = false
         return
@@ -1026,7 +1028,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
     } catch (error) {
       clientLogger.error('Error leaving lobby:', error)
-      showToast.error('errors.unexpected')
+      showToast.errorFrom(error, 'errors.general')
 
       // Fallback: disconnect and redirect anyway
       if (socket) {
@@ -1064,10 +1066,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         typeof result?.invitedCount === 'number' ? result.invitedCount : friendIds.length
 
       if (Array.isArray(result?.skippedFriendIds) && result.skippedFriendIds.length > 0) {
-        showToast.info(
-          'toast.success',
-          `${result.skippedFriendIds.length} selected users were skipped (not friends or invalid).`
-        )
+        showToast.info('toast.inviteSkippedUsers', undefined, {
+          count: result.skippedFriendIds.length,
+        })
       }
 
       clientLogger.log('Lobby invites sent', {
@@ -1079,7 +1080,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       setShowFriendsModal(false)
     } catch (error) {
       clientLogger.error('Failed to invite friends', error as Error)
-      showToast.error('errors.general', 'Failed to send invites')
+      showToast.errorFrom(error, 'errors.general')
     }
   }, [lobby, code])
 
@@ -1101,13 +1102,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         typeof result?.notifiedCount === 'number' ? result.notifiedCount : 0
 
       if (notifiedCount > 0) {
-        showToast.success('toast.success', `Rematch request sent to ${notifiedCount} player(s).`)
+        showToast.success('toast.rematchRequestSent', undefined, { count: notifiedCount })
       } else {
-        showToast.info('toast.success', 'No players were available for rematch notification.')
+        showToast.info('toast.rematchNoPlayers')
       }
     } catch (error) {
       clientLogger.error('Failed to request rematch', error as Error)
-      showToast.error('errors.general', 'Failed to request rematch')
+      showToast.errorFrom(error, 'errors.general')
     }
   }, [code])
 

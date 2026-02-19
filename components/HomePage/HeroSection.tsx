@@ -39,9 +39,9 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
         showToast.error(err.translationKey)
       } else if (err.statusCode === 409) {
         // Username conflict
-        showToast.error('errors.userSignup.username.taken')
+        showToast.error('auth.username.taken')
       } else {
-        showToast.error('errors.generic')
+        showToast.errorFrom(err, 'guest.startFailed')
       }
       setIsLoading(false)
     }

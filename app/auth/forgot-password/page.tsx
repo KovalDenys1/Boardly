@@ -29,10 +29,10 @@ export default function ForgotPasswordPage() {
         throw new Error(data?.error || 'Failed to send reset email')
       }
 
-      showToast.success('auth.resetPasswordSuccess')
+      showToast.success('auth.forgotPassword.success')
       setSent(true)
     } catch (err: any) {
-      showToast.error('auth.resetPasswordError')
+      showToast.errorFrom(err, 'auth.forgotPassword.error')
     } finally {
       setLoading(false)
     }

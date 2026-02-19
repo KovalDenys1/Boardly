@@ -36,8 +36,11 @@ export default function WaitingRoom({
   const { t } = useTranslation()
   const playerCount = game?.players?.length || 0
   const hasBot = game?.players?.some((p: any) => !!p.user?.bot)
+  const supportsBots = hasBotSupport(lobby.gameType)
   const canAddMorePlayers = playerCount < (lobby?.maxPlayers || 4)
-  const canConfigureBots = hasBotSupport(lobby.gameType) && canAddMorePlayers
+  const canConfigureBots = supportsBots && canAddMorePlayers
+  const canStartWithAutoBot = supportsBots && !hasBot && playerCount > 0 && playerCount < minPlayers && canAddMorePlayers
+  const canStartImmediately = playerCount >= minPlayers || canStartWithAutoBot
   const difficultyLabelMap: Record<BotDifficulty, string> = {
     easy: t('game.ui.botDifficultyEasy'),
     medium: t('game.ui.botDifficultyMedium'),
@@ -85,28 +88,32 @@ export default function WaitingRoom({
           {/* Player Count Card */}
           <div
             className={`bg-white/10 backdrop-blur-md border rounded-2xl p-4 ${
-              playerCount < minPlayers
-                ? 'border-yellow-400/30'
-                : 'border-green-400/30'
+              canStartImmediately
+                ? 'border-green-400/30'
+                : 'border-yellow-400/30'
             }`}
           >
             <div className="flex items-start gap-3">
               <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
-                playerCount < minPlayers
-                  ? 'bg-yellow-500/20'
-                  : 'bg-green-500/20'
+                canStartImmediately
+                  ? 'bg-green-500/20'
+                  : 'bg-yellow-500/20'
               }`}>
                 <span className="text-2xl">👥</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className={`font-bold text-sm mb-1 ${
-                  playerCount < minPlayers ? 'text-yellow-200' : 'text-green-200'
+                  canStartImmediately ? 'text-green-200' : 'text-yellow-200'
                 }`}>
                   {t('game.ui.playersInLobby', { count: playerCount })}
                 </p>
-                {playerCount < minPlayers ? (
+                {!canStartImmediately ? (
                   <p className="text-xs text-white/60">
                     Need {minPlayers - playerCount} more player{minPlayers - playerCount === 1 ? '' : 's'} to start
+                  </p>
+                ) : canStartWithAutoBot ? (
+                  <p className="text-xs text-white/60">
+                    {t('game.ui.botAutoAddTip')}
                   </p>
                 ) : (
                   <p className="text-xs text-white/60">
@@ -215,14 +222,14 @@ export default function WaitingRoom({
                 soundManager.play('click')
                 onStartGame()
               }}
-              disabled={playerCount < minPlayers}
+              disabled={!canStartImmediately}
               className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-600 disabled:to-gray-700"
             >
               <span className="mr-2 text-xl">🎮</span>
               {t('game.ui.startGame')}
             </button>
 
-            {hasBotSupport(lobby.gameType) && playerCount === 1 && !hasBot && (
+            {supportsBots && playerCount === 1 && !hasBot && (
               <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl px-4 py-2.5">
                 <p className="text-blue-200 text-xs">
                   💡 <strong>{t('game.ui.tip')}:</strong> {t('game.ui.botAutoAddTip')}
@@ -259,7 +266,7 @@ export default function WaitingRoom({
             )}
 
             {/* Add Bot Button */}
-            {hasBotSupport(lobby.gameType) && canAddMorePlayers && (
+            {supportsBots && canAddMorePlayers && (
               <button
                 onClick={() => {
                   soundManager.play('click')

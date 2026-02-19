@@ -62,7 +62,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
             if (!res.ok) {
                 clientLogger.error('Failed to load lobby:', data.error)
-                showToast.error('lobby.loadFailed')
+                showToast.error('errors.failedToLoad')
                 router.push('/games')
                 return
             }
@@ -102,7 +102,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             setLoading(false)
         } catch (error) {
             clientLogger.error('Error loading lobby:', error)
-            showToast.error('errors.unexpected')
+            showToast.errorFrom(error, 'games.tictactoe.game.loadFailed')
             setLoading(false)
         }
     }, [code, router])
@@ -120,7 +120,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             optimisticEngine.restoreState(gameEngine.getState())
 
             if (!optimisticEngine.validateMove(move)) {
-                showToast.error('tictactoe.ui.invalidMove')
+                showToast.error('errors.invalidActionData')
                 return
             }
 
@@ -153,7 +153,12 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
             if (!res.ok) {
                 clientLogger.error('Move failed:', data.error)
-                showToast.error('errors.moveFailed')
+                showToast.error('games.tictactoe.game.moveFailed', undefined, {
+                    message:
+                        (typeof data?.details === 'string' && data.details) ||
+                        (typeof data?.error === 'string' && data.error) ||
+                        'Failed to submit move',
+                })
                 // Reload game state from server
                 await loadLobby()
                 return
@@ -190,14 +195,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             const winner = optimisticEngine.checkWinCondition()
             if (winner || optimisticEngine.getState().status === 'finished') {
                 if (winner) {
-                    showToast.success('common.success')
+                    showToast.success('games.tictactoe.game.gameWon')
                 } else {
                     showToast.info('game.ui.gameFinished')
                 }
             }
         } catch (error) {
             clientLogger.error('Error making move:', error)
-            showToast.error('errors.unexpected')
+            showToast.errorFrom(error, 'games.tictactoe.game.moveFailed')
             await loadLobby()
         } finally {
             setIsMoveSubmitting(false)
@@ -293,7 +298,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             router.push('/games')
         } catch (error) {
             clientLogger.error('Error leaving lobby:', error)
-            showToast.error('errors.unexpected')
+            showToast.errorFrom(error, 'games.tictactoe.game.leaveFailed')
         }
     }
 
@@ -357,13 +362,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     await loadLobby()
                 }
 
-                showToast.success('toast.success', t('lobby.game.next_round'))
+                showToast.success('lobby.game.next_round')
                 return
             }
 
             const isCreator = lobby.creatorId === userId
             if (!isCreator) {
-                showToast.info('toast.info', t('game.ui.waitingForHost'))
+                showToast.info('game.ui.waitingForHost')
                 return
             }
 
@@ -386,14 +391,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             }
 
             await loadLobby()
-            showToast.success('toast.success', t('games.tictactoe.game.playAgain'))
+            showToast.success('games.tictactoe.game.playAgain')
         } catch (error) {
             clientLogger.error('Failed to continue Tic-Tac-Toe match:', error)
-            showToast.error('errors.unexpected')
+            showToast.errorFrom(error, 'games.tictactoe.game.continueFailed')
         } finally {
             setIsRematchSubmitting(false)
         }
-    }, [code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router, t])
+    }, [code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router])
 
     if (loading) {
         return (

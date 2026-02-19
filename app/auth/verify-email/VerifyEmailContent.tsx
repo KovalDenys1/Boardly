@@ -50,7 +50,7 @@ export default function VerifyEmailContent() {
         throw new Error(data.error || 'Verification failed')
       }
 
-      showToast.success('auth.verifyEmail.successMessage', 'Email verified successfully! You can now play.')
+      showToast.success('auth.verifyEmail.successMessage')
       
       // Update session to reflect emailVerified status
       await update()
@@ -76,7 +76,7 @@ export default function VerifyEmailContent() {
 
   const resendVerification = async () => {
     if (!session?.user?.email) {
-      showToast.error('auth.verifyEmail.loginRequired', 'Please log in to resend verification email')
+      showToast.error('auth.verifyEmail.loginRequired')
       return
     }
 
@@ -95,7 +95,7 @@ export default function VerifyEmailContent() {
       }
 
       setSent(true)
-      showToast.success('auth.verifyEmail.resendSuccess', 'Verification email sent! Check your inbox.')
+      showToast.success('auth.verifyEmail.resendSuccess')
       
       // Update session to refresh emailVerified status
       await update()

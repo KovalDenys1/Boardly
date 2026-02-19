@@ -147,7 +147,7 @@ export default function Friends() {
       clientLogger.log('Friends loaded', { count: data.friends?.length })
     } catch (error) {
       clientLogger.error('Error loading friends:', error)
-      showToast.error('friends.errors.loadFailed')
+      showToast.error('profile.friends.errors.loadFailed')
     }
   }, [])
 
@@ -175,7 +175,7 @@ export default function Friends() {
       })
     } catch (error) {
       clientLogger.error('Error loading requests:', error)
-      showToast.error('friends.errors.loadFailed')
+      showToast.error('profile.friends.errors.loadFailed')
     }
   }, [])
 
@@ -224,7 +224,7 @@ export default function Friends() {
     e.preventDefault()
     
     if (!searchUsername.trim()) {
-      showToast.error('friends.errors.usernameRequired')
+      showToast.error('profile.friends.errors.usernameRequired')
       return
     }
 
@@ -244,14 +244,14 @@ export default function Friends() {
         throw new Error(data.error || 'Failed to send request')
       }
 
-      showToast.success('friends.requestSent')
+      showToast.success('profile.friends.requestSent')
       setSearchUsername('')
       setShowAddModal(false)
       await loadRequests()
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error sending request:', err)
-      showToast.error('errors.generic', undefined, { message: err.message })
+      showToast.errorFrom(err, 'profile.friends.errors.sendRequestFailed')
     } finally {
       setAddLoading(false)
     }
@@ -262,7 +262,7 @@ export default function Friends() {
     
     const cleanCode = friendCode.replace(/\s/g, '')
     if (!cleanCode || !/^\d{5}$/.test(cleanCode)) {
-      showToast.error('friends.errors.invalidFriendCode')
+      showToast.error('profile.friends.errors.invalidFriendCode')
       return
     }
 
@@ -282,14 +282,14 @@ export default function Friends() {
         throw new Error(data.error || 'Failed to send request')
       }
 
-      showToast.success('friends.requestSent')
+      showToast.success('profile.friends.requestSent')
       setFriendCode('')
       setShowAddModal(false)
       await loadRequests()
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error sending request by code:', err)
-      showToast.error('errors.generic', undefined, { message: err.message })
+      showToast.errorFrom(err, 'profile.friends.errors.sendRequestFailed')
     } finally {
       setAddLoading(false)
     }
@@ -300,10 +300,10 @@ export default function Friends() {
     
     try {
       await navigator.clipboard.writeText(myFriendCode)
-      showToast.success('friends.friendCodeCopied')
+      showToast.success('profile.friends.friendCodeCopied')
     } catch (error) {
       clientLogger.error('Error copying friend code:', error)
-      showToast.error('errors.generic')
+      showToast.error('profile.friends.errors.copyCodeFailed')
     }
   }
 
@@ -313,10 +313,10 @@ export default function Friends() {
     try {
       const profileUrl = `${window.location.origin}/add-friend/${myFriendCode}`
       await navigator.clipboard.writeText(profileUrl)
-      showToast.success('friends.profileLinkCopied')
+      showToast.success('profile.friends.profileLinkCopied')
     } catch (error) {
       clientLogger.error('Error copying profile link:', error)
-      showToast.error('errors.generic')
+      showToast.error('profile.friends.errors.copyLinkFailed')
     }
   }
 
@@ -331,12 +331,12 @@ export default function Friends() {
         throw new Error(data.error || 'Failed to accept request')
       }
 
-      showToast.success('friends.requestAccepted')
+      showToast.success('profile.friends.requestAccepted')
       await Promise.all([loadFriends(), loadRequests()])
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error accepting request:', err)
-      showToast.error('errors.generic', undefined, { message: err.message })
+      showToast.errorFrom(err, 'profile.friends.errors.acceptFailed')
     }
   }
 
@@ -351,12 +351,12 @@ export default function Friends() {
         throw new Error(data.error || 'Failed to reject request')
       }
 
-      showToast.success('friends.requestRejected')
+      showToast.success('profile.friends.requestRejected')
       await loadRequests()
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error rejecting request:', err)
-      showToast.error('errors.generic', undefined, { message: err.message })
+      showToast.errorFrom(err, 'profile.friends.errors.rejectFailed')
     }
   }
 
@@ -375,12 +375,12 @@ export default function Friends() {
         throw new Error(data.error || 'Failed to remove friend')
       }
 
-      showToast.success('friends.friendRemoved')
+      showToast.success('profile.friends.friendRemoved')
       await loadFriends()
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error removing friend:', err)
-      showToast.error('errors.generic', undefined, { message: err.message })
+      showToast.errorFrom(err, 'profile.friends.errors.removeFailed')
     }
   }
 

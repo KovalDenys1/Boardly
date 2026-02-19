@@ -344,8 +344,9 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         } catch (err) {
             clientLogger.error('Failed to submit choice:', err)
             setLobby(previousLobby)
-            setError(err instanceof Error ? err.message : t('errors.failed_to_submit_move'))
-            showToast.error('errors.failed_to_submit_move')
+            const errorMessage = err instanceof Error ? err.message : t('errors.generic')
+            setError(errorMessage)
+            showToast.error('errors.general', undefined, { message: errorMessage })
         } finally {
             setIsSubmitting(false)
         }

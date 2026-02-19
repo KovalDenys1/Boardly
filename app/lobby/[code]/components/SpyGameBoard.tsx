@@ -204,7 +204,7 @@ export default function SpyGameBoard({
         }
 
         if (!options?.silent) {
-          showToast.success('toast.success', 'Spy round initialized')
+          showToast.success('spy.roundInitialized')
         }
 
         await refreshAfterAction()
