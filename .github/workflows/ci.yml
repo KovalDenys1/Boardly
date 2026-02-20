@@ -63,21 +63,6 @@ jobs:
       - name: Validate Prisma schema
         run: npm run db:validate
 
-      - name: Prepare Supabase roles for RLS grants
-        run: |
-          cat <<'SQL' | npx prisma db execute --stdin --url "$DATABASE_URL"
-          DO $$
-          BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-              CREATE ROLE authenticated;
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-              CREATE ROLE service_role;
-            END IF;
-          END
-          $$;
-          SQL
-
       - name: Apply Prisma migrations
         run: npm run db:migrate
 

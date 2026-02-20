@@ -98,6 +98,10 @@ Reason: running migrations in socket build can hang deployments.
 4. Verify health endpoint (`/health`) and lobby join flow.
 5. Check reconnect dashboard and alerts from `docs/REALTIME_TELEMETRY.md`.
 
+Note: `npm run db:migrate` automatically bootstraps required RLS roles
+(`anon`, `authenticated`, `service_role`) before running `prisma migrate deploy`,
+so CI/local PostgreSQL environments do not require a separate manual role-prep step.
+
 ## Common troubleshooting
 
 ### Render build hangs after Prisma datasource log

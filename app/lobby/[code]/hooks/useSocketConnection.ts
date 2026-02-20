@@ -84,6 +84,7 @@ export function useSocketConnection({
   const authTokenUnauthorizedRef = useRef(false)
   const authFailureCountRef = useRef(0)
   const connectionRunIdRef = useRef(0)
+  const hasTrackedFinalFailureRef = useRef(false)
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -151,6 +152,18 @@ export function useSocketConnection({
   useEffect(() => {
     let isMounted = true
     const runId = ++connectionRunIdRef.current
+
+    const trackFinalReconnectFailureOnce = (event: {
+      attemptsTotal: number
+      reason: 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
+      isGuest: boolean
+    }) => {
+      if (hasTrackedFinalFailureRef.current) {
+        return
+      }
+      hasTrackedFinalFailureRef.current = true
+      trackSocketReconnectFailedFinal(event)
+    }
 
     const clearTimer = (timerRef: { current: NodeJS.Timeout | null }) => {
       if (!timerRef.current) return
@@ -458,7 +471,7 @@ export function useSocketConnection({
               lobbyCode: code,
               maxAttempts: MAX_JOIN_ATTEMPTS,
             })
-            trackSocketReconnectFailedFinal({
+            trackFinalReconnectFailureOnce({
               attemptsTotal: Math.max(reconnectAttemptsForCycleRef.current, attempt),
               reason: 'rejoin_timeout',
               isGuest,
@@ -524,6 +537,7 @@ export function useSocketConnection({
         setIsConnected(true)
         setIsReconnecting(false)
         setReconnectAttempt(0)
+        hasTrackedFinalFailureRef.current = false
         if (!isReconnect) {
           reconnectAttemptRef.current = 0
           reconnectAttemptsForCycleRef.current = 0
@@ -561,6 +575,7 @@ export function useSocketConnection({
           clientLogger.log('❌ Socket disconnected:', reason)
           reconnectStartedAtRef.current = Date.now()
           reconnectAttemptsForCycleRef.current = 0
+          hasTrackedFinalFailureRef.current = false
           setIsReconnecting(true)
         } else {
           reconnectStartedAtRef.current = null
@@ -593,7 +608,7 @@ export function useSocketConnection({
       newSocket.on('reconnect_failed', () => {
         if (!isMounted || runId !== connectionRunIdRef.current) return
 
-        trackSocketReconnectFailedFinal({
+        trackFinalReconnectFailureOnce({
           attemptsTotal: Math.max(1, reconnectAttemptsForCycleRef.current),
           reason: 'reconnect_failed',
           isGuest,
@@ -683,7 +698,7 @@ export function useSocketConnection({
             authFailureCount: authFailureCountRef.current,
           })
 
-          trackSocketReconnectFailedFinal({
+          trackFinalReconnectFailureOnce({
             attemptsTotal: Math.max(1, reconnectAttemptsForCycleRef.current),
             reason: 'authentication_failed',
             isGuest,
@@ -872,6 +887,7 @@ export function useSocketConnection({
       isRejoiningRef.current = false
       latestAuthTokenRef.current = null
       authTokenUnauthorizedRef.current = false
+      hasTrackedFinalFailureRef.current = false
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
