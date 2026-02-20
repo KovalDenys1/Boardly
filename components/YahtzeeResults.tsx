@@ -2,12 +2,14 @@
 
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { ALL_CATEGORIES } from '@/lib/yahtzee'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
   currentUserId: string | null
   canStartGame: boolean
   canRequestRematch?: boolean
+  isRequestRematchPending?: boolean
   onPlayAgain: () => void
   onRequestRematch?: () => void
   onBackToLobby: () => void
@@ -18,11 +20,13 @@ export default function YahtzeeResults({
   currentUserId,
   canStartGame,
   canRequestRematch = false,
+  isRequestRematchPending = false,
   onPlayAgain,
   onRequestRematch,
   onBackToLobby
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
+  const totalRounds = ALL_CATEGORIES.length
 
   if (results.length === 0) {
     return null
@@ -65,7 +69,7 @@ export default function YahtzeeResults({
             className="text-gray-600 dark:text-gray-400"
             style={{ fontSize: `clamp(13px, 1.3vw, 20px)` }}
           >
-            {t('yahtzee.results.roundsCompleted', { count: 13 })} • {results.length} {t('yahtzee.results.players', { count: results.length })}
+            {t('yahtzee.results.roundsCompleted', { count: totalRounds })} • {results.length} {t('yahtzee.results.players', { count: results.length })}
           </p>
         </div>
       
@@ -368,7 +372,8 @@ export default function YahtzeeResults({
         {onRequestRematch && canRequestRematch && (
           <button
             onClick={onRequestRematch}
-            className="btn btn-primary flex items-center justify-center hover:shadow-xl hover:brightness-110 transition-all"
+            disabled={isRequestRematchPending}
+            className="btn btn-primary flex items-center justify-center hover:shadow-xl hover:brightness-110 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
               fontSize: `clamp(13px, 1.3vw, 20px)`,
               padding: `clamp(10px, 1vh, 16px) clamp(20px, 2vw, 40px)`,
@@ -376,7 +381,7 @@ export default function YahtzeeResults({
             }}
           >
             <span style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>📣</span>
-            <span>{t('yahtzee.results.requestRematch')}</span>
+            <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
           </button>
         )}
         <button

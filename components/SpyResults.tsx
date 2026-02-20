@@ -15,6 +15,7 @@ interface SpyResultsProps {
   onNextRound?: () => void
   onPlayAgain?: () => void
   onRequestRematch?: () => void
+  isRequestRematchPending?: boolean
   onBackToLobby?: () => void
 }
 
@@ -30,6 +31,7 @@ export default function SpyResults({
   onNextRound,
   onPlayAgain,
   onRequestRematch,
+  isRequestRematchPending = false,
   onBackToLobby,
 }: SpyResultsProps) {
   const { t } = useTranslation()
@@ -185,9 +187,10 @@ export default function SpyResults({
               {onRequestRematch && (
                 <button
                   onClick={onRequestRematch}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg"
+                  disabled={isRequestRematchPending}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:from-blue-500 disabled:hover:to-indigo-500"
                 >
-                  {t('spy.requestRematch')}
+                  {isRequestRematchPending ? t('common.loading') : t('spy.requestRematch')}
                 </button>
               )}
               {onBackToLobby && (

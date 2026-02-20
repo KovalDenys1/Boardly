@@ -22,8 +22,6 @@ const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   threeOfKind: 'Three of a Kind',
   fourOfKind: 'Four of a Kind',
   fullHouse: 'Full House',
-  onePair: 'One Pair',
-  twoPairs: 'Two Pairs',
   smallStraight: 'Small Straight',
   largeStraight: 'Large Straight',
   yahtzee: 'Yahtzee',

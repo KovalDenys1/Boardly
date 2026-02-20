@@ -1,5 +1,10 @@
 import { generateLobbyCode } from '@/lib/lobby'
-import { calculateScore, calculateTotalScore } from '@/lib/yahtzee'
+import {
+  calculateScore,
+  calculateTotalScore,
+  isGameFinished,
+  selectBestAvailableCategory,
+} from '@/lib/yahtzee'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 
 describe('Lobby Utilities', () => {
@@ -76,24 +81,9 @@ describe('Yahtzee Score Calculation', () => {
     it('should calculate full house (25 points)', () => {
       expect(calculateScore([3, 3, 3, 2, 2], 'fullHouse')).toBe(25)
       expect(calculateScore([6, 6, 1, 1, 1], 'fullHouse')).toBe(25)
-      // Yahtzee (5 of a kind) can also count as full house for bonus scoring
-      expect(calculateScore([1, 1, 1, 1, 1], 'fullHouse')).toBe(25)
+      // Official rule: Yahtzee is not a Full House by itself
+      expect(calculateScore([1, 1, 1, 1, 1], 'fullHouse')).toBe(0)
       expect(calculateScore([1, 2, 3, 4, 5], 'fullHouse')).toBe(0)
-    })
-
-    it('should calculate one pair (10 points)', () => {
-      expect(calculateScore([3, 3, 1, 2, 4], 'onePair')).toBe(10)
-      expect(calculateScore([6, 6, 1, 2, 3], 'onePair')).toBe(10)
-      expect(calculateScore([5, 5, 4, 4, 1], 'onePair')).toBe(10) // Two pairs also counts as one pair
-      expect(calculateScore([1, 2, 3, 4, 5], 'onePair')).toBe(0) // No pairs
-    })
-
-    it('should calculate two pairs (20 points)', () => {
-      expect(calculateScore([3, 3, 2, 2, 1], 'twoPairs')).toBe(20)
-      expect(calculateScore([6, 6, 1, 1, 4], 'twoPairs')).toBe(20)
-      expect(calculateScore([5, 5, 4, 4, 4], 'twoPairs')).toBe(20) // Three of a kind includes two pairs
-      expect(calculateScore([1, 2, 3, 4, 5], 'twoPairs')).toBe(0)
-      expect(calculateScore([2, 2, 3, 4, 5], 'twoPairs')).toBe(0) // Only one pair
     })
 
     it('should calculate small straight (30 points)', () => {
@@ -139,17 +129,15 @@ describe('Yahtzee Score Calculation', () => {
         threeOfKind: 20,
         fourOfKind: 24,
         fullHouse: 25,
-        onePair: 10,
-        twoPairs: 20,
         smallStraight: 30,
         largeStraight: 40,
         yahtzee: 50,
         chance: 25,
       }
       // Upper: 63 + 35 bonus = 98
-      // Lower: 20+24+25+10+20+30+40+50+25 = 244
-      // Total: 342
-      expect(calculateTotalScore(scorecard)).toBe(342)
+      // Lower: 20+24+25+30+40+50+25 = 214
+      // Total: 312
+      expect(calculateTotalScore(scorecard)).toBe(312)
     })
 
     it('should calculate total without bonus', () => {
@@ -163,17 +151,15 @@ describe('Yahtzee Score Calculation', () => {
         threeOfKind: 15,
         fourOfKind: 20,
         fullHouse: 25,
-        onePair: 10,
-        twoPairs: 20,
         smallStraight: 30,
         largeStraight: 40,
         yahtzee: 50,
         chance: 20,
       }
       // Upper: 21
-      // Lower: 15+20+25+10+20+30+40+50+20 = 230
-      // Total: 251
-      expect(calculateTotalScore(scorecard)).toBe(251)
+      // Lower: 15+20+25+30+40+50+20 = 200
+      // Total: 221
+      expect(calculateTotalScore(scorecard)).toBe(221)
     })
 
     it('should handle empty scorecard', () => {
@@ -211,6 +197,75 @@ describe('Yahtzee Score Calculation', () => {
         sixes: 18, // Total 62
       }
       expect(calculateTotalScore(scorecard)).toBe(62) // No bonus
+    })
+  })
+
+  describe('isGameFinished', () => {
+    it('should return true when all 13 official categories are filled', () => {
+      const fullScorecard = {
+        ones: 0,
+        twos: 0,
+        threes: 0,
+        fours: 0,
+        fives: 0,
+        sixes: 0,
+        threeOfKind: 0,
+        fourOfKind: 0,
+        fullHouse: 0,
+        smallStraight: 0,
+        largeStraight: 0,
+        yahtzee: 0,
+        chance: 0,
+      }
+
+      expect(isGameFinished(fullScorecard)).toBe(true)
+    })
+
+    it('should return false when at least one category is missing', () => {
+      const incompleteScorecard = {
+        ones: 0,
+        twos: 0,
+        threes: 0,
+        fours: 0,
+        fives: 0,
+        sixes: 0,
+        threeOfKind: 0,
+        fourOfKind: 0,
+        fullHouse: 0,
+        smallStraight: 0,
+        largeStraight: 0,
+        yahtzee: 0,
+      }
+
+      expect(isGameFinished(incompleteScorecard)).toBe(false)
+    })
+  })
+
+  describe('selectBestAvailableCategory', () => {
+    it('should pick highest scoring available category', () => {
+      const category = selectBestAvailableCategory([6, 6, 6, 6, 6], {})
+      expect(category).toBe('yahtzee')
+    })
+
+    it('should skip already filled categories', () => {
+      const category = selectBestAvailableCategory([1, 2, 3, 4, 5], {
+        yahtzee: 0,
+        largeStraight: 40,
+      })
+      expect(category).toBe('smallStraight')
+    })
+
+    it('should use waste priority when remaining categories score zero', () => {
+      const category = selectBestAvailableCategory([1, 2, 3, 5, 6], {
+        ones: 0,
+        twos: 0,
+        threes: 0,
+        fours: 0,
+        fives: 0,
+        sixes: 0,
+        chance: 17,
+      })
+      expect(category).toBe('threeOfKind')
     })
   })
 
