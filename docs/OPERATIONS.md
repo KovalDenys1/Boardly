@@ -18,17 +18,46 @@ npm run db:push
 npm run dev:all
 ```
 
+## Machine bootstrap and sync
+
+### New machine bootstrap
+
+```bash
+git clone <repo-url>
+cd Boardly
+npm install
+cp .env.example .env.local
+npm run db:generate
+npm run db:push
+npm run dev:all
+```
+
+### Daily sync workflow
+
+```bash
+git pull
+npm install
+npm run db:generate
+npm run dev:all
+```
+
+Before pushing changes:
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
 ## Environment file strategy
 
-Use one primary file for local dev: `.env.local`.
+Use one primary file for local development: `.env.local`.
 
 Notes:
 
 - Next.js automatically loads `.env.local`.
-- `socket-server.ts` explicitly loads `.env.local` first, then `.env` as fallback.
-- Keep `.env` optional (e.g. migration-specific overrides), not mandatory.
-
-If you want a single-file setup, keep only `.env.local` and remove secrets from `.env`.
+- `socket-server.ts` loads `.env.local` first, then `.env` as fallback.
+- Keep `.env` optional (for local overrides only), not mandatory.
 
 ## Required env vars (minimum)
 
@@ -42,7 +71,7 @@ Recommended:
 - `DIRECT_URL` (for migrations)
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
-- `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict `/analytics` and `/api/analytics/product`)
+- `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 
 ## Build and deploy
 
@@ -55,11 +84,11 @@ Recommended:
 
 - Platform: Render (web service)
 - Build command should not run DB migrations in this service.
-- `render.yaml` currently uses:
+- Current `render.yaml` pattern:
   - build: `npm ci && npm run db:generate`
   - start: `npm run socket:start`
 
-Reason: running migrations in socket build can cause hanging deployments.
+Reason: running migrations in socket build can hang deployments.
 
 ## Production runbook
 

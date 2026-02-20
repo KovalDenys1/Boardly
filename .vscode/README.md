@@ -31,11 +31,11 @@ Model Context Protocol (MCP) server configuration for GitHub Copilot integration
 - **memory** - Persistent memory across Copilot sessions
 
 **Required Setup:**
-1. Copy `.env.example` to `.env`
-2. Add your `GITHUB_TOKEN` to `.env` (get from https://github.com/settings/tokens)
+1. Copy `.env.example` to `.env.local`
+2. Add your `GITHUB_TOKEN` to `.env.local` (get from https://github.com/settings/tokens)
    - Required scopes: `repo`, `workflow`, `read:org`, `read:user`
-3. Ensure `DATABASE_URL` is set in `.env`
-4. Optional: use `.env.local` for machine-specific MCP credentials
+3. Ensure `DATABASE_URL` is set in `.env.local`
+4. Optional: keep `.env` for local overrides only
 
 ### `settings.json`
 **Status**: ✅ Safe to commit
@@ -53,7 +53,7 @@ Project-wide VSCode settings:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/KovalDenys1/Boardly.git
+   git clone <repo-url>
    cd Boardly
    ```
 
@@ -64,8 +64,8 @@ Project-wide VSCode settings:
 
 3. **Configure environment variables**
    ```bash
-   cp .env.example .env
-   # Edit .env and add your credentials
+   cp .env.example .env.local
+   # Edit .env.local and add your credentials
    ```
 
 4. **Install recommended extensions**
@@ -85,7 +85,7 @@ Project-wide VSCode settings:
 All configuration files in this directory are committed to git, so when you:
 1. Clone the repo on a new machine
 2. Run `npm install`
-3. Copy `.env.example` to `.env` and configure
+3. Copy `.env.example` to `.env.local` and configure
 4. Install recommended VSCode extensions
 
 You'll have the **exact same development environment** as on your other machines!
@@ -98,7 +98,7 @@ You'll have the **exact same development environment** as on your other machines
 - `mcp.json` - MCP server wiring only (scripts/endpoints, no actual tokens)
 
 ✅ **What is NOT committed:**
-- `.env` - your actual secrets and API keys
+- `.env`, `.env.local` - your actual secrets and API keys
 - `.vscode/*.json` (any other files) - user-specific settings
 
 ## Troubleshooting

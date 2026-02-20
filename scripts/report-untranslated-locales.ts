@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { availableLocales, defaultLocale, locales } from '../locales'
 
@@ -48,12 +48,12 @@ const localesToAudit = availableLocales.filter((locale) => locale !== defaultLoc
 const generatedAt = new Date().toISOString()
 
 const lines: string[] = [
-  '# Locale Translation TODO',
+  '# Locale Translation Report',
   '',
   `Generated: ${generatedAt}`,
   `Base locale: \`${defaultLocale}\``,
   '',
-  'This file lists keys where locale value is identical to English and likely needs translation.',
+  'This report lists keys where locale value is identical to English and likely needs translation.',
   '',
 ]
 
@@ -83,7 +83,8 @@ for (const locale of localesToAudit) {
   lines.push('')
 }
 
-const outputPath = resolve(process.cwd(), 'docs/LOCALE_TRANSLATION_TODO.md')
+const outputPath = resolve(process.cwd(), 'tmp/locale-translation-report.md')
+mkdirSync(resolve(process.cwd(), 'tmp'), { recursive: true })
 writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8')
 
 console.log(`Generated ${outputPath}`)

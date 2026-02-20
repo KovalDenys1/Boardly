@@ -9,8 +9,14 @@ This folder contains the canonical project documentation.
 - `docs/OPERATIONS.md` - environment setup, local runbook, deployment, troubleshooting
 - `docs/ROADMAP.md` - active priorities and near-term milestones
 - `docs/CONTRIBUTING.md` - workflow and engineering standards
-- `docs/SECURITY_MODEL.md` - security layers, auth model, RLS posture
-- `docs/REALTIME_TELEMETRY.md` - reconnect telemetry events, dashboards, SLOs, and alert baseline
+- `docs/SECURITY_MODEL.md` - auth boundaries, RLS posture, secrets policy
+- `docs/REALTIME_TELEMETRY.md` - reconnect telemetry events, dashboards, SLOs, alerts
+
+## Specialized docs
+
+- `lib/bots/README.md` - bot architecture and implementation guide
+- `prisma/migrations/README.md` - migration timeline and RLS migration notes
+- `public/sounds/README.md` - audio assets and usage notes
 
 ## Root-level docs
 
@@ -22,5 +28,5 @@ This folder contains the canonical project documentation.
 ## Documentation rules
 
 - Keep docs short and source-of-truth oriented.
-- Prefer one canonical page per topic instead of many status snapshots.
-- Remove or merge historical writeups once their decisions are absorbed here.
+- Prefer one canonical page per topic instead of status snapshots.
+- Remove or merge historical writeups once decisions are absorbed.
