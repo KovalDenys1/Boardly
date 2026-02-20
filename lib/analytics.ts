@@ -6,11 +6,19 @@ import { clientLogger } from './client-logger'
  * Uses Vercel Analytics for production, logs to console in development
  */
 
-type GameType = 'yahtzee' | 'tic_tac_toe' | 'rock_paper_scissors' | 'guess_the_spy'
+type AnalyticsPropertyValue = string | number | boolean | null
+export type AnalyticsGameType =
+  | 'yahtzee'
+  | 'tic_tac_toe'
+  | 'rock_paper_scissors'
+  | 'guess_the_spy'
+type GameType = AnalyticsGameType
 type ReconnectFailureReason = 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
+type ReliabilityAlertEvent = 'rejoin_timeout' | 'auth_refresh_failed' | 'move_apply_timeout'
 
 const REALTIME_TELEMETRY_SAMPLE_RATE = 0.25
-type AnalyticsPropertyValue = string | number | boolean | null
+export const MOVE_APPLY_TARGET_MS = 800
+export const LOBBY_READY_TARGET_MS = 2500
 
 interface LobbyEvent {
   lobbyCode: string
@@ -57,6 +65,37 @@ interface ErrorEvent {
   context?: Record<string, unknown>
 }
 
+interface MoveSubmitAppliedEvent {
+  gameType: GameType
+  moveType: string
+  durationMs: number
+  isGuest: boolean
+  success: boolean
+  applied: boolean
+  statusCode?: number
+  isAutoAction?: boolean
+  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page'
+}
+
+interface LobbyCreateLatencyEvent {
+  gameType: GameType
+  durationMs: number
+  isGuest: boolean
+  success: boolean
+  statusCode?: number
+}
+
+interface LobbyCreateReadyEvent {
+  gameType: GameType
+  durationMs: number
+  isGuest: boolean
+}
+
+function normalizeDurationMs(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.round(value))
+}
+
 function trackRealtimeTelemetry(
   eventName: string,
   payload: Record<string, AnalyticsPropertyValue>
@@ -70,6 +109,17 @@ function trackRealtimeTelemetry(
     eventName,
     ...payload,
     sampleRate: REALTIME_TELEMETRY_SAMPLE_RATE,
+  })
+}
+
+function trackReliabilityAlert(
+  eventName: ReliabilityAlertEvent,
+  payload: Record<string, AnalyticsPropertyValue>
+): void {
+  track(eventName, payload)
+  clientLogger.warn('🚨 Reliability alert signal emitted', {
+    eventName,
+    ...payload,
   })
 }
 
@@ -219,6 +269,74 @@ export function trackFeatureUsage(feature: string, metadata?: Record<string, unk
 }
 
 /**
+ * Track move latency from submit to UI authoritative apply.
+ */
+export function trackMoveSubmitApplied(event: MoveSubmitAppliedEvent): void {
+  const durationMs = normalizeDurationMs(event.durationMs)
+
+  track('move_submit_applied', {
+    game_type: event.gameType,
+    move_type: event.moveType,
+    latency_ms: durationMs,
+    is_guest: event.isGuest,
+    success: event.success,
+    applied: event.applied,
+    ...(typeof event.statusCode === 'number' ? { status_code: event.statusCode } : {}),
+    ...(event.isAutoAction ? { is_auto_action: true } : {}),
+    ...(event.source ? { source: event.source } : {}),
+  })
+
+  if (event.applied && durationMs > MOVE_APPLY_TARGET_MS) {
+    trackReliabilityAlert('move_apply_timeout', {
+      game_type: event.gameType,
+      move_type: event.moveType,
+      latency_ms: durationMs,
+      target_ms: MOVE_APPLY_TARGET_MS,
+      is_guest: event.isGuest,
+      ...(event.source ? { source: event.source } : {}),
+    })
+  }
+}
+
+/**
+ * Track lobby create API request latency.
+ */
+export function trackLobbyCreateRequest(event: LobbyCreateLatencyEvent): void {
+  const durationMs = normalizeDurationMs(event.durationMs)
+
+  track('lobby_create_request', {
+    game_type: event.gameType,
+    latency_ms: durationMs,
+    is_guest: event.isGuest,
+    success: event.success,
+    ...(typeof event.statusCode === 'number' ? { status_code: event.statusCode } : {}),
+  })
+}
+
+/**
+ * Track end-to-end latency from create submit to lobby page being ready.
+ */
+export function trackLobbyCreateReady(event: LobbyCreateReadyEvent): void {
+  const durationMs = normalizeDurationMs(event.durationMs)
+
+  track('lobby_create_ready', {
+    game_type: event.gameType,
+    latency_ms: durationMs,
+    target_ms: LOBBY_READY_TARGET_MS,
+    is_guest: event.isGuest,
+  })
+
+  if (durationMs > LOBBY_READY_TARGET_MS) {
+    track('lobby_create_ready_slow', {
+      game_type: event.gameType,
+      latency_ms: durationMs,
+      target_ms: LOBBY_READY_TARGET_MS,
+      is_guest: event.isGuest,
+    })
+  }
+}
+
+/**
  * Realtime reliability telemetry
  */
 export function trackSocketReconnectAttempt(event: {
@@ -266,6 +384,12 @@ export function trackSocketAuthRefreshFailed(event: {
   status?: number
   isGuest: boolean
 }): void {
+  trackReliabilityAlert('auth_refresh_failed', {
+    stage: event.stage,
+    is_guest: event.isGuest,
+    ...(typeof event.status === 'number' ? { status: event.status } : {}),
+  })
+
   trackRealtimeTelemetry('socket_auth_refresh_failed', {
     stage: event.stage,
     is_guest: event.isGuest,
@@ -290,6 +414,13 @@ export function trackSocketReconnectFailedFinal(event: {
   reason: ReconnectFailureReason
   isGuest: boolean
 }): void {
+  if (event.reason === 'rejoin_timeout') {
+    trackReliabilityAlert('rejoin_timeout', {
+      attempts_total: event.attemptsTotal,
+      is_guest: event.isGuest,
+    })
+  }
+
   trackRealtimeTelemetry('socket_reconnect_failed_final', {
     attempts_total: event.attemptsTotal,
     reason: event.reason,

@@ -10,7 +10,7 @@ import { POST as ADD_BOT } from '@/app/api/lobby/[code]/add-bot/route'
 import { POST as LEAVE_LOBBY } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { createBot } from '@/lib/bot-helpers'
+import { getOrCreateBotUser } from '@/lib/bot-helpers'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -72,17 +72,18 @@ jest.mock('@/lib/rate-limit', () => ({
 }))
 
 jest.mock('@/lib/bot-helpers', () => ({
-  createBot: jest.fn(() => ({
-    user: {
-      id: 'bot_123',
-      username: 'AI Bot',
-    },
+  getOrCreateBotUser: jest.fn(() => ({
+    id: 'bot_123',
+    username: 'AI Bot',
     bot: {
       id: 'bot_meta_1',
       botType: 'yahtzee',
       difficulty: 'medium',
     },
   })),
+  isPrismaUniqueConstraintError: jest.fn(
+    (error: any) => !!error && typeof error === 'object' && error.code === 'P2002'
+  ),
 }))
 
 jest.mock('@/lib/game-registry', () => ({
@@ -99,7 +100,7 @@ jest.mock('@/lib/lobby-snapshot', () => ({
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
-const mockCreateBot = createBot as jest.Mock
+const mockGetOrCreateBotUser = getOrCreateBotUser as jest.Mock
 
 describe('Guest mode API endpoints', () => {
   const guestUser = {
@@ -249,8 +250,9 @@ describe('Guest mode API endpoints', () => {
       players: [],
     } as any)
 
-    mockCreateBot.mockResolvedValue({
-      user: { id: 'bot_hard_ttt', username: 'Grid Grandmaster' },
+    mockGetOrCreateBotUser.mockResolvedValue({
+      id: 'bot_hard_ttt',
+      username: 'Grid Grandmaster',
       bot: { id: 'bot_meta_hard_ttt', botType: 'tic_tac_toe', difficulty: 'hard' },
     } as any)
 
@@ -264,7 +266,7 @@ describe('Guest mode API endpoints', () => {
 
     const response = await ADD_BOT(req, { params: Promise.resolve({ code: 'TTT123' }) })
     expect(response.status).toBe(200)
-    expect(mockCreateBot).toHaveBeenCalledWith('Grid Grandmaster', 'tic_tac_toe', 'hard')
+    expect(mockGetOrCreateBotUser).toHaveBeenCalledWith('Grid Grandmaster', 'tic_tac_toe', 'hard')
   })
 
   it('allows guest player to leave waiting lobby', async () => {

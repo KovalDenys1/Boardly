@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { createBot } from '@/lib/bot-helpers'
+import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { notifySocket } from '@/lib/socket-url'
 import { hasBotSupport } from '@/lib/game-registry'
@@ -90,47 +90,26 @@ export async function POST(
       return NextResponse.json({ error: 'Bot already in lobby' }, { status: 400 })
     }
 
-    // Create or find bot user
-    let botUser = await prisma.users.findFirst({
-      where: {
-        username: botDisplayName,
-        bot: {
-          is: {
-            botType: lobby.gameType,
-            difficulty: botDifficulty,
-          },
-        }
-      },
-      include: {
-        bot: true
-      }
-    })
-
-    if (!botUser) {
-      const result = await createBot(botDisplayName, lobby.gameType, botDifficulty)
-      // Type assertion: result.user includes bot relation
-      botUser = {
-        ...result.user,
-        bot: result.bot
-      } as any
-    }
-
-    // Ensure botUser is defined (TypeScript guard)
-    if (!botUser) {
-      return NextResponse.json({ error: 'Failed to create bot' }, { status: 500 })
-    }
+    const botUser = await getOrCreateBotUser(botDisplayName, lobby.gameType, botDifficulty)
 
     // Add bot to game
     const position = activeGame.players.length
-    await prisma.players.create({
-      data: {
-        gameId: activeGame.id,
-        userId: botUser.id,
-        position,
-        isReady: true,
-        score: 0
+    try {
+      await prisma.players.create({
+        data: {
+          gameId: activeGame.id,
+          userId: botUser.id,
+          position,
+          isReady: true,
+          score: 0
+        }
+      })
+    } catch (error) {
+      // If another request added the same bot concurrently, treat as idempotent success.
+      if (!isPrismaUniqueConstraintError(error)) {
+        throw error
       }
-    })
+    }
 
     await notifySocket(
       `lobby:${code}`,

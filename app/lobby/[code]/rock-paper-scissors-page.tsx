@@ -15,6 +15,8 @@ import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
+import { trackMoveSubmitApplied } from '@/lib/analytics'
 
 interface RPSGame {
     id: string
@@ -154,6 +156,10 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                 throw new Error('Invalid lobby response')
             }
             setLobby(normalizedLobby)
+            finalizePendingLobbyCreateMetric({
+                lobbyCode: normalizedLobby.code,
+                fallbackGameType: normalizedLobby.gameType,
+            })
         } catch (err) {
             clientLogger.error('Failed to load lobby:', err)
             setError(t('errors.failed_to_load_lobby'))
@@ -251,6 +257,9 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         if (!lobby?.game) return
 
         const previousLobby = lobby
+        const submitStartedAt = Date.now()
+        let responseStatus: number | undefined
+        let moveMetricTracked = false
         setIsSubmitting(true)
         setError(null)
         try {
@@ -298,9 +307,21 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                     userId,
                 }),
             })
+            responseStatus = res.status
 
             const payload = await res.json().catch(() => null)
             if (!res.ok) {
+                trackMoveSubmitApplied({
+                    gameType: 'rock_paper_scissors',
+                    moveType: 'submit-choice',
+                    durationMs: Date.now() - submitStartedAt,
+                    isGuest,
+                    success: false,
+                    applied: false,
+                    statusCode: responseStatus,
+                    source: 'rock_paper_scissors_page',
+                })
+                moveMetricTracked = true
                 throw new Error(payload?.message || payload?.error || 'Failed to submit choice')
             }
 
@@ -339,9 +360,33 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                 void loadLobbyData()
             }
 
+            trackMoveSubmitApplied({
+                gameType: 'rock_paper_scissors',
+                moveType: 'submit-choice',
+                durationMs: Date.now() - submitStartedAt,
+                isGuest,
+                success: true,
+                applied: true,
+                statusCode: responseStatus,
+                source: 'rock_paper_scissors_page',
+            })
+            moveMetricTracked = true
+
             clientLogger.log(`🎮 RPS: Submitted choice: ${choice}`)
             showToast.success('lobby.game.move_submitted')
         } catch (err) {
+            if (!moveMetricTracked) {
+                trackMoveSubmitApplied({
+                    gameType: 'rock_paper_scissors',
+                    moveType: 'submit-choice',
+                    durationMs: Date.now() - submitStartedAt,
+                    isGuest,
+                    success: false,
+                    applied: false,
+                    statusCode: responseStatus,
+                    source: 'rock_paper_scissors_page',
+                })
+            }
             clientLogger.error('Failed to submit choice:', err)
             setLobby(previousLobby)
             const errorMessage = err instanceof Error ? err.message : t('errors.generic')
