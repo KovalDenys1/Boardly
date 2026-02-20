@@ -32,8 +32,6 @@ const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   threeOfKind: 'Three of a Kind',
   fourOfKind: 'Four of a Kind',
   fullHouse: 'Full House',
-  onePair: 'One Pair',
-  twoPairs: 'Two Pairs',
   smallStraight: 'Small Straight',
   largeStraight: 'Large Straight',
   yahtzee: 'Yahtzee',
@@ -142,15 +140,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const { t } = useTranslation()
 
   const roundInfo = React.useMemo(() => {
-    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: 13 }
+    const totalCategories = ALL_CATEGORIES.length
+    if (!gameEngine || !(gameEngine instanceof YahtzeeGame)) return { current: 1, total: totalCategories }
     const players = gameEngine.getPlayers()
     const filledCounts = players.map(p => {
       const scorecard = gameEngine.getScorecard(p.id)
-      return scorecard ? Object.keys(scorecard).length : 0
+      return scorecard
+        ? ALL_CATEGORIES.filter((category) => scorecard[category] !== undefined).length
+        : 0
     })
     const maxFilled = filledCounts.length ? Math.max(...filledCounts) : 0
-    const current = Math.min(13, maxFilled + 1)
-    return { current, total: 13 }
+    const current = Math.min(totalCategories, maxFilled + 1)
+    return { current, total: totalCategories }
   }, [gameEngine])
 
   // Chat state
@@ -191,6 +192,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Friends invite modal state
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [selectedBotDifficulty, setSelectedBotDifficulty] = useState<BotDifficulty>('medium')
+  const [isRequestingRematch, setIsRequestingRematch] = useState(false)
 
   // Leave confirmation modal state
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
@@ -1028,7 +1030,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
     } catch (error) {
       clientLogger.error('Error leaving lobby:', error)
-      showToast.errorFrom(error, 'errors.general')
+      showToast.errorFrom(error, 'toast.leaveLobbyFailed')
 
       // Fallback: disconnect and redirect anyway
       if (socket) {
@@ -1044,7 +1046,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   const handleInviteFriends = useCallback(async (friendIds: string[]) => {
-    if (!lobby || friendIds.length === 0) return
+    if (!lobby || friendIds.length === 0) {
+      return { invitedCount: 0, skippedCount: 0 }
+    }
 
     clientLogger.log('Inviting friends to lobby', { friendIds, lobbyCode: code })
 
@@ -1057,34 +1061,41 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         body: JSON.stringify({ friendIds }),
       })
 
-      const result = await response.json()
+      const result = await response.json().catch(() => null)
       if (!response.ok) {
-        throw new Error(result?.error || 'Failed to send invites')
+        const inviteError = new Error(
+          (typeof result?.error === 'string' && result.error) || 'Failed to send invites'
+        ) as Error & { translationKey?: string }
+        if (typeof result?.translationKey === 'string') {
+          inviteError.translationKey = result.translationKey
+        }
+        throw inviteError
       }
 
       const invitedCount =
         typeof result?.invitedCount === 'number' ? result.invitedCount : friendIds.length
-
-      if (Array.isArray(result?.skippedFriendIds) && result.skippedFriendIds.length > 0) {
-        showToast.info('toast.inviteSkippedUsers', undefined, {
-          count: result.skippedFriendIds.length,
-        })
-      }
+      const skippedCount = Array.isArray(result?.skippedFriendIds) ? result.skippedFriendIds.length : 0
 
       clientLogger.log('Lobby invites sent', {
         lobbyCode: code,
         invitedCount,
-        skippedCount: Array.isArray(result?.skippedFriendIds) ? result.skippedFriendIds.length : 0,
+        skippedCount,
       })
-
-      setShowFriendsModal(false)
+      return { invitedCount, skippedCount }
     } catch (error) {
       clientLogger.error('Failed to invite friends', error as Error)
-      showToast.errorFrom(error, 'errors.general')
+      throw error
     }
   }, [lobby, code])
 
   const handleRequestRematch = useCallback(async () => {
+    if (isRequestingRematch) {
+      return
+    }
+
+    setIsRequestingRematch(true)
+    showToast.loading('toast.rematchRequestSending', undefined, undefined, { id: 'rematch-request' })
+
     try {
       const response = await fetchWithGuest(`/api/lobby/${code}/rematch`, {
         method: 'POST',
@@ -1093,24 +1104,41 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         },
       })
 
-      const result = await response.json()
+      const result = await response.json().catch(() => null)
       if (!response.ok) {
-        throw new Error(result?.error || 'Failed to request rematch')
+        const translationKey =
+          typeof result?.translationKey === 'string' ? result.translationKey : null
+        const fallbackMessage =
+          (typeof result?.error === 'string' && result.error) || 'Failed to request rematch'
+
+        if (translationKey) {
+          showToast.error(translationKey, undefined, undefined, { id: 'rematch-request' })
+        } else {
+          showToast.error(
+            'toast.rematchRequestFailed',
+            undefined,
+            { message: fallbackMessage },
+            { id: 'rematch-request' }
+          )
+        }
+        return
       }
 
       const notifiedCount =
         typeof result?.notifiedCount === 'number' ? result.notifiedCount : 0
 
       if (notifiedCount > 0) {
-        showToast.success('toast.rematchRequestSent', undefined, { count: notifiedCount })
+        showToast.success('toast.rematchRequestSent', undefined, { count: notifiedCount }, { id: 'rematch-request' })
       } else {
-        showToast.info('toast.rematchNoPlayers')
+        showToast.info('toast.rematchNoPlayers', undefined, undefined, { id: 'rematch-request' })
       }
     } catch (error) {
       clientLogger.error('Failed to request rematch', error as Error)
-      showToast.errorFrom(error, 'errors.general')
+      showToast.errorFrom(error, 'toast.rematchRequestFailed', { id: 'rematch-request' })
+    } finally {
+      setIsRequestingRematch(false)
     }
-  }, [code])
+  }, [code, isRequestingRematch])
 
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
@@ -1309,6 +1337,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               currentUserId={getCurrentUserId() || null}
               canStartGame={!!canStartGame}
               canRequestRematch={!!isInGame}
+              isRequestRematchPending={isRequestingRematch}
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
@@ -1713,6 +1742,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   await loadLobbyRef.current()
                 }
               }}
+              isRequestingRematch={isRequestingRematch}
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}

@@ -125,6 +125,23 @@ describe('Social loop APIs', () => {
   })
 
   describe('POST /api/lobby/[code]/rematch', () => {
+    it('returns localized auth error when unauthenticated', async () => {
+      mockGetRequestAuthUser.mockResolvedValue(null)
+
+      const request = new NextRequest('http://localhost:3000/api/lobby/ABCD/rematch', {
+        method: 'POST',
+      })
+
+      const response = await REQUEST_REMATCH(request, {
+        params: Promise.resolve({ code: 'ABCD' }),
+      })
+      const data = await response.json()
+
+      expect(response.status).toBe(401)
+      expect(data.translationKey).toBe('errors.unauthorized')
+      expect(mockNotifySocket).not.toHaveBeenCalled()
+    })
+
     it('notifies other participants when creator requests rematch', async () => {
       mockGetRequestAuthUser.mockResolvedValue({
         id: 'host-1',
@@ -189,8 +206,37 @@ describe('Social loop APIs', () => {
       const response = await REQUEST_REMATCH(request, {
         params: Promise.resolve({ code: 'ABCD' }),
       })
+      const data = await response.json()
 
       expect(response.status).toBe(403)
+      expect(data.translationKey).toBe('toast.rematchNotParticipant')
+      expect(mockNotifySocket).not.toHaveBeenCalled()
+    })
+
+    it('returns localized error when lobby has no games yet', async () => {
+      mockGetRequestAuthUser.mockResolvedValue({
+        id: 'host-1',
+        username: 'Host',
+        isGuest: false,
+      })
+      mockPrisma.lobbies.findUnique.mockResolvedValue({
+        code: 'ABCD',
+        name: 'Lobby',
+        gameType: 'yahtzee',
+        creatorId: 'host-1',
+        games: [],
+      } as any)
+
+      const request = new NextRequest('http://localhost:3000/api/lobby/ABCD/rematch', {
+        method: 'POST',
+      })
+      const response = await REQUEST_REMATCH(request, {
+        params: Promise.resolve({ code: 'ABCD' }),
+      })
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.translationKey).toBe('toast.rematchNoCompletedGame')
       expect(mockNotifySocket).not.toHaveBeenCalled()
     })
   })

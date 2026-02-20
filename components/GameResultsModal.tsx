@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { ALL_CATEGORIES, YahtzeeCategory } from '@/lib/yahtzee'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
@@ -131,11 +132,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
     if (!game || game.gameType !== 'yahtzee' || !game.state?.gameData) return null
 
     const gameData = game.state.gameData
-    const categories = [
-      'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-      'threeOfAKind', 'fourOfAKind', 'fullHouse', 'onePair', 'twoPairs',
-      'smallStraight', 'largeStraight', 'yahtzee', 'chance'
-    ]
+    const categories: YahtzeeCategory[] = [...ALL_CATEGORIES]
 
     return (
       <div className="mt-6">
@@ -162,7 +159,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
               {categories.map((category) => (
                 <tr key={category} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 font-medium capitalize">
-                    {category.replace(/([A-Z])/g, ' $1').trim()}
+                    {t(`yahtzee.categories.${category}`)}
                   </td>
                   {game.players.map((player) => {
                     const playerData = gameData.players?.[player.id]

@@ -60,6 +60,7 @@ interface SpyGameBoardProps {
   onRefresh: () => Promise<void> | void
   onPlayAgain?: () => void
   onRequestRematch?: () => void
+  isRequestingRematch?: boolean
   onBackToLobby?: () => void
 }
 
@@ -95,6 +96,7 @@ export default function SpyGameBoard({
   onRefresh,
   onPlayAgain,
   onRequestRematch,
+  isRequestingRematch = false,
   onBackToLobby,
 }: SpyGameBoardProps) {
   const { t } = useTranslation()
@@ -512,6 +514,7 @@ export default function SpyGameBoard({
             }
             onPlayAgain={onPlayAgain}
             onRequestRematch={onRequestRematch}
+            isRequestRematchPending={isRequestingRematch}
             onBackToLobby={onBackToLobby}
           />
         )}

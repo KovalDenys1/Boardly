@@ -10,7 +10,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { RollHistoryEntry } from '@/components/RollHistory'
 import { detectPatternOnRoll, detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { Game, GamePlayer } from '@/types/game'
-import { trackPlayerAction, trackGameCompleted } from '@/lib/analytics'
+import { trackPlayerAction, trackGameCompleted, trackMoveSubmitApplied } from '@/lib/analytics'
 
 interface UseGameActionsProps {
   game: Game | null
@@ -191,6 +191,9 @@ export function useGameActions(props: UseGameActionsProps) {
       data: { held }, // Include held array in roll move
       timestamp: new Date(),
     }
+    const submitStartedAt = Date.now()
+    let responseStatus: number | undefined
+    let moveMetricTracked = false
 
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -200,15 +203,40 @@ export function useGameActions(props: UseGameActionsProps) {
         headers,
         body: JSON.stringify({ move, autoActionContext: normalizedAutoActionContext }),
       })
+      responseStatus = res.status
 
       // Auto-actions can be debounced/ignored server-side by design.
       if (isAutoAction && res.status === 202) {
+        trackMoveSubmitApplied({
+          gameType: 'yahtzee',
+          moveType: 'roll',
+          durationMs: Date.now() - submitStartedAt,
+          isGuest,
+          success: true,
+          applied: false,
+          statusCode: responseStatus,
+          isAutoAction,
+          source: 'yahtzee_hook',
+        })
+        moveMetricTracked = true
         return null
       }
 
       if (!res.ok) {
         const error = await res.json()
         if (isAutoAction && isExpectedAutoActionSkip(res.status, error)) {
+          trackMoveSubmitApplied({
+            gameType: 'yahtzee',
+            moveType: 'roll',
+            durationMs: Date.now() - submitStartedAt,
+            isGuest,
+            success: true,
+            applied: false,
+            statusCode: responseStatus,
+            isAutoAction,
+            source: 'yahtzee_hook',
+          })
+          moveMetricTracked = true
           clientLogger.log('⏱️ Auto roll skipped by server guard', { status: res.status, code: error?.code })
           return null
         }
@@ -294,8 +322,34 @@ export function useGameActions(props: UseGameActionsProps) {
         void reconcileWithServerSnapshot()
       }
 
+      trackMoveSubmitApplied({
+        gameType: 'yahtzee',
+        moveType: 'roll',
+        durationMs: Date.now() - submitStartedAt,
+        isGuest,
+        success: true,
+        applied: true,
+        statusCode: responseStatus,
+        isAutoAction,
+        source: 'yahtzee_hook',
+      })
+      moveMetricTracked = true
+
       return newEngine
     } catch (error: any) {
+      if (!moveMetricTracked) {
+        trackMoveSubmitApplied({
+          gameType: 'yahtzee',
+          moveType: 'roll',
+          durationMs: Date.now() - submitStartedAt,
+          isGuest,
+          success: false,
+          applied: false,
+          statusCode: responseStatus,
+          isAutoAction,
+          source: 'yahtzee_hook',
+        })
+      }
       if (!isAutoAction) {
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()
@@ -371,6 +425,9 @@ export function useGameActions(props: UseGameActionsProps) {
       data: { category },
       timestamp: new Date(),
     }
+    const submitStartedAt = Date.now()
+    let responseStatus: number | undefined
+    let moveMetricTracked = false
 
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -380,15 +437,40 @@ export function useGameActions(props: UseGameActionsProps) {
         headers,
         body: JSON.stringify({ move, autoActionContext: normalizedAutoActionContext }),
       })
+      responseStatus = res.status
 
       // Auto-actions can be debounced/ignored server-side by design.
       if (isAutoAction && res.status === 202) {
+        trackMoveSubmitApplied({
+          gameType: 'yahtzee',
+          moveType: 'score',
+          durationMs: Date.now() - submitStartedAt,
+          isGuest,
+          success: true,
+          applied: false,
+          statusCode: responseStatus,
+          isAutoAction,
+          source: 'yahtzee_hook',
+        })
+        moveMetricTracked = true
         return null
       }
 
       if (!res.ok) {
         const error = await res.json()
         if (isAutoAction && isExpectedAutoActionSkip(res.status, error)) {
+          trackMoveSubmitApplied({
+            gameType: 'yahtzee',
+            moveType: 'score',
+            durationMs: Date.now() - submitStartedAt,
+            isGuest,
+            success: true,
+            applied: false,
+            statusCode: responseStatus,
+            isAutoAction,
+            source: 'yahtzee_hook',
+          })
+          moveMetricTracked = true
           clientLogger.log('⏱️ Auto score skipped by server guard', { status: res.status, code: error?.code })
           return null
         }
@@ -450,6 +532,19 @@ export function useGameActions(props: UseGameActionsProps) {
         void reconcileWithServerSnapshot()
       }
 
+      trackMoveSubmitApplied({
+        gameType: 'yahtzee',
+        moveType: 'score',
+        durationMs: Date.now() - submitStartedAt,
+        isGuest,
+        success: true,
+        applied: true,
+        statusCode: responseStatus,
+        isAutoAction,
+        source: 'yahtzee_hook',
+      })
+      moveMetricTracked = true
+
       if (newEngine.isGameFinished()) {
         setTimerActive(false)
         const winner = newEngine.checkWinCondition()
@@ -494,6 +589,19 @@ export function useGameActions(props: UseGameActionsProps) {
 
       return newEngine
     } catch (error: any) {
+      if (!moveMetricTracked) {
+        trackMoveSubmitApplied({
+          gameType: 'yahtzee',
+          moveType: 'score',
+          durationMs: Date.now() - submitStartedAt,
+          isGuest,
+          success: false,
+          applied: false,
+          statusCode: responseStatus,
+          isAutoAction,
+          source: 'yahtzee_hook',
+        })
+      }
       if (!isAutoAction) {
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()

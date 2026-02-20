@@ -8,6 +8,11 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { RegisteredGameType } from '@/lib/game-registry'
+import {
+  trackLobbyCreateRequest,
+  type AnalyticsGameType,
+} from '@/lib/analytics'
+import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 
 type GameType = RegisteredGameType
 
@@ -166,6 +171,9 @@ function CreateLobbyPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    const createStartedAt = Date.now()
+    let responseStatus: number | undefined
+    let createMetricTracked = false
 
     try {
       // Allow both authenticated users and guests to create lobbies
@@ -192,22 +200,64 @@ function CreateLobbyPage() {
         },
         body: JSON.stringify(payload),
       })
+      responseStatus = res.status
 
       const data = await res.json()
       clientLogger.log('📥 Received response:', { status: res.status, data })
 
       if (!res.ok) {
+        trackLobbyCreateRequest({
+          gameType: formData.gameType as AnalyticsGameType,
+          durationMs: Date.now() - createStartedAt,
+          isGuest,
+          success: false,
+          statusCode: responseStatus,
+        })
+        createMetricTracked = true
         throw new Error(data.error || 'Failed to create lobby')
       }
 
       const lobbyCode = typeof data?.lobby?.code === 'string' ? data.lobby.code : null
       if (!lobbyCode) {
+        trackLobbyCreateRequest({
+          gameType: formData.gameType as AnalyticsGameType,
+          durationMs: Date.now() - createStartedAt,
+          isGuest,
+          success: false,
+          statusCode: responseStatus,
+        })
+        createMetricTracked = true
         throw new Error('Lobby code missing in response')
       }
+
+      trackLobbyCreateRequest({
+        gameType: formData.gameType as AnalyticsGameType,
+        durationMs: Date.now() - createStartedAt,
+        isGuest,
+        success: true,
+        statusCode: responseStatus,
+      })
+      createMetricTracked = true
+
+      markPendingLobbyCreateMetric({
+        lobbyCode,
+        gameType: formData.gameType as AnalyticsGameType,
+        startedAt: createStartedAt,
+        isGuest,
+      })
 
       clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
       router.push(`/lobby/${lobbyCode}`)
     } catch (err) {
+      if (!createMetricTracked) {
+        trackLobbyCreateRequest({
+          gameType: formData.gameType as AnalyticsGameType,
+          durationMs: Date.now() - createStartedAt,
+          isGuest,
+          success: false,
+          statusCode: responseStatus,
+        })
+      }
       clientLogger.error('❌ Lobby creation error:', err)
       const errorMessage = err instanceof Error ? err.message : t('lobby.create.errors.failedToCreate')
       setError(errorMessage)

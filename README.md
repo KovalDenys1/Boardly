@@ -71,9 +71,11 @@ npm run dev:all        # both
 npm run build          # prisma generate + next build
 npm run test
 npm run lint
+npm run check:locales
 npm run db:generate
 npm run db:push
 npm run db:migrate
+npm run db:rls:smoke
 ```
 
 ## Documentation map
@@ -85,6 +87,9 @@ npm run db:migrate
 - Current roadmap: `docs/ROADMAP.md`
 - Contribution workflow: `docs/CONTRIBUTING.md`
 - Security model details: `docs/SECURITY_MODEL.md`
+- Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
+- Bot developer guide: `lib/bots/README.md`
+- Migrations and RLS notes: `prisma/migrations/README.md`
 - AI agent instructions: `.github/copilot-instructions.md`
 
 ## Community and policy

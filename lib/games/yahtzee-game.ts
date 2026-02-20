@@ -1,5 +1,5 @@
 import { GameEngine, Player, Move, GameConfig } from '../game-engine'
-import { YahtzeeCategory, YahtzeeScorecard, rollDice, calculateScore, calculateTotalScore, isGameFinished } from '../yahtzee'
+import { ALL_CATEGORIES, YahtzeeCategory, YahtzeeScorecard, rollDice, calculateScore, calculateTotalScore, isGameFinished } from '../yahtzee'
 
 export interface YahtzeeGameData {
   round: number
@@ -229,10 +229,12 @@ export class YahtzeeGame extends GameEngine {
     const gameData = this.state.data as YahtzeeGameData
     const currentPlayerIndex = this.state.currentPlayerIndex
     const currentPlayerScorecard = gameData.scores[currentPlayerIndex] || {}
-    
-    // Count filled categories
-    const filledCategories = Object.keys(currentPlayerScorecard).length
-    
+
+    // Count only official Yahtzee categories to stay robust against legacy keys.
+    const filledCategories = ALL_CATEGORIES.filter(
+      (category) => currentPlayerScorecard[category] !== undefined
+    ).length
+
     // Round is filled categories + 1 (next round to play)
     return filledCategories + 1
   }

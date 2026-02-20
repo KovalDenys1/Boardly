@@ -8,6 +8,8 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { SpyGame } from '@/lib/games/spy-game'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
+import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
+import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -173,6 +175,60 @@ export async function POST(request: NextRequest) {
     // Type guard - ensure waitingGame is defined
     if (!waitingGame) {
       return NextResponse.json({ error: 'Failed to get or create game' }, { status: 500 })
+    }
+
+    const hasBotInWaitingGame = waitingGame.players.some((player) => isBot(player))
+    if (
+      supportsBots &&
+      waitingGame.status === 'waiting' &&
+      !hasBotInWaitingGame &&
+      waitingGame.players.length > 0 &&
+      waitingGame.players.length < requiredMinPlayers &&
+      waitingGame.players.length < lobby.maxPlayers
+    ) {
+      const fallbackDifficulty = normalizeBotDifficulty('medium')
+      const fallbackBotDisplayName = getBotDisplayName(gameType, fallbackDifficulty)
+      const fallbackBotUser = await getOrCreateBotUser(
+        fallbackBotDisplayName,
+        gameType,
+        fallbackDifficulty,
+      )
+
+      try {
+        await prisma.players.create({
+          data: {
+            gameId: waitingGame.id,
+            userId: fallbackBotUser.id,
+            position: waitingGame.players.length,
+            isReady: true,
+            score: 0,
+          },
+        })
+      } catch (error) {
+        // Concurrent start requests may race to add the same bot.
+        if (!isPrismaUniqueConstraintError(error)) {
+          throw error
+        }
+      }
+
+      const refreshedWaitingGame = await prisma.games.findUnique({
+        where: { id: waitingGame.id },
+        include: {
+          players: {
+            include: {
+              user: {
+                include: {
+                  bot: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      if (refreshedWaitingGame) {
+        waitingGame = refreshedWaitingGame
+      }
     }
 
     // Validate minimum players

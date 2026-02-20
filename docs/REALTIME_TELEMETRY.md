@@ -1,12 +1,12 @@
 # Realtime Telemetry
 
-This document defines reconnect telemetry for Boardly and the minimum dashboards/SLOs for production monitoring.
+This document defines reconnect and gameplay latency telemetry for Boardly and the minimum dashboards/SLOs for production monitoring.
 
 ## Scope
 
 - Source events: `lib/analytics.ts`
 - Source emitters: `app/lobby/[code]/hooks/useSocketConnection.ts`
-- Focus: reconnect reliability, lobby rejoin reliability, and auth refresh failures
+- Focus: reconnect reliability, lobby rejoin reliability, auth refresh failures, and move apply latency
 
 ## Sampling and Privacy
 
@@ -24,6 +24,10 @@ This document defines reconnect telemetry for Boardly and the minimum dashboards
 | `socket_auth_refresh_failed` | Token refresh/auth payload resolution fails | `stage`, `status`, `is_guest` |
 | `socket_reconnect_recovered` | Reconnect flow recovered and lobby rejoin confirmed | `attempts_total`, `time_to_recover_ms`, `is_guest` |
 | `socket_reconnect_failed_final` | Reconnect flow reached terminal failure | `attempts_total`, `reason`, `is_guest` |
+| `move_submit_applied` | Client submits move and receives authoritative applied state | `game_type`, `move_type`, `latency_ms`, `success`, `applied`, `is_guest` |
+| `move_apply_timeout` | Move apply latency breaches target threshold | `game_type`, `move_type`, `latency_ms`, `target_ms`, `is_guest` |
+| `auth_refresh_failed` | Alert signal for auth token refresh/auth payload failures (unsampled) | `stage`, `status`, `is_guest` |
+| `rejoin_timeout` | Alert signal for terminal reconnect failures with lobby rejoin timeout (unsampled) | `attempts_total`, `is_guest` |
 
 `socket_reconnect_failed_final.reason` values:
 
@@ -65,6 +69,12 @@ Create one dashboard with these cards:
 - Count of `socket_reconnect_attempt`
 - Breakdown by `attempt` bucket and `transport`
 
+1. Move apply latency and timeouts
+
+- P50/P95 for `move_submit_applied.latency_ms` filtered by `success=true` and `applied=true`
+- Count of `move_apply_timeout`
+- Breakdown by `game_type` and `move_type`
+
 ## SLO and Alert Baseline
 
 Initial SLO targets:
@@ -75,9 +85,10 @@ Initial SLO targets:
 
 Initial alert thresholds:
 
-- `socket_reconnect_failed_final` spikes above baseline for 10+ minutes
+- `rejoin_timeout` spikes above baseline for 10+ minutes
 - Recovery latency P95 above `15s` for 10+ minutes
-- `socket_auth_refresh_failed` ratio above `2%` for 10+ minutes
+- `auth_refresh_failed` ratio above `2%` for 10+ minutes
+- `move_apply_timeout` above baseline for 10+ minutes (or `move_submit_applied` P95 > `800ms`)
 
 ## Troubleshooting Map
 
@@ -95,6 +106,12 @@ If `reconnect_failed` grows:
 
 - Check socket server uptime/cold starts and network errors
 - Check deploy windows and infra incidents
+
+If `move_apply_timeout` grows:
+
+- Check `/api/game/[gameId]/state` p95 duration and DB lock contention
+- Check whether specific `game_type` or `move_type` dominates tail latency
+- Check socket broadcast lag after successful state mutation
 
 ## Review Cadence
 

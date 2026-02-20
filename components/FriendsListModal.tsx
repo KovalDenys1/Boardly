@@ -20,7 +20,7 @@ interface Friend {
 interface FriendsListModalProps {
   isOpen: boolean
   onClose: () => void
-  onInvite: (friendIds: string[]) => Promise<void>
+  onInvite: (friendIds: string[]) => Promise<{ invitedCount: number; skippedCount: number }>
   lobbyCode: string
 }
 
@@ -129,13 +129,27 @@ export default function FriendsListModal({
 
     setInviting(true)
     try {
-      await onInvite(Array.from(selectedFriends))
-      showToast.success('lobby.invite.sent', undefined, { count: selectedFriends.size })
+      const result = await onInvite(Array.from(selectedFriends))
+      if (result.skippedCount > 0) {
+        showToast.info('toast.inviteSkippedUsers', undefined, { count: result.skippedCount })
+      }
+      if (result.invitedCount > 0) {
+        showToast.success('lobby.invite.sent', undefined, { count: result.invitedCount })
+      }
       setSelectedFriends(new Set())
       onClose()
     } catch (error) {
       clientLogger.error('Error inviting friends:', error)
-      showToast.error('lobby.invite.failed')
+      const translationKey =
+        typeof (error as { translationKey?: unknown })?.translationKey === 'string'
+          ? ((error as { translationKey?: string }).translationKey as string)
+          : null
+
+      if (translationKey) {
+        showToast.error(translationKey)
+      } else {
+        showToast.errorFrom(error, 'lobby.invite.failed')
+      }
     } finally {
       setInviting(false)
     }

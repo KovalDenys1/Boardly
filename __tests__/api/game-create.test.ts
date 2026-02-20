@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/game/create/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
+import { getOrCreateBotUser } from '@/lib/bot-helpers'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -18,6 +19,7 @@ jest.mock('@/lib/db', () => ({
     games: {
       create: jest.fn(),
       update: jest.fn(),
+      findUnique: jest.fn(),
     },
     players: {
       create: jest.fn(),
@@ -55,8 +57,16 @@ jest.mock('@/lib/rate-limit', () => ({
   },
 }))
 
+jest.mock('@/lib/bot-helpers', () => ({
+  getOrCreateBotUser: jest.fn(),
+  isPrismaUniqueConstraintError: jest.fn(
+    (error: any) => !!error && typeof error === 'object' && error.code === 'P2002'
+  ),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockGetOrCreateBotUser = getOrCreateBotUser as jest.MockedFunction<typeof getOrCreateBotUser>
 
 describe('POST /api/game/create', () => {
   const mockSession = {
@@ -113,6 +123,15 @@ describe('POST /api/game/create', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGetOrCreateBotUser.mockResolvedValue({
+      id: 'bot-user-1',
+      username: 'Grid Tactician',
+      bot: {
+        id: 'bot-meta-1',
+        botType: 'tic_tac_toe',
+        difficulty: 'medium',
+      },
+    } as any)
   })
 
   it('should return 401 when user not authenticated', async () => {
@@ -320,17 +339,81 @@ describe('POST /api/game/create', () => {
     expect(persistedState?.data?.match?.targetRounds).toBe(5)
   })
 
-  it('should return 400 when not enough players', async () => {
+  it('auto-adds bot and starts game when creator starts alone in bot-supported game', async () => {
     const gameWithOnePlayer = {
       ...mockWaitingGame,
       players: [mockWaitingGame.players[0]], // Only 1 player
     }
 
     mockGetServerSession.mockResolvedValue(mockSession as any)
-    mockPrisma.lobbies.findUnique.mockResolvedValue({
+    const lobbyWithOnePlayer = {
       ...mockLobby,
       gameType: 'tic_tac_toe',
+      maxPlayers: 2,
       games: [gameWithOnePlayer],
+    }
+
+    mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithOnePlayer as any)
+    mockPrisma.players.create.mockResolvedValue({ id: 'new-bot-player' } as any)
+    mockPrisma.games.findUnique.mockResolvedValue({
+      ...gameWithOnePlayer,
+      players: [
+        ...gameWithOnePlayer.players,
+        {
+          id: 'player-bot',
+          userId: 'bot-user-1',
+          score: 0,
+          position: 1,
+          user: {
+            id: 'bot-user-1',
+            username: 'Grid Tactician',
+            bot: {
+              id: 'bot-meta-1',
+              botType: 'tic_tac_toe',
+              difficulty: 'medium',
+            },
+          },
+        },
+      ],
+    } as any)
+    mockPrisma.games.update.mockResolvedValue({
+      ...gameWithOnePlayer,
+      status: 'playing',
+      gameType: 'tic_tac_toe',
+      players: [
+        ...gameWithOnePlayer.players,
+        {
+          id: 'player-bot',
+          userId: 'bot-user-1',
+          score: 0,
+          position: 1,
+          user: {
+            id: 'bot-user-1',
+            username: 'Grid Tactician',
+            bot: {
+              id: 'bot-meta-1',
+              botType: 'tic_tac_toe',
+              difficulty: 'medium',
+            },
+          },
+        },
+      ],
+      state: JSON.stringify({
+        id: 'game-123',
+        gameType: 'tic_tac_toe',
+        status: 'playing',
+        players: [
+          { id: 'creator-123', name: 'creator', score: 0 },
+          { id: 'bot-user-1', name: 'Grid Tactician', score: 0 },
+        ],
+        currentPlayerIndex: 0,
+        data: {
+          board: [[null, null, null], [null, null, null], [null, null, null]],
+          currentSymbol: 'X',
+          moveCount: 0,
+          winner: null,
+        },
+      }),
     } as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
@@ -344,8 +427,21 @@ describe('POST /api/game/create', () => {
     const response = await POST(request)
     const data = await response.json()
 
-    expect(response.status).toBe(400)
-    expect(data.error).toBe('At least 2 players are required to start this game')
+    expect(response.status).toBe(200)
+    expect(data.game.status).toBe('playing')
+    expect(mockGetOrCreateBotUser).toHaveBeenCalledWith(
+      'Grid Tactician',
+      'tic_tac_toe',
+      'medium',
+    )
+    expect(mockPrisma.players.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          gameId: gameWithOnePlayer.id,
+          userId: 'bot-user-1',
+        }),
+      })
+    )
   })
 
   it('should require 3 players for guess_the_spy', async () => {

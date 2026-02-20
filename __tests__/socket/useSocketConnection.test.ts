@@ -362,6 +362,49 @@ describe('useSocketConnection', () => {
       }
     })
 
+    it('tracks only one final reconnect failure per reconnect cycle', async () => {
+      jest.useFakeTimers()
+      try {
+        renderHook(() => useSocketConnection(defaultProps))
+        await waitForSocketInit()
+
+        const connectHandler = getHandler<() => void>('connect')
+        const disconnectHandler = getHandler<(reason: string) => void>('disconnect')
+        const reconnectFailedHandler = getHandler<() => void>('reconnect_failed')
+
+        await act(async () => {
+          connectHandler?.()
+        })
+
+        // Drive JOIN_LOBBY retries to terminal timeout (max attempts).
+        await act(async () => {
+          jest.advanceTimersByTime(20000)
+        })
+
+        expect(analytics.trackSocketReconnectFailedFinal).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+          reconnectFailedHandler?.()
+        })
+
+        // Same cycle: should not emit second terminal failure event.
+        expect(analytics.trackSocketReconnectFailedFinal).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+          disconnectHandler?.('transport close')
+        })
+
+        await act(async () => {
+          reconnectFailedHandler?.()
+        })
+
+        // New cycle after disconnect: terminal failure can be tracked again.
+        expect(analytics.trackSocketReconnectFailedFinal).toHaveBeenCalledTimes(2)
+      } finally {
+        jest.useRealTimers()
+      }
+    })
+
     it('should track reconnect attempt telemetry', async () => {
       renderHook(() => useSocketConnection(defaultProps))
       await waitForSocketInit()

@@ -14,10 +14,12 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { Game } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import TicTacToeGameBoard from '@/components/TicTacToeGameBoard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
+import { trackMoveSubmitApplied } from '@/lib/analytics'
 
 interface Lobby {
     id: string
@@ -77,6 +79,12 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
             setLobby(lobbyPayload as Lobby)
             setGame(activeGame as Game | null)
+            if (typeof lobbyPayload?.code === 'string') {
+                finalizePendingLobbyCreateMetric({
+                    lobbyCode: lobbyPayload.code,
+                    fallbackGameType: lobbyPayload.gameType,
+                })
+            }
 
             // Initialize game engine if game exists
             if (activeGame?.state) {
@@ -110,6 +118,8 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {
         if (!gameEngine || !game || isMoveSubmitting) return
+        const submitStartedAt = Date.now()
+        let responseStatus: number | undefined
 
         try {
             const userId = getCurrentUserId()
@@ -148,10 +158,21 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     userId,
                 }),
             })
+            responseStatus = res.status
 
             const data = await res.json()
 
             if (!res.ok) {
+                trackMoveSubmitApplied({
+                    gameType: 'tic_tac_toe',
+                    moveType: move.type,
+                    durationMs: Date.now() - submitStartedAt,
+                    isGuest,
+                    success: false,
+                    applied: false,
+                    statusCode: responseStatus,
+                    source: 'tic_tac_toe_page',
+                })
                 clientLogger.error('Move failed:', data.error)
                 showToast.error('games.tictactoe.game.moveFailed', undefined, {
                     message:
@@ -180,6 +201,17 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 })
             }
 
+            trackMoveSubmitApplied({
+                gameType: 'tic_tac_toe',
+                moveType: move.type,
+                durationMs: Date.now() - submitStartedAt,
+                isGuest,
+                success: true,
+                applied: true,
+                statusCode: responseStatus,
+                source: 'tic_tac_toe_page',
+            })
+
             // Notify other players via Socket
             if (socket?.connected) {
                 socket.emit('game-move', {
@@ -201,13 +233,23 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 }
             }
         } catch (error) {
+            trackMoveSubmitApplied({
+                gameType: 'tic_tac_toe',
+                moveType: move.type,
+                durationMs: Date.now() - submitStartedAt,
+                isGuest,
+                success: false,
+                applied: false,
+                statusCode: responseStatus,
+                source: 'tic_tac_toe_page',
+            })
             clientLogger.error('Error making move:', error)
             showToast.errorFrom(error, 'games.tictactoe.game.moveFailed')
             await loadLobby()
         } finally {
             setIsMoveSubmitting(false)
         }
-    }, [gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting])
+    }, [gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
 
     // Socket connection
     useEffect(() => {
@@ -320,8 +362,12 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         const isMatchComplete = targetRounds !== null && roundsPlayed >= targetRounds
 
         setIsRematchSubmitting(true)
+        let nextRoundSubmitStartedAt: number | null = null
+        let nextRoundResponseStatus: number | undefined
+        let nextRoundMetricTracked = false
         try {
             if (!isMatchComplete) {
+                nextRoundSubmitStartedAt = Date.now()
                 const response = await fetchWithGuest(`/api/game/${game.id}/state`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -334,9 +380,21 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         userId,
                     }),
                 })
+                nextRoundResponseStatus = response.status
 
                 const data = await response.json().catch(() => null)
                 if (!response.ok) {
+                    trackMoveSubmitApplied({
+                        gameType: 'tic_tac_toe',
+                        moveType: 'next-round',
+                        durationMs: Date.now() - nextRoundSubmitStartedAt,
+                        isGuest,
+                        success: false,
+                        applied: false,
+                        statusCode: nextRoundResponseStatus,
+                        source: 'tic_tac_toe_page',
+                    })
+                    nextRoundMetricTracked = true
                     const errorMessage =
                         (typeof data?.details === 'string' && data.details) ||
                         (typeof data?.error === 'string' && data.error) ||
@@ -361,6 +419,18 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 } else {
                     await loadLobby()
                 }
+
+                trackMoveSubmitApplied({
+                    gameType: 'tic_tac_toe',
+                    moveType: 'next-round',
+                    durationMs: Date.now() - nextRoundSubmitStartedAt,
+                    isGuest,
+                    success: true,
+                    applied: true,
+                    statusCode: nextRoundResponseStatus,
+                    source: 'tic_tac_toe_page',
+                })
+                nextRoundMetricTracked = true
 
                 showToast.success('lobby.game.next_round')
                 return
@@ -393,12 +463,24 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             await loadLobby()
             showToast.success('games.tictactoe.game.playAgain')
         } catch (error) {
+            if (!isMatchComplete && !nextRoundMetricTracked && nextRoundSubmitStartedAt !== null) {
+                trackMoveSubmitApplied({
+                    gameType: 'tic_tac_toe',
+                    moveType: 'next-round',
+                    durationMs: Date.now() - nextRoundSubmitStartedAt,
+                    isGuest,
+                    success: false,
+                    applied: false,
+                    statusCode: nextRoundResponseStatus,
+                    source: 'tic_tac_toe_page',
+                })
+            }
             clientLogger.error('Failed to continue Tic-Tac-Toe match:', error)
             showToast.errorFrom(error, 'games.tictactoe.game.continueFailed')
         } finally {
             setIsRematchSubmitting(false)
         }
-    }, [code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router])
+    }, [code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router, isGuest])
 
     if (loading) {
         return (

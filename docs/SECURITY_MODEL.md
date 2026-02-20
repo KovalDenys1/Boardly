@@ -24,11 +24,34 @@
 - Guest claims are verified in API and socket auth paths.
 - Raw client-supplied guest IDs/names are not trusted as identity.
 
-## Secret usage policy
+## Secret policy
 
-- `NEXTAUTH_SECRET`: required for auth/session token signing.
-- `JWT_SECRET`: deprecated compatibility only.
-- `GUEST_JWT_SECRET`: optional override for guest token signing.
+### Required in production
+
+- `DATABASE_URL`: PostgreSQL connection string.
+- `NEXTAUTH_SECRET`: NextAuth JWT/session signing, minimum 32 characters.
+- `SOCKET_SERVER_INTERNAL_SECRET`: internal socket endpoints (`/api/notify`, `/metrics`), minimum 16 characters.
+
+### Optional and conditional
+
+- `GUEST_JWT_SECRET`: overrides guest token signing secret.
+- `CRON_SECRET`: only for cron endpoints.
+- `SOCKET_INTERNAL_SECRET`: deprecated alias of `SOCKET_SERVER_INTERNAL_SECRET`.
+
+### Usage rules
+
+- Never expose secrets through `NEXT_PUBLIC_*`.
+- Never log raw secrets.
+- Keep a dedicated internal socket secret (no fallback to unrelated app secrets).
+- Rotate secrets after incidents and on schedule.
+
+### Rotation checklist
+
+1. Generate a new `SOCKET_SERVER_INTERNAL_SECRET`.
+2. Update secret in all environments (Next.js + socket server).
+3. Redeploy both services.
+4. Verify internal notifications and metrics auth behavior.
+5. Remove old secret from secret manager.
 
 ## Realtime integrity expectations
 
@@ -40,7 +63,7 @@
 
 Before production deploy:
 
-- Validate env secrets and origins.
+- Validate env secrets and allowed origins.
 - Verify migration path is separate from socket build.
 - Confirm auth/guest flows and websocket room authorization.
 - Run lint/tests and smoke test create/join/play/finish cycle.

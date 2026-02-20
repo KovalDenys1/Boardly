@@ -15,7 +15,14 @@ export async function POST(
   try {
     const requestUser = await getRequestAuthUser(request)
     if (!requestUser?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          code: 'UNAUTHORIZED',
+          translationKey: 'errors.unauthorized',
+        },
+        { status: 401 }
+      )
     }
 
     const { code } = await params
@@ -46,13 +53,24 @@ export async function POST(
     })
 
     if (!lobby) {
-      return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
+      return NextResponse.json(
+        {
+          error: 'Lobby not found',
+          code: 'LOBBY_NOT_FOUND',
+          translationKey: 'errors.notFound',
+        },
+        { status: 404 }
+      )
     }
 
     const latestGame = lobby.games[0]
     if (!latestGame) {
       return NextResponse.json(
-        { error: 'No games found in lobby' },
+        {
+          error: 'No games found in lobby',
+          code: 'NO_GAMES_IN_LOBBY',
+          translationKey: 'toast.rematchNoCompletedGame',
+        },
         { status: 400 }
       )
     }
@@ -73,7 +91,11 @@ export async function POST(
 
     if (!participantIds.includes(requestUser.id)) {
       return NextResponse.json(
-        { error: 'Only game participants can request rematch' },
+        {
+          error: 'Only game participants can request rematch',
+          code: 'REMATCH_NOT_PARTICIPANT',
+          translationKey: 'toast.rematchNotParticipant',
+        },
         { status: 403 }
       )
     }
@@ -151,7 +173,11 @@ export async function POST(
   } catch (error) {
     log.error('Failed to send rematch request', error as Error)
     return NextResponse.json(
-      { error: 'Failed to send rematch request' },
+      {
+        error: 'Failed to send rematch request',
+        code: 'REMATCH_REQUEST_FAILED',
+        translationKey: 'toast.rematchRequestFailed',
+      },
       { status: 500 }
     )
   }

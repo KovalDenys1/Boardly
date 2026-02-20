@@ -9,6 +9,7 @@ import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
+import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import type { Socket } from 'socket.io-client'
 
 interface ChatMessage {
@@ -101,6 +102,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data)
       setLobby(lobbyPayload)
+      if (lobbyPayload?.code) {
+        finalizePendingLobbyCreateMetric({
+          lobbyCode: lobbyPayload.code,
+          fallbackGameType: lobbyPayload.gameType || DEFAULT_GAME_TYPE,
+        })
+      }
 
       if (activeGame) {
         setGame(activeGame)
