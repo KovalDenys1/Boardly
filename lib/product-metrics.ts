@@ -18,6 +18,11 @@ export interface ProductMetricsSummary {
   gamesStarted: number
   gamesCompleted: number
   gameStartToCompletePct: number
+  rematchGames: number
+  rematchRatePct: number
+  abandonedGames: number
+  abandonRatePct: number
+  avgGameDurationSec: number
   invitesSent: number
   invitesAccepted: number
   inviteConversionPct: number
@@ -52,6 +57,11 @@ export interface ProductGameMetricsSummary {
   gamesStarted: number
   gamesCompleted: number
   gameStartToCompletePct: number
+  rematchGames: number
+  rematchRatePct: number
+  abandonedGames: number
+  abandonRatePct: number
+  avgGameDurationSec: number
 }
 
 export interface ProductGameMetricsDay {
@@ -104,6 +114,11 @@ function dateKeyUtc(date: Date): string {
 function percent(numerator: number, denominator: number): number {
   if (denominator <= 0) return 0
   return Number(((numerator / denominator) * 100).toFixed(1))
+}
+
+function average(numerator: number, denominator: number): number {
+  if (denominator <= 0) return 0
+  return Number((numerator / denominator).toFixed(1))
 }
 
 function createDailyBuckets(startDate: Date, rangeDays: number): Map<string, ProductMetricsDay> {
@@ -228,6 +243,8 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
     {
       summary: ProductGameMetricsSummary
       dailyBuckets: Map<string, ProductGameMetricsDay>
+      durationTotalSec: number
+      durationCount: number
     }
   >()
 
@@ -240,8 +257,15 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
         gamesStarted: 0,
         gamesCompleted: 0,
         gameStartToCompletePct: 0,
+        rematchGames: 0,
+        rematchRatePct: 0,
+        abandonedGames: 0,
+        abandonRatePct: 0,
+        avgGameDurationSec: 0,
       },
       dailyBuckets: createGameDailyBuckets(startDate, rangeDays),
+      durationTotalSec: 0,
+      durationCount: 0,
     })
   }
 
@@ -299,6 +323,7 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
 
   const startedStatuses = new Set<GameStatus>(['playing', 'finished', 'abandoned'])
   let lobbiesWithGameStart = 0
+  let rematchGames = 0
 
   for (const lobby of lobbies) {
     const key = dateKeyUtc(lobby.createdAt)
@@ -316,7 +341,10 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
       perGameMetrics.summary.lobbiesCreated += 1
     }
 
-    const hasStartedGame = lobby.games.some((game) => startedStatuses.has(game.status))
+    const startedGamesInLobby = lobby.games.reduce((count, game) => {
+      return startedStatuses.has(game.status) ? count + 1 : count
+    }, 0)
+    const hasStartedGame = startedGamesInLobby > 0
     if (hasStartedGame) {
       dayBucket.lobbiesWithGameStart += 1
       lobbiesWithGameStart += 1
@@ -327,11 +355,22 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
         }
         perGameMetrics.summary.lobbiesWithGameStart += 1
       }
+
+      const rematchesInLobby = Math.max(0, startedGamesInLobby - 1)
+      if (rematchesInLobby > 0) {
+        rematchGames += rematchesInLobby
+        if (perGameMetrics) {
+          perGameMetrics.summary.rematchGames += rematchesInLobby
+        }
+      }
     }
   }
 
   let gamesStarted = 0
   let gamesCompleted = 0
+  let abandonedGames = 0
+  let terminalDurationTotalSec = 0
+  let terminalDurationCount = 0
 
   for (const game of games) {
     const gameType = (game.gameType as GameType | null) || 'yahtzee'
@@ -366,6 +405,23 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
           perGameCompletedDayBucket.gamesCompleted += 1
         }
         perGameMetrics.summary.gamesCompleted += 1
+      }
+    }
+
+    if (game.status === 'abandoned') {
+      abandonedGames += 1
+      if (perGameMetrics) {
+        perGameMetrics.summary.abandonedGames += 1
+      }
+    }
+
+    if (game.status === 'finished' || game.status === 'abandoned') {
+      const durationSec = Math.max(0, (game.updatedAt.getTime() - game.createdAt.getTime()) / 1000)
+      terminalDurationTotalSec += durationSec
+      terminalDurationCount += 1
+      if (perGameMetrics) {
+        perGameMetrics.durationTotalSec += durationSec
+        perGameMetrics.durationCount += 1
       }
     }
   }
@@ -405,6 +461,9 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
           metrics.summary.lobbiesCreated
         ),
         gameStartToCompletePct: percent(metrics.summary.gamesCompleted, metrics.summary.gamesStarted),
+        rematchRatePct: percent(metrics.summary.rematchGames, metrics.summary.gamesStarted),
+        abandonRatePct: percent(metrics.summary.abandonedGames, metrics.summary.gamesStarted),
+        avgGameDurationSec: average(metrics.durationTotalSec, metrics.durationCount),
       }
       return {
         gameType,
@@ -429,6 +488,11 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
     gamesStarted,
     gamesCompleted,
     gameStartToCompletePct: percent(gamesCompleted, gamesStarted),
+    rematchGames,
+    rematchRatePct: percent(rematchGames, gamesStarted),
+    abandonedGames,
+    abandonRatePct: percent(abandonedGames, gamesStarted),
+    avgGameDurationSec: average(terminalDurationTotalSec, terminalDurationCount),
     invitesSent: invites.length,
     invitesAccepted,
     inviteConversionPct: percent(invitesAccepted, invites.length),
@@ -445,7 +509,7 @@ export async function getProductMetricsDashboard(rawRangeDays?: number): Promise
       retentionMethod:
         'D1/D7 are approximated from users.createdAt and users.lastActiveAt (returned at least once after +1/+7 days).',
       gameCompletionMethod:
-        'Daily gamesCompleted are grouped by games.updatedAt for finished games (proxy for completion timestamp).',
+        'Daily gamesCompleted are grouped by games.updatedAt for finished games (proxy for completion timestamp). Duration uses games.updatedAt - games.createdAt for finished/abandoned games. Rematch games are started games beyond the first started game in the same lobby.',
       inviteConversionMethod:
         'Invite conversion = accepted invites / sent invites in selected period (accepted if invitee joined the lobby). Daily accepts are grouped by acceptedAt date.',
     },

@@ -86,6 +86,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
+  const startGameInFlightRef = useRef(false)
 
   const loadLobby = useCallback(async () => {
     try {
@@ -270,6 +271,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
+    if (startGameInFlightRef.current) {
+      clientLogger.warn('Start game already in progress, ignoring duplicate request', { code })
+      return
+    }
+
+    startGameInFlightRef.current = true
 
     try {
       setStartingGame(true)
@@ -408,6 +415,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       showToast.errorFrom(error, 'toast.gameStartFailed')
       clientLogger.error('Failed to start game:', error)
     } finally {
+      startGameInFlightRef.current = false
       setStartingGame(false)
     }
   }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])

@@ -39,6 +39,12 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value)
 }
 
+function formatDuration(value: number): string {
+  if (value <= 0) return '0s'
+  if (value < 60) return `${value.toFixed(1)}s`
+  return `${(value / 60).toFixed(1)}m`
+}
+
 function clampDays(rawDays: string | undefined): number {
   const parsed = rawDays ? Number(rawDays) : 7
   if (!Number.isFinite(parsed)) return 7
@@ -78,6 +84,11 @@ export default async function AnalyticsPage({
       gamesStarted: summary.gamesStarted,
       gamesCompleted: summary.gamesCompleted,
       gameStartToCompletePct: summary.gameStartToCompletePct,
+      rematchGames: summary.rematchGames,
+      rematchRatePct: summary.rematchRatePct,
+      abandonedGames: summary.abandonedGames,
+      abandonRatePct: summary.abandonRatePct,
+      avgGameDurationSec: summary.avgGameDurationSec,
     },
     daily: daily.map((row) => ({
       date: row.date,
@@ -134,6 +145,27 @@ export default async function AnalyticsPage({
           <div className="rounded-xl border border-white/10 bg-white/5 p-4">
             <p className="text-xs uppercase tracking-wider text-slate-400">Invite conversion</p>
             <p className="mt-2 text-3xl font-bold">{formatPct(summary.inviteConversionPct)}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-400">Rematch rate</p>
+            <p className="mt-2 text-3xl font-bold">{formatPct(summary.rematchRatePct)}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              {formatNumber(summary.rematchGames)} rematch games
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-400">Abandon rate</p>
+            <p className="mt-2 text-3xl font-bold">{formatPct(summary.abandonRatePct)}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              {formatNumber(summary.abandonedGames)} abandoned games
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-wider text-slate-400">Avg game duration</p>
+            <p className="mt-2 text-3xl font-bold">{formatDuration(summary.avgGameDurationSec)}</p>
           </div>
         </div>
 

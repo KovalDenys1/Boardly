@@ -17,6 +17,7 @@ const INITIAL_GUEST_JOIN_DELAY_MS = 500
 const JOIN_ACK_TIMEOUT_MS = 4000
 const MAX_JOIN_ATTEMPTS = 4
 const AUTH_FAILURE_RESET_MS = 5000
+const MAX_PENDING_EMITS = 50
 
 interface UseSocketConnectionProps {
   code: string
@@ -85,6 +86,23 @@ export function useSocketConnection({
   const authFailureCountRef = useRef(0)
   const connectionRunIdRef = useRef(0)
   const hasTrackedFinalFailureRef = useRef(false)
+  const pendingEmitQueueRef = useRef<Array<{ event: string; data: any }>>([])
+
+  const flushPendingEmits = useCallback(() => {
+    const currentSocket = socketRef.current
+    if (!currentSocket || !currentSocket.connected || !hasJoinedLobbyRef.current) {
+      return
+    }
+
+    if (pendingEmitQueueRef.current.length === 0) {
+      return
+    }
+
+    const queued = pendingEmitQueueRef.current.splice(0, pendingEmitQueueRef.current.length)
+    for (const entry of queued) {
+      currentSocket.emit(entry.event, entry.data)
+    }
+  }, [])
 
   // Use refs to store callbacks so they don't trigger socket reconnection
   const onGameUpdateRef = useRef(onGameUpdate)
@@ -518,6 +536,7 @@ export function useSocketConnection({
           reconnectAttemptsForCycleRef.current = 0
         }
 
+        flushPendingEmits()
         void syncStateAfterReconnect()
       })
 
@@ -567,6 +586,7 @@ export function useSocketConnection({
 
         setIsConnected(false)
         hasJoinedLobbyRef.current = false
+        pendingEmitQueueRef.current = []
         shouldSyncAfterJoinRef.current = false
         isRejoiningRef.current = false
         clearJoinTimers()
@@ -882,6 +902,7 @@ export function useSocketConnection({
       reconnectAttemptsForCycleRef.current = 0
       authFailureCountRef.current = 0
       hasJoinedLobbyRef.current = false
+      pendingEmitQueueRef.current = []
       shouldSyncAfterJoinRef.current = false
       joinAttemptRef.current = 0
       isRejoiningRef.current = false
@@ -891,22 +912,29 @@ export function useSocketConnection({
     }
     // session?.user?.id is accessed directly in the effect, no need to add session itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken, shouldJoinLobbyRoom, session?.user?.id, normalizeServerError])
+  }, [code, isGuest, guestId, guestName, guestToken, shouldJoinLobbyRoom, session?.user?.id, normalizeServerError, flushPendingEmits])
 
   const emitWhenConnected = useCallback(
     (event: string, data: any) => {
       const currentSocket = socketRef.current
       if (!currentSocket) return
 
-      if (isConnected) {
+      if (currentSocket.connected && hasJoinedLobbyRef.current) {
         currentSocket.emit(event, data)
-      } else {
-        currentSocket.once('connect', () => {
-          currentSocket.emit(event, data)
+        return
+      }
+
+      if (pendingEmitQueueRef.current.length >= MAX_PENDING_EMITS) {
+        pendingEmitQueueRef.current.shift()
+        clientLogger.warn('⚠️ Pending socket emit queue is full, dropping oldest event', {
+          maxSize: MAX_PENDING_EMITS,
+          lobbyCode: code,
         })
       }
+
+      pendingEmitQueueRef.current.push({ event, data })
     },
-    [isConnected]
+    [code]
   )
 
   return {

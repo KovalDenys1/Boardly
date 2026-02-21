@@ -147,6 +147,11 @@ describe('getProductMetricsDashboard', () => {
       gamesStarted: 2,
       gamesCompleted: 1,
       gameStartToCompletePct: 50,
+      rematchGames: 0,
+      rematchRatePct: 0,
+      abandonedGames: 0,
+      abandonRatePct: 0,
+      avgGameDurationSec: 86400,
       invitesSent: 3,
       invitesAccepted: 2,
       inviteConversionPct: 66.7,
@@ -212,6 +217,11 @@ describe('getProductMetricsDashboard', () => {
       gamesStarted: 0,
       gamesCompleted: 0,
       gameStartToCompletePct: 0,
+      rematchGames: 0,
+      rematchRatePct: 0,
+      abandonedGames: 0,
+      abandonRatePct: 0,
+      avgGameDurationSec: 0,
     })
 
     const ticTacToeMetrics = dashboard.gameMetrics.find((metrics) => metrics.gameType === 'tic_tac_toe')
@@ -222,6 +232,11 @@ describe('getProductMetricsDashboard', () => {
       gamesStarted: 2,
       gamesCompleted: 1,
       gameStartToCompletePct: 50,
+      rematchGames: 0,
+      rematchRatePct: 0,
+      abandonedGames: 0,
+      abandonRatePct: 0,
+      avgGameDurationSec: 86400,
     })
 
     const ticTacToeFeb15 = ticTacToeMetrics?.daily.find((row) => row.date === '2026-02-15')
@@ -243,6 +258,11 @@ describe('getProductMetricsDashboard', () => {
       gamesStarted: 0,
       gamesCompleted: 0,
       gameStartToCompletePct: 0,
+      rematchGames: 0,
+      rematchRatePct: 0,
+      abandonedGames: 0,
+      abandonRatePct: 0,
+      avgGameDurationSec: 0,
     })
 
     expect(prismaMock.users.findMany).toHaveBeenCalledTimes(1)
@@ -270,6 +290,11 @@ describe('getProductMetricsDashboard', () => {
       gamesStarted: 0,
       gamesCompleted: 0,
       gameStartToCompletePct: 0,
+      rematchGames: 0,
+      rematchRatePct: 0,
+      abandonedGames: 0,
+      abandonRatePct: 0,
+      avgGameDurationSec: 0,
       invitesSent: 0,
       invitesAccepted: 0,
       inviteConversionPct: 0,

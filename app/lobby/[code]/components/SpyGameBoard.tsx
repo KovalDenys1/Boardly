@@ -10,6 +10,7 @@ import { getAuthHeaders } from '@/lib/socket-url'
 import { showToast } from '@/lib/i18n-toast'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { GameState } from '@/lib/game-engine'
+import { trackMoveSubmitApplied } from '@/lib/analytics'
 
 interface SpyRoleInfo {
   role: string
@@ -224,6 +225,10 @@ export default function SpyGameBoard({
   const submitAction = React.useCallback(
     async (action: string, actionData: Record<string, unknown> = {}) => {
       setIsActionLoading(true)
+      const submitStartedAt = Date.now()
+      let responseStatus: number | undefined
+      let moveMetricTracked = false
+
       try {
         const res = await fetch(`/api/game/${gameId}/spy-action`, {
           method: 'POST',
@@ -233,6 +238,7 @@ export default function SpyGameBoard({
             data: actionData,
           }),
         })
+        responseStatus = res.status
         const payload = await res.json()
 
         if (!res.ok) {
@@ -240,7 +246,29 @@ export default function SpyGameBoard({
         }
 
         await refreshAfterAction()
+
+        trackMoveSubmitApplied({
+          gameType: 'guess_the_spy',
+          moveType: action,
+          durationMs: Date.now() - submitStartedAt,
+          isGuest,
+          success: true,
+          applied: true,
+          statusCode: responseStatus,
+        })
+        moveMetricTracked = true
       } catch (error) {
+        if (!moveMetricTracked) {
+          trackMoveSubmitApplied({
+            gameType: 'guess_the_spy',
+            moveType: action,
+            durationMs: Date.now() - submitStartedAt,
+            isGuest,
+            success: false,
+            applied: false,
+            statusCode: responseStatus,
+          })
+        }
         showActionError(String((error as Error)?.message || 'Failed to submit action'))
       } finally {
         setIsActionLoading(false)
