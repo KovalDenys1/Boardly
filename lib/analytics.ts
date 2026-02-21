@@ -1,5 +1,6 @@
 import { track } from '@vercel/analytics'
 import { clientLogger } from './client-logger'
+import type { OperationalEventName } from './operational-events'
 
 /**
  * Analytics wrapper for tracking game events
@@ -19,6 +20,7 @@ type ReliabilityAlertEvent = 'rejoin_timeout' | 'auth_refresh_failed' | 'move_ap
 const REALTIME_TELEMETRY_SAMPLE_RATE = 0.25
 export const MOVE_APPLY_TARGET_MS = 800
 export const LOBBY_READY_TARGET_MS = 2500
+const OPERATIONAL_EVENT_ENDPOINT = '/api/ops/events'
 
 interface LobbyEvent {
   lobbyCode: string
@@ -91,9 +93,52 @@ interface LobbyCreateReadyEvent {
   isGuest: boolean
 }
 
+interface StartAloneAutoBotResultEvent {
+  gameType: GameType
+  success: boolean
+  reason: 'started' | 'bot_add_failed' | 'insufficient_players' | 'start_failed'
+  isGuest: boolean
+}
+
 function normalizeDurationMs(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.round(value))
+}
+
+function emitOperationalEvent(
+  eventName: OperationalEventName,
+  payload: Record<string, AnalyticsPropertyValue>
+): void {
+  if (typeof window === 'undefined' || process.env.NODE_ENV === 'test') {
+    return
+  }
+
+  const body = JSON.stringify({
+    eventName,
+    payload,
+    eventAt: Date.now(),
+  })
+
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+      const blob = new Blob([body], { type: 'application/json' })
+      const sent = navigator.sendBeacon(OPERATIONAL_EVENT_ENDPOINT, blob)
+      if (sent) {
+        return
+      }
+    }
+  } catch {
+    // Fall through to fetch.
+  }
+
+  void fetch(OPERATIONAL_EVENT_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body,
+    keepalive: true,
+  }).catch(() => undefined)
 }
 
 function trackRealtimeTelemetry(
@@ -105,7 +150,7 @@ function trackRealtimeTelemetry(
   }
 
   track(eventName, payload)
-  clientLogger.log('📊 Analytics: Realtime telemetry', {
+  clientLogger.log('[analytics] Realtime telemetry', {
     eventName,
     ...payload,
     sampleRate: REALTIME_TELEMETRY_SAMPLE_RATE,
@@ -117,12 +162,12 @@ function trackReliabilityAlert(
   payload: Record<string, AnalyticsPropertyValue>
 ): void {
   track(eventName, payload)
-  clientLogger.warn('🚨 Reliability alert signal emitted', {
+  emitOperationalEvent(eventName, payload)
+  clientLogger.warn('[analytics] Reliability alert signal emitted', {
     eventName,
     ...payload,
   })
 }
-
 /**
  * Track lobby creation
  */
@@ -133,7 +178,7 @@ export function trackLobbyCreated(event: LobbyEvent): void {
     max_players: event.maxPlayers,
   })
   
-  clientLogger.log('📊 Analytics: Lobby created', event)
+  clientLogger.log('[analytics] Lobby created', event)
 }
 
 /**
@@ -146,7 +191,7 @@ export function trackLobbyJoined(event: Omit<LobbyEvent, 'maxPlayers'>): void {
     is_private: event.isPrivate,
   })
   
-  clientLogger.log('📊 Analytics: Lobby joined', event)
+  clientLogger.log('[analytics] Lobby joined', event)
 }
 
 /**
@@ -161,7 +206,7 @@ export function trackGameStarted(event: GameStartEvent): void {
     is_private: event.isPrivate,
   })
   
-  clientLogger.log('📊 Analytics: Game started', event)
+  clientLogger.log('[analytics] Game started', event)
 }
 
 /**
@@ -177,7 +222,7 @@ export function trackGameCompleted(event: GameEndEvent): void {
     final_scores: JSON.stringify(event.finalScores),
   })
   
-  clientLogger.log('📊 Analytics: Game completed', event)
+  clientLogger.log('[analytics] Game completed', event)
 }
 
 /**
@@ -207,7 +252,7 @@ export function trackAuth(event: AuthEvent): void {
     success: event.success,
   })
   
-  clientLogger.log('📊 Analytics: Auth event', event)
+  clientLogger.log('[analytics] Auth event', event)
 }
 
 /**
@@ -222,7 +267,7 @@ export function trackError(event: ErrorEvent): void {
     ...(event.context && { context: JSON.stringify(event.context) }),
   })
   
-  clientLogger.error('📊 Analytics: Error tracked', event)
+  clientLogger.error('[analytics] Error tracked', event)
 }
 
 /**
@@ -253,7 +298,7 @@ export function trackBotPerformance(data: {
     total_players: data.totalPlayers,
   })
   
-  clientLogger.log('📊 Analytics: Bot performance', data)
+  clientLogger.log('[analytics] Bot performance', data)
 }
 
 /**
@@ -265,7 +310,7 @@ export function trackFeatureUsage(feature: string, metadata?: Record<string, unk
     ...(metadata && metadata),
   })
   
-  clientLogger.log('📊 Analytics: Feature used', { feature, metadata })
+  clientLogger.log('[analytics] Feature used', { feature, metadata })
 }
 
 /**
@@ -274,7 +319,7 @@ export function trackFeatureUsage(feature: string, metadata?: Record<string, unk
 export function trackMoveSubmitApplied(event: MoveSubmitAppliedEvent): void {
   const durationMs = normalizeDurationMs(event.durationMs)
 
-  track('move_submit_applied', {
+  const payload = {
     game_type: event.gameType,
     move_type: event.moveType,
     latency_ms: durationMs,
@@ -284,7 +329,10 @@ export function trackMoveSubmitApplied(event: MoveSubmitAppliedEvent): void {
     ...(typeof event.statusCode === 'number' ? { status_code: event.statusCode } : {}),
     ...(event.isAutoAction ? { is_auto_action: true } : {}),
     ...(event.source ? { source: event.source } : {}),
-  })
+  } satisfies Record<string, AnalyticsPropertyValue>
+
+  track('move_submit_applied', payload)
+  emitOperationalEvent('move_submit_applied', payload)
 
   if (event.applied && durationMs > MOVE_APPLY_TARGET_MS) {
     trackReliabilityAlert('move_apply_timeout', {
@@ -319,12 +367,15 @@ export function trackLobbyCreateRequest(event: LobbyCreateLatencyEvent): void {
 export function trackLobbyCreateReady(event: LobbyCreateReadyEvent): void {
   const durationMs = normalizeDurationMs(event.durationMs)
 
-  track('lobby_create_ready', {
+  const payload = {
     game_type: event.gameType,
     latency_ms: durationMs,
     target_ms: LOBBY_READY_TARGET_MS,
     is_guest: event.isGuest,
-  })
+  } satisfies Record<string, AnalyticsPropertyValue>
+
+  track('lobby_create_ready', payload)
+  emitOperationalEvent('lobby_create_ready', payload)
 
   if (durationMs > LOBBY_READY_TARGET_MS) {
     track('lobby_create_ready_slow', {
@@ -402,11 +453,14 @@ export function trackSocketReconnectRecovered(event: {
   timeToRecoverMs: number
   isGuest: boolean
 }): void {
-  trackRealtimeTelemetry('socket_reconnect_recovered', {
+  const payload = {
     attempts_total: event.attemptsTotal,
     time_to_recover_ms: event.timeToRecoverMs,
     is_guest: event.isGuest,
-  })
+  } satisfies Record<string, AnalyticsPropertyValue>
+
+  trackRealtimeTelemetry('socket_reconnect_recovered', payload)
+  emitOperationalEvent('socket_reconnect_recovered', payload)
 }
 
 export function trackSocketReconnectFailedFinal(event: {
@@ -421,11 +475,26 @@ export function trackSocketReconnectFailedFinal(event: {
     })
   }
 
-  trackRealtimeTelemetry('socket_reconnect_failed_final', {
+  const payload = {
     attempts_total: event.attemptsTotal,
     reason: event.reason,
     is_guest: event.isGuest,
-  })
+  } satisfies Record<string, AnalyticsPropertyValue>
+
+  trackRealtimeTelemetry('socket_reconnect_failed_final', payload)
+  emitOperationalEvent('socket_reconnect_failed_final', payload)
+}
+
+export function trackStartAloneAutoBotResult(event: StartAloneAutoBotResultEvent): void {
+  const payload = {
+    game_type: event.gameType,
+    success: event.success,
+    reason: event.reason,
+    is_guest: event.isGuest,
+  } satisfies Record<string, AnalyticsPropertyValue>
+
+  track('start_alone_auto_bot_result', payload)
+  emitOperationalEvent('start_alone_auto_bot_result', payload)
 }
 
 /**
@@ -491,5 +560,5 @@ export function trackFunnelStep(step: 'landing' | 'signup' | 'register' | 'guest
     timestamp: Date.now(),
   })
   
-  clientLogger.log('📊 Analytics: Funnel step', step)
+  clientLogger.log('[analytics] Funnel step', step)
 }

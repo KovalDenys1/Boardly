@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/cleanup-guests",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/reliability-alerts",
+      "schedule": "*/10 * * * *"
     }
   ],
   "headers": [

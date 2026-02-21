@@ -72,6 +72,9 @@ Recommended:
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
+- `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
+- `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
+- `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
 
 ## Build and deploy
 
@@ -96,7 +99,8 @@ Reason: running migrations in socket build can hang deployments.
 2. Deploy Next.js app.
 3. Deploy socket service.
 4. Verify health endpoint (`/health`) and lobby join flow.
-5. Check reconnect dashboard and alerts from `docs/REALTIME_TELEMETRY.md`.
+5. Verify alert cron endpoint (`/api/cron/reliability-alerts`) and webhook delivery.
+6. Check operational dashboard and SLO cards from `docs/REALTIME_TELEMETRY.md`.
 
 Note: `npm run db:migrate` automatically bootstraps required RLS roles
 (`anon`, `authenticated`, `service_role`) before running `prisma migrate deploy`,
@@ -138,3 +142,25 @@ Check:
 - spike in `socket_reconnect_failed_final` by `reason`
 - spike in `socket_auth_refresh_failed` by `stage` or `status`
 - increase in `lobby_join_ack_timeout` after deploys
+
+### Alerts not firing
+
+Check:
+
+- `OPS_ALERT_WEBHOOK_URL` is configured and valid
+- cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts`
+- `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
+- run manual dry-run: `npm run ops:alerts:check -- --dry-run`
+
+## Reliability operations commands
+
+```bash
+# Evaluate alert rules and send notifications (if webhook is configured)
+npm run ops:alerts:check
+
+# Build operational KPI report (baseline + SLO status)
+npm run ops:kpi:report -- --hours=24 --baseline-days=7
+
+# Run load scenario and produce fail-rate report
+npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
+```

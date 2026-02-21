@@ -1,0 +1,2 @@
+-- Historical migration placeholder.
+-- This migration was superseded by the 20260212000000 init squash.
