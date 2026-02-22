@@ -31,6 +31,7 @@
     "report:locales:untranslated": "node --import tsx scripts/report-untranslated-locales.ts",
     "ready:build-test": "npm run check:locales && npm run typecheck && npm run lint && npm test && npm run build",
     "check:env": "tsx scripts/check-env.ts",
+    "check:env:quiet": "tsx scripts/check-env.ts --quiet",
     "check:bundle-budget": "tsx scripts/check-bundle-budget.ts",
     "check:db": "tsx scripts/test-db-connection.ts",
     "check:spy-locations": "tsx scripts/check-spy-locations.ts",
