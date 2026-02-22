@@ -71,5 +71,8 @@
   ],
   "WillLuke.nextjs.hasPrompted": true,
   "github-actions.validate.secrets": false,
-  "yaml.validate": false
+  "yaml.validate": false,
+  "prisma.pinToPrisma6": true,
+  "chatgpt.openOnStartup": true,
+  "chatgpt.commentCodeLensEnabled": true
 }
