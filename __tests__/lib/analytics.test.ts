@@ -1,6 +1,7 @@
 import {
   MOVE_APPLY_TARGET_MS,
   trackMoveSubmitApplied,
+  trackStartAloneAutoBotResult,
   trackSocketAuthRefreshFailed,
   trackSocketReconnectFailedFinal,
 } from '@/lib/analytics'
@@ -82,6 +83,22 @@ describe('analytics reliability alerts', () => {
       target_ms: MOVE_APPLY_TARGET_MS,
       is_guest: false,
       source: 'tic_tac_toe_page',
+    })
+  })
+
+  it('tracks start alone auto bot flow result', () => {
+    trackStartAloneAutoBotResult({
+      gameType: 'yahtzee',
+      success: true,
+      reason: 'started',
+      isGuest: true,
+    })
+
+    expect(mockTrack).toHaveBeenCalledWith('start_alone_auto_bot_result', {
+      game_type: 'yahtzee',
+      success: true,
+      reason: 'started',
+      is_guest: true,
     })
   })
 })

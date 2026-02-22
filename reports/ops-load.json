@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-02-22T11:54:13.112Z",
+  "options": {
+    "baseUrl": "http://localhost:3000",
+    "iterations": 80,
+    "concurrency": 12,
+    "gameType": "tic_tac_toe",
+    "reportPath": "reports/ops-load.json"
+  },
+  "summary": {
+    "totalScenarios": 80,
+    "scenarioSuccessCount": 80,
+    "scenarioFailCount": 0,
+    "scenarioFailRatePct": 0,
+    "autoBotExpectedCount": 80,
+    "autoBotSuccessCount": 80,
+    "autoBotSuccessRatioPct": 100,
+    "steps": [
+      {
+        "step": "fixture_setup",
+        "attempts": 80,
+        "successCount": 80,
+        "failCount": 0,
+        "failRatePct": 0,
+        "p95SuccessMs": 834.1
+      },
+      {
+        "step": "game_create_start_alone",
+        "attempts": 80,
+        "successCount": 80,
+        "failCount": 0,
+        "failRatePct": 0,
+        "p95SuccessMs": 2653.6
+      },
+      {
+        "step": "first_move_apply",
+        "attempts": 80,
+        "successCount": 80,
+        "failCount": 0,
+        "failRatePct": 0,
+        "p95SuccessMs": 1505.6
+      }
+    ]
+  }
+}

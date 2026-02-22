@@ -109,7 +109,7 @@ export default function WaitingRoom({
                 </p>
                 {!canStartImmediately ? (
                   <p className="text-xs text-white/60">
-                    Need {minPlayers - playerCount} more player{minPlayers - playerCount === 1 ? '' : 's'} to start
+                    {t('game.ui.needMorePlayers', { count: minPlayers - playerCount })}
                   </p>
                 ) : canStartWithAutoBot ? (
                   <p className="text-xs text-white/60">
@@ -182,22 +182,22 @@ export default function WaitingRoom({
 
                     {/* Player Info */}
                     <div className="flex-1 text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white text-sm truncate">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-white text-sm truncate min-w-0 max-w-full">
                           {playerName}
                         </span>
                         {isBot && (
-                          <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          <span className="shrink-0 bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             AI
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
-                          <span className="bg-indigo-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          <span className="shrink-0 bg-indigo-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
-                          <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          <span className="shrink-0 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                             {t('game.ui.you')}
                           </span>
                         )}
@@ -223,10 +223,12 @@ export default function WaitingRoom({
                 onStartGame()
               }}
               disabled={!canStartImmediately}
-              className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-600 disabled:to-gray-700"
+              className="w-full px-5 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-base sm:text-lg shadow-2xl hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-600 disabled:to-gray-700"
             >
-              <span className="mr-2 text-xl">🎮</span>
-              {t('game.ui.startGame')}
+              <span className="inline-flex items-center justify-center gap-2 min-w-0">
+                <span className="text-xl shrink-0">🎮</span>
+                <span className="truncate">{t('game.ui.startGame')}</span>
+              </span>
             </button>
 
             {supportsBots && playerCount === 1 && !hasBot && (
@@ -242,7 +244,7 @@ export default function WaitingRoom({
                 <p className="text-white/80 text-xs font-semibold uppercase tracking-wide mb-2">
                   {t('game.ui.botDifficulty')}
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {BOT_DIFFICULTIES.map((difficulty) => (
                     <button
                       key={difficulty}
@@ -276,16 +278,18 @@ export default function WaitingRoom({
                 className="w-full px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20"
                 title={!canAddMorePlayers ? t('game.ui.lobbyFull') : t('game.ui.addAiOpponent')}
               >
-                <span className="mr-2 text-lg">🤖</span>
-                {t('game.ui.addBotPlayer')}
-                <span className="ml-2 text-xs opacity-80">
-                  ({difficultyLabelMap[botDifficulty]})
-                </span>
-                {canAddMorePlayers && (
-                  <span className="ml-2 text-xs opacity-60">
-                    ({playerCount}/{lobby?.maxPlayers || 4})
+                <span className="flex flex-col items-center justify-center gap-0.5 min-w-0">
+                  <span className="inline-flex items-center justify-center gap-2 min-w-0">
+                    <span className="text-lg shrink-0">🤖</span>
+                    <span className="truncate">{t('game.ui.addBotPlayer')}</span>
                   </span>
-                )}
+                  <span className="text-xs opacity-80 truncate">
+                    {difficultyLabelMap[botDifficulty]}
+                    {canAddMorePlayers && (
+                      <span className="opacity-70"> • {playerCount}/{lobby?.maxPlayers || 4}</span>
+                    )}
+                  </span>
+                </span>
               </button>
             )}
 
@@ -300,13 +304,17 @@ export default function WaitingRoom({
                 className="w-full px-6 py-3.5 bg-white/20 hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed border border-white/20"
                 title={!canAddMorePlayers ? t('game.ui.lobbyFull') : t('game.ui.inviteFriendsToJoin')}
               >
-                <span className="mr-2 text-lg">👥</span>
-                {t('game.ui.inviteFriends')}
-                {canAddMorePlayers && (
-                  <span className="ml-2 text-xs opacity-60">
-                    ({playerCount}/{lobby?.maxPlayers || 4})
+                <span className="flex flex-col items-center justify-center gap-0.5 min-w-0">
+                  <span className="inline-flex items-center justify-center gap-2 min-w-0">
+                    <span className="text-lg shrink-0">👥</span>
+                    <span className="truncate">{t('game.ui.inviteFriends')}</span>
                   </span>
-                )}
+                  {canAddMorePlayers && (
+                    <span className="text-xs opacity-70 truncate">
+                      {playerCount}/{lobby?.maxPlayers || 4}
+                    </span>
+                  )}
+                </span>
               </button>
             )}
           </div>
@@ -319,7 +327,7 @@ export default function WaitingRoom({
               </p>
             </div>
             <p className="text-white/60 text-sm">
-              {t('game.ui.host')}: <span className="font-semibold text-white/80">{lobby?.creator?.username || lobby?.creator?.email || 'Unknown'}</span>
+              {t('game.ui.host')}: <span className="font-semibold text-white/80">{lobby?.creator?.username || lobby?.creator?.email || '—'}</span>
             </p>
           </div>
         )}

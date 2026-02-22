@@ -32,6 +32,12 @@ function formatPct(value: number): string {
   return `${value.toFixed(1)}%`
 }
 
+function formatDuration(value: number): string {
+  if (value <= 0) return '0s'
+  if (value < 60) return `${value.toFixed(1)}s`
+  return `${(value / 60).toFixed(1)}m`
+}
+
 interface GameAnalyticsSectionProps {
   gameMetrics: ProductGameMetrics[]
 }
@@ -94,6 +100,30 @@ export default function GameAnalyticsSection({ gameMetrics }: GameAnalyticsSecti
           <p className="text-xs uppercase tracking-wider text-slate-400">Start to complete</p>
           <p className="mt-1 text-lg font-semibold">
             {formatPct(selectedMetrics.summary.gameStartToCompletePct)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-xs uppercase tracking-wider text-slate-400">Rematch rate</p>
+          <p className="mt-1 text-lg font-semibold">
+            {formatPct(selectedMetrics.summary.rematchRatePct)}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {formatNumber(selectedMetrics.summary.rematchGames)} rematch games
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-xs uppercase tracking-wider text-slate-400">Abandon rate</p>
+          <p className="mt-1 text-lg font-semibold">
+            {formatPct(selectedMetrics.summary.abandonRatePct)}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {formatNumber(selectedMetrics.summary.abandonedGames)} abandoned games
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <p className="text-xs uppercase tracking-wider text-slate-400">Avg game duration</p>
+          <p className="mt-1 text-lg font-semibold">
+            {formatDuration(selectedMetrics.summary.avgGameDurationSec)}
           </p>
         </div>
       </div>

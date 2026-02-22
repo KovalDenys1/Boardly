@@ -1,0 +1,52 @@
+name: Reliability Alerts Cron
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: reliability-alerts-cron
+  cancel-in-progress: false
+
+jobs:
+  trigger-reliability-alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate required secrets
+        env:
+          RELIABILITY_ALERTS_CRON_URL: ${{ secrets.RELIABILITY_ALERTS_CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$RELIABILITY_ALERTS_CRON_URL" ]; then
+            echo "Missing required GitHub secret: RELIABILITY_ALERTS_CRON_URL"
+            exit 1
+          fi
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing required GitHub secret: CRON_SECRET"
+            exit 1
+          fi
+
+      - name: Trigger reliability alert cycle
+        env:
+          RELIABILITY_ALERTS_CRON_URL: ${{ secrets.RELIABILITY_ALERTS_CRON_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          RESPONSE_BODY="$(mktemp)"
+
+          HTTP_CODE="$(curl -sS -o "$RESPONSE_BODY" -w "%{http_code}" \
+            --max-time 30 \
+            --connect-timeout 10 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Accept: application/json" \
+            "$RELIABILITY_ALERTS_CRON_URL")"
+
+          echo "HTTP $HTTP_CODE"
+          cat "$RESPONSE_BODY"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Reliability alert cron endpoint returned a non-2xx response"
+            exit 1
+          fi

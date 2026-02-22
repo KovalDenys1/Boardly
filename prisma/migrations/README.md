@@ -71,6 +71,14 @@ Baseline policy restoration:
   - `Users can view players in their games`
 - Uses explicit roles and `(select public.get_current_user_id())` pattern.
 
+### 20260221000000_add_operational_observability_tables
+
+Operational observability storage:
+
+- Adds `OperationalEvents` table for persisted reliability telemetry.
+- Adds `OperationalAlertStates` table for alert deduplication/escalation state.
+- Adds indexes for event/time and game/time slices used by KPI/alert queries.
+
 ## Row Level Security (RLS)
 
 All tables have RLS enabled with appropriate policies:

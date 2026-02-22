@@ -1,120 +1,145 @@
-# Realtime Telemetry
+# Realtime Telemetry and Operational Alerts
 
-This document defines reconnect and gameplay latency telemetry for Boardly and the minimum dashboards/SLOs for production monitoring.
+This document defines the production reliability telemetry path, alert rules, KPI dashboard metrics, and the load-run workflow for Boardly.
 
 ## Scope
 
-- Source events: `lib/analytics.ts`
-- Source emitters: `app/lobby/[code]/hooks/useSocketConnection.ts`
-- Focus: reconnect reliability, lobby rejoin reliability, auth refresh failures, and move apply latency
+- Source emitters:
+  - `lib/analytics.ts`
+  - `app/lobby/[code]/hooks/useSocketConnection.ts`
+  - `app/lobby/[code]/hooks/useLobbyActions.ts`
+- Ingestion API: `POST /api/ops/events`
+- Storage:
+  - `OperationalEvents` (telemetry events)
+  - `OperationalAlertStates` (alert open/close state, dedupe)
+- Alert executor:
+  - Script: `npm run ops:alerts:check`
+  - Cron endpoint: `GET /api/cron/reliability-alerts`
+  - Scheduler (Hobby-safe): `.github/workflows/reliability-alerts-cron.yml` (`*/10 * * * *`)
 
-## Sampling and Privacy
+## Event Catalog (Operational)
 
-- Sample rate: `25%` (`REALTIME_TELEMETRY_SAMPLE_RATE` in `lib/analytics.ts`)
-- No PII in payloads
-- Client telemetry is best-effort and can be dropped by network/ad blockers
-
-## Event Catalog
-
-| Event | Emitted when | Key fields |
+| Event | Purpose | Key fields |
 | --- | --- | --- |
-| `socket_reconnect_attempt` | Socket emits `reconnect_attempt` | `attempt`, `backoff_ms`, `is_guest`, `transport`, `reason` |
-| `lobby_join_retry` | Client schedules `JOIN_LOBBY` retry | `attempt`, `delay_ms`, `trigger`, `is_guest` |
-| `lobby_join_ack_timeout` | `JOINED_LOBBY` not received before timeout | `attempt`, `is_guest` |
-| `socket_auth_refresh_failed` | Token refresh/auth payload resolution fails | `stage`, `status`, `is_guest` |
-| `socket_reconnect_recovered` | Reconnect flow recovered and lobby rejoin confirmed | `attempts_total`, `time_to_recover_ms`, `is_guest` |
-| `socket_reconnect_failed_final` | Reconnect flow reached terminal failure | `attempts_total`, `reason`, `is_guest` |
-| `move_submit_applied` | Client submits move and receives authoritative applied state | `game_type`, `move_type`, `latency_ms`, `success`, `applied`, `is_guest` |
-| `move_apply_timeout` | Move apply latency breaches target threshold | `game_type`, `move_type`, `latency_ms`, `target_ms`, `is_guest` |
-| `auth_refresh_failed` | Alert signal for auth token refresh/auth payload failures (unsampled) | `stage`, `status`, `is_guest` |
-| `rejoin_timeout` | Alert signal for terminal reconnect failures with lobby rejoin timeout (unsampled) | `attempts_total`, `is_guest` |
+| `rejoin_timeout` | Alert signal: reconnect ended with lobby rejoin timeout | `attempts_total`, `is_guest` |
+| `auth_refresh_failed` | Alert signal: socket token refresh/payload auth failed | `stage`, `status`, `is_guest` |
+| `move_apply_timeout` | Alert signal: move apply latency breached target | `game_type`, `latency_ms`, `target_ms`, `is_guest` |
+| `move_submit_applied` | KPI latency source for submit -> applied | `game_type`, `latency_ms`, `success`, `applied` |
+| `lobby_create_ready` | KPI latency source for create -> lobby ready | `game_type`, `latency_ms`, `target_ms` |
+| `socket_reconnect_recovered` | KPI source for reconnect recovery latency | `attempts_total`, `time_to_recover_ms`, `is_guest` |
+| `socket_reconnect_failed_final` | KPI source for reconnect success ratio denominator | `attempts_total`, `reason`, `is_guest` |
+| `start_alone_auto_bot_result` | KPI source for start-alone -> auto-bot reliability | `game_type`, `success`, `reason`, `is_guest` |
 
-`socket_reconnect_failed_final.reason` values:
+## Alert Delivery
 
-- `reconnect_failed`
-- `authentication_failed`
-- `rejoin_timeout`
+Set webhook channel and alert windows in env:
 
-## Dashboard (Minimum)
+- `OPS_ALERT_WEBHOOK_URL`
+- `OPS_ALERT_WINDOW_MINUTES` (default: `10`)
+- `OPS_ALERT_BASELINE_DAYS` (default: `7`)
+- `OPS_ALERT_REPEAT_MINUTES` (default: `60`)
+- `OPS_RUNBOOK_BASE_URL` (optional; used to build absolute runbook links)
 
-Create one dashboard with these cards:
+Supported channels: Slack/Discord/Teams webhook endpoints.
 
-1. Reconnect success ratio
+Scheduler note:
+- Vercel Hobby only supports cron jobs that run once per day.
+- Use the GitHub Actions scheduler (`.github/workflows/reliability-alerts-cron.yml`) for 10-minute reliability alert checks on Hobby.
+- Vercel cron for `/api/cron/reliability-alerts` is only suitable on plans that support sub-daily cron intervals.
 
-- Formula: `recovered / (recovered + failed_final)`
-- Group by `is_guest`
+## Active Alert Rules
 
-1. Recovery latency
+Rules are evaluated in `evaluateReliabilityAlerts()` (`lib/operational-metrics.ts`) and dispatched by `runReliabilityAlertCycle()` (`lib/reliability-alerts.ts`).
 
-- `time_to_recover_ms` from `socket_reconnect_recovered`
-- Track P50 and P95
+1. `rejoin_timeout` spike
+- Severity: `critical`
+- Condition: current window count >= `max(2, baseline_per_window * 3)`
+- Window: `OPS_ALERT_WINDOW_MINUTES`
 
-1. Join ack timeout rate
+1. `auth_refresh_failed` ratio
+- Severity: `warning`
+- Condition: `auth_refresh_failed / reconnect_cycles >= 2%` for windows with >= 5 reconnect cycles
+- Window: `OPS_ALERT_WINDOW_MINUTES`
 
-- Count of `lobby_join_ack_timeout`
-- Breakdown by `attempt` and `is_guest`
+1. `move_apply_timeout` spike or latency breach
+- Severity: `warning` (count spike), `critical` (latency breach)
+- Condition A: current timeout count >= `max(3, baseline_per_window * 3)`
+- Condition B: `move_submit_applied` p95 > `MOVE_APPLY_TARGET_MS` (`800ms`)
+- Window: `OPS_ALERT_WINDOW_MINUTES`
 
-1. Auth refresh failure rate
+## KPI Dashboard (Operational)
 
-- Count of `socket_auth_refresh_failed`
-- Breakdown by `stage` and `status`
+Operational KPI data is shown in:
 
-1. Final failures by reason
+- `/analytics` page (server-rendered section: "Operational Reliability")
+- `GET /api/analytics/operations`
+- CLI report: `npm run ops:kpi:report`
 
-- Count of `socket_reconnect_failed_final`
-- Breakdown by `reason`
+Tracked KPIs:
 
-1. Reconnect pressure
+1. `move submit -> applied p95` (per game)
+1. `create lobby -> ready p95` (per game)
+1. `reconnect success ratio` (global)
+1. `reconnect recovery p95` (global)
+1. `start alone -> auto bot success ratio` (per game)
 
-- Count of `socket_reconnect_attempt`
-- Breakdown by `attempt` bucket and `transport`
+## SLO Targets (Baseline + Operational)
 
-1. Move apply latency and timeouts
+Targets are encoded in `lib/operational-metrics.ts`:
 
-- P50/P95 for `move_submit_applied.latency_ms` filtered by `success=true` and `applied=true`
-- Count of `move_apply_timeout`
-- Breakdown by `game_type` and `move_type`
+- Move submit -> applied p95 <= `800ms`
+- Create lobby -> ready p95 <= `2500ms`
+- Reconnect success ratio >= `99%`
+- Reconnect recovery p95 <= `12000ms`
+- Start alone -> auto bot success ratio >= `99.5%`
 
-## SLO and Alert Baseline
+Baseline is computed from the previous `baselineDays` window (default 7 days), separate from the current reporting window.
 
-Initial SLO targets:
+## Runbook
 
-- Reconnect success ratio >= `99%` (rolling 24h)
-- Recovery latency P95 <= `12s` (rolling 24h)
-- Final reconnect failure <= `1%` of reconnect cycles (rolling 24h)
+<a id="runbook-rejoin-timeout"></a>
+### If `rejoin_timeout` breaches
 
-Initial alert thresholds:
+- Check Socket.IO service health and deploy/cold-start windows
+- Check lobby join ACK behavior in `useSocketConnection` and socket room authorization
+- Check DB latency on lobby/member queries
 
-- `rejoin_timeout` spikes above baseline for 10+ minutes
-- Recovery latency P95 above `15s` for 10+ minutes
-- `auth_refresh_failed` ratio above `2%` for 10+ minutes
-- `move_apply_timeout` above baseline for 10+ minutes (or `move_submit_applied` P95 > `800ms`)
+<a id="runbook-auth-refresh-failed"></a>
+### If `auth_refresh_failed` breaches
 
-## Troubleshooting Map
+- Check `/api/socket/token` status trend (`401`/`403`/`5xx`)
+- Check auth secret/session validity (`NEXTAUTH_SECRET`, provider state)
+- Check token refresh path in `useSocketConnection` (`token_fetch`, `socket_auth_payload`)
 
-If `rejoin_timeout` grows:
+<a id="runbook-move-apply-timeout"></a>
+### If `move_apply_timeout` breaches
 
-- Check socket server health and room join latency
-- Check `join-lobby` handler DB lookups and player membership checks
+- Check `/api/game/[gameId]/state` p95 and DB lock/contention
+- Check by game breakdown (`game_type`) in operational KPI table
+- Check socket broadcast lag after successful mutation
 
-If `authentication_failed` grows:
+## Execution Commands
 
-- Check `/api/socket/token` response status trends
-- Check `NEXTAUTH_SECRET`, session validity, and auth provider status
+Manual alert evaluation:
 
-If `reconnect_failed` grows:
+```bash
+npm run ops:alerts:check
+```
 
-- Check socket server uptime/cold starts and network errors
-- Check deploy windows and infra incidents
+Dry-run alert evaluation:
 
-If `move_apply_timeout` grows:
+```bash
+npm run ops:alerts:check -- --dry-run
+```
 
-- Check `/api/game/[gameId]/state` p95 duration and DB lock contention
-- Check whether specific `game_type` or `move_type` dominates tail latency
-- Check socket broadcast lag after successful state mutation
+KPI report:
 
-## Review Cadence
+```bash
+npm run ops:kpi:report -- --hours=24 --baseline-days=7
+```
 
-- Daily: quick check for spikes
-- Weekly: compare guest vs authenticated reliability
-- Before release: verify no regression vs last 7-day baseline
+Load run with fail-rate report:
+
+```bash
+npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
+```

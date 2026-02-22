@@ -3,7 +3,7 @@ import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
-import { trackLobbyJoined, trackGameStarted } from '@/lib/analytics'
+import { trackLobbyJoined, trackGameStarted, trackStartAloneAutoBotResult } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -86,6 +86,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
+  const startGameInFlightRef = useRef(false)
 
   const loadLobby = useCallback(async () => {
     try {
@@ -270,6 +271,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
   const handleStartGame = useCallback(async () => {
     if (!game) return
+    if (startGameInFlightRef.current) {
+      clientLogger.warn('Start game already in progress, ignoring duplicate request', { code })
+      return
+    }
+
+    startGameInFlightRef.current = true
+    let reportAutoBotFlowResult = (
+      _success: boolean,
+      _reason: 'started' | 'bot_add_failed' | 'insufficient_players' | 'start_failed'
+    ) => undefined
 
     try {
       setStartingGame(true)
@@ -279,6 +290,30 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const requiredMinPlayers = requirements.minPlayersRequired
       const desiredPlayerCount = requirements.desiredPlayerCount
       let playerCount = game?.players?.length || 0
+      const requiresAutoBotFlow = supportsBots && playerCount < desiredPlayerCount
+      let autoBotMetricTracked = false
+      reportAutoBotFlowResult = (
+        success: boolean,
+        reason: 'started' | 'bot_add_failed' | 'insufficient_players' | 'start_failed'
+      ) => {
+        if (!requiresAutoBotFlow || autoBotMetricTracked) {
+          return
+        }
+
+        trackStartAloneAutoBotResult({
+          gameType:
+            gameType === 'yahtzee' ||
+            gameType === 'tic_tac_toe' ||
+            gameType === 'rock_paper_scissors' ||
+            gameType === 'guess_the_spy'
+              ? gameType
+              : DEFAULT_GAME_TYPE,
+          success,
+          reason,
+          isGuest,
+        })
+        autoBotMetricTracked = true
+      }
 
       // Auto-add one bot for bot-supported games when we are below minimum.
       if (playerCount < desiredPlayerCount && supportsBots) {
@@ -287,6 +322,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         showToast.dismiss('add-bot')
 
         if (!botResult.success) {
+          reportAutoBotFlowResult(false, 'bot_add_failed')
           setStartingGame(false)
           showToast.error('toast.botAddFailed')
           return
@@ -311,6 +347,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       if (playerCount < requiredMinPlayers) {
+          reportAutoBotFlowResult(false, 'insufficient_players')
           setStartingGame(false)
           showToast.error(
             'toast.gameStartFailed',
@@ -376,6 +413,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         hasBot: botCount > 0,
         botCount,
       })
+      reportAutoBotFlowResult(true, 'started')
 
       const turnTimerLimit = lobby?.turnTimer || 60
       setTimerActive(true)
@@ -404,10 +442,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       // Sound will play automatically via socket event handler
     } catch (error: any) {
+      reportAutoBotFlowResult(false, 'start_failed')
       showToast.dismiss('start-game')
       showToast.errorFrom(error, 'toast.gameStartFailed')
       clientLogger.error('Failed to start game:', error)
     } finally {
+      startGameInFlightRef.current = false
       setStartingGame(false)
     }
   }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])

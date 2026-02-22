@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-
 export type TabId = 'game' | 'scorecard' | 'players' | 'chat'
 
 interface Tab {
@@ -20,7 +18,7 @@ interface MobileTabsProps {
 
 export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCount }: MobileTabsProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-xl border-t border-white/20 shadow-lg z-40 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-xl border-t border-white/20 shadow-lg z-40 md:hidden pb-[max(env(safe-area-inset-bottom),0.25rem)]">
       <div className="grid grid-cols-4 gap-0">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
@@ -30,7 +28,7 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`relative flex flex-col items-center justify-center py-2 px-1 transition-all duration-200 ${
+              className={`relative flex flex-col items-center justify-center py-2 px-1 transition-all duration-200 min-h-[56px] ${
                 isActive
                   ? 'bg-white/10 text-white'
                   : 'text-white/50 hover:bg-white/5 hover:text-white/70'
@@ -38,7 +36,7 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
             >
               {/* Badge */}
               {hasBadge && (
-                <div className="absolute top-1 right-1/4 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 animate-pulse shadow-lg">
+                <div className="absolute top-1 right-[18%] bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 animate-pulse shadow-lg">
                   {unreadChatCount! > 9 ? '9+' : unreadChatCount}
                 </div>
               )}
@@ -49,7 +47,7 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
               </span>
               
               {/* Label */}
-              <span className={`text-xs font-medium ${isActive ? 'font-bold' : ''}`}>
+              <span className={`text-xs font-medium max-w-full truncate px-1 ${isActive ? 'font-bold' : ''}`}>
                 {tab.label}
               </span>
               

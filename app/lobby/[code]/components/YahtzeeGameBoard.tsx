@@ -79,7 +79,7 @@ export default function GameBoard({
           <div className="text-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-md bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-200 animate-pulse">
             <div className="flex items-center justify-center gap-1.5 sm:gap-2">
               <span className="text-base sm:text-lg">↩️</span>
-              <p className="text-xs sm:text-sm font-semibold">Move failed. Reverted to server state.</p>
+              <p className="text-xs sm:text-sm font-semibold">{t('yahtzee.ui.moveReverted')}</p>
             </div>
           </div>
         )}
@@ -121,26 +121,29 @@ export default function GameBoard({
           disabled={
             !isMyTurn ||
             rollsLeft === 0 ||
-            isMoveInProgress
+            isMoveInProgress ||
+            isRolling
           }
-          className={`w-full overflow-hidden px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-lg
-            ${!isMyTurn || rollsLeft === 0 || isMoveInProgress
+          className={`w-full overflow-hidden px-3 sm:px-5 py-2.5 sm:py-3 min-h-[52px] sm:min-h-[56px] rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-lg
+            ${!isMyTurn || rollsLeft === 0 || isMoveInProgress || isRolling
               ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white hover:shadow-xl active:scale-95'
             }`}
         >
           {isRolling ? (
-            <span className="flex items-center justify-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="flex w-full items-center justify-center gap-1.5 sm:gap-2 min-w-0">
               <span className="text-lg sm:text-xl animate-spin">🎲</span>
               <span className="truncate">{t('yahtzee.ui.rolling')}</span>
             </span>
           ) : (
-            <span className="flex items-center justify-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-lg sm:text-xl shrink-0">🎲</span>
-              <span className="truncate">{t('yahtzee.ui.rollDice')}</span>
+            <span className="flex w-full items-center justify-between gap-2 min-w-0">
+              <span className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <span className="text-lg sm:text-xl shrink-0">🎲</span>
+                <span className="truncate">{t('yahtzee.ui.rollDice')}</span>
+              </span>
               <span
                 title={t('yahtzee.ui.rollsLeft', { count: rollsLeft })}
-                className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs sm:text-sm font-semibold"
+                className="shrink-0 whitespace-nowrap rounded-full bg-white/20 px-2 py-0.5 text-xs sm:text-sm font-semibold"
               >
                 {rollsLeft}/3
               </span>

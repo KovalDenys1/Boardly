@@ -638,15 +638,20 @@ describe('useSocketConnection', () => {
   })
 
   describe('emitWhenConnected helper', () => {
-    it('should emit immediately when already connected', async () => {
+    it('should emit immediately when connected and lobby join is confirmed', async () => {
       const { result } = renderHook(() => useSocketConnection(defaultProps))
       await waitForSocketInit()
 
       const connectHandler = getHandler<() => void>('connect')
+      const joinedLobbyHandler = getHandler<(payload: { lobbyCode: string; success: boolean }) => void>('joined-lobby')
 
       await act(async () => {
         connectHandler?.()
         await new Promise(resolve => setTimeout(resolve, 50))
+      })
+      await act(async () => {
+        joinedLobbyHandler?.({ lobbyCode: defaultProps.code, success: true })
+        await new Promise(resolve => setTimeout(resolve, 10))
       })
 
       expect(result.current.isConnected).toBe(true)
@@ -660,7 +665,7 @@ describe('useSocketConnection', () => {
       expect(mockSocket.emit).toHaveBeenCalledWith('test-event', { data: 'test' })
     })
 
-    it('should queue event when not connected', async () => {
+    it('should queue event until lobby join is confirmed', async () => {
       const { result } = renderHook(() => useSocketConnection(defaultProps))
       await waitForSocketInit()
 
@@ -670,7 +675,25 @@ describe('useSocketConnection', () => {
         result.current.emitWhenConnected('test-event', { data: 'test' })
       })
 
-      expect(mockSocket.once).toHaveBeenCalledWith('connect', expect.any(Function))
+      expect(mockSocket.emit).not.toHaveBeenCalledWith('test-event', { data: 'test' })
+
+      const connectHandler = getHandler<() => void>('connect')
+      const joinedLobbyHandler = getHandler<(payload: { lobbyCode: string; success: boolean }) => void>('joined-lobby')
+
+      await act(async () => {
+        connectHandler?.()
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      // Connected transport alone is not enough; wait for join ACK.
+      expect(mockSocket.emit).not.toHaveBeenCalledWith('test-event', { data: 'test' })
+
+      await act(async () => {
+        joinedLobbyHandler?.({ lobbyCode: defaultProps.code, success: true })
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      expect(mockSocket.emit).toHaveBeenCalledWith('test-event', { data: 'test' })
     })
   })
 })

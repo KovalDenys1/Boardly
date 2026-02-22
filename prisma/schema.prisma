@@ -251,3 +251,39 @@ model SpyLocations {
   @@index([category])
   @@index([isActive])
 }
+
+model OperationalEvents {
+  id            String   @id @default(cuid())
+  eventName     String
+  metricType    String
+  gameType      String?
+  isGuest       Boolean?
+  success       Boolean?
+  applied       Boolean?
+  latencyMs     Int?
+  targetMs      Int?
+  attemptsTotal Int?
+  reason        String?
+  stage         String?
+  statusCode    Int?
+  source        String?
+  payload       Json?
+  occurredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([eventName, occurredAt])
+  @@index([metricType, occurredAt])
+  @@index([gameType, occurredAt])
+}
+
+model OperationalAlertStates {
+  id             String   @id @default(cuid())
+  alertKey       String   @unique
+  isOpen         Boolean  @default(false)
+  lastValue      Float?
+  lastTriggeredAt DateTime?
+  lastNotifiedAt DateTime?
+  lastResolvedAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
