@@ -75,6 +75,9 @@ Recommended:
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
+- GitHub Actions scheduler secrets (if using `.github/workflows/reliability-alerts-cron.yml`):
+- `RELIABILITY_ALERTS_CRON_URL` (for example `https://boardly.online/api/cron/reliability-alerts`)
+- `CRON_SECRET` (must match the app env value used by the endpoint)
 
 ## Build and deploy
 
@@ -99,7 +102,7 @@ Reason: running migrations in socket build can hang deployments.
 2. Deploy Next.js app.
 3. Deploy socket service.
 4. Verify health endpoint (`/health`) and lobby join flow.
-5. Verify alert cron endpoint (`/api/cron/reliability-alerts`) and webhook delivery.
+5. Verify the alert scheduler (GitHub Actions or Vercel cron), endpoint (`/api/cron/reliability-alerts`), and webhook delivery.
 6. Check operational dashboard and SLO cards from `docs/REALTIME_TELEMETRY.md`.
 
 Note: `npm run db:migrate` automatically bootstraps required RLS roles
@@ -149,6 +152,7 @@ Check:
 
 - `OPS_ALERT_WEBHOOK_URL` is configured and valid
 - cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts`
+- if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
 

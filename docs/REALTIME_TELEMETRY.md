@@ -15,6 +15,7 @@ This document defines the production reliability telemetry path, alert rules, KP
 - Alert executor:
   - Script: `npm run ops:alerts:check`
   - Cron endpoint: `GET /api/cron/reliability-alerts`
+  - Scheduler (Hobby-safe): `.github/workflows/reliability-alerts-cron.yml` (`*/10 * * * *`)
 
 ## Event Catalog (Operational)
 
@@ -40,6 +41,11 @@ Set webhook channel and alert windows in env:
 - `OPS_RUNBOOK_BASE_URL` (optional; used to build absolute runbook links)
 
 Supported channels: Slack/Discord/Teams webhook endpoints.
+
+Scheduler note:
+- Vercel Hobby only supports cron jobs that run once per day.
+- Use the GitHub Actions scheduler (`.github/workflows/reliability-alerts-cron.yml`) for 10-minute reliability alert checks on Hobby.
+- Vercel cron for `/api/cron/reliability-alerts` is only suitable on plans that support sub-daily cron intervals.
 
 ## Active Alert Rules
 
