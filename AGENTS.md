@@ -96,18 +96,29 @@ DB / Prisma / RLS:
 
 ## Codex Automation (MCP)
 
-This repo includes Windows-friendly MCP wrappers for Codex:
+This repo includes cross-platform MCP wrappers and Codex helpers (PowerShell + Bash):
 
 - `scripts/mcp-github.ps1`
+- `scripts/mcp-github.sh`
 - `scripts/mcp-postgres.ps1`
+- `scripts/mcp-postgres.sh`
 - `scripts/mcp-filesystem.ps1`
+- `scripts/mcp-filesystem.sh`
 - `scripts/mcp-memory.ps1`
+- `scripts/mcp-memory.sh`
 - `scripts/codex-mcp-setup.ps1`
+- `scripts/codex-mcp-setup.sh`
 - `scripts/codex-mcp-health-check.ps1`
+- `scripts/codex-mcp-health-check.sh`
+- `scripts/codex-quick-check.ps1`
+- `scripts/codex-quick-check.sh`
+
+Note: `codex-mcp-setup` and `codex-mcp-health-check` now use shared `tsx` orchestration (`scripts/codex-mcp-setup.ts`, `scripts/codex-mcp-health-check.ts`) with thin `.ps1/.sh` wrappers.
 
 First-time setup (registers MCP servers in `~/.codex/config.toml`):
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1`
+- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1`
+- macOS/Linux: `bash scripts/codex-mcp-setup.sh`
 
 Expected MCP server names:
 
@@ -144,11 +155,13 @@ Use these as default automation routines when the task does not require somethin
 
 Quick local confidence pass (recommended before/after non-trivial edits):
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1`
+- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1`
+- macOS/Linux: `bash scripts/codex-quick-check.sh`
 
 Skip DB when working offline / DB is unavailable:
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1 -SkipDb`
+- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-quick-check.ps1 -SkipDb`
+- macOS/Linux: `bash scripts/codex-quick-check.sh --skip-db`
 
 Notes:
 
@@ -158,13 +171,22 @@ Full pre-PR local gate:
 
 - `npm run ready:build-test`
 
+Git hooks (Lefthook, auto-installed via `npm install`/`npm ci` through `prepare`):
+
+- Install manually (if needed): `npm run hooks:install`
+- Run pre-commit hook manually: `npm run hooks:pre-commit`
+- Run pre-push hook manually: `npm run hooks:pre-push`
+- Emergency bypass (one-off): `git commit --no-verify` / `git push --no-verify`
+
 Refresh Codex MCP registration (after script/path changes):
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1 -Force`
+- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-setup.ps1 -Force`
+- macOS/Linux: `bash scripts/codex-mcp-setup.sh --force`
 
 MCP health check (detailed local sanity):
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-health-check.ps1`
+- Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/codex-mcp-health-check.ps1`
+- macOS/Linux: `bash scripts/codex-mcp-health-check.sh`
 
 Suggested Codex task prompts (examples):
 

@@ -4,14 +4,32 @@
     {
       "label": "Codex: Quick Check",
       "type": "shell",
-      "command": "powershell",
+      "command": "bash",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/codex-quick-check.ps1"
+        "scripts/codex-quick-check.sh"
       ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "scripts/codex-quick-check.ps1"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "scripts/codex-quick-check.sh"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "scripts/codex-quick-check.sh"
+        ]
+      },
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -20,15 +38,36 @@
     {
       "label": "Codex: MCP Refresh",
       "type": "shell",
-      "command": "powershell",
+      "command": "bash",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/codex-mcp-setup.ps1",
-        "-Force"
+        "scripts/codex-mcp-setup.sh",
+        "--force"
       ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "scripts/codex-mcp-setup.ps1",
+          "-Force"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "scripts/codex-mcp-setup.sh",
+          "--force"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "scripts/codex-mcp-setup.sh",
+          "--force"
+        ]
+      },
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -50,14 +89,32 @@
     {
       "label": "Codex: MCP Health Check",
       "type": "shell",
-      "command": "powershell",
+      "command": "bash",
       "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "scripts/codex-mcp-health-check.ps1"
+        "scripts/codex-mcp-health-check.sh"
       ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "scripts/codex-mcp-health-check.ps1"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "scripts/codex-mcp-health-check.sh"
+        ]
+      },
+      "linux": {
+        "command": "bash",
+        "args": [
+          "scripts/codex-mcp-health-check.sh"
+        ]
+      },
       "options": {
         "cwd": "${workspaceFolder}"
       },

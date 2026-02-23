@@ -144,9 +144,12 @@ backup_*.sql
 
 # Local development files
 .codex-local/
+.lefthook-local.yml
 *.bat
 *.sh
 !scripts/mcp-*.sh
+!scripts/codex-*.sh
+!scripts/test-mcp-postgres-driver.sh
 setup-*.*
 # .env-template.*
 # *-template.*
