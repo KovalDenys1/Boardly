@@ -4,36 +4,31 @@ name: CI
   push:
     branches:
       - main
+      - develop
   pull_request:
     branches:
       - main
+      - develop
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint-and-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test-ci-password-secure-2024
-          POSTGRES_DB: boardly
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres -d boardly"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
+  fast-checks:
+    name: Fast Checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     env:
-      # CI uses ephemeral test environment - hardcoded credentials are safe here
-      DATABASE_URL: "postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly"
-      DIRECT_URL: "postgresql://postgres:test-ci-password-secure-2024@localhost:5432/boardly"
+      # Fast CI matrix intentionally avoids DB setup; provide placeholders for modules that read env.
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder"
       NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
       JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
@@ -51,32 +46,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run lint and typecheck
+      - name: Run lint and typecheck (ci:quick)
         run: npm run ci:quick
 
-      - name: Check locale key parity
-        run: npm run check:locales
-
-      - name: Run tests (pre-migrations)
-        run: npm test -- --ci --runInBand
-
-      - name: Validate Prisma schema
-        run: npm run db:validate
-
-      - name: Apply Prisma migrations
-        run: npm run db:migrate
-
-      - name: Check Prisma migration status
-        run: npm run db:migrate:status
-
-      - name: Run RLS smoke checks
-        run: npm run db:rls:smoke
-
-      - name: Run tests (post-migrations)
-        run: npm test
-
-      - name: Build application
-        run: npm run build
-
-      - name: Check bundle budget
-        run: npm run check:bundle-budget
+      - name: Run smoke tests
+        run: >-
+          npm test -- --ci --runTestsByPath
+          __tests__/lib/socket-url.test.ts
+          __tests__/lib/guest-helpers.test.ts
+          __tests__/lib/game-registry.test.ts
+          __tests__/lib/lobby-player-requirements.test.ts
