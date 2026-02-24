@@ -1,0 +1,29 @@
+# Boardly Codex MCP external server template
+#
+# Copy selected sections into:
+#   C:\Users\koval\.codex\config.toml
+#
+# Replace placeholder URLs and env var names with your actual MCP provider settings.
+# These are examples only and are not auto-registered by repo scripts.
+
+# Example: Figma MCP (streamable HTTP)
+# [mcp_servers.figma]
+# url = "<FIGMA_MCP_URL>"
+# bearer_token_env_var = "FIGMA_ACCESS_TOKEN"
+
+# Example: Notion MCP (streamable HTTP)
+# [mcp_servers.notion]
+# url = "<NOTION_MCP_URL>"
+# bearer_token_env_var = "NOTION_API_KEY"
+
+# Example: Linear MCP (streamable HTTP)
+# [mcp_servers.linear]
+# url = "<LINEAR_MCP_URL>"
+# bearer_token_env_var = "LINEAR_API_KEY"
+
+# Optional: separate environment variables to avoid reusing app secrets
+# (Set them in your user environment, not in repo files, if you prefer.)
+#   FIGMA_ACCESS_TOKEN
+#   NOTION_API_KEY
+#   LINEAR_API_KEY
+

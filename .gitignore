@@ -114,6 +114,7 @@ temp/
 !.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/mcp.json
+!.vscode/tasks.json
 !.vscode/README.md
 .idea
 .DS_Store
@@ -142,9 +143,13 @@ backup_*.sql
 # .vercel-env-template.md
 
 # Local development files
+.codex-local/
+.lefthook-local.yml
 *.bat
 *.sh
 !scripts/mcp-*.sh
+!scripts/codex-*.sh
+!scripts/test-mcp-postgres-driver.sh
 setup-*.*
 # .env-template.*
 # *-template.*
