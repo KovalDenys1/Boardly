@@ -93,6 +93,7 @@ DB / Prisma / RLS:
 - `npm run db:validate`
 - `npm run db:generate`
 - `npm run db:rls:smoke` (when relevant)
+- `npm run check:db` (safe-by-default diagnostics; use `npm run check:db:verbose` for local debugging details)
 
 ## Codex Automation (MCP)
 

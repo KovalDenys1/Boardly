@@ -7,6 +7,32 @@
 import dotenv from 'dotenv'
 import { resolve } from 'path'
 
+const args = process.argv.slice(2)
+const argSet = new Set(args)
+const verbose = argSet.has('--verbose') || argSet.has('-v')
+const showHelp = argSet.has('--help') || argSet.has('-h')
+const unsupportedArgs = args.filter((arg) => !['--verbose', '-v', '--help', '-h'].includes(arg))
+
+if (unsupportedArgs.length > 0) {
+  console.error(`Unknown argument(s): ${unsupportedArgs.join(', ')}`)
+  console.error('Use --help to see available options.\n')
+  process.exit(1)
+}
+
+if (showHelp) {
+  console.log('Database Connection Test')
+  console.log('')
+  console.log('Usage:')
+  console.log('  tsx scripts/test-db-connection.ts [--verbose]')
+  console.log('')
+  console.log('Options:')
+  console.log('  --verbose, -v  Show non-secret connection target fields (user/host/port/database)')
+  console.log('  --help, -h     Show this help message')
+  console.log('')
+  console.log('Default output is safe-by-default and redacts connection identifiers.')
+  process.exit(0)
+}
+
 // Load environment files
 dotenv.config({ path: resolve(process.cwd(), '.env'), override: true })
 dotenv.config({ path: resolve(process.cwd(), '.env.local') })
@@ -19,20 +45,54 @@ if (!process.env.DATABASE_URL) {
   process.exit(1)
 }
 
-// Show connection details (masked)
-const dbUrl = process.env.DATABASE_URL
-const urlPattern = /postgres:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/
-const match = dbUrl.match(urlPattern)
+function printConnectionDiagnostics(databaseUrl: string, isVerbose: boolean) {
+  let parsed: URL
 
-if (match) {
-  console.log('📋 Database connection details:')
-  console.log(`  User: ${match[1]}`)
-  console.log(`  Password: ${match[2].substring(0, 4)}${'*'.repeat(match[2].length - 4)}`)
-  console.log(`  Host: ${match[3]}`)
-  console.log(`  Port: ${match[4]}`)
-  console.log(`  Database: ${match[5].split('?')[0]}`)
+  try {
+    parsed = new URL(databaseUrl)
+  } catch {
+    console.log('📋 Database connection diagnostics:')
+    if (isVerbose) {
+      console.log('  URL: [unparseable DATABASE_URL value]')
+      console.log('  Password: [redacted]')
+    } else {
+      console.log('  URL: [redacted]')
+      console.log('  Details hidden by default (use --verbose for local debugging)')
+    }
+    console.log()
+    return
+  }
+
+  const protocol = parsed.protocol.replace(':', '')
+  const databaseName = parsed.pathname.replace(/^\/+/, '') || '(none)'
+  const sslMode = parsed.searchParams.get('sslmode')
+
+  console.log('📋 Database connection diagnostics:')
+  console.log(`  Protocol: ${protocol || 'unknown'}`)
+  console.log(`  SSL mode: ${sslMode ?? '[not set]'}`)
+
+  if (isVerbose) {
+    console.log('  Verbose mode: ON (local debugging)')
+    console.log(`  User: ${parsed.username || '[none]'}`)
+    console.log('  Password: [redacted]')
+    console.log(`  Host: ${parsed.hostname || '[none]'}`)
+    console.log(`  Port: ${parsed.port || '[default]'}`)
+    console.log(`  Database: ${databaseName}`)
+  } else {
+    console.log('  User: [redacted]')
+    console.log('  Password: [redacted]')
+    console.log('  Host: [redacted]')
+    console.log('  Port: [redacted]')
+    console.log('  Database: [redacted]')
+    console.log('  Tip: rerun with --verbose for local-only debugging details')
+  }
+
   console.log()
 }
+
+// Show connection details (safe-by-default)
+const dbUrl = process.env.DATABASE_URL
+printConnectionDiagnostics(dbUrl, verbose)
 
 // Try to connect
 async function testConnection() {
