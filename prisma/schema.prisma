@@ -124,6 +124,9 @@ model Lobbies {
   name       String
   password   String?
   maxPlayers Int      @default(4)
+  allowSpectators Boolean @default(false)
+  maxSpectators   Int     @default(10)
+  spectatorCount  Int     @default(0)
   turnTimer  Int      @default(60) // Turn time limit in seconds (30, 60, 90, 120)
   isActive   Boolean  @default(true)
   gameType   String   @default("yahtzee")

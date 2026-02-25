@@ -14,6 +14,8 @@ const createLobbySchema = z.object({
   name: z.string().min(1).max(50),
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(10).default(6),
+  allowSpectators: z.boolean().default(false),
+  maxSpectators: z.number().int().min(1).max(20).default(10),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
   gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors']).default('yahtzee'),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
@@ -62,12 +64,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, password, maxPlayers, turnTimer, gameType, ticTacToeRounds } = createLobbySchema.parse(body)
+    const {
+      name,
+      password,
+      maxPlayers,
+      allowSpectators,
+      maxSpectators,
+      turnTimer,
+      gameType,
+      ticTacToeRounds,
+    } = createLobbySchema.parse(body)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
 
     log.info('Creating lobby', {
       gameType,
       maxPlayers,
+      allowSpectators,
+      maxSpectators: allowSpectators ? maxSpectators : 0,
       turnTimer,
       ...(gameType === 'tic_tac_toe' ? { targetRounds: normalizedTicTacToeRounds } : {}),
     })
@@ -93,6 +106,9 @@ export async function POST(request: NextRequest) {
           code: string
           name: string
           maxPlayers: number
+          allowSpectators: boolean
+          maxSpectators: number
+          spectatorCount: number
           turnTimer: number
           gameType: string
           creatorId: string
@@ -109,6 +125,9 @@ export async function POST(request: NextRequest) {
             name,
             password,
             maxPlayers,
+            allowSpectators,
+            maxSpectators: allowSpectators ? maxSpectators : 0,
+            spectatorCount: 0,
             turnTimer,
             gameType,
             creatorId: requestUser.id,
@@ -132,6 +151,9 @@ export async function POST(request: NextRequest) {
             code: true,
             name: true,
             maxPlayers: true,
+            allowSpectators: true,
+            maxSpectators: true,
+            spectatorCount: true,
             turnTimer: true,
             gameType: true,
             creatorId: true,
@@ -248,6 +270,9 @@ export async function GET(request: NextRequest) {
               code: true,
               name: true,
               maxPlayers: true,
+              allowSpectators: true,
+              maxSpectators: true,
+              spectatorCount: true,
               turnTimer: true,
               isActive: true,
               gameType: true,

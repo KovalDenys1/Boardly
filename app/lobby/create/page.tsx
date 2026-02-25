@@ -115,6 +115,8 @@ function CreateLobbyPage() {
     name: '',
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
+    allowSpectators: true,
+    maxSpectators: 10,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60, // Use game-specific default or fallback to 60
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     gameType: selectedGameType as GameType,
@@ -188,6 +190,8 @@ function CreateLobbyPage() {
         name: formData.name,
         password: formData.password,
         maxPlayers: formData.maxPlayers,
+        allowSpectators: formData.allowSpectators,
+        maxSpectators: formData.allowSpectators ? formData.maxSpectators : 10,
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
         ...(formData.gameType === 'tic_tac_toe' ? { ticTacToeRounds: formData.ticTacToeRounds } : {}),
@@ -535,6 +539,59 @@ function CreateLobbyPage() {
                   </p>
                 </div>
               )}
+
+              <div className="rounded-xl border border-white/20 bg-white/10 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-white">Spectators</p>
+                    <p className="text-xs text-white/70">
+                      Allow users to watch in read-only mode
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))
+                    }
+                    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                      formData.allowSpectators ? 'bg-emerald-400' : 'bg-white/25'
+                    }`}
+                    aria-pressed={formData.allowSpectators}
+                    aria-label="Toggle spectators"
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        formData.allowSpectators ? 'translate-x-8' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {formData.allowSpectators && (
+                  <div className="mt-4">
+                    <label className="block text-xs md:text-sm font-bold text-white mb-2">
+                      Max Spectators
+                    </label>
+                    <input
+                      type="range"
+                      min={1}
+                      max={20}
+                      step={1}
+                      value={formData.maxSpectators}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          maxSpectators: Math.min(20, Math.max(1, Number(e.target.value) || 10)),
+                        }))
+                      }
+                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="mt-2 text-center text-sm font-semibold text-white">
+                      {formData.maxSpectators} spectators
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Game Mode - Only for games that support it */}
               {gameInfo.settings.hasGameModes && (

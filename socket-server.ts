@@ -167,6 +167,7 @@ function checkRateLimit(socketId: string): boolean {
 }
 
 const LOBBY_ROOM_PREFIX = SocketRooms.lobby('')
+const SPECTATOR_ROOM_SUFFIX = ':spectators'
 const SOCKET_INTERNAL_AUTH_HEADER = 'x-socket-internal-secret'
 const SOCKET_INTERNAL_AUTH_BEARER_PREFIX = 'Bearer '
 
@@ -182,7 +183,24 @@ function getLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
   const lobbyCodes: string[] = []
   for (const room of rooms) {
     if (!room.startsWith(LOBBY_ROOM_PREFIX)) continue
+    if (room.endsWith(SPECTATOR_ROOM_SUFFIX)) continue
     const lobbyCode = room.slice(LOBBY_ROOM_PREFIX.length)
+    if (lobbyCode) {
+      lobbyCodes.push(lobbyCode)
+    }
+  }
+  return lobbyCodes
+}
+
+function getSpectatorLobbyCodesFromRooms(rooms: Iterable<string>): string[] {
+  const lobbyCodes: string[] = []
+  for (const room of rooms) {
+    if (!room.startsWith(LOBBY_ROOM_PREFIX)) continue
+    if (!room.endsWith(SPECTATOR_ROOM_SUFFIX)) continue
+    const lobbyCode = room
+      .slice(LOBBY_ROOM_PREFIX.length)
+      .replace(new RegExp(`${SPECTATOR_ROOM_SUFFIX}$`), '')
+      .trim()
     if (lobbyCode) {
       lobbyCodes.push(lobbyCode)
     }
@@ -235,11 +253,29 @@ function getUserDisplayName(user: { username?: string | null; email?: string | n
 type AuthorizedLobbySocket = {
   data: {
     authorizedLobbies?: Set<string>
+    authorizedSpectatorLobbies?: Set<string>
   }
 }
 
 type LobbyAuthorizationSocket = AuthorizedLobbySocket & {
   rooms: Set<string>
+}
+
+type SpectatorMembershipSocket = AuthorizedLobbySocket & {
+  id: string
+  data: {
+    user?: {
+      id?: string
+      username?: string | null
+      email?: string | null
+      isGuest?: boolean
+    }
+    authorizedLobbies?: Set<string>
+    authorizedSpectatorLobbies?: Set<string>
+  }
+  join: (room: string) => void
+  leave: (room: string) => void
+  emit: (event: string, payload?: unknown) => void
 }
 
 function getAuthorizedLobbySet(socket: AuthorizedLobbySocket): Set<string> {
@@ -256,6 +292,23 @@ function markSocketLobbyAuthorized(socket: AuthorizedLobbySocket, lobbyCode: str
 
 function revokeSocketLobbyAuthorization(socket: AuthorizedLobbySocket, lobbyCode: string) {
   const authorizedLobbies = getAuthorizedLobbySet(socket)
+  authorizedLobbies.delete(lobbyCode)
+}
+
+function getAuthorizedSpectatorLobbySet(socket: AuthorizedLobbySocket): Set<string> {
+  if (!(socket.data.authorizedSpectatorLobbies instanceof Set)) {
+    socket.data.authorizedSpectatorLobbies = new Set<string>()
+  }
+  return socket.data.authorizedSpectatorLobbies as Set<string>
+}
+
+function markSocketSpectatorLobbyAuthorized(socket: AuthorizedLobbySocket, lobbyCode: string) {
+  const authorizedLobbies = getAuthorizedSpectatorLobbySet(socket)
+  authorizedLobbies.add(lobbyCode)
+}
+
+function revokeSocketSpectatorLobbyAuthorization(socket: AuthorizedLobbySocket, lobbyCode: string) {
+  const authorizedLobbies = getAuthorizedSpectatorLobbySet(socket)
   authorizedLobbies.delete(lobbyCode)
 }
 
@@ -281,6 +334,156 @@ async function isUserActivePlayerInLobby(lobbyCode: string, userId: string): Pro
   })
 
   return !!player
+}
+
+function hasAnotherActiveSocketForUserInSpectatorLobby(
+  userId: string,
+  excludingSocketId: string,
+  lobbyCode: string
+): boolean {
+  const spectatorRoom = SocketRooms.spectators(lobbyCode)
+  for (const [socketId, activeSocket] of io.sockets.sockets.entries()) {
+    if (socketId === excludingSocketId) continue
+    if (!activeSocket.connected) continue
+    if (activeSocket.data?.user?.id !== userId) continue
+    if (!activeSocket.rooms.has(spectatorRoom)) continue
+    return true
+  }
+  return false
+}
+
+const spectatorMembersByLobby = new Map<string, Map<string, string>>()
+
+async function syncLobbySpectatorCount(lobbyCode: string) {
+  const count = spectatorMembersByLobby.get(lobbyCode)?.size ?? 0
+  try {
+    await prisma.lobbies.updateMany({
+      where: { code: lobbyCode },
+      data: { spectatorCount: count },
+    })
+  } catch (error) {
+    logger.error('Failed to sync lobby spectator count', error as Error, { lobbyCode, count })
+  }
+}
+
+function getSpectatorSnapshot(lobbyCode: string) {
+  const members = spectatorMembersByLobby.get(lobbyCode)
+  if (!members) {
+    return { count: 0, spectators: [] as Array<{ userId: string; username: string }> }
+  }
+  const spectators = Array.from(members.entries()).map(([userId, username]) => ({ userId, username }))
+  return { count: spectators.length, spectators }
+}
+
+async function handleSpectatorJoin(socket: SpectatorMembershipSocket, lobbyCode: string) {
+  socketMonitor.trackEvent('join-spectators')
+  try {
+    if (!checkRateLimit(socket.id)) {
+      emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
+      return
+    }
+
+    const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
+    if (!normalizedLobbyCode || normalizedLobbyCode.length > 20) {
+      emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
+      return
+    }
+
+    const lobby = await prisma.lobbies.findUnique({
+      where: { code: normalizedLobbyCode },
+      select: {
+        id: true,
+        code: true,
+        isActive: true,
+        allowSpectators: true,
+        maxSpectators: true,
+      },
+    })
+
+    if (!lobby) {
+      emitError(socket, 'LOBBY_NOT_FOUND', 'Lobby not found', 'errors.lobbyNotFound')
+      return
+    }
+
+    if (!lobby.allowSpectators) {
+      emitError(socket, 'SPECTATORS_DISABLED', 'Spectator mode disabled for this lobby')
+      return
+    }
+
+    const userId = socket.data?.user?.id
+    const username = getUserDisplayName(socket.data?.user)
+    if (!userId) {
+      emitError(socket, 'UNAUTHORIZED', 'Unauthorized')
+      return
+    }
+
+    const members = spectatorMembersByLobby.get(normalizedLobbyCode) ?? new Map<string, string>()
+    const alreadyPresent = members.has(userId)
+    if (!alreadyPresent && members.size >= Math.max(1, lobby.maxSpectators || 10)) {
+      emitError(socket, 'SPECTATOR_LIMIT_REACHED', 'Spectator limit reached')
+      return
+    }
+
+    members.set(userId, username)
+    spectatorMembersByLobby.set(normalizedLobbyCode, members)
+
+    socket.join(SocketRooms.spectators(normalizedLobbyCode))
+    markSocketSpectatorLobbyAuthorized(socket, normalizedLobbyCode)
+
+    await syncLobbySpectatorCount(normalizedLobbyCode)
+    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+
+    const snapshot = getSpectatorSnapshot(normalizedLobbyCode)
+    socket.emit(SocketEvents.JOINED_SPECTATORS, {
+      lobbyCode: normalizedLobbyCode,
+      success: true,
+      count: snapshot.count,
+      spectators: snapshot.spectators,
+    })
+
+    emitWithMetadata(io, SocketRooms.spectators(normalizedLobbyCode), SocketEvents.SPECTATOR_JOINED, {
+      lobbyCode: normalizedLobbyCode,
+      userId,
+      username,
+      count: snapshot.count,
+    })
+  } catch (error) {
+    logger.error('Error joining spectator room', error as Error, { lobbyCode })
+    emitError(socket, 'JOIN_SPECTATORS_ERROR', 'Failed to join spectator room')
+  }
+}
+
+async function removeSpectatorFromLobby(socket: SpectatorMembershipSocket, lobbyCode: string, reason: string) {
+  const normalizedLobbyCode = typeof lobbyCode === 'string' ? lobbyCode.trim() : ''
+  if (!normalizedLobbyCode) return
+
+  socket.leave(SocketRooms.spectators(normalizedLobbyCode))
+  revokeSocketSpectatorLobbyAuthorization(socket, normalizedLobbyCode)
+
+  const userId = socket.data?.user?.id
+  if (!userId) return
+  if (hasAnotherActiveSocketForUserInSpectatorLobby(userId, socket.id, normalizedLobbyCode)) {
+    return
+  }
+
+  const members = spectatorMembersByLobby.get(normalizedLobbyCode)
+  if (!members) return
+
+  const removed = members.delete(userId)
+  if (!removed) return
+  if (members.size === 0) {
+    spectatorMembersByLobby.delete(normalizedLobbyCode)
+  }
+
+  await syncLobbySpectatorCount(normalizedLobbyCode)
+  io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+  const snapshot = getSpectatorSnapshot(normalizedLobbyCode)
+  emitWithMetadata(io, SocketRooms.spectators(normalizedLobbyCode), SocketEvents.SPECTATOR_LEFT, {
+    lobbyCode: normalizedLobbyCode,
+    userId,
+    count: snapshot.count,
+    reason,
+  })
 }
 
 function extractHeaderValue(header: string | string[] | undefined): string | null {
@@ -480,6 +683,14 @@ io.on('connection', (socket) => {
     handleLeaveLobby(socket, lobbyCode)
   })
 
+  socket.on(SocketEvents.JOIN_SPECTATORS, async (lobbyCode: string) => {
+    await handleSpectatorJoin(socket, lobbyCode)
+  })
+
+  socket.on(SocketEvents.LEAVE_SPECTATORS, async (lobbyCode: string) => {
+    await removeSpectatorFromLobby(socket, lobbyCode, 'left-spectators-explicitly')
+  })
+
   socket.on(SocketEvents.JOIN_LOBBY_LIST, () => {
     handleJoinLobbyList(socket)
   })
@@ -517,6 +728,14 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnecting', () => {
+    const spectatorLobbyCodes = getSpectatorLobbyCodesFromRooms(socket.rooms)
+    if (spectatorLobbyCodes.length > 0) {
+      void Promise.all(
+        spectatorLobbyCodes.map((lobbyCode) =>
+          removeSpectatorFromLobby(socket, lobbyCode, 'socket-disconnecting')
+        )
+      )
+    }
     handleDisconnecting(socket)
   })
 

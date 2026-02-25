@@ -41,6 +41,9 @@ export const SocketEvents = {
   JOIN_LOBBY: 'join-lobby', // Join a specific lobby room
   LEAVE_LOBBY: 'leave-lobby', // Leave a lobby room
   JOINED_LOBBY: 'joined-lobby', // Confirmation of successful join (Server → Client)
+  JOIN_SPECTATORS: 'join-spectators',
+  LEAVE_SPECTATORS: 'leave-spectators',
+  JOINED_SPECTATORS: 'joined-spectators',
 
   // ========================================
   // Lobby List Management (Client → Server)
@@ -333,11 +336,23 @@ export interface SpectatorJoinedPayload extends BaseEventPayload {
   lobbyCode: string
   userId: string
   username: string
+  count?: number
 }
 
 export interface SpectatorLeftPayload extends BaseEventPayload {
   lobbyCode: string
   userId: string
+  count?: number
+}
+
+export interface JoinedSpectatorsPayload extends BaseEventPayload {
+  lobbyCode: string
+  success: boolean
+  spectators: Array<{
+    userId: string
+    username: string
+  }>
+  count: number
 }
 
 // ============================================================================
@@ -442,8 +457,8 @@ export const SocketRooms = {
   /** Room for a specific game (future) */
   game: (gameId: string) => `game:${gameId}`,
 
-  /** Room for spectators of a game (future) */
-  spectators: (gameId: string) => `spectators:${gameId}`,
+  /** Room for spectators of a lobby */
+  spectators: (lobbyCode: string) => `lobby:${lobbyCode}:spectators`,
 
   /** Room for user's friends (future) */
   userFriends: (userId: string) => `friends:${userId}`,

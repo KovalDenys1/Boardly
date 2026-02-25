@@ -32,6 +32,9 @@ interface Lobby {
   code: string
   name: string
   maxPlayers: number
+  allowSpectators?: boolean
+  maxSpectators?: number
+  spectatorCount?: number
   creator: { 
     username: string | null
     email: string | null
@@ -450,18 +453,25 @@ function LobbyListPageContent() {
                         </span>
                       </div>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                      lobby.games.length > 0 && lobby.games[0].status === 'playing'
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full ${
-                        lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-                      }`}></div>
-                      {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
-                        t('lobby.playing', { count: lobby.games[0]._count.players })
-                      ) : (
-                        t('lobby.waiting')
+                    <div className="flex flex-col items-end gap-2">
+                      <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                        lobby.games.length > 0 && lobby.games[0].status === 'playing'
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${
+                          lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
+                        }`}></div>
+                        {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
+                          t('lobby.playing', { count: lobby.games[0]._count.players })
+                        ) : (
+                          t('lobby.waiting')
+                        )}
+                      </div>
+                      {lobby.allowSpectators && (
+                        <div className="rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 px-3 py-1 text-xs font-semibold">
+                          Spectators: {lobby.spectatorCount ?? 0}/{lobby.maxSpectators ?? 0}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -469,12 +479,26 @@ function LobbyListPageContent() {
                     <span className="text-gray-600 dark:text-gray-400">
                       👥 {t('lobby.maxPlayers', { count: lobby.maxPlayers })}
                     </span>
-                    <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                      {t('lobby.joinGame')}
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {lobby.allowSpectators && lobby.games[0]?.status === 'playing' && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/lobby/${lobby.code}/spectate`)
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                        >
+                          Watch
+                        </button>
+                      )}
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                        {t('lobby.joinGame')}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
