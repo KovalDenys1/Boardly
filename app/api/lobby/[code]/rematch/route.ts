@@ -8,6 +8,7 @@ import {
   createNotificationUnsubscribeToken,
   getNotificationPreferences,
 } from '@/lib/notification-preferences'
+import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 
 export async function POST(
@@ -144,34 +145,76 @@ export async function POST(
 
     const participantById = new Map(participants.map((participant) => [participant.id, participant]))
     await Promise.allSettled(
-      dedupedTargetUserIds.map((userId) => {
+      dedupedTargetUserIds.map(async (userId) => {
         const recipient = participantById.get(userId)
-        if (!recipient?.email) {
-          return Promise.resolve({ success: false, error: 'Missing recipient email' })
+        const dedupeKey = `game_invite:rematch:game:${latestGame.id}:recipient:${userId}`
+        const payload = {
+          lobbyId: lobby.id,
+          lobbyCode: lobby.code,
+          lobbyName: lobby.name,
+          gameType: lobby.gameType,
+          gameId: latestGame.id,
+          senderId: requestUser.id,
+          senderName: requestUser.username || 'Player',
+          emailType: 'rematch',
         }
 
-        return getNotificationPreferences(userId).then((prefs) => {
-          if (prefs.unsubscribedAll || !prefs.gameInvites) {
-            return { success: false, error: 'Recipient disabled game invite emails' }
-          }
-
-          const token = createNotificationUnsubscribeToken({
+        if (!recipient?.email) {
+          await recordNotificationDelivery({
             userId,
-            type: 'gameInvites',
+            type: 'game_invite',
+            status: 'skipped',
+            reason: 'missing_recipient_email',
+            dedupeKey,
+            payload,
           })
-          const unsubscribeUrl = `${origin}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
+          return { success: false, error: 'Missing recipient email' }
+        }
 
-          return sendSocialInviteEmail({
-            email: recipient.email!,
-            recipientName: recipient.username,
-            senderName: requestUser.username,
-            lobbyName: lobby.name,
-            gameType: lobby.gameType,
-            inviteUrl,
-            unsubscribeUrl,
-            type: 'rematch',
+        const prefs = await getNotificationPreferences(userId)
+        if (prefs.unsubscribedAll || !prefs.gameInvites) {
+          await recordNotificationDelivery({
+            userId,
+            type: 'game_invite',
+            status: 'skipped',
+            reason: prefs.unsubscribedAll ? 'unsubscribed_all' : 'game_invites_disabled',
+            dedupeKey,
+            payload,
           })
+          return { success: false, error: 'Recipient disabled game invite emails' }
+        }
+
+        const token = createNotificationUnsubscribeToken({
+          userId,
+          type: 'gameInvites',
         })
+        const unsubscribeUrl = `${origin}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
+
+        const emailResult = await sendSocialInviteEmail({
+          email: recipient.email!,
+          recipientName: recipient.username,
+          senderName: requestUser.username,
+          lobbyName: lobby.name,
+          gameType: lobby.gameType,
+          inviteUrl,
+          unsubscribeUrl,
+          type: 'rematch',
+        })
+
+        await recordNotificationDelivery({
+          userId,
+          type: 'game_invite',
+          status: emailResult.success ? 'sent' : 'failed',
+          reason: emailResult.success ? undefined : 'email_send_failed',
+          dedupeKey,
+          payload: {
+            ...payload,
+            recipientEmail: recipient.email,
+            providerError: emailResult.success ? undefined : emailResult.error,
+          },
+        })
+
+        return emailResult
       })
     )
 

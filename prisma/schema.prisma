@@ -38,6 +38,7 @@ model Users {
   receivedLobbyInvites   LobbyInvites[]   @relation("LobbyInvitesReceived")
   adminAuditLogs         AdminAuditLogs[] @relation("AdminAuditLogsActor")
   notificationPreferences NotificationPreferences?
+  notifications         Notifications[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -317,6 +318,26 @@ model NotificationPreferences {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Notifications {
+  id        String   @id @default(cuid())
+  userId     String
+  user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  channel    String   @default("email")
+  status     String   @default("queued") // queued, sent, skipped, failed
+  dedupeKey  String?
+  reason     String?
+  payload    Json?
+  processedAt DateTime?
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([type, channel, status, createdAt])
+  @@index([dedupeKey])
 }
 
 model AdminAuditLogs {
