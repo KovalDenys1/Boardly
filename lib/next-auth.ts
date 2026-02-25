@@ -9,9 +9,11 @@ import { prisma } from './db'
 import { comparePassword } from './auth'
 import { apiLogger } from './logger'
 import { decode as defaultJwtDecode, encode as defaultJwtEncode } from 'next-auth/jwt'
-
-const REMEMBER_ME_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
-const DEFAULT_SESSION_MAX_AGE_SECONDS = 24 * 60 * 60
+import {
+  DEFAULT_SESSION_MAX_AGE_SECONDS,
+  getCredentialsSessionMaxAgeSeconds,
+  REMEMBER_ME_MAX_AGE_SECONDS,
+} from './auth-session-policy'
 
 export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
@@ -103,7 +105,7 @@ export const authOptions: NextAuthOptions = {
       const rememberMe = params.token?.rememberMe !== false
       return defaultJwtEncode({
         ...params,
-        maxAge: rememberMe ? REMEMBER_ME_MAX_AGE_SECONDS : DEFAULT_SESSION_MAX_AGE_SECONDS,
+        maxAge: getCredentialsSessionMaxAgeSeconds(rememberMe),
       })
     },
     async decode(params) {
