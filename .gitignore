@@ -99,6 +99,14 @@ dist
 # Gatsby files
 .cache/
 public
+!public/
+!public/manifest.json
+!public/offline.html
+!public/sw.js
+!public/icons/
+!public/icons/**
+!public/splash/
+!public/splash/**
 
 # Storybook build outputs
 .out
