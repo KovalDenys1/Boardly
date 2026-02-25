@@ -17,6 +17,8 @@ model Users {
   passwordHash  String?
   image         String?
   isGuest       Boolean   @default(false) // Flag for guest (temporary) users
+  role          UserRole  @default(user)
+  suspended     Boolean   @default(false)
   lastActiveAt  DateTime  @default(now()) // Track last activity for all users
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
@@ -34,8 +36,16 @@ model Users {
   friendshipsReceived    Friendships[]    @relation("FriendshipsReceived")
   sentLobbyInvites       LobbyInvites[]   @relation("LobbyInvitesSent")
   receivedLobbyInvites   LobbyInvites[]   @relation("LobbyInvitesReceived")
+  adminAuditLogs         AdminAuditLogs[] @relation("AdminAuditLogsActor")
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
+  @@index([role])
+  @@index([suspended])
+}
+
+enum UserRole {
+  user
+  admin
 }
 
 // Bot players - separate table to avoid polluting Users with false isBot values
@@ -286,4 +296,19 @@ model OperationalAlertStates {
   lastResolvedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model AdminAuditLogs {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      Users    @relation("AdminAuditLogsActor", fields: [adminId], references: [id], onDelete: Cascade)
+  action     String
+  targetType String
+  targetId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([adminId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, createdAt])
 }

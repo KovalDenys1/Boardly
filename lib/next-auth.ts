@@ -50,9 +50,22 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.users.findUnique({
           where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            image: true,
+            passwordHash: true,
+            role: true,
+            suspended: true,
+          },
         })
 
         if (!user || !user.passwordHash) {
+          return null
+        }
+
+        if (user.suspended) {
           return null
         }
 
@@ -67,6 +80,8 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.username,
           image: user.image,
+          role: user.role,
+          suspended: user.suspended,
         }
       },
     }),
@@ -99,6 +114,15 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (existingAccount) {
+            if (existingAccount.user.suspended) {
+              const log = apiLogger('OAuth signIn')
+              log.warn('Suspended user OAuth sign-in denied', {
+                userId: existingAccount.userId,
+                provider: account.provider,
+              })
+              return false
+            }
+
             // Account already exists - allow sign in
             // Auto-verify email if not already verified
             if (!existingAccount.user.emailVerified) {
@@ -116,9 +140,24 @@ export const authOptions: NextAuthOptions = {
           // New OAuth account - check if user with this email already exists
           const existingUserByEmail = await prisma.users.findUnique({
             where: { email: user.email! },
+            select: {
+              id: true,
+              emailVerified: true,
+              suspended: true,
+            },
           })
 
           if (existingUserByEmail) {
+            if (existingUserByEmail.suspended) {
+              const log = apiLogger('OAuth signIn')
+              log.warn('Suspended user OAuth sign-in denied (email match)', {
+                existingUserId: existingUserByEmail.id,
+                provider: account.provider,
+                email: user.email,
+              })
+              return false
+            }
+
             // A user with this email already exists — allow sign-in and let
             // PrismaAdapter link the OAuth account to the existing user.
             // Also ensure emailVerified is set for convenience.
@@ -160,6 +199,8 @@ export const authOptions: NextAuthOptions = {
         token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         token.picture = user.image
         token.emailVerified = user.emailVerified
+        token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
+        token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false
       }
 
       // Ensure we have user data from database
@@ -169,24 +210,30 @@ export const authOptions: NextAuthOptions = {
           select: {
             id: true,
             username: true,
-            emailVerified: true
+            emailVerified: true,
+            role: true,
+            suspended: true,
           }
         })
         if (dbUser) {
           token.id = dbUser.id
           token.name = dbUser.username
           token.emailVerified = dbUser.emailVerified
+          token.role = dbUser.role
+          token.suspended = dbUser.suspended
         }
       }
 
-      // Refresh emailVerified status on update trigger
+      // Refresh mutable user flags/status on update trigger
       if (trigger === 'update' && token.email) {
         const dbUser = await prisma.users.findUnique({
           where: { email: token.email },
-          select: { emailVerified: true }
+          select: { emailVerified: true, role: true, suspended: true }
         })
         if (dbUser) {
           token.emailVerified = dbUser.emailVerified
+          token.role = dbUser.role
+          token.suspended = dbUser.suspended
         }
       }
 
@@ -218,6 +265,8 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string
         session.user.image = token.picture as string
         session.user.emailVerified = token.emailVerified as Date | null
+        session.user.role = (token.role as 'user' | 'admin' | undefined) ?? 'user'
+        session.user.suspended = Boolean(token.suspended)
       }
       return session
     },
