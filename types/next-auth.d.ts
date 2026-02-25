@@ -21,6 +21,7 @@ declare module 'next-auth' {
     emailVerified?: Date | null
     role?: 'user' | 'admin'
     suspended?: boolean
+    rememberMe?: boolean
   }
 }
 
@@ -30,6 +31,8 @@ declare module 'next-auth/jwt' {
     emailVerified?: Date | null
     role?: 'user' | 'admin'
     suspended?: boolean
+    rememberMe?: boolean
+    authenticatedAt?: number
     lastActiveUpdate?: number // Timestamp of last lastActiveAt update
   }
 }
