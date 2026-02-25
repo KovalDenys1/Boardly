@@ -1,7 +1,7 @@
 import { IncomingMessage, Server as HttpServer, ServerResponse } from 'http'
 import { parse } from 'url'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
-import { sanitizeGameStateForSpectator } from '../spectator-state'
+import { sanitizeGameStateForSpectator, sanitizePayloadForSpectator } from '../spectator-state'
 
 type LogContext = Record<string, unknown>
 
@@ -132,40 +132,49 @@ function buildSpectatorMirrorPayload(event: string, data: unknown): unknown {
     return data
   }
 
-  if (event !== SocketEvents.GAME_UPDATE) {
-    return data
-  }
-
   const source = data as Record<string, unknown>
-  if (source.action !== 'state-change') {
-    return data
-  }
-
-  const payload = source.payload
-  if (!payload || typeof payload !== 'object') {
-    return data
-  }
-
-  const payloadObj = payload as Record<string, unknown>
-  const gameType =
-    typeof payloadObj.gameType === 'string'
-      ? payloadObj.gameType
-      : typeof source.gameType === 'string'
-        ? (source.gameType as string)
+  const directGameType =
+    typeof source.gameType === 'string'
+      ? source.gameType
+      : typeof (source.game as Record<string, unknown> | undefined)?.gameType === 'string'
+        ? ((source.game as Record<string, unknown>).gameType as string)
         : null
 
-  const rawState =
-    payloadObj.state && typeof payloadObj.state === 'object'
-      ? payloadObj.state
-      : payloadObj
+  if (event === SocketEvents.GAME_UPDATE) {
+    const payload = source.payload
+    if (!payload || typeof payload !== 'object') {
+      return data
+    }
 
-  return {
-    ...source,
-    payload: {
-      ...payloadObj,
-      ...(gameType ? { state: sanitizeGameStateForSpectator(gameType, rawState) } : {}),
-    },
+    const payloadObj = payload as Record<string, unknown>
+    const gameType =
+      typeof payloadObj.gameType === 'string'
+        ? payloadObj.gameType
+        : directGameType
+
+    if (source.action !== 'state-change') {
+      return gameType ? { ...source, payload: sanitizePayloadForSpectator(gameType, payloadObj) } : data
+    }
+
+    const rawState =
+      payloadObj.state && typeof payloadObj.state === 'object'
+        ? payloadObj.state
+        : payloadObj
+
+    return {
+      ...source,
+      payload: {
+        ...payloadObj,
+        ...(gameType ? { state: sanitizeGameStateForSpectator(gameType, rawState) } : {}),
+      },
+    }
   }
+
+  if (!directGameType) {
+    return data
+  }
+
+  return sanitizePayloadForSpectator(directGameType, source)
 }
 
 export function registerSocketHttpEndpoints({
