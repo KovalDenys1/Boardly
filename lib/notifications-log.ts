@@ -8,6 +8,11 @@ export type NotificationEmailType =
 
 export type NotificationDeliveryStatus = 'queued' | 'sent' | 'skipped' | 'failed'
 
+type NotificationsModelLike = {
+  create: (args: Record<string, unknown>) => Promise<unknown>
+  findFirst?: (args: Record<string, unknown>) => Promise<unknown>
+}
+
 type RecordNotificationDeliveryInput = {
   userId: string
   type: NotificationEmailType
@@ -27,9 +32,7 @@ export async function recordNotificationDelivery(
   input: RecordNotificationDeliveryInput
 ): Promise<void> {
   const notificationsModel = (prisma as unknown as {
-    notifications?: {
-      create: (args: Record<string, unknown>) => Promise<unknown>
-    }
+    notifications?: NotificationsModelLike
   }).notifications
 
   // Some tests mock a partial Prisma client and may not include this model.
@@ -56,5 +59,49 @@ export async function recordNotificationDelivery(
     })
   } catch {
     // Best-effort logging: notification delivery should not fail the parent flow.
+  }
+}
+
+type HasRecentSentNotificationInput = {
+  userId: string
+  type: NotificationEmailType
+  dedupeKey?: string
+  since: Date
+}
+
+export async function hasRecentSentNotification(
+  input: HasRecentSentNotificationInput
+): Promise<boolean> {
+  const notificationsModel = (prisma as unknown as {
+    notifications?: NotificationsModelLike
+  }).notifications
+
+  if (!notificationsModel?.findFirst) {
+    return false
+  }
+
+  try {
+    const recent = await notificationsModel.findFirst({
+      where: {
+        userId: input.userId,
+        type: input.type,
+        channel: 'email',
+        status: 'sent',
+        ...(input.dedupeKey ? { dedupeKey: input.dedupeKey } : {}),
+        sentAt: {
+          gte: input.since,
+        },
+      },
+      select: {
+        id: true,
+      },
+      orderBy: {
+        sentAt: 'desc',
+      },
+    })
+
+    return !!recent
+  } catch {
+    return false
   }
 }

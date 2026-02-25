@@ -318,3 +318,82 @@ export async function sendSocialInviteEmail(options: SocialInviteEmailOptions) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
+
+interface TurnReminderEmailOptions {
+  email: string
+  lobbyName: string
+  gameType: string
+  lobbyUrl: string
+  unsubscribeUrl?: string | null
+  recipientName?: string | null
+}
+
+export async function sendTurnReminderEmail(options: TurnReminderEmailOptions) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const {
+    email,
+    lobbyName,
+    gameType,
+    lobbyUrl,
+    unsubscribeUrl,
+    recipientName,
+  } = options
+
+  const displayName = recipientName || 'there'
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `It's your turn in ${lobbyName} - Boardly`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">⏰ Boardly Turn Reminder</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #111827; margin-top: 0;">Hi ${displayName}!</h2>
+              <p>It's your turn in <strong>${lobbyName}</strong>.</p>
+              <p><strong>Game:</strong> ${gameType.replace(/_/g, ' ')}</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${lobbyUrl}" target="_blank" rel="noopener noreferrer" style="background: #2563eb; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                  Play Your Turn
+                </a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
+              <p style="color: #2563eb; word-break: break-all; font-size: 12px;">${lobbyUrl}</p>
+              ${
+                unsubscribeUrl
+                  ? `
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                Don’t want turn reminder emails? <a href="${unsubscribeUrl}" style="color: #2563eb;">Unsubscribe from turn reminders</a>.
+              </p>
+              `
+                  : ''
+              }
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Failed to send turn reminder email:', error as Error, {
+      lobbyName,
+      gameType,
+    })
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
