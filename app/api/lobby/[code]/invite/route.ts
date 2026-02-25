@@ -5,6 +5,10 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { sendSocialInviteEmail } from '@/lib/email'
+import {
+  createNotificationUnsubscribeToken,
+  getNotificationPreferences,
+} from '@/lib/notification-preferences'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 
 const inviteSchema = z.object({
@@ -165,18 +169,32 @@ export async function POST(
 
     await Promise.allSettled(
       Array.from(invitedFriends.values()).map((friend) => {
-        if (!friend.email) {
+        const recipientEmail = friend.email
+        if (!recipientEmail) {
           return Promise.resolve({ success: false, error: 'Missing recipient email' })
         }
 
-        return sendSocialInviteEmail({
-          email: friend.email,
-          recipientName: friend.username,
-          senderName: requestUser.username,
-          lobbyName: lobby.name,
-          gameType: lobby.gameType,
-          inviteUrl,
-          type: 'invite',
+        return getNotificationPreferences(friend.id).then((prefs) => {
+          if (prefs.unsubscribedAll || !prefs.gameInvites) {
+            return { success: false, error: 'Recipient disabled game invite emails' }
+          }
+
+          const token = createNotificationUnsubscribeToken({
+            userId: friend.id,
+            type: 'gameInvites',
+          })
+          const unsubscribeUrl = `${origin}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
+
+          return sendSocialInviteEmail({
+            email: recipientEmail,
+            recipientName: friend.username,
+            senderName: requestUser.username || 'Player',
+            lobbyName: lobby.name,
+            gameType: lobby.gameType,
+            inviteUrl,
+            unsubscribeUrl,
+            type: 'invite',
+          })
         })
       })
     )

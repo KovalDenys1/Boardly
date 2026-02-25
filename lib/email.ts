@@ -229,6 +229,7 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
 
 interface SocialInviteEmailOptions {
   email: string
+  unsubscribeUrl?: string | null
   recipientName?: string | null
   senderName: string
   lobbyName: string
@@ -245,6 +246,7 @@ export async function sendSocialInviteEmail(options: SocialInviteEmailOptions) {
 
   const {
     email,
+    unsubscribeUrl,
     recipientName,
     senderName,
     lobbyName,
@@ -290,6 +292,16 @@ export async function sendSocialInviteEmail(options: SocialInviteEmailOptions) {
               </div>
               <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
               <p style="color: #2563eb; word-break: break-all; font-size: 12px;">${inviteUrl}</p>
+              ${
+                unsubscribeUrl
+                  ? `
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                Don't want invite emails? <a href="${unsubscribeUrl}" style="color: #2563eb;">Unsubscribe from game invite notifications</a>.
+              </p>
+              `
+                  : ''
+              }
             </div>
           </body>
         </html>

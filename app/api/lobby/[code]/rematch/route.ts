@@ -4,6 +4,10 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { sendSocialInviteEmail } from '@/lib/email'
+import {
+  createNotificationUnsubscribeToken,
+  getNotificationPreferences,
+} from '@/lib/notification-preferences'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 
 export async function POST(
@@ -146,14 +150,27 @@ export async function POST(
           return Promise.resolve({ success: false, error: 'Missing recipient email' })
         }
 
-        return sendSocialInviteEmail({
-          email: recipient.email,
-          recipientName: recipient.username,
-          senderName: requestUser.username,
-          lobbyName: lobby.name,
-          gameType: lobby.gameType,
-          inviteUrl,
-          type: 'rematch',
+        return getNotificationPreferences(userId).then((prefs) => {
+          if (prefs.unsubscribedAll || !prefs.gameInvites) {
+            return { success: false, error: 'Recipient disabled game invite emails' }
+          }
+
+          const token = createNotificationUnsubscribeToken({
+            userId,
+            type: 'gameInvites',
+          })
+          const unsubscribeUrl = `${origin}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
+
+          return sendSocialInviteEmail({
+            email: recipient.email!,
+            recipientName: recipient.username,
+            senderName: requestUser.username,
+            lobbyName: lobby.name,
+            gameType: lobby.gameType,
+            inviteUrl,
+            unsubscribeUrl,
+            type: 'rematch',
+          })
         })
       })
     )
