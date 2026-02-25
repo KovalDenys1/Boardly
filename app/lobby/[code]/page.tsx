@@ -863,32 +863,43 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         rollsUsed: 3 - workingEngine.getRollsLeft()
       })
 
-      const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
-
-      // Show friendly toast message without dice array
-      if (score === 0) {
-        showToast.error(
-          'toast.timerScoredZero',
-          undefined,
-          { category: displayName },
-          { duration: 4000 }
-        )
-      } else {
-        showToast.custom(
-          'toast.timerScored',
-          '⏱️',
-          undefined,
-          { score, category: displayName },
-          { duration: 4000 }
-        )
-      }
-
       try {
         const scoredEngine = await scoreHandler(bestCategory, autoActionContext)
         if (!scoredEngine) {
           clientLogger.log('⏰ Auto-score skipped by server guard')
           return false
         }
+
+        const appliedEngine = scoredEngine instanceof YahtzeeGame ? scoredEngine : null
+        const updatedScorecard = appliedEngine?.getScorecard(currentPlayer.id)
+
+        // Show timer toast only after the auto-score was actually applied.
+        if (updatedScorecard && updatedScorecard[bestCategory] !== undefined) {
+          const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
+
+          if (score === 0) {
+            showToast.error(
+              'toast.timerScoredZero',
+              undefined,
+              { category: displayName },
+              { duration: 4000 }
+            )
+          } else {
+            showToast.custom(
+              'toast.timerScored',
+              '⏱️',
+              undefined,
+              { score, category: displayName },
+              { duration: 4000 }
+            )
+          }
+        } else {
+          clientLogger.log('⏰ Auto-score applied without expected category fill, skipping timer toast', {
+            category: bestCategory,
+            playerId: currentPlayer.id,
+          })
+        }
+
         return true
       } catch (error) {
         clientLogger.error('⏰ Failed to auto-score:', error)
