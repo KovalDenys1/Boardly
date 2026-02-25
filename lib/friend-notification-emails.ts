@@ -5,6 +5,7 @@ import {
   getNotificationPreferences,
 } from './notification-preferences'
 import { recordNotificationDelivery } from './notifications-log'
+import { enqueueEmailNotification } from './notification-queue'
 
 type FriendUserRef = {
   id: string
@@ -34,9 +35,66 @@ type FriendNotificationResult = {
   reason?: string
 }
 
+type QueueFriendNotificationResult = {
+  queued: boolean
+  skipped?: boolean
+  reason?: string
+}
+
 function normalizeBaseUrl(baseUrl?: string): string {
   const raw = (baseUrl || process.env.NEXTAUTH_URL || 'http://localhost:3000').trim()
   return raw.replace(/\/+$/, '')
+}
+
+export async function queueFriendRequestNotificationEmail(
+  input: SendFriendRequestNotificationEmailInput
+): Promise<QueueFriendNotificationResult> {
+  const recipient = input.receiver
+  const senderName = input.sender.username || 'Player'
+  const dedupeKey = input.requestId
+    ? `friend_request:request:${input.requestId}:recipient:${recipient.id}`
+    : `friend_request:recipient:${recipient.id}:sender:${input.sender.id}`
+
+  return enqueueEmailNotification({
+    userId: recipient.id,
+    type: 'friend_request',
+    dedupeKey,
+    payload: {
+      requestId: input.requestId,
+      source: input.source || 'username',
+      senderId: input.sender.id,
+      senderName,
+      receiverId: recipient.id,
+      receiverName: recipient.username || null,
+      recipientEmail: recipient.email || null,
+      // baseUrl is intentionally omitted to avoid per-request host drift; queue processor uses canonical base URL.
+    },
+  })
+}
+
+export async function queueFriendAcceptedNotificationEmail(
+  input: SendFriendAcceptedNotificationEmailInput
+): Promise<QueueFriendNotificationResult> {
+  const recipient = input.requester
+  const accepterName = input.accepter.username || 'Player'
+  const dedupeKey = input.requestId
+    ? `friend_accepted:request:${input.requestId}:recipient:${recipient.id}`
+    : `friend_accepted:recipient:${recipient.id}:accepter:${input.accepter.id}`
+
+  return enqueueEmailNotification({
+    userId: recipient.id,
+    type: 'friend_accepted',
+    dedupeKey,
+    payload: {
+      requestId: input.requestId,
+      friendshipId: input.friendshipId,
+      accepterId: input.accepter.id,
+      accepterName,
+      requesterId: recipient.id,
+      requesterName: recipient.username || null,
+      recipientEmail: recipient.email || null,
+    },
+  })
 }
 
 export async function sendFriendRequestNotificationEmail(

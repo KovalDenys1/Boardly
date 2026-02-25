@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { sendFriendAcceptedNotificationEmail } from '@/lib/friend-notification-emails'
+import { queueFriendAcceptedNotificationEmail } from '@/lib/friend-notification-emails'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request/accept')
@@ -124,7 +124,7 @@ export async function POST(
       friendshipId: friendship.id
     })
 
-    await sendFriendAcceptedNotificationEmail({
+    await queueFriendAcceptedNotificationEmail({
       accepter: {
         id: friendRequest.receiver.id,
         username: friendRequest.receiver.username,

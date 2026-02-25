@@ -5,7 +5,7 @@ import { findUserByFriendCode } from '@/lib/friend-code'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { sendFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
+import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
 
 export const runtime = 'nodejs'
 
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    await sendFriendRequestNotificationEmail({
+    await queueFriendRequestNotificationEmail({
       sender: {
         id: currentUser.id,
         username: currentUser.username,
