@@ -80,6 +80,8 @@ export const SocketEvents = {
   // ========================================
   SEND_CHAT_MESSAGE: 'send-chat-message', // Client → Server
   CHAT_MESSAGE: 'chat-message', // Server → Client (broadcast)
+  SEND_SPECTATOR_CHAT_MESSAGE: 'send-spectator-chat-message',
+  SPECTATOR_CHAT_MESSAGE: 'spectator-chat-message',
 
   // ========================================
   // Bot Events
@@ -259,6 +261,15 @@ export interface ChatMessagePayload extends BaseEventPayload {
   message: string
   /** Message type for special messages */
   type?: 'system' | 'user' | 'bot'
+}
+
+export interface SpectatorChatMessagePayload extends BaseEventPayload {
+  id: string
+  lobbyCode: string
+  userId: string
+  username: string
+  message: string
+  type?: 'user' | 'system'
 }
 
 // ============================================================================

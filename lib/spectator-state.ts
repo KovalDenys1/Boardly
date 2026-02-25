@@ -36,6 +36,18 @@ function scrubSpyIdentity(value: unknown): unknown {
       continue
     }
 
+    const shouldTryParseJsonString =
+      typeof rawChild === 'string' &&
+      (lowerKey === 'state' || lowerKey === 'initialstate' || lowerKey === 'game')
+
+    if (shouldTryParseJsonString) {
+      const parsed = parseGameState(rawChild)
+      if (parsed && typeof parsed === 'object') {
+        result[key] = scrubSpyIdentity(parsed)
+        continue
+      }
+    }
+
     result[key] = scrubSpyIdentity(rawChild)
   }
 
@@ -53,4 +65,28 @@ export function sanitizeGameStateForSpectator(gameType: string, rawState: unknow
   }
 
   return parsed
+}
+
+export function sanitizePayloadForSpectator(gameType: string, rawPayload: unknown): unknown {
+  if (gameType !== 'guess_the_spy') {
+    return rawPayload
+  }
+
+  if (rawPayload === null || rawPayload === undefined) {
+    return rawPayload
+  }
+
+  if (typeof rawPayload === 'string') {
+    const parsed = parseGameState(rawPayload)
+    if (parsed && typeof parsed === 'object') {
+      return scrubSpyIdentity(parsed)
+    }
+    return rawPayload
+  }
+
+  if (typeof rawPayload !== 'object') {
+    return rawPayload
+  }
+
+  return scrubSpyIdentity(rawPayload)
 }

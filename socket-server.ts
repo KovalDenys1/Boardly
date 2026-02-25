@@ -317,6 +317,14 @@ function isSocketAuthorizedForLobby(socket: LobbyAuthorizationSocket, lobbyCode:
   return authorizedLobbies.has(lobbyCode) && socket.rooms.has(SocketRooms.lobby(lobbyCode))
 }
 
+function isSocketAuthorizedForSpectatorLobby(socket: LobbyAuthorizationSocket, lobbyCode: string): boolean {
+  const authorizedSpectatorLobbies = getAuthorizedSpectatorLobbySet(socket)
+  return (
+    authorizedSpectatorLobbies.has(lobbyCode) &&
+    socket.rooms.has(SocketRooms.spectators(lobbyCode))
+  )
+}
+
 async function isUserActivePlayerInLobby(lobbyCode: string, userId: string): Promise<boolean> {
   const player = await prisma.players.findFirst({
     where: {
@@ -483,6 +491,52 @@ async function removeSpectatorFromLobby(socket: SpectatorMembershipSocket, lobby
     userId,
     count: snapshot.count,
     reason,
+  })
+}
+
+async function handleSpectatorChatMessage(
+  socket: SpectatorMembershipSocket & { rooms: Set<string> },
+  data: { lobbyCode?: string; message?: string }
+) {
+  socketMonitor.trackEvent('send-spectator-chat-message')
+
+  if (!checkRateLimit(socket.id)) {
+    emitError(socket, 'RATE_LIMIT_EXCEEDED', 'Too many requests', 'errors.rateLimitExceeded')
+    return
+  }
+
+  const lobbyCode = typeof data?.lobbyCode === 'string' ? data.lobbyCode.trim() : ''
+  const message = typeof data?.message === 'string' ? data.message.trim() : ''
+
+  if (!lobbyCode || lobbyCode.length > 20) {
+    emitError(socket, 'INVALID_LOBBY_CODE', 'Invalid lobby code', 'errors.invalidLobbyCode')
+    return
+  }
+
+  if (!isSocketAuthorizedForSpectatorLobby(socket as LobbyAuthorizationSocket, lobbyCode)) {
+    emitError(socket, 'SPECTATOR_ACCESS_DENIED', 'You are not joined as a spectator')
+    return
+  }
+
+  if (!message || message.length > 500) {
+    emitError(socket, 'INVALID_CHAT_MESSAGE', 'Invalid spectator chat message')
+    return
+  }
+
+  const userId = socket.data.user?.id
+  if (!userId) {
+    emitError(socket, 'UNAUTHORIZED', 'Unauthorized')
+    return
+  }
+
+  const username = getUserDisplayName(socket.data.user)
+  emitWithMetadata(io, SocketRooms.spectators(lobbyCode), SocketEvents.SPECTATOR_CHAT_MESSAGE, {
+    id: `spectator-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    lobbyCode,
+    userId,
+    username,
+    message,
+    type: 'user',
   })
 }
 
@@ -720,6 +774,13 @@ io.on('connection', (socket) => {
     SocketEvents.SEND_CHAT_MESSAGE,
     async (data: { lobbyCode: string; message: string; userId: string; username: string }) => {
       await handleSendChatMessage(socket, data)
+    }
+  )
+
+  socket.on(
+    SocketEvents.SEND_SPECTATOR_CHAT_MESSAGE,
+    async (data: { lobbyCode?: string; message?: string }) => {
+      await handleSpectatorChatMessage(socket as SpectatorMembershipSocket & { rooms: Set<string> }, data)
     }
   )
 
