@@ -225,6 +225,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isInitialLoadRef = React.useRef(true)
   const isLeavingLobbyRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
+  const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -1175,6 +1176,24 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
   const isGameStarted = game?.status === 'playing'
 
+  // Reset mobile-only UI state when a new Yahtzee game starts without a page reload
+  // (e.g. host starts game, rematch starts, or socket-driven transition).
+  useEffect(() => {
+    if (lobby?.gameType !== 'yahtzee' || !isGameStarted || !game?.id) {
+      return
+    }
+
+    if (initializedMobileUiGameIdRef.current === game.id) {
+      return
+    }
+
+    initializedMobileUiGameIdRef.current = game.id
+    setMobileActiveTab('game')
+    setSelectedPlayerId(null)
+    setUnreadMessageCount(0)
+    setRollHistory([])
+  }, [lobby?.gameType, isGameStarted, game?.id])
+
   const playersForLeaderboard = React.useMemo(() => {
     if (!gameEngine || !Array.isArray(game?.players)) {
       return []
@@ -1583,6 +1602,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 {/* Mobile: Tabbed Layout */}
                 <div
+                  key={game?.id || 'yahtzee-mobile-tabs'}
                   className="md:hidden relative"
                   style={{
                     height: '100%',
