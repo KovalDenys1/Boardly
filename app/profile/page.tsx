@@ -25,6 +25,14 @@ interface LinkedAccounts {
 
 type TabType = 'profile' | 'friends' | 'history' | 'settings'
 
+type NotificationPreferences = {
+  gameInvites: boolean
+  turnReminders: boolean
+  friendRequests: boolean
+  friendAccepted: boolean
+  unsubscribedAll: boolean
+}
+
 export default function ProfilePage() {
   const { t } = useTranslation()
   const { data: session, update, status } = useSession()
@@ -43,6 +51,13 @@ export default function ProfilePage() {
   // Settings state
   const [settingsChanged, setSettingsChanged] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
+  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({
+    gameInvites: true,
+    turnReminders: true,
+    friendRequests: true,
+    friendAccepted: true,
+    unsubscribedAll: false,
+  })
   const [settings, setSettings] = useState({
     language: 'en',
     theme: 'system',
@@ -141,6 +156,18 @@ export default function ProfilePage() {
           theme: savedTheme
         }))
       }
+
+      fetch('/api/user/notification-preferences', { cache: 'no-store' })
+        .then(async (res) => {
+          if (!res.ok) return null
+          return res.json()
+        })
+        .then((data) => {
+          if (data?.preferences) {
+            setNotificationPreferences(data.preferences)
+          }
+        })
+        .catch(() => {})
     }
   }, [status])
 
@@ -328,6 +355,16 @@ export default function ProfilePage() {
       // Trigger language change
       window.dispatchEvent(new Event('languageChange'))
 
+      // Save server-side email notification preferences
+      const prefsRes = await fetch('/api/user/notification-preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notificationPreferences),
+      })
+      if (!prefsRes.ok) {
+        throw new Error('Failed to save notification preferences')
+      }
+
       showToast.success('profile.settings.saved')
       setSettingsChanged(false)
 
@@ -342,6 +379,23 @@ export default function ProfilePage() {
 
   const updateSetting = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }))
+    setSettingsChanged(true)
+  }
+
+  const updateNotificationPreference = (key: keyof NotificationPreferences, value: boolean) => {
+    setNotificationPreferences((prev) => {
+      const next = { ...prev, [key]: value }
+      if (key === 'unsubscribedAll' && value) {
+        next.gameInvites = false
+        next.turnReminders = false
+        next.friendRequests = false
+        next.friendAccepted = false
+      }
+      if (key !== 'unsubscribedAll' && value) {
+        next.unsubscribedAll = false
+      }
+      return next
+    })
     setSettingsChanged(true)
   }
 
@@ -788,6 +842,86 @@ export default function ProfilePage() {
                       <div className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.soundDesc')}</div>
                     </div>
                   </Label>
+
+                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Email Notification Categories (server-side)
+                    </div>
+
+                    <Label className="flex items-start gap-3 cursor-pointer mb-3">
+                      <Checkbox
+                        checked={notificationPreferences.unsubscribedAll}
+                        onCheckedChange={(checked) => updateNotificationPreference('unsubscribedAll', Boolean(checked))}
+                        className="mt-1"
+                      />
+                      <div>
+                        <div className="font-medium">Unsubscribe from all email notifications</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Overrides all categories below
+                        </div>
+                      </div>
+                    </Label>
+
+                    <Label className="flex items-start gap-3 cursor-pointer mb-3">
+                      <Checkbox
+                        checked={notificationPreferences.gameInvites}
+                        onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
+                        disabled={notificationPreferences.unsubscribedAll}
+                        className="mt-1"
+                      />
+                      <div>
+                        <div className="font-medium">Game invites & rematches</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Email me when friends invite me to a lobby or rematch
+                        </div>
+                      </div>
+                    </Label>
+
+                    <Label className="flex items-start gap-3 cursor-pointer mb-3">
+                      <Checkbox
+                        checked={notificationPreferences.turnReminders}
+                        onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
+                        disabled={notificationPreferences.unsubscribedAll}
+                        className="mt-1"
+                      />
+                      <div>
+                        <div className="font-medium">Turn reminders</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          For long-running games (future)
+                        </div>
+                      </div>
+                    </Label>
+
+                    <Label className="flex items-start gap-3 cursor-pointer mb-3">
+                      <Checkbox
+                        checked={notificationPreferences.friendRequests}
+                        onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
+                        disabled={notificationPreferences.unsubscribedAll}
+                        className="mt-1"
+                      />
+                      <div>
+                        <div className="font-medium">Friend requests</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          For future friend notification emails
+                        </div>
+                      </div>
+                    </Label>
+
+                    <Label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        checked={notificationPreferences.friendAccepted}
+                        onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
+                        disabled={notificationPreferences.unsubscribedAll}
+                        className="mt-1"
+                      />
+                      <div>
+                        <div className="font-medium">Friend request accepted</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          For future friend notification emails
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
                 </div>
               </div>
 
