@@ -397,3 +397,155 @@ export async function sendTurnReminderEmail(options: TurnReminderEmailOptions) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }
+
+interface FriendRequestEmailOptions {
+  email: string
+  senderName: string
+  profileUrl: string
+  unsubscribeUrl?: string | null
+  recipientName?: string | null
+}
+
+export async function sendFriendRequestEmail(options: FriendRequestEmailOptions) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const {
+    email,
+    senderName,
+    profileUrl,
+    unsubscribeUrl,
+    recipientName,
+  } = options
+
+  const displayName = recipientName || 'there'
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `${senderName} sent you a friend request - Boardly`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🤝 New Friend Request</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #111827; margin-top: 0;">Hi ${displayName}!</h2>
+              <p><strong>${senderName}</strong> sent you a friend request on Boardly.</p>
+              <p>Open your profile to accept or reject it.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" style="background: #059669; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                  Open Profile
+                </a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
+              <p style="color: #059669; word-break: break-all; font-size: 12px;">${profileUrl}</p>
+              ${
+                unsubscribeUrl
+                  ? `
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                Don’t want friend request emails? <a href="${unsubscribeUrl}" style="color: #059669;">Unsubscribe from friend request notifications</a>.
+              </p>
+              `
+                  : ''
+              }
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Failed to send friend request email:', error as Error, {
+      senderName,
+    })
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+interface FriendAcceptedEmailOptions {
+  email: string
+  accepterName: string
+  profileUrl: string
+  unsubscribeUrl?: string | null
+  recipientName?: string | null
+}
+
+export async function sendFriendAcceptedEmail(options: FriendAcceptedEmailOptions) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const {
+    email,
+    accepterName,
+    profileUrl,
+    unsubscribeUrl,
+    recipientName,
+  } = options
+
+  const displayName = recipientName || 'there'
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `${accepterName} accepted your friend request - Boardly`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">✅ Friend Request Accepted</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #111827; margin-top: 0;">Hi ${displayName}!</h2>
+              <p><strong>${accepterName}</strong> accepted your friend request on Boardly.</p>
+              <p>You can now invite each other to lobbies and games.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${profileUrl}" target="_blank" rel="noopener noreferrer" style="background: #d97706; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                  View Friends
+                </a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
+              <p style="color: #d97706; word-break: break-all; font-size: 12px;">${profileUrl}</p>
+              ${
+                unsubscribeUrl
+                  ? `
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                Don’t want friend accepted emails? <a href="${unsubscribeUrl}" style="color: #d97706;">Unsubscribe from friend acceptance notifications</a>.
+              </p>
+              `
+                  : ''
+              }
+            </div>
+          </body>
+        </html>
+      `,
+    })
+
+    return { success: true }
+  } catch (error) {
+    logger.error('Failed to send friend accepted email:', error as Error, {
+      accepterName,
+    })
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}

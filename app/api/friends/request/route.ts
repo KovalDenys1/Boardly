@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { sendFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request')
@@ -127,6 +128,22 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    })
+
+    await sendFriendRequestNotificationEmail({
+      sender: {
+        id: friendRequest.sender.id,
+        username: friendRequest.sender.username,
+        email: friendRequest.sender.email,
+      },
+      receiver: {
+        id: friendRequest.receiver.id,
+        username: friendRequest.receiver.username,
+        email: friendRequest.receiver.email,
+      },
+      requestId: friendRequest.id,
+      source: 'username',
+      baseUrl: new URL(req.url).origin,
     })
 
     log.info('Friend request sent', {
