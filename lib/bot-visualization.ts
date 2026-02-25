@@ -1,4 +1,4 @@
-import { YahtzeeCategory } from './yahtzee'
+import { ALL_CATEGORIES, YahtzeeCategory } from './yahtzee'
 import { clientLogger } from './client-logger'
 
 // Re-export BotMoveStep from the shared types for backward compatibility
@@ -102,21 +102,7 @@ export function findFilledCategory(
   previousScorecard: Record<YahtzeeCategory, number | undefined>,
   currentScorecard: Record<YahtzeeCategory, number | undefined>
 ): { category: YahtzeeCategory; score: number } | null {
-  const categories: YahtzeeCategory[] = [
-    'ones',
-    'twos',
-    'threes',
-    'fours',
-    'fives',
-    'sixes',
-    'threeOfKind',
-    'fourOfKind',
-    'fullHouse',
-    'smallStraight',
-    'largeStraight',
-    'yahtzee',
-    'chance',
-  ]
+  const categories: YahtzeeCategory[] = [...ALL_CATEGORIES]
 
   for (const category of categories) {
     const prevScore = previousScorecard[category]

@@ -557,6 +557,8 @@ const uk: Translation = {
       fours: 'Четвірки',
       fives: 'П\'ятірки',
       sixes: 'Шістки',
+      onePair: 'Пара',
+      twoPairs: 'Дві пари',
       threeOfKind: 'Три однакових',
       fourOfKind: 'Чотири однакових',
       fullHouse: 'Фул-хаус',

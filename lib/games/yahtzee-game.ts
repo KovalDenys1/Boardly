@@ -160,7 +160,7 @@ export class YahtzeeGame extends GameEngine {
         gameData.dice = rollDice(5)
         gameData.held = [false, false, false, false, false]
         gameData.rollsLeft = 3
-        // Don't increment round - game ends when all players finish all 13 categories
+        // Don't increment round - game ends when all players finish all categories
         
         // Note: currentPlayerIndex is advanced by GameEngine.makeMove() after processMove
         break
@@ -168,7 +168,7 @@ export class YahtzeeGame extends GameEngine {
   }
 
   checkWinCondition(): Player | null {
-    // Yahtzee is finished when all players have completed their scorecards (13 categories each)
+    // Yahtzee is finished when all players have completed their scorecards (all categories)
     const gameData = this.state.data as YahtzeeGameData
     
     // If not all players have scorecards, game not finished
@@ -202,7 +202,7 @@ export class YahtzeeGame extends GameEngine {
     return [
       'Roll 5 dice up to 3 times per turn',
       'Hold dice you want to keep between rolls',
-      'Score in one of the 13 categories after each turn',
+      'Score in one of the available categories after each turn',
       'Upper section: score sum of dice showing that number',
       'Lower section: special combinations with fixed scores',
       'Bonus 35 points if upper section >= 63',
@@ -230,7 +230,7 @@ export class YahtzeeGame extends GameEngine {
     const currentPlayerIndex = this.state.currentPlayerIndex
     const currentPlayerScorecard = gameData.scores[currentPlayerIndex] || {}
 
-    // Count only official Yahtzee categories to stay robust against legacy keys.
+    // Count only supported score categories to stay robust against legacy keys.
     const filledCategories = ALL_CATEGORIES.filter(
       (category) => currentPlayerScorecard[category] !== undefined
     ).length

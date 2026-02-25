@@ -555,6 +555,8 @@ const no = {
       fours: 'Firere',
       fives: 'Femmere',
       sixes: 'Seksere',
+      onePair: 'Ett par',
+      twoPairs: 'To par',
       threeOfKind: 'Tre like',
       fourOfKind: 'Fire like',
       fullHouse: 'Hus',

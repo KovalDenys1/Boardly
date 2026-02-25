@@ -40,8 +40,10 @@ function calculateSectionScores(scorecard: YahtzeeScorecard): {
   // Bonus: 35 points if upper section >= 63
   const bonus = upper >= 63 ? 35 : 0
   
-  // Lower section: three of kind through chance
+  // Lower section: pair categories through chance
   const lower = (
+    (scorecard.onePair || 0) +
+    (scorecard.twoPairs || 0) +
     (scorecard.threeOfKind || 0) +
     (scorecard.fourOfKind || 0) +
     (scorecard.fullHouse || 0) +

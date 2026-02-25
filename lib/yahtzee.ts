@@ -1,4 +1,4 @@
-// Official Yahtzee categories (13 total)
+// Boardly Yahtzee/Yatzy categories (15 total)
 export const ALL_CATEGORIES = [
   'ones',
   'twos',
@@ -6,6 +6,8 @@ export const ALL_CATEGORIES = [
   'fours',
   'fives',
   'sixes',
+  'onePair',
+  'twoPairs',
   'threeOfKind',
   'fourOfKind',
   'fullHouse',
@@ -24,6 +26,8 @@ export interface YahtzeeScorecard {
   fours?: number
   fives?: number
   sixes?: number
+  onePair?: number
+  twoPairs?: number
   threeOfKind?: number
   fourOfKind?: number
   fullHouse?: number
@@ -60,6 +64,29 @@ export function calculateScore(dice: number[], category: YahtzeeCategory): numbe
     case 'fours': return counts[4] * 4
     case 'fives': return counts[5] * 5
     case 'sixes': return counts[6] * 6
+
+    case 'onePair': {
+      for (let value = 6; value >= 1; value--) {
+        if (counts[value] >= 2) {
+          return value * 2
+        }
+      }
+      return 0
+    }
+
+    case 'twoPairs': {
+      const pairValues: number[] = []
+
+      for (let value = 6; value >= 1; value--) {
+        if (counts[value] >= 2) {
+          pairValues.push(value)
+        }
+      }
+
+      return pairValues.length >= 2
+        ? (pairValues[0] * 2) + (pairValues[1] * 2)
+        : 0
+    }
 
     case 'threeOfKind':
       return counts.some(c => c >= 3) ? dice.reduce((a, b) => a + b, 0) : 0
@@ -132,7 +159,8 @@ export function calculateTotalScore(scorecard: YahtzeeScorecard): number {
 
   const upperBonus = upperSection >= 63 ? 35 : 0
 
-  const lowerSection = (scorecard.threeOfKind || 0) + (scorecard.fourOfKind || 0) +
+  const lowerSection = (scorecard.onePair || 0) + (scorecard.twoPairs || 0) +
+    (scorecard.threeOfKind || 0) + (scorecard.fourOfKind || 0) +
     (scorecard.fullHouse || 0) +
     (scorecard.smallStraight || 0) + (scorecard.largeStraight || 0) +
     (scorecard.yahtzee || 0) + (scorecard.chance || 0)
@@ -149,7 +177,7 @@ const WASTE_PRIORITY: YahtzeeCategory[] = [
   // Upper section first (lowest value first)
   'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
   // Lower section (least valuable first)
-  'threeOfKind', 'fourOfKind', 'smallStraight', 'fullHouse',
+  'onePair', 'twoPairs', 'threeOfKind', 'fourOfKind', 'smallStraight', 'fullHouse',
   'largeStraight', 'chance', 'yahtzee'
 ]
 
