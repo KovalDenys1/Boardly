@@ -66,6 +66,19 @@ describe('Yahtzee Score Calculation', () => {
       expect(calculateScore([6, 6, 1, 2, 3], 'sixes')).toBe(12)
     })
 
+    it('should calculate one pair (highest pair) correctly', () => {
+      expect(calculateScore([2, 2, 5, 5, 6], 'onePair')).toBe(10)
+      expect(calculateScore([4, 4, 4, 2, 1], 'onePair')).toBe(8)
+      expect(calculateScore([1, 2, 3, 4, 5], 'onePair')).toBe(0)
+    })
+
+    it('should calculate two pairs correctly', () => {
+      expect(calculateScore([2, 2, 5, 5, 6], 'twoPairs')).toBe(14)
+      expect(calculateScore([4, 4, 4, 2, 2], 'twoPairs')).toBe(12)
+      expect(calculateScore([6, 6, 6, 6, 1], 'twoPairs')).toBe(0)
+      expect(calculateScore([1, 2, 3, 4, 5], 'twoPairs')).toBe(0)
+    })
+
     it('should calculate three of a kind', () => {
       expect(calculateScore([3, 3, 3, 4, 5], 'threeOfKind')).toBe(18)
       expect(calculateScore([1, 1, 1, 1, 1], 'threeOfKind')).toBe(5)
@@ -201,7 +214,7 @@ describe('Yahtzee Score Calculation', () => {
   })
 
   describe('isGameFinished', () => {
-    it('should return true when all 13 official categories are filled', () => {
+    it('should return true when all 15 score categories are filled', () => {
       const fullScorecard = {
         ones: 0,
         twos: 0,
@@ -209,6 +222,8 @@ describe('Yahtzee Score Calculation', () => {
         fours: 0,
         fives: 0,
         sixes: 0,
+        onePair: 0,
+        twoPairs: 0,
         threeOfKind: 0,
         fourOfKind: 0,
         fullHouse: 0,
@@ -229,6 +244,8 @@ describe('Yahtzee Score Calculation', () => {
         fours: 0,
         fives: 0,
         sixes: 0,
+        onePair: 0,
+        twoPairs: 0,
         threeOfKind: 0,
         fourOfKind: 0,
         fullHouse: 0,
@@ -265,7 +282,7 @@ describe('Yahtzee Score Calculation', () => {
         sixes: 0,
         chance: 17,
       })
-      expect(category).toBe('threeOfKind')
+      expect(category).toBe('onePair')
     })
   })
 

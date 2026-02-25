@@ -555,6 +555,8 @@ const ru = {
       fours: 'Четвёрки',
       fives: 'Пятёрки',
       sixes: 'Шестёрки',
+      onePair: 'Пара',
+      twoPairs: 'Две пары',
       threeOfKind: 'Три одинаковых',
       fourOfKind: 'Четыре одинаковых',
       fullHouse: 'Фулл-хаус',

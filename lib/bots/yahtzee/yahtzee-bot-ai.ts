@@ -1,4 +1,4 @@
-import { YahtzeeCategory, calculateScore, YahtzeeScorecard } from '@/lib/yahtzee'
+import { ALL_CATEGORIES, YahtzeeCategory, calculateScore, YahtzeeScorecard } from '@/lib/yahtzee'
 
 /**
  * Yahtzee Bot AI - Pure decision logic without game engine coupling
@@ -417,12 +417,7 @@ export class YahtzeeBotAI {
    * Helper: Get available categories from scorecard
    */
   private static getAvailableCategories(scorecard: YahtzeeScorecard): YahtzeeCategory[] {
-    const allCategories: YahtzeeCategory[] = [
-      'ones', 'twos', 'threes', 'fours', 'fives', 'sixes',
-      'threeOfKind', 'fourOfKind', 'fullHouse', 'smallStraight',
-      'largeStraight', 'yahtzee', 'chance'
-    ]
-    return allCategories.filter(cat => scorecard[cat] === undefined)
+    return ALL_CATEGORIES.filter(cat => scorecard[cat] === undefined)
   }
 
   /**
