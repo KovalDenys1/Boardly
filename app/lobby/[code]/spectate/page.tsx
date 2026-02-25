@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
@@ -21,6 +21,15 @@ type SpectatorLobbyResponse = {
   canJoinAsPlayer: boolean
 }
 
+type SpectatorChatMessage = {
+  id: string
+  userId: string
+  username: string
+  lobbyCode: string
+  message: string
+  timestamp?: number
+}
+
 export default function SpectatorLobbyPage() {
   const params = useParams()
   const router = useRouter()
@@ -34,6 +43,9 @@ export default function SpectatorLobbyPage() {
   const [spectators, setSpectators] = useState<SpectatorUser[]>([])
   const [spectatorCount, setSpectatorCount] = useState(0)
   const [joiningAsPlayer, setJoiningAsPlayer] = useState(false)
+  const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const socketRef = useRef<Socket | null>(null)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -86,6 +98,7 @@ export default function SpectatorLobbyPage() {
         auth: socketAuth.authPayload,
         query: socketAuth.queryPayload,
       })
+      socketRef.current = socket
 
       socket.on('connect', () => {
         socket?.emit(SocketEvents.JOIN_SPECTATORS, code)
@@ -121,6 +134,16 @@ export default function SpectatorLobbyPage() {
         }
       })
 
+      socket.on(SocketEvents.SPECTATOR_CHAT_MESSAGE, (payload: any) => {
+        if (payload?.lobbyCode !== code) return
+        if (typeof payload?.id !== 'string' || typeof payload?.message !== 'string') return
+        setChatMessages((prev) => {
+          if (prev.some((m) => m.id === payload.id)) return prev
+          const next = [...prev, payload as SpectatorChatMessage]
+          return next.slice(-100)
+        })
+      })
+
       const refetch = () => void loadSnapshot()
       socket.on(SocketEvents.GAME_UPDATE, refetch)
       socket.on(SocketEvents.LOBBY_UPDATE, refetch)
@@ -138,8 +161,27 @@ export default function SpectatorLobbyPage() {
         socket.emit(SocketEvents.LEAVE_SPECTATORS, code)
         socket.disconnect()
       }
+      socketRef.current = null
     }
   }, [code, guestToken, isGuest, loadSnapshot, session?.user?.id])
+
+  const sendSpectatorChatMessage = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault()
+      const message = chatInput.trim()
+      if (!message) return
+      if (!socketRef.current || socketRef.current.disconnected) {
+        setError('Spectator chat is unavailable while disconnected')
+        return
+      }
+      socketRef.current.emit(SocketEvents.SEND_SPECTATOR_CHAT_MESSAGE, {
+        lobbyCode: code,
+        message,
+      })
+      setChatInput('')
+    },
+    [chatInput, code]
+  )
 
   const joinAsPlayer = useCallback(async () => {
     if (!data?.canJoinAsPlayer || joiningAsPlayer) return
@@ -270,6 +312,38 @@ export default function SpectatorLobbyPage() {
               <p className="text-gray-600 dark:text-gray-300">
                 This spectator view is read-only. Interactive game controls and player chat are disabled.
               </p>
+            </div>
+
+            <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900">
+              <h3 className="font-bold mb-3">Spectator Chat</h3>
+              <div className="mb-3 max-h-52 overflow-auto space-y-2 rounded-xl border bg-gray-50 p-3 dark:bg-gray-950">
+                {chatMessages.length === 0 && (
+                  <div className="text-sm text-gray-500">No spectator messages yet</div>
+                )}
+                {chatMessages.map((message) => (
+                  <div key={message.id} className="text-sm">
+                    <span className="font-semibold">{message.username}: </span>
+                    <span className="text-gray-700 dark:text-gray-300">{message.message}</span>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={sendSpectatorChatMessage} className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Say something to spectators..."
+                  maxLength={500}
+                  className="flex-1 rounded-lg border px-3 py-2 text-sm bg-white dark:bg-gray-950"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  Send
+                </button>
+              </form>
             </div>
           </div>
         </div>
