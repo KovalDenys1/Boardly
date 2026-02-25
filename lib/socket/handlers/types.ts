@@ -9,11 +9,13 @@ export interface SocketUserContext {
 export interface SocketDataWithUser {
   user: SocketUserContext
   authorizedLobbies?: Set<string>
+  authorizedSpectatorLobbies?: Set<string>
 }
 
 export interface SocketDataWithOptionalUser {
   user?: SocketUserContext
   authorizedLobbies?: Set<string>
+  authorizedSpectatorLobbies?: Set<string>
 }
 
 export interface EmitsToSelf {

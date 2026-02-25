@@ -56,3 +56,34 @@ jobs:
           __tests__/lib/guest-helpers.test.ts
           __tests__/lib/game-registry.test.ts
           __tests__/lib/lobby-player-requirements.test.ts
+
+  bundle-budget:
+    name: Bundle Budget (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Build + budget checks do not require a real DB, but some routes instantiate Prisma during build.
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
+      JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
+      SOCKET_SERVER_INTERNAL_SECRET: test-socket-secret-32chars-min-required-key
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app (production)
+        run: npm run build
+
+      - name: Enforce bundle budget
+        run: npm run check:bundle-budget

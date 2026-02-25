@@ -78,7 +78,6 @@ import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
-import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import type { TabId } from './components/MobileTabs'
@@ -109,6 +108,15 @@ const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
+const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
+  loading: () => (
+    <div className="h-full min-h-[280px] rounded-xl border border-white/15 bg-white/5">
+      <div className="flex h-full items-center justify-center">
+        <LoadingSpinner size="md" />
+      </div>
+    </div>
+  ),
+})
 const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
   loading: () => <CenteredLoadingFallback />,
 })
