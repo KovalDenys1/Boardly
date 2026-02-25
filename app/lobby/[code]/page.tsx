@@ -226,6 +226,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isLeavingLobbyRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
+  const hasLobbyPageInteractionRef = React.useRef(false)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -233,6 +234,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       isInitialLoadRef.current = false
     }, 2000)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Require an interaction on this page (not just a previous page) before ambient sounds.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const markInteracted = () => {
+      hasLobbyPageInteractionRef.current = true
+      window.removeEventListener('pointerdown', markInteracted)
+      window.removeEventListener('keydown', markInteracted)
+      window.removeEventListener('touchstart', markInteracted)
+    }
+
+    window.addEventListener('pointerdown', markInteracted, { once: true })
+    window.addEventListener('keydown', markInteracted, { once: true })
+    window.addEventListener('touchstart', markInteracted, { once: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', markInteracted)
+      window.removeEventListener('keydown', markInteracted)
+      window.removeEventListener('touchstart', markInteracted)
+    }
   }, [])
 
   // Sync soundEnabled state with soundManager on mount
@@ -244,6 +267,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
       if (isInitialLoadRef.current) return
       if (!soundManager.hasUserInteracted()) return
+      if (!hasLobbyPageInteractionRef.current) return
       soundManager.play(soundName, options)
     },
     []
