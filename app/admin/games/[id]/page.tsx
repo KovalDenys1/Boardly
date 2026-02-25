@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAdminSession } from '@/lib/admin-auth'
 import AdminForceEndGameButton from '../../_components/AdminForceEndGameButton'
+import AdminDeleteGameButton from '../../_components/AdminDeleteGameButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,7 +87,10 @@ export default async function AdminGameDetailPage({ params }: { params: Promise<
               Created {game.createdAt.toLocaleString('en-US')} · Updated {game.updatedAt.toLocaleString('en-US')}
             </p>
           </div>
-          <AdminForceEndGameButton gameId={game.id} status={game.status} />
+          <div className="flex flex-col items-end gap-2">
+            <AdminForceEndGameButton gameId={game.id} status={game.status} />
+            <AdminDeleteGameButton gameId={game.id} />
+          </div>
         </div>
       </section>
 

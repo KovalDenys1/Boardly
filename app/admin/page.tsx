@@ -28,6 +28,10 @@ function StatCard({
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdminSession('/admin')
+  const sentryOrg = process.env.SENTRY_ORG
+  const sentryProject = process.env.SENTRY_PROJECT
+  const sentryUrl =
+    sentryOrg && sentryProject ? `https://${sentryOrg}.sentry.io/issues/?project=${encodeURIComponent(sentryProject)}` : null
 
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
@@ -106,6 +110,16 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/audit-logs" className="rounded-lg bg-white/10 px-3 py-1.5 hover:bg-white/20">
               Audit logs
             </Link>
+            {sentryUrl ? (
+              <a
+                href={sentryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg bg-white/10 px-3 py-1.5 hover:bg-white/20"
+              >
+                Sentry issues
+              </a>
+            ) : null}
           </div>
         </div>
         <p className="mt-3 text-xs text-slate-400">Admin: {admin.username || admin.email || admin.id}</p>

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAdminSession } from '@/lib/admin-auth'
 import AdminUserSuspendButton from '../../_components/AdminUserSuspendButton'
+import AdminDeleteUserButton from '../../_components/AdminDeleteUserButton'
+import AdminResetPasswordButton from '../../_components/AdminResetPasswordButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,7 +83,11 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
               ID: {user.id} · {user.isGuest ? 'guest' : 'registered'} · friend code: {user.friendCode || '-'}
             </p>
           </div>
-          <AdminUserSuspendButton userId={user.id} suspended={user.suspended} disabled={user.id === admin.id} />
+          <div className="flex flex-col items-end gap-2">
+            <AdminUserSuspendButton userId={user.id} suspended={user.suspended} disabled={user.id === admin.id} />
+            {!user.isGuest && !user.suspended ? <AdminResetPasswordButton userId={user.id} /> : null}
+            <AdminDeleteUserButton userId={user.id} disabled={user.id === admin.id} />
+          </div>
         </div>
       </section>
 

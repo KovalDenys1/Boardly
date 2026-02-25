@@ -1,10 +1,39 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 import { getSecurityHeaders } from '@/lib/csrf'
 import { getServerSocketUrl } from '@/lib/socket-url'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
+  const { pathname } = request.nextUrl
+
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    if (request.method === 'OPTIONS' && pathname.startsWith('/api/admin')) {
+      // Let CORS preflight pass; auth is enforced on actual request methods.
+    } else {
+      const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+      const isAdmin = token?.role === 'admin' && !token?.suspended
+
+      if (!isAdmin) {
+        if (pathname.startsWith('/api/admin')) {
+          const status = token ? 403 : 401
+          return NextResponse.json(
+            { error: token ? 'Admin access required' : 'Authentication required' },
+            { status }
+          )
+        }
+
+        if (!token) {
+          const loginUrl = new URL('/auth/login', request.url)
+          loginUrl.searchParams.set('returnUrl', pathname)
+          return NextResponse.redirect(loginUrl)
+        }
+
+        return NextResponse.redirect(new URL('/games', request.url))
+      }
+    }
+  }
 
   // Add security headers to all responses
   const securityHeaders = getSecurityHeaders()
@@ -71,7 +100,7 @@ export function middleware(request: NextRequest) {
   response.headers.set('Content-Security-Policy', cspHeader)
 
   // Add CORS headers for API routes
-  if (request.nextUrl.pathname.startsWith('/api')) {
+  if (pathname.startsWith('/api')) {
     const origin = request.headers.get('origin')
     const isDevelopment = process.env.NODE_ENV === 'development'
     const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [

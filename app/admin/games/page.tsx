@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { requireAdminSession } from '@/lib/admin-auth'
 import AdminForceEndGameButton from '../_components/AdminForceEndGameButton'
+import AdminDeleteGameButton from '../_components/AdminDeleteGameButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -134,7 +135,10 @@ export default async function AdminGamesPage({
                   <td className="py-2 pr-3 text-slate-300">{game._count.players}</td>
                   <td className="py-2 pr-3 text-slate-300">{game.lastMoveAt.toLocaleString('en-US')}</td>
                   <td className="py-2">
-                    <AdminForceEndGameButton gameId={game.id} status={game.status} />
+                    <div className="flex flex-col items-end gap-2">
+                      <AdminForceEndGameButton gameId={game.id} status={game.status} />
+                      <AdminDeleteGameButton gameId={game.id} redirectTo="" />
+                    </div>
                   </td>
                 </tr>
               ))}
