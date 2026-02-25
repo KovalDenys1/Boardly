@@ -8,6 +8,10 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import { comparePassword } from './auth'
 import { apiLogger } from './logger'
+import { decode as defaultJwtDecode, encode as defaultJwtEncode } from 'next-auth/jwt'
+
+const REMEMBER_ME_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
+const DEFAULT_SESSION_MAX_AGE_SECONDS = 24 * 60 * 60
 
 export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
@@ -42,6 +46,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        rememberMe: { label: 'Remember Me', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -75,6 +80,8 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const rememberMe = String(credentials.rememberMe ?? 'false') === 'true'
+
         return {
           id: user.id,
           email: user.email,
@@ -82,13 +89,26 @@ export const authOptions: NextAuthOptions = {
           image: user.image,
           role: user.role,
           suspended: user.suspended,
+          rememberMe,
         }
       },
     }),
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: REMEMBER_ME_MAX_AGE_SECONDS,
+  },
+  jwt: {
+    async encode(params) {
+      const rememberMe = params.token?.rememberMe !== false
+      return defaultJwtEncode({
+        ...params,
+        maxAge: rememberMe ? REMEMBER_ME_MAX_AGE_SECONDS : DEFAULT_SESSION_MAX_AGE_SECONDS,
+      })
+    },
+    async decode(params) {
+      return defaultJwtDecode(params)
+    },
   },
   pages: {
     signIn: '/auth/login',
@@ -201,6 +221,12 @@ export const authOptions: NextAuthOptions = {
         token.emailVerified = user.emailVerified
         token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
         token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false
+        token.rememberMe = (user as { rememberMe?: boolean }).rememberMe ?? token.rememberMe ?? true
+        token.authenticatedAt = Date.now()
+      }
+
+      if (typeof token.rememberMe !== 'boolean') {
+        token.rememberMe = true
       }
 
       // Ensure we have user data from database

@@ -49,6 +49,7 @@ export default function LoginForm() {
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
+        rememberMe: rememberMe ? 'true' : 'false',
         redirect: false,
       })
 
