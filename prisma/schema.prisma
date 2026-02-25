@@ -37,6 +37,8 @@ model Users {
   sentLobbyInvites       LobbyInvites[]   @relation("LobbyInvitesSent")
   receivedLobbyInvites   LobbyInvites[]   @relation("LobbyInvitesReceived")
   adminAuditLogs         AdminAuditLogs[] @relation("AdminAuditLogsActor")
+  notificationPreferences NotificationPreferences?
+  notifications         Notifications[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -299,6 +301,43 @@ model OperationalAlertStates {
   lastResolvedAt DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model NotificationPreferences {
+  id String @id @default(cuid())
+  userId String @unique
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gameInvites    Boolean @default(true)
+  turnReminders  Boolean @default(true)
+  friendRequests Boolean @default(true)
+  friendAccepted Boolean @default(true)
+  unsubscribedAll Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Notifications {
+  id        String   @id @default(cuid())
+  userId     String
+  user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  channel    String   @default("email")
+  status     String   @default("queued") // queued, sent, skipped, failed
+  dedupeKey  String?
+  reason     String?
+  payload    Json?
+  processedAt DateTime?
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([type, channel, status, createdAt])
+  @@index([dedupeKey])
 }
 
 model AdminAuditLogs {

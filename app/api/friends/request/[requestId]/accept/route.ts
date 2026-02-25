@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { queueFriendAcceptedNotificationEmail } from '@/lib/friend-notification-emails'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request/accept')
@@ -45,7 +46,23 @@ export async function POST(
 
     // Get friend request
     const friendRequest = await prisma.friendRequests.findUnique({
-      where: { id: requestId }
+      where: { id: requestId },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+        receiver: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+      },
     })
 
     if (!friendRequest) {
@@ -105,6 +122,22 @@ export async function POST(
       user1Id,
       user2Id,
       friendshipId: friendship.id
+    })
+
+    await queueFriendAcceptedNotificationEmail({
+      accepter: {
+        id: friendRequest.receiver.id,
+        username: friendRequest.receiver.username,
+        email: friendRequest.receiver.email,
+      },
+      requester: {
+        id: friendRequest.sender.id,
+        username: friendRequest.sender.username,
+        email: friendRequest.sender.email,
+      },
+      requestId,
+      friendshipId: friendship.id,
+      baseUrl: new URL(req.url).origin,
     })
 
     return NextResponse.json({
