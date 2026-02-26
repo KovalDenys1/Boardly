@@ -1,6 +1,7 @@
 import { IncomingMessage, Server as HttpServer, ServerResponse } from 'http'
 import { parse } from 'url'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
+import { sanitizeGameStateForSpectator, sanitizePayloadForSpectator } from '../spectator-state'
 
 type LogContext = Record<string, unknown>
 
@@ -119,6 +120,63 @@ function sendJson(res: ServerResponse, statusCode: number, payload: unknown) {
   res.end(JSON.stringify(payload))
 }
 
+function parseLobbyCodeFromPlayerRoom(room: string): string | null {
+  if (!room.startsWith('lobby:')) return null
+  if (room.endsWith(':spectators')) return null
+  const code = room.slice('lobby:'.length)
+  return code || null
+}
+
+function buildSpectatorMirrorPayload(event: string, data: unknown): unknown {
+  if (!data || typeof data !== 'object') {
+    return data
+  }
+
+  const source = data as Record<string, unknown>
+  const directGameType =
+    typeof source.gameType === 'string'
+      ? source.gameType
+      : typeof (source.game as Record<string, unknown> | undefined)?.gameType === 'string'
+        ? ((source.game as Record<string, unknown>).gameType as string)
+        : null
+
+  if (event === SocketEvents.GAME_UPDATE) {
+    const payload = source.payload
+    if (!payload || typeof payload !== 'object') {
+      return data
+    }
+
+    const payloadObj = payload as Record<string, unknown>
+    const gameType =
+      typeof payloadObj.gameType === 'string'
+        ? payloadObj.gameType
+        : directGameType
+
+    if (source.action !== 'state-change') {
+      return gameType ? { ...source, payload: sanitizePayloadForSpectator(gameType, payloadObj) } : data
+    }
+
+    const rawState =
+      payloadObj.state && typeof payloadObj.state === 'object'
+        ? payloadObj.state
+        : payloadObj
+
+    return {
+      ...source,
+      payload: {
+        ...payloadObj,
+        ...(gameType ? { state: sanitizeGameStateForSpectator(gameType, rawState) } : {}),
+      },
+    }
+  }
+
+  if (!directGameType) {
+    return data
+  }
+
+  return sanitizePayloadForSpectator(directGameType, source)
+}
+
 export function registerSocketHttpEndpoints({
   server,
   io,
@@ -210,6 +268,32 @@ export function registerSocketHttpEndpoints({
 
           // Broadcast to all clients in the room
           io.to(room).emit(event, payloadWithMetadata)
+
+          const lobbyCode = parseLobbyCodeFromPlayerRoom(room)
+          if (lobbyCode) {
+            const spectatorRoom = SocketRooms.spectators(lobbyCode)
+            const mirroredData = buildSpectatorMirrorPayload(event, data)
+            const spectatorPayload = {
+              ...(mirroredData && typeof mirroredData === 'object'
+                ? (mirroredData as Record<string, unknown>)
+                : {}),
+              sequenceId: getNextSequenceId(),
+              timestamp: Date.now(),
+              version: '1.0.0',
+            }
+
+            if (
+              event === SocketEvents.GAME_UPDATE ||
+              event === SocketEvents.GAME_STARTED ||
+              event === SocketEvents.GAME_ABANDONED ||
+              event === SocketEvents.LOBBY_UPDATE ||
+              event === SocketEvents.BOT_ACTION ||
+              event === SocketEvents.PLAYER_JOINED ||
+              event === SocketEvents.PLAYER_LEFT
+            ) {
+              io.to(spectatorRoom).emit(event, spectatorPayload)
+            }
+          }
 
           // Notify lobby list if it's a state change
           if (

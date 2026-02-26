@@ -5,6 +5,7 @@ import { findUserByFriendCode } from '@/lib/friend-code'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
 
 export const runtime = 'nodejs'
 
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     // Get current user
     const currentUser = await prisma.users.findUnique({
       where: { email: session.user.email },
-      select: { id: true, username: true, bot: true }
+      select: { id: true, username: true, email: true, bot: true }
     })
 
     if (!currentUser) {
@@ -150,6 +151,22 @@ export async function POST(req: NextRequest) {
           }
         }
       }
+    })
+
+    await queueFriendRequestNotificationEmail({
+      sender: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+      },
+      receiver: {
+        id: targetUser.id,
+        username: targetUser.username,
+        email: targetUser.email,
+      },
+      requestId: friendRequest.id,
+      source: 'friend_code',
+      baseUrl: new URL(req.url).origin,
     })
 
     log.info('Friend request sent via friend code', {

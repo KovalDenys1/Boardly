@@ -41,6 +41,9 @@ export const SocketEvents = {
   JOIN_LOBBY: 'join-lobby', // Join a specific lobby room
   LEAVE_LOBBY: 'leave-lobby', // Leave a lobby room
   JOINED_LOBBY: 'joined-lobby', // Confirmation of successful join (Server → Client)
+  JOIN_SPECTATORS: 'join-spectators',
+  LEAVE_SPECTATORS: 'leave-spectators',
+  JOINED_SPECTATORS: 'joined-spectators',
 
   // ========================================
   // Lobby List Management (Client → Server)
@@ -77,6 +80,8 @@ export const SocketEvents = {
   // ========================================
   SEND_CHAT_MESSAGE: 'send-chat-message', // Client → Server
   CHAT_MESSAGE: 'chat-message', // Server → Client (broadcast)
+  SEND_SPECTATOR_CHAT_MESSAGE: 'send-spectator-chat-message',
+  SPECTATOR_CHAT_MESSAGE: 'spectator-chat-message',
 
   // ========================================
   // Bot Events
@@ -258,6 +263,15 @@ export interface ChatMessagePayload extends BaseEventPayload {
   type?: 'system' | 'user' | 'bot'
 }
 
+export interface SpectatorChatMessagePayload extends BaseEventPayload {
+  id: string
+  lobbyCode: string
+  userId: string
+  username: string
+  message: string
+  type?: 'user' | 'system'
+}
+
 // ============================================================================
 // Bot Event Payloads
 // ============================================================================
@@ -333,11 +347,23 @@ export interface SpectatorJoinedPayload extends BaseEventPayload {
   lobbyCode: string
   userId: string
   username: string
+  count?: number
 }
 
 export interface SpectatorLeftPayload extends BaseEventPayload {
   lobbyCode: string
   userId: string
+  count?: number
+}
+
+export interface JoinedSpectatorsPayload extends BaseEventPayload {
+  lobbyCode: string
+  success: boolean
+  spectators: Array<{
+    userId: string
+    username: string
+  }>
+  count: number
 }
 
 // ============================================================================
@@ -442,8 +468,8 @@ export const SocketRooms = {
   /** Room for a specific game (future) */
   game: (gameId: string) => `game:${gameId}`,
 
-  /** Room for spectators of a game (future) */
-  spectators: (gameId: string) => `spectators:${gameId}`,
+  /** Room for spectators of a lobby */
+  spectators: (lobbyCode: string) => `lobby:${lobbyCode}:spectators`,
 
   /** Room for user's friends (future) */
   userFriends: (userId: string) => `friends:${userId}`,

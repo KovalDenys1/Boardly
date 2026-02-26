@@ -8,6 +8,12 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from './db'
 import { comparePassword } from './auth'
 import { apiLogger } from './logger'
+import { decode as defaultJwtDecode, encode as defaultJwtEncode } from 'next-auth/jwt'
+import {
+  DEFAULT_SESSION_MAX_AGE_SECONDS,
+  getCredentialsSessionMaxAgeSeconds,
+  REMEMBER_ME_MAX_AGE_SECONDS,
+} from './auth-session-policy'
 
 export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
@@ -42,6 +48,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        rememberMe: { label: 'Remember Me', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -50,9 +57,22 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.users.findUnique({
           where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            image: true,
+            passwordHash: true,
+            role: true,
+            suspended: true,
+          },
         })
 
         if (!user || !user.passwordHash) {
+          return null
+        }
+
+        if (user.suspended) {
           return null
         }
 
@@ -62,18 +82,35 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const rememberMe = String(credentials.rememberMe ?? 'false') === 'true'
+
         return {
           id: user.id,
           email: user.email,
           name: user.username,
           image: user.image,
+          role: user.role,
+          suspended: user.suspended,
+          rememberMe,
         }
       },
     }),
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: REMEMBER_ME_MAX_AGE_SECONDS,
+  },
+  jwt: {
+    async encode(params) {
+      const rememberMe = params.token?.rememberMe !== false
+      return defaultJwtEncode({
+        ...params,
+        maxAge: getCredentialsSessionMaxAgeSeconds(rememberMe),
+      })
+    },
+    async decode(params) {
+      return defaultJwtDecode(params)
+    },
   },
   pages: {
     signIn: '/auth/login',
@@ -99,6 +136,15 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (existingAccount) {
+            if (existingAccount.user.suspended) {
+              const log = apiLogger('OAuth signIn')
+              log.warn('Suspended user OAuth sign-in denied', {
+                userId: existingAccount.userId,
+                provider: account.provider,
+              })
+              return false
+            }
+
             // Account already exists - allow sign in
             // Auto-verify email if not already verified
             if (!existingAccount.user.emailVerified) {
@@ -116,9 +162,24 @@ export const authOptions: NextAuthOptions = {
           // New OAuth account - check if user with this email already exists
           const existingUserByEmail = await prisma.users.findUnique({
             where: { email: user.email! },
+            select: {
+              id: true,
+              emailVerified: true,
+              suspended: true,
+            },
           })
 
           if (existingUserByEmail) {
+            if (existingUserByEmail.suspended) {
+              const log = apiLogger('OAuth signIn')
+              log.warn('Suspended user OAuth sign-in denied (email match)', {
+                existingUserId: existingUserByEmail.id,
+                provider: account.provider,
+                email: user.email,
+              })
+              return false
+            }
+
             // A user with this email already exists — allow sign-in and let
             // PrismaAdapter link the OAuth account to the existing user.
             // Also ensure emailVerified is set for convenience.
@@ -160,6 +221,14 @@ export const authOptions: NextAuthOptions = {
         token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         token.picture = user.image
         token.emailVerified = user.emailVerified
+        token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
+        token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false
+        token.rememberMe = (user as { rememberMe?: boolean }).rememberMe ?? token.rememberMe ?? true
+        token.authenticatedAt = Date.now()
+      }
+
+      if (typeof token.rememberMe !== 'boolean') {
+        token.rememberMe = true
       }
 
       // Ensure we have user data from database
@@ -169,24 +238,30 @@ export const authOptions: NextAuthOptions = {
           select: {
             id: true,
             username: true,
-            emailVerified: true
+            emailVerified: true,
+            role: true,
+            suspended: true,
           }
         })
         if (dbUser) {
           token.id = dbUser.id
           token.name = dbUser.username
           token.emailVerified = dbUser.emailVerified
+          token.role = dbUser.role
+          token.suspended = dbUser.suspended
         }
       }
 
-      // Refresh emailVerified status on update trigger
+      // Refresh mutable user flags/status on update trigger
       if (trigger === 'update' && token.email) {
         const dbUser = await prisma.users.findUnique({
           where: { email: token.email },
-          select: { emailVerified: true }
+          select: { emailVerified: true, role: true, suspended: true }
         })
         if (dbUser) {
           token.emailVerified = dbUser.emailVerified
+          token.role = dbUser.role
+          token.suspended = dbUser.suspended
         }
       }
 
@@ -218,6 +293,8 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string
         session.user.image = token.picture as string
         session.user.emailVerified = token.emailVerified as Date | null
+        session.user.role = (token.role as 'user' | 'admin' | undefined) ?? 'user'
+        session.user.suspended = Boolean(token.suspended)
       }
       return session
     },

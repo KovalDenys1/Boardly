@@ -72,7 +72,7 @@ export async function POST(
     }
 
     const botDifficulty = normalizeBotDifficulty(requestPayload?.difficulty)
-    const botDisplayName = getBotDisplayName(lobby.gameType, botDifficulty)
+    const baseBotDisplayName = getBotDisplayName(lobby.gameType, botDifficulty)
 
     // Check if game already started
     if (activeGame.status === 'playing') {
@@ -84,11 +84,16 @@ export async function POST(
       return NextResponse.json({ error: 'Lobby is full' }, { status: 400 })
     }
 
-    // Check if bot already exists in this game
-    const botExists = activeGame.players.some((p: any) => p.user.bot !== null)
-    if (botExists) {
-      return NextResponse.json({ error: 'Bot already in lobby' }, { status: 400 })
-    }
+    // Allow multiple bots. Generate a unique display name per difficulty profile
+    // so each bot maps to a distinct bot user.
+    const sameDifficultyBotCount = activeGame.players.filter((p: any) => {
+      const bot = p.user?.bot
+      return !!bot && bot.botType === lobby.gameType && bot.difficulty === botDifficulty
+    }).length
+    const botDisplayName =
+      sameDifficultyBotCount > 0
+        ? `${baseBotDisplayName} ${sameDifficultyBotCount + 1}`
+        : baseBotDisplayName
 
     const botUser = await getOrCreateBotUser(botDisplayName, lobby.gameType, botDifficulty)
 

@@ -6,11 +6,7 @@
   "regions": ["iad1"],
   "crons": [
     {
-      "path": "/api/cron/cleanup-unverified",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-guests",
+      "path": "/api/cron/maintenance",
       "schedule": "0 3 * * *"
     }
   ],

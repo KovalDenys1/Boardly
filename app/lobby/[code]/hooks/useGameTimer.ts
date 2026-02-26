@@ -15,6 +15,16 @@ interface UseGameTimerProps {
   onTimeout: () => boolean | Promise<boolean>
 }
 
+function resolveLastMoveAtMs(gameState: GameState | null): number | null {
+  const lastMoveAt = gameState?.lastMoveAt
+  return typeof lastMoveAt === 'number' && Number.isFinite(lastMoveAt) ? lastMoveAt : null
+}
+
+function calculateRemainingTimeSeconds(turnTimerLimit: number, lastMoveAt: number): number {
+  const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
+  return Math.max(0, turnTimerLimit - elapsedSeconds)
+}
+
 export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }: UseGameTimerProps) {
   const [timeLeft, setTimeLeft] = useState<number>(turnTimerLimit)
   const [timerActive, setTimerActive] = useState<boolean>(false)
@@ -29,6 +39,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
   const turnSignatureRef = useRef<string>('')
   const lastTimeoutInvocationAtRef = useRef<number>(0)
   const TIMEOUT_CALLBACK_DEBOUNCE_MS = 1500
+  const authoritativeLastMoveAt = resolveLastMoveAtMs(gameState)
 
   const clearTimeoutRetryTimer = useCallback(() => {
     if (timeoutRetryTimerRef.current) {
@@ -76,10 +87,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
     }
 
     const currentPlayerIndex = gameState.currentPlayerIndex
-    const lastMoveAt =
-      typeof gameState.lastMoveAt === 'number' && Number.isFinite(gameState.lastMoveAt)
-        ? gameState.lastMoveAt
-        : null
+    const lastMoveAt = resolveLastMoveAtMs(gameState)
     const turnSignature = `${currentPlayerIndex}:${lastMoveAt ?? 'none'}`
 
     // Detect real turn boundary (player or turn-start timestamp changed)
@@ -95,7 +103,7 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
       // Calculate remaining time from lastMoveAt if available
       if (lastMoveAt) {
         const elapsedSeconds = Math.floor((Date.now() - lastMoveAt) / 1000)
-        const remainingTime = Math.max(0, turnTimerLimit - elapsedSeconds)
+        const remainingTime = calculateRemainingTimeSeconds(turnTimerLimit, lastMoveAt)
         
         if (isInitialLoad) {
           clientLogger.log('🔄 Initial load - turn changed, calculated remaining time:', remainingTime, 's (elapsed:', elapsedSeconds, 's, limit:', turnTimerLimit, 's)')
@@ -125,14 +133,27 @@ export function useGameTimer({ isMyTurn, gameState, turnTimerLimit, onTimeout }:
 
   // Countdown
   useEffect(() => {
-    if (timerActive && timeLeft > 0) {
-      const interval = setInterval(() => {
-        setTimeLeft(prev => prev <= 1 ? 0 : prev - 1)
-      }, 1000)
+    if (!timerActive) return
 
-      return () => clearInterval(interval)
+    const syncFromAuthoritativeTimestamp = () => {
+      if (authoritativeLastMoveAt && turnTimerLimit > 0) {
+        const remainingTime = calculateRemainingTimeSeconds(turnTimerLimit, authoritativeLastMoveAt)
+        setTimeLeft(prev => (prev === remainingTime ? prev : remainingTime))
+        return
+      }
+
+      setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1))
     }
-  }, [timerActive, timeLeft])
+
+    // When we have a server timestamp, immediately resync on effect mount/resubscribe
+    // (e.g. after tab throttling/background resume) instead of waiting a full second.
+    if (authoritativeLastMoveAt && turnTimerLimit > 0) {
+      syncFromAuthoritativeTimestamp()
+    }
+
+    const interval = setInterval(syncFromAuthoritativeTimestamp, 1000)
+    return () => clearInterval(interval)
+  }, [timerActive, authoritativeLastMoveAt, turnTimerLimit])
 
   // Handle timeout separately in useEffect to avoid state updates during render.
   // If timeout handler returns `false`, we re-arm this effect and retry.

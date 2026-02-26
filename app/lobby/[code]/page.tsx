@@ -29,6 +29,8 @@ const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   fours: 'Fours',
   fives: 'Fives',
   sixes: 'Sixes',
+  onePair: 'One Pair',
+  twoPairs: 'Two Pairs',
   threeOfKind: 'Three of a Kind',
   fourOfKind: 'Four of a Kind',
   fullHouse: 'Full House',
@@ -78,7 +80,6 @@ import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useBotTurn } from './hooks/useBotTurn'
 import LobbyInfo from './components/LobbyInfo'
-import GameBoard from './components/YahtzeeGameBoard'
 import WaitingRoom from './components/WaitingRoom'
 import JoinPrompt from './components/JoinPrompt'
 import type { TabId } from './components/MobileTabs'
@@ -109,6 +110,15 @@ const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
+const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
+  loading: () => (
+    <div className="h-full min-h-[280px] rounded-xl border border-white/15 bg-white/5">
+      <div className="flex h-full items-center justify-center">
+        <LoadingSpinner size="md" />
+      </div>
+    </div>
+  ),
+})
 const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
   loading: () => <CenteredLoadingFallback />,
 })
@@ -215,6 +225,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isInitialLoadRef = React.useRef(true)
   const isLeavingLobbyRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
+  const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
+  const hasLobbyPageInteractionRef = React.useRef(false)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -222,6 +234,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       isInitialLoadRef.current = false
     }, 2000)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Require an interaction on this page (not just a previous page) before ambient sounds.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const markInteracted = () => {
+      hasLobbyPageInteractionRef.current = true
+      window.removeEventListener('pointerdown', markInteracted)
+      window.removeEventListener('keydown', markInteracted)
+      window.removeEventListener('touchstart', markInteracted)
+    }
+
+    window.addEventListener('pointerdown', markInteracted, { once: true })
+    window.addEventListener('keydown', markInteracted, { once: true })
+    window.addEventListener('touchstart', markInteracted, { once: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', markInteracted)
+      window.removeEventListener('keydown', markInteracted)
+      window.removeEventListener('touchstart', markInteracted)
+    }
   }, [])
 
   // Sync soundEnabled state with soundManager on mount
@@ -233,6 +267,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
       if (isInitialLoadRef.current) return
       if (!soundManager.hasUserInteracted()) return
+      if (!hasLobbyPageInteractionRef.current) return
       soundManager.play(soundName, options)
     },
     []
@@ -853,32 +888,43 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         rollsUsed: 3 - workingEngine.getRollsLeft()
       })
 
-      const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
-
-      // Show friendly toast message without dice array
-      if (score === 0) {
-        showToast.error(
-          'toast.timerScoredZero',
-          undefined,
-          { category: displayName },
-          { duration: 4000 }
-        )
-      } else {
-        showToast.custom(
-          'toast.timerScored',
-          '⏱️',
-          undefined,
-          { score, category: displayName },
-          { duration: 4000 }
-        )
-      }
-
       try {
         const scoredEngine = await scoreHandler(bestCategory, autoActionContext)
         if (!scoredEngine) {
           clientLogger.log('⏰ Auto-score skipped by server guard')
           return false
         }
+
+        const appliedEngine = scoredEngine instanceof YahtzeeGame ? scoredEngine : null
+        const updatedScorecard = appliedEngine?.getScorecard(currentPlayer.id)
+
+        // Show timer toast only after the auto-score was actually applied.
+        if (updatedScorecard && updatedScorecard[bestCategory] !== undefined) {
+          const displayName = CATEGORY_DISPLAY_NAMES[bestCategory]
+
+          if (score === 0) {
+            showToast.error(
+              'toast.timerScoredZero',
+              undefined,
+              { category: displayName },
+              { duration: 4000 }
+            )
+          } else {
+            showToast.custom(
+              'toast.timerScored',
+              '⏱️',
+              undefined,
+              { score, category: displayName },
+              { duration: 4000 }
+            )
+          }
+        } else {
+          clientLogger.log('⏰ Auto-score applied without expected category fill, skipping timer toast', {
+            category: bestCategory,
+            playerId: currentPlayer.id,
+          })
+        }
+
         return true
       } catch (error) {
         clientLogger.error('⏰ Failed to auto-score:', error)
@@ -1153,6 +1199,24 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+
+  // Reset mobile-only UI state when a new Yahtzee game starts without a page reload
+  // (e.g. host starts game, rematch starts, or socket-driven transition).
+  useEffect(() => {
+    if (lobby?.gameType !== 'yahtzee' || !isGameStarted || !game?.id) {
+      return
+    }
+
+    if (initializedMobileUiGameIdRef.current === game.id) {
+      return
+    }
+
+    initializedMobileUiGameIdRef.current = game.id
+    setMobileActiveTab('game')
+    setSelectedPlayerId(null)
+    setUnreadMessageCount(0)
+    setRollHistory([])
+  }, [lobby?.gameType, isGameStarted, game?.id])
 
   const playersForLeaderboard = React.useMemo(() => {
     if (!gameEngine || !Array.isArray(game?.players)) {
@@ -1562,6 +1626,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 {/* Mobile: Tabbed Layout */}
                 <div
+                  key={game?.id || 'yahtzee-mobile-tabs'}
                   className="md:hidden relative"
                   style={{
                     height: '100%',

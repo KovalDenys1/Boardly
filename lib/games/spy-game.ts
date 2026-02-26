@@ -333,15 +333,20 @@ export class SpyGame extends GameEngine {
       voteCounts[targetId] = (voteCounts[targetId] || 0) + 1
     }
 
-    // Find player with most votes
+    // Find player with most votes.
+    // Tie on max votes means no elimination: spy escapes by default.
     let maxVotes = 0
-    let eliminatedId = ''
+    const leaders: string[] = []
     for (const [playerId, count] of Object.entries(voteCounts)) {
       if (count > maxVotes) {
         maxVotes = count
-        eliminatedId = playerId
+        leaders.length = 0
+        leaders.push(playerId)
+      } else if (count === maxVotes && count > 0) {
+        leaders.push(playerId)
       }
     }
+    const eliminatedId = leaders.length === 1 ? leaders[0] : ''
 
     // Calculate scores
     const spyWon = eliminatedId !== data.spyPlayerId

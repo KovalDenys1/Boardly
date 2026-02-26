@@ -71,16 +71,20 @@ function computeVoteLeader(votes: Record<string, string>): string {
     counts[targetId] = (counts[targetId] || 0) + 1
   }
 
-  let leaderId = ''
   let maxVotes = -1
+  const leaders: string[] = []
   for (const [playerId, count] of Object.entries(counts)) {
     if (count > maxVotes) {
       maxVotes = count
-      leaderId = playerId
+      leaders.length = 0
+      leaders.push(playerId)
+    } else if (count === maxVotes) {
+      leaders.push(playerId)
     }
   }
 
-  return leaderId
+  // Tie on max votes means no one is voted out (spy escapes).
+  return leaders.length === 1 ? leaders[0] : ''
 }
 
 export default function SpyGameBoard({

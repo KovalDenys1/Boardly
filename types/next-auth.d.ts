@@ -8,6 +8,8 @@ declare module 'next-auth' {
       name?: string | null
       image?: string | null
       emailVerified?: Date | null
+      role?: 'user' | 'admin'
+      suspended?: boolean
     }
   }
 
@@ -17,6 +19,9 @@ declare module 'next-auth' {
     name?: string | null
     image?: string | null
     emailVerified?: Date | null
+    role?: 'user' | 'admin'
+    suspended?: boolean
+    rememberMe?: boolean
   }
 }
 
@@ -24,6 +29,10 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     emailVerified?: Date | null
+    role?: 'user' | 'admin'
+    suspended?: boolean
+    rememberMe?: boolean
+    authenticatedAt?: number
     lastActiveUpdate?: number // Timestamp of last lastActiveAt update
   }
 }

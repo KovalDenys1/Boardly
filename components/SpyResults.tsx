@@ -39,6 +39,7 @@ export default function SpyResults({
   const spyWon = eliminatedId !== spyId
   const eliminatedPlayer = players.find((p) => p.id === eliminatedId)
   const spyPlayer = players.find((p) => p.id === spyId)
+  const noElimination = eliminatedId.length === 0
 
   // Count votes for each player
   const voteCounts: Record<string, number> = {}
@@ -73,11 +74,15 @@ export default function SpyResults({
           >
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
-          <p className="text-white text-xl">
-            {spyWon
-              ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
-              : t('spy.wasSpy', { player: spyPlayer?.name })}
-          </p>
+          {!noElimination ? (
+            <p className="text-white text-xl">
+              {spyWon
+                ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
+                : t('spy.wasSpy', { player: spyPlayer?.name })}
+            </p>
+          ) : (
+            <p className="text-white text-xl">Tie vote: no player was eliminated.</p>
+          )}
           <p className="text-purple-200 text-lg mt-2">
             {t('spy.locationRevealed', { location })}
           </p>

@@ -87,6 +87,7 @@ export default function RegisterForm() {
       const loginResult = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
+        rememberMe: rememberMe ? 'true' : 'false',
         redirect: false,
       })
       if (loginResult?.error) {

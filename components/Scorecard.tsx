@@ -25,6 +25,8 @@ const categoryIcons: Record<YahtzeeCategory, string> = {
   fours: '⚃',
   fives: '⚄',
   sixes: '⚅',
+  onePair: '👥',
+  twoPairs: '👥👥',
   threeOfKind: '🎲',
   fourOfKind: '🎲🎲',
   fullHouse: '🏠',
@@ -123,6 +125,8 @@ const Scorecard = React.memo(function Scorecard({
   const { t } = useTranslation()
   const upperSection: YahtzeeCategory[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes']
   const lowerSection: YahtzeeCategory[] = [
+    'onePair',
+    'twoPairs',
     'threeOfKind',
     'fourOfKind',
     'fullHouse',
