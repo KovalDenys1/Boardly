@@ -36,9 +36,12 @@ jobs:
         run: |
           RESPONSE_BODY="$(mktemp)"
 
-          HTTP_CODE="$(curl -sS -o "$RESPONSE_BODY" -w "%{http_code}" \
+          HTTP_CODE="$(curl -sS -L -o "$RESPONSE_BODY" -w "%{http_code}" \
             --max-time 45 \
             --connect-timeout 10 \
+            --max-redirs 5 \
+            --retry 2 \
+            --retry-all-errors \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Accept: application/json" \
             "$GAME_OPS_CRON_URL")"
