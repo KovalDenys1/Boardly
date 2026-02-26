@@ -85,6 +85,8 @@ export async function runTurnReminderCycle(
     rateLimitMinutes,
     batchLimit,
   }
+  const notifiedUsersInCycle = new Set<string>()
+  const userRateLimitedInCycle = new Set<string>()
 
   const games = await prisma.games.findMany({
     where: {
@@ -210,6 +212,34 @@ export async function runTurnReminderCycle(
         continue
       }
 
+      // Prevent bursty email spam when one user is "current turn" in many stale games.
+      // We still track per-game dedupe below, but cap email sends to one per user per cycle.
+      if (notifiedUsersInCycle.has(recipient.id)) {
+        result.skipped += 1
+        await recordNotificationDelivery({
+          userId: recipient.id,
+          type: 'turn_reminder',
+          status: 'skipped',
+          reason: 'user_already_notified_in_cycle',
+          dedupeKey,
+          payload,
+        })
+        continue
+      }
+
+      if (userRateLimitedInCycle.has(recipient.id)) {
+        result.skipped += 1
+        await recordNotificationDelivery({
+          userId: recipient.id,
+          type: 'turn_reminder',
+          status: 'skipped',
+          reason: 'user_rate_limited_recent_send',
+          dedupeKey,
+          payload,
+        })
+        continue
+      }
+
       const wasRecentlySent = await hasRecentSentNotification({
         userId: recipient.id,
         type: 'turn_reminder',
@@ -224,6 +254,26 @@ export async function runTurnReminderCycle(
           type: 'turn_reminder',
           status: 'skipped',
           reason: 'rate_limited_recent_send',
+          dedupeKey,
+          payload,
+        })
+        continue
+      }
+
+      const userHadRecentTurnReminder = await hasRecentSentNotification({
+        userId: recipient.id,
+        type: 'turn_reminder',
+        since: recentSentCutoff,
+      })
+
+      if (userHadRecentTurnReminder) {
+        userRateLimitedInCycle.add(recipient.id)
+        result.skipped += 1
+        await recordNotificationDelivery({
+          userId: recipient.id,
+          type: 'turn_reminder',
+          status: 'skipped',
+          reason: 'user_rate_limited_recent_send',
           dedupeKey,
           payload,
         })
@@ -250,6 +300,7 @@ export async function runTurnReminderCycle(
 
       if (emailResult.success) {
         result.sent += 1
+        notifiedUsersInCycle.add(recipient.id)
       } else {
         result.failed += 1
         result.success = false

@@ -216,4 +216,56 @@ describe('runTurnReminderCycle', () => {
       })
     )
   })
+
+  it('sends at most one reminder per user per cycle across multiple stale games', async () => {
+    const game1 = buildGame({
+      id: 'game-1',
+      lobby: {
+        id: 'lobby-1',
+        code: 'ABCD',
+        name: 'Ranked Lobby',
+        gameType: 'yahtzee',
+      },
+      lastMoveAt: new Date('2026-02-25T09:00:00.000Z'),
+    })
+
+    const game2 = buildGame({
+      id: 'game-2',
+      lobby: {
+        id: 'lobby-2',
+        code: 'EFGH',
+        name: 'Casual Lobby',
+        gameType: 'guess_the_spy',
+      },
+      lastMoveAt: new Date('2026-02-25T09:10:00.000Z'),
+    })
+
+    mockPrisma.games.findMany.mockResolvedValue([game1, game2])
+
+    const result = await runTurnReminderCycle({
+      now,
+      baseUrl: 'http://localhost:3000',
+      idleMinutes: 15,
+      rateLimitMinutes: 60,
+      recentActiveSkipMinutes: 10,
+    })
+
+    expect(result.scannedGames).toBe(2)
+    expect(result.attempted).toBe(1)
+    expect(result.sent).toBe(1)
+    expect(result.skipped).toBe(1)
+    expect(result.failed).toBe(0)
+
+    expect(mockSendTurnReminderEmail).toHaveBeenCalledTimes(1)
+
+    expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-2',
+        type: 'turn_reminder',
+        status: 'skipped',
+        reason: 'user_already_notified_in_cycle',
+        dedupeKey: 'turn_reminder:game:game-2:recipient:user-2',
+      })
+    )
+  })
 })
