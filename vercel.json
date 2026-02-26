@@ -6,20 +6,12 @@
   "regions": ["iad1"],
   "crons": [
     {
-      "path": "/api/cron/cleanup-unverified",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-guests",
+      "path": "/api/cron/maintenance",
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/process-notifications",
+      "path": "/api/cron/game-ops",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/turn-reminders",
-      "schedule": "*/10 * * * *"
     }
   ],
   "headers": [
