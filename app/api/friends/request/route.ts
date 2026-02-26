@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -158,6 +159,13 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Friend request already exists' },
+        { status: 400 }
+      )
+    }
+
     log.error('Error sending friend request', error as Error)
     return NextResponse.json(
       { error: 'Failed to send friend request' },

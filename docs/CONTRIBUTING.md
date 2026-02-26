@@ -40,6 +40,7 @@ npm run db:rls:smoke
 - Keep socket event names/types centralized in `types/socket-events.ts`.
 - Keep server-authoritative reconciliation after moves.
 - Keep comments and documentation in English.
+- For new PostgreSQL server timestamps, prefer `TIMESTAMPTZ` (via explicit SQL in Prisma migrations when needed).
 
 ## Adding a new game (minimal checklist)
 

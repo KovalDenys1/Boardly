@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/next-auth'
 import { findUserByFriendCode } from '@/lib/friend-code'
 import { prisma } from '@/lib/db'
@@ -181,6 +182,13 @@ export async function POST(req: NextRequest) {
       user: targetUser
     })
   } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A friend request is already pending with this user' },
+        { status: 400 }
+      )
+    }
+
     log.error('Error adding friend by code', error)
 
     return NextResponse.json(
