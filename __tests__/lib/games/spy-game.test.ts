@@ -332,5 +332,69 @@ describe('SpyGame', () => {
       expect(finalState.winner).toBeTruthy()
       expect((finalState.data as any).phase).toBe(SpyGamePhase.RESULTS)
     })
+
+    it('treats tied max votes as no elimination so the spy escapes', () => {
+      game.addPlayer({ id: 'p4', name: 'Player 4' })
+      game.startGame()
+      game.initializeRound(mockLocations)
+
+      const state = game.getState()
+      const data = state.data as any
+
+      data.phase = SpyGamePhase.VOTING
+      data.currentRound = data.totalRounds
+      data.spyPlayerId = 'p1'
+      data.scores = { p1: 0, p2: 0, p3: 0, p4: 0 }
+      data.votes = {}
+
+      // 2-2 tie between spy (p1) and p2.
+      // Vote order intentionally inserts spy target first to catch previous "first max wins" behavior.
+      expect(
+        game.makeMove({
+          playerId: 'p2',
+          type: 'vote',
+          data: { targetId: 'p1' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+      expect(
+        game.makeMove({
+          playerId: 'p1',
+          type: 'vote',
+          data: { targetId: 'p2' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+      expect(
+        game.makeMove({
+          playerId: 'p3',
+          type: 'vote',
+          data: { targetId: 'p1' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+      expect(
+        game.makeMove({
+          playerId: 'p4',
+          type: 'vote',
+          data: { targetId: 'p2' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      const finalState = game.getState()
+      const finalData = finalState.data as any
+
+      expect(finalData.phase).toBe(SpyGamePhase.RESULTS)
+      // Spy escapes on tie: +300 spy points, regulars do not receive regular-win bonus.
+      expect(finalData.scores).toEqual({
+        p1: 290, // +300 spy win, -10 incorrect vote
+        p2: 50,  // correct vote bonus only
+        p3: 50,  // correct vote bonus only
+        p4: -10, // incorrect vote penalty
+      })
+      expect(finalState.status).toBe('finished')
+      expect(finalState.winner).toBe('p1')
+    })
   })
 })
