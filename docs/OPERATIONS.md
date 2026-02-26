@@ -109,6 +109,22 @@ Note: `npm run db:migrate` automatically bootstraps required RLS roles
 (`anon`, `authenticated`, `service_role`) before running `prisma migrate deploy`,
 so CI/local PostgreSQL environments do not require a separate manual role-prep step.
 
+### Timestamp migration rollout notes (`timestamptz` phases)
+
+When migrating existing timestamp columns from `TIMESTAMP` to `TIMESTAMPTZ`:
+
+- batch by table/domain (do not convert unrelated tables in one release)
+- deploy schema migration first, then application changes if parsing/serialization logic changes
+- verify cron/scheduler paths and realtime timer logic after deploy (timestamp-sensitive flows)
+- check for DB locks/statement timeout risk on large tables before running DDL in production
+- validate API payloads still emit ISO timestamps and UI date rendering remains correct
+
+Recommended verification after each phase:
+
+- `npm run check:db`
+- critical cron/manual endpoint smoke (`/api/cron/*` used in that phase)
+- one realtime gameplay flow (create/join/play/reconnect) if gameplay timestamps changed
+
 ## Common troubleshooting
 
 ### Render build hangs after Prisma datasource log

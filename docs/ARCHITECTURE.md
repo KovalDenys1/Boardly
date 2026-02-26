@@ -84,6 +84,40 @@ Core tables (pluralized schema):
 
 Game state is persisted as JSON in `Games.state` and treated as source of truth for replay/recovery.
 
+## Database timestamp policy
+
+### Policy (effective now)
+
+- For new server-authored timestamps in PostgreSQL, prefer `TIMESTAMPTZ` (`timestamp with time zone`).
+- Treat database timestamps as UTC-backed canonical server time.
+- Do not introduce broad table-wide timestamp conversions in feature PRs.
+- For Prisma migrations that need `TIMESTAMPTZ`, use explicit SQL in migration files (Prisma `DateTime` defaults to `TIMESTAMP(3)` in generated SQL).
+
+### Scope guidance
+
+Use `TIMESTAMPTZ` by default for:
+
+- audit/event timestamps (`occurredAt`, `createdAt`, `processedAt`, `sentAt`)
+- scheduler/cron timestamps
+- timeout/deadline/retry timestamps
+- cross-region/cross-device reconciliation timestamps
+
+`TIMESTAMP WITHOUT TIME ZONE` may be tolerated only when preserving compatibility in existing tables during phased migration.
+
+### Phased migration plan (no big-bang)
+
+1. New tables/columns: `TIMESTAMPTZ` by default (no retroactive conversion in same PR).
+2. Low-risk append-only tables first (events/notifications/operational telemetry).
+3. Medium-risk gameplay/social timestamps (`Games`, `Lobbies`, `Players`, `FriendRequests`, etc.) with targeted migrations and regression tests.
+4. Auth/session-related tables only after adapter/compatibility review.
+5. Legacy cleanup pass when operational telemetry shows no parsing/serialization regressions.
+
+### Compatibility assumptions to preserve
+
+- App/server code should treat Prisma `DateTime` values as JS `Date` objects and serialize via ISO strings (UTC).
+- Do not compare timestamp strings lexicographically in business logic; compare `Date`/epoch values.
+- Client UI may localize display, but server persistence and API payload semantics remain UTC-based.
+
 ## Quality guardrails
 
 - Keep game-specific logic isolated under `lib/games/` and game-specific UI blocks.
