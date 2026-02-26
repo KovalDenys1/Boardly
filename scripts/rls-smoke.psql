@@ -93,7 +93,8 @@ BEGIN
 
   WITH required_policy_pairs(table_name, policy_name) AS (
     VALUES
-      ('Users', 'Users can view own profile'),
+      ('Users', 'Authenticated users can view public user info'),
+      ('Users', 'Anon users can view public user info'),
       ('Users', 'Service role can manage users'),
       ('Bots', 'Anyone can view bots'),
       ('Games', 'Players can view their games'),
