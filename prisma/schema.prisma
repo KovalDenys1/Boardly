@@ -80,6 +80,7 @@ model Accounts {
   user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Sessions {
@@ -88,6 +89,8 @@ model Sessions {
   userId       String
   expires      DateTime
   user         Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationTokens {
