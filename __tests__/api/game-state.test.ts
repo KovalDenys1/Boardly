@@ -232,6 +232,113 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(payload.serverBroadcasted).toBe(true)
   })
 
+  it('rejects auto-action while turn timer is still active based on authoritative state timestamp', async () => {
+    const now = Date.now()
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 0,
+      updatedAt: new Date(now).toISOString(),
+      lastMoveAt: now,
+      data: {
+        ...persistedState.data,
+        rollsLeft: 2,
+      },
+    }
+
+    const mockEngine = {
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getRollsLeft: jest.fn(() => 2),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(
+      buildRequest({
+        move: { type: 'score', data: { category: 'chance' } },
+        autoActionContext: {
+          source: 'turn-timeout',
+          debounceKey: `timer-active-${now}`,
+          turnSnapshot: {
+            currentPlayerId: 'player-1',
+            currentPlayerIndex: 0,
+            lastMoveAt: now,
+            rollsLeft: 2,
+            updatedAt: engineState.updatedAt,
+          },
+        },
+      }),
+      {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      }
+    )
+
+    const payload = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(payload.code).toBe('TURN_TIMER_ACTIVE')
+    expect(typeof payload.remainingMs).toBe('number')
+    expect(payload.remainingMs).toBeGreaterThan(0)
+    expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('uses database lastMoveAt as authoritative fallback when engine state timestamp is missing', async () => {
+    const recentDbLastMoveAt = new Date(Date.now())
+    const gameWithRecentDbTimer = {
+      ...dbGame,
+      lastMoveAt: recentDbLastMoveAt,
+    }
+
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 0,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: undefined,
+      data: {
+        ...persistedState.data,
+        rollsLeft: 2,
+      },
+    }
+
+    const mockEngine = {
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getRollsLeft: jest.fn(() => 2),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(gameWithRecentDbTimer as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(
+      buildRequest({
+        move: { type: 'score', data: { category: 'chance' } },
+        autoActionContext: {
+          source: 'turn-timeout',
+          debounceKey: `timer-db-fallback-${Date.now()}`,
+          turnSnapshot: {
+            currentPlayerId: 'player-1',
+            currentPlayerIndex: 0,
+            lastMoveAt: null,
+            rollsLeft: 2,
+            updatedAt: engineState.updatedAt,
+          },
+        },
+      }),
+      {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      }
+    )
+
+    const payload = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(payload.code).toBe('TURN_TIMER_ACTIVE')
+    expect(mockPrisma.games.updateMany).not.toHaveBeenCalled()
+  })
+
   it('skips redundant player score updates when score state is unchanged', async () => {
     const engineState = {
       ...persistedState,

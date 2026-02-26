@@ -128,4 +128,33 @@ describe('useGameTimer race guards', () => {
     await advanceAndFlush(1)
     expect(onTimeout).toHaveBeenCalledTimes(2)
   })
+
+  it('resynchronizes countdown from lastMoveAt after a long clock jump', async () => {
+    const startedAt = Date.now()
+    const onTimeout = jest.fn().mockResolvedValue(true)
+
+    const { result } = renderHook(() =>
+      useGameTimer({
+        isMyTurn: true,
+        gameState: {
+          currentPlayerIndex: 0,
+          status: 'playing',
+          lastMoveAt: startedAt,
+        },
+        turnTimerLimit: 10,
+        onTimeout,
+      })
+    )
+
+    expect(result.current.timeLeft).toBe(10)
+
+    await act(async () => {
+      jest.setSystemTime(new Date(startedAt + 5000))
+      await Promise.resolve()
+    })
+
+    // First interval tick after "sleep"/background resume should snap to true remaining time.
+    await advanceAndFlush(1000)
+    expect(result.current.timeLeft).toBe(4)
+  })
 })
