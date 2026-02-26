@@ -8,10 +8,6 @@
     {
       "path": "/api/cron/maintenance",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/game-ops",
-      "schedule": "*/5 * * * *"
     }
   ],
   "headers": [
