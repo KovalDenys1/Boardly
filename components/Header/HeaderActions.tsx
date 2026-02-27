@@ -1,9 +1,10 @@
 'use client'
 
 import { signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
+import { navigateToProfile } from '@/lib/profile-navigation'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -13,6 +14,7 @@ interface HeaderActionsProps {
 
 export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderActionsProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { t } = useTranslation()
   const { isGuest, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
@@ -25,6 +27,10 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
   const handleGuestExit = () => {
     clearGuestMode()
     router.replace('/')
+  }
+
+  const handleProfileNavigation = () => {
+    navigateToProfile(router, pathname)
   }
 
   if (isGuestSession) {
@@ -78,7 +84,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
         )}
       </div>
       <button
-        onClick={() => router.push('/profile')}
+        onClick={handleProfileNavigation}
         className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-purple-600 font-bold hover:scale-110 transition-transform shadow-sm"
         title={t('header.profile', 'Profile')}
       >

@@ -10,6 +10,7 @@ import GameHistory from '@/components/GameHistory'
 import Friends from '@/components/Friends'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { navigateBackFromProfile } from '@/lib/profile-navigation'
 
 interface LinkedAccount {
   provider: string
@@ -399,6 +400,10 @@ export default function ProfilePage() {
     setSettingsChanged(true)
   }
 
+  const handleBackNavigation = () => {
+    navigateBackFromProfile(router)
+  }
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
@@ -417,6 +422,14 @@ export default function ProfilePage() {
         <div className="card animate-scale-in">
           {/* Header - Adaptive sizing */}
           <div className="mb-4 sm:mb-6">
+            <button
+              type="button"
+              onClick={handleBackNavigation}
+              className="mb-3 inline-flex items-center gap-2 text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
+            >
+              <span aria-hidden>←</span>
+              <span>Back</span>
+            </button>
             <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3 sm:mb-4">
               <span className="text-3xl sm:text-4xl">👤</span>
             </div>
@@ -553,7 +566,7 @@ export default function ProfilePage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => router.back()}
+                    onClick={handleBackNavigation}
                     className="btn btn-secondary text-sm sm:text-base"
                   >
                     Cancel

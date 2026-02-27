@@ -7,12 +7,14 @@ import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
 import { MobileMenu } from './Header/MobileMenu'
 import LanguageSwitcher from './LanguageSwitcher'
+import { useProfileNavigationTracking } from '@/lib/profile-navigation'
 
 export default function Header() {
   const { data: session, status } = useSession()
   const { isGuest, guestName } = useGuest()
   const router = useRouter()
   const pathname = usePathname()
+  useProfileNavigationTracking(pathname)
 
   // Don't show header on auth pages
   if (pathname?.startsWith('/auth')) {
