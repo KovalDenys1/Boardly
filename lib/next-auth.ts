@@ -10,10 +10,10 @@ import { comparePassword } from './auth'
 import { apiLogger } from './logger'
 import { decode as defaultJwtDecode, encode as defaultJwtEncode } from 'next-auth/jwt'
 import {
-  DEFAULT_SESSION_MAX_AGE_SECONDS,
   getCredentialsSessionMaxAgeSeconds,
   REMEMBER_ME_MAX_AGE_SECONDS,
 } from './auth-session-policy'
+import { loginSchema } from './validation/auth'
 
 export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
@@ -51,12 +51,24 @@ export const authOptions: NextAuthOptions = {
         rememberMe: { label: 'Remember Me', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        const parsedCredentials = loginSchema.safeParse({
+          email: credentials?.email,
+          password: credentials?.password,
+        })
+
+        if (!parsedCredentials.success) {
           return null
         }
 
-        const user = await prisma.users.findUnique({
-          where: { email: credentials.email },
+        const { email, password } = parsedCredentials.data
+
+        const user = await prisma.users.findFirst({
+          where: {
+            email: {
+              equals: email,
+              mode: 'insensitive',
+            },
+          },
           select: {
             id: true,
             email: true,
@@ -76,17 +88,17 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const isValid = await comparePassword(credentials.password, user.passwordHash)
+        const isValid = await comparePassword(password, user.passwordHash)
 
         if (!isValid) {
           return null
         }
 
-        const rememberMe = String(credentials.rememberMe ?? 'false') === 'true'
+        const rememberMe = String(credentials?.rememberMe ?? 'false') === 'true'
 
         return {
           id: user.id,
-          email: user.email,
+          email: user.email ?? email,
           name: user.username,
           image: user.image,
           role: user.role,
@@ -159,9 +171,27 @@ export const authOptions: NextAuthOptions = {
             return true
           }
 
+          const normalizedOAuthEmail = typeof user.email === 'string'
+            ? user.email.trim().toLowerCase()
+            : null
+
+          if (!normalizedOAuthEmail) {
+            const log = apiLogger('OAuth signIn')
+            log.info('OAuth sign-in without email; skipping existing email lookup', {
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+            })
+            return true
+          }
+
           // New OAuth account - check if user with this email already exists
-          const existingUserByEmail = await prisma.users.findUnique({
-            where: { email: user.email! },
+          const existingUserByEmail = await prisma.users.findFirst({
+            where: {
+              email: {
+                equals: normalizedOAuthEmail,
+                mode: 'insensitive',
+              },
+            },
             select: {
               id: true,
               emailVerified: true,
@@ -175,7 +205,7 @@ export const authOptions: NextAuthOptions = {
               log.warn('Suspended user OAuth sign-in denied (email match)', {
                 existingUserId: existingUserByEmail.id,
                 provider: account.provider,
-                email: user.email,
+                email: normalizedOAuthEmail,
               })
               return false
             }
@@ -192,7 +222,7 @@ export const authOptions: NextAuthOptions = {
             log.info('OAuth sign-in allowed — email exists, will link to existing user', {
               existingUserId: existingUserByEmail.id,
               provider: account.provider,
-              email: user.email
+              email: normalizedOAuthEmail
             })
             return true
           }
@@ -203,7 +233,7 @@ export const authOptions: NextAuthOptions = {
           const log = apiLogger('OAuth signIn')
           log.info('New OAuth user will be created', {
             provider: account.provider,
-            email: user.email
+            email: normalizedOAuthEmail
           })
 
         } catch (error) {
@@ -217,7 +247,7 @@ export const authOptions: NextAuthOptions = {
       // On sign in, add user data to token
       if (user) {
         token.id = user.id
-        token.email = user.email
+        token.email = typeof user.email === 'string' ? user.email.trim().toLowerCase() : user.email
         token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         token.picture = user.image
         token.emailVerified = user.emailVerified
@@ -233,8 +263,14 @@ export const authOptions: NextAuthOptions = {
 
       // Ensure we have user data from database
       if (!token.id && token.email) {
-        const dbUser = await prisma.users.findUnique({
-          where: { email: token.email },
+        const tokenEmail = String(token.email).trim().toLowerCase()
+        const dbUser = await prisma.users.findFirst({
+          where: {
+            email: {
+              equals: tokenEmail,
+              mode: 'insensitive',
+            },
+          },
           select: {
             id: true,
             username: true,
@@ -254,8 +290,14 @@ export const authOptions: NextAuthOptions = {
 
       // Refresh mutable user flags/status on update trigger
       if (trigger === 'update' && token.email) {
-        const dbUser = await prisma.users.findUnique({
-          where: { email: token.email },
+        const tokenEmail = String(token.email).trim().toLowerCase()
+        const dbUser = await prisma.users.findFirst({
+          where: {
+            email: {
+              equals: tokenEmail,
+              mode: 'insensitive',
+            },
+          },
           select: { emailVerified: true, role: true, suspended: true }
         })
         if (dbUser) {

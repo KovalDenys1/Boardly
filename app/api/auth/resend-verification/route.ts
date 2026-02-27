@@ -31,12 +31,19 @@ export async function POST(request: NextRequest) {
       email = body.email
     }
 
-    if (!email) {
+    if (typeof email !== 'string' || email.trim().length === 0) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    const user = await prisma.users.findUnique({
-      where: { email },
+    const normalizedEmail = email.trim().toLowerCase()
+
+    const user = await prisma.users.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: 'insensitive',
+        },
+      },
       select: {
         id: true,
         email: true,
@@ -68,9 +75,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    await sendVerificationEmail(email, token, user.username || 'User')
+    await sendVerificationEmail(user.email ?? normalizedEmail, token, user.username || 'User')
 
-    log.info('Verification email resent', { userId: user.id, email })
+    log.info('Verification email resent', { userId: user.id, email: user.email ?? normalizedEmail })
 
     return NextResponse.json({ 
       success: true,
