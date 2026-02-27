@@ -5,51 +5,34 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
-import LobbyFilters, { LobbyFilterOptions } from '@/components/LobbyFilters'
+import LobbyFilters from '@/components/LobbyFilters'
 import LobbyStats from '@/components/LobbyStats'
+import LobbyCard, { LobbyCardData } from '@/components/LobbyCard'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
+import {
+  buildLobbyQueryParams,
+  hasActiveLobbyFilters,
+  LOBBY_CODE_LENGTH,
+  LobbyFilterOptions,
+  normalizeGameTypeFilter,
+  sanitizeLobbyCode,
+} from '@/lib/lobby-filters'
 import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
 
 let socket: Socket | null = null
-const FILTERABLE_GAME_TYPES = new Set([
-  'yahtzee',
-  'guess_the_spy',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-])
-
-function normalizeGameTypeFilter(value: string | null): string | undefined {
-  if (!value) return undefined
-  return FILTERABLE_GAME_TYPES.has(value) ? value : undefined
-}
-
-interface Lobby {
-  id: string
-  code: string
-  name: string
-  maxPlayers: number
-  allowSpectators?: boolean
-  maxSpectators?: number
-  spectatorCount?: number
-  creator: { 
-    username: string | null
-    email: string | null
-  }
-  games: {
-    id: string
-    status: string
-    _count: {
-      players: number
-    }
-  }[]
+const EMPTY_LOBBY_STATS = {
+  totalLobbies: 0,
+  waitingLobbies: 0,
+  playingLobbies: 0,
+  totalPlayers: 0,
 }
 
 interface LobbyListResponse {
-  lobbies: Lobby[]
+  lobbies: LobbyCardData[]
   stats: {
     totalLobbies: number
     waitingLobbies: number
@@ -67,14 +50,12 @@ function LobbyListPageContent() {
   const { isGuest, guestToken } = useGuest()
   const authenticatedUserId = session?.user?.id || null
   const hasAuthenticatedSession = Boolean(authenticatedUserId)
-  const [lobbies, setLobbies] = useState<Lobby[]>([])
-  const [stats, setStats] = useState({
-    totalLobbies: 0,
-    waitingLobbies: 0,
-    playingLobbies: 0,
-    totalPlayers: 0,
-  })
+  const [lobbies, setLobbies] = useState<LobbyCardData[]>([])
+  const [stats, setStats] = useState(EMPTY_LOBBY_STATS)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [hasLoadError, setHasLoadError] = useState(false)
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
   const [joinCode, setJoinCode] = useState('')
   const [filters, setFilters] = useState<LobbyFilterOptions>({
     gameType: initialGameTypeFilter,
@@ -106,22 +87,21 @@ function LobbyListPageContent() {
 
   const loadLobbies = useCallback(async () => {
     const requestId = ++loadRequestIdRef.current
+    const isInitialLoad = !initializedRef.current
+    if (isInitialLoad) {
+      setLoading(true)
+    } else {
+      setRefreshing(true)
+    }
     loadAbortControllerRef.current?.abort()
     const controller = new AbortController()
     loadAbortControllerRef.current = controller
 
     try {
-      // Build query string
-      const params = new URLSearchParams()
-      if (filters.gameType) params.append('gameType', filters.gameType)
-      if (filters.status && filters.status !== 'all') params.append('status', filters.status)
-      if (filters.search) params.append('search', filters.search)
-      if (filters.minPlayers) params.append('minPlayers', filters.minPlayers.toString())
-      if (filters.maxPlayers) params.append('maxPlayers', filters.maxPlayers.toString())
-      if (filters.sortBy) params.append('sortBy', filters.sortBy)
-      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+      const params = buildLobbyQueryParams(filters)
+      const query = params.toString()
 
-      const res = await fetch(`/api/lobby?${params.toString()}`, {
+      const res = await fetch(query ? `/api/lobby?${query}` : '/api/lobby', {
         cache: 'no-store',
         signal: controller.signal,
       })
@@ -140,20 +120,29 @@ function LobbyListPageContent() {
       if ('error' in data) {
         clientLogger.warn('Lobbies loaded with error:', (data as any).error)
       }
-      
+
+      setHasLoadError(false)
+      setLastUpdatedAt(Date.now())
       setLobbies(data.lobbies || [])
-      setStats(data.stats || { totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
+      setStats(data.stats || EMPTY_LOBBY_STATS)
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         return
       }
       clientLogger.error('Failed to load lobbies:', error)
-      // Set empty array to prevent UI from breaking
-      setLobbies([])
-      setStats({ totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
+      setHasLoadError(true)
+      // Initial failure should still render a stable empty state.
+      if (isInitialLoad) {
+        setLobbies([])
+        setStats(EMPTY_LOBBY_STATS)
+      }
     } finally {
       if (requestId === loadRequestIdRef.current) {
-        setLoading(false)
+        if (isInitialLoad) {
+          setLoading(false)
+        } else {
+          setRefreshing(false)
+        }
       }
     }
   }, [filters])
@@ -299,10 +288,46 @@ function LobbyListPageContent() {
   }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken])
 
   const handleJoinByCode = () => {
-    if (joinCode) {
-      router.push(`/lobby/${joinCode.toUpperCase()}`)
-    }
+    const normalizedCode = sanitizeLobbyCode(joinCode)
+    setJoinCode(normalizedCode)
+    if (normalizedCode.length !== LOBBY_CODE_LENGTH) return
+    router.push(`/lobby/${normalizedCode}`)
   }
+
+  const hasActiveFilters = hasActiveLobbyFilters(filters)
+  const quickRules = [
+    {
+      gameType: 'yahtzee',
+      icon: '🎲',
+      label: t('games.yahtzee.title', 'Yahtzee'),
+      rule: t('game.ui.howToPlayRuleYahtzee'),
+    },
+    {
+      gameType: 'guess_the_spy',
+      icon: '🕵️',
+      label: t('games.spy.name', 'Guess the Spy'),
+      rule: t('game.ui.howToPlayRuleSpy'),
+    },
+    {
+      gameType: 'tic_tac_toe',
+      icon: '❌⭕',
+      label: t('games.tictactoe.name', 'Tic-Tac-Toe'),
+      rule: t('game.ui.howToPlayRuleTicTacToe'),
+    },
+    {
+      gameType: 'rock_paper_scissors',
+      icon: '✊✋✌️',
+      label: t('games.rock_paper_scissors.name', 'Rock Paper Scissors'),
+      rule: t('game.ui.howToPlayRuleRps'),
+    },
+    {
+      gameType: 'memory',
+      icon: '🧠',
+      label: t('games.memory.name', 'Memory'),
+      rule: t('game.ui.howToPlayRuleMemory'),
+    },
+  ]
+  const selectedQuickRule = quickRules.find((entry) => entry.gameType === filters.gameType) || null
 
   // Wait for i18n to be ready before rendering
   if (!ready || !i18n.isInitialized) {
@@ -351,13 +376,13 @@ function LobbyListPageContent() {
                 placeholder={t('lobby.enterCode')}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-lg"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                maxLength={4}
-                onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
+                onChange={(e) => setJoinCode(sanitizeLobbyCode(e.target.value))}
+                maxLength={LOBBY_CODE_LENGTH}
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
               />
               <button
                 onClick={handleJoinByCode}
-                disabled={!joinCode || joinCode.length !== 4}
+                disabled={joinCode.length !== LOBBY_CODE_LENGTH}
                 className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
               >
                 {t('lobby.join')}
@@ -366,8 +391,11 @@ function LobbyListPageContent() {
           </div>
 
           {/* Create Lobby Card */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white hover:shadow-xl transition-all hover:scale-105 cursor-pointer"
-               onClick={() => router.push('/lobby/create')}>
+          <button
+            type="button"
+            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white hover:shadow-xl transition-all hover:scale-105 cursor-pointer text-left"
+            onClick={() => router.push('/lobby/create')}
+          >
             <div className="text-5xl mb-4">✨</div>
             <h2 className="text-2xl font-bold mb-2">{t('lobby.createLobby')}</h2>
             <p className="text-white/80 mb-4">{t('lobby.createDescription')}</p>
@@ -377,8 +405,42 @@ function LobbyListPageContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
-          </div>
+          </button>
         </div>
+
+        <section className="mb-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl">
+          <h2 className="text-2xl font-bold mb-2">📘 {t('game.ui.howToPlayTitle')}</h2>
+          <p className="text-sm text-slate-300 mb-4">{t('game.ui.howToPlayDescription')}</p>
+
+          <div className="grid gap-3 md:grid-cols-2 mb-4">
+            <div className="rounded-xl bg-slate-700/60 border border-slate-600 px-4 py-3 text-sm">
+              {t('game.ui.howToPlayReady')}
+            </div>
+            <div className="rounded-xl bg-slate-700/60 border border-slate-600 px-4 py-3 text-sm">
+              {t('game.ui.howToPlayStart')}
+            </div>
+          </div>
+
+          {selectedQuickRule ? (
+            <div className="rounded-xl bg-blue-600/20 border border-blue-400/40 px-4 py-3">
+              <p className="text-sm font-semibold text-blue-100 mb-1">
+                {selectedQuickRule.icon} {selectedQuickRule.label}
+              </p>
+              <p className="text-sm text-blue-50">{selectedQuickRule.rule}</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {quickRules.map((rule) => (
+                <div key={rule.gameType} className="rounded-xl bg-slate-700/40 border border-slate-600 px-4 py-3">
+                  <p className="text-sm font-semibold text-white mb-1">
+                    {rule.icon} {rule.label}
+                  </p>
+                  <p className="text-sm text-slate-300">{rule.rule}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Filters */}
         <LobbyFilters filters={filters} onFiltersChange={setFilters} />
@@ -393,17 +455,36 @@ function LobbyListPageContent() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {t('lobby.lobbiesCount', { count: lobbies.length })}
               </p>
+              {lastUpdatedAt && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('lobby.lastUpdated', {
+                    time: new Date(lastUpdatedAt).toLocaleTimeString(),
+                  })}
+                </p>
+              )}
             </div>
             <button
               onClick={loadLobbies}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              disabled={refreshing || loading}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title={t('lobby.refresh')}
             >
-              <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className={`w-6 h-6 text-gray-600 dark:text-gray-400 ${refreshing ? 'animate-spin' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
           </div>
+
+          {hasLoadError && (
+            <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+              {t('lobby.loadFailed')}
+            </div>
+          )}
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -417,90 +498,41 @@ function LobbyListPageContent() {
                 <span className="text-5xl">🎲</span>
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {t('lobby.noLobbies')}
+                {hasActiveFilters ? t('lobby.noFilterMatches') : t('lobby.noLobbies')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {t('lobby.noLobbiesDescription')}
+                {hasActiveFilters ? t('lobby.noFilterMatchesDescription') : t('lobby.noLobbiesDescription')}
               </p>
               <button
-                onClick={() => router.push('/lobby/create')}
+                onClick={
+                  hasActiveFilters
+                    ? () =>
+                        setFilters({
+                          gameType: undefined,
+                          status: 'all',
+                          search: '',
+                          minPlayers: undefined,
+                          maxPlayers: undefined,
+                          sortBy: 'createdAt',
+                          sortOrder: 'desc',
+                        })
+                    : () => router.push('/lobby/create')
+                }
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105"
               >
-                {t('lobby.createFirst')}
+                {hasActiveFilters ? t('lobby.filters.clearAll') : t('lobby.createFirst')}
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               {lobbies.map((lobby, index) => (
-                <div
+                <LobbyCard
                   key={lobby.id}
-                  onClick={() => router.push(`/lobby/${lobby.code}`)}
-                  className="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-5 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 animate-fade-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {lobby.name}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-mono bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-bold">
-                          {lobby.code}
-                        </span>
-                        <span>•</span>
-                        <span className="truncate">
-                          👤 {lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                        lobby.games.length > 0 && lobby.games[0].status === 'playing'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-                        }`}></div>
-                        {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
-                          t('lobby.playing', { count: lobby.games[0]._count.players })
-                        ) : (
-                          t('lobby.waiting')
-                        )}
-                      </div>
-                      {lobby.allowSpectators && (
-                        <div className="rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 px-3 py-1 text-xs font-semibold">
-                          Spectators: {lobby.spectatorCount ?? 0}/{lobby.maxSpectators ?? 0}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      👥 {t('lobby.maxPlayers', { count: lobby.maxPlayers })}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {lobby.allowSpectators && lobby.games[0]?.status === 'playing' && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/lobby/${lobby.code}/spectate`)
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-                        >
-                          Watch
-                        </button>
-                      )}
-                      <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                        {t('lobby.joinGame')}
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  lobby={lobby}
+                  index={index}
+                  onOpenLobby={(code) => router.push(`/lobby/${code}`)}
+                  onWatchLobby={(code) => router.push(`/lobby/${code}/spectate`)}
+                />
               ))}
             </div>
           )}

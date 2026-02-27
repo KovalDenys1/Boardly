@@ -34,6 +34,17 @@ describe('getLobbyPlayerRequirements', () => {
     })
   })
 
+  it('returns strict two-player minimum for memory game', () => {
+    const requirements = getLobbyPlayerRequirements('memory')
+
+    expect(requirements).toEqual({
+      gameType: 'memory',
+      supportsBots: false,
+      minPlayersRequired: 2,
+      desiredPlayerCount: 2,
+    })
+  })
+
   it('uses default game type when input is empty', () => {
     const requirements = getLobbyPlayerRequirements('   ')
 

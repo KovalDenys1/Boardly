@@ -15,15 +15,19 @@ import {
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 
 type GameType = RegisteredGameType
+type MemoryDifficulty = 'easy' | 'medium' | 'hard'
 
 type GameSettings = {
   hasTurnTimer?: boolean // Whether this game supports turn timer
   hasGameModes?: boolean // Whether this game supports game modes
   hasRoundSelection?: boolean // Whether this game supports selecting number of rounds
+  hasDifficultySelection?: boolean // Whether this game supports selecting difficulty
   turnTimerOptions?: number[] // Available turn timer options (in seconds)
   defaultTurnTimer?: number // Default turn timer value
   roundOptions?: number[] // Available round count options
   defaultRounds?: number | null // Default number of rounds (null = unlimited)
+  difficultyOptions?: MemoryDifficulty[] // Available game difficulty options
+  defaultDifficulty?: MemoryDifficulty // Default game difficulty
 }
 
 type GameInfo = {
@@ -96,6 +100,22 @@ const GAME_INFO: Record<GameType, GameInfo> = {
       hasGameModes: false,
     },
   },
+  memory: {
+    name: 'Memory',
+    emoji: '🧠',
+    description: '', // Set via i18n
+    gradient: 'from-emerald-500 via-teal-500 to-cyan-400',
+    translationKey: 'memory',
+    allowedPlayers: [2, 3, 4],
+    defaultMaxPlayers: 4,
+    settings: {
+      hasTurnTimer: false,
+      hasGameModes: false,
+      hasDifficultySelection: true,
+      difficultyOptions: ['easy', 'medium', 'hard'],
+      defaultDifficulty: 'easy',
+    },
+  },
 }
 
 
@@ -119,6 +139,7 @@ function CreateLobbyPage() {
     maxSpectators: 10,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60, // Use game-specific default or fallback to 60
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
+    memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
     gameType: selectedGameType as GameType,
   })
   const LOBBY_NAME_MAX = 22;
@@ -136,6 +157,7 @@ function CreateLobbyPage() {
         maxPlayers: gameInfo.defaultMaxPlayers,
         turnTimer: gameInfo.settings.defaultTurnTimer || 60, // Update turn timer when game changes
         ticTacToeRounds: gameInfo.settings.defaultRounds ?? null,
+        memoryDifficulty: gameInfo.settings.defaultDifficulty ?? 'easy',
         gameType: selectedGameType,
       }))
       setMaxPlayersInput(gameInfo.defaultMaxPlayers.toString())
@@ -195,6 +217,7 @@ function CreateLobbyPage() {
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
         ...(formData.gameType === 'tic_tac_toe' ? { ticTacToeRounds: formData.ticTacToeRounds } : {}),
+        ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
       }
 
       const res = await fetchWithGuest('/api/lobby', {
@@ -513,6 +536,43 @@ function CreateLobbyPage() {
                 </div>
               )}
 
+              {/* Difficulty Settings - Memory */}
+              {gameInfo.settings.hasDifficultySelection && (
+                <div>
+                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
+                    🧠 {t('lobby.create.memoryDifficulty')}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(gameInfo.settings.difficultyOptions || ['easy', 'medium', 'hard']).map((difficulty) => (
+                      <button
+                        key={difficulty}
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            memoryDifficulty: difficulty as MemoryDifficulty,
+                          }))
+                        }
+                        className={`px-3 py-2 rounded-xl font-semibold transition-all ${
+                          formData.memoryDifficulty === difficulty
+                            ? 'bg-white text-blue-600 shadow-lg scale-105'
+                            : 'bg-white/20 text-white hover:bg-white/30'
+                        }`}
+                      >
+                        {difficulty === 'easy'
+                          ? t('lobby.create.difficultyEasy')
+                          : difficulty === 'medium'
+                            ? t('lobby.create.difficultyMedium')
+                            : t('lobby.create.difficultyHard')}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-white/70 mt-2 text-center">
+                    {t('lobby.create.memoryDifficultyHelper')}
+                  </p>
+                </div>
+              )}
+
               {/* Turn Timer Settings - Only for games that support it */}
               {gameInfo.settings.hasTurnTimer && (
                 <div>
@@ -701,6 +761,15 @@ function CreateLobbyPage() {
                     🔁 {formData.ticTacToeRounds === null
                       ? t('lobby.create.unlimitedRounds')
                       : t('lobby.create.rounds', { count: formData.ticTacToeRounds })}
+                  </span>
+                )}
+                {gameInfo.settings.hasDifficultySelection && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
+                    🧠 {formData.memoryDifficulty === 'easy'
+                      ? t('lobby.create.difficultyEasy')
+                      : formData.memoryDifficulty === 'medium'
+                        ? t('lobby.create.difficultyMedium')
+                        : t('lobby.create.difficultyHard')}
                   </span>
                 )}
               </div>

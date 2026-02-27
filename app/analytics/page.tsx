@@ -1,10 +1,7 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import { getProductMetricsDashboard, type ProductGameMetrics } from '@/lib/product-metrics'
 import { getOperationalKpiDashboard } from '@/lib/operational-metrics'
-import { canAccessProductAnalytics } from '@/lib/analytics-access'
+import { requireAdminSession } from '@/lib/admin-auth'
 import AnalyticsInteractiveTable, { AnalyticsTableColumn } from '@/components/AnalyticsInteractiveTable'
 import GameAnalyticsSection from '@/components/GameAnalyticsSection'
 
@@ -80,6 +77,8 @@ function formatGameTypeLabel(gameType: string): string {
       return 'Rock Paper Scissors'
     case 'guess_the_spy':
       return 'Guess the Spy'
+    case 'memory':
+      return 'Memory'
     default:
       return gameType.replace(/_/g, ' ')
   }
@@ -90,19 +89,7 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<{ days?: string }>
 }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id) {
-    redirect('/auth/login?returnUrl=%2Fanalytics')
-  }
-
-  if (
-    !canAccessProductAnalytics({
-      id: session.user.id,
-      email: session.user.email,
-    })
-  ) {
-    redirect('/games')
-  }
+  await requireAdminSession('/analytics')
 
   const resolvedSearchParams = await searchParams
   const days = clampDays(resolvedSearchParams.days)

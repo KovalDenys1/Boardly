@@ -5,15 +5,27 @@ import { useTranslation } from '@/lib/i18n-helpers'
 
 interface LobbyInfoProps {
   lobby: any
+  game: any
   soundEnabled: boolean
   onSoundToggle: () => void
   onLeave: () => void
 }
 
-export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave }: LobbyInfoProps) {
+export default function LobbyInfo({ lobby, game, soundEnabled, onSoundToggle, onLeave }: LobbyInfoProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const gameMeta = lobby.gameType ? getGameMetadata(lobby.gameType) : null
+  const currentPlayers = Array.isArray(game?.players) ? game.players.length : 0
+  const maxPlayers = typeof lobby?.maxPlayers === 'number' ? lobby.maxPlayers : 0
+  const isPrivate = Boolean(lobby?.isPrivate)
+  const isPlaying = game?.status === 'playing'
+  const creatorName = lobby?.creator?.username || lobby?.creator?.email || t('lobby.ownerFallback')
+  const spectatorsLabel = lobby?.allowSpectators
+    ? t('lobby.spectators', {
+        count: lobby?.spectatorCount ?? 0,
+        max: lobby?.maxSpectators ?? 0,
+      })
+    : t('game.ui.spectatorsDisabled')
 
   const handleCopyInvite = () => {
     if (typeof window !== 'undefined') {
@@ -25,72 +37,112 @@ export default function LobbyInfo({ lobby, soundEnabled, onSoundToggle, onLeave 
   }
 
   return (
-    <div className="flex-shrink-0 sticky top-0 z-10 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-xl border-b border-white/20 px-3 sm:px-6 py-3.5 sm:py-4 shadow-lg">
-      {/* Breadcrumbs */}
-      <nav className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-white/60 mb-2.5 sm:mb-3">
-        <button
-          onClick={() => router.push('/')}
-          aria-label={t('common.goHome')}
-          className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-        >
-          🏠 {t('breadcrumbs.home')}
-        </button>
-        <span aria-hidden="true" className="text-white/30">›</span>
-        <button
-          onClick={() => router.push('/games')}
-          aria-label={t('games.title')}
-          className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-        >
-          🎮 {t('breadcrumbs.games')}
-        </button>
-        <span aria-hidden="true" className="text-white/30">›</span>
-        <button
-          onClick={() => router.push(`/games/${lobby.gameType}/lobbies`)}
-          aria-label={t('lobby.activeLobbies')}
-          className="hidden sm:inline-flex hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-        >
-          {gameMeta?.icon ?? '🎮'} {gameMeta?.name ?? 'Game'}
-        </button>
-        <span aria-hidden="true" className="hidden sm:inline text-white/30">›</span>
-        <span className="text-white/80 font-semibold tracking-wide">{lobby.code}</span>
-      </nav>
+    <div className="flex-shrink-0 sticky top-0 z-10 pt-2 pb-3">
+      <div className="rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl px-3 sm:px-5 py-3 sm:py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <nav className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-white/65 mb-3">
+              <button
+                onClick={() => router.push('/')}
+                aria-label={t('common.goHome')}
+                className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              >
+                🏠 {t('breadcrumbs.home')}
+              </button>
+              <span aria-hidden="true" className="text-white/30">
+                ›
+              </span>
+              <button
+                onClick={() => router.push('/games')}
+                aria-label={t('games.title')}
+                className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              >
+                🎮 {t('breadcrumbs.games')}
+              </button>
+              <span aria-hidden="true" className="text-white/30">
+                ›
+              </span>
+              <button
+                onClick={() => router.push(lobby?.gameType ? `/games/${lobby.gameType}/lobbies` : '/games')}
+                aria-label={t('lobby.activeLobbies')}
+                className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              >
+                {gameMeta?.icon ?? '🎮'} {gameMeta?.name ?? 'Game'}
+              </button>
+            </nav>
 
-      {/* Lobby Header Row */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-2xl font-extrabold text-white truncate drop-shadow-lg">
-            {lobby.name}
-          </h1>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
-            <p className="text-white/50 text-xs sm:text-sm">
-              {t('game.ui.code')}: <span className="font-mono font-bold text-white/80 text-sm tracking-wider">{lobby.code}</span>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-white truncate">{lobby.name}</h1>
+              <span className="font-mono text-xs sm:text-sm font-bold tracking-wider text-cyan-100 bg-cyan-500/20 border border-cyan-300/30 px-2 py-1 rounded-lg">
+                {lobby.code}
+              </span>
+              <span
+                className={`text-xs font-semibold px-2 py-1 rounded-lg ${
+                  isPrivate
+                    ? 'bg-rose-500/25 text-rose-100 border border-rose-300/35'
+                    : 'bg-emerald-500/25 text-emerald-100 border border-emerald-300/35'
+                }`}
+              >
+                {isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
+              </span>
+              <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-white/10 text-white/85 border border-white/20">
+                {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
+              </span>
+            </div>
+
+            <p className="text-xs sm:text-sm text-white/70 truncate">
+              👤 {creatorName}
             </p>
+          </div>
+
+          <div className="flex w-full lg:w-auto items-center gap-2">
             <button
               onClick={handleCopyInvite}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-all text-[11px] sm:text-xs font-semibold text-white max-w-full"
+              className="inline-flex flex-1 lg:flex-none items-center justify-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all text-xs sm:text-sm font-semibold text-white"
             >
               <span className="shrink-0">🔗</span>
               <span className="truncate">{t('game.ui.copyInvite')}</span>
             </button>
+            <button
+              onClick={onSoundToggle}
+              aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
+              aria-pressed={soundEnabled}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+              title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
+            >
+              {soundEnabled ? '🔊' : '🔇'}
+            </button>
+            <button
+              onClick={onLeave}
+              aria-label={t('game.ui.leave')}
+              className="px-4 py-2 bg-red-500/35 hover:bg-red-500/55 text-white rounded-xl font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+            >
+              🚪 {t('game.ui.leave')}
+            </button>
           </div>
         </div>
-        <div className="flex w-full sm:w-auto items-center gap-2">
-          <button
-            onClick={onSoundToggle}
-            aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-            aria-pressed={soundEnabled}
-            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none flex-1 sm:flex-none"
-            title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-          >
-            {soundEnabled ? '🔊' : '🔇'}
-          </button>
-          <button
-            onClick={onLeave}
-            aria-label={t('game.ui.leave')}
-            className="px-4 py-2 bg-red-500/30 hover:bg-red-500/50 text-white rounded-xl font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none flex-1 sm:flex-none"
-          >
-            🚪 {t('game.ui.leave')}
-          </button>
+
+        <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.playersInLobbyTitle')}</p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              {t('lobby.playerOccupancy', { current: currentPlayers, max: maxPlayers })}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.gameTypeLabel')}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{gameMeta?.name ?? t('lobby.gameUnknown')}</p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.timeLimit')}</p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              {lobby?.turnTimer ? `${lobby.turnTimer}s ${t('game.ui.perTurn')}` : '—'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.spectatorsLabel')}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{spectatorsLabel}</p>
+          </div>
         </div>
       </div>
     </div>

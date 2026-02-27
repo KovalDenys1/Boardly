@@ -8,6 +8,7 @@ import { POST } from '@/app/api/game/create/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { getOrCreateBotUser } from '@/lib/bot-helpers'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -64,9 +65,16 @@ jest.mock('@/lib/bot-helpers', () => ({
   ),
 }))
 
+jest.mock('@/lib/game-replay', () => ({
+  appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockGetOrCreateBotUser = getOrCreateBotUser as jest.MockedFunction<typeof getOrCreateBotUser>
+const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
+  typeof appendGameReplaySnapshot
+>
 
 describe('POST /api/game/create', () => {
   const mockSession = {
@@ -123,6 +131,7 @@ describe('POST /api/game/create', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockGetOrCreateBotUser.mockResolvedValue({
       id: 'bot-user-1',
       username: 'Grid Tactician',
@@ -337,6 +346,60 @@ describe('POST /api/game/create', () => {
     expect(response.status).toBe(200)
     expect(data.game).toBeDefined()
     expect(persistedState?.data?.match?.targetRounds).toBe(5)
+  })
+
+  it('preserves configured Memory difficulty when starting from waiting state', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+
+    const memoryWaitingGame = {
+      ...mockWaitingGame,
+      state: JSON.stringify({
+        data: {
+          difficulty: 'hard',
+        },
+      }),
+    }
+
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      gameType: 'memory',
+      maxPlayers: 4,
+      games: [memoryWaitingGame],
+    } as any)
+
+    let persistedState: any
+    mockPrisma.games.update.mockImplementation((args: any) => {
+      persistedState = JSON.parse(args.data.state)
+      return Promise.resolve({
+        ...memoryWaitingGame,
+        status: 'playing',
+        gameType: 'memory',
+        state: args.data.state,
+        players: memoryWaitingGame.players.map((p: any) => ({
+          ...p,
+          user: {
+            ...p.user,
+            bot: null,
+          },
+        })),
+      } as any)
+    })
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'memory',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 4, minPlayers: 2 },
+      }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.game).toBeDefined()
+    expect(persistedState?.data?.difficulty).toBe('hard')
   })
 
   it('auto-adds bot and starts game when creator starts alone in bot-supported game', async () => {

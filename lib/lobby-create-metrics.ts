@@ -16,6 +16,7 @@ const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
   'tic_tac_toe',
   'rock_paper_scissors',
   'guess_the_spy',
+  'memory',
 ])
 
 function normalizeGameType(value: unknown, fallback: AnalyticsGameType = 'yahtzee'): AnalyticsGameType {

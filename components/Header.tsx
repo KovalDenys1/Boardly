@@ -23,6 +23,7 @@ export default function Header() {
 
   const isAuthenticated = status === 'authenticated'
   const isLoading = status === 'loading'
+  const isAdmin = session?.user?.role === 'admin'
 
   return (
     <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
@@ -37,7 +38,11 @@ export default function Header() {
               🎲 Boardly
             </button>
 
-            <HeaderNavigation isAuthenticated={isAuthenticated} isGuest={isGuest} />
+            <HeaderNavigation
+              isAuthenticated={isAuthenticated}
+              isAdmin={isAdmin}
+              isGuest={isGuest}
+            />
           </div>
 
           {/* User menu and language switcher */}

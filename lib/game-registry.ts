@@ -11,12 +11,18 @@ import { YahtzeeGame } from './games/yahtzee-game'
 import { TicTacToeGame } from './games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from './games/rock-paper-scissors-game'
 import { SpyGame } from './games/spy-game'
+import { MemoryGame } from './games/memory-game'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type RegisteredGameType = 'yahtzee' | 'guess_the_spy' | 'tic_tac_toe' | 'rock_paper_scissors'
+export type RegisteredGameType =
+  | 'yahtzee'
+  | 'guess_the_spy'
+  | 'tic_tac_toe'
+  | 'rock_paper_scissors'
+  | 'memory'
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -96,6 +102,20 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     },
     create: (id, cfg) =>
       new RockPaperScissorsGame(id, { maxPlayers: 2, minPlayers: 2, ...cfg }),
+  },
+
+  memory: {
+    metadata: {
+      type: 'memory',
+      name: 'Memory',
+      icon: '🧠',
+      minPlayers: 2,
+      maxPlayers: 4,
+      supportsBots: false,
+      translationKey: 'memory',
+    },
+    create: (id, cfg) =>
+      new MemoryGame(id, { maxPlayers: 4, minPlayers: 2, ...cfg }),
   },
 }
 

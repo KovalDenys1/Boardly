@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { restoreGameEngine } from '@/lib/game-registry'
 import { notifySocket } from '@/lib/socket-url'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -34,6 +35,10 @@ jest.mock('@/lib/socket-url', () => ({
   notifySocket: jest.fn(),
 }))
 
+jest.mock('@/lib/game-replay', () => ({
+  appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined),
+}))
+
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
     info: jest.fn(),
@@ -46,6 +51,9 @@ const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 const mockRestoreGameEngine = restoreGameEngine as jest.MockedFunction<typeof restoreGameEngine>
 const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
+  typeof appendGameReplaySnapshot
+>
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
 
@@ -104,6 +112,7 @@ describe('POST /api/game/[gameId]/state', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockNotifySocket.mockResolvedValue(true as any)
+    mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -220,6 +229,13 @@ describe('POST /api/game/[gameId]/state', () => {
       })
     )
     expect(mockPrisma.players.update).toHaveBeenCalledTimes(2)
+    expect(mockAppendGameReplaySnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gameId: 'game-123',
+        playerId: 'player-1',
+        actionType: 'roll',
+      })
+    )
     expect(mockNotifySocket).toHaveBeenCalledWith(
       'lobby:ABCD12',
       'game-update',

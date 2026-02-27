@@ -107,6 +107,7 @@ const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'))
 const RollHistory = dynamic(() => import('@/components/RollHistory'))
 const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
 const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
+const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
 const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
@@ -1352,6 +1353,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           {/* Sticky header bar */}
           <LobbyInfo
             lobby={lobby}
+            game={game}
             soundEnabled={soundEnabled}
             onSoundToggle={() => {
               soundManager.toggle()
@@ -1811,6 +1813,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+            />
+          ) : gameEngine && (lobby?.gameType as string) === 'memory' && game?.id ? (
+            <MemoryGameBoard
+              gameId={game.id}
+              lobbyCode={code}
+              players={Array.isArray(game.players) ? game.players : []}
+              state={gameEngine.getState()}
+              currentUserId={getCurrentUserId()}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">

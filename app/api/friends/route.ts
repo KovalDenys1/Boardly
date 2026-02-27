@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends')
+type FriendPresence = 'offline' | 'online' | 'in_lobby' | 'in_game'
 
 // GET /api/friends - Get user's friends list
 export async function GET(req: NextRequest) {
@@ -72,13 +73,67 @@ export async function GET(req: NextRequest) {
       return {
         ...friend,
         friendshipId: friendship.id,
-        friendsSince: friendship.createdAt
+        friendsSince: friendship.createdAt,
       }
     })
 
-    log.info('Friends list retrieved', { userId, count: friends.length })
+    const friendIds = friends.map((friend) => friend.id)
+    const friendIdSet = new Set(friendIds)
+    const presenceByUserId = new Map<string, FriendPresence>()
 
-    return NextResponse.json({ friends })
+    if (friendIds.length > 0) {
+      const activeGames = await prisma.games.findMany({
+        where: {
+          status: {
+            in: ['waiting', 'playing'],
+          },
+          players: {
+            some: {
+              userId: {
+                in: friendIds,
+              },
+            },
+          },
+        },
+        select: {
+          status: true,
+          players: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+
+      for (const game of activeGames) {
+        const nextPresence: FriendPresence = game.status === 'playing' ? 'in_game' : 'in_lobby'
+
+        for (const player of game.players) {
+          if (!friendIdSet.has(player.userId)) {
+            continue
+          }
+
+          const currentPresence = presenceByUserId.get(player.userId)
+          if (currentPresence === 'in_game') {
+            continue
+          }
+
+          presenceByUserId.set(player.userId, nextPresence)
+        }
+      }
+    }
+
+    const friendsWithPresence = friends.map((friend) => ({
+      ...friend,
+      presence: presenceByUserId.get(friend.id) || 'offline',
+    }))
+
+    log.info('Friends list retrieved', { userId, count: friendsWithPresence.length })
+
+    return NextResponse.json({ friends: friendsWithPresence })
 
   } catch (error) {
     log.error('Error fetching friends', error as Error)

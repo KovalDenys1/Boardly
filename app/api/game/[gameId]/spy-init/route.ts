@@ -6,6 +6,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -142,6 +143,16 @@ export async function POST(
         status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
       },
+    })
+
+    await appendGameReplaySnapshot({
+      gameId,
+      playerId: userId,
+      actionType: 'spy:init-round',
+      actionPayload: {
+        source: activeLocations.source,
+      },
+      state: updatedState,
     })
 
     if (statusChanged) {

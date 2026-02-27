@@ -8,6 +8,7 @@ import { showToast } from '@/lib/i18n-toast'
 import UsernameInput from '@/components/UsernameInput'
 import GameHistory from '@/components/GameHistory'
 import Friends from '@/components/Friends'
+import PlayerStatsDashboard from '@/components/PlayerStatsDashboard'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
@@ -24,7 +25,7 @@ interface LinkedAccounts {
   discord?: LinkedAccount
 }
 
-type TabType = 'profile' | 'friends' | 'history' | 'settings'
+type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'settings'
 
 type NotificationPreferences = {
   gameInvites: boolean
@@ -482,6 +483,16 @@ export default function ProfilePage() {
                 <span className="inline sm:hidden">⚙️</span>
                 <span className="hidden sm:inline">⚙️ {t('profile.settings.title')}</span>
               </button>
+              <button
+                onClick={() => setActiveTab('stats')}
+                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === 'stats'
+                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+              >
+                <span className="inline sm:hidden">📊</span>
+                <span className="hidden sm:inline">📊 Statistics</span>
+              </button>
             </nav>
           </div>
 
@@ -735,6 +746,19 @@ export default function ProfilePage() {
           {activeTab === 'history' && (
             <div>
               <GameHistory />
+            </div>
+          )}
+
+          {/* Statistics Tab */}
+          {activeTab === 'stats' && (
+            <div>
+              {session?.user?.id ? (
+                <PlayerStatsDashboard userId={session.user.id} />
+              ) : (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Unable to load statistics right now.
+                </div>
+              )}
             </div>
           )}
 

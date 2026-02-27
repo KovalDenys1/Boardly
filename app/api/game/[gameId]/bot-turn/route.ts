@@ -7,6 +7,7 @@ import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -305,6 +306,14 @@ export async function POST(
                 currentPlayerId: disconnectedTurnResult.currentPlayerId,
               })
             }
+
+            await appendGameReplaySnapshot({
+              gameId: game.id,
+              playerId: botUserId,
+              actionType: `bot:${botMove.type}`,
+              actionPayload: botMove.data,
+              state: newState,
+            })
           } catch (dbError) {
             log.error('Critical: Failed to save game state after retry', dbError as Error)
             throw new Error('Database connection failed. Please try again.')

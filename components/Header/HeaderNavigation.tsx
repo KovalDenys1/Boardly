@@ -5,10 +5,11 @@ import { useTranslation } from '@/lib/i18n-helpers'
 
 interface HeaderNavigationProps {
   isAuthenticated: boolean
+  isAdmin?: boolean
   isGuest?: boolean
 }
 
-export function HeaderNavigation({ isAuthenticated, isGuest }: HeaderNavigationProps) {
+export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: HeaderNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
@@ -39,7 +40,7 @@ export function HeaderNavigation({ isAuthenticated, isGuest }: HeaderNavigationP
           🎮 {t('header.games', 'Games')}
         </button>
       )}
-      {isAuthenticated && (
+      {isAuthenticated && isAdmin && (
         <button
           onClick={() => router.push('/analytics')}
           className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/analytics')

@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
  * Returns user's game history with filters
  * Query params: 
  *   - status: waiting | playing | finished | abandoned | cancelled (optional)
- *   - gameType: yahtzee | chess | guess_the_spy | uno | other (optional)
+ *   - gameType: yahtzee | tic_tac_toe | rock_paper_scissors | memory | chess | guess_the_spy | uno | other (optional)
  *   - limit: number of games to return (default 50)
  *   - offset: pagination offset (default 0)
  */
@@ -86,6 +86,11 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
+          _count: {
+            select: {
+              snapshots: true,
+            },
+          },
           players: {
             select: {
               id: true,
@@ -132,6 +137,7 @@ export async function GET(request: NextRequest) {
         createdAt: game.createdAt,
         updatedAt: game.updatedAt,
         abandonedAt: game.abandonedAt,
+        hasReplay: game._count.snapshots > 0,
         players: game.players.map((player) => ({
           id: player.id,
           username: player.user.username,

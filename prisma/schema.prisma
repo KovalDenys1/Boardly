@@ -180,10 +180,28 @@ model Games {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   players     Players[]
+  snapshots   GameStateSnapshots[]
 
   @@index([lobbyId])
   @@index([status])
   @@index([createdAt])
+}
+
+model GameStateSnapshots {
+  id              String   @id @default(cuid())
+  gameId          String
+  game            Games    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  turnNumber      Int
+  playerId        String?
+  actionType      String
+  actionPayload   Json?
+  stateCompressed String   @db.Text
+  stateEncoding   String   @default("gzip-base64")
+  stateSize       Int
+  createdAt       DateTime @default(now())
+
+  @@index([gameId, createdAt])
+  @@index([gameId, turnNumber])
 }
 
 enum GameStatus {
@@ -198,6 +216,7 @@ enum GameType {
   yahtzee
   tic_tac_toe
   rock_paper_scissors
+  memory
   chess
   guess_the_spy
   uno

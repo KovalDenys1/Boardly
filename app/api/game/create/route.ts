@@ -10,6 +10,7 @@ import { SpyGame } from '@/lib/games/spy-game'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -48,6 +49,34 @@ function extractTicTacToeTargetRounds(rawState: unknown): number | null | undefi
     targetRounds > 0
   ) {
     return targetRounds
+  }
+
+  return undefined
+}
+
+function extractMemoryDifficulty(rawState: unknown): 'easy' | 'medium' | 'hard' | undefined {
+  let parsedState = rawState
+
+  if (typeof rawState === 'string') {
+    try {
+      parsedState = JSON.parse(rawState)
+    } catch {
+      return undefined
+    }
+  }
+
+  if (!parsedState || typeof parsedState !== 'object') {
+    return undefined
+  }
+
+  const stateData = (parsedState as { data?: unknown }).data
+  if (!stateData || typeof stateData !== 'object') {
+    return undefined
+  }
+
+  const difficulty = (stateData as { difficulty?: unknown }).difficulty
+  if (difficulty === 'easy' || difficulty === 'medium' || difficulty === 'hard') {
+    return difficulty
   }
 
   return undefined
@@ -128,6 +157,8 @@ export async function POST(request: NextRequest) {
 
         const finishedGameTargetRounds =
           gameType === 'tic_tac_toe' ? extractTicTacToeTargetRounds(finishedGame.state) : undefined
+        const finishedGameMemoryDifficulty =
+          gameType === 'memory' ? extractMemoryDifficulty(finishedGame.state) : undefined
         const initialWaitingState = createGameEngine(
           gameType,
           `waiting_${Date.now()}`,
@@ -137,7 +168,13 @@ export async function POST(request: NextRequest) {
                   targetRounds: finishedGameTargetRounds,
                 },
               }
-            : undefined
+            : gameType === 'memory' && finishedGameMemoryDifficulty !== undefined
+              ? {
+                  rules: {
+                    difficulty: finishedGameMemoryDifficulty,
+                  },
+                }
+              : undefined
         ).getState()
 
         // Create new waiting game with same players
@@ -262,6 +299,19 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+    if (gameType === 'memory') {
+      const waitingDifficulty = extractMemoryDifficulty(waitingGame.state)
+      if (waitingDifficulty !== undefined) {
+        const existingRules =
+          startConfig.rules && typeof startConfig.rules === 'object' && !Array.isArray(startConfig.rules)
+            ? (startConfig.rules as Record<string, unknown>)
+            : {}
+        startConfig.rules = {
+          ...existingRules,
+          difficulty: waitingDifficulty,
+        }
+      }
+    }
 
     // Create game instance via registry
     const gameEngine = createGameEngine(
@@ -353,6 +403,17 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    })
+
+    await appendGameReplaySnapshot({
+      gameId: game.id,
+      playerId: userId,
+      actionType: 'game:start',
+      actionPayload: {
+        gameType,
+        playerCount: game.players.length,
+      },
+      state: gameEngine.getState(),
     })
 
     log.info('Game status changed', {

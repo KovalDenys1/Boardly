@@ -1,17 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
-
-export interface LobbyFilterOptions {
-  gameType?: string
-  status?: 'all' | 'waiting' | 'playing'
-  search?: string
-  minPlayers?: number
-  maxPlayers?: number
-  sortBy?: 'createdAt' | 'playerCount' | 'name'
-  sortOrder?: 'asc' | 'desc'
-}
+import { hasActiveLobbyFilters, LobbyFilterOptions } from '@/lib/lobby-filters'
 
 interface LobbyFiltersProps {
   filters: LobbyFilterOptions
@@ -20,7 +11,7 @@ interface LobbyFiltersProps {
 
 export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersProps) {
   const { t } = useTranslation()
-  const [showFilters, setShowFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(() => hasActiveLobbyFilters(filters))
 
   const handleFilterChange = (key: keyof LobbyFilterOptions, value: any) => {
     onFiltersChange({ ...filters, [key]: value })
@@ -38,7 +29,22 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
     })
   }
 
-  const hasActiveFilters = filters.gameType || filters.status !== 'all' || filters.search || filters.minPlayers || filters.maxPlayers
+  const hasActiveFilters = hasActiveLobbyFilters(filters)
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (filters.gameType) count += 1
+    if (filters.status && filters.status !== 'all') count += 1
+    if (filters.search) count += 1
+    if (filters.minPlayers) count += 1
+    if (filters.maxPlayers) count += 1
+    return count
+  }, [filters.gameType, filters.maxPlayers, filters.minPlayers, filters.search, filters.status])
+
+  useEffect(() => {
+    if (hasActiveFilters) {
+      setShowFilters(true)
+    }
+  }, [hasActiveFilters])
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
@@ -50,7 +56,7 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
           </h3>
           {hasActiveFilters && (
             <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full">
-              Active
+              {activeFilterCount}
             </span>
           )}
         </div>
@@ -121,6 +127,7 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
               <option value="guess_the_spy">{t('games.spy.name', 'Guess the Spy')}</option>
               <option value="tic_tac_toe">{t('games.tictactoe.name', 'Tic-Tac-Toe')}</option>
               <option value="rock_paper_scissors">{t('games.rock_paper_scissors.name', 'Rock Paper Scissors')}</option>
+              <option value="memory">{t('games.memory.name', 'Memory')}</option>
             </select>
           </div>
 

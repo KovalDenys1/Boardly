@@ -66,7 +66,8 @@ export default function GamesPage() {
       descriptionKey: 'games.memory.description',
       players: '2-4',
       difficultyKey: 'games.memory.difficulty',
-      status: 'coming-soon',
+      status: 'available',
+      route: '/games/memory/lobbies',
       color: 'from-green-400 to-teal-500'
     },
     {

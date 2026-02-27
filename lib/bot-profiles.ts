@@ -28,6 +28,11 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Intel Analyst',
     hard: 'Shadow Director',
   },
+  memory: {
+    easy: 'Memory Scout',
+    medium: 'Pattern Seeker',
+    hard: 'Recall Master',
+  },
 }
 
 const FALLBACK_NAMES: Record<BotDifficulty, string> = {
@@ -64,4 +69,3 @@ export function getBotDisplayName(
 
   return BOT_NAMES_BY_GAME[gameType][difficulty]
 }
-
