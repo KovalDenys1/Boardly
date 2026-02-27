@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { canAccessProductAnalytics } from '@/lib/analytics-access'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getOperationalKpiDashboard } from '@/lib/operational-metrics'
@@ -23,9 +22,9 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.users.findUnique({
       where: { id: authUser.id },
-      select: { id: true, email: true },
+      select: { role: true, suspended: true },
     })
-    if (!user || !canAccessProductAnalytics({ id: user.id, email: user.email })) {
+    if (!user || user.suspended || user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
