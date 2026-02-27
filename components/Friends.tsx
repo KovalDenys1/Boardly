@@ -17,6 +17,7 @@ interface Friend {
   email: string
   friendshipId: string
   friendsSince: string
+  presence?: 'offline' | 'online' | 'in_lobby' | 'in_game'
   statistics?: {
     totalGames: number
     totalWins: number
@@ -393,6 +394,21 @@ export default function Friends() {
     })
   }
 
+  const resolvePresence = (friend: Friend): 'offline' | 'online' | 'in_lobby' | 'in_game' => {
+    const isOnline = onlineUsers.has(friend.id)
+    if (!isOnline) return 'offline'
+    if (friend.presence === 'in_game') return 'in_game'
+    if (friend.presence === 'in_lobby') return 'in_lobby'
+    return 'online'
+  }
+
+  const presencePriority: Record<'offline' | 'online' | 'in_lobby' | 'in_game', number> = {
+    in_game: 0,
+    in_lobby: 1,
+    online: 2,
+    offline: 3,
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -582,16 +598,25 @@ export default function Friends() {
             <div className="grid gap-3">
               {[...friends]
                 .sort((a, b) => {
-                  const aOnline = onlineUsers.has(a.id)
-                  const bOnline = onlineUsers.has(b.id)
-                  if (aOnline && !bOnline) return -1
-                  if (!aOnline && bOnline) return 1
+                  const aPresence = resolvePresence(a)
+                  const bPresence = resolvePresence(b)
+                  const priorityDiff = presencePriority[aPresence] - presencePriority[bPresence]
+                  if (priorityDiff !== 0) return priorityDiff
                   const aName = a.username || a.email
                   const bName = b.username || b.email
                   return aName.localeCompare(bName)
                 })
                 .map((friend) => {
-                  const isOnline = onlineUsers.has(friend.id)
+                  const presence = resolvePresence(friend)
+                  const isOnline = presence !== 'offline'
+                  const presenceBadge =
+                    presence === 'in_game'
+                      ? { label: 'In game', className: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' }
+                      : presence === 'in_lobby'
+                        ? { label: 'In lobby', className: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' }
+                        : presence === 'online'
+                          ? { label: 'Online', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' }
+                          : null
                   return (
                     <div
                       key={friend.friendshipId}
@@ -624,9 +649,9 @@ export default function Friends() {
                               <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate text-lg">
                                 {friend.username || friend.email}
                               </h4>
-                              {isOnline && (
-                                <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
-                                  Online
+                              {presenceBadge && (
+                                <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${presenceBadge.className}`}>
+                                  {presenceBadge.label}
                                 </span>
                               )}
                             </div>
