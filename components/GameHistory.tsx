@@ -5,6 +5,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
+import ReplayViewerModal from './ReplayViewerModal'
 
 interface Player {
   id: string
@@ -32,6 +33,7 @@ interface GameHistoryItem {
   createdAt: string
   updatedAt: string
   abandonedAt: string | null
+  hasReplay: boolean
   players: Player[]
 }
 
@@ -56,6 +58,7 @@ export default function GameHistory() {
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
+  const [selectedReplayGameId, setSelectedReplayGameId] = useState<string | null>(null)
   
   const limit = 20
 
@@ -150,6 +153,8 @@ export default function GameHistory() {
         return 'Tic Tac Toe'
       case 'rock_paper_scissors':
         return 'Rock Paper Scissors'
+      case 'memory':
+        return 'Memory'
       case 'uno':
         return 'Uno'
       default:
@@ -182,6 +187,10 @@ export default function GameHistory() {
       <GameResultsModal
         gameId={selectedGameId}
         onClose={() => setSelectedGameId(null)}
+      />
+      <ReplayViewerModal
+        gameId={selectedReplayGameId}
+        onClose={() => setSelectedReplayGameId(null)}
       />
 
       {/* Filters */}
@@ -216,6 +225,9 @@ export default function GameHistory() {
             <option value="yahtzee">Yahtzee</option>
             <option value="chess">Chess</option>
             <option value="guess_the_spy">Guess the Spy</option>
+            <option value="tic_tac_toe">Tic Tac Toe</option>
+            <option value="rock_paper_scissors">Rock Paper Scissors</option>
+            <option value="memory">Memory</option>
             <option value="uno">Uno</option>
           </select>
         </div>
@@ -236,59 +248,74 @@ export default function GameHistory() {
       ) : (
         <div className="space-y-4">
           {games.map((game) => (
-            <button
+            <div
               key={game.id}
-              onClick={() => setSelectedGameId(game.id)}
-              className="w-full text-left p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-pointer"
+              className="w-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 transition-all"
             >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {game.lobbyName}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatGameType(game.gameType)} • {formatDate(game.createdAt)}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
-                    game.status
-                  )}`}
-                >
-                  {t(`profile.gameHistory.${game.status}` as any)}
-                </span>
-              </div>
-
-              {/* Players */}
-              <div className="flex flex-wrap gap-2">
-                {game.players.map((player, index) => (
-                  <div
-                    key={player.id}
-                    className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
-                      player.isWinner
-                        ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600'
-                        : 'bg-gray-100 dark:bg-gray-700'
-                    }`}
-                  >
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {player.username || `Player ${index + 1}`}
-                      {(player.isBot || player.bot) && ' 🤖'}
-                    </span>
-                    {player.finalScore !== null && (
-                      <span className="text-xs text-gray-600 dark:text-gray-400">
-                        {player.finalScore} {t('profile.gameResults.points')}
-                      </span>
-                    )}
-                    {player.isWinner && <span className="text-yellow-500">👑</span>}
+              <button
+                onClick={() => setSelectedGameId(game.id)}
+                className="w-full text-left"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {game.lobbyName}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatGameType(game.gameType)} • {formatDate(game.createdAt)}
+                    </p>
                   </div>
-                ))}
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                      game.status
+                    )}`}
+                  >
+                    {t(`profile.gameHistory.${game.status}` as any)}
+                  </span>
+                </div>
+
+                {/* Players */}
+                <div className="flex flex-wrap gap-2">
+                  {game.players.map((player, index) => (
+                    <div
+                      key={player.id}
+                      className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
+                        player.isWinner
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600'
+                          : 'bg-gray-100 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {player.username || `Player ${index + 1}`}
+                        {(player.isBot || player.bot) && ' 🤖'}
+                      </span>
+                      {player.finalScore !== null && (
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {player.finalScore} {t('profile.gameResults.points')}
+                        </span>
+                      )}
+                      {player.isWinner && <span className="text-yellow-500">👑</span>}
+                    </div>
+                  ))}
+                </div>
+              </button>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                {/* Click hint */}
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                  {t('profile.gameHistory.clickToView')} →
+                </div>
+                <button
+                  onClick={() => setSelectedReplayGameId(game.id)}
+                  disabled={!game.hasReplay}
+                  className="px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed dark:disabled:bg-gray-700 dark:disabled:text-gray-400 transition-colors"
+                >
+                  {game.hasReplay
+                    ? t('profile.gameReplay.watch')
+                    : t('profile.gameReplay.unavailable')}
+                </button>
               </div>
-              
-              {/* Click hint */}
-              <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
-                {t('profile.gameHistory.clickToView')} →
-              </div>
-            </button>
+            </div>
           ))}
         </div>
       )}

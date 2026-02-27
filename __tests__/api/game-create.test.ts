@@ -8,6 +8,7 @@ import { POST } from '@/app/api/game/create/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { getOrCreateBotUser } from '@/lib/bot-helpers'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -64,9 +65,16 @@ jest.mock('@/lib/bot-helpers', () => ({
   ),
 }))
 
+jest.mock('@/lib/game-replay', () => ({
+  appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockGetOrCreateBotUser = getOrCreateBotUser as jest.MockedFunction<typeof getOrCreateBotUser>
+const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
+  typeof appendGameReplaySnapshot
+>
 
 describe('POST /api/game/create', () => {
   const mockSession = {
@@ -123,6 +131,7 @@ describe('POST /api/game/create', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockGetOrCreateBotUser.mockResolvedValue({
       id: 'bot-user-1',
       username: 'Grid Tactician',

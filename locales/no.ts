@@ -937,6 +937,24 @@ const no = {
       showing: 'Viser {{start}}-{{end}} av {{total}} spill',
       clickToView: 'Klikk for å se detaljerte resultater'
     },
+    gameReplay: {
+      title: 'Replay',
+      watch: 'Se replay',
+      unavailable: 'Replay utilgjengelig',
+      noData: 'Replay-data er ikke tilgjengelig for dette spillet ennå',
+      play: 'Spill av',
+      pause: 'Pause',
+      stepBack: 'Steg tilbake',
+      stepForward: 'Steg frem',
+      speed: 'Hastighet',
+      download: 'Last ned JSON',
+      stepOf: 'Steg {{current}} av {{total}}',
+      action: 'Handling',
+      player: 'Spiller',
+      system: 'System',
+      actionPayload: 'Handlingsdata',
+      state: 'Spilltilstand'
+    },
     gameResults: {
       title: 'Spillresultater',
       rankings: 'Rangeringer',

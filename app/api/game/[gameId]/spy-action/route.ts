@@ -5,6 +5,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -103,6 +104,14 @@ export async function POST(
         updatedAt: new Date(),
         ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
       },
+    })
+
+    await appendGameReplaySnapshot({
+      gameId,
+      playerId: userId,
+      actionType: `spy:${action}`,
+      actionPayload: data,
+      state: updatedState,
     })
 
     // Log state transitions for debugging

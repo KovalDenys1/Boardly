@@ -6,6 +6,7 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
 import { notifySocket } from '@/lib/socket-url'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -370,6 +371,14 @@ export async function POST(
         { status: 409 }
       )
     }
+
+    await appendGameReplaySnapshot({
+      gameId,
+      playerId: userId,
+      actionType: move.type,
+      actionPayload: move.data,
+      state: newState,
+    })
 
     // Log state transitions for debugging
     if (statusChanged) {

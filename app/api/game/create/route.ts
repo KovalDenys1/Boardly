@@ -10,6 +10,7 @@ import { SpyGame } from '@/lib/games/spy-game'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -402,6 +403,17 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    })
+
+    await appendGameReplaySnapshot({
+      gameId: game.id,
+      playerId: userId,
+      actionType: 'game:start',
+      actionPayload: {
+        gameType,
+        playerCount: game.players.length,
+      },
+      state: gameEngine.getState(),
     })
 
     log.info('Game status changed', {

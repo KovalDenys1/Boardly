@@ -937,6 +937,24 @@ const ru = {
       showing: 'Показано {{start}}-{{end}} из {{total}} игр',
       clickToView: 'Нажмите для просмотра детальных результатов'
     },
+    gameReplay: {
+      title: 'Повтор',
+      watch: 'Смотреть повтор',
+      unavailable: 'Повтор недоступен',
+      noData: 'Данные повтора для этой игры пока недоступны',
+      play: 'Воспроизвести',
+      pause: 'Пауза',
+      stepBack: 'Шаг назад',
+      stepForward: 'Шаг вперед',
+      speed: 'Скорость',
+      download: 'Скачать JSON',
+      stepOf: 'Шаг {{current}} из {{total}}',
+      action: 'Действие',
+      player: 'Игрок',
+      system: 'Система',
+      actionPayload: 'Данные действия',
+      state: 'Состояние игры'
+    },
     gameResults: {
       title: 'Результаты игры',
       rankings: 'Рейтинги',
