@@ -25,19 +25,29 @@ async function cleanupAbandonedGames() {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - DAYS_TO_KEEP)
 
-    // Find abandoned games older than cutoff date
-    // Note: Using updatedAt instead of abandonedAt due to TypeScript cache issue
-    // After TS server restart, replace with abandonedAt
+    // Find abandoned games older than cutoff date.
+    // Prefer abandonedAt when present and fall back to updatedAt for legacy rows.
     const abandonedGames = await prisma.games.findMany({
       where: {
         status: 'abandoned',
-        updatedAt: {
-          lt: cutoffDate,
-        },
+        OR: [
+          {
+            abandonedAt: {
+              lt: cutoffDate,
+            },
+          },
+          {
+            abandonedAt: null,
+            updatedAt: {
+              lt: cutoffDate,
+            },
+          },
+        ],
       },
       select: {
         id: true,
         lobbyId: true,
+        abandonedAt: true,
         updatedAt: true,
       },
     })

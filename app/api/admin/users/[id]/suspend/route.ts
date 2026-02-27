@@ -5,10 +5,10 @@ import { requireAdminApiUser, writeAdminAuditLog } from '@/lib/admin-auth'
 
 async function postAdminSuspendUserHandler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = await requireAdminApiUser()
-  const { id } = params
+  const { id } = await params
   const body = (await req.json().catch(() => ({}))) as { suspended?: unknown }
 
   if (typeof body.suspended !== 'boolean') {

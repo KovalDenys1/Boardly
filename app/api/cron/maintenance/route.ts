@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup-unverified'
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
+import { cleanupOldReplaySnapshots } from '@/lib/cleanup-replays'
 
 const log = apiLogger('GET /api/cron/maintenance')
 
@@ -20,13 +21,17 @@ async function handleCronRequest(request: NextRequest) {
     // Consolidated daily maintenance to stay within Vercel cron limits.
     const warningResult = await warnUnverifiedAccounts(2, 7)
     const cleanupUnverifiedResult = await cleanupUnverifiedAccounts(7)
-    await cleanupOldGuests()
+    const guestCleanupResult = await cleanupOldGuests({ disconnect: false })
+    const replayCleanupResult = await cleanupOldReplaySnapshots()
 
     return NextResponse.json({
       success: true,
       warned: warningResult.warned,
       deletedUnverified: cleanupUnverifiedResult.deleted,
-      guestCleanup: 'completed',
+      deletedGuests: guestCleanupResult.deleted,
+      deletedReplaySnapshots: replayCleanupResult.deleted,
+      replayRetentionDays: replayCleanupResult.retentionDays,
+      replayCutoffDate: replayCleanupResult.cutoffDate,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {

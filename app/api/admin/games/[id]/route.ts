@@ -5,10 +5,10 @@ import { requireAdminApiUser, writeAdminAuditLog } from '@/lib/admin-auth'
 
 async function deleteAdminGameHandler(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = await requireAdminApiUser()
-  const { id } = params
+  const { id } = await params
 
   const existing = await prisma.games.findUnique({
     where: { id },

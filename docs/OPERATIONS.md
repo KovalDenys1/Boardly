@@ -75,6 +75,8 @@ Recommended:
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
+- `CLEANUP_GUEST_DAYS` (optional guest retention window, defaults to `3`)
+- `REPLAY_RETENTION_DAYS` (optional replay retention window for finished/abandoned/cancelled games, defaults to `90`)
 - GitHub Actions scheduler secrets (if using `.github/workflows/reliability-alerts-cron.yml`):
 - `RELIABILITY_ALERTS_CRON_URL` (for example `https://boardly.online/api/cron/reliability-alerts`)
 - `CRON_SECRET` (must match the app env value used by the endpoint)
@@ -171,6 +173,15 @@ Check:
 - if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
+
+### Replay storage grows over time
+
+Check:
+
+- daily maintenance endpoint (`/api/cron/maintenance`) is running with valid `CRON_SECRET`
+- `REPLAY_RETENTION_DAYS` is configured as expected (or default `90`)
+- run manual cleanup to verify behavior:
+  - `npm run cleanup:old-replays -- --days=90`
 
 ## Reliability operations commands
 

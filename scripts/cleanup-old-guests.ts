@@ -14,11 +14,13 @@ import { prisma } from '../lib/db'
 interface CleanupOptions {
   days?: number
   dryRun?: boolean
+  disconnect?: boolean
 }
 
 async function cleanupOldGuests(opts: CleanupOptions = {}) {
   const days = opts.days ?? (process.env.CLEANUP_GUEST_DAYS ? parseInt(process.env.CLEANUP_GUEST_DAYS, 10) : 3)
   const dryRun = opts.dryRun ?? process.argv.includes('--dry-run')
+  const shouldDisconnect = opts.disconnect ?? true
 
   try {
     console.log('🧹 Starting guest cleanup...')
@@ -84,7 +86,9 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
     console.error('❌ Error cleaning up old guests:', error as Error)
     throw error
   } finally {
-    await prisma.$disconnect()
+    if (shouldDisconnect) {
+      await prisma.$disconnect()
+    }
   }
 }
 
@@ -97,7 +101,7 @@ if (isMain) {
   const days = daysArg ? parseInt(daysArg.split('=')[1], 10) : undefined
   const dryRun = process.argv.includes('--dry-run')
 
-  cleanupOldGuests({ days, dryRun })
+  cleanupOldGuests({ days, dryRun, disconnect: true })
     .then(() => {
       console.log('🎉 Guest cleanup completed')
       process.exit(0)
