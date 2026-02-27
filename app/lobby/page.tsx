@@ -320,6 +320,12 @@ function LobbyListPageContent() {
       label: t('games.rock_paper_scissors.name', 'Rock Paper Scissors'),
       rule: t('game.ui.howToPlayRuleRps'),
     },
+    {
+      gameType: 'memory',
+      icon: '🧠',
+      label: t('games.memory.name', 'Memory'),
+      rule: t('game.ui.howToPlayRuleMemory'),
+    },
   ]
   const selectedQuickRule = quickRules.find((entry) => entry.gameType === filters.gameType) || null
 

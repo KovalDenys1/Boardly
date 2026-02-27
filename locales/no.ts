@@ -144,6 +144,11 @@ const no = {
       players: 'Spillere',
       turnTimer: 'Turgrense',
       turnTimerHelper: 'Hver spiller har så mye tid til å fullføre sin tur',
+      memoryDifficulty: 'Memory-vanskelighetsgrad',
+      memoryDifficultyHelper: 'Velg kortgrid og kompleksitet',
+      difficultyEasy: 'Lett',
+      difficultyMedium: 'Middels',
+      difficultyHard: 'Vanskelig',
       gameMode: 'Spillmodus',
       gameModeHelper: 'Rask modus, kort modus og mods kommer snart!',
       comingSoon: 'Kommer snart',
@@ -444,7 +449,20 @@ const no = {
     memory: {
       name: 'Hukommelse',
       description: 'Finn alle matchende par. Test hukommelsen din!',
-      difficulty: 'Lett'
+      difficulty: 'Lett',
+      game: {
+        lobbyLabel: 'Lobby {{code}}',
+        yourTurn: 'Din tur: snu to kort',
+        waitingForTurn: 'Venter på {{player}}',
+        resolvingMismatch: 'Ikke match, snur kortene tilbake...',
+        scoreboardTitle: 'Poengtavle',
+        pairsLabel: '{{count}} par funnet',
+        finishedPrefix: 'Spillet er ferdig:',
+        winnerLabel: '{{player}} vinner',
+        tieLabel: 'Uavgjort',
+        unknownPlayer: 'Ukjent spiller',
+        moveFailed: 'Kunne ikke sende trekk'
+      }
     },
     rps: {
       name: 'Stein saks papir',
@@ -568,6 +586,7 @@ const no = {
       howToPlayRuleSpy: 'Still spørsmål, oppdag mistenkelige svar og stem på spionen.',
       howToPlayRuleTicTacToe: 'Bytt på å plassere symboler og lag en linje på tre.',
       howToPlayRuleRps: 'Velg stein, papir eller saks og vinn flertallet av rundene.',
+      howToPlayRuleMemory: 'Snu to kort per tur og samle matchende par.',
       howToPlayRuleFallback: 'Følg instruksjonene i spillet og utfør handlinger når det er din tur.',
       perTurn: 'per tur',
       timeLimit: 'Tidsgrense',

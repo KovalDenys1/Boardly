@@ -6,6 +6,7 @@ const DEFAULT_ANALYTICS_GAME_TYPES: string[] = [
   'guess_the_spy',
   'tic_tac_toe',
   'rock_paper_scissors',
+  'memory',
 ]
 
 export interface ProductMetricsSummary {

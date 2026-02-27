@@ -77,6 +77,8 @@ function formatGameTypeLabel(gameType: string): string {
       return 'Rock Paper Scissors'
     case 'guess_the_spy':
       return 'Guess the Spy'
+    case 'memory':
+      return 'Memory'
     default:
       return gameType.replace(/_/g, ' ')
   }

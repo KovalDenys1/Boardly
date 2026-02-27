@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db'
 import { LOBBY_READY_TARGET_MS, MOVE_APPLY_TARGET_MS } from '@/lib/analytics'
 
-const DEFAULT_GAME_TYPES = ['yahtzee', 'tic_tac_toe', 'rock_paper_scissors', 'guess_the_spy']
+const DEFAULT_GAME_TYPES = ['yahtzee', 'tic_tac_toe', 'rock_paper_scissors', 'guess_the_spy', 'memory']
 const KPI_EVENT_NAMES = [
   'move_submit_applied',
   'lobby_create_ready',

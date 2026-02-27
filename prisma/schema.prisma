@@ -198,6 +198,7 @@ enum GameType {
   yahtzee
   tic_tac_toe
   rock_paper_scissors
+  memory
   chess
   guess_the_spy
   uno

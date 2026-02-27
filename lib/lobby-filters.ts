@@ -13,6 +13,7 @@ const FILTERABLE_GAME_TYPES = new Set([
   'guess_the_spy',
   'tic_tac_toe',
   'rock_paper_scissors',
+  'memory',
 ])
 
 export const LOBBY_CODE_LENGTH = 4

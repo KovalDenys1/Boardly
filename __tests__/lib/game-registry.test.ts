@@ -11,6 +11,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { SpyGame } from '@/lib/games/spy-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
+import { MemoryGame } from '@/lib/games/memory-game'
 
 describe('Game Registry', () => {
   describe('createGameEngine', () => {
@@ -40,6 +41,13 @@ describe('Game Registry', () => {
       expect(engine).toBeInstanceOf(RockPaperScissorsGame)
       expect(engine.getState().gameType).toBe('rockPaperScissors')
       expect(engine.getState().id).toBe('rps-012')
+    })
+
+    it('should create a Memory game engine', () => {
+      const engine = createGameEngine('memory', 'memory-345')
+      expect(engine).toBeInstanceOf(MemoryGame)
+      expect(engine.getState().gameType).toBe('memory')
+      expect(engine.getState().id).toBe('memory-345')
     })
 
     it('should apply custom config when provided', () => {
@@ -149,6 +157,15 @@ describe('Game Registry', () => {
       expect(meta.supportsBots).toBe(true)
     })
 
+    it('should return correct metadata for Memory', () => {
+      const meta = getGameMetadata('memory')
+      expect(meta.type).toBe('memory')
+      expect(meta.name).toBe('Memory')
+      expect(meta.minPlayers).toBe(2)
+      expect(meta.maxPlayers).toBe(4)
+      expect(meta.supportsBots).toBe(false)
+    })
+
     it('should throw error for unknown type', () => {
       expect(() => getGameMetadata('invalid_game' as any))
         .toThrow('Unknown game type')
@@ -162,7 +179,8 @@ describe('Game Registry', () => {
       expect(types).toContain('guess_the_spy')
       expect(types).toContain('tic_tac_toe')
       expect(types).toContain('rock_paper_scissors')
-      expect(types).toHaveLength(4)
+      expect(types).toContain('memory')
+      expect(types).toHaveLength(5)
     })
 
     it('should return types as an array', () => {
@@ -180,6 +198,7 @@ describe('Game Registry', () => {
 
     it('should return false for games without bot support', () => {
       expect(hasBotSupport('guess_the_spy')).toBe(false)
+      expect(hasBotSupport('memory')).toBe(false)
     })
 
     it('should return false for unknown game types', () => {
@@ -193,6 +212,7 @@ describe('Game Registry', () => {
       expect(isRegisteredGameType('guess_the_spy')).toBe(true)
       expect(isRegisteredGameType('tic_tac_toe')).toBe(true)
       expect(isRegisteredGameType('rock_paper_scissors')).toBe(true)
+      expect(isRegisteredGameType('memory')).toBe(true)
     })
 
     it('should return false for invalid game types', () => {

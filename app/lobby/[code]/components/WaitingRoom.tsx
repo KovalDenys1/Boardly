@@ -51,6 +51,7 @@ export default function WaitingRoom({
     guess_the_spy: t('game.ui.howToPlayRuleSpy'),
     tic_tac_toe: t('game.ui.howToPlayRuleTicTacToe'),
     rock_paper_scissors: t('game.ui.howToPlayRuleRps'),
+    memory: t('game.ui.howToPlayRuleMemory'),
   }
   const quickRule = quickRuleByGameType[lobby?.gameType as string] || t('game.ui.howToPlayRuleFallback')
   const difficultyLabelMap: Record<BotDifficulty, string> = {

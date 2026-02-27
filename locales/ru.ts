@@ -144,6 +144,11 @@ const ru = {
       players: 'Игроки',
       turnTimer: 'Лимит времени на ход',
       turnTimerHelper: 'Каждый игрок имеет это время для завершения своего хода',
+      memoryDifficulty: 'Сложность памяти',
+      memoryDifficultyHelper: 'Выберите размер поля и сложность карточек',
+      difficultyEasy: 'Лёгкая',
+      difficultyMedium: 'Средняя',
+      difficultyHard: 'Сложная',
       gameMode: 'Режим игры',
       gameModeHelper: 'Быстрый режим, короткий режим и моды появятся скоро!',
       comingSoon: 'Скоро',
@@ -444,7 +449,20 @@ const ru = {
     memory: {
       name: 'Память',
       description: 'Найдите все пары. Проверьте свою память!',
-      difficulty: 'Легко'
+      difficulty: 'Легко',
+      game: {
+        lobbyLabel: 'Лобби {{code}}',
+        yourTurn: 'Ваш ход: откройте две карты',
+        waitingForTurn: 'Ожидаем ход {{player}}',
+        resolvingMismatch: 'Пара не найдена, карты переворачиваются обратно...',
+        scoreboardTitle: 'Счёт',
+        pairsLabel: 'Собрано пар: {{count}}',
+        finishedPrefix: 'Игра завершена:',
+        winnerLabel: '{{player}} победил',
+        tieLabel: 'Ничья',
+        unknownPlayer: 'Неизвестный игрок',
+        moveFailed: 'Не удалось отправить ход'
+      }
     },
     rps: {
       name: 'Камень ножницы бумага',
@@ -568,6 +586,7 @@ const ru = {
       howToPlayRuleSpy: 'Задавайте вопросы, ищите подозрительные ответы и голосуйте за шпиона.',
       howToPlayRuleTicTacToe: 'Ходите по очереди и соберите линию из трёх символов.',
       howToPlayRuleRps: 'Выберите камень, бумагу или ножницы и выиграйте большинство раундов.',
+      howToPlayRuleMemory: 'За ход открывайте две карты и собирайте совпадающие пары.',
       howToPlayRuleFallback: 'Следуйте подсказкам в игре и выполняйте действия в свой ход.',
       perTurn: 'за ход',
       timeLimit: 'Лимит времени',

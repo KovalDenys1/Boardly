@@ -17,8 +17,9 @@ const createLobbySchema = z.object({
   allowSpectators: z.boolean().default(false),
   maxSpectators: z.number().int().min(1).max(20).default(10),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
-  gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors']).default('yahtzee'),
+  gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors', 'memory']).default('yahtzee'),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
+  memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -73,8 +74,10 @@ export async function POST(request: NextRequest) {
       turnTimer,
       gameType,
       ticTacToeRounds,
+      memoryDifficulty,
     } = createLobbySchema.parse(body)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
+    const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
 
     log.info('Creating lobby', {
       gameType,
@@ -83,20 +86,30 @@ export async function POST(request: NextRequest) {
       maxSpectators: allowSpectators ? maxSpectators : 0,
       turnTimer,
       ...(gameType === 'tic_tac_toe' ? { targetRounds: normalizedTicTacToeRounds } : {}),
+      ...(gameType === 'memory' ? { difficulty: normalizedMemoryDifficulty } : {}),
     })
 
     // Create lobby with initial game and add creator as first player
     // Build initial state via game engine registry
-    const tempEngine = createGameEngine(
-      gameType,
-      'temp_lobby_init',
+    const initialEngineConfig =
       gameType === 'tic_tac_toe'
         ? {
             rules: {
               targetRounds: normalizedTicTacToeRounds,
             },
           }
-        : undefined
+        : gameType === 'memory'
+          ? {
+              rules: {
+                difficulty: normalizedMemoryDifficulty,
+              },
+            }
+          : undefined
+
+    const tempEngine = createGameEngine(
+      gameType,
+      'temp_lobby_init',
+      initialEngineConfig
     )
     const initialState = tempEngine.getState()
 

@@ -10,6 +10,7 @@ describe('lobby-filters helpers', () => {
   it('normalizes allowed game type filters', () => {
     expect(normalizeGameTypeFilter('yahtzee')).toBe('yahtzee')
     expect(normalizeGameTypeFilter('guess_the_spy')).toBe('guess_the_spy')
+    expect(normalizeGameTypeFilter('memory')).toBe('memory')
     expect(normalizeGameTypeFilter('unknown')).toBeUndefined()
     expect(normalizeGameTypeFilter(null)).toBeUndefined()
   })
