@@ -21,16 +21,52 @@ const FILTERABLE_GAME_TYPES = new Set([
   'tic_tac_toe',
   'rock_paper_scissors',
 ])
+const LOBBY_CODE_LENGTH = 4
+const LOBBY_CODE_SANITIZE_PATTERN = /[^A-Z0-9]/g
+type TranslateFn = (...args: any[]) => string
 
 function normalizeGameTypeFilter(value: string | null): string | undefined {
   if (!value) return undefined
   return FILTERABLE_GAME_TYPES.has(value) ? value : undefined
 }
 
+function sanitizeLobbyCode(value: string): string {
+  return value.toUpperCase().replace(LOBBY_CODE_SANITIZE_PATTERN, '').slice(0, LOBBY_CODE_LENGTH)
+}
+
+function buildLobbyQueryParams(filters: LobbyFilterOptions): URLSearchParams {
+  const params = new URLSearchParams()
+  if (filters.gameType) params.append('gameType', filters.gameType)
+  if (filters.status && filters.status !== 'all') params.append('status', filters.status)
+  if (filters.search) params.append('search', filters.search)
+  if (filters.minPlayers) params.append('minPlayers', filters.minPlayers.toString())
+  if (filters.maxPlayers) params.append('maxPlayers', filters.maxPlayers.toString())
+  if (filters.sortBy) params.append('sortBy', filters.sortBy)
+  if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+  return params
+}
+
+function getGamePresentation(gameType: string | undefined, t: TranslateFn): { icon: string; label: string } {
+  switch (gameType) {
+    case 'yahtzee':
+      return { icon: '🎲', label: t('games.yahtzee.title', 'Yahtzee') }
+    case 'guess_the_spy':
+      return { icon: '🕵️', label: t('games.spy.name', 'Guess the Spy') }
+    case 'tic_tac_toe':
+      return { icon: '❌⭕', label: t('games.tictactoe.name', 'Tic-Tac-Toe') }
+    case 'rock_paper_scissors':
+      return { icon: '✊✋✌️', label: t('games.rock_paper_scissors.name', 'Rock Paper Scissors') }
+    default:
+      return { icon: '🎮', label: t('lobby.gameUnknown') }
+  }
+}
+
 interface Lobby {
   id: string
   code: string
   name: string
+  gameType?: string
+  isPrivate?: boolean
   maxPlayers: number
   allowSpectators?: boolean
   maxSpectators?: number
@@ -111,17 +147,10 @@ function LobbyListPageContent() {
     loadAbortControllerRef.current = controller
 
     try {
-      // Build query string
-      const params = new URLSearchParams()
-      if (filters.gameType) params.append('gameType', filters.gameType)
-      if (filters.status && filters.status !== 'all') params.append('status', filters.status)
-      if (filters.search) params.append('search', filters.search)
-      if (filters.minPlayers) params.append('minPlayers', filters.minPlayers.toString())
-      if (filters.maxPlayers) params.append('maxPlayers', filters.maxPlayers.toString())
-      if (filters.sortBy) params.append('sortBy', filters.sortBy)
-      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
+      const params = buildLobbyQueryParams(filters)
+      const query = params.toString()
 
-      const res = await fetch(`/api/lobby?${params.toString()}`, {
+      const res = await fetch(query ? `/api/lobby?${query}` : '/api/lobby', {
         cache: 'no-store',
         signal: controller.signal,
       })
@@ -299,9 +328,10 @@ function LobbyListPageContent() {
   }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken])
 
   const handleJoinByCode = () => {
-    if (joinCode) {
-      router.push(`/lobby/${joinCode.toUpperCase()}`)
-    }
+    const normalizedCode = sanitizeLobbyCode(joinCode)
+    setJoinCode(normalizedCode)
+    if (normalizedCode.length !== LOBBY_CODE_LENGTH) return
+    router.push(`/lobby/${normalizedCode}`)
   }
 
   // Wait for i18n to be ready before rendering
@@ -351,13 +381,13 @@ function LobbyListPageContent() {
                 placeholder={t('lobby.enterCode')}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-lg"
                 value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                maxLength={4}
-                onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
+                onChange={(e) => setJoinCode(sanitizeLobbyCode(e.target.value))}
+                maxLength={LOBBY_CODE_LENGTH}
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
               />
               <button
                 onClick={handleJoinByCode}
-                disabled={!joinCode || joinCode.length !== 4}
+                disabled={joinCode.length !== LOBBY_CODE_LENGTH}
                 className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
               >
                 {t('lobby.join')}
@@ -366,8 +396,11 @@ function LobbyListPageContent() {
           </div>
 
           {/* Create Lobby Card */}
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white hover:shadow-xl transition-all hover:scale-105 cursor-pointer"
-               onClick={() => router.push('/lobby/create')}>
+          <button
+            type="button"
+            className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white hover:shadow-xl transition-all hover:scale-105 cursor-pointer text-left"
+            onClick={() => router.push('/lobby/create')}
+          >
             <div className="text-5xl mb-4">✨</div>
             <h2 className="text-2xl font-bold mb-2">{t('lobby.createLobby')}</h2>
             <p className="text-white/80 mb-4">{t('lobby.createDescription')}</p>
@@ -377,7 +410,7 @@ function LobbyListPageContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Filters */}
@@ -430,77 +463,101 @@ function LobbyListPageContent() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               {lobbies.map((lobby, index) => (
-                <div
+                <article
                   key={lobby.id}
-                  onClick={() => router.push(`/lobby/${lobby.code}`)}
-                  className="group bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-5 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 animate-fade-in"
+                  className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:shadow-lg animate-fade-in"
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {lobby.name}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="font-mono bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-bold">
-                          {lobby.code}
-                        </span>
-                        <span>•</span>
-                        <span className="truncate">
-                          👤 {lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-                        lobby.games.length > 0 && lobby.games[0].status === 'playing'
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                          : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          lobby.games.length > 0 && lobby.games[0].status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-                        }`}></div>
-                        {lobby.games.length > 0 && lobby.games[0].status === 'playing' ? (
-                          t('lobby.playing', { count: lobby.games[0]._count.players })
-                        ) : (
-                          t('lobby.waiting')
-                        )}
-                      </div>
-                      {lobby.allowSpectators && (
-                        <div className="rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 px-3 py-1 text-xs font-semibold">
-                          Spectators: {lobby.spectatorCount ?? 0}/{lobby.maxSpectators ?? 0}
+                  {(() => {
+                    const activeGame = lobby.games[0]
+                    const isPlaying = activeGame?.status === 'playing'
+                    const playerCount = activeGame?._count?.players ?? 0
+                    const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
+                    const creatorName =
+                      lobby.creator.username ||
+                      lobby.creator.email?.split('@')[0] ||
+                      t('lobby.ownerFallback')
+                    const gamePresentation = getGamePresentation(lobby.gameType, t)
+                    const statusClass = isPlaying
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+
+                    return (
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                              {lobby.name}
+                            </h3>
+                            <span className="font-mono bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-bold text-sm">
+                              {lobby.code}
+                            </span>
+                            <span
+                              className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                lobby.isPrivate
+                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300'
+                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                              }`}
+                            >
+                              {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
+                            </span>
+                          </div>
+
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                            👤 {creatorName}
+                          </p>
+
+                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                            <span className={`px-2.5 py-1 rounded-full font-semibold ${statusClass}`}>
+                              {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-full font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                              {gamePresentation.icon + ' '}
+                              {gamePresentation.label}
+                            </span>
+                            {lobby.allowSpectators && (
+                              <span className="px-2.5 py-1 rounded-full font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300">
+                                {t('lobby.spectators', {
+                                  count: lobby.spectatorCount ?? 0,
+                                  max: lobby.maxSpectators ?? 0,
+                                })}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      👥 {t('lobby.maxPlayers', { count: lobby.maxPlayers })}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {lobby.allowSpectators && lobby.games[0]?.status === 'playing' && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/lobby/${lobby.code}/spectate`)
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
-                        >
-                          Watch
-                        </button>
-                      )}
-                      <span className="text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                        {t('lobby.joinGame')}
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+
+                        <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
+                          <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                            {t('lobby.playerOccupancy', {
+                              current: playerCount,
+                              max: lobby.maxPlayers,
+                            })}
+                          </span>
+                          <div className="flex w-full gap-2 lg:w-auto">
+                            {canSpectate && (
+                              <button
+                                type="button"
+                                onClick={() => router.push(`/lobby/${lobby.code}/spectate`)}
+                                className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold"
+                              >
+                                {t('lobby.watch')}
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/lobby/${lobby.code}`)}
+                              className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+                            >
+                              {t('lobby.openLobby')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </article>
               ))}
             </div>
           )}

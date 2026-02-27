@@ -1352,6 +1352,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           {/* Sticky header bar */}
           <LobbyInfo
             lobby={lobby}
+            game={game}
             soundEnabled={soundEnabled}
             onSoundToggle={() => {
               soundManager.toggle()
