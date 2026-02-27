@@ -10,6 +10,15 @@ import { calculateUserStats } from '@/lib/stats-calculator'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('GET /api/user/[id]/stats')
+const STATS_CACHE_TTL_MS = 60 * 1000
+
+interface StatsCacheEntry {
+  signature: string
+  expiresAt: number
+  payload: unknown
+}
+
+const statsCache = new Map<string, StatsCacheEntry>()
 
 function parseDateRangeParam(raw: string | null, { endOfDay }: { endOfDay: boolean }): Date | null {
   if (!raw) return null
@@ -94,6 +103,27 @@ export async function GET(
       }
     }
 
+    const cacheKey = `${targetUserId}|${fromDate?.toISOString() ?? 'none'}|${toDate?.toISOString() ?? 'none'}`
+    const cacheSnapshot = await prisma.games.aggregate({
+      where,
+      _count: {
+        id: true,
+      },
+      _max: {
+        updatedAt: true,
+      },
+    })
+    const cacheSignature = `${cacheSnapshot._count.id}:${cacheSnapshot._max.updatedAt?.toISOString() ?? 'none'}`
+    const cachedEntry = statsCache.get(cacheKey)
+    if (cachedEntry && cachedEntry.signature === cacheSignature && Date.now() < cachedEntry.expiresAt) {
+      return NextResponse.json(cachedEntry.payload, {
+        headers: {
+          'Cache-Control': 'private, max-age=60',
+          'X-Stats-Cache': 'hit',
+        },
+      })
+    }
+
     const games = await prisma.games.findMany({
       where,
       select: {
@@ -121,15 +151,22 @@ export async function GET(
       from: fromDate,
       to: toDate,
     })
+    const payload = {
+      userId: targetUserId,
+      ...stats,
+    }
+    statsCache.set(cacheKey, {
+      signature: cacheSignature,
+      expiresAt: Date.now() + STATS_CACHE_TTL_MS,
+      payload,
+    })
 
     return NextResponse.json(
-      {
-        userId: targetUserId,
-        ...stats,
-      },
+      payload,
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'Cache-Control': 'private, max-age=60',
+          'X-Stats-Cache': 'miss',
         },
       }
     )
