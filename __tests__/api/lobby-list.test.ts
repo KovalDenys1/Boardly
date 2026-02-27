@@ -131,8 +131,11 @@ describe('GET /api/lobby', () => {
     expect(res.status).toBe(200)
     expect(data.lobbies).toHaveLength(1)
     expect(data.lobbies[0].code).toBe('NEW1')
+    expect(data.lobbies[0].creator?.email).toBeUndefined()
     expect(data.stats.totalLobbies).toBe(1)
     expect(data.stats.waitingLobbies).toBe(1)
+    const queryArgs = mockPrisma.lobbies.findMany.mock.calls[0][0] as any
+    expect(queryArgs.select.creator.select.email).toBeUndefined()
     expect(res.headers.get('cache-control')).toContain('no-store')
   })
 })

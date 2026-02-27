@@ -7,6 +7,11 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import {
+  hashLobbyPassword,
+  isHashedLobbyPassword,
+  verifyLobbyPassword,
+} from '@/lib/lobby-password'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
@@ -44,7 +49,6 @@ export async function GET(
           select: {
             id: true,
             username: true,
-            email: true,
           },
         },
         games: {
@@ -65,7 +69,6 @@ export async function GET(
                   select: {
                     id: true,
                     username: true,
-                    email: true,
                     bot: true,  // Bot relation
                   },
                 },
@@ -81,18 +84,35 @@ export async function GET(
     }
 
     const { password, ...safeLobby } = lobby
-    const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished })
+    const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished }) as any | null
+    const sanitizedActiveGame = activeGame
+      ? {
+          ...activeGame,
+          players: Array.isArray(activeGame.players)
+            ? activeGame.players.map((player: any) => {
+                if (!player?.user || typeof player.user !== 'object') return player
+                const { email: _email, ...safeUser } = player.user
+                return { ...player, user: safeUser }
+              })
+            : activeGame.players,
+        }
+      : null
+    const { creator, ...safeLobbyWithoutCreator } = safeLobby
+    const sanitizedCreator = creator
+      ? (({ email: _email, ...safeCreator }: { email?: string; [key: string]: unknown }) => safeCreator)(creator as any)
+      : null
 
     return NextResponse.json({
       lobby: {
-        ...safeLobby,
-        games: activeGame ? [activeGame] : [],
-        activeGame,
+        ...safeLobbyWithoutCreator,
+        creator: sanitizedCreator,
+        games: sanitizedActiveGame ? [sanitizedActiveGame] : [],
+        activeGame: sanitizedActiveGame,
         isPrivate: !!password,
       },
-      activeGame,
+      activeGame: sanitizedActiveGame,
       // Backward compatibility for older clients.
-      game: activeGame,
+      game: sanitizedActiveGame,
     })
   } catch (error) {
     const log = apiLogger('GET /api/lobby/[code]')
@@ -111,6 +131,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const log = apiLogger('POST /api/lobby/[code]')
+
   try {
     // Rate limit join requests
     const rateLimitResult = await gameLimiter(request)
@@ -139,8 +161,31 @@ export async function POST(
 
     // Check password if set
     const body = await request.json()
-    if (lobby.password && body.password !== lobby.password) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
+    if (lobby.password) {
+      const providedPassword = typeof body?.password === 'string' ? body.password : undefined
+      const isPasswordValid = await verifyLobbyPassword(lobby.password, providedPassword)
+
+      if (!isPasswordValid) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
+      }
+
+      // Upgrade legacy plain-text lobby passwords after a successful match.
+      if (!isHashedLobbyPassword(lobby.password)) {
+        const upgradedHash = await hashLobbyPassword(providedPassword)
+        if (upgradedHash) {
+          try {
+            await prisma.lobbies.update({
+              where: { id: lobby.id },
+              data: { password: upgradedHash },
+            })
+          } catch (upgradeError) {
+            log.warn('Failed to upgrade legacy lobby password hash', {
+              lobbyId: lobby.id,
+              error: (upgradeError as Error).message,
+            })
+          }
+        }
+      }
     }
 
     // Find or create active game
@@ -210,40 +255,18 @@ export async function POST(
           select: {
             id: true,
             username: true,
-            email: true,
             isGuest: true,
           },
         },
       },
     })
 
-    // Initialize scores array in game state for this player
-    try {
-      const currentState = JSON.parse(game.state || '{}')
-      if (!currentState.scores || !Array.isArray(currentState.scores)) {
-        currentState.scores = []
-      }
-      // Add empty scorecard for new player
-      currentState.scores.push({})
-
-      await prisma.games.update({
-        where: { id: game.id },
-        data: {
-          state: JSON.stringify(currentState),
-        },
-      })
-    } catch (error) {
-      const log = apiLogger('POST /api/lobby/[code]')
-      log.error('Error updating game state with new player scores', error as Error)
-      // Continue anyway - game state will be initialized on game start
-    }
-
     // Notify all clients via WebSocket that a player joined
     await notifySocket(
       `lobby:${code}`,
       'player-joined',
       {
-        username: player.user.username || player.user.email || 'Player',
+        username: player.user.username || 'Player',
         userId: userId,
         isGuest: player.user.isGuest,
       }
@@ -269,7 +292,6 @@ export async function POST(
 
     return NextResponse.json({ game, player })
   } catch (error) {
-    const log = apiLogger('POST /api/lobby/[code]')
     log.error('Join lobby error', error as Error, {
       code: (await params).code,
       stack: (error as Error).stack

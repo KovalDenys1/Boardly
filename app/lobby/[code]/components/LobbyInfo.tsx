@@ -1,6 +1,6 @@
 import { useRouter } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
-import { getGameMetadata } from '@/lib/game-registry'
+import { getGameMetadata } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface LobbyInfoProps {
@@ -19,11 +19,10 @@ export default function LobbyInfo({ lobby, game, soundEnabled, onSoundToggle, on
   const maxPlayers = typeof lobby?.maxPlayers === 'number' ? lobby.maxPlayers : 0
   const isPrivate = Boolean(lobby?.isPrivate)
   const isPlaying = game?.status === 'playing'
-  const creatorName = lobby?.creator?.username || lobby?.creator?.email || t('lobby.ownerFallback')
+  const creatorName = lobby?.creator?.username || t('lobby.ownerFallback')
   const spectatorsLabel = lobby?.allowSpectators
     ? t('lobby.spectators', {
         count: lobby?.spectatorCount ?? 0,
-        max: lobby?.maxSpectators ?? 0,
       })
     : t('game.ui.spectatorsDisabled')
 

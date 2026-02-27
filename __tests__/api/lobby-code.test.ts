@@ -102,6 +102,7 @@ describe('GET /api/lobby/[code]', () => {
     expect(response.status).toBe(200)
     expect(data.lobby).toBeDefined()
     expect(data.lobby.code).toBe('ABC123')
+    expect(data.lobby.creator?.email).toBeUndefined()
     expect(data.lobby.password).toBeUndefined()
     expect(data.lobby.isPrivate).toBe(false)
     expect(data.activeGame).toBeNull()
@@ -110,6 +111,9 @@ describe('GET /api/lobby/[code]', () => {
       where: { code: 'ABC123' },
       select: expect.any(Object),
     })
+    const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any
+    expect(queryArgs.select.creator.select.email).toBeUndefined()
+    expect(queryArgs.select.games.include.players.include.user.select.email).toBeUndefined()
   })
 
   it('should prioritize playing game when multiple active games exist', async () => {
@@ -120,13 +124,29 @@ describe('GET /api/lobby/[code]', () => {
           id: 'game-waiting',
           status: 'waiting',
           updatedAt: new Date('2026-02-13T10:00:00.000Z'),
-          players: [],
+          players: [
+            {
+              user: {
+                id: 'user-1',
+                username: 'alpha',
+                email: 'alpha@example.com',
+              },
+            },
+          ],
         },
         {
           id: 'game-playing',
           status: 'playing',
           updatedAt: new Date('2026-02-13T09:00:00.000Z'),
-          players: [],
+          players: [
+            {
+              user: {
+                id: 'user-2',
+                username: 'beta',
+                email: 'beta@example.com',
+              },
+            },
+          ],
         },
       ],
     }
@@ -139,9 +159,12 @@ describe('GET /api/lobby/[code]', () => {
 
     expect(response.status).toBe(200)
     expect(data.activeGame?.id).toBe('game-playing')
+    expect(data.activeGame?.players?.[0]?.user?.email).toBeUndefined()
     expect(data.game?.id).toBe('game-playing')
+    expect(data.game?.players?.[0]?.user?.email).toBeUndefined()
     expect(data.lobby?.games).toHaveLength(1)
     expect(data.lobby?.games?.[0]?.id).toBe('game-playing')
+    expect(data.lobby?.games?.[0]?.players?.[0]?.user?.email).toBeUndefined()
   })
 
   it('should return 404 when lobby not found', async () => {

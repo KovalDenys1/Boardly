@@ -482,7 +482,7 @@ export default function SpectatorLobbyPage() {
 
             <details className="rounded-2xl border bg-white p-4 dark:bg-gray-900" open>
               <summary className="cursor-pointer font-bold">
-                Spectators ({spectatorCount}/{data.lobby.maxSpectators})
+                Spectators ({spectatorCount})
               </summary>
               <div className="mt-3 space-y-2">
                 {spectators.map((spectator) => (

@@ -76,7 +76,7 @@ const uk: Translation = {
     privateLobby: 'Приватне',
     ownerFallback: 'Анонім',
     gameUnknown: 'Невідома гра',
-    spectators: 'Глядачі {{count}}/{{max}}',
+    spectators: 'Глядачі {{count}}',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',
     gameAbandoned: 'Гру завершено - недостатньо гравців',

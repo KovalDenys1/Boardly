@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
 import { apiLogger } from '@/lib/logger'
+import { authorizeCronRequest } from '@/lib/cron-auth'
 
 /**
  * Cron endpoint for cleaning up old guest users
@@ -18,13 +19,10 @@ export async function GET(request: Request) {
   const log = apiLogger('GET /api/cron/cleanup-guests')
   
   try {
-    // Verify this is a Vercel Cron request (in production)
-    const authHeader = request.headers.get('authorization')
-    if (process.env.NODE_ENV === 'production' && process.env.CRON_SECRET) {
-      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        log.error('Unauthorized cron request')
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
+    const authError = authorizeCronRequest(request)
+    if (authError) {
+      log.error('Unauthorized cron request')
+      return authError
     }
     
     log.info('Starting guest cleanup cron job')

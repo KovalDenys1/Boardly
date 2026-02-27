@@ -3,14 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { processNotificationEmailQueue } from '@/lib/notification-queue'
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
+import { authorizeCronRequest } from '@/lib/cron-auth'
 
 const log = apiLogger('GET /api/cron/game-ops')
-
-function isAuthorizedCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
-  return !!authHeader && !!cronSecret && authHeader === `Bearer ${cronSecret}`
-}
 
 type GameOpsTaskName = 'notifications' | 'turnReminders'
 
@@ -81,9 +76,8 @@ function toSchemaDegradedTaskResult(task: GameOpsTaskName, error: unknown) {
 }
 
 async function handleCronRequest(request: NextRequest) {
-  if (!isAuthorizedCronRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = authorizeCronRequest(request)
+  if (authError) return authError
 
   try {
     const baseUrl = new URL(request.url).origin

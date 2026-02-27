@@ -67,7 +67,7 @@ const no = {
     privateLobby: 'Privat',
     ownerFallback: 'Anonym',
     gameUnknown: 'Ukjent spill',
-    spectators: 'Tilskuere {{count}}/{{max}}',
+    spectators: 'Tilskuere {{count}}',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
     gameAbandoned: 'Spill avsluttet - ikke nok spillere igjen',

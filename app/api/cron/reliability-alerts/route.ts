@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { runReliabilityAlertCycle } from '@/lib/reliability-alerts'
+import { authorizeCronRequest } from '@/lib/cron-auth'
 
 const log = apiLogger('GET /api/cron/reliability-alerts')
 
@@ -11,11 +12,8 @@ function parseEnvNumber(value: string | undefined): number | undefined {
 
 async function handleCronRequest(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authError = authorizeCronRequest(request)
+    if (authError) return authError
 
     const result = await runReliabilityAlertCycle({
       windowMinutes: parseEnvNumber(process.env.OPS_ALERT_WINDOW_MINUTES),

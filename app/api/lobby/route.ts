@@ -7,6 +7,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { hashLobbyPassword } from '@/lib/lobby-password'
 
 const log = apiLogger('/api/lobby')
 
@@ -15,7 +16,6 @@ const createLobbySchema = z.object({
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(10).default(6),
   allowSpectators: z.boolean().default(false),
-  maxSpectators: z.number().int().min(1).max(20).default(10),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
   gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors', 'memory']).default('yahtzee'),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
@@ -25,6 +25,7 @@ const createLobbySchema = z.object({
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
 const MAX_LOBBY_CODE_ATTEMPTS = 10
+const UNLIMITED_SPECTATORS_VALUE = 0
 
 function isLobbyCodeConflict(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
@@ -70,12 +71,12 @@ export async function POST(request: NextRequest) {
       password,
       maxPlayers,
       allowSpectators,
-      maxSpectators,
       turnTimer,
       gameType,
       ticTacToeRounds,
       memoryDifficulty,
     } = createLobbySchema.parse(body)
+    const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
 
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       gameType,
       maxPlayers,
       allowSpectators,
-      maxSpectators: allowSpectators ? maxSpectators : 0,
+      spectatorMode: allowSpectators ? 'unlimited' : 'disabled',
       turnTimer,
       ...(gameType === 'tic_tac_toe' ? { targetRounds: normalizedTicTacToeRounds } : {}),
       ...(gameType === 'memory' ? { difficulty: normalizedMemoryDifficulty } : {}),
@@ -136,10 +137,10 @@ export async function POST(request: NextRequest) {
           data: {
             code,
             name,
-            password,
+            password: hashedLobbyPassword,
             maxPlayers,
             allowSpectators,
-            maxSpectators: allowSpectators ? maxSpectators : 0,
+            maxSpectators: allowSpectators ? UNLIMITED_SPECTATORS_VALUE : 0,
             spectatorCount: 0,
             turnTimer,
             gameType,
@@ -295,7 +296,6 @@ export async function GET(request: NextRequest) {
               creator: {
                 select: {
                   username: true,
-                  email: true,
                 },
               },
               games: {
@@ -401,9 +401,14 @@ export async function GET(request: NextRequest) {
     })
 
     const sanitizedLobbies = filteredLobbies.map(lobby => {
-      const { password, ...safeLobby } = lobby
+      const { password, creator, ...safeLobby } = lobby
+      const sanitizedCreator = creator
+        ? (({ email: _email, ...safeCreator }: { email?: string; [key: string]: unknown }) => safeCreator)(creator)
+        : null
+
       return {
         ...safeLobby,
+        creator: sanitizedCreator,
         isPrivate: !!password,
       }
     })

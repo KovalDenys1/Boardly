@@ -3,19 +3,13 @@ import { apiLogger } from '@/lib/logger'
 import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup-unverified'
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
 import { cleanupOldReplaySnapshots } from '@/lib/cleanup-replays'
+import { authorizeCronRequest } from '@/lib/cron-auth'
 
 const log = apiLogger('GET /api/cron/maintenance')
 
-function isAuthorizedCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
-  return !!authHeader && !!cronSecret && authHeader === `Bearer ${cronSecret}`
-}
-
 async function handleCronRequest(request: NextRequest) {
-  if (!isAuthorizedCronRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = authorizeCronRequest(request)
+  if (authError) return authError
 
   try {
     // Consolidated daily maintenance to stay within Vercel cron limits.

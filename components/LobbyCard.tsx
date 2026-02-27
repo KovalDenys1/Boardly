@@ -53,7 +53,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
   const isPlaying = activeGame?.status === 'playing'
   const playerCount = activeGame?._count?.players ?? 0
   const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
-  const creatorName = lobby.creator.username || lobby.creator.email?.split('@')[0] || t('lobby.ownerFallback')
+  const creatorName = lobby.creator.username || t('lobby.ownerFallback')
   const gamePresentation = getGamePresentation(lobby.gameType)
   const statusClass = isPlaying
     ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
@@ -96,7 +96,6 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
               <span className="px-2.5 py-1 rounded-full font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300">
                 {t('lobby.spectators', {
                   count: lobby.spectatorCount ?? 0,
-                  max: lobby.maxSpectators ?? 0,
                 })}
               </span>
             )}

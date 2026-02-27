@@ -171,11 +171,9 @@ const SPECTATOR_ROOM_SUFFIX = ':spectators'
 const SOCKET_INTERNAL_AUTH_HEADER = 'x-socket-internal-secret'
 const SOCKET_INTERNAL_AUTH_BEARER_PREFIX = 'Bearer '
 
-const SOCKET_INTERNAL_SECRET =
-  process.env.SOCKET_SERVER_INTERNAL_SECRET ||
-  process.env.SOCKET_INTERNAL_SECRET
+const SOCKET_SERVER_INTERNAL_SECRET = process.env.SOCKET_SERVER_INTERNAL_SECRET
 
-if (process.env.NODE_ENV === 'production' && !SOCKET_INTERNAL_SECRET) {
+if (process.env.NODE_ENV === 'production' && !SOCKET_SERVER_INTERNAL_SECRET) {
   throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production for internal socket endpoints')
 }
 
@@ -404,7 +402,6 @@ async function handleSpectatorJoin(socket: SpectatorMembershipSocket, lobbyCode:
         code: true,
         isActive: true,
         allowSpectators: true,
-        maxSpectators: true,
       },
     })
 
@@ -426,12 +423,6 @@ async function handleSpectatorJoin(socket: SpectatorMembershipSocket, lobbyCode:
     }
 
     const members = spectatorMembersByLobby.get(normalizedLobbyCode) ?? new Map<string, string>()
-    const alreadyPresent = members.has(userId)
-    if (!alreadyPresent && members.size >= Math.max(1, lobby.maxSpectators || 10)) {
-      emitError(socket, 'SPECTATOR_LIMIT_REACHED', 'Spectator limit reached')
-      return
-    }
-
     members.set(userId, username)
     spectatorMembersByLobby.set(normalizedLobbyCode, members)
 
@@ -574,13 +565,13 @@ function isInternalEndpointAuthorized(req: IncomingMessage): boolean {
     return true
   }
 
-  if (!SOCKET_INTERNAL_SECRET) {
+  if (!SOCKET_SERVER_INTERNAL_SECRET) {
     logger.error('Protected socket endpoints are enabled in production without internal secret')
     return false
   }
 
   const providedSecret = extractInternalRequestSecret(req)
-  return !!providedSecret && providedSecret === SOCKET_INTERNAL_SECRET
+  return !!providedSecret && providedSecret === SOCKET_SERVER_INTERNAL_SECRET
 }
 
 // Clean up expired rate limit entries to prevent memory leaks

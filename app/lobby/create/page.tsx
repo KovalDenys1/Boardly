@@ -136,7 +136,6 @@ function CreateLobbyPage() {
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     allowSpectators: true,
-    maxSpectators: 10,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60, // Use game-specific default or fallback to 60
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
@@ -213,7 +212,6 @@ function CreateLobbyPage() {
         password: formData.password,
         maxPlayers: formData.maxPlayers,
         allowSpectators: formData.allowSpectators,
-        maxSpectators: formData.allowSpectators ? formData.maxSpectators : 10,
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
         ...(formData.gameType === 'tic_tac_toe' ? { ticTacToeRounds: formData.ticTacToeRounds } : {}),
@@ -626,31 +624,9 @@ function CreateLobbyPage() {
                     />
                   </button>
                 </div>
-
-                {formData.allowSpectators && (
-                  <div className="mt-4">
-                    <label className="block text-xs md:text-sm font-bold text-white mb-2">
-                      Max Spectators
-                    </label>
-                    <input
-                      type="range"
-                      min={1}
-                      max={20}
-                      step={1}
-                      value={formData.maxSpectators}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          maxSpectators: Math.min(20, Math.max(1, Number(e.target.value) || 10)),
-                        }))
-                      }
-                      className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="mt-2 text-center text-sm font-semibold text-white">
-                      {formData.maxSpectators} spectators
-                    </div>
-                  </div>
-                )}
+                <p className="mt-3 text-xs text-white/70">
+                  Spectator capacity is unlimited when enabled.
+                </p>
               </div>
 
               {/* Game Mode - Only for games that support it */}
