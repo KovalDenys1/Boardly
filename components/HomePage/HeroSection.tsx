@@ -2,23 +2,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { showToast } from '@/lib/i18n-toast'
 
-interface HeroSectionProps {
-  isLoggedIn: boolean
-  userName?: string | null
-  userEmail?: string | null
-}
-
-export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSectionProps) {
+export default function HeroSection() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const { t } = useTranslation()
   const { isGuest, guestName, setGuestMode, clearGuestMode } = useGuest()
   const [showGuestForm, setShowGuestForm] = useState(false)
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const isLoggedIn = status === 'authenticated'
+  const userName = session?.user?.name
+  const userEmail = session?.user?.email
   const displayName = userName || userEmail?.split('@')[0]
 
   async function handleStartGuest() {
@@ -142,7 +141,7 @@ export default function HeroSection({ isLoggedIn, userName, userEmail }: HeroSec
   return (
     <>
       {/* Hero Section - Responsive, no forced minHeight, no mb-16 */}
-      <div className="flex flex-col items-center justify-center text-center w-full animate-fade-in">
+      <div className="flex flex-col items-center justify-center text-center w-full">
         <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm mb-6">
           <span className="text-6xl" style={{ fontSize: '4rem', lineHeight: '1' }}>🎲</span>
         </div>

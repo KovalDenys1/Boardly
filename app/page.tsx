@@ -1,18 +1,14 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/next-auth'
 import HeroSection from '@/components/HomePage/HeroSection'
 
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
 import HowItWorks from '@/components/HomePage/HowItWorks'
 
-// Use ISR for better performance - revalidate every 60 seconds
-export const revalidate = 60
+// Keep home page fully static for fast global TTFB.
+export const dynamic = 'force-static'
+export const revalidate = 3600
 
-export default async function HomePage() {
-  const session = await getServerSession(authOptions)
-  const isLoggedIn = !!session
-
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex flex-col">
       {/* Hero Block - Full viewport height minus nav, flex centered, responsive */}
@@ -21,26 +17,25 @@ export default async function HomePage() {
         style={{ minHeight: 'calc(100vh - 64px)' }}
       >
         <div className="w-full max-w-3xl flex flex-col items-center justify-center h-full">
-          <AnimatedSection threshold={0} animationClass="animate-scale-fade-in">
-            <HeroSection
-              isLoggedIn={isLoggedIn}
-              userName={session?.user?.name}
-              userEmail={session?.user?.email}
-            />
-          </AnimatedSection>
+          {/* Render hero immediately to avoid delaying LCP/FCP behind client-side intersection animations. */}
+          <HeroSection />
         </div>
       </section>
 
       {/* Main content below hero */}
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Features Grid - Animated */}
-        <AnimatedSection className="mb-8" threshold={0.5}>
-          <FeaturesGrid />
-        </AnimatedSection>
+        <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 520px' }}>
+          <AnimatedSection className="mb-8" threshold={0.5}>
+            <FeaturesGrid />
+          </AnimatedSection>
+        </div>
         {/* How It Works - Animated */}
-        <AnimatedSection className="mb-8" threshold={0.4}>
-          <HowItWorks />
-        </AnimatedSection>
+        <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 440px' }}>
+          <AnimatedSection className="mb-8" threshold={0.4}>
+            <HowItWorks />
+          </AnimatedSection>
+        </div>
       </div>
 
       {/* Footer */}
