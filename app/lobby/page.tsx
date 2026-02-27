@@ -295,6 +295,33 @@ function LobbyListPageContent() {
   }
 
   const hasActiveFilters = hasActiveLobbyFilters(filters)
+  const quickRules = [
+    {
+      gameType: 'yahtzee',
+      icon: '🎲',
+      label: t('games.yahtzee.title', 'Yahtzee'),
+      rule: t('game.ui.howToPlayRuleYahtzee'),
+    },
+    {
+      gameType: 'guess_the_spy',
+      icon: '🕵️',
+      label: t('games.spy.name', 'Guess the Spy'),
+      rule: t('game.ui.howToPlayRuleSpy'),
+    },
+    {
+      gameType: 'tic_tac_toe',
+      icon: '❌⭕',
+      label: t('games.tictactoe.name', 'Tic-Tac-Toe'),
+      rule: t('game.ui.howToPlayRuleTicTacToe'),
+    },
+    {
+      gameType: 'rock_paper_scissors',
+      icon: '✊✋✌️',
+      label: t('games.rock_paper_scissors.name', 'Rock Paper Scissors'),
+      rule: t('game.ui.howToPlayRuleRps'),
+    },
+  ]
+  const selectedQuickRule = quickRules.find((entry) => entry.gameType === filters.gameType) || null
 
   // Wait for i18n to be ready before rendering
   if (!ready || !i18n.isInitialized) {
@@ -374,6 +401,40 @@ function LobbyListPageContent() {
             </div>
           </button>
         </div>
+
+        <section className="mb-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl">
+          <h2 className="text-2xl font-bold mb-2">📘 {t('game.ui.howToPlayTitle')}</h2>
+          <p className="text-sm text-slate-300 mb-4">{t('game.ui.howToPlayDescription')}</p>
+
+          <div className="grid gap-3 md:grid-cols-2 mb-4">
+            <div className="rounded-xl bg-slate-700/60 border border-slate-600 px-4 py-3 text-sm">
+              {t('game.ui.howToPlayReady')}
+            </div>
+            <div className="rounded-xl bg-slate-700/60 border border-slate-600 px-4 py-3 text-sm">
+              {t('game.ui.howToPlayStart')}
+            </div>
+          </div>
+
+          {selectedQuickRule ? (
+            <div className="rounded-xl bg-blue-600/20 border border-blue-400/40 px-4 py-3">
+              <p className="text-sm font-semibold text-blue-100 mb-1">
+                {selectedQuickRule.icon} {selectedQuickRule.label}
+              </p>
+              <p className="text-sm text-blue-50">{selectedQuickRule.rule}</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {quickRules.map((rule) => (
+                <div key={rule.gameType} className="rounded-xl bg-slate-700/40 border border-slate-600 px-4 py-3">
+                  <p className="text-sm font-semibold text-white mb-1">
+                    {rule.icon} {rule.label}
+                  </p>
+                  <p className="text-sm text-slate-300">{rule.rule}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Filters */}
         <LobbyFilters filters={filters} onFiltersChange={setFilters} />
