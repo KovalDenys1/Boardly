@@ -4,6 +4,7 @@ import { signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
+import { navigateToProfile } from '@/lib/profile-navigation'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
@@ -38,6 +39,10 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
   const handleGuestExit = () => {
     clearGuestMode()
     router.replace('/')
+  }
+
+  const handleProfileNavigation = () => {
+    navigateToProfile(router, pathname)
   }
 
   // Prevent body scroll when menu is open
@@ -229,7 +234,7 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
 
                     {isAuthenticated && (
                       <button
-                        onClick={() => router.push('/profile')}
+                        onClick={handleProfileNavigation}
                         className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/profile')
                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'

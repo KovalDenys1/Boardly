@@ -6,7 +6,7 @@ import crypto from 'crypto'
 import { apiLogger } from '@/lib/logger'
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().trim().email('Invalid email address').transform((value) => value.toLowerCase()),
 })
 
 export async function POST(request: NextRequest) {
@@ -18,7 +18,14 @@ export async function POST(request: NextRequest) {
     // doesn't return 500 — instead log and return generic success.
     let user
     try {
-      user = await prisma.users.findUnique({ where: { email } })
+      user = await prisma.users.findFirst({
+        where: {
+          email: {
+            equals: email,
+            mode: 'insensitive',
+          },
+        },
+      })
     } catch (dbError) {
       const log = apiLogger('POST /api/auth/forgot-password')
       log.warn('DB lookup failed during forgot-password; returning generic success to caller', {
@@ -59,7 +66,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Send email
-    const result = await sendPasswordResetEmail(email, token)
+    const result = await sendPasswordResetEmail(user.email ?? email, token)
 
     if (!result.success) {
       const log = apiLogger('POST /api/auth/forgot-password')

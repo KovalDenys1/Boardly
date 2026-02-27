@@ -56,10 +56,13 @@ export default function RegisterForm() {
         setFieldErrors(errs)
         throw new Error(t('auth.register.fixFields'))
       }
+
+      const sanitizedInput = parsed.data
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(sanitizedInput),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -80,13 +83,13 @@ export default function RegisterForm() {
         event: 'register',
         method: 'email',
         success: true,
-        userId: formData.email,
+        userId: sanitizedInput.email,
       })
       trackFunnelStep('register')
       // Auto-login after registration
       const loginResult = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
+        email: sanitizedInput.email,
+        password: sanitizedInput.password,
         rememberMe: rememberMe ? 'true' : 'false',
         redirect: false,
       })

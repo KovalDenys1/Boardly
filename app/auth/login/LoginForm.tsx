@@ -46,9 +46,11 @@ export default function LoginForm() {
         throw new Error('Please fix the highlighted fields')
       }
 
+      const normalizedEmail = parsed.data.email
+
       const result = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
+        email: normalizedEmail,
+        password: parsed.data.password,
         rememberMe: rememberMe ? 'true' : 'false',
         redirect: false,
       })
@@ -76,7 +78,7 @@ export default function LoginForm() {
           event: 'login',
           method: 'email',
           success: true,
-          userId: formData.email, // Will be replaced with actual userId by session
+          userId: normalizedEmail, // Will be replaced with actual userId by session
         })
         
         router.push(returnUrl)
