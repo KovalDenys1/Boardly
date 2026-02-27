@@ -5,87 +5,34 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
-import LobbyFilters, { LobbyFilterOptions } from '@/components/LobbyFilters'
+import LobbyFilters from '@/components/LobbyFilters'
 import LobbyStats from '@/components/LobbyStats'
+import LobbyCard, { LobbyCardData } from '@/components/LobbyCard'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
+import {
+  buildLobbyQueryParams,
+  hasActiveLobbyFilters,
+  LOBBY_CODE_LENGTH,
+  LobbyFilterOptions,
+  normalizeGameTypeFilter,
+  sanitizeLobbyCode,
+} from '@/lib/lobby-filters'
 import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
 
 let socket: Socket | null = null
-const FILTERABLE_GAME_TYPES = new Set([
-  'yahtzee',
-  'guess_the_spy',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-])
-const LOBBY_CODE_LENGTH = 4
-const LOBBY_CODE_SANITIZE_PATTERN = /[^A-Z0-9]/g
-type TranslateFn = (...args: any[]) => string
-
-function normalizeGameTypeFilter(value: string | null): string | undefined {
-  if (!value) return undefined
-  return FILTERABLE_GAME_TYPES.has(value) ? value : undefined
-}
-
-function sanitizeLobbyCode(value: string): string {
-  return value.toUpperCase().replace(LOBBY_CODE_SANITIZE_PATTERN, '').slice(0, LOBBY_CODE_LENGTH)
-}
-
-function buildLobbyQueryParams(filters: LobbyFilterOptions): URLSearchParams {
-  const params = new URLSearchParams()
-  if (filters.gameType) params.append('gameType', filters.gameType)
-  if (filters.status && filters.status !== 'all') params.append('status', filters.status)
-  if (filters.search) params.append('search', filters.search)
-  if (filters.minPlayers) params.append('minPlayers', filters.minPlayers.toString())
-  if (filters.maxPlayers) params.append('maxPlayers', filters.maxPlayers.toString())
-  if (filters.sortBy) params.append('sortBy', filters.sortBy)
-  if (filters.sortOrder) params.append('sortOrder', filters.sortOrder)
-  return params
-}
-
-function getGamePresentation(gameType: string | undefined, t: TranslateFn): { icon: string; label: string } {
-  switch (gameType) {
-    case 'yahtzee':
-      return { icon: '🎲', label: t('games.yahtzee.title', 'Yahtzee') }
-    case 'guess_the_spy':
-      return { icon: '🕵️', label: t('games.spy.name', 'Guess the Spy') }
-    case 'tic_tac_toe':
-      return { icon: '❌⭕', label: t('games.tictactoe.name', 'Tic-Tac-Toe') }
-    case 'rock_paper_scissors':
-      return { icon: '✊✋✌️', label: t('games.rock_paper_scissors.name', 'Rock Paper Scissors') }
-    default:
-      return { icon: '🎮', label: t('lobby.gameUnknown') }
-  }
-}
-
-interface Lobby {
-  id: string
-  code: string
-  name: string
-  gameType?: string
-  isPrivate?: boolean
-  maxPlayers: number
-  allowSpectators?: boolean
-  maxSpectators?: number
-  spectatorCount?: number
-  creator: { 
-    username: string | null
-    email: string | null
-  }
-  games: {
-    id: string
-    status: string
-    _count: {
-      players: number
-    }
-  }[]
+const EMPTY_LOBBY_STATS = {
+  totalLobbies: 0,
+  waitingLobbies: 0,
+  playingLobbies: 0,
+  totalPlayers: 0,
 }
 
 interface LobbyListResponse {
-  lobbies: Lobby[]
+  lobbies: LobbyCardData[]
   stats: {
     totalLobbies: number
     waitingLobbies: number
@@ -103,14 +50,12 @@ function LobbyListPageContent() {
   const { isGuest, guestToken } = useGuest()
   const authenticatedUserId = session?.user?.id || null
   const hasAuthenticatedSession = Boolean(authenticatedUserId)
-  const [lobbies, setLobbies] = useState<Lobby[]>([])
-  const [stats, setStats] = useState({
-    totalLobbies: 0,
-    waitingLobbies: 0,
-    playingLobbies: 0,
-    totalPlayers: 0,
-  })
+  const [lobbies, setLobbies] = useState<LobbyCardData[]>([])
+  const [stats, setStats] = useState(EMPTY_LOBBY_STATS)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [hasLoadError, setHasLoadError] = useState(false)
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
   const [joinCode, setJoinCode] = useState('')
   const [filters, setFilters] = useState<LobbyFilterOptions>({
     gameType: initialGameTypeFilter,
@@ -142,6 +87,12 @@ function LobbyListPageContent() {
 
   const loadLobbies = useCallback(async () => {
     const requestId = ++loadRequestIdRef.current
+    const isInitialLoad = !initializedRef.current
+    if (isInitialLoad) {
+      setLoading(true)
+    } else {
+      setRefreshing(true)
+    }
     loadAbortControllerRef.current?.abort()
     const controller = new AbortController()
     loadAbortControllerRef.current = controller
@@ -169,20 +120,29 @@ function LobbyListPageContent() {
       if ('error' in data) {
         clientLogger.warn('Lobbies loaded with error:', (data as any).error)
       }
-      
+
+      setHasLoadError(false)
+      setLastUpdatedAt(Date.now())
       setLobbies(data.lobbies || [])
-      setStats(data.stats || { totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
+      setStats(data.stats || EMPTY_LOBBY_STATS)
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         return
       }
       clientLogger.error('Failed to load lobbies:', error)
-      // Set empty array to prevent UI from breaking
-      setLobbies([])
-      setStats({ totalLobbies: 0, waitingLobbies: 0, playingLobbies: 0, totalPlayers: 0 })
+      setHasLoadError(true)
+      // Initial failure should still render a stable empty state.
+      if (isInitialLoad) {
+        setLobbies([])
+        setStats(EMPTY_LOBBY_STATS)
+      }
     } finally {
       if (requestId === loadRequestIdRef.current) {
-        setLoading(false)
+        if (isInitialLoad) {
+          setLoading(false)
+        } else {
+          setRefreshing(false)
+        }
       }
     }
   }, [filters])
@@ -334,6 +294,8 @@ function LobbyListPageContent() {
     router.push(`/lobby/${normalizedCode}`)
   }
 
+  const hasActiveFilters = hasActiveLobbyFilters(filters)
+
   // Wait for i18n to be ready before rendering
   if (!ready || !i18n.isInitialized) {
     return <LoadingSkeleton />
@@ -426,17 +388,36 @@ function LobbyListPageContent() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {t('lobby.lobbiesCount', { count: lobbies.length })}
               </p>
+              {lastUpdatedAt && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {t('lobby.lastUpdated', {
+                    time: new Date(lastUpdatedAt).toLocaleTimeString(),
+                  })}
+                </p>
+              )}
             </div>
             <button
               onClick={loadLobbies}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              disabled={refreshing || loading}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title={t('lobby.refresh')}
             >
-              <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className={`w-6 h-6 text-gray-600 dark:text-gray-400 ${refreshing ? 'animate-spin' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
           </div>
+
+          {hasLoadError && (
+            <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+              {t('lobby.loadFailed')}
+            </div>
+          )}
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -450,114 +431,41 @@ function LobbyListPageContent() {
                 <span className="text-5xl">🎲</span>
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {t('lobby.noLobbies')}
+                {hasActiveFilters ? t('lobby.noFilterMatches') : t('lobby.noLobbies')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {t('lobby.noLobbiesDescription')}
+                {hasActiveFilters ? t('lobby.noFilterMatchesDescription') : t('lobby.noLobbiesDescription')}
               </p>
               <button
-                onClick={() => router.push('/lobby/create')}
+                onClick={
+                  hasActiveFilters
+                    ? () =>
+                        setFilters({
+                          gameType: undefined,
+                          status: 'all',
+                          search: '',
+                          minPlayers: undefined,
+                          maxPlayers: undefined,
+                          sortBy: 'createdAt',
+                          sortOrder: 'desc',
+                        })
+                    : () => router.push('/lobby/create')
+                }
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105"
               >
-                {t('lobby.createFirst')}
+                {hasActiveFilters ? t('lobby.filters.clearAll') : t('lobby.createFirst')}
               </button>
             </div>
           ) : (
             <div className="space-y-3">
               {lobbies.map((lobby, index) => (
-                <article
+                <LobbyCard
                   key={lobby.id}
-                  className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:shadow-lg animate-fade-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  {(() => {
-                    const activeGame = lobby.games[0]
-                    const isPlaying = activeGame?.status === 'playing'
-                    const playerCount = activeGame?._count?.players ?? 0
-                    const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
-                    const creatorName =
-                      lobby.creator.username ||
-                      lobby.creator.email?.split('@')[0] ||
-                      t('lobby.ownerFallback')
-                    const gamePresentation = getGamePresentation(lobby.gameType, t)
-                    const statusClass = isPlaying
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                      : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-
-                    return (
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                              {lobby.name}
-                            </h3>
-                            <span className="font-mono bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-bold text-sm">
-                              {lobby.code}
-                            </span>
-                            <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                lobby.isPrivate
-                                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300'
-                                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                              }`}
-                            >
-                              {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
-                            </span>
-                          </div>
-
-                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                            👤 {creatorName}
-                          </p>
-
-                          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                            <span className={`px-2.5 py-1 rounded-full font-semibold ${statusClass}`}>
-                              {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
-                            </span>
-                            <span className="px-2.5 py-1 rounded-full font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-                              {gamePresentation.icon + ' '}
-                              {gamePresentation.label}
-                            </span>
-                            {lobby.allowSpectators && (
-                              <span className="px-2.5 py-1 rounded-full font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300">
-                                {t('lobby.spectators', {
-                                  count: lobby.spectatorCount ?? 0,
-                                  max: lobby.maxSpectators ?? 0,
-                                })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
-                          <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-                            {t('lobby.playerOccupancy', {
-                              current: playerCount,
-                              max: lobby.maxPlayers,
-                            })}
-                          </span>
-                          <div className="flex w-full gap-2 lg:w-auto">
-                            {canSpectate && (
-                              <button
-                                type="button"
-                                onClick={() => router.push(`/lobby/${lobby.code}/spectate`)}
-                                className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold"
-                              >
-                                {t('lobby.watch')}
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/lobby/${lobby.code}`)}
-                              className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-                            >
-                              {t('lobby.openLobby')}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })()}
-                </article>
+                  lobby={lobby}
+                  index={index}
+                  onOpenLobby={(code) => router.push(`/lobby/${code}`)}
+                  onWatchLobby={(code) => router.push(`/lobby/${code}/spectate`)}
+                />
               ))}
             </div>
           )}
