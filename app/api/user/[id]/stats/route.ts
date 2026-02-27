@@ -38,9 +38,14 @@ function parseDateRangeParam(raw: string | null, { endOfDay }: { endOfDay: boole
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  let targetUserId = 'unknown'
+
   try {
+    const resolvedParams = await params
+    targetUserId = resolvedParams.id
+
     const rateLimitResult = await limiter(request)
     if (rateLimitResult) {
       return rateLimitResult
@@ -51,7 +56,6 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const targetUserId = params.id
     const requesterUserId = session.user.id
     const requesterIsAdmin = await isAdminUser(requesterUserId)
 
@@ -172,7 +176,7 @@ export async function GET(
     )
   } catch (error) {
     log.error('Failed to build user stats dashboard', error as Error, {
-      userId: params.id,
+      userId: targetUserId,
     })
     return NextResponse.json(
       { error: 'Failed to load user stats' },
