@@ -4,6 +4,7 @@ import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup
 import { cleanupOldGuests } from '@/scripts/cleanup-old-guests'
 import { cleanupOldReplaySnapshots } from '@/lib/cleanup-replays'
 import { authorizeCronRequest } from '@/lib/cron-auth'
+import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 
 const log = apiLogger('GET /api/cron/maintenance')
 
@@ -17,6 +18,7 @@ async function handleCronRequest(request: NextRequest) {
     const cleanupUnverifiedResult = await cleanupUnverifiedAccounts(7)
     const guestCleanupResult = await cleanupOldGuests({ disconnect: false })
     const replayCleanupResult = await cleanupOldReplaySnapshots()
+    const lobbyCleanupResult = await cleanupStaleLobbiesAndGames()
 
     return NextResponse.json({
       success: true,
@@ -24,6 +26,9 @@ async function handleCronRequest(request: NextRequest) {
       deletedUnverified: cleanupUnverifiedResult.deleted,
       deletedGuests: guestCleanupResult.deleted,
       deletedReplaySnapshots: replayCleanupResult.deleted,
+      deactivatedLobbies: lobbyCleanupResult.deactivatedLobbies,
+      cancelledWaitingGames: lobbyCleanupResult.cancelledWaitingGames,
+      abandonedPlayingGames: lobbyCleanupResult.abandonedPlayingGames,
       replayRetentionDays: replayCleanupResult.retentionDays,
       replayCutoffDate: replayCleanupResult.cutoffDate,
       timestamp: new Date().toISOString(),

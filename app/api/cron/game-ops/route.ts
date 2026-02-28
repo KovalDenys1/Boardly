@@ -4,10 +4,11 @@ import { apiLogger } from '@/lib/logger'
 import { processNotificationEmailQueue } from '@/lib/notification-queue'
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
 import { authorizeCronRequest } from '@/lib/cron-auth'
+import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 
 const log = apiLogger('GET /api/cron/game-ops')
 
-type GameOpsTaskName = 'notifications' | 'turnReminders'
+type GameOpsTaskName = 'cleanup' | 'notifications' | 'turnReminders'
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error'
@@ -82,21 +83,37 @@ async function handleCronRequest(request: NextRequest) {
   try {
     const baseUrl = new URL(request.url).origin
 
-    // Consolidated frequent cron to stay within Vercel cron limits.
-    // Turn reminders are rate-limited per game, so a 5-minute cadence is acceptable.
-    const [notificationsResult, turnRemindersResult] = await Promise.allSettled([
-      processNotificationEmailQueue({ baseUrl }),
-      runTurnReminderCycle({ baseUrl }),
-    ])
-
     const warnings: Array<{
       task: GameOpsTaskName
-      kind: 'schema_mismatch'
+      kind: 'schema_mismatch' | 'execution_failed'
       code?: string
       table?: string
       column?: string
       message: string
     }> = []
+
+    let cleanup: unknown
+    try {
+      cleanup = await cleanupStaleLobbiesAndGames()
+    } catch (cleanupError) {
+      warnings.push({
+        task: 'cleanup',
+        kind: 'execution_failed',
+        message: getErrorMessage(cleanupError),
+      })
+      cleanup = {
+        success: false,
+        reason: 'cleanup_failed',
+      }
+      log.error('Game ops cleanup task failed', cleanupError as Error)
+    }
+
+    // Consolidated frequent cron to stay within Vercel limits.
+    // Turn reminders are rate-limited per game and user.
+    const [notificationsResult, turnRemindersResult] = await Promise.allSettled([
+      processNotificationEmailQueue({ baseUrl }),
+      runTurnReminderCycle({ baseUrl }),
+    ])
 
     let notifications: unknown
     if (notificationsResult.status === 'fulfilled') {
@@ -135,6 +152,7 @@ async function handleCronRequest(request: NextRequest) {
     }
 
     return NextResponse.json({
+      cleanup,
       notifications,
       turnReminders,
       degraded: warnings.length > 0,

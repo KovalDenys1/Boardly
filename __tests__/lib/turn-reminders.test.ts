@@ -268,4 +268,84 @@ describe('runTurnReminderCycle', () => {
       })
     )
   })
+
+  it('skips sending when recipient has been inactive for too long', async () => {
+    mockPrisma.games.findMany.mockResolvedValue([
+      buildGame({
+        players: [
+          {
+            userId: 'user-1',
+            position: 0,
+            user: {
+              id: 'user-1',
+              email: 'host@example.com',
+              username: 'Host',
+              isGuest: false,
+              lastActiveAt: new Date('2026-02-25T09:00:00.000Z'),
+              bot: null,
+            },
+          },
+          {
+            userId: 'user-2',
+            position: 1,
+            user: {
+              id: 'user-2',
+              email: 'friend@example.com',
+              username: 'Friend',
+              isGuest: false,
+              lastActiveAt: new Date('2026-02-10T09:00:00.000Z'),
+              bot: null,
+            },
+          },
+        ],
+      }),
+    ])
+
+    const result = await runTurnReminderCycle({
+      now,
+      baseUrl: 'http://localhost:3000',
+      idleMinutes: 15,
+      rateLimitMinutes: 60,
+      recentActiveSkipMinutes: 10,
+      maxUserInactiveDays: 7,
+    })
+
+    expect(result.attempted).toBe(0)
+    expect(result.sent).toBe(0)
+    expect(result.skipped).toBe(1)
+    expect(mockSendTurnReminderEmail).not.toHaveBeenCalled()
+    expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-2',
+        type: 'turn_reminder',
+        status: 'skipped',
+        reason: 'user_inactive_too_long',
+      })
+    )
+  })
+
+  it('queries only active lobbies within max idle window', async () => {
+    mockPrisma.games.findMany.mockResolvedValue([buildGame()])
+
+    await runTurnReminderCycle({
+      now,
+      baseUrl: 'http://localhost:3000',
+      idleMinutes: 15,
+      maxGameIdleMinutes: 120,
+    })
+
+    expect(mockPrisma.games.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'playing',
+          abandonedAt: null,
+          lobby: { isActive: true },
+          lastMoveAt: expect.objectContaining({
+            lte: expect.any(Date),
+            gte: expect.any(Date),
+          }),
+        }),
+      })
+    )
+  })
 })
