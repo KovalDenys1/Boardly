@@ -9,7 +9,6 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
 import { soundManager } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
-import { createBotMoveVisualization, detectBotMove, findFilledCategory } from '@/lib/bot-visualization'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
@@ -17,7 +16,8 @@ import { clientLogger } from '@/lib/client-logger'
 import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
-import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
+import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -342,7 +342,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const loadLobbyRef = React.useRef<(() => Promise<void>) | null>(null)
 
   // Memoize socket event handlers to prevent infinite loops
-  const onGameUpdate = useCallback((payload: GameUpdatePayload) => {
+  const onGameUpdate = useCallback(async (payload: GameUpdatePayload) => {
     clientLogger.log('📡 Received game-update:', payload)
 
     // Extract state from payload structure: { action: 'state-change', payload: { state: ... } }
@@ -363,7 +363,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
         if (game?.id) {
           const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
-          const newEngine = restoreGameEngine(gt, game.id, parsedState)
+          const newEngine = await restoreGameEngineClient(gt, game.id, parsedState)
           setGameEngine(newEngine)
 
           if (
@@ -480,7 +480,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           }
         }
 
-        // Note: Bot move detection handled by bot-visualization.ts
+        // Bot move detection is handled through server-emitted bot-action events.
       } catch (e) {
         clientLogger.error('Failed to parse game state:', e)
       }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { clientLogger } from '@/lib/client-logger'

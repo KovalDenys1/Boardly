@@ -1,6 +1,6 @@
 # Bundle Budget Policy
 
-Updated: 2026-02-25
+Updated: 2026-02-27
 
 ## Goal
 
@@ -35,26 +35,38 @@ From `npm run check:bundle-budget` (`/lobby/[code]/page`):
 - Shared vendor chunk: `1466.8 KiB`
 - Shared common chunk: `214.2 KiB`
 
-## 2026-02-25 Optimization Landed
+## 2026-02-27 Baseline (after optimization)
 
-- Moved `YahtzeeGameBoard` in `app/lobby/[code]/page.tsx` to `next/dynamic`
-- Deferred `canvas-confetti` loading in `hooks/useConfetti.ts`
+Optimization set:
+
+- Removed static `game-registry` imports from lobby client path and switched to lazy client engine restore.
+- Moved lobby metadata/bot-support lookups to lightweight `lib/game-catalog.ts`.
+- Removed unused heavy bot-visualization import path from `app/lobby/[code]/page.tsx`.
+- Kept server-side engine registry behavior unchanged.
 
 Measured result from `next build`:
 
-- `"/lobby/[code]"` route size: `34.2 kB -> 32 kB`
-- `"/lobby/[code]"` First Load JS: `557 kB -> 555 kB`
+- `First Load JS shared by all`: `221 kB`
+- `"/lobby/[code]"` route size: `36.4 kB`
+- `"/lobby/[code]"` First Load JS: `365 kB`
+
+Measured result from `npm run check:bundle-budget` (`/lobby/[code]/page`):
+
+- Route total JS: `1173.2 KiB`
+- Route specific chunk: `128.1 KiB`
+- Shared vendor chunk: `0.0 KiB`
+- Shared common chunk: `0.0 KiB`
 
 ## Enforced Thresholds (default)
 
 `scripts/check-bundle-budget.ts` defaults:
 
-- Route total JS (`/lobby/[code]/page`): `1875 KiB`
-- Route specific chunk: `135 KiB`
-- Shared vendor chunk: `1525 KiB`
-- Shared common chunk: `235 KiB`
+- Route total JS (`/lobby/[code]/page`): `1400 KiB`
+- Route specific chunk: `130 KiB`
+- Shared vendor chunk: `256 KiB`
+- Shared common chunk: `128 KiB`
 
-These allow modest headroom over the current baseline while failing on meaningful regressions.
+These keep headroom while making regressions visible much earlier than the old thresholds.
 
 ## CI Policy
 

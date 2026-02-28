@@ -8,11 +8,17 @@ import { navigateToProfile } from '@/lib/profile-navigation'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
+  isAdmin?: boolean
   userName?: string | null
   userEmail?: string | null
 }
 
-export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuProps) {
+export function MobileMenu({
+  isAuthenticated,
+  isAdmin = false,
+  userName,
+  userEmail,
+}: MobileMenuProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -228,6 +234,23 @@ export function MobileMenu({ isAuthenticated, userName, userEmail }: MobileMenuP
                       <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🎲</span>
                       <span>Lobbies</span>
                     </button>
+
+                    {isAuthenticated && isAdmin && (
+                      <button
+                        onClick={() => router.push('/analytics')}
+                        className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/analytics')
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        style={{
+                          padding: 'clamp(12px, 1.2vh, 16px)',
+                          fontSize: 'clamp(15px, 1.5vw, 17px)'
+                        }}
+                      >
+                        <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>📊</span>
+                        <span>Analytics</span>
+                      </button>
+                    )}
 
                     {/* Divider */}
                     <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />

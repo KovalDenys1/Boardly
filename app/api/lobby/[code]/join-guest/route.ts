@@ -13,6 +13,11 @@ import {
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import {
+  hashLobbyPassword,
+  isHashedLobbyPassword,
+  verifyLobbyPassword,
+} from '@/lib/lobby-password'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -25,6 +30,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const log = apiLogger('POST /api/lobby/[code]/join-guest')
+
   try {
     // Rate limit join requests
     const rateLimitResult = await limiter(req)
@@ -65,8 +72,29 @@ export async function POST(
       return NextResponse.json({ error: 'Lobby not found' }, { status: 404 })
     }
 
-    if (lobby.password && parsedBody.data.password !== lobby.password) {
-      return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
+    if (lobby.password) {
+      const isPasswordValid = await verifyLobbyPassword(lobby.password, parsedBody.data.password)
+      if (!isPasswordValid) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 403 })
+      }
+
+      // Upgrade legacy plain-text lobby passwords after a successful match.
+      if (!isHashedLobbyPassword(lobby.password)) {
+        const upgradedHash = await hashLobbyPassword(parsedBody.data.password)
+        if (upgradedHash) {
+          try {
+            await prisma.lobbies.update({
+              where: { id: lobby.id },
+              data: { password: upgradedHash },
+            })
+          } catch (upgradeError) {
+            log.warn('Failed to upgrade legacy lobby password hash for guest join', {
+              lobbyId: lobby.id,
+              error: (upgradeError as Error).message,
+            })
+          }
+        }
+      }
     }
 
     const guestUser = await getOrCreateGuestUser(guestId, requestedGuestName)
@@ -169,7 +197,6 @@ export async function POST(
       { status: 200 }
     )
   } catch (error: any) {
-    const log = apiLogger('POST /api/lobby/[code]/join-guest')
     log.error('Error joining as guest', error)
     return NextResponse.json(
       { error: 'Failed to join as guest' },

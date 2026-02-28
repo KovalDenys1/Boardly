@@ -72,9 +72,7 @@ export function getServerSocketUrl(): string {
 }
 
 function getSocketInternalSecret(): string | null {
-  const secret =
-    process.env.SOCKET_SERVER_INTERNAL_SECRET ||
-    process.env.SOCKET_INTERNAL_SECRET
+  const secret = process.env.SOCKET_SERVER_INTERNAL_SECRET
 
   if (!secret || !secret.trim()) {
     if (process.env.NODE_ENV === 'production' && logger?.error) {

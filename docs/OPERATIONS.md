@@ -81,6 +81,22 @@ Recommended:
 - `RELIABILITY_ALERTS_CRON_URL` (for example `https://boardly.online/api/cron/reliability-alerts`)
 - `CRON_SECRET` (must match the app env value used by the endpoint)
 
+## Secret migration notes
+
+Canonical secrets only:
+
+- `NEXTAUTH_SECRET`
+- `SOCKET_SERVER_INTERNAL_SECRET`
+
+Migration from deprecated aliases:
+
+1. Remove `JWT_SECRET` from all app/socket environments.
+2. Ensure `NEXTAUTH_SECRET` is set and has at least 32 characters.
+3. Remove `SOCKET_INTERNAL_SECRET` from all app/socket environments.
+4. Ensure `SOCKET_SERVER_INTERNAL_SECRET` is set and has at least 16 characters.
+5. Redeploy Next.js app and socket service together.
+6. Verify `/api/notify` and internal metrics auth still succeed.
+
 ## Build and deploy
 
 ### Frontend

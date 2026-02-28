@@ -115,6 +115,8 @@ public
 # Temporary folders
 tmp/
 temp/
+reports/*.json
+!reports/.gitkeep
 
 # Editor directories and files
 # Allow shared VSCode configuration files

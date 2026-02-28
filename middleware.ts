@@ -7,16 +7,63 @@ import { getServerSocketUrl } from '@/lib/socket-url'
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const SOCKET_URL = getServerSocketUrl()
 const SECURITY_HEADERS = getSecurityHeaders()
-const ALLOWED_ORIGINS_FROM_ENV = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((value) => value.trim()).filter(Boolean)
-  : []
-const ALLOWED_CORS_ORIGINS = process.env.CORS_ORIGIN?.split(',') || [
+const DEFAULT_CORS_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
-  'https://boardly.online'
+  'https://boardly.online',
 ]
+const ALLOWED_ORIGINS_FROM_ENV = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((value) => value.trim()).filter(Boolean)
+  : []
+const RAW_ALLOWED_CORS_ORIGINS = ALLOWED_ORIGINS_FROM_ENV.length > 0
+  ? ALLOWED_ORIGINS_FROM_ENV
+  : DEFAULT_CORS_ORIGINS
+
+function normalizeCorsOrigin(origin: string | null | undefined): string | null {
+  if (!origin) return null
+
+  try {
+    const parsed = new URL(origin)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null
+    }
+    return parsed.origin
+  } catch {
+    return null
+  }
+}
+
+const ALLOWED_CORS_ORIGIN_SET = new Set(
+  RAW_ALLOWED_CORS_ORIGINS
+    .map((origin) => normalizeCorsOrigin(origin))
+    .filter((origin): origin is string => origin !== null)
+)
+
+function isLocalDevelopmentOrigin(origin: string): boolean {
+  try {
+    const parsed = new URL(origin)
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+  } catch {
+    return false
+  }
+}
+
+function resolveAllowedCorsOrigin(origin: string | null): string | null {
+  const normalizedOrigin = normalizeCorsOrigin(origin)
+  if (!normalizedOrigin) return null
+
+  if (ALLOWED_CORS_ORIGIN_SET.has(normalizedOrigin)) {
+    return normalizedOrigin
+  }
+
+  if (IS_DEVELOPMENT && isLocalDevelopmentOrigin(normalizedOrigin)) {
+    return normalizedOrigin
+  }
+
+  return null
+}
 
 function buildCspHeaderValue() {
   const connectSrcCandidates = new Set<string>([
@@ -113,13 +160,14 @@ export async function middleware(request: NextRequest) {
   // Add CORS headers for API routes
   if (pathname.startsWith('/api')) {
     const origin = request.headers.get('origin')
-    
-    // In development, allow localhost and local hostname
-    if (IS_DEVELOPMENT || (origin && ALLOWED_CORS_ORIGINS.some(allowed => origin.includes(allowed.trim())))) {
-      response.headers.set('Access-Control-Allow-Origin', origin || '*')
+    const allowedOrigin = resolveAllowedCorsOrigin(origin)
+
+    if (allowedOrigin) {
+      response.headers.set('Access-Control-Allow-Origin', allowedOrigin)
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Guest-Token')
       response.headers.set('Access-Control-Allow-Credentials', 'true')
+      response.headers.set('Vary', 'Origin')
     }
 
     // Handle preflight requests

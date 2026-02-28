@@ -70,7 +70,6 @@ Important safeguards:
 ### Secret policy
 
 - `NEXTAUTH_SECRET` is canonical for auth/session signing
-- `JWT_SECRET` is deprecated compatibility only
 - optional `GUEST_JWT_SECRET` can isolate guest token signing
 
 ## Data model summary

@@ -31,7 +31,6 @@ jobs:
       DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder"
       NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
-      JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
       SOCKET_SERVER_INTERNAL_SECRET: test-socket-secret-32chars-min-required-key
     steps:
       - name: Checkout repository
@@ -67,7 +66,6 @@ jobs:
       DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/boardly_ci_placeholder"
       NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: test-nextauth-secret-32chars-min-required-len
-      JWT_SECRET: test-jwt-secret-key-32chars-minimum-required
       SOCKET_SERVER_INTERNAL_SECRET: test-socket-secret-32chars-min-required-key
     steps:
       - name: Checkout repository

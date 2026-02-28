@@ -70,6 +70,7 @@ export default function Header() {
 
             <MobileMenu
               isAuthenticated={isAuthenticated}
+              isAdmin={isAdmin}
               userName={session?.user?.name}
               userEmail={session?.user?.email}
             />
