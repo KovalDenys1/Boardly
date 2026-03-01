@@ -87,6 +87,8 @@ export function useSocketConnection({
   const connectionRunIdRef = useRef(0)
   const hasTrackedFinalFailureRef = useRef(false)
   const pendingEmitQueueRef = useRef<Array<{ event: string; data: any }>>([])
+  const authenticatedUserId =
+    typeof session?.user?.id === 'string' ? session.user.id : null
 
   const flushPendingEmits = useCallback(() => {
     const currentSocket = socketRef.current
@@ -211,18 +213,17 @@ export function useSocketConnection({
       return
     }
 
-    if (!isGuest && !session?.user?.id) {
+    if (!isGuest && !authenticatedUserId) {
       clientLogger.log('⏳ Waiting for session to load before connecting socket...', {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userId: session?.user?.id,
+        hasUserId: false,
+        userId: authenticatedUserId,
       })
       authFailedRef.current = false
       return
     }
 
-    if (!isGuest && session?.user?.id) {
-      const userId = session.user.id
+    if (!isGuest && authenticatedUserId) {
+      const userId = authenticatedUserId
       if (typeof userId !== 'string' || userId.length < 10) {
         clientLogger.error('❌ Invalid user ID format in session:', {
           userId,
@@ -245,7 +246,7 @@ export function useSocketConnection({
       url,
       code,
       isGuest,
-      userId: !isGuest ? session?.user?.id : guestId,
+      userId: !isGuest ? authenticatedUserId : guestId,
     })
 
     const getAuthToken = async (): Promise<string | null> => {
@@ -261,7 +262,7 @@ export function useSocketConnection({
         return guestToken
       }
 
-      if (!isGuest && session?.user?.id) {
+      if (!isGuest && authenticatedUserId) {
         let responseStatus: number | undefined
         try {
           clientLogger.log('🔐 Fetching Socket.IO token for authenticated user...')
@@ -687,8 +688,8 @@ export function useSocketConnection({
             clientLogger.log('🔍 First poll error for authenticated user - checking token:', {
               tokenType: typeof activeToken,
               tokenValue: activeToken,
-              sessionExists: !!session,
-              userIdInSession: session?.user?.id,
+              hasUserId: !!authenticatedUserId,
+              userIdInSession: authenticatedUserId,
             })
           }
 
@@ -910,9 +911,17 @@ export function useSocketConnection({
       authTokenUnauthorizedRef.current = false
       hasTrackedFinalFailureRef.current = false
     }
-    // session?.user?.id is accessed directly in the effect, no need to add session itself
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken, shouldJoinLobbyRoom, session?.user?.id, normalizeServerError, flushPendingEmits])
+  }, [
+    code,
+    isGuest,
+    guestId,
+    guestName,
+    guestToken,
+    shouldJoinLobbyRoom,
+    authenticatedUserId,
+    normalizeServerError,
+    flushPendingEmits,
+  ])
 
   const emitWhenConnected = useCallback(
     (event: string, data: any) => {
