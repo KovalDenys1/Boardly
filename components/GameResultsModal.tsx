@@ -2,11 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { ALL_CATEGORIES, YahtzeeCategory } from '@/lib/yahtzee'
 import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
+
+const GAME_HISTORY_STATUS_KEYS = {
+  waiting: 'profile.gameHistory.waiting',
+  playing: 'profile.gameHistory.playing',
+  finished: 'profile.gameHistory.finished',
+  abandoned: 'profile.gameHistory.abandoned',
+  cancelled: 'profile.gameHistory.cancelled',
+} as const satisfies Record<string, TranslationKeys>
 
 interface Player {
   id: string
@@ -93,6 +102,14 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
       hour: '2-digit',
       minute: '2-digit',
     })
+  }
+
+  function formatStatusLabel(status: string): string {
+    const key = GAME_HISTORY_STATUS_KEYS[status as keyof typeof GAME_HISTORY_STATUS_KEYS]
+    if (key) {
+      return t(key)
+    }
+    return status.replace(/_/g, ' ')
   }
 
   function renderYahtzeeScorecard() {
@@ -190,7 +207,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
                 game.status
               )}`}
             >
-              {t(`profile.gameHistory.${game.status}` as any)}
+              {formatStatusLabel(game.status)}
             </span>
           </div>
 
