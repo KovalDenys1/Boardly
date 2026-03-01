@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
 import { formatGameTypeLabel } from '@/lib/game-display'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface OverallStats {
   totalGames: number
@@ -68,6 +69,7 @@ interface PlayerStatsDashboardProps {
 }
 
 export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardProps) {
+  const { t } = useTranslation()
   const [draftRange, setDraftRange] = useState<DateRange>(() => buildDefaultRange())
   const [appliedRange, setAppliedRange] = useState<DateRange>(() => buildDefaultRange())
   const [stats, setStats] = useState<StatsResponse | null>(null)
@@ -91,17 +93,17 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to load statistics')
+        throw new Error(data?.error || t('profile.stats.dashboard.errors.failedToLoad'))
       }
 
       setStats(data)
     } catch (err) {
       clientLogger.error('Failed to load player statistics', err)
-      setError((err as Error).message || 'Failed to load statistics')
+      setError((err as Error).message || t('profile.stats.dashboard.errors.failedToLoad'))
     } finally {
       setLoading(false)
     }
-  }, [appliedRange.from, appliedRange.to, userId])
+  }, [appliedRange.from, appliedRange.to, t, userId])
 
   useEffect(() => {
     void loadStats()
@@ -119,7 +121,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
   const applyDateRange = () => {
     if (draftRange.from && draftRange.to && draftRange.from > draftRange.to) {
-      setError('`From` must be earlier than `To`.')
+      setError(t('profile.stats.dashboard.filters.invalidRange'))
       return
     }
     setAppliedRange(draftRange)
@@ -154,15 +156,17 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">📊 Statistics Dashboard</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+          {t('profile.stats.dashboard.title')}
+        </h2>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Performance summary, per-game breakdown, and recent trend.
+          {t('profile.stats.dashboard.subtitle')}
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-              From
+              {t('profile.stats.dashboard.filters.from')}
             </label>
             <input
               type="date"
@@ -173,7 +177,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-              To
+              {t('profile.stats.dashboard.filters.to')}
             </label>
             <input
               type="date"
@@ -187,7 +191,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
             onClick={applyDateRange}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
           >
-            Apply
+            {t('profile.stats.dashboard.filters.apply')}
           </button>
           <div className="flex flex-wrap gap-2">
             <button
@@ -195,21 +199,21 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
               onClick={() => applyPreset(30)}
               className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-semibold"
             >
-              30d
+              {t('profile.stats.dashboard.filters.last30Days')}
             </button>
             <button
               type="button"
               onClick={() => applyPreset(90)}
               className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-semibold"
             >
-              90d
+              {t('profile.stats.dashboard.filters.last90Days')}
             </button>
             <button
               type="button"
               onClick={() => applyPreset('all')}
               className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-semibold"
             >
-              All time
+              {t('profile.stats.dashboard.filters.allTime')}
             </button>
           </div>
         </div>
@@ -225,41 +229,60 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total games</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.totalGames')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.totalGames}</p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Win rate</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.winRate')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.winRate}%</p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Avg duration</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.avgDuration')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {stats.overall.avgGameDurationMinutes}m
+                {stats.overall.avgGameDurationMinutes}
+                {t('profile.stats.dashboard.summary.minutesSuffix')}
               </p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Favorite game</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.favoriteGame')}
+              </p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                {stats.overall.favoriteGame ? formatGameTypeLabel(stats.overall.favoriteGame) : '—'}
+                {stats.overall.favoriteGame
+                  ? formatGameTypeLabel(stats.overall.favoriteGame)
+                  : t('profile.stats.dashboard.common.notAvailable')}
               </p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Wins / Losses / Draws</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.wld')}
+              </p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {stats.overall.wins} / {stats.overall.losses} / {stats.overall.draws}
               </p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current streak</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.currentStreak')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.currentWinStreak}</p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best streak</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.bestStreak')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.longestWinStreak}</p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Generated</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                {t('profile.stats.dashboard.summary.generated')}
+              </p>
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {new Date(stats.generatedAt).toLocaleString()}
               </p>
@@ -267,21 +290,25 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
           </div>
 
           <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">Per-game performance</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">
+              {t('profile.stats.dashboard.sections.byGame.title')}
+            </h3>
             {stats.byGame.length === 0 ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">No completed games in selected range.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('profile.stats.dashboard.sections.byGame.empty')}
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                      <th className="py-2 pr-4">Game</th>
-                      <th className="py-2 pr-4">Played</th>
-                      <th className="py-2 pr-4">W/L/D</th>
-                      <th className="py-2 pr-4">Win rate</th>
-                      <th className="py-2 pr-4">Avg score</th>
-                      <th className="py-2 pr-4">Best score</th>
-                      <th className="py-2">Last played</th>
+                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.game')}</th>
+                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.played')}</th>
+                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.wld')}</th>
+                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.winRate')}</th>
+                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.avgScore')}</th>
+                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.bestScore')}</th>
+                      <th className="py-2">{t('profile.stats.dashboard.sections.byGame.columns.lastPlayed')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -295,10 +322,12 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                           {item.wins}/{item.losses}/{item.draws}
                         </td>
                         <td className="py-2 pr-4">{item.winRate}%</td>
-                        <td className="py-2 pr-4">{item.avgScore ?? '—'}</td>
-                        <td className="py-2 pr-4">{item.bestScore ?? '—'}</td>
+                        <td className="py-2 pr-4">{item.avgScore ?? t('profile.stats.dashboard.common.notAvailable')}</td>
+                        <td className="py-2 pr-4">{item.bestScore ?? t('profile.stats.dashboard.common.notAvailable')}</td>
                         <td className="py-2">
-                          {item.lastPlayed ? new Date(item.lastPlayed).toLocaleDateString() : '—'}
+                          {item.lastPlayed
+                            ? new Date(item.lastPlayed).toLocaleDateString()
+                            : t('profile.stats.dashboard.common.notAvailable')}
                         </td>
                       </tr>
                     ))}
@@ -309,12 +338,16 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
           </div>
 
           <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Recent trend</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
+              {t('profile.stats.dashboard.sections.recentTrend.title')}
+            </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Blue = games played, Green = wins (last 30 activity points).
+              {t('profile.stats.dashboard.sections.recentTrend.subtitle')}
             </p>
             {trendPoints.length === 0 ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">No trend data in selected range.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('profile.stats.dashboard.sections.recentTrend.empty')}
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <div className="flex items-end gap-2 min-w-[720px] h-44">
@@ -324,12 +357,18 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                         <div
                           className="w-2 rounded-t bg-blue-500"
                           style={{ height: `${(point.gamesPlayed / trendMax) * 100}%` }}
-                          title={`${point.date}: ${point.gamesPlayed} games`}
+                          title={t('profile.stats.dashboard.sections.recentTrend.gamesTooltip', {
+                            date: point.date,
+                            count: point.gamesPlayed,
+                          })}
                         />
                         <div
                           className="w-2 rounded-t bg-emerald-500"
                           style={{ height: `${(point.wins / trendMax) * 100}%` }}
-                          title={`${point.date}: ${point.wins} wins`}
+                          title={t('profile.stats.dashboard.sections.recentTrend.winsTooltip', {
+                            date: point.date,
+                            count: point.wins,
+                          })}
                         />
                       </div>
                       <span className="text-[10px] text-gray-500 dark:text-gray-400">{point.date.slice(5)}</span>

@@ -44,6 +44,7 @@ export async function GET(
           select: {
             code: true,
             name: true,
+            gameType: true,
           }
         }
       }
@@ -66,12 +67,14 @@ export async function GET(
       )
     }
 
+    const resolvedGameType = game.lobby.gameType || game.gameType
+
     // Format response
     const formattedGame = {
       id: game.id,
       lobbyCode: game.lobby.code,
       lobbyName: game.lobby.name,
-      gameType: game.gameType,
+      gameType: resolvedGameType,
       status: game.status,
       createdAt: game.createdAt.toISOString(),
       updatedAt: game.updatedAt.toISOString(),

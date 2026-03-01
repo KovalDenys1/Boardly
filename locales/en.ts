@@ -528,6 +528,31 @@ const en = {
       description: 'Act out or draw the word for your team to guess!',
       difficulty: 'Medium',
     },
+    guess_my_drawing: {
+      name: 'Sketch & Guess',
+      description: 'Draw a secret prompt and race to guess each other\'s sketches!',
+      difficulty: 'Medium',
+    },
+    liars_party: {
+      name: 'Liar\'s Party',
+      description: 'Bluff, read the room, and catch the best liars before they fool everyone.',
+      difficulty: 'Hard',
+    },
+    fake_artist: {
+      name: 'Fake Artist',
+      description: 'One player does not know the prompt. Spot the fake before they blend in.',
+      difficulty: 'Medium',
+    },
+    telephone_doodle: {
+      name: 'Telephone Doodle',
+      description: 'Pass text to drawing to text in a chain, then reveal the hilarious final result.',
+      difficulty: 'Easy',
+    },
+    alibi_night: {
+      name: 'Alibi Night',
+      description: 'Invent alibis, challenge stories, and vote out the most suspicious player.',
+      difficulty: 'Hard',
+    },
   },
   game: {
     ui: {
@@ -865,6 +890,58 @@ const en = {
       gamesPlayed: 'Games Played',
       gamesWon: 'Games Won',
       winRate: 'Win Rate',
+      dashboard: {
+        title: 'Statistics Dashboard',
+        subtitle: 'Performance summary, per-game breakdown, and recent trend.',
+        filters: {
+          from: 'From',
+          to: 'To',
+          apply: 'Apply',
+          last30Days: '30d',
+          last90Days: '90d',
+          allTime: 'All time',
+          invalidRange: 'From date must be earlier than To date.',
+        },
+        summary: {
+          totalGames: 'Total games',
+          winRate: 'Win rate',
+          avgDuration: 'Avg duration',
+          minutesSuffix: 'm',
+          favoriteGame: 'Favorite game',
+          wld: 'Wins / Losses / Draws',
+          currentStreak: 'Current streak',
+          bestStreak: 'Best streak',
+          generated: 'Generated',
+        },
+        sections: {
+          byGame: {
+            title: 'Per-game performance',
+            empty: 'No completed games in selected range.',
+            columns: {
+              game: 'Game',
+              played: 'Played',
+              wld: 'W/L/D',
+              winRate: 'Win rate',
+              avgScore: 'Avg score',
+              bestScore: 'Best score',
+              lastPlayed: 'Last played',
+            },
+          },
+          recentTrend: {
+            title: 'Recent trend',
+            subtitle: 'Blue = games played, Green = wins (last 30 activity points).',
+            empty: 'No trend data in selected range.',
+            gamesTooltip: '{{date}}: {{count}} games',
+            winsTooltip: '{{date}}: {{count}} wins',
+          },
+        },
+        common: {
+          notAvailable: '—',
+        },
+        errors: {
+          failedToLoad: 'Failed to load statistics',
+        },
+      },
     },
     settings: {
       title: 'Settings',
@@ -953,6 +1030,7 @@ const en = {
       watch: 'Watch Replay',
       unavailable: 'Replay Unavailable',
       noData: 'Replay data is not available for this game yet',
+      loadFailed: 'Failed to load replay',
       play: 'Play',
       pause: 'Pause',
       stepBack: 'Step Back',
@@ -962,6 +1040,9 @@ const en = {
       stepOf: 'Step {{current}} of {{total}}',
       action: 'Action',
       player: 'Player',
+      playerFallback: 'Player',
+      bot: 'Bot',
+      unknownAction: 'Unknown action',
       system: 'System',
       actionPayload: 'Action Payload',
       state: 'Game State',

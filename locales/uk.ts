@@ -530,6 +530,31 @@ const uk: Translation = {
       description: 'Показуй або малюй слово, щоб команда відгадала!',
       difficulty: 'Середня',
     },
+    guess_my_drawing: {
+      name: 'Намалюй і вгадай',
+      description: 'Малюйте секретну підказку та вгадуйте малюнки одне одного на швидкість!',
+      difficulty: 'Середня',
+    },
+    liars_party: {
+      name: 'Вечірка брехунів',
+      description: 'Блефуйте, читайте реакції гравців і викривайте найкращих брехунів до фіналу.',
+      difficulty: 'Складна',
+    },
+    fake_artist: {
+      name: 'Фальшивий художник',
+      description: 'Один гравець не знає підказку. Знайдіть «фейкового» до фінального голосування.',
+      difficulty: 'Середня',
+    },
+    telephone_doodle: {
+      name: 'Зіпсований малюнок',
+      description: 'Передавайте ланцюжок текст -> малюнок -> текст і дивіться, як зміниться ідея.',
+      difficulty: 'Легка',
+    },
+    alibi_night: {
+      name: 'Ніч алібі',
+      description: 'Вигадуйте алібі, перевіряйте історії та голосуйте за найпідозрілішого гравця.',
+      difficulty: 'Складна',
+    },
   },
   game: {
     ui: {
@@ -867,6 +892,58 @@ const uk: Translation = {
       gamesPlayed: 'Зіграно ігор',
       gamesWon: 'Виграно ігор',
       winRate: 'Відсоток перемог',
+      dashboard: {
+        title: 'Панель статистики',
+        subtitle: 'Зведення результатів, розбивка за іграми та нещодавній тренд.',
+        filters: {
+          from: 'Від',
+          to: 'До',
+          apply: 'Застосувати',
+          last30Days: '30 днів',
+          last90Days: '90 днів',
+          allTime: 'За весь час',
+          invalidRange: 'Дата "Від" має бути раніше за дату "До".',
+        },
+        summary: {
+          totalGames: 'Всього ігор',
+          winRate: 'Відсоток перемог',
+          avgDuration: 'Сер. тривалість',
+          minutesSuffix: 'хв',
+          favoriteGame: 'Улюблена гра',
+          wld: 'Перемоги / Поразки / Нічиї',
+          currentStreak: 'Поточна серія',
+          bestStreak: 'Найкраща серія',
+          generated: 'Згенеровано',
+        },
+        sections: {
+          byGame: {
+            title: 'Результати за іграми',
+            empty: 'У вибраному діапазоні немає завершених ігор.',
+            columns: {
+              game: 'Гра',
+              played: 'Зіграно',
+              wld: 'П/Пз/Н',
+              winRate: 'Відсоток перемог',
+              avgScore: 'Сер. рахунок',
+              bestScore: 'Найкращий рахунок',
+              lastPlayed: 'Остання гра',
+            },
+          },
+          recentTrend: {
+            title: 'Нещодавній тренд',
+            subtitle: 'Синій = зіграні ігри, зелений = перемоги (останні 30 точок активності).',
+            empty: 'У вибраному діапазоні немає даних тренду.',
+            gamesTooltip: '{{date}}: {{count}} ігор',
+            winsTooltip: '{{date}}: {{count}} перемог',
+          },
+        },
+        common: {
+          notAvailable: '—',
+        },
+        errors: {
+          failedToLoad: 'Не вдалося завантажити статистику',
+        },
+      },
     },
     settings: {
       title: 'Налаштування',
@@ -955,6 +1032,7 @@ const uk: Translation = {
       watch: 'Дивитися повтор',
       unavailable: 'Повтор недоступний',
       noData: 'Дані повтору для цієї гри поки недоступні',
+      loadFailed: 'Не вдалося завантажити повтор',
       play: 'Відтворити',
       pause: 'Пауза',
       stepBack: 'Крок назад',
@@ -964,6 +1042,9 @@ const uk: Translation = {
       stepOf: 'Крок {{current}} з {{total}}',
       action: 'Дія',
       player: 'Гравець',
+      playerFallback: 'Гравець',
+      bot: 'Бот',
+      unknownAction: 'Невідома дія',
       system: 'Система',
       actionPayload: 'Дані дії',
       state: 'Стан гри',

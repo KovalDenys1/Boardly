@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
@@ -40,6 +40,31 @@ export default function YahtzeeLobbiesPage() {
   const [joinCode, setJoinCode] = useState('')
   const isAuthenticated = status === 'authenticated' || isGuest
 
+  const loadLobbies = useCallback(async () => {
+    try {
+      const res = await fetchWithGuest('/api/lobby?gameType=yahtzee')
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      }
+
+      const data = await res.json()
+
+      // Handle case where API returns error but with 200 status
+      if (data.error) {
+        clientLogger.warn('Yahtzee lobbies loaded with error:', data.error)
+      }
+
+      setLobbies(data.lobbies || [])
+    } catch (error) {
+      clientLogger.error('Failed to load Yahtzee lobbies:', error)
+      // Set empty array to prevent UI from breaking
+      setLobbies([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     // Allow both authenticated users and guests
     if (status === 'unauthenticated' && !isGuest) {
@@ -53,7 +78,6 @@ export default function YahtzeeLobbiesPage() {
 
     if (status === 'authenticated' || isGuest) {
       loadLobbies()
-      triggerCleanup()
       let isMounted = true
 
       // Auto-refresh lobbies every 5 seconds
@@ -121,47 +145,7 @@ export default function YahtzeeLobbiesPage() {
         socket = null
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, isGuest, guestToken, router])
-
-  const triggerCleanup = async () => {
-    try {
-      const res = await fetch('/api/lobby/cleanup', {
-        method: 'POST',
-      })
-
-      if (!res.ok) {
-        clientLogger.warn('Cleanup returned non-ok status:', res.status)
-      }
-    } catch (error) {
-      clientLogger.log('Background cleanup skipped (non-critical):', error)
-    }
-  }
-
-  const loadLobbies = async () => {
-    try {
-      const res = await fetchWithGuest('/api/lobby?gameType=yahtzee')
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-      }
-
-      const data = await res.json()
-
-      // Handle case where API returns error but with 200 status
-      if (data.error) {
-        clientLogger.warn('Yahtzee lobbies loaded with error:', data.error)
-      }
-
-      setLobbies(data.lobbies || [])
-    } catch (error) {
-      clientLogger.error('Failed to load Yahtzee lobbies:', error)
-      // Set empty array to prevent UI from breaking
-      setLobbies([])
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [status, isGuest, guestToken, loadLobbies])
 
   const handleJoinByCode = () => {
     if (!isAuthenticated) {

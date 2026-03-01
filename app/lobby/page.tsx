@@ -68,23 +68,6 @@ function LobbyListPageContent() {
   const loadLobbiesRef = useRef<() => Promise<void>>(async () => {})
   const initializedRef = useRef(false)
 
-  const triggerCleanup = useCallback(async () => {
-    try {
-      // Silently cleanup inactive lobbies in background
-      const res = await fetch('/api/lobby/cleanup', {
-        method: 'POST',
-        cache: 'no-store',
-      })
-
-      if (!res.ok) {
-        clientLogger.warn('Cleanup returned non-ok status:', res.status)
-      }
-    } catch (error) {
-      // Ignore errors - cleanup is not critical for user experience
-      clientLogger.log('Background cleanup skipped (non-critical):', error)
-    }
-  }, [])
-
   const loadLobbies = useCallback(async () => {
     const requestId = ++loadRequestIdRef.current
     const isInitialLoad = !initializedRef.current
@@ -176,10 +159,8 @@ function LobbyListPageContent() {
     let cancelled = false
 
     const initializeLobbyList = async () => {
-      // Clean first to avoid showing stale waiting lobbies on initial render.
-      await triggerCleanup()
+      await loadLobbiesRef.current()
       if (!cancelled) {
-        await loadLobbiesRef.current()
         initializedRef.current = true
       }
     }
@@ -191,18 +172,12 @@ function LobbyListPageContent() {
       void loadLobbiesRef.current()
     }, 5000)
 
-    // Run periodic cleanup so stale waiting lobbies disappear without full page reload.
-    const cleanupInterval = setInterval(() => {
-      void triggerCleanup()
-    }, 60000)
-
     return () => {
       cancelled = true
       clearInterval(refreshInterval)
-      clearInterval(cleanupInterval)
       loadAbortControllerRef.current?.abort()
     }
-  }, [triggerCleanup])
+  }, [])
 
   // Socket connection effect
   useEffect(() => {

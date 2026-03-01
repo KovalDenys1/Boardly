@@ -51,7 +51,7 @@ require('whatwg-fetch')
 
 // Mock nanoid for lobby code generation
 jest.mock('nanoid', () => ({
-  customAlphabet: () => () => 'AB12',
+  customAlphabet: () => () => 'AB12CD',
   nanoid: () => 'test-id-123',
 }))
 

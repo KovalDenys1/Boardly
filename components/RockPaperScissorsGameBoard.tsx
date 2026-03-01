@@ -1,22 +1,27 @@
 'use client'
 
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState } from 'react'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 import LoadingButton from '@/components/LoadingButton'
+
+interface RPSPlayer {
+    id: string
+    name: string
+}
 
 interface RockPaperScissorsGameBoardProps {
     gameData: RockPaperScissorsGameData
     playerId: string
     playerName: string
+    players: RPSPlayer[]
     onSubmitChoice: (choice: RPSChoice) => Promise<void>
     isLoading?: boolean
 }
 
-const CHOICES: { choice: RPSChoice; emoji: string; label: string }[] = [
-    { choice: 'rock', emoji: '🪨', label: 'lobby.choice.rock' },
-    { choice: 'paper', emoji: '📄', label: 'lobby.choice.paper' },
-    { choice: 'scissors', emoji: '✂️', label: 'lobby.choice.scissors' },
+const CHOICES: { choice: RPSChoice; emoji: string; label: string; beats: string }[] = [
+    { choice: 'rock', emoji: '🪨', label: 'lobby.choice.rock', beats: '✂️' },
+    { choice: 'paper', emoji: '📄', label: 'lobby.choice.paper', beats: '🪨' },
+    { choice: 'scissors', emoji: '✂️', label: 'lobby.choice.scissors', beats: '📄' },
 ]
 
 const CHOICE_LABEL_BY_VALUE: Record<RPSChoice, string> = {
@@ -25,211 +30,210 @@ const CHOICE_LABEL_BY_VALUE: Record<RPSChoice, string> = {
     scissors: 'lobby.choice.scissors',
 }
 
+function getChoiceEmoji(choice: RPSChoice | null | undefined): string {
+    if (!choice) return '❔'
+    return CHOICES.find((entry) => entry.choice === choice)?.emoji || '❔'
+}
+
 export default function RockPaperScissorsGameBoard({
     gameData,
     playerId,
     playerName,
+    players,
     onSubmitChoice,
     isLoading = false,
 }: RockPaperScissorsGameBoardProps) {
     const { t } = useTranslation()
-    const [selectedChoice, setSelectedChoice] = useState<RPSChoice | null>(null)
-    const [isSubmitted, setIsSubmitted] = useState(false)
-    const [revealedRound, setRevealedRound] = useState(false)
 
-    // Check if current player has submitted for this round
-    useEffect(() => {
-        const hasSubmitted = gameData.playersReady.includes(playerId)
-        setIsSubmitted(hasSubmitted)
-        if (hasSubmitted) {
-            setSelectedChoice(gameData.playerChoices[playerId] || null)
-        }
-    }, [gameData.playersReady, playerId, gameData.playerChoices])
+    const myPlayer = players.find((player) => player.id === playerId) || { id: playerId, name: playerName }
+    const opponent = players.find((player) => player.id !== playerId) || null
 
-    // Reset reveal animation when round changes
-    useEffect(() => {
-        setRevealedRound(false)
-    }, [gameData.rounds.length])
+    const myScore = gameData.scores[playerId] || 0
+    const opponentScore = opponent ? (gameData.scores[opponent.id] || 0) : 0
+    const winsNeeded = gameData.mode === 'best-of-5' ? 3 : 2
+    const maxRounds = gameData.mode === 'best-of-5' ? 5 : 3
+    const currentRoundNumber = gameData.rounds.length + 1
 
-    const handleSubmitChoice = async (choice: RPSChoice) => {
-        setSelectedChoice(choice)
-        setIsSubmitted(true)
-        try {
-            await onSubmitChoice(choice)
-        } catch {
-            setSelectedChoice(null)
-            setIsSubmitted(false)
-        }
+    const mySubmitted = gameData.playersReady.includes(playerId)
+    const opponentSubmitted = opponent ? gameData.playersReady.includes(opponent.id) : false
+    const myCurrentChoice = (gameData.playerChoices[playerId] as RPSChoice | null | undefined) ?? null
+
+    const latestRound = gameData.rounds[gameData.rounds.length - 1] || null
+    const myLatestChoice =
+        latestRound && latestRound.choices ? ((latestRound.choices[playerId] as RPSChoice | undefined) || null) : null
+    const opponentLatestChoice =
+        latestRound && latestRound.choices && opponent
+            ? ((latestRound.choices[opponent.id] as RPSChoice | undefined) || null)
+            : null
+
+    const canChoose = !isLoading && !mySubmitted && !gameData.gameWinner && !!opponent
+
+    let statusTitle = t('lobby.game.makeyourChoice')
+    let statusDescription = t('lobby.game.waitingForPlayers')
+
+    if (!opponent) {
+        statusTitle = t('lobby.game.waitingForPlayers')
+        statusDescription = 'Join with one more player to start submitting moves.'
+    } else if (gameData.gameWinner) {
+        statusTitle = gameData.gameWinner === playerId ? t('lobby.game.you_won') : t('lobby.game.opponent_won')
+        statusDescription = `${t('lobby.game.final_score')}: ${myScore} - ${opponentScore}`
+    } else if (mySubmitted && !opponentSubmitted) {
+        statusTitle = t('lobby.game.waitingForOpponent')
+        statusDescription = myCurrentChoice
+            ? `You locked: ${t(CHOICE_LABEL_BY_VALUE[myCurrentChoice])}`
+            : 'Your move is submitted.'
+    } else if (mySubmitted && opponentSubmitted) {
+        statusTitle = 'Revealing round...'
+        statusDescription = 'Both choices received.'
+    } else {
+        statusTitle = t('lobby.game.makeyourChoice')
+        statusDescription = 'Pick one option below. Both players reveal simultaneously.'
     }
 
-    const currentRound = gameData.rounds[gameData.rounds.length - 1] || null
-    const otherPlayerId = Object.keys(gameData.playerChoices).find((id) => id !== playerId)
-    const otherPlayerScore = otherPlayerId ? (gameData.scores[otherPlayerId] || 0) : 0
-    const otherPlayerSubmitted = otherPlayerId ? gameData.playersReady.includes(otherPlayerId) : false
-
-    // Determine if both players have submitted (round is complete)
-    const bothSubmitted = currentRound !== null
-
     return (
-        <div className="space-y-6">
-            {/* Game Status */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-center">
-                {gameData.gameWinner ? (
-                    <div>
-                        <p className="text-sm text-indigo-100 mb-2">{t('lobby.game.finished')}</p>
-                        <p className="text-3xl font-bold text-white">
-                            {gameData.gameWinner === playerId ? t('lobby.game.you_won') : t('lobby.game.opponent_won')}
-                        </p>
-                        <p className="text-lg text-indigo-100 mt-2">
-                            {t('lobby.game.final_score')}: {gameData.scores[playerId] || 0} - {otherPlayerScore}
+        <div className="space-y-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-700">
+                        {t('lobby.game.round')} {Math.min(currentRoundNumber, maxRounds)} / {maxRounds}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        {t('lobby.game.best_of')}: {gameData.mode === 'best-of-3' ? '3' : '5'} • First to {winsNeeded}
+                    </p>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">{t('lobby.game.you')}</p>
+                        <p className="mt-1 text-lg font-bold text-emerald-900">{myPlayer.name}</p>
+                        <p className="mt-1 text-sm font-semibold text-emerald-700">
+                            {t('lobby.game.score')}: {myScore}
                         </p>
                     </div>
-                ) : (
-                    <div>
-                        <p className="text-sm text-indigo-100 mb-2">
-                            {t('lobby.game.best_of')}: {gameData.mode === 'best-of-3' ? '3' : '5'}
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">{t('lobby.game.opponent')}</p>
+                        <p className="mt-1 text-lg font-bold text-slate-900">
+                            {opponent?.name || t('lobby.game.waitingForPlayers')}
                         </p>
-                        <p className="text-2xl font-bold text-white">
-                            {t('lobby.game.round')} {gameData.rounds.length + 1}
+                        <p className="mt-1 text-sm font-semibold text-slate-600">
+                            {t('lobby.game.score')}: {opponentScore}
                         </p>
-                        <p className="text-lg text-indigo-100 mt-2">
-                            {t('lobby.game.score')}: {gameData.scores[playerId] || 0} - {otherPlayerScore}
-                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section className="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+                <p className="text-lg font-bold text-blue-900">{statusTitle}</p>
+                <p className="mt-1 text-sm text-blue-800">{statusDescription}</p>
+                {!gameData.gameWinner && opponent && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-blue-800">
+                            You: {mySubmitted ? 'Ready' : 'Waiting'}
+                        </div>
+                        <div className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-blue-800">
+                            {opponent.name}: {opponentSubmitted ? 'Ready' : 'Waiting'}
+                        </div>
                     </div>
                 )}
-            </div>
+            </section>
 
-            {/* Current Status Message */}
             {!gameData.gameWinner && (
-                <div className="text-center text-sm text-gray-400">
-                    {isSubmitted && !bothSubmitted ? (
-                        <p className="text-blue-400">
-                            ⏳ {t('lobby.game.waitingForOpponent')}
-                        </p>
-                    ) : !isSubmitted ? (
-                        <p>{t('lobby.game.makeyourChoice')}</p>
-                    ) : null}
-                </div>
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-sm font-semibold text-slate-700 mb-3">{t('lobby.game.makeyourChoice')}</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        {CHOICES.map(({ choice, emoji, label, beats }) => {
+                            const isSelected = myCurrentChoice === choice
+                            return (
+                                <LoadingButton
+                                    key={choice}
+                                    onClick={() => onSubmitChoice(choice)}
+                                    loading={isLoading && isSelected}
+                                    disabled={!canChoose}
+                                    className={`h-28 rounded-xl border-2 text-slate-900 transition-all ${
+                                        isSelected
+                                            ? 'border-blue-500 bg-blue-100 shadow-md'
+                                            : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50'
+                                    }`}
+                                >
+                                    <span className="flex flex-col items-center justify-center gap-1">
+                                        <span className="text-3xl">{emoji}</span>
+                                        <span className="text-sm font-bold">{t(label)}</span>
+                                        <span className="text-[11px] text-slate-500">beats {beats}</span>
+                                    </span>
+                                </LoadingButton>
+                            )
+                        })}
+                    </div>
+                </section>
             )}
 
-            {/* Choice Buttons */}
-            {!gameData.gameWinner && !isSubmitted && (
-                <div className="grid grid-cols-3 gap-4">
-                    {CHOICES.map(({ choice, emoji, label }) => (
-                        <LoadingButton
-                            key={choice}
-                            onClick={() => handleSubmitChoice(choice)}
-                            loading={isLoading && selectedChoice === choice}
-                            disabled={isLoading}
-                            className="h-24 flex flex-col items-center justify-center gap-2 bg-slate-700 hover:bg-indigo-600 disabled:opacity-50 text-2xl font-bold rounded-lg border-2 border-slate-600 hover:border-indigo-500 transition"
-                        >
-                            <span>{emoji}</span>
-                            <span className="text-sm">{t(label)}</span>
-                        </LoadingButton>
-                    ))}
-                </div>
-            )}
-
-            {/* Reveal Animation - Show when both submitted */}
-            {bothSubmitted && (
-                <div className="space-y-4">
-                    {/* Round Result */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Player 1 Choice */}
-                        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                            <p className="text-xs text-gray-400 mb-2">{playerName}</p>
-                            <div className="text-4xl mb-2">
-                                {selectedChoice && CHOICES.find((c) => c.choice === selectedChoice)?.emoji}
-                            </div>
-                            <p className="text-sm font-semibold text-gray-300">
-                                {selectedChoice ? t(CHOICE_LABEL_BY_VALUE[selectedChoice]) : ''}
+            {latestRound && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-sm font-semibold text-slate-700">
+                        {t('lobby.game.round')} {gameData.rounds.length} result
+                    </p>
+                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-xs uppercase tracking-wider text-slate-500">{myPlayer.name}</p>
+                            <p className="mt-1 text-3xl">{getChoiceEmoji(myLatestChoice)}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700">
+                                {myLatestChoice ? t(CHOICE_LABEL_BY_VALUE[myLatestChoice]) : '—'}
                             </p>
                         </div>
 
-                        {/* Opponent Choice */}
-                        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                            <p className="text-xs text-gray-400 mb-2">{t('lobby.game.opponent')}</p>
-                            <div className="text-4xl mb-2">
-                                {otherPlayerId &&
-                                    gameData.playerChoices[otherPlayerId] &&
-                                    CHOICES.find((c) => c.choice === gameData.playerChoices[otherPlayerId])?.emoji}
-                            </div>
-                            <p className="text-sm font-semibold text-gray-300">
-                                {otherPlayerId && gameData.playerChoices[otherPlayerId]
-                                    ? t(CHOICE_LABEL_BY_VALUE[gameData.playerChoices[otherPlayerId]])
-                                    : ''}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-xs uppercase tracking-wider text-slate-500">
+                                {opponent?.name || t('lobby.game.opponent')}
+                            </p>
+                            <p className="mt-1 text-3xl">{getChoiceEmoji(opponentLatestChoice)}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-700">
+                                {opponentLatestChoice ? t(CHOICE_LABEL_BY_VALUE[opponentLatestChoice]) : '—'}
                             </p>
                         </div>
                     </div>
 
-                    {/* Round Winner */}
-                    {currentRound && (
-                        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg p-4 text-center">
-                            {currentRound.winner === 'draw' ? (
-                                <p className="text-lg font-bold text-white">🤝 {t('lobby.game.draw')}</p>
-                            ) : currentRound.winner === playerId ? (
-                                <p className="text-lg font-bold text-white">🎉 {t('lobby.game.round_won')}</p>
-                            ) : (
-                                <p className="text-lg font-bold text-white">😔 {t('lobby.game.round_lost')}</p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Next Round Button or Game Complete */}
-                    {!gameData.gameWinner && (
-                        <button
-                            onClick={() => {
-                                setSelectedChoice(null)
-                                setIsSubmitted(false)
-                                setRevealedRound(true)
-                            }}
-                            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition"
-                        >
-                            {t('lobby.game.next_round')}
-                        </button>
-                    )}
-
-                    {gameData.gameWinner && (
-                        <button
-                            onClick={() => window.location.reload()}
-                            className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition"
-                        >
-                            {t('lobby.game.playAgain')}
-                        </button>
-                    )}
-                </div>
+                    <div className="mt-3 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white">
+                        {latestRound.winner === 'draw'
+                            ? t('lobby.game.draw')
+                            : latestRound.winner === playerId
+                                ? t('lobby.game.round_won')
+                                : t('lobby.game.round_lost')}
+                    </div>
+                </section>
             )}
 
-            {/* Round History */}
             {gameData.rounds.length > 0 && (
-                <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                    <h3 className="text-sm font-bold text-gray-300 mb-3">{t('lobby.game.round_history')}</h3>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {gameData.rounds.map((round, index) => {
-                            const p1Id = Object.keys(gameData.playerChoices)[0]
-                            const p1Choice = round.choices[p1Id] as RPSChoice | undefined
-                            const p2Id = Object.keys(gameData.playerChoices)[1]
-                            const p2Choice = round.choices[p2Id] as RPSChoice | undefined
-                            const p1Emoji = CHOICES.find((c) => c.choice === p1Choice)?.emoji
-                            const p2Emoji = CHOICES.find((c) => c.choice === p2Choice)?.emoji
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-sm font-semibold text-slate-700 mb-3">{t('lobby.game.round_history')}</p>
+                    <div className="max-h-56 space-y-2 overflow-y-auto">
+                        {[...gameData.rounds].reverse().map((round, reverseIndex) => {
+                            const roundNumber = gameData.rounds.length - reverseIndex
+                            const myRoundChoice = round.choices[playerId] as RPSChoice | undefined
+                            const opponentRoundChoice = opponent
+                                ? (round.choices[opponent.id] as RPSChoice | undefined)
+                                : undefined
+                            const outcome =
+                                round.winner === 'draw'
+                                    ? t('lobby.game.draw')
+                                    : round.winner === playerId
+                                        ? t('lobby.game.win')
+                                        : t('lobby.game.loss')
 
                             return (
-                                <div key={index} className="flex items-center justify-between text-xs text-gray-400 bg-slate-700/50 p-2 rounded">
-                                    <span>
-                                        {t('lobby.game.round')} {index + 1}: {p1Emoji} vs {p2Emoji}
+                                <div
+                                    key={`round-${roundNumber}`}
+                                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                                >
+                                    <span className="text-slate-600">
+                                        {t('lobby.game.round')} {roundNumber}: {getChoiceEmoji(myRoundChoice)} vs {getChoiceEmoji(opponentRoundChoice)}
                                     </span>
-                                    <span className="font-bold text-indigo-300">
-                                        {round.winner === playerId
-                                            ? '✓ ' + t('lobby.game.win')
-                                            : round.winner === 'draw'
-                                                ? '= ' + t('lobby.game.draw')
-                                                : '✗ ' + t('lobby.game.loss')}
-                                    </span>
+                                    <span className="font-semibold text-slate-800">{outcome}</span>
                                 </div>
                             )
                         })}
                     </div>
-                </div>
+                </section>
             )}
         </div>
     )

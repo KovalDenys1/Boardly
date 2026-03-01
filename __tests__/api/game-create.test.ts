@@ -6,9 +6,9 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/game/create/route'
 import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
 import { getOrCreateBotUser } from '@/lib/bot-helpers'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -29,14 +29,6 @@ jest.mock('@/lib/db', () => ({
       findMany: jest.fn(),
     },
   },
-}))
-
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn(),
-}))
-
-jest.mock('@/lib/next-auth', () => ({
-  authOptions: {},
 }))
 
 jest.mock('@/lib/socket-url', () => ({
@@ -69,20 +61,22 @@ jest.mock('@/lib/game-replay', () => ({
   appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/request-auth', () => ({
+  getRequestAuthUser: jest.fn(),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockGetOrCreateBotUser = getOrCreateBotUser as jest.MockedFunction<typeof getOrCreateBotUser>
 const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
   typeof appendGameReplaySnapshot
 >
+const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 
 describe('POST /api/game/create', () => {
   const mockSession = {
-    user: {
-      id: 'creator-123',
-      email: 'creator@example.com',
-      username: 'creator',
-    },
+    id: 'creator-123',
+    email: 'creator@example.com',
+    username: 'creator',
   }
 
   const mockLobby = {
@@ -144,7 +138,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('should return 401 when user not authenticated', async () => {
-    mockGetServerSession.mockResolvedValue(null)
+    mockGetRequestAuthUser.mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
       method: 'POST',
@@ -162,7 +156,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('should return 400 when missing required fields', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
       method: 'POST',
@@ -179,7 +173,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('should return 404 when lobby not found', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(null)
 
     const request = new NextRequest('http://localhost:3000/api/game/create', {
@@ -199,13 +193,11 @@ describe('POST /api/game/create', () => {
 
   it('should return 403 when user is not lobby creator', async () => {
     const otherUserSession = {
-      user: {
-        id: 'other-user-123',
-        email: 'other@example.com',
-      },
+      id: 'other-user-123',
+      email: 'other@example.com',
     }
     
-    mockGetServerSession.mockResolvedValue(otherUserSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(otherUserSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [mockWaitingGame],
@@ -227,7 +219,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('should successfully create and start game', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [mockWaitingGame],
@@ -290,7 +282,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('preserves configured Tic-Tac-Toe target rounds when starting from waiting state', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
 
     const tttWaitingGame = {
       ...mockWaitingGame,
@@ -349,7 +341,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('preserves configured Memory difficulty when starting from waiting state', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
 
     const memoryWaitingGame = {
       ...mockWaitingGame,
@@ -408,7 +400,7 @@ describe('POST /api/game/create', () => {
       players: [mockWaitingGame.players[0]], // Only 1 player
     }
 
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     const lobbyWithOnePlayer = {
       ...mockLobby,
       gameType: 'tic_tac_toe',
@@ -513,7 +505,7 @@ describe('POST /api/game/create', () => {
       gameType: 'guess_the_spy',
     }
 
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...spyLobby,
       games: [mockWaitingGame], // only 2 players
@@ -559,7 +551,7 @@ describe('POST /api/game/create', () => {
       ],
     }
 
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...spyLobby,
       games: [spyWaitingGame],
@@ -616,7 +608,7 @@ describe('POST /api/game/create', () => {
       status: 'waiting',
     }
 
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [finishedGame],
@@ -644,7 +636,7 @@ describe('POST /api/game/create', () => {
   })
 
   it('should initialize game state correctly', async () => {
-    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       ...mockLobby,
       games: [mockWaitingGame],

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import Modal from './Modal'
@@ -49,33 +49,69 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
     }
     return a.position - b.position // If scores equal, use original position
   })
-  const [prevScores, setPrevScores] = useState<Record<string, number>>({})
   const [animatingScores, setAnimatingScores] = useState<Record<string, boolean>>({})
+  const prevScoresRef = useRef<Record<string, number>>({})
+  const scoreResetTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   useEffect(() => {
-    // Check if scores have changed
+    const activePlayerIds = new Set(players.map((player) => player.id))
+    const currentScores: Record<string, number> = {}
     const newAnimating: Record<string, boolean> = {}
-    players.forEach(player => {
-      if (prevScores[player.id] !== undefined && prevScores[player.id] !== player.score) {
+
+    players.forEach((player) => {
+      currentScores[player.id] = player.score
+      if (
+        prevScoresRef.current[player.id] !== undefined &&
+        prevScoresRef.current[player.id] !== player.score
+      ) {
         newAnimating[player.id] = true
-        setTimeout(() => {
-          setAnimatingScores(prev => ({ ...prev, [player.id]: false }))
+
+        const existingTimeout = scoreResetTimeoutsRef.current[player.id]
+        if (existingTimeout) {
+          clearTimeout(existingTimeout)
+        }
+
+        scoreResetTimeoutsRef.current[player.id] = setTimeout(() => {
+          setAnimatingScores((prev) => ({ ...prev, [player.id]: false }))
+          delete scoreResetTimeoutsRef.current[player.id]
         }, 1000)
       }
     })
 
-    if (Object.keys(newAnimating).length > 0) {
-      setAnimatingScores(newAnimating)
-    }
-
-    // Update previous scores
-    const newPrevScores: Record<string, number> = {}
-    players.forEach(player => {
-      newPrevScores[player.id] = player.score
+    Object.entries(scoreResetTimeoutsRef.current).forEach(([playerId, timeoutId]) => {
+      if (!activePlayerIds.has(playerId)) {
+        clearTimeout(timeoutId)
+        delete scoreResetTimeoutsRef.current[playerId]
+      }
     })
-    setPrevScores(newPrevScores)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players.map(p => p.score).join(',')]) // Track score changes
+
+    setAnimatingScores((prev) => {
+      const next: Record<string, boolean> = {}
+
+      Object.entries(prev).forEach(([playerId, isAnimating]) => {
+        if (activePlayerIds.has(playerId) && isAnimating) {
+          next[playerId] = true
+        }
+      })
+
+      Object.entries(newAnimating).forEach(([playerId, isAnimating]) => {
+        if (isAnimating) {
+          next[playerId] = true
+        }
+      })
+
+      return next
+    })
+
+    prevScoresRef.current = currentScores
+  }, [players])
+
+  useEffect(() => {
+    return () => {
+      Object.values(scoreResetTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId))
+      scoreResetTimeoutsRef.current = {}
+    }
+  }, [])
 
   return (
     <>

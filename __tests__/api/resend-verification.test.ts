@@ -153,4 +153,32 @@ describe('POST /api/auth/resend-verification', () => {
       'pending-user'
     )
   })
+
+  it('returns generic success when verification email dispatch fails', async () => {
+    mockPrisma.users.findFirst.mockResolvedValue({
+      id: 'user-3',
+      email: 'pending2@example.com',
+      emailVerified: null,
+      username: 'pending-user-2',
+    } as any)
+    mockPrisma.emailVerificationTokens.deleteMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.emailVerificationTokens.create.mockResolvedValue({ id: 'token-2' } as any)
+    mockSendVerificationEmail.mockRejectedValueOnce(new Error('mail provider unavailable'))
+
+    const request = new NextRequest('http://localhost:3000/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'pending2@example.com' }),
+    })
+
+    const response = await POST(request)
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual({
+      success: true,
+      message: 'If an unverified account exists for this email, a verification message was sent.',
+    })
+    expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalled()
+    expect(mockSendVerificationEmail).toHaveBeenCalled()
+  })
 })

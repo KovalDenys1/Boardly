@@ -52,7 +52,7 @@ describe('GET /api/lobby', () => {
         createdAt: new Date('2026-02-13T08:00:00.000Z'),
         creatorId: 'user-1',
         password: null,
-        creator: { username: 'owner1', email: 'owner1@example.com' },
+        creator: { id: 'user-1', username: 'owner1', email: 'owner1@example.com' },
         games: [
           {
             id: 'game-stale',
@@ -78,7 +78,7 @@ describe('GET /api/lobby', () => {
         createdAt: new Date('2026-02-13T08:10:00.000Z'),
         creatorId: 'user-2',
         password: null,
-        creator: { username: 'owner2', email: 'owner2@example.com' },
+        creator: { id: 'user-2', username: 'owner2', email: 'owner2@example.com' },
         games: [
           {
             id: 'game-bots',
@@ -104,7 +104,7 @@ describe('GET /api/lobby', () => {
         createdAt: new Date('2026-02-13T08:20:00.000Z'),
         creatorId: 'user-3',
         password: null,
-        creator: { username: 'owner3', email: 'owner3@example.com' },
+        creator: { id: 'user-3', username: 'owner3', email: 'owner3@example.com' },
         games: [
           {
             id: 'game-valid',
@@ -131,10 +131,12 @@ describe('GET /api/lobby', () => {
     expect(res.status).toBe(200)
     expect(data.lobbies).toHaveLength(1)
     expect(data.lobbies[0].code).toBe('NEW1')
+    expect(data.lobbies[0].creator?.id).toBe('user-3')
     expect(data.lobbies[0].creator?.email).toBeUndefined()
     expect(data.stats.totalLobbies).toBe(1)
     expect(data.stats.waitingLobbies).toBe(1)
     const queryArgs = mockPrisma.lobbies.findMany.mock.calls[0][0] as any
+    expect(queryArgs.select.creator.select.id).toBe(true)
     expect(queryArgs.select.creator.select.email).toBeUndefined()
     expect(res.headers.get('cache-control')).toContain('no-store')
   })

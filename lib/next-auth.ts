@@ -15,6 +15,19 @@ import {
 } from './auth-session-policy'
 import { loginSchema } from './validation/auth'
 
+function getOAuthProfileEmail(profile: unknown): string {
+  if (!profile || typeof profile !== 'object') {
+    return 'unknown'
+  }
+
+  if (!('email' in profile)) {
+    return 'unknown'
+  }
+
+  const email = (profile as { email?: unknown }).email
+  return typeof email === 'string' && email.length > 0 ? email : 'unknown'
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: CustomPrismaAdapter(prisma),
   providers: [
@@ -364,15 +377,14 @@ export const authOptions: NextAuthOptions = {
       })
 
       const log = apiLogger('OAuth linkAccount')
-      log.info('OAuth account linked successfully', {
-        userId: user.id,
-        userEmail: user.email,
-        provider: account.provider,
-        providerAccountId: account.providerAccountId,
-        // @ts-ignore - profile.email may exist depending on provider
-        oauthEmail: profile?.email || 'unknown'
-      })
-    },
+        log.info('OAuth account linked successfully', {
+          userId: user.id,
+          userEmail: user.email,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+          oauthEmail: getOAuthProfileEmail(profile)
+        })
+      },
     async signIn({ user, account, profile, isNewUser }) {
       // Phase 2: Handle manual OAuth linking with different email
       // This event fires AFTER successful OAuth authentication
@@ -482,8 +494,7 @@ export const authOptions: NextAuthOptions = {
           targetEmail: targetUser.email,
           provider: account.provider,
           providerAccountId: account.providerAccountId,
-          // @ts-ignore - profile.email may exist
-          oauthEmail: profile?.email || 'unknown'
+          oauthEmail: getOAuthProfileEmail(profile)
         })
 
       } catch (error) {

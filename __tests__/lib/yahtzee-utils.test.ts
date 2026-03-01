@@ -9,14 +9,14 @@ import { YahtzeeCategory } from '@/lib/yahtzee'
 
 describe('Lobby Utilities', () => {
   describe('generateLobbyCode', () => {
-    it('should generate 4-character code', () => {
+    it('should generate 6-character code', () => {
       const code = generateLobbyCode()
-      expect(code).toHaveLength(4)
+      expect(code).toHaveLength(6)
     })
 
     it('should generate alphanumeric code', () => {
       const code = generateLobbyCode()
-      expect(code).toMatch(/^[A-Z0-9]{4}$/)
+      expect(code).toMatch(/^[A-Z0-9]{6}$/)
     })
 
     it('should generate codes with high randomness', () => {
@@ -25,11 +25,11 @@ describe('Lobby Utilities', () => {
       const code3 = generateLobbyCode()
       
       // Each code should be valid
-      expect(code1).toMatch(/^[A-Z0-9]{4}$/)
-      expect(code2).toMatch(/^[A-Z0-9]{4}$/)
-      expect(code3).toMatch(/^[A-Z0-9]{4}$/)
+      expect(code1).toMatch(/^[A-Z0-9]{6}$/)
+      expect(code2).toMatch(/^[A-Z0-9]{6}$/)
+      expect(code3).toMatch(/^[A-Z0-9]{6}$/)
       
-      // Note: In tests, nanoid is mocked to return 'AB12' consistently
+      // Note: In some test environments nanoid can be mocked for determinism
       // In production, codes would be unique
     })
   })

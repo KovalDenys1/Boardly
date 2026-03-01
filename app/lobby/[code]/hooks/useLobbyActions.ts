@@ -58,6 +58,12 @@ interface AddBotResult {
   botDifficulty?: BotDifficulty
 }
 
+interface LobbySettingsUpdatePayload {
+  maxPlayers?: number
+  turnTimer?: number
+  allowSpectators?: boolean
+}
+
 export function useLobbyActions(props: UseLobbyActionsProps) {
   const {
     code,
@@ -132,9 +138,18 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setLoading(false)
     }
-    // setState functions are stable and don't need to be in dependencies
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken])
+  }, [
+    code,
+    isGuest,
+    guestId,
+    guestName,
+    guestToken,
+    setLobby,
+    setGame,
+    setGameEngine,
+    setError,
+    setLoading,
+  ])
 
   // Update ref when loadLobby changes
   useEffect(() => {
@@ -453,12 +468,33 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     }
   }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
 
+  const updateLobbySettings = useCallback(async (updates: LobbySettingsUpdatePayload) => {
+    const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+    const res = await fetch(`/api/lobby/${code}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(updates),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data?.error || 'Failed to update lobby settings')
+    }
+
+    if (loadLobbyRef.current) {
+      await loadLobbyRef.current()
+    }
+
+    return data
+  }, [code, isGuest, guestId, guestName, guestToken])
+
   return {
     loadLobby,
     addBotToLobby,
     announceBotJoined,
     handleJoinLobby,
     handleStartGame,
+    updateLobbySettings,
     password,
     setPassword,
   }

@@ -12,6 +12,18 @@
 - API routes validate actor identity and permissions before state mutation.
 - Rate limiting is applied on sensitive routes.
 
+### CSRF layer
+
+- Mutating `/api/*` requests with authenticated session cookies are origin-validated in middleware.
+- Same-origin requests are allowed; cross-origin attempts are rejected with `403`.
+- Allowed origins are derived from deployment origin plus configured allowed origins.
+
+### Browser CSP layer
+
+- Production CSP uses nonce-based `script-src` with `'strict-dynamic'`.
+- Production script policy must not rely on `'unsafe-inline'` or `'unsafe-eval'`.
+- Development keeps relaxed script directives only where needed for local tooling/HMR.
+
 ### Database safety layer (RLS)
 
 - RLS policies are used as defense-in-depth for direct DB access scenarios.
@@ -31,17 +43,18 @@
 - `DATABASE_URL`: PostgreSQL connection string.
 - `NEXTAUTH_SECRET`: NextAuth JWT/session signing, minimum 32 characters.
 - `SOCKET_SERVER_INTERNAL_SECRET`: internal socket endpoints (`/api/notify`, `/metrics`), minimum 16 characters.
+- `CRON_SECRET`: dedicated cron endpoint auth secret, minimum 32 characters.
 
 ### Optional and conditional
 
 - `GUEST_JWT_SECRET`: overrides guest token signing secret.
-- `CRON_SECRET`: only for cron endpoints.
 
 ### Usage rules
 
 - Never expose secrets through `NEXT_PUBLIC_*`.
 - Never log raw secrets.
 - Keep a dedicated internal socket secret (no fallback to unrelated app secrets).
+- Keep cron auth isolated to `CRON_SECRET` only (no fallback to `NEXTAUTH_SECRET`).
 - Rotate secrets after incidents and on schedule.
 
 ### Rotation checklist
@@ -63,6 +76,7 @@
 Before production deploy:
 
 - Validate env secrets and allowed origins.
+- Validate CSRF behavior on key mutating API routes (same-origin pass, cross-origin reject).
 - Verify migration path is separate from socket build.
 - Confirm auth/guest flows and websocket room authorization.
 - Run lint/tests and smoke test create/join/play/finish cycle.

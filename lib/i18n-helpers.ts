@@ -2,7 +2,7 @@ import { useTranslation as useTranslationOriginal } from 'react-i18next'
 import type { Translation } from '@/locales'
 
 // Type-safe translation keys
-type TranslationKeys = RecursiveKeyOf<Translation>
+export type TranslationKeys = RecursiveKeyOf<Translation>
 
 type RecursiveKeyOf<TObj extends object> = {
   [TKey in keyof TObj & string]: TObj[TKey] extends object

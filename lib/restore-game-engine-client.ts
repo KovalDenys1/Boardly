@@ -1,11 +1,18 @@
 import type { GameEngine } from './game-engine'
-import { DEFAULT_GAME_TYPE, isRegisteredGameType, type RegisteredGameType } from './game-catalog'
+import {
+  DEFAULT_GAME_TYPE,
+  isSupportedGameType,
+  type SupportedCatalogGameType,
+} from './game-catalog'
 
-function normalizeGameType(gameType: string): RegisteredGameType {
-  return isRegisteredGameType(gameType) ? gameType : DEFAULT_GAME_TYPE
+function normalizeGameType(gameType: string): SupportedCatalogGameType {
+  return isSupportedGameType(gameType) ? gameType : DEFAULT_GAME_TYPE
 }
 
-async function createGameEngineClient(gameType: RegisteredGameType, gameId: string): Promise<GameEngine> {
+async function createGameEngineClient(
+  gameType: SupportedCatalogGameType,
+  gameId: string,
+): Promise<GameEngine> {
   switch (gameType) {
     case 'yahtzee': {
       const { YahtzeeGame } = await import('./games/yahtzee-game')
@@ -26,6 +33,22 @@ async function createGameEngineClient(gameType: RegisteredGameType, gameId: stri
     case 'memory': {
       const { MemoryGame } = await import('./games/memory-game')
       return new MemoryGame(gameId, { maxPlayers: 4, minPlayers: 2 })
+    }
+    case 'telephone_doodle': {
+      const { TelephoneDoodleGame } = await import('./games/telephone-doodle-game')
+      return new TelephoneDoodleGame(gameId, { maxPlayers: 12, minPlayers: 3 })
+    }
+    case 'sketch_and_guess': {
+      const { SketchAndGuessGame } = await import('./games/sketch-and-guess-game')
+      return new SketchAndGuessGame(gameId, { maxPlayers: 10, minPlayers: 3 })
+    }
+    case 'liars_party': {
+      const { LiarsPartyGame } = await import('./games/liars-party-game')
+      return new LiarsPartyGame(gameId, { maxPlayers: 12, minPlayers: 4 })
+    }
+    case 'fake_artist': {
+      const { FakeArtistGame } = await import('./games/fake-artist-game')
+      return new FakeArtistGame(gameId, { maxPlayers: 10, minPlayers: 4 })
     }
     default: {
       const exhausted: never = gameType

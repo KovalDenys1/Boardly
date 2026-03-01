@@ -1,14 +1,27 @@
+import {
+  isFakeArtistEnabled,
+  isLiarsPartyEnabled,
+  isSketchAndGuessEnabled,
+  isTelephoneDoodleEnabled,
+} from './feature-flags'
+
 export type RegisteredGameType =
   | 'yahtzee'
   | 'guess_the_spy'
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
+export type ExperimentalGameType =
+  | 'telephone_doodle'
+  | 'sketch_and_guess'
+  | 'liars_party'
+  | 'fake_artist'
+export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
 
 export interface GameMetadata {
-  type: RegisteredGameType
+  type: SupportedCatalogGameType
   name: string
   icon: string
   minPlayers: number
@@ -65,15 +78,77 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
   },
 }
 
+const TELEPHONE_DOODLE_METADATA: GameMetadata = {
+  type: 'telephone_doodle',
+  name: 'Telephone Doodle',
+  icon: '📞',
+  minPlayers: 3,
+  maxPlayers: 12,
+  supportsBots: false,
+  translationKey: 'telephone_doodle',
+}
+
+const SKETCH_AND_GUESS_METADATA: GameMetadata = {
+  type: 'sketch_and_guess',
+  name: 'Sketch & Guess',
+  icon: '🎨',
+  minPlayers: 3,
+  maxPlayers: 10,
+  supportsBots: false,
+  translationKey: 'guess_my_drawing',
+}
+
+const LIARS_PARTY_METADATA: GameMetadata = {
+  type: 'liars_party',
+  name: "Liar's Party",
+  icon: '🎭',
+  minPlayers: 4,
+  maxPlayers: 12,
+  supportsBots: false,
+  translationKey: 'liars_party',
+}
+
+const FAKE_ARTIST_METADATA: GameMetadata = {
+  type: 'fake_artist',
+  name: 'Fake Artist',
+  icon: '🖌️',
+  minPlayers: 4,
+  maxPlayers: 10,
+  supportsBots: false,
+  translationKey: 'fake_artist',
+}
+
 export function isRegisteredGameType(value: string): value is RegisteredGameType {
   return value in GAME_METADATA
 }
 
+export function isSupportedGameType(value: string): value is SupportedCatalogGameType {
+  return (
+    isRegisteredGameType(value) ||
+    (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
+    (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
+    (value === 'liars_party' && isLiarsPartyEnabled()) ||
+    (value === 'fake_artist' && isFakeArtistEnabled())
+  )
+}
+
 export function getGameMetadata(gameType: string): GameMetadata | null {
-  if (!isRegisteredGameType(gameType)) {
-    return null
+  if (isRegisteredGameType(gameType)) {
+    return GAME_METADATA[gameType]
   }
-  return GAME_METADATA[gameType]
+  if (gameType === 'telephone_doodle' && isTelephoneDoodleEnabled()) {
+    return TELEPHONE_DOODLE_METADATA
+  }
+  if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
+    return SKETCH_AND_GUESS_METADATA
+  }
+  if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
+    return LIARS_PARTY_METADATA
+  }
+  if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
+    return FAKE_ARTIST_METADATA
+  }
+  return null
 }
 
 export function hasBotSupport(gameType: string): boolean {

@@ -89,6 +89,7 @@ jest.mock('@/lib/bot-helpers', () => ({
 jest.mock('@/lib/game-registry', () => ({
   DEFAULT_GAME_TYPE: 'yahtzee',
   hasBotSupport: jest.fn(() => true),
+  isSupportedGameType: jest.fn(() => true),
   createGameEngine: jest.fn(() => ({
     getState: () => ({ players: [], currentPlayerIndex: 0, status: 'waiting', data: {} }),
   })),

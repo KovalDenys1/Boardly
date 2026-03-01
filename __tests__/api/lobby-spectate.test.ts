@@ -113,8 +113,16 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(payload.lobby.creator.email).toBeUndefined()
     expect(payload.lobby.activeGame.players[0].user.email).toBeUndefined()
     expect(payload.activeGame.players[0].user.email).toBeUndefined()
+    expect(payload.activeGame.players[0].user).toEqual({
+      id: 'player-1',
+      username: 'player',
+      isGuest: false,
+      isBot: false,
+      bot: null,
+    })
     const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any
     expect(queryArgs.select.creator.select.email).toBeUndefined()
+    expect(queryArgs.select.games.include.players.include.user.select.bot.select.difficulty).toBe(true)
     expect(queryArgs.select.games.include.players.include.user.select.email).toBeUndefined()
     expect(mockSanitizeGameStateForSpectator).toHaveBeenCalledTimes(1)
   })

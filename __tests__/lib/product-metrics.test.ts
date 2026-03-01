@@ -207,7 +207,7 @@ describe('getProductMetricsDashboard', () => {
       d7RetentionPct: 0,
     })
 
-    expect(dashboard.gameMetrics).toHaveLength(4)
+    expect(dashboard.gameMetrics).toHaveLength(5)
 
     const yahtzeeMetrics = dashboard.gameMetrics.find((metrics) => metrics.gameType === 'yahtzee')
     expect(yahtzeeMetrics?.summary).toEqual({
@@ -265,6 +265,21 @@ describe('getProductMetricsDashboard', () => {
       avgGameDurationSec: 0,
     })
 
+    const memoryMetrics = dashboard.gameMetrics.find((metrics) => metrics.gameType === 'memory')
+    expect(memoryMetrics?.summary).toEqual({
+      lobbiesCreated: 0,
+      lobbiesWithGameStart: 0,
+      lobbyToGameStartPct: 0,
+      gamesStarted: 0,
+      gamesCompleted: 0,
+      gameStartToCompletePct: 0,
+      rematchGames: 0,
+      rematchRatePct: 0,
+      abandonedGames: 0,
+      abandonRatePct: 0,
+      avgGameDurationSec: 0,
+    })
+
     expect(prismaMock.users.findMany).toHaveBeenCalledTimes(1)
     expect(prismaMock.lobbies.findMany).toHaveBeenCalledTimes(1)
     expect(prismaMock.games.findMany).toHaveBeenCalledTimes(1)
@@ -302,7 +317,7 @@ describe('getProductMetricsDashboard', () => {
 
     expect(dashboard.daily).toHaveLength(120)
     expect(dashboard.cohorts).toHaveLength(120)
-    expect(dashboard.gameMetrics).toHaveLength(4)
+    expect(dashboard.gameMetrics).toHaveLength(5)
     expect(dashboard.caveats.retentionMethod).toContain('D1/D7')
     expect(dashboard.caveats.inviteConversionMethod).toContain('Invite conversion')
   })

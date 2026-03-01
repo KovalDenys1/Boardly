@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { createGameEngine, getGameMetadata, isRegisteredGameType } from '@/lib/game-registry'
+import { createGameEngine, getGameMetadata, isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
@@ -11,6 +11,7 @@ import { getActiveSpyLocations } from '@/lib/spy-locations'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { toPersistedGameType } from '@/lib/game-type-storage'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -101,13 +102,14 @@ export async function POST(request: NextRequest) {
 
     const { gameType, lobbyId, config } = await request.json()
 
-    if (!gameType || !lobbyId) {
+    if (typeof gameType !== 'string' || typeof lobbyId !== 'string' || lobbyId.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    if (!isRegisteredGameType(gameType)) {
+    if (!isSupportedGameType(gameType)) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
+    const persistedGameType = toPersistedGameType(gameType)
 
     // Verify lobby exists and user is the creator
     const lobby = await prisma.lobbies.findUnique({
@@ -182,7 +184,7 @@ export async function POST(request: NextRequest) {
           data: {
             lobbyId: lobbyId,
             status: 'waiting',
-            gameType,
+            gameType: persistedGameType,
             state: JSON.stringify(initialWaitingState),
             players: {
               create: finishedGame.players.map((p, index) => ({
@@ -389,7 +391,7 @@ export async function POST(request: NextRequest) {
       data: {
         state: JSON.stringify(gameEngine.getState()),
         status: 'playing',
-        gameType,
+        gameType: persistedGameType,
         updatedAt: new Date(),
       },
       include: {

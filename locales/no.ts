@@ -527,6 +527,31 @@ const no = {
       name: 'Krokodille',
       description: 'Spill ut eller tegn ordet for at laget ditt skal gjette!',
       difficulty: 'Middels'
+    },
+    guess_my_drawing: {
+      name: 'Tegn og gjett',
+      description: 'Tegn en hemmelig ledetråd og gjett hverandres skisser så raskt du kan!',
+      difficulty: 'Middels'
+    },
+    liars_party: {
+      name: 'Løgnerfest',
+      description: 'Bløff, les bordet og avslør de beste løgnerne før de lurer alle.',
+      difficulty: 'Vanskelig'
+    },
+    fake_artist: {
+      name: 'Falsk kunstner',
+      description: 'Én spiller kjenner ikke ledetråden. Finn den falske kunstneren før avstemningen.',
+      difficulty: 'Middels'
+    },
+    telephone_doodle: {
+      name: 'Tegnet telefon',
+      description: 'Send tekst -> tegning -> tekst i kjede og se hvor morsomt budskapet ender.',
+      difficulty: 'Lett'
+    },
+    alibi_night: {
+      name: 'Alibi-kveld',
+      description: 'Finn på alibier, utfordre historier og stem ut den mest mistenkelige spilleren.',
+      difficulty: 'Vanskelig'
     }
   },
   game: {
@@ -864,7 +889,59 @@ const no = {
       title: 'Statistikk',
       gamesPlayed: 'Spill spilt',
       gamesWon: 'Spill vunnet',
-      winRate: 'Vinnrate'
+      winRate: 'Vinnrate',
+      dashboard: {
+        title: 'Statistikkpanel',
+        subtitle: 'Resultatoversikt, per-spill-oversikt og nylig trend.',
+        filters: {
+          from: 'Fra',
+          to: 'Til',
+          apply: 'Bruk',
+          last30Days: '30 d',
+          last90Days: '90 d',
+          allTime: 'Hele perioden',
+          invalidRange: 'Fra-dato må være tidligere enn til-dato.'
+        },
+        summary: {
+          totalGames: 'Totalt antall spill',
+          winRate: 'Vinnrate',
+          avgDuration: 'Snittvarighet',
+          minutesSuffix: 'm',
+          favoriteGame: 'Favorittspill',
+          wld: 'Seire / Tap / Uavgjort',
+          currentStreak: 'Nåværende streak',
+          bestStreak: 'Beste streak',
+          generated: 'Generert'
+        },
+        sections: {
+          byGame: {
+            title: 'Resultater per spill',
+            empty: 'Ingen fullførte spill i valgt periode.',
+            columns: {
+              game: 'Spill',
+              played: 'Spilt',
+              wld: 'S/T/U',
+              winRate: 'Vinnrate',
+              avgScore: 'Snittscore',
+              bestScore: 'Beste score',
+              lastPlayed: 'Sist spilt'
+            }
+          },
+          recentTrend: {
+            title: 'Nylig trend',
+            subtitle: 'Blå = spilte spill, grønn = seire (siste 30 aktivitetspunkter).',
+            empty: 'Ingen trenddata i valgt periode.',
+            gamesTooltip: '{{date}}: {{count}} spill',
+            winsTooltip: '{{date}}: {{count}} seire'
+          }
+        },
+        common: {
+          notAvailable: '—'
+        },
+        errors: {
+          failedToLoad: 'Kunne ikke laste statistikk'
+        }
+      }
     },
     settings: {
       title: 'Innstillinger',
@@ -942,6 +1019,7 @@ const no = {
       watch: 'Se replay',
       unavailable: 'Replay utilgjengelig',
       noData: 'Replay-data er ikke tilgjengelig for dette spillet ennå',
+      loadFailed: 'Kunne ikke laste replay',
       play: 'Spill av',
       pause: 'Pause',
       stepBack: 'Steg tilbake',
@@ -951,6 +1029,9 @@ const no = {
       stepOf: 'Steg {{current}} av {{total}}',
       action: 'Handling',
       player: 'Spiller',
+      playerFallback: 'Spiller',
+      bot: 'Bot',
+      unknownAction: 'Ukjent handling',
       system: 'System',
       actionPayload: 'Handlingsdata',
       state: 'Spilltilstand'

@@ -79,11 +79,7 @@ import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
 import { useBotTurn } from './hooks/useBotTurn'
-import LobbyInfo from './components/LobbyInfo'
-import WaitingRoom from './components/WaitingRoom'
-import JoinPrompt from './components/JoinPrompt'
 import type { TabId } from './components/MobileTabs'
-import MobileTabPanel from './components/MobileTabPanel'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -109,6 +105,10 @@ const YahtzeeResults = dynamic(() => import('@/components/YahtzeeResults'))
 const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
 const MobileTabs = dynamic(() => import('./components/MobileTabs'))
+const MobileTabPanel = dynamic(() => import('./components/MobileTabPanel'))
+const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
+const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
+const JoinPrompt = dynamic(() => import('./components/JoinPrompt'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
 const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
@@ -696,6 +696,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     addBotToLobby,
     handleJoinLobby,
     handleStartGame,
+    updateLobbySettings,
     password,
     setPassword,
   } = useLobbyActions({
@@ -1355,6 +1356,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             lobby={lobby}
             game={game}
             soundEnabled={soundEnabled}
+            canEditSettings={isCreator && !startingGame}
+            onUpdateSettings={updateLobbySettings}
             onSoundToggle={() => {
               soundManager.toggle()
               setSoundEnabled(soundManager.isEnabled())
@@ -1370,11 +1373,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               lobby={lobby}
               gameEngine={gameEngine}
               minPlayers={minPlayersRequired}
+              canEditSettings={isCreator && !startingGame}
               botDifficulty={selectedBotDifficulty}
               canStartGame={canStartGame}
               startingGame={startingGame}
               onStartGame={handleStartGame}
               onAddBot={handleAddBot}
+              onUpdateSettings={updateLobbySettings}
               onBotDifficultyChange={setSelectedBotDifficulty}
               onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
               getCurrentUserId={getCurrentUserId}

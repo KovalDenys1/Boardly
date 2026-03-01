@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { getSecurityHeaders } from '@/lib/csrf'
+import { getSecurityHeaders, verifyCsrfToken } from '@/lib/csrf'
 import { getServerSocketUrl } from '@/lib/socket-url'
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
@@ -40,6 +40,13 @@ const ALLOWED_CORS_ORIGIN_SET = new Set(
     .map((origin) => normalizeCorsOrigin(origin))
     .filter((origin): origin is string => origin !== null)
 )
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+const AUTH_SESSION_COOKIE_NAMES = [
+  'next-auth.session-token',
+  '__Secure-next-auth.session-token',
+  'authjs.session-token',
+  '__Secure-authjs.session-token',
+]
 
 function isLocalDevelopmentOrigin(origin: string): boolean {
   try {
@@ -65,7 +72,11 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
   return null
 }
 
-function buildCspHeaderValue() {
+function hasAuthenticatedSessionCookie(request: NextRequest): boolean {
+  return AUTH_SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name))
+}
+
+function buildCspHeaderValue(nonce: string | null) {
   const connectSrcCandidates = new Set<string>([
     "'self'",
     SOCKET_URL,
@@ -99,10 +110,13 @@ function buildCspHeaderValue() {
   }
 
   const connectSrcValue = Array.from(connectSrcCandidates).join(' ')
+  const scriptSrcValue = IS_DEVELOPMENT
+    ? "'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
+    : `'self' 'nonce-${nonce}' 'strict-dynamic' https://vercel.live https://accounts.google.com https://apis.google.com`
 
   return `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com;
+    script-src ${scriptSrcValue};
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
@@ -117,10 +131,18 @@ function buildCspHeaderValue() {
   `.replace(/\s{2,}/g, ' ').trim()
 }
 
-const CSP_HEADER_VALUE = buildCspHeaderValue()
-
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+  const nonce = IS_DEVELOPMENT ? null : crypto.randomUUID().replace(/-/g, '')
+  const requestHeaders = new Headers(request.headers)
+  if (nonce) {
+    requestHeaders.set('x-nonce', nonce)
+  }
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
@@ -155,7 +177,7 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
-  response.headers.set('Content-Security-Policy', CSP_HEADER_VALUE)
+  response.headers.set('Content-Security-Policy', buildCspHeaderValue(nonce))
 
   // Add CORS headers for API routes
   if (pathname.startsWith('/api')) {
@@ -173,6 +195,14 @@ export async function middleware(request: NextRequest) {
     // Handle preflight requests
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, { status: 200, headers: response.headers })
+    }
+
+    const isUnsafeMethod = !SAFE_METHODS.has(request.method.toUpperCase())
+    if (isUnsafeMethod && hasAuthenticatedSessionCookie(request) && !verifyCsrfToken(request)) {
+      return NextResponse.json(
+        { error: 'Invalid origin. Possible CSRF attack.' },
+        { status: 403 }
+      )
     }
   }
 

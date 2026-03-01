@@ -70,6 +70,7 @@ Recommended:
 
 - `DIRECT_URL` (for migrations)
 - `GUEST_JWT_SECRET` (guest token signing isolation)
+- `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
@@ -77,9 +78,13 @@ Recommended:
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
 - `CLEANUP_GUEST_DAYS` (optional guest retention window, defaults to `3`)
 - `REPLAY_RETENTION_DAYS` (optional replay retention window for finished/abandoned/cancelled games, defaults to `90`)
-- GitHub Actions scheduler secrets (if using `.github/workflows/reliability-alerts-cron.yml`):
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (optional shared rate-limit backend for production; when absent, app falls back to in-memory limiter)
+- GitHub Actions scheduler configuration:
 - `RELIABILITY_ALERTS_CRON_URL` (for example `https://boardly.online/api/cron/reliability-alerts`)
 - `CRON_SECRET` (must match the app env value used by the endpoint)
+- `PROJECT_HYGIENE_TOKEN` (PAT used by `.github/workflows/project-hygiene.yml`; needs read/write access to project items plus issue/PR read access)
+- repo variable `PROJECT_HYGIENE_PROJECT_NUMBER` (target GitHub Project v2 number, for example `1`)
+- optional repo variable `PROJECT_HYGIENE_OWNER` (user/org login; defaults to repository owner)
 
 ## Secret migration notes
 
@@ -87,6 +92,7 @@ Canonical secrets only:
 
 - `NEXTAUTH_SECRET`
 - `SOCKET_SERVER_INTERNAL_SECRET`
+- `CRON_SECRET`
 
 Migration from deprecated aliases:
 
@@ -94,8 +100,10 @@ Migration from deprecated aliases:
 2. Ensure `NEXTAUTH_SECRET` is set and has at least 32 characters.
 3. Remove `SOCKET_INTERNAL_SECRET` from all app/socket environments.
 4. Ensure `SOCKET_SERVER_INTERNAL_SECRET` is set and has at least 16 characters.
-5. Redeploy Next.js app and socket service together.
-6. Verify `/api/notify` and internal metrics auth still succeed.
+5. Ensure `CRON_SECRET` is set and scheduler jobs send `Authorization: Bearer ${CRON_SECRET}`.
+6. Do not use `NEXTAUTH_SECRET` for cron endpoint authorization.
+7. Redeploy Next.js app and socket service together.
+8. Verify `/api/notify`, internal metrics auth, and `/api/cron/*` auth still succeed.
 
 ## Build and deploy
 
@@ -171,6 +179,18 @@ Check:
 - token is created through `/api/auth/guest-session`
 - `NEXTAUTH_SECRET` or `GUEST_JWT_SECRET` is configured
 
+### CSRF blocks authenticated API writes
+
+Symptoms:
+
+- `403` response with `Invalid origin. Possible CSRF attack.` on `POST/PUT/PATCH/DELETE` to `/api/*`
+
+Check:
+
+- frontend request is same-origin (or origin is explicitly allowed)
+- browser sends expected `Origin` or `Referer` headers
+- deployment origin / `CORS_ORIGIN` / `ALLOWED_ORIGINS` values are correct
+
 ### Reconnect reliability regressed
 
 Check:
@@ -185,10 +205,24 @@ Check:
 Check:
 
 - `OPS_ALERT_WEBHOOK_URL` is configured and valid
-- cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts`
+- cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts` (no `NEXTAUTH_SECRET` fallback)
 - if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
+
+### CSP hardening verification (preview/production)
+
+Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
+
+- `Content-Security-Policy` includes nonce-based `script-src` with `'strict-dynamic'`
+- `Content-Security-Policy` does not include `'unsafe-inline'` in `script-src`
+- `Content-Security-Policy` does not include `'unsafe-eval'` in `script-src`
+
+Example:
+
+```bash
+curl -I https://boardly.online/games | grep -i content-security-policy
+```
 
 ### Replay storage grows over time
 
@@ -211,3 +245,29 @@ npm run ops:kpi:report -- --hours=24 --baseline-days=7
 # Run load scenario and produce fail-rate report
 npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
 ```
+
+## Project board hygiene automation
+
+Workflow: `.github/workflows/project-hygiene.yml`
+
+- Schedule: hourly (`0 * * * *`)
+- Manual run: GitHub Actions `workflow_dispatch`
+- Dry run: set `dry_run=true` in manual dispatch inputs
+
+Local/manual execution examples:
+
+```bash
+# Dry run with explicit owner/project
+npm run ops:project-hygiene -- --dry-run --owner=KovalDenys1 --project=1
+
+# Mutating run via env config
+PROJECT_HYGIENE_OWNER=KovalDenys1 \
+PROJECT_HYGIENE_PROJECT_NUMBER=1 \
+PROJECT_HYGIENE_TOKEN=<token> \
+npm run ops:project-hygiene
+```
+
+Token scope notes for `PROJECT_HYGIENE_TOKEN`:
+
+- Fine-grained PAT: read access to Issues and Pull requests, plus write access to Projects for the target owner project.
+- Classic PAT fallback: include `repo` and `project`.

@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
+import { authorizeCronRequest } from '@/lib/cron-auth'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
-// This endpoint is called automatically when users visit the lobby page
-// No authentication required - it's a public cleanup utility
-export async function POST(_req: NextRequest) {
+const limiter = rateLimit(rateLimitPresets.api)
+
+export async function POST(req: NextRequest) {
   const log = apiLogger('POST /api/lobby/cleanup')
-  
+
   try {
+    const rateLimitResult = await limiter(req)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
+
+    const authError = authorizeCronRequest(req)
+    if (authError) {
+      return authError
+    }
+
     const cleanup = await cleanupStaleLobbiesAndGames()
     log.info('Cleanup completed', cleanup)
-    
+
     return NextResponse.json({
       message: 'Cleanup completed',
       deactivatedCount: cleanup.deactivatedLobbies,
@@ -21,16 +33,14 @@ export async function POST(_req: NextRequest) {
     })
   } catch (error: any) {
     log.error('Cleanup error', error)
-    
-    // Return success even on error - cleanup is not critical
-    // This prevents blocking other operations
+
     return NextResponse.json(
-      { 
-        message: 'Cleanup skipped due to error', 
+      {
+        message: 'Cleanup failed',
         deactivatedCount: 0,
-        error: error.message 
+        error: error.message
       },
-      { status: 200 } // Changed from 500 to 200
+      { status: 500 }
     )
   }
 }

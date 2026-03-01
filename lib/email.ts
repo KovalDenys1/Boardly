@@ -57,6 +57,69 @@ export async function sendVerificationEmail(email: string, token: string, userna
   }
 }
 
+export async function sendUnverifiedAccountWarningEmail(
+  email: string,
+  token: string,
+  username: string,
+  daysUntilDeletion: number
+) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const verifyUrl = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${token}`
+  const pluralizedDays = daysUntilDeletion === 1 ? 'day' : 'days'
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `Action required: verify your Boardly account in ${daysUntilDeletion} ${pluralizedDays}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">⚠️ Boardly</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #111827; margin-top: 0;">Hi ${username || 'there'}!</h2>
+              <p>Your account email is still not verified.</p>
+              <p>
+                To keep your account, please verify your email within
+                <strong>${daysUntilDeletion} ${pluralizedDays}</strong>.
+              </p>
+              <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 14px; margin: 18px 0;">
+                <p style="margin: 0; color: #92400e;">
+                  Accounts that remain unverified will be automatically deleted.
+                </p>
+              </div>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verifyUrl}" target="_blank" rel="noopener noreferrer" style="background: #dc2626; color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                  Verify Email Now
+                </a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">If the button does not work, open this link manually:</p>
+              <p style="color: #dc2626; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+    return { success: true }
+  } catch (error) {
+    logger.error('Failed to send unverified warning email:', error as Error, {
+      daysUntilDeletion,
+    })
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
 export async function sendPasswordResetEmail(email: string, token: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
