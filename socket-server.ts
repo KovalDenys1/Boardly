@@ -39,8 +39,9 @@ import {
 } from './types/socket-events'
 
 // Socket runtime does not serve /api/cron routes, so CRON_SECRET is not required here.
-validateEnv({ requireCronSecretInProduction: false })
-printEnvInfo()
+const socketEnvOptions = { requireCronSecretInProduction: false }
+validateEnv(socketEnvOptions)
+printEnvInfo(socketEnvOptions)
 
 const port = Number(process.env.PORT) || 3001
 const hostname = process.env.HOSTNAME || '0.0.0.0'
