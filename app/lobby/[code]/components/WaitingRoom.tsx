@@ -1,19 +1,27 @@
+import { useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
-import { hasBotSupport } from '@/lib/game-catalog'
+import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { showToast } from '@/lib/i18n-toast'
 
 interface WaitingRoomProps {
   game: any
   lobby: any
   gameEngine: any
   minPlayers: number
+  canEditSettings?: boolean
   botDifficulty: BotDifficulty
   canStartGame: boolean
   startingGame: boolean
   onStartGame: () => void
   onAddBot: () => void
+  onUpdateSettings?: (updates: {
+    maxPlayers?: number
+    turnTimer?: number
+    allowSpectators?: boolean
+  }) => Promise<unknown>
   onBotDifficultyChange: (difficulty: BotDifficulty) => void
   onInviteFriends?: () => void
   getCurrentUserId: () => string | null | undefined
@@ -24,22 +32,28 @@ export default function WaitingRoom({
   lobby,
   gameEngine,
   minPlayers,
+  canEditSettings = false,
   botDifficulty,
   canStartGame,
   startingGame,
   onStartGame,
   onAddBot,
+  onUpdateSettings,
   onBotDifficultyChange,
   onInviteFriends,
   getCurrentUserId,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
+  const [activeSettingEditor, setActiveSettingEditor] = useState<'maxPlayers' | 'turnTimer' | 'allowSpectators' | null>(null)
+  const [updatingSetting, setUpdatingSetting] = useState<'maxPlayers' | 'turnTimer' | 'allowSpectators' | null>(null)
   const playerCount = game?.players?.length || 0
   const maxPlayers = lobby?.maxPlayers || 4
   const openSlots = Math.max(maxPlayers - playerCount, 0)
   const missingPlayers = Math.max(minPlayers - playerCount, 0)
   const hasBot = game?.players?.some((p: any) => !!p.user?.bot)
+  const gameMeta = getGameMetadata(lobby.gameType)
   const supportsBots = hasBotSupport(lobby.gameType)
+  const canEditLobbySettings = Boolean(canEditSettings && onUpdateSettings)
   const canAddMorePlayers = playerCount < maxPlayers
   const canConfigureBots = supportsBots && canAddMorePlayers
   const canStartWithAutoBot = supportsBots && !hasBot && playerCount > 0 && playerCount < minPlayers && canAddMorePlayers
@@ -58,6 +72,42 @@ export default function WaitingRoom({
     easy: t('game.ui.botDifficultyEasy'),
     medium: t('game.ui.botDifficultyMedium'),
     hard: t('game.ui.botDifficultyHard'),
+  }
+  const turnTimerOptions = useMemo(() => {
+    const baseOptions = [30, 60, 90, 120, 150, 180]
+    if (typeof lobby?.turnTimer === 'number' && !baseOptions.includes(lobby.turnTimer)) {
+      return [...baseOptions, lobby.turnTimer].sort((a, b) => a - b)
+    }
+    return baseOptions
+  }, [lobby?.turnTimer])
+  const maxPlayersOptions = useMemo(() => {
+    const minByGameType = Math.max(2, gameMeta?.minPlayers ?? 2)
+    const minValue = Math.max(minByGameType, minPlayers, playerCount)
+    const maxByGameType = Math.min(10, gameMeta?.maxPlayers ?? 10)
+    const maxValue = Math.max(minValue, maxByGameType)
+    return Array.from({ length: maxValue - minValue + 1 }, (_, index) => minValue + index)
+  }, [minPlayers, playerCount, gameMeta?.maxPlayers, gameMeta?.minPlayers])
+
+  const openEditor = (key: 'maxPlayers' | 'turnTimer' | 'allowSpectators') => {
+    if (!canEditLobbySettings) return
+    setActiveSettingEditor((prev) => (prev === key ? null : key))
+  }
+
+  const applySettingUpdate = async (
+    key: 'maxPlayers' | 'turnTimer' | 'allowSpectators',
+    updates: { maxPlayers?: number; turnTimer?: number; allowSpectators?: boolean },
+  ) => {
+    if (!onUpdateSettings) return
+    setUpdatingSetting(key)
+    try {
+      await onUpdateSettings(updates)
+      setActiveSettingEditor(null)
+      showToast.success('profile.settings.saved')
+    } catch (error) {
+      showToast.errorFrom(error, 'toast.error')
+    } finally {
+      setUpdatingSetting(null)
+    }
   }
 
   // Show loading overlay when starting game
@@ -114,7 +164,16 @@ export default function WaitingRoom({
       </section>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4">
+        <div
+          className={`rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4 ${
+            canEditLobbySettings
+              ? 'cursor-pointer hover:bg-white/20 transition-colors'
+              : ''
+          }`}
+          onClick={() => openEditor('maxPlayers')}
+          role={canEditLobbySettings ? 'button' : undefined}
+          tabIndex={canEditLobbySettings ? 0 : undefined}
+        >
           <p className="text-xs uppercase tracking-wider text-white/55 mb-1">{t('game.ui.playersInLobbyTitle')}</p>
           <p className="text-lg font-bold text-white">{t('game.ui.playersInLobby', { count: playerCount })}</p>
         </div>
@@ -124,11 +183,29 @@ export default function WaitingRoom({
             {canStartImmediately ? t('game.ui.readyToStart') : t('game.ui.needMorePlayers', { count: missingPlayers })}
           </p>
         </div>
-        <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4">
+        <div
+          className={`rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4 ${
+            canEditLobbySettings
+              ? 'cursor-pointer hover:bg-white/20 transition-colors'
+              : ''
+          }`}
+          onClick={() => openEditor('turnTimer')}
+          role={canEditLobbySettings ? 'button' : undefined}
+          tabIndex={canEditLobbySettings ? 0 : undefined}
+        >
           <p className="text-xs uppercase tracking-wider text-white/55 mb-1">{t('game.ui.timeLimit')}</p>
           <p className="text-lg font-bold text-white">{lobby?.turnTimer ? `${lobby.turnTimer}s ${t('game.ui.perTurn')}` : '—'}</p>
         </div>
-        <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4">
+        <div
+          className={`rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-4 ${
+            canEditLobbySettings
+              ? 'cursor-pointer hover:bg-white/20 transition-colors'
+              : ''
+          }`}
+          onClick={() => openEditor('allowSpectators')}
+          role={canEditLobbySettings ? 'button' : undefined}
+          tabIndex={canEditLobbySettings ? 0 : undefined}
+        >
           <p className="text-xs uppercase tracking-wider text-white/55 mb-1">{t('game.ui.spectatorsLabel')}</p>
           <p className="text-lg font-bold text-white">
             {lobby?.allowSpectators
@@ -137,6 +214,88 @@ export default function WaitingRoom({
           </p>
         </div>
       </section>
+
+      {canEditLobbySettings && activeSettingEditor && (
+        <section className="rounded-2xl border border-cyan-300/35 bg-cyan-500/10 p-4">
+          {activeSettingEditor === 'maxPlayers' && (
+            <>
+              <p className="text-xs font-semibold text-cyan-100 mb-2">{t('lobby.create.maxPlayers')}</p>
+              <div className="flex flex-wrap gap-2">
+                {maxPlayersOptions.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={updatingSetting === 'maxPlayers' || value === maxPlayers}
+                    onClick={() => void applySettingUpdate('maxPlayers', { maxPlayers: value })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                      value === maxPlayers
+                        ? 'bg-cyan-500/80 border-cyan-300 text-white'
+                        : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeSettingEditor === 'turnTimer' && (
+            <>
+              <p className="text-xs font-semibold text-cyan-100 mb-2">{t('game.ui.timeLimit')}</p>
+              <div className="flex flex-wrap gap-2">
+                {turnTimerOptions.map((seconds) => (
+                  <button
+                    key={seconds}
+                    type="button"
+                    disabled={updatingSetting === 'turnTimer' || seconds === lobby?.turnTimer}
+                    onClick={() => void applySettingUpdate('turnTimer', { turnTimer: seconds })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                      seconds === lobby?.turnTimer
+                        ? 'bg-cyan-500/80 border-cyan-300 text-white'
+                        : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {seconds}s
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {activeSettingEditor === 'allowSpectators' && (
+            <>
+              <p className="text-xs font-semibold text-cyan-100 mb-2">{t('game.ui.spectatorsLabel')}</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={updatingSetting === 'allowSpectators' || lobby?.allowSpectators === true}
+                  onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: true })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    lobby?.allowSpectators
+                      ? 'bg-cyan-500/80 border-cyan-300 text-white'
+                      : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  Enabled
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingSetting === 'allowSpectators' || lobby?.allowSpectators === false}
+                  onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: false })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    lobby?.allowSpectators === false
+                      ? 'bg-cyan-500/80 border-cyan-300 text-white'
+                      : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  Disabled
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       <section className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md p-5">
         <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider mb-2">
