@@ -155,6 +155,20 @@ export class YahtzeeBotExecutor {
             message: `${botName} rolled: ${dice.join(', ')}`,
         })
 
+        if (heldIndices.length > 0) {
+            await this.delay(150)
+            onBotAction?.({
+                type: 'hold',
+                botName,
+                data: {
+                    dice,
+                    held: heldIndices,
+                    rollNumber,
+                },
+                message: `${botName} holds ${heldIndices.length} dice`,
+            })
+        }
+
         await this.delay(400)
     }
 

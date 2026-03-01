@@ -458,7 +458,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 // Play dice roll sound for other players' rolls (not our own)
                 if (lastRoll.playerId !== currentUserId) {
-                  playAmbientSound('diceRoll')
+                  playAmbientSound('diceRoll', { force: true })
                 }
 
                 const newRollEntry: RollHistoryEntry = {
@@ -560,30 +560,35 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const botName = event.botName || 'Bot'
 
     // Add bot action to roll history ONLY if dice are present (after roll, not before)
-    if (event.type === 'roll' && event.data?.dice && gameEngine) {
-      const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
-      const playerCount = game?.players?.length || 1
-      const turnNumber = Math.floor(currentRound / playerCount) + 1
-
-      setRollHistory(prev => {
-        const newRollEntry: RollHistoryEntry = {
-          id: `bot-${Date.now()}-${Math.random()}`,
-          type: 'roll',
-          playerName: botName,
-          dice: event.data.dice,
-          rollNumber: event.data.rollNumber || 1,
-          turnNumber: turnNumber,
-          held: normalizeHeldIndexes(event.data.held),
-          isBot: true,
-          timestamp: Date.now(),
-        }
-
-        return [...prev, newRollEntry].slice(-20)
-      })
-
-      // Play sound ONLY after roll completes AND not during initial load
-      // Use force option to ensure sound plays even if previous roll sound is still playing
+    if (event.type === 'roll' && event.data?.dice) {
+      // Play sound as soon as roll result is received.
       playAmbientSound('diceRoll', { force: true })
+
+      if (gameEngine) {
+        const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
+        const playerCount = game?.players?.length || 1
+        const turnNumber = Math.floor(currentRound / playerCount) + 1
+
+        setRollHistory(prev => {
+          const newRollEntry: RollHistoryEntry = {
+            id: `bot-${Date.now()}-${Math.random()}`,
+            type: 'roll',
+            playerName: botName,
+            dice: event.data.dice,
+            rollNumber: event.data.rollNumber || 1,
+            turnNumber: turnNumber,
+            held: normalizeHeldIndexes(event.data.held),
+            isBot: true,
+            timestamp: Date.now(),
+          }
+
+          return [...prev, newRollEntry].slice(-20)
+        })
+      }
+    }
+
+    if (event.type === 'hold' && event.data?.held?.length) {
+      playAmbientSound('click', { force: true })
     }
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
@@ -1449,6 +1454,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => {
+                          soundManager.play('click', { force: true })
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
@@ -1463,7 +1469,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
-                        onClick={() => setShowLeaveConfirmModal(true)}
+                        onClick={() => {
+                          soundManager.play('click', { force: true })
+                          setShowLeaveConfirmModal(true)
+                        }}
                         aria-label={t('game.ui.leave')}
                         className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                       >
@@ -1510,6 +1519,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
+                          soundManager.play('click', { force: true })
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
@@ -1525,7 +1535,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="hidden sm:inline text-xs">Sound</span>
                       </button>
                       <button
-                        onClick={() => setShowLeaveConfirmModal(true)}
+                        onClick={() => {
+                          soundManager.play('click', { force: true })
+                          setShowLeaveConfirmModal(true)
+                        }}
                         aria-label="Leave game"
                         className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                       >
