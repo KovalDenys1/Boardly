@@ -223,63 +223,58 @@ async function resolveProjectAndStatusField(
   owner: string,
   projectNumber: number
 ): Promise<{ projectId: string; statusField: ProjectStatusField }> {
-  const query = `
-    query ResolveProject($owner: String!, $projectNumber: Int!) {
-      user(login: $owner) {
-        projectV2(number: $projectNumber) {
-          id
-          fields(first: 50) {
-            nodes {
-              __typename
-              ... on ProjectV2SingleSelectField {
-                id
-                name
-                options {
+  type ProjectNode = {
+    id: string
+    fields: { nodes: Array<ProjectStatusField & { __typename: string } | null> }
+  }
+
+  const readProjectForOwnerType = async (
+    ownerType: 'user' | 'organization'
+  ): Promise<ProjectNode | null> => {
+    const query = `
+      query ResolveProject($owner: String!, $projectNumber: Int!) {
+        ${ownerType}(login: $owner) {
+          projectV2(number: $projectNumber) {
+            id
+            fields(first: 50) {
+              nodes {
+                __typename
+                ... on ProjectV2SingleSelectField {
                   id
                   name
+                  options {
+                    id
+                    name
+                  }
                 }
               }
             }
           }
         }
       }
-      organization(login: $owner) {
-        projectV2(number: $projectNumber) {
-          id
-          fields(first: 50) {
-            nodes {
-              __typename
-              ... on ProjectV2SingleSelectField {
-                id
-                name
-                options {
-                  id
-                  name
-                }
-              }
-            }
-          }
-        }
+    `
+
+    try {
+      const data = await callGithubGraphql<
+        Record<'user' | 'organization', { projectV2: ProjectNode | null } | null>
+      >(token, query, { owner, projectNumber })
+      return data[ownerType]?.projectV2 ?? null
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      const notFoundMessage =
+        ownerType === 'user'
+          ? 'Could not resolve to a User'
+          : 'Could not resolve to an Organization'
+      if (message.includes(notFoundMessage)) {
+        return null
       }
+      throw error
     }
-  `
+  }
 
-  const data = await callGithubGraphql<{
-    user: {
-      projectV2: {
-        id: string
-        fields: { nodes: Array<ProjectStatusField & { __typename: string } | null> }
-      } | null
-    } | null
-    organization: {
-      projectV2: {
-        id: string
-        fields: { nodes: Array<ProjectStatusField & { __typename: string } | null> }
-      } | null
-    } | null
-  }>(token, query, { owner, projectNumber })
-
-  const project = data.user?.projectV2 || data.organization?.projectV2
+  const userProject = await readProjectForOwnerType('user')
+  const organizationProject = userProject ? null : await readProjectForOwnerType('organization')
+  const project = userProject || organizationProject
   if (!project) {
     throw new Error(`Project #${projectNumber} not found for owner "${owner}".`)
   }
