@@ -15,7 +15,9 @@ import { MemoryGame } from './games/memory-game'
 import { TelephoneDoodleGame } from './games/telephone-doodle-game'
 import { SketchAndGuessGame } from './games/sketch-and-guess-game'
 import { LiarsPartyGame } from './games/liars-party-game'
+import { FakeArtistGame } from './games/fake-artist-game'
 import {
+  isFakeArtistEnabled,
   isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
@@ -31,7 +33,11 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
-export type ExperimentalGameType = 'telephone_doodle' | 'sketch_and_guess' | 'liars_party'
+export type ExperimentalGameType =
+  | 'telephone_doodle'
+  | 'sketch_and_guess'
+  | 'liars_party'
+  | 'fake_artist'
 export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
@@ -171,6 +177,20 @@ const LIARS_PARTY_ENTRY: GameRegistryEntry = {
     new LiarsPartyGame(id, { maxPlayers: 12, minPlayers: 4, ...cfg }),
 }
 
+const FAKE_ARTIST_ENTRY: GameRegistryEntry = {
+  metadata: {
+    type: 'fake_artist',
+    name: 'Fake Artist',
+    icon: '🖌️',
+    minPlayers: 4,
+    maxPlayers: 10,
+    supportsBots: false,
+    translationKey: 'fake_artist',
+  },
+  create: (id, cfg) =>
+    new FakeArtistGame(id, { maxPlayers: 10, minPlayers: 4, ...cfg }),
+}
+
 function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
   const stableEntry = REGISTRY[gameType as RegisteredGameType]
   if (stableEntry) {
@@ -187,6 +207,9 @@ function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
 
   if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
     return LIARS_PARTY_ENTRY
+  }
+  if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
+    return FAKE_ARTIST_ENTRY
   }
 
   return undefined
@@ -252,6 +275,9 @@ export function getSupportedGameTypes(): SupportedGameType[] {
   if (isLiarsPartyEnabled()) {
     experimentalTypes.push('liars_party')
   }
+  if (isFakeArtistEnabled()) {
+    experimentalTypes.push('fake_artist')
+  }
 
   return [...stableTypes, ...experimentalTypes]
 }
@@ -276,6 +302,7 @@ export function isSupportedGameType(value: string): value is SupportedGameType {
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
-    (value === 'liars_party' && isLiarsPartyEnabled())
+    (value === 'liars_party' && isLiarsPartyEnabled()) ||
+    (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }

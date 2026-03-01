@@ -21,7 +21,8 @@ export function toPersistedGameType(gameType: string): PrismaGameType {
   if (
     gameType === 'telephone_doodle' ||
     gameType === 'sketch_and_guess' ||
-    gameType === 'liars_party'
+    gameType === 'liars_party' ||
+    gameType === 'fake_artist'
   ) {
     return 'other'
   }

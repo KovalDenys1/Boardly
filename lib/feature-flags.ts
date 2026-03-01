@@ -24,3 +24,10 @@ export function isLiarsPartyEnabled(): boolean {
     parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_LIARS_PARTY)
   )
 }
+
+export function isFakeArtistEnabled(): boolean {
+  return (
+    parseBooleanFlag(process.env.ENABLE_FAKE_ARTIST) ||
+    parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_FAKE_ARTIST)
+  )
+}

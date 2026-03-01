@@ -46,6 +46,10 @@ async function createGameEngineClient(
       const { LiarsPartyGame } = await import('./games/liars-party-game')
       return new LiarsPartyGame(gameId, { maxPlayers: 12, minPlayers: 4 })
     }
+    case 'fake_artist': {
+      const { FakeArtistGame } = await import('./games/fake-artist-game')
+      return new FakeArtistGame(gameId, { maxPlayers: 10, minPlayers: 4 })
+    }
     default: {
       const exhausted: never = gameType
       throw new Error(`Unsupported game type: ${String(exhausted)}`)
