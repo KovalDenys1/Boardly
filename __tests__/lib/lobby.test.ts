@@ -3,7 +3,7 @@ jest.mock('nanoid', () => ({
   customAlphabet: () => () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     let result = ''
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 6; i++) {
       result += chars[Math.floor(Math.random() * chars.length)]
     }
     return result
@@ -15,14 +15,14 @@ import { generateLobbyCode } from '@/lib/lobby'
 
 describe('Lobby Utilities', () => {
   describe('generateLobbyCode', () => {
-    it('should generate a 4-character code', () => {
+    it('should generate a 6-character code', () => {
       const code = generateLobbyCode()
-      expect(code).toHaveLength(4)
+      expect(code).toHaveLength(6)
     })
 
     it('should generate codes with only uppercase letters and numbers', () => {
       const code = generateLobbyCode()
-      expect(code).toMatch(/^[A-Z0-9]{4}$/)
+      expect(code).toMatch(/^[A-Z0-9]{6}$/)
     })
 
     it('should generate unique codes', () => {
@@ -33,7 +33,7 @@ describe('Lobby Utilities', () => {
         codes.add(generateLobbyCode())
       }
 
-      // With 36^4 = 1,679,616 possible combinations, 
+      // With 36^6 = 2,176,782,336 possible combinations,
       // collisions should be rare in 100 attempts
       expect(codes.size).toBeGreaterThan(95)
     })
