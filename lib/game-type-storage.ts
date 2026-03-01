@@ -14,11 +14,11 @@ const PERSISTED_GAME_TYPES = new Set<PrismaGameType>([
 /**
  * Maps runtime game type values to the current Prisma GameType enum.
  *
- * `telephone_doodle` is intentionally persisted as `other` until DB enum/schema
- * is expanded in a dedicated migration.
+ * Experimental game types are intentionally persisted as `other` until DB
+ * enum/schema is expanded in a dedicated migration.
  */
 export function toPersistedGameType(gameType: string): PrismaGameType {
-  if (gameType === 'telephone_doodle') {
+  if (gameType === 'telephone_doodle' || gameType === 'sketch_and_guess') {
     return 'other'
   }
 

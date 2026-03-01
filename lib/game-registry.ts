@@ -13,7 +13,8 @@ import { RockPaperScissorsGame } from './games/rock-paper-scissors-game'
 import { SpyGame } from './games/spy-game'
 import { MemoryGame } from './games/memory-game'
 import { TelephoneDoodleGame } from './games/telephone-doodle-game'
-import { isTelephoneDoodleEnabled } from './feature-flags'
+import { SketchAndGuessGame } from './games/sketch-and-guess-game'
+import { isSketchAndGuessEnabled, isTelephoneDoodleEnabled } from './feature-flags'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,7 +26,7 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
-export type ExperimentalGameType = 'telephone_doodle'
+export type ExperimentalGameType = 'telephone_doodle' | 'sketch_and_guess'
 export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
@@ -137,6 +138,20 @@ const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
     new TelephoneDoodleGame(id, { maxPlayers: 12, minPlayers: 3, ...cfg }),
 }
 
+const SKETCH_AND_GUESS_ENTRY: GameRegistryEntry = {
+  metadata: {
+    type: 'sketch_and_guess',
+    name: 'Sketch & Guess',
+    icon: '🎨',
+    minPlayers: 3,
+    maxPlayers: 10,
+    supportsBots: false,
+    translationKey: 'guess_my_drawing',
+  },
+  create: (id, cfg) =>
+    new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, ...cfg }),
+}
+
 function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
   const stableEntry = REGISTRY[gameType as RegisteredGameType]
   if (stableEntry) {
@@ -145,6 +160,10 @@ function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
 
   if (gameType === 'telephone_doodle' && isTelephoneDoodleEnabled()) {
     return TELEPHONE_DOODLE_ENTRY
+  }
+
+  if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
+    return SKETCH_AND_GUESS_ENTRY
   }
 
   return undefined
@@ -199,10 +218,16 @@ export function getGameMetadata(gameType: string): GameMetadata {
  */
 export function getSupportedGameTypes(): SupportedGameType[] {
   const stableTypes = Object.keys(REGISTRY) as RegisteredGameType[]
+  const experimentalTypes: SupportedGameType[] = []
+
   if (isTelephoneDoodleEnabled()) {
-    return [...stableTypes, 'telephone_doodle']
+    experimentalTypes.push('telephone_doodle')
   }
-  return stableTypes
+  if (isSketchAndGuessEnabled()) {
+    experimentalTypes.push('sketch_and_guess')
+  }
+
+  return [...stableTypes, ...experimentalTypes]
 }
 
 /**
@@ -221,5 +246,9 @@ export function isRegisteredGameType(value: string): value is RegisteredGameType
 }
 
 export function isSupportedGameType(value: string): value is SupportedGameType {
-  return isRegisteredGameType(value) || (value === 'telephone_doodle' && isTelephoneDoodleEnabled())
+  return (
+    isRegisteredGameType(value) ||
+    (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
+    (value === 'sketch_and_guess' && isSketchAndGuessEnabled())
+  )
 }

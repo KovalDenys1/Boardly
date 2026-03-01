@@ -38,6 +38,10 @@ async function createGameEngineClient(
       const { TelephoneDoodleGame } = await import('./games/telephone-doodle-game')
       return new TelephoneDoodleGame(gameId, { maxPlayers: 12, minPlayers: 3 })
     }
+    case 'sketch_and_guess': {
+      const { SketchAndGuessGame } = await import('./games/sketch-and-guess-game')
+      return new SketchAndGuessGame(gameId, { maxPlayers: 10, minPlayers: 3 })
+    }
     default: {
       const exhausted: never = gameType
       throw new Error(`Unsupported game type: ${String(exhausted)}`)

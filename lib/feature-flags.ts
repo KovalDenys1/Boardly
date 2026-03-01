@@ -10,3 +10,10 @@ export function isTelephoneDoodleEnabled(): boolean {
     parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_TELEPHONE_DOODLE)
   )
 }
+
+export function isSketchAndGuessEnabled(): boolean {
+  return (
+    parseBooleanFlag(process.env.ENABLE_SKETCH_AND_GUESS) ||
+    parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS)
+  )
+}
