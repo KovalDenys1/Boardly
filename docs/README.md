@@ -17,6 +17,7 @@ This folder contains the canonical project documentation.
 - `lib/bots/README.md` - bot architecture and implementation guide
 - `prisma/migrations/README.md` - migration timeline and RLS migration notes
 - `public/sounds/README.md` - audio assets and usage notes
+- `docs/ALIBI_NIGHT_DESIGN.md` - phase model, safety rules, and MVP checklist for upcoming Alibi Night game
 
 ## Root-level docs
 
