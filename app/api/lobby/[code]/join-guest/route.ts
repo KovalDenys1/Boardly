@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GameType } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -11,13 +10,14 @@ import {
   verifyGuestToken,
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
-import { createGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import {
   hashLobbyPassword,
   isHashedLobbyPassword,
   verifyLobbyPassword,
 } from '@/lib/lobby-password'
+import { toPersistedGameType } from '@/lib/game-type-storage'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -130,12 +130,16 @@ export async function POST(
     // Create or get the active game
     let game
     if (!activeGame) {
-      const gameType = (lobby.gameType || DEFAULT_GAME_TYPE) as GameType
-      const initialState = createGameEngine(gameType, 'temp').getState()
+      const requestedGameType = lobby.gameType || DEFAULT_GAME_TYPE
+      if (!isSupportedGameType(requestedGameType)) {
+        return NextResponse.json({ error: 'Unsupported lobby game type' }, { status: 400 })
+      }
+      const runtimeGameType = requestedGameType
+      const initialState = createGameEngine(runtimeGameType, 'temp').getState()
       game = await prisma.games.create({
         data: {
           lobbyId: lobby.id,
-          gameType,
+          gameType: toPersistedGameType(runtimeGameType),
           status: 'waiting',
           state: JSON.stringify(initialState),
           players: {

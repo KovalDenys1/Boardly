@@ -12,6 +12,8 @@ import { TicTacToeGame } from './games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from './games/rock-paper-scissors-game'
 import { SpyGame } from './games/spy-game'
 import { MemoryGame } from './games/memory-game'
+import { TelephoneDoodleGame } from './games/telephone-doodle-game'
+import { isTelephoneDoodleEnabled } from './feature-flags'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -23,12 +25,14 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
+export type ExperimentalGameType = 'telephone_doodle'
+export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
 
 export interface GameMetadata {
-  type: RegisteredGameType
+  type: SupportedGameType
   name: string
   icon: string
   minPlayers: number
@@ -119,6 +123,33 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
   },
 }
 
+const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
+  metadata: {
+    type: 'telephone_doodle',
+    name: 'Telephone Doodle',
+    icon: '📞',
+    minPlayers: 3,
+    maxPlayers: 12,
+    supportsBots: false,
+    translationKey: 'telephone_doodle',
+  },
+  create: (id, cfg) =>
+    new TelephoneDoodleGame(id, { maxPlayers: 12, minPlayers: 3, ...cfg }),
+}
+
+function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
+  const stableEntry = REGISTRY[gameType as RegisteredGameType]
+  if (stableEntry) {
+    return stableEntry
+  }
+
+  if (gameType === 'telephone_doodle' && isTelephoneDoodleEnabled()) {
+    return TELEPHONE_DOODLE_ENTRY
+  }
+
+  return undefined
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -132,7 +163,7 @@ export function createGameEngine(
   gameId: string,
   config?: Partial<GameConfig>,
 ): GameEngine {
-  const entry = REGISTRY[gameType as RegisteredGameType]
+  const entry = getRegistryEntry(gameType)
   if (!entry) {
     throw new Error(`Unknown game type: "${gameType}"`)
   }
@@ -156,7 +187,7 @@ export function restoreGameEngine(
  * Return metadata for a specific game type. Throws if unknown.
  */
 export function getGameMetadata(gameType: string): GameMetadata {
-  const entry = REGISTRY[gameType as RegisteredGameType]
+  const entry = getRegistryEntry(gameType)
   if (!entry) {
     throw new Error(`Unknown game type: "${gameType}"`)
   }
@@ -166,15 +197,19 @@ export function getGameMetadata(gameType: string): GameMetadata {
 /**
  * List all registered game types.
  */
-export function getSupportedGameTypes(): RegisteredGameType[] {
-  return Object.keys(REGISTRY) as RegisteredGameType[]
+export function getSupportedGameTypes(): SupportedGameType[] {
+  const stableTypes = Object.keys(REGISTRY) as RegisteredGameType[]
+  if (isTelephoneDoodleEnabled()) {
+    return [...stableTypes, 'telephone_doodle']
+  }
+  return stableTypes
 }
 
 /**
  * Check whether a game type supports bot players.
  */
 export function hasBotSupport(gameType: string): boolean {
-  const entry = REGISTRY[gameType as RegisteredGameType]
+  const entry = getRegistryEntry(gameType)
   return entry?.metadata.supportsBots ?? false
 }
 
@@ -183,4 +218,8 @@ export function hasBotSupport(gameType: string): boolean {
  */
 export function isRegisteredGameType(value: string): value is RegisteredGameType {
   return value in REGISTRY
+}
+
+export function isSupportedGameType(value: string): value is SupportedGameType {
+  return isRegisteredGameType(value) || (value === 'telephone_doodle' && isTelephoneDoodleEnabled())
 }

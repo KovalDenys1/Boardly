@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { generateLobbyCode } from '@/lib/lobby'
-import { createGameEngine } from '@/lib/game-registry'
+import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { hashLobbyPassword } from '@/lib/lobby-password'
+import { toPersistedGameType } from '@/lib/game-type-storage'
 
 const log = apiLogger('/api/lobby')
 
@@ -17,7 +18,7 @@ const createLobbySchema = z.object({
   maxPlayers: z.number().min(2).max(10).default(6),
   allowSpectators: z.boolean().default(false),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
-  gameType: z.enum(['yahtzee', 'guess_the_spy', 'tic_tac_toe', 'rock_paper_scissors', 'memory']).default('yahtzee'),
+  gameType: z.string().default('yahtzee'),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
   memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
 })
@@ -76,6 +77,12 @@ export async function POST(request: NextRequest) {
       ticTacToeRounds,
       memoryDifficulty,
     } = createLobbySchema.parse(body)
+
+    if (!isSupportedGameType(gameType)) {
+      return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    }
+
+    const persistedGameType = toPersistedGameType(gameType)
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
@@ -148,7 +155,7 @@ export async function POST(request: NextRequest) {
             games: {
               create: {
                 status: 'waiting',
-                gameType,
+                gameType: persistedGameType,
                 state: JSON.stringify(initialState),
                 players: {
                   create: {

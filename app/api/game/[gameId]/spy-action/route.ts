@@ -55,7 +55,7 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const resolvedGameType = game.gameType || game.lobby?.gameType
+    const resolvedGameType = game.lobby?.gameType || game.gameType
     if (resolvedGameType !== 'guess_the_spy') {
       return NextResponse.json({ error: 'Invalid game type' }, { status: 400 })
     }

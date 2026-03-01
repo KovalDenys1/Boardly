@@ -39,6 +39,7 @@ export async function GET(
           select: {
             code: true,
             name: true,
+            gameType: true,
           },
         },
         players: {
@@ -98,12 +99,14 @@ export async function GET(
             },
           ]
 
+    const resolvedGameType = game.lobby.gameType || game.gameType
+
     const replayPayload = {
       game: {
         id: game.id,
         lobbyCode: game.lobby.code,
         lobbyName: game.lobby.name,
-        gameType: game.gameType,
+        gameType: resolvedGameType,
         status: game.status,
         createdAt: game.createdAt.toISOString(),
         updatedAt: game.updatedAt.toISOString(),
