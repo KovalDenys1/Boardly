@@ -48,6 +48,7 @@ Core flow:
 - Open PRs from task branches into `develop`. Do not push task commits directly to `develop`.
 - Promote to production only through PRs from `develop` into `main`.
 - Treat direct pushes to `main` and `develop` as emergency-only exceptions.
+- After PR merge, delete the local task branch (`git branch -d <branch>`). The remote branch is auto-deleted by repository settings.
 
 ## Fast Command Cookbook
 
