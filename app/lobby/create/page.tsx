@@ -7,7 +7,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { RegisteredGameType } from '@/lib/game-registry'
+import type { RegisteredGameType } from '@/lib/game-catalog'
 import {
   trackLobbyCreateRequest,
   type AnalyticsGameType,

@@ -1,4 +1,4 @@
-import { DEFAULT_GAME_TYPE, getGameMetadata } from './game-registry'
+import { DEFAULT_GAME_TYPE, getGameMetadata } from './game-catalog'
 
 export interface LobbyPlayerRequirements {
   gameType: string
@@ -13,24 +13,24 @@ export function getLobbyPlayerRequirements(gameType: string | null | undefined):
       ? gameType.trim()
       : DEFAULT_GAME_TYPE
 
-  try {
-    const metadata = getGameMetadata(normalizedGameType)
-    const supportsBots = metadata.supportsBots
-    const minPlayersRequired = supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
-    const desiredPlayerCount = supportsBots ? Math.max(2, minPlayersRequired) : minPlayersRequired
-
-    return {
-      gameType: normalizedGameType,
-      supportsBots,
-      minPlayersRequired,
-      desiredPlayerCount,
-    }
-  } catch {
+  const metadata = getGameMetadata(normalizedGameType)
+  if (!metadata) {
     return {
       gameType: normalizedGameType,
       supportsBots: false,
       minPlayersRequired: 2,
       desiredPlayerCount: 2,
     }
+  }
+
+  const supportsBots = metadata.supportsBots
+  const minPlayersRequired = supportsBots ? metadata.minPlayers : Math.max(2, metadata.minPlayers)
+  const desiredPlayerCount = supportsBots ? Math.max(2, minPlayersRequired) : minPlayersRequired
+
+  return {
+    gameType: normalizedGameType,
+    supportsBots,
+    minPlayersRequired,
+    desiredPlayerCount,
   }
 }
