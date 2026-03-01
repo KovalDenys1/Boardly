@@ -165,3 +165,4 @@ npx prisma migrate dev --name migration_name
 - [ ] I updated relevant documentation
 - [ ] My changes introduce no new warnings/errors
 - [ ] I reviewed changes for security risks
+- [ ] After merge, I will delete the local task branch (`git branch -d <branch>`)
