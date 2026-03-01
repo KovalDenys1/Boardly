@@ -78,6 +78,7 @@ Recommended:
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
 - `CLEANUP_GUEST_DAYS` (optional guest retention window, defaults to `3`)
 - `REPLAY_RETENTION_DAYS` (optional replay retention window for finished/abandoned/cancelled games, defaults to `90`)
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (optional shared rate-limit backend for production; when absent, app falls back to in-memory limiter)
 - GitHub Actions scheduler secrets (if using `.github/workflows/reliability-alerts-cron.yml`):
 - `RELIABILITY_ALERTS_CRON_URL` (for example `https://boardly.online/api/cron/reliability-alerts`)
 - `CRON_SECRET` (must match the app env value used by the endpoint)
