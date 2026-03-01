@@ -138,9 +138,18 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setLoading(false)
     }
-    // setState functions are stable and don't need to be in dependencies
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, isGuest, guestId, guestName, guestToken])
+  }, [
+    code,
+    isGuest,
+    guestId,
+    guestName,
+    guestToken,
+    setLobby,
+    setGame,
+    setGameEngine,
+    setError,
+    setLoading,
+  ])
 
   // Update ref when loadLobby changes
   useEffect(() => {
