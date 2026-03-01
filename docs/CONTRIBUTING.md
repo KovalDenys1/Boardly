@@ -13,10 +13,11 @@ npm run dev:all
 ## Workflow
 
 1. Pick a GitHub Issue.
-2. Create a branch.
+2. Create a dedicated branch from `develop` (`feature/*`, `fix/*`, or `chore/*`).
 3. Implement with tests.
 4. Run verification commands.
-5. Open PR with issue reference.
+5. Open PR into `develop` with issue reference.
+6. Release via PR from `develop` to `main` (no direct pushes to protected branches).
 
 ## Verification commands
 

@@ -33,6 +33,7 @@ State flow:
 - **Auth and guest identity**: use `NEXTAUTH_SECRET` as primary signing secret. `JWT_SECRET` is deprecated; do not introduce new logic based on it. Guest identity must use signed tokens (`X-Guest-Token`), not raw client IDs/names.
 - **Realtime robustness**: protect timer/auto-action paths against duplicate processing, handle reconnect/out-of-order events defensively, and advance turn safely when the current player disconnects.
 - **Code quality**: keep TypeScript strictness and minimal readable changes. Keep comments in English and never put secrets in code or docs.
+- **Branching workflow**: for every ticket/feature/fix, create a dedicated branch from `develop` and open a PR back into `develop`. Do not commit task work directly to `develop` or `main`.
 
 ## High-priority areas when touching code
 

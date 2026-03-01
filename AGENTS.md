@@ -42,6 +42,13 @@ Core flow:
 - Be defensive around reconnects, duplicate events, and timer/auto-action paths.
 - Keep changes minimal and readable; avoid broad refactors unless requested.
 
+## Branch and PR Policy
+
+- For each ticket/feature/fix, create a dedicated branch from `develop` (for example `feature/<ticket>-<short-name>`, `fix/<ticket>-<short-name>`, `chore/<short-name>`).
+- Open PRs from task branches into `develop`. Do not push task commits directly to `develop`.
+- Promote to production only through PRs from `develop` into `main`.
+- Treat direct pushes to `main` and `develop` as emergency-only exceptions.
+
 ## Fast Command Cookbook
 
 Setup:
