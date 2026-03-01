@@ -1,4 +1,8 @@
-import { isSketchAndGuessEnabled, isTelephoneDoodleEnabled } from './feature-flags'
+import {
+  isLiarsPartyEnabled,
+  isSketchAndGuessEnabled,
+  isTelephoneDoodleEnabled,
+} from './feature-flags'
 
 export type RegisteredGameType =
   | 'yahtzee'
@@ -6,7 +10,7 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
-export type ExperimentalGameType = 'telephone_doodle' | 'sketch_and_guess'
+export type ExperimentalGameType = 'telephone_doodle' | 'sketch_and_guess' | 'liars_party'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -89,6 +93,16 @@ const SKETCH_AND_GUESS_METADATA: GameMetadata = {
   translationKey: 'guess_my_drawing',
 }
 
+const LIARS_PARTY_METADATA: GameMetadata = {
+  type: 'liars_party',
+  name: "Liar's Party",
+  icon: '🎭',
+  minPlayers: 4,
+  maxPlayers: 12,
+  supportsBots: false,
+  translationKey: 'liars_party',
+}
+
 export function isRegisteredGameType(value: string): value is RegisteredGameType {
   return value in GAME_METADATA
 }
@@ -97,7 +111,8 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
   return (
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
-    (value === 'sketch_and_guess' && isSketchAndGuessEnabled())
+    (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
+    (value === 'liars_party' && isLiarsPartyEnabled())
   )
 }
 
@@ -110,6 +125,9 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
     return SKETCH_AND_GUESS_METADATA
+  }
+  if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
+    return LIARS_PARTY_METADATA
   }
   return null
 }

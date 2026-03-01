@@ -17,3 +17,10 @@ export function isSketchAndGuessEnabled(): boolean {
     parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS)
   )
 }
+
+export function isLiarsPartyEnabled(): boolean {
+  return (
+    parseBooleanFlag(process.env.ENABLE_LIARS_PARTY) ||
+    parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_LIARS_PARTY)
+  )
+}

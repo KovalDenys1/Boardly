@@ -14,7 +14,12 @@ import { SpyGame } from './games/spy-game'
 import { MemoryGame } from './games/memory-game'
 import { TelephoneDoodleGame } from './games/telephone-doodle-game'
 import { SketchAndGuessGame } from './games/sketch-and-guess-game'
-import { isSketchAndGuessEnabled, isTelephoneDoodleEnabled } from './feature-flags'
+import { LiarsPartyGame } from './games/liars-party-game'
+import {
+  isLiarsPartyEnabled,
+  isSketchAndGuessEnabled,
+  isTelephoneDoodleEnabled,
+} from './feature-flags'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,7 +31,7 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
-export type ExperimentalGameType = 'telephone_doodle' | 'sketch_and_guess'
+export type ExperimentalGameType = 'telephone_doodle' | 'sketch_and_guess' | 'liars_party'
 export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
@@ -152,6 +157,20 @@ const SKETCH_AND_GUESS_ENTRY: GameRegistryEntry = {
     new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, ...cfg }),
 }
 
+const LIARS_PARTY_ENTRY: GameRegistryEntry = {
+  metadata: {
+    type: 'liars_party',
+    name: "Liar's Party",
+    icon: '🎭',
+    minPlayers: 4,
+    maxPlayers: 12,
+    supportsBots: false,
+    translationKey: 'liars_party',
+  },
+  create: (id, cfg) =>
+    new LiarsPartyGame(id, { maxPlayers: 12, minPlayers: 4, ...cfg }),
+}
+
 function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
   const stableEntry = REGISTRY[gameType as RegisteredGameType]
   if (stableEntry) {
@@ -164,6 +183,10 @@ function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
 
   if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
     return SKETCH_AND_GUESS_ENTRY
+  }
+
+  if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
+    return LIARS_PARTY_ENTRY
   }
 
   return undefined
@@ -226,6 +249,9 @@ export function getSupportedGameTypes(): SupportedGameType[] {
   if (isSketchAndGuessEnabled()) {
     experimentalTypes.push('sketch_and_guess')
   }
+  if (isLiarsPartyEnabled()) {
+    experimentalTypes.push('liars_party')
+  }
 
   return [...stableTypes, ...experimentalTypes]
 }
@@ -249,6 +275,7 @@ export function isSupportedGameType(value: string): value is SupportedGameType {
   return (
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
-    (value === 'sketch_and_guess' && isSketchAndGuessEnabled())
+    (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
+    (value === 'liars_party' && isLiarsPartyEnabled())
   )
 }

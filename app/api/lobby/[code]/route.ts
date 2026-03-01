@@ -9,6 +9,7 @@ import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/
 import { getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
+import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import {
   hashLobbyPassword,
@@ -233,6 +234,137 @@ export async function GET(
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
           log.warn('Telephone Doodle timeout fallback on lobby GET failed', {
+            code,
+            gameId: activeGame.id,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+    }
+
+    if (
+      activeGame &&
+      activeGame.status === 'playing' &&
+      (safeLobby.gameType || activeGame.gameType) === 'liars_party'
+    ) {
+      const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
+      if (turnTimerSeconds > 0) {
+        try {
+          const parsedState = JSON.parse(activeGame.state)
+          const liarsPartyGame = new LiarsPartyGame(activeGame.id)
+          liarsPartyGame.restoreState(parsedState as any)
+
+          const timeoutResolution = liarsPartyGame.applyTimeoutFallback(turnTimerSeconds)
+          if (timeoutResolution.changed) {
+            const nextState = liarsPartyGame.getState()
+            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+
+            const updateResult = await prisma.games.updateMany({
+              where: {
+                id: activeGame.id,
+                updatedAt: activeGame.updatedAt,
+              },
+              data: {
+                state: JSON.stringify(nextState),
+                status: nextState.status,
+                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+                updatedAt: new Date(),
+              },
+            })
+
+            if (updateResult.count > 0) {
+              const scoreUpdates: Array<Promise<unknown>> = []
+              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+              type ActiveScorePlayer = {
+                id: string
+                userId: string
+                score: number
+              }
+
+              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
+                .map((entry: any) => ({
+                  id: typeof entry?.id === 'string' ? entry.id : '',
+                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
+                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
+                }))
+                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
+              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
+                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
+              )
+
+              for (const statePlayer of statePlayers) {
+                if (!statePlayer || typeof statePlayer !== 'object') continue
+
+                const statePlayerId = (statePlayer as { id?: unknown }).id
+                if (typeof statePlayerId !== 'string') continue
+
+                const dbPlayer = activePlayersByUserId.get(statePlayerId)
+                if (!dbPlayer) continue
+
+                const rawScore = (statePlayer as { score?: unknown }).score
+                const nextScore =
+                  typeof rawScore === 'number' && Number.isFinite(rawScore)
+                    ? Math.floor(rawScore)
+                    : 0
+
+                if (dbPlayer.score === nextScore) continue
+
+                scoreUpdates.push(
+                  prisma.players.update({
+                    where: { id: dbPlayer.id },
+                    data: {
+                      score: nextScore,
+                    },
+                  })
+                )
+                dbPlayer.score = nextScore
+              }
+
+              if (scoreUpdates.length > 0) {
+                await Promise.all(scoreUpdates)
+              }
+
+              activeGame.state = JSON.stringify(nextState)
+              activeGame.status = nextState.status
+              if (lastMoveAtDate) {
+                activeGame.lastMoveAt = lastMoveAtDate
+              }
+
+              await appendGameReplaySnapshot({
+                gameId: activeGame.id,
+                playerId: null,
+                actionType: 'liars_party:timeout-fallback',
+                actionPayload: {
+                  source: 'lobby-get',
+                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+                  autoSubmittedClaims: timeoutResolution.autoSubmittedClaims,
+                  autoSubmittedChallenges: timeoutResolution.autoSubmittedChallenges,
+                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+                },
+                state: nextState,
+              })
+
+              await notifySocket(`lobby:${safeLobby.code}`, 'liars-party-action', {
+                action: 'timeout-fallback',
+                playerId: null,
+                data: {
+                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+                  autoSubmittedClaims: timeoutResolution.autoSubmittedClaims,
+                  autoSubmittedChallenges: timeoutResolution.autoSubmittedChallenges,
+                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+                },
+                state: nextState,
+              })
+
+              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
+                action: 'state-change',
+                payload: { state: nextState },
+              })
+            }
+          }
+        } catch (error) {
+          const log = apiLogger('GET /api/lobby/[code]')
+          log.warn("Liar's Party timeout fallback on lobby GET failed", {
             code,
             gameId: activeGame.id,
             error: error instanceof Error ? error.message : String(error),
