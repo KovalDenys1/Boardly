@@ -117,6 +117,9 @@ export async function POST(
 
     const telephoneGame = new TelephoneDoodleGame(gameId)
     telephoneGame.restoreState(parsedState as any)
+    const gamePlayersByUserId = new Map(
+      game.players.map((entry) => [entry.userId, entry])
+    )
 
     const persistTelephoneState = async (
       nextState: ReturnType<TelephoneDoodleGame['getState']>,
@@ -140,6 +143,40 @@ export async function POST(
           updatedAt: new Date(),
         },
       })
+
+      const scoreUpdates: Array<Promise<unknown>> = []
+      const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+      for (const statePlayer of statePlayers) {
+        if (!statePlayer || typeof statePlayer !== 'object') continue
+
+        const playerId = (statePlayer as { id?: unknown }).id
+        if (typeof playerId !== 'string') continue
+
+        const dbPlayer = gamePlayersByUserId.get(playerId)
+        if (!dbPlayer) continue
+
+        const rawScore = (statePlayer as { score?: unknown }).score
+        const nextScore =
+          typeof rawScore === 'number' && Number.isFinite(rawScore)
+            ? Math.floor(rawScore)
+            : 0
+
+        if (dbPlayer.score === nextScore) continue
+
+        scoreUpdates.push(
+          prisma.players.update({
+            where: { id: dbPlayer.id },
+            data: {
+              score: nextScore,
+            },
+          })
+        )
+        dbPlayer.score = nextScore
+      }
+
+      if (scoreUpdates.length > 0) {
+        await Promise.all(scoreUpdates)
+      }
 
       await appendGameReplaySnapshot({
         gameId,

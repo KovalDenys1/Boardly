@@ -18,6 +18,16 @@ export interface TelephoneDoodleChain {
   steps: TelephoneDoodleStep[]
 }
 
+export interface TelephoneDoodleScoreBreakdown {
+  manualSubmissions: number
+  autoSubmissions: number
+  manualStepPoints: number
+  autoSubmissionPenalty: number
+  roundCompletionBonus: number
+  perfectReliabilityBonus: number
+  finalScore: number
+}
+
 export interface TelephoneDoodleGameData {
   phase: TelephoneDoodlePhase
   round: number
@@ -25,6 +35,12 @@ export interface TelephoneDoodleGameData {
   chains: TelephoneDoodleChain[]
   submittedPlayerIds: string[]
   revealIndex: number
+  scores: Record<string, number>
+  scoreBreakdown: Record<string, TelephoneDoodleScoreBreakdown>
+  winnerId: string | null
+  ranking: string[]
+  completionReason: 'all-revealed' | null
+  finishedAt: number | null
   isMvpScaffold: boolean
 }
 
@@ -49,6 +65,10 @@ const MAX_ROUNDS = 10
 const MIN_CONTENT_LENGTH = 3
 const MAX_CONTENT_LENGTH = 500
 const TELEPHONE_TIMEOUT_FALLBACK_MAX_ITERATIONS = 256
+const SCORE_MANUAL_STEP_POINTS = 10
+const SCORE_AUTO_SUBMISSION_PENALTY = 5
+const SCORE_ROUND_COMPLETION_BONUS = 6
+const SCORE_PERFECT_RELIABILITY_BONUS = 12
 
 export class TelephoneDoodleGame extends GameEngine {
   constructor(gameId: string, config: GameConfig = { maxPlayers: 12, minPlayers: 3 }) {
@@ -63,6 +83,12 @@ export class TelephoneDoodleGame extends GameEngine {
       chains: [],
       submittedPlayerIds: [],
       revealIndex: 0,
+      scores: {},
+      scoreBreakdown: {},
+      winnerId: null,
+      ranking: [],
+      completionReason: null,
+      finishedAt: null,
       isMvpScaffold: true,
     }
   }
@@ -79,11 +105,18 @@ export class TelephoneDoodleGame extends GameEngine {
     data.maxRounds = this.resolveMaxRounds()
     data.submittedPlayerIds = []
     data.revealIndex = 0
+    data.scores = {}
+    data.scoreBreakdown = {}
+    data.winnerId = null
+    data.ranking = []
+    data.completionReason = null
+    data.finishedAt = null
     data.chains = this.state.players.map((player) => ({
       id: `chain-${player.id}`,
       ownerId: player.id,
       steps: [],
     }))
+    this.recomputeScoreboard(data)
     return true
   }
 
@@ -150,7 +183,7 @@ export class TelephoneDoodleGame extends GameEngine {
       data.revealIndex += 1
       this.state.lastMoveAt = Date.now()
       if (data.revealIndex >= data.chains.length) {
-        this.state.status = 'finished'
+        this.finalizeGame(data, 'all-revealed')
       }
       return
     }
@@ -180,6 +213,7 @@ export class TelephoneDoodleGame extends GameEngine {
       content: content.trim(),
       submittedAt: Date.now(),
     })
+    this.recomputeScoreboard(data)
     data.submittedPlayerIds.push(move.playerId)
 
     if (data.submittedPlayerIds.length >= this.state.players.length) {
@@ -190,7 +224,16 @@ export class TelephoneDoodleGame extends GameEngine {
   }
 
   checkWinCondition(): Player | null {
-    return null
+    if (this.state.status !== 'finished') {
+      return null
+    }
+
+    const data = this.state.data as TelephoneDoodleGameData
+    if (!data.winnerId) {
+      return null
+    }
+
+    return this.state.players.find((player) => player.id === data.winnerId) || null
   }
 
   getGameRules(): string[] {
@@ -199,7 +242,7 @@ export class TelephoneDoodleGame extends GameEngine {
       'Each step is submitted once per player in the active phase.',
       'If the phase timer expires, missing steps are auto-submitted and the phase auto-advances.',
       'After caption phase, chains are revealed one by one.',
-      'This engine is an MVP scaffold and does not calculate final scoring yet.',
+      'MVP scoring rewards manual submissions and reliable rounds, while penalizing timeout auto-submits.',
     ]
   }
 
@@ -269,6 +312,7 @@ export class TelephoneDoodleGame extends GameEngine {
       if (stepPhase) {
         const autoSubmittedCount = this.autoSubmitPendingPlayersForPhase(data, stepPhase, timeoutAt)
         if (autoSubmittedCount > 0) {
+          this.recomputeScoreboard(data)
           result.changed = true
           result.autoSubmittedSteps += autoSubmittedCount
           for (const autoSubmittedPlayerId of this.getAutoSubmittedPlayerIds(data, stepPhase, data.round)) {
@@ -297,7 +341,7 @@ export class TelephoneDoodleGame extends GameEngine {
       if (data.phase === 'reveal') {
         data.revealIndex += 1
         if (data.revealIndex >= data.chains.length) {
-          this.state.status = 'finished'
+          this.finalizeGame(data, 'all-revealed')
         }
         this.state.lastMoveAt = timeoutAt
 
@@ -313,6 +357,123 @@ export class TelephoneDoodleGame extends GameEngine {
     }
 
     return result
+  }
+
+  private finalizeGame(data: TelephoneDoodleGameData, reason: 'all-revealed'): void {
+    this.recomputeScoreboard(data)
+    data.completionReason = reason
+    data.finishedAt = Date.now()
+    data.winnerId = data.ranking[0] || null
+    this.state.status = 'finished'
+    this.state.winner = data.winnerId ?? undefined
+  }
+
+  private recomputeScoreboard(data: TelephoneDoodleGameData): void {
+    const manualSubmissionsByPlayer = new Map<string, number>()
+    const autoSubmissionsByPlayer = new Map<string, number>()
+    const roundCompletionByPlayer = new Map<string, number>()
+
+    for (const player of this.state.players) {
+      manualSubmissionsByPlayer.set(player.id, 0)
+      autoSubmissionsByPlayer.set(player.id, 0)
+      roundCompletionByPlayer.set(player.id, 0)
+    }
+
+    for (const chain of data.chains) {
+      for (const step of chain.steps) {
+        if (!manualSubmissionsByPlayer.has(step.playerId)) {
+          continue
+        }
+
+        if (step.autoSubmitted) {
+          autoSubmissionsByPlayer.set(step.playerId, (autoSubmissionsByPlayer.get(step.playerId) || 0) + 1)
+        } else {
+          manualSubmissionsByPlayer.set(step.playerId, (manualSubmissionsByPlayer.get(step.playerId) || 0) + 1)
+        }
+      }
+    }
+
+    for (let round = 1; round <= data.maxRounds; round += 1) {
+      for (const player of this.state.players) {
+        const manualPhases = new Set<TelephoneDoodleStepPhase>()
+        for (const chain of data.chains) {
+          for (const step of chain.steps) {
+            if (
+              step.round === round &&
+              step.playerId === player.id &&
+              !step.autoSubmitted
+            ) {
+              manualPhases.add(step.phase)
+            }
+          }
+        }
+
+        if (manualPhases.size === STEP_PHASES.length) {
+          roundCompletionByPlayer.set(player.id, (roundCompletionByPlayer.get(player.id) || 0) + 1)
+        }
+      }
+    }
+
+    const nextScores: Record<string, number> = {}
+    const nextScoreBreakdown: Record<string, TelephoneDoodleScoreBreakdown> = {}
+
+    for (const player of this.state.players) {
+      const manualSubmissions = manualSubmissionsByPlayer.get(player.id) || 0
+      const autoSubmissions = autoSubmissionsByPlayer.get(player.id) || 0
+      const completedRounds = roundCompletionByPlayer.get(player.id) || 0
+
+      const manualStepPoints = manualSubmissions * SCORE_MANUAL_STEP_POINTS
+      const autoSubmissionPenalty = autoSubmissions * SCORE_AUTO_SUBMISSION_PENALTY
+      const roundCompletionBonus = completedRounds * SCORE_ROUND_COMPLETION_BONUS
+      const perfectReliabilityBonus = autoSubmissions === 0 && manualSubmissions > 0
+        ? SCORE_PERFECT_RELIABILITY_BONUS
+        : 0
+
+      const finalScore = Math.max(
+        0,
+        manualStepPoints + roundCompletionBonus + perfectReliabilityBonus - autoSubmissionPenalty,
+      )
+
+      nextScores[player.id] = finalScore
+      nextScoreBreakdown[player.id] = {
+        manualSubmissions,
+        autoSubmissions,
+        manualStepPoints,
+        autoSubmissionPenalty,
+        roundCompletionBonus,
+        perfectReliabilityBonus,
+        finalScore,
+      }
+
+      player.score = finalScore
+    }
+
+    const playerOrder = new Map<string, number>(
+      this.state.players.map((player, index) => [player.id, index])
+    )
+    const ranking = this.state.players
+      .map((player) => player.id)
+      .sort((leftId, rightId) => {
+        const scoreDelta = (nextScores[rightId] || 0) - (nextScores[leftId] || 0)
+        if (scoreDelta !== 0) return scoreDelta
+
+        const autoDelta =
+          (nextScoreBreakdown[leftId]?.autoSubmissions || 0) -
+          (nextScoreBreakdown[rightId]?.autoSubmissions || 0)
+        if (autoDelta !== 0) return autoDelta
+
+        const manualDelta =
+          (nextScoreBreakdown[rightId]?.manualSubmissions || 0) -
+          (nextScoreBreakdown[leftId]?.manualSubmissions || 0)
+        if (manualDelta !== 0) return manualDelta
+
+        return (playerOrder.get(leftId) || 0) - (playerOrder.get(rightId) || 0)
+      })
+
+    data.scores = nextScores
+    data.scoreBreakdown = nextScoreBreakdown
+    data.ranking = ranking
+    data.winnerId = ranking[0] || null
   }
 
   private getCurrentStepPhase(data: TelephoneDoodleGameData): TelephoneDoodleStepPhase | null {

@@ -143,6 +143,57 @@ export async function GET(
             })
 
             if (updateResult.count > 0) {
+              const scoreUpdates: Array<Promise<unknown>> = []
+              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+              type ActiveScorePlayer = {
+                id: string
+                userId: string
+                score: number
+              }
+
+              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
+                .map((entry: any) => ({
+                  id: typeof entry?.id === 'string' ? entry.id : '',
+                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
+                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
+                }))
+                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
+              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
+                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
+              )
+
+              for (const statePlayer of statePlayers) {
+                if (!statePlayer || typeof statePlayer !== 'object') continue
+
+                const statePlayerId = (statePlayer as { id?: unknown }).id
+                if (typeof statePlayerId !== 'string') continue
+
+                const dbPlayer = activePlayersByUserId.get(statePlayerId)
+                if (!dbPlayer) continue
+
+                const rawScore = (statePlayer as { score?: unknown }).score
+                const nextScore =
+                  typeof rawScore === 'number' && Number.isFinite(rawScore)
+                    ? Math.floor(rawScore)
+                    : 0
+
+                if (dbPlayer.score === nextScore) continue
+
+                scoreUpdates.push(
+                  prisma.players.update({
+                    where: { id: dbPlayer.id },
+                    data: {
+                      score: nextScore,
+                    },
+                  })
+                )
+                dbPlayer.score = nextScore
+              }
+
+              if (scoreUpdates.length > 0) {
+                await Promise.all(scoreUpdates)
+              }
+
               activeGame.state = JSON.stringify(nextState)
               activeGame.status = nextState.status
               if (lastMoveAtDate) {

@@ -251,4 +251,57 @@ describe('TelephoneDoodleGame (MVP scaffold)', () => {
     expect(timeoutResult.revealAdvances).toBe(3)
     expect(game.getState().status).toBe('finished')
   })
+
+  it('applies deterministic scoring and winner tie-break when everyone performs equally', () => {
+    expect(game.startGame()).toBe(true)
+
+    submitPhase(game, 'prompt', 1)
+    submitPhase(game, 'drawing', 1)
+    submitPhase(game, 'caption', 1)
+
+    game.processMove(createMove('player1', 'advance-reveal', {}))
+    game.processMove(createMove('player2', 'advance-reveal', {}))
+    game.processMove(createMove('player3', 'advance-reveal', {}))
+
+    const state = game.getState()
+    const data = dataOfState(state)
+
+    expect(state.status).toBe('finished')
+    expect(data.completionReason).toBe('all-revealed')
+    expect(data.finishedAt).toEqual(expect.any(Number))
+    expect(data.scores.player1).toBe(data.scores.player2)
+    expect(data.scores.player2).toBe(data.scores.player3)
+    expect(data.ranking).toEqual(['player1', 'player2', 'player3'])
+    expect(data.winnerId).toBe('player1')
+    expect(state.winner).toBe('player1')
+  })
+
+  it('penalizes timeout auto-submits and keeps completion deterministic', () => {
+    expect(game.startGame()).toBe(true)
+
+    submitStep(game, 'player1', resolveExpectedChainId('player1', 'prompt', 1), 'Prompt by player1')
+    const promptStartedAt = game.getState().lastMoveAt as number
+    game.applyTimeoutFallback(30, promptStartedAt + 30_000)
+
+    submitStep(game, 'player1', resolveExpectedChainId('player1', 'drawing', 1), 'Drawing by player1')
+    const drawingStartedAt = game.getState().lastMoveAt as number
+    game.applyTimeoutFallback(30, drawingStartedAt + 30_000)
+
+    submitStep(game, 'player1', resolveExpectedChainId('player1', 'caption', 1), 'Caption by player1')
+    const captionStartedAt = game.getState().lastMoveAt as number
+    game.applyTimeoutFallback(30, captionStartedAt + 30_000)
+
+    const revealStartedAt = game.getState().lastMoveAt as number
+    game.applyTimeoutFallback(30, revealStartedAt + 90_000)
+
+    const state = game.getState()
+    const data = dataOfState(state)
+    expect(state.status).toBe('finished')
+    expect(data.winnerId).toBe('player1')
+    expect(data.scores.player1).toBeGreaterThan(data.scores.player2)
+    expect(data.scores.player1).toBeGreaterThan(data.scores.player3)
+    expect(data.scoreBreakdown.player1.autoSubmissions).toBe(0)
+    expect(data.scoreBreakdown.player2.autoSubmissions).toBeGreaterThan(0)
+    expect(data.scoreBreakdown.player3.autoSubmissions).toBeGreaterThan(0)
+  })
 })
