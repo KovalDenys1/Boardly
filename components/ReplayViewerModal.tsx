@@ -50,9 +50,9 @@ function toPrettyJson(value: unknown): string {
   }
 }
 
-function formatActionType(actionType: string): string {
+function formatActionType(actionType: string, unknownActionLabel: string): string {
   const normalized = actionType.replace(/[:_-]+/g, ' ').trim()
-  if (!normalized) return 'Unknown action'
+  if (!normalized) return unknownActionLabel
   return normalized.charAt(0).toUpperCase() + normalized.slice(1)
 }
 
@@ -85,7 +85,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
 
         const response = await fetch(`/api/game/${gameId}/replay`)
         if (!response.ok) {
-          throw new Error('Failed to load replay')
+          throw new Error(t('profile.gameReplay.loadFailed'))
         }
 
         const replayData: ReplayData = await response.json()
@@ -124,11 +124,11 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
   const playerNameById = useMemo(() => {
     const map = new Map<string, string>()
     for (const player of data?.game.players ?? []) {
-      const fallback = player.isBot ? 'Bot' : 'Player'
+      const fallback = player.isBot ? t('profile.gameReplay.bot') : t('profile.gameReplay.playerFallback')
       map.set(player.userId, player.username || fallback)
     }
     return map
-  }, [data?.game.players])
+  }, [data?.game.players, t])
 
   const actorLabel =
     currentSnapshot?.playerId ? playerNameById.get(currentSnapshot.playerId) || currentSnapshot.playerId : null
@@ -241,7 +241,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
           <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 space-y-2">
             <div className="text-sm text-gray-700 dark:text-gray-200">
               <span className="font-semibold">{t('profile.gameReplay.action')}:</span>{' '}
-              {currentSnapshot ? formatActionType(currentSnapshot.actionType) : '-'}
+              {currentSnapshot ? formatActionType(currentSnapshot.actionType, t('profile.gameReplay.unknownAction')) : '-'}
             </div>
             <div className="text-sm text-gray-700 dark:text-gray-200">
               <span className="font-semibold">{t('profile.gameReplay.player')}:</span>{' '}

@@ -889,7 +889,59 @@ const ru = {
       title: 'Статистика',
       gamesPlayed: 'Сыграно игр',
       gamesWon: 'Выиграно игр',
-      winRate: 'Процент побед'
+      winRate: 'Процент побед',
+      dashboard: {
+        title: 'Панель статистики',
+        subtitle: 'Сводка результатов, разбивка по играм и недавний тренд.',
+        filters: {
+          from: 'От',
+          to: 'До',
+          apply: 'Применить',
+          last30Days: '30 дн.',
+          last90Days: '90 дн.',
+          allTime: 'За всё время',
+          invalidRange: 'Дата «От» должна быть раньше даты «До».'
+        },
+        summary: {
+          totalGames: 'Всего игр',
+          winRate: 'Процент побед',
+          avgDuration: 'Средняя длительность',
+          minutesSuffix: 'м',
+          favoriteGame: 'Любимая игра',
+          wld: 'Победы / Поражения / Ничьи',
+          currentStreak: 'Текущая серия',
+          bestStreak: 'Лучшая серия',
+          generated: 'Сформировано'
+        },
+        sections: {
+          byGame: {
+            title: 'Результаты по играм',
+            empty: 'В выбранном диапазоне нет завершённых игр.',
+            columns: {
+              game: 'Игра',
+              played: 'Сыграно',
+              wld: 'П/Пр/Н',
+              winRate: 'Процент побед',
+              avgScore: 'Сред. счёт',
+              bestScore: 'Лучший счёт',
+              lastPlayed: 'Последняя игра'
+            }
+          },
+          recentTrend: {
+            title: 'Недавний тренд',
+            subtitle: 'Синий = сыгранные игры, зелёный = победы (последние 30 точек активности).',
+            empty: 'В выбранном диапазоне нет данных тренда.',
+            gamesTooltip: '{{date}}: {{count}} игр',
+            winsTooltip: '{{date}}: {{count}} побед'
+          }
+        },
+        common: {
+          notAvailable: '—'
+        },
+        errors: {
+          failedToLoad: 'Не удалось загрузить статистику'
+        }
+      }
     },
     settings: {
       title: 'Настройки',
@@ -967,6 +1019,7 @@ const ru = {
       watch: 'Смотреть повтор',
       unavailable: 'Повтор недоступен',
       noData: 'Данные повтора для этой игры пока недоступны',
+      loadFailed: 'Не удалось загрузить повтор',
       play: 'Воспроизвести',
       pause: 'Пауза',
       stepBack: 'Шаг назад',
@@ -976,6 +1029,9 @@ const ru = {
       stepOf: 'Шаг {{current}} из {{total}}',
       action: 'Действие',
       player: 'Игрок',
+      playerFallback: 'Игрок',
+      bot: 'Бот',
+      unknownAction: 'Неизвестное действие',
       system: 'Система',
       actionPayload: 'Данные действия',
       state: 'Состояние игры'
