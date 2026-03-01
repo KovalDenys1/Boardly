@@ -1,6 +1,6 @@
 # Bundle Budget Policy
 
-Updated: 2026-02-27
+Updated: 2026-03-01
 
 ## Goal
 
@@ -57,16 +57,41 @@ Measured result from `npm run check:bundle-budget` (`/lobby/[code]/page`):
 - Shared vendor chunk: `0.0 KiB`
 - Shared common chunk: `0.0 KiB`
 
+## 2026-03-01 Baseline (after additional route splitting)
+
+Optimization set:
+
+- Kept heavy gameplay page shell and shared modals dynamic-loaded.
+- Split additional non-critical lobby UI blocks in `app/lobby/[code]/page.tsx`:
+  - `WaitingRoom`
+  - `LobbyInfo`
+  - `JoinPrompt`
+  - `MobileTabPanel`
+- Preserved gameplay and socket flows while reducing initial route chunk weight.
+
+Measured result from `next build`:
+
+- `First Load JS shared by all`: `221 kB`
+- `"/lobby/[code]"` route size: `28.0 kB`
+- `"/lobby/[code]"` First Load JS: `358 kB`
+
+Measured result from `npm run check:bundle-budget` (`/lobby/[code]/page`):
+
+- Route total JS: `1142.8 KiB`
+- Route specific chunk: `93.7 KiB`
+- Shared vendor chunk: `0.0 KiB`
+- Shared common chunk: `0.0 KiB`
+
 ## Enforced Thresholds (default)
 
 `scripts/check-bundle-budget.ts` defaults:
 
-- Route total JS (`/lobby/[code]/page`): `1400 KiB`
-- Route specific chunk: `130 KiB`
+- Route total JS (`/lobby/[code]/page`): `1250 KiB`
+- Route specific chunk: `110 KiB`
 - Shared vendor chunk: `256 KiB`
 - Shared common chunk: `128 KiB`
 
-These keep headroom while making regressions visible much earlier than the old thresholds.
+These tightened thresholds keep healthy headroom while making regressions visible much earlier.
 
 ## CI Policy
 

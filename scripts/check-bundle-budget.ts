@@ -11,9 +11,9 @@ import {
 const DEFAULT_ROUTE = '/lobby/[code]/page'
 
 const DEFAULT_BUDGETS_KIB = {
-  // Calibrated from 2026-02-27 production build baseline (see docs/PERFORMANCE_BUNDLE_BUDGET.md).
-  routeTotal: 1400,
-  routeSpecificChunk: 130,
+  // Calibrated from 2026-03-01 production build baseline (see docs/PERFORMANCE_BUNDLE_BUDGET.md).
+  routeTotal: 1250,
+  routeSpecificChunk: 110,
   sharedVendor: 256,
   sharedCommon: 128,
 } as const
