@@ -1,31 +1,106 @@
+#!/usr/bin/env tsx
 /**
- * Cron job to cleanup abandoned games older than 7 days
- * 
- * Run this script periodically (e.g., daily via cron, GitHub Actions, or Vercel cron)
- * to delete old abandoned games and free up database space.
- * 
+ * Cleanup abandoned games older than N days.
+ *
  * Usage:
- *   node scripts/cleanup-abandoned-games.js
- * 
- * Or via package.json script:
  *   npm run cleanup:abandoned-games
+ *   npm run cleanup:abandoned-games -- --days=7
+ *   npm run cleanup:abandoned-games -- --dry-run
  */
 
 import { prisma } from '../lib/db'
 import { apiLogger as log } from '../lib/logger'
 
 const logger = log('cleanup-abandoned-games')
+const DEFAULT_DAYS_TO_KEEP = 7
 
-const DAYS_TO_KEEP = 7 // Keep abandoned games for 7 days before deletion
+interface CleanupAbandonedOptions {
+  daysToKeep?: number
+  dryRun?: boolean
+  disconnect?: boolean
+}
 
-async function cleanupAbandonedGames() {
+interface CleanupEmptyLobbiesOptions {
+  dryRun?: boolean
+}
+
+export interface CleanupAbandonedResult {
+  candidates: number
+  deletedGames: number
+  deletedEmptyLobbies: number
+  daysToKeep: number
+  cutoffDate: string
+  dryRun: boolean
+}
+
+function resolveDaysToKeep(rawDays: number | undefined): number {
+  if (!Number.isFinite(rawDays) || (rawDays as number) <= 0) {
+    return DEFAULT_DAYS_TO_KEEP
+  }
+
+  return Math.floor(rawDays as number)
+}
+
+async function cleanupEmptyLobbies(options: CleanupEmptyLobbiesOptions = {}): Promise<number> {
+  const dryRun = options.dryRun === true
+
+  logger.info('Cleaning up empty lobbies', { dryRun })
+
+  const emptyLobbies = await prisma.lobbies.findMany({
+    where: {
+      isActive: false,
+      games: {
+        none: {},
+      },
+    },
+    select: {
+      id: true,
+      code: true,
+    },
+  })
+
+  if (emptyLobbies.length === 0) {
+    logger.info('No empty lobbies to cleanup')
+    return 0
+  }
+
+  if (dryRun) {
+    logger.info(`Dry run: found ${emptyLobbies.length} empty lobbies`, {
+      count: emptyLobbies.length,
+    })
+    return 0
+  }
+
+  const result = await prisma.lobbies.deleteMany({
+    where: {
+      id: {
+        in: emptyLobbies.map((lobby) => lobby.id),
+      },
+    },
+  })
+
+  logger.info('Empty lobbies cleaned up', {
+    deletedCount: result.count,
+  })
+
+  return result.count
+}
+
+export async function cleanupAbandonedGames(options: CleanupAbandonedOptions = {}): Promise<CleanupAbandonedResult> {
+  const daysToKeep = resolveDaysToKeep(options.daysToKeep)
+  const dryRun = options.dryRun ?? process.argv.includes('--dry-run')
+  const shouldDisconnect = options.disconnect ?? true
+
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - daysToKeep)
+
   try {
-    logger.info('Starting cleanup of abandoned games')
+    logger.info('Starting cleanup of abandoned games', {
+      daysToKeep,
+      dryRun,
+      cutoffDate: cutoffDate.toISOString(),
+    })
 
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - DAYS_TO_KEEP)
-
-    // Find abandoned games older than cutoff date.
     // Prefer abandonedAt when present and fall back to updatedAt for legacy rows.
     const abandonedGames = await prisma.games.findMany({
       where: {
@@ -54,85 +129,81 @@ async function cleanupAbandonedGames() {
 
     if (abandonedGames.length === 0) {
       logger.info('No abandoned games to cleanup')
-      return
+      return {
+        candidates: 0,
+        deletedGames: 0,
+        deletedEmptyLobbies: 0,
+        daysToKeep,
+        cutoffDate: cutoffDate.toISOString(),
+        dryRun,
+      }
     }
 
-    logger.info(`Found ${abandonedGames.length} abandoned games to delete`, {
+    logger.info(`Found ${abandonedGames.length} abandoned games to cleanup`, {
       count: abandonedGames.length,
       cutoffDate: cutoffDate.toISOString(),
+      dryRun,
     })
 
-    // Delete games (cascade will delete related players)
+    if (dryRun) {
+      logger.info('Dry run enabled — no abandoned games will be deleted')
+      return {
+        candidates: abandonedGames.length,
+        deletedGames: 0,
+        deletedEmptyLobbies: 0,
+        daysToKeep,
+        cutoffDate: cutoffDate.toISOString(),
+        dryRun: true,
+      }
+    }
+
     const result = await prisma.games.deleteMany({
       where: {
         id: {
-          in: abandonedGames.map((g: any) => g.id),
+          in: abandonedGames.map((game) => game.id),
         },
       },
     })
 
-    logger.info('Cleanup completed successfully', {
+    logger.info('Abandoned games cleaned up', {
       deletedCount: result.count,
     })
 
-    // Also cleanup empty lobbies (optional)
-    await cleanupEmptyLobbies()
-  } catch (error) {
-    logger.error('Error during cleanup', error as Error)
-    process.exit(1)
-  } finally {
-    await prisma.$disconnect()
-  }
-}
+    const deletedEmptyLobbies = await cleanupEmptyLobbies()
 
-async function cleanupEmptyLobbies() {
-  try {
-    logger.info('Cleaning up empty lobbies')
-
-    // Find lobbies with no active games
-    const emptyLobbies = await prisma.lobbies.findMany({
-      where: {
-        isActive: false,
-        games: {
-          none: {},
-        },
-      },
-      select: {
-        id: true,
-        code: true,
-      },
-    })
-
-    if (emptyLobbies.length === 0) {
-      logger.info('No empty lobbies to cleanup')
-      return
+    return {
+      candidates: abandonedGames.length,
+      deletedGames: result.count,
+      deletedEmptyLobbies,
+      daysToKeep,
+      cutoffDate: cutoffDate.toISOString(),
+      dryRun: false,
     }
-
-    logger.info(`Found ${emptyLobbies.length} empty lobbies to delete`)
-
-    const result = await prisma.lobbies.deleteMany({
-      where: {
-        id: {
-          in: emptyLobbies.map((l: any) => l.id),
-        },
-      },
-    })
-
-    logger.info('Empty lobbies cleaned up', {
-      deletedCount: result.count,
-    })
-  } catch (error) {
-    logger.error('Error cleaning up empty lobbies', error as Error)
+  } finally {
+    if (shouldDisconnect) {
+      await prisma.$disconnect()
+    }
   }
 }
 
-// Run cleanup
-cleanupAbandonedGames()
-  .then(() => {
-    logger.info('Cleanup script finished')
-    process.exit(0)
+const isMain = typeof require !== 'undefined' && require.main === module
+
+if (isMain) {
+  const daysArg = process.argv.find((arg) => arg.startsWith('--days='))
+  const parsedDays = daysArg ? Number.parseInt(daysArg.split('=')[1], 10) : undefined
+  const dryRun = process.argv.includes('--dry-run')
+
+  cleanupAbandonedGames({
+    daysToKeep: parsedDays,
+    dryRun,
+    disconnect: true,
   })
-  .catch((error) => {
-    logger.error('Cleanup script failed', error)
-    process.exit(1)
-  })
+    .then((result) => {
+      logger.info('Cleanup script finished', result)
+      process.exit(0)
+    })
+    .catch((error) => {
+      logger.error('Cleanup script failed', error as Error)
+      process.exit(1)
+    })
+}

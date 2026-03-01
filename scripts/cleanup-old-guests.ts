@@ -17,8 +17,21 @@ interface CleanupOptions {
   disconnect?: boolean
 }
 
+const DEFAULT_GUEST_CLEANUP_DAYS = 3
+
+function resolveCleanupGuestDays(rawDays: number | undefined): number {
+  if (!Number.isFinite(rawDays) || (rawDays as number) <= 0) {
+    return DEFAULT_GUEST_CLEANUP_DAYS
+  }
+
+  return Math.floor(rawDays as number)
+}
+
 async function cleanupOldGuests(opts: CleanupOptions = {}) {
-  const days = opts.days ?? (process.env.CLEANUP_GUEST_DAYS ? parseInt(process.env.CLEANUP_GUEST_DAYS, 10) : 3)
+  const envDays = process.env.CLEANUP_GUEST_DAYS
+    ? Number.parseInt(process.env.CLEANUP_GUEST_DAYS, 10)
+    : undefined
+  const days = resolveCleanupGuestDays(opts.days ?? envDays)
   const dryRun = opts.dryRun ?? process.argv.includes('--dry-run')
   const shouldDisconnect = opts.disconnect ?? true
 
@@ -92,8 +105,8 @@ async function cleanupOldGuests(opts: CleanupOptions = {}) {
   }
 }
 
-// Run if executed directly (support ESM and CommonJS)
-const isMain = typeof require !== 'undefined' ? require.main === module : (import.meta && import.meta.url === `file://${process.argv[1]}`)
+// Run if executed directly.
+const isMain = typeof require !== 'undefined' && require.main === module
 
 if (isMain) {
   // parse simple args: --days=N and --dry-run

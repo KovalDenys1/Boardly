@@ -18,7 +18,7 @@ async function run() {
   }
 }
 
-const isMain = typeof require !== 'undefined' ? require.main === module : (import.meta && import.meta.url === `file://${process.argv[1]}`)
+const isMain = typeof require !== 'undefined' && require.main === module
 
 if (isMain) {
   void run()
