@@ -67,7 +67,7 @@ const ru = {
     privateLobby: 'Приватное',
     ownerFallback: 'Аноним',
     gameUnknown: 'Неизвестная игра',
-    spectators: 'Зрители {{count}}/{{max}}',
+    spectators: 'Зрители {{count}}',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
     gameAbandoned: 'Игра завершена - недостаточно игроков',

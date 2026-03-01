@@ -36,7 +36,6 @@
 
 - `GUEST_JWT_SECRET`: overrides guest token signing secret.
 - `CRON_SECRET`: only for cron endpoints.
-- `SOCKET_INTERNAL_SECRET`: deprecated alias of `SOCKET_SERVER_INTERNAL_SECRET`.
 
 ### Usage rules
 

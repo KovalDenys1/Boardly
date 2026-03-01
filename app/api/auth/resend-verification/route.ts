@@ -9,6 +9,10 @@ import { apiLogger } from '@/lib/logger'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/auth/resend-verification')
+const GENERIC_RESEND_RESPONSE = {
+  success: true,
+  message: 'If an unverified account exists for this email, a verification message was sent.',
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,37 +56,33 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (user && !user.emailVerified) {
+      await prisma.emailVerificationTokens.deleteMany({
+        where: { userId: user.id },
+      })
+
+      const token = nanoid(32)
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+      await prisma.emailVerificationTokens.create({
+        data: {
+          userId: user.id,
+          token,
+          expires,
+        },
+      })
+
+      await sendVerificationEmail(user.email ?? normalizedEmail, token, user.username || 'User')
+
+      log.info('Verification email resent', { userId: user.id })
+    } else {
+      log.info('Verification resend accepted without token issue', {
+        hasUser: !!user,
+        alreadyVerified: !!user?.emailVerified,
+      })
     }
 
-    if (user.emailVerified) {
-      return NextResponse.json({ error: 'Email already verified' }, { status: 400 })
-    }
-
-    await prisma.emailVerificationTokens.deleteMany({
-      where: { userId: user.id },
-    })
-
-    const token = nanoid(32)
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-
-    await prisma.emailVerificationTokens.create({
-      data: {
-        userId: user.id,
-        token,
-        expires,
-      },
-    })
-
-    await sendVerificationEmail(user.email ?? normalizedEmail, token, user.username || 'User')
-
-    log.info('Verification email resent', { userId: user.id, email: user.email ?? normalizedEmail })
-
-    return NextResponse.json({ 
-      success: true,
-      message: 'Verification email sent' 
-    })
+    return NextResponse.json(GENERIC_RESEND_RESPONSE)
   } catch (error) {
     log.error('Resend verification error', error as Error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

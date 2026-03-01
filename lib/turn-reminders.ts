@@ -17,6 +17,8 @@ type TurnReminderCycleOptions = {
   rateLimitMinutes?: number
   batchLimit?: number
   recentActiveSkipMinutes?: number
+  maxGameIdleMinutes?: number
+  maxUserInactiveDays?: number
 }
 
 export type TurnReminderCycleResult = {
@@ -29,6 +31,8 @@ export type TurnReminderCycleResult = {
   idleMinutes: number
   rateLimitMinutes: number
   batchLimit: number
+  maxGameIdleMinutes: number
+  maxUserInactiveDays: number
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
@@ -57,6 +61,14 @@ function getRecentActiveSkipMinutes(options: TurnReminderCycleOptions): number {
   return options.recentActiveSkipMinutes ?? parsePositiveInt(process.env.TURN_REMINDER_RECENT_ACTIVE_MINUTES, 10)
 }
 
+function getMaxGameIdleMinutes(options: TurnReminderCycleOptions): number {
+  return options.maxGameIdleMinutes ?? parsePositiveInt(process.env.TURN_REMINDER_MAX_GAME_IDLE_MINUTES, 120)
+}
+
+function getMaxUserInactiveDays(options: TurnReminderCycleOptions): number {
+  return options.maxUserInactiveDays ?? parsePositiveInt(process.env.TURN_REMINDER_MAX_USER_INACTIVE_DAYS, 14)
+}
+
 function getDisplayGameType(gameType: string): string {
   return gameType.replace(/_/g, ' ')
 }
@@ -70,9 +82,13 @@ export async function runTurnReminderCycle(
   const rateLimitMinutes = getRateLimitMinutes(options)
   const batchLimit = getBatchLimit(options)
   const recentActiveSkipMinutes = getRecentActiveSkipMinutes(options)
+  const maxGameIdleMinutes = getMaxGameIdleMinutes(options)
+  const maxUserInactiveDays = getMaxUserInactiveDays(options)
   const idleCutoff = new Date(now.getTime() - idleMinutes * 60 * 1000)
   const recentSentCutoff = new Date(now.getTime() - rateLimitMinutes * 60 * 1000)
   const recentActiveCutoff = new Date(now.getTime() - recentActiveSkipMinutes * 60 * 1000)
+  const maxGameIdleCutoff = new Date(now.getTime() - maxGameIdleMinutes * 60 * 1000)
+  const maxUserInactiveCutoff = new Date(now.getTime() - maxUserInactiveDays * 24 * 60 * 60 * 1000)
 
   const result: TurnReminderCycleResult = {
     success: true,
@@ -84,6 +100,8 @@ export async function runTurnReminderCycle(
     idleMinutes,
     rateLimitMinutes,
     batchLimit,
+    maxGameIdleMinutes,
+    maxUserInactiveDays,
   }
   const notifiedUsersInCycle = new Set<string>()
   const userRateLimitedInCycle = new Set<string>()
@@ -92,8 +110,12 @@ export async function runTurnReminderCycle(
     where: {
       status: 'playing',
       abandonedAt: null,
+      lobby: {
+        isActive: true,
+      },
       lastMoveAt: {
         lte: idleCutoff,
+        gte: maxGameIdleCutoff,
       },
     },
     orderBy: {
@@ -193,6 +215,23 @@ export async function runTurnReminderCycle(
           payload: {
             ...payload,
             lastActiveAt: recipient.lastActiveAt.toISOString(),
+          },
+        })
+        continue
+      }
+
+      if (recipient.lastActiveAt && recipient.lastActiveAt < maxUserInactiveCutoff) {
+        result.skipped += 1
+        await recordNotificationDelivery({
+          userId: recipient.id,
+          type: 'turn_reminder',
+          status: 'skipped',
+          reason: 'user_inactive_too_long',
+          dedupeKey,
+          payload: {
+            ...payload,
+            lastActiveAt: recipient.lastActiveAt.toISOString(),
+            maxInactiveDays: maxUserInactiveDays,
           },
         })
         continue
@@ -351,6 +390,8 @@ export async function runTurnReminderCycle(
     idleMinutes,
     rateLimitMinutes,
     batchLimit,
+    maxGameIdleMinutes,
+    maxUserInactiveDays,
   })
 
   return result

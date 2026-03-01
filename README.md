@@ -39,7 +39,6 @@ Fill required values in `.env.local`.
 Important:
 
 - Use `NEXTAUTH_SECRET` as the single signing secret for auth/session tokens.
-- `JWT_SECRET` is deprecated and should not be used for new logic.
 - Guest authentication uses signed guest JWTs (`X-Guest-Token`).
 
 ### 3) Prepare database

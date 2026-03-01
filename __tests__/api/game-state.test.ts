@@ -41,6 +41,7 @@ jest.mock('@/lib/game-replay', () => ({
 
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
+    debug: jest.fn(),
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),

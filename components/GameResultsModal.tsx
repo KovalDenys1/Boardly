@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { ALL_CATEGORIES, YahtzeeCategory } from '@/lib/yahtzee'
+import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
@@ -94,40 +95,6 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
     })
   }
 
-  function getStatusBadgeColor(status: string): string {
-    switch (status) {
-      case 'finished':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'playing':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      case 'abandoned':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      default:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-    }
-  }
-
-  function formatGameType(gameType: string): string {
-    switch (gameType) {
-      case 'yahtzee':
-        return 'Yahtzee'
-      case 'chess':
-        return 'Chess'
-      case 'guess_the_spy':
-        return 'Guess the Spy'
-      case 'tic_tac_toe':
-        return 'Tic Tac Toe'
-      case 'rock_paper_scissors':
-        return 'Rock Paper Scissors'
-      case 'uno':
-        return 'Uno'
-      default:
-        return gameType
-    }
-  }
-
   function renderYahtzeeScorecard() {
     if (!game || game.gameType !== 'yahtzee' || !game.state?.gameData) return null
 
@@ -211,7 +178,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {formatGameType(game.gameType)}
+                {formatGameTypeLabel(game.gameType)}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {formatDate(game.createdAt)}
@@ -219,7 +186,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
               </p>
             </div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+              className={`px-3 py-1 rounded-full text-xs font-medium ${getGameStatusBadgeColor(
                 game.status
               )}`}
             >

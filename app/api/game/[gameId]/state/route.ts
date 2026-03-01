@@ -91,7 +91,7 @@ export async function POST(
     const requestUser = await getRequestAuthUser(request)
     const userId = requestUser?.id
 
-    log.info('Game state update attempt', {
+    log.debug('Game state update attempt', {
       gameId,
       userId,
       isGuest: requestUser?.isGuest,
@@ -133,7 +133,7 @@ export async function POST(
     }
 
     // Get game from database - optimize by selecting only needed fields
-    log.info('Fetching game from database', { gameId, userId })
+    log.debug('Fetching game from database', { gameId, userId })
     
     const game = await prisma.games.findUnique({
       where: { id: gameId },
@@ -178,7 +178,7 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
     
-    log.info('Game fetched successfully', { gameId, status: game.status })
+    log.debug('Game fetched successfully', { gameId, status: game.status })
 
     interface GamePlayer {
       id: string
@@ -260,7 +260,7 @@ export async function POST(
         (serverRollsLeft === null || snapshot.rollsLeft === serverRollsLeft)
 
       if (!isSameTurn || !isSameMoveWindow) {
-        log.info('Auto action skipped: turn already ended or state changed', {
+        log.debug('Auto action skipped: turn already ended or state changed', {
           gameId,
           userId,
           moveType: move.type,
@@ -336,7 +336,7 @@ export async function POST(
     const oldStatus = game.status
 
     if (disconnectedTurnResult.changed) {
-      log.info('Skipped disconnected player turn after move', {
+      log.debug('Skipped disconnected player turn after move', {
         gameId,
         userId,
         skippedPlayerIds: disconnectedTurnResult.skippedPlayerIds,
@@ -477,7 +477,7 @@ export async function POST(
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000)
 
-      log.info('Auto-triggering bot turn after player move', {
+      log.debug('Auto-triggering bot turn after player move', {
         gameId,
         gameType: game.lobby.gameType,
         botUserId: botUserIdToTrigger,

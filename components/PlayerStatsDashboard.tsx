@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
+import { formatGameTypeLabel } from '@/lib/game-display'
 
 interface OverallStats {
   totalGames: number
@@ -49,25 +50,6 @@ interface DateRange {
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().slice(0, 10)
-}
-
-function formatGameType(gameType: string): string {
-  switch (gameType) {
-    case 'yahtzee':
-      return 'Yahtzee'
-    case 'guess_the_spy':
-      return 'Guess the Spy'
-    case 'tic_tac_toe':
-      return 'Tic-Tac-Toe'
-    case 'rock_paper_scissors':
-      return 'Rock Paper Scissors'
-    case 'uno':
-      return 'Uno'
-    case 'chess':
-      return 'Chess'
-    default:
-      return gameType
-  }
 }
 
 function buildDefaultRange(): DateRange {
@@ -259,7 +241,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Favorite game</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                {stats.overall.favoriteGame ? formatGameType(stats.overall.favoriteGame) : '—'}
+                {stats.overall.favoriteGame ? formatGameTypeLabel(stats.overall.favoriteGame) : '—'}
               </p>
             </div>
             <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
@@ -306,7 +288,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                     {stats.byGame.map((item) => (
                       <tr key={item.gameType} className="border-b border-gray-100 dark:border-gray-800">
                         <td className="py-2 pr-4 font-semibold text-gray-900 dark:text-gray-100">
-                          {formatGameType(item.gameType)}
+                          {formatGameTypeLabel(item.gameType)}
                         </td>
                         <td className="py-2 pr-4">{item.gamesPlayed}</td>
                         <td className="py-2 pr-4">

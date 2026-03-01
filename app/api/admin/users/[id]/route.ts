@@ -5,10 +5,10 @@ import { requireAdminApiUser, writeAdminAuditLog } from '@/lib/admin-auth'
 
 async function deleteAdminUserHandler(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const admin = await requireAdminApiUser()
-  const { id } = params
+  const { id } = await params
 
   if (id === admin.id) {
     throw new ValidationError('Admin cannot delete their own account')

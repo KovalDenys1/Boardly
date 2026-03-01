@@ -1,4 +1,10 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Boardly',
+  description: 'Learn how Boardly collects, uses, and protects your personal information.',
+}
 
 export default function PrivacyPolicy() {
   return (

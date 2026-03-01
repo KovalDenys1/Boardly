@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { processNotificationEmailQueue } from '@/lib/notification-queue'
+import { authorizeCronRequest } from '@/lib/cron-auth'
 
 const log = apiLogger('GET /api/cron/process-notifications')
 
 async function handleCronRequest(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
-
-    if (!authHeader || !cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const authError = authorizeCronRequest(request)
+    if (authError) return authError
 
     const result = await processNotificationEmailQueue({
       baseUrl: new URL(request.url).origin,

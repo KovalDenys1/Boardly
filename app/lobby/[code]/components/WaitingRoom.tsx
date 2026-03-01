@@ -1,6 +1,6 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { soundManager } from '@/lib/sounds'
-import { hasBotSupport } from '@/lib/game-registry'
+import { hasBotSupport } from '@/lib/game-catalog'
 import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -132,7 +132,7 @@ export default function WaitingRoom({
           <p className="text-xs uppercase tracking-wider text-white/55 mb-1">{t('game.ui.spectatorsLabel')}</p>
           <p className="text-lg font-bold text-white">
             {lobby?.allowSpectators
-              ? t('lobby.spectators', { count: lobby?.spectatorCount ?? 0, max: lobby?.maxSpectators ?? 0 })
+              ? t('lobby.spectators', { count: lobby?.spectatorCount ?? 0 })
               : t('game.ui.spectatorsDisabled')}
           </p>
         </div>

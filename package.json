@@ -38,6 +38,7 @@
     "check:spy-locations": "tsx scripts/check-spy-locations.ts",
     "cleanup:abandoned-games": "tsx scripts/cleanup-abandoned-games.ts",
     "cleanup:old-guests": "tsx scripts/cleanup-old-guests.ts",
+    "cleanup:old-replays": "tsx scripts/cleanup-old-replays.ts",
     "cleanup:unverified": "tsx scripts/cleanup-unverified.ts",
     "ops:alerts:check": "tsx scripts/check-reliability-alerts.ts",
     "ops:kpi:report": "tsx scripts/report-operational-kpis.ts",

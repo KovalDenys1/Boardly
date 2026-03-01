@@ -67,7 +67,7 @@ const en = {
     privateLobby: 'Private',
     ownerFallback: 'Anonymous',
     gameUnknown: 'Unknown Game',
-    spectators: 'Spectators {{count}}/{{max}}',
+    spectators: 'Spectators {{count}}',
     backToGames: 'Back to Games',
     leftLobby: 'You left the lobby',
     gameAbandoned: 'Game ended - not enough players remaining',

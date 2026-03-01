@@ -1,4 +1,10 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Terms of Service | Boardly',
+  description: 'Read our Terms of Service to understand the rules and guidelines for using Boardly.',
+}
 
 export default function TermsOfService() {
   return (

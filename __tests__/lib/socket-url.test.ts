@@ -14,7 +14,6 @@ describe('notifySocket deduplication', () => {
     })
     process.env.SOCKET_SERVER_URL = 'http://localhost:3001'
     delete process.env.SOCKET_SERVER_INTERNAL_SECRET
-    delete process.env.SOCKET_INTERNAL_SECRET
     delete process.env.CRON_SECRET
     delete process.env.NEXT_PUBLIC_SOCKET_URL
   })

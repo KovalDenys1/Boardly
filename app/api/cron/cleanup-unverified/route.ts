@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '@/lib/cleanup-unverified'
 import { apiLogger } from '@/lib/logger'
+import { authorizeCronRequest } from '@/lib/cron-auth'
 
 const log = apiLogger('/api/cron/cleanup-unverified')
 
@@ -8,16 +9,13 @@ const log = apiLogger('/api/cron/cleanup-unverified')
 // Protect it with a secret token
 export async function GET(req: NextRequest) {
   try {
-    // Verify cron secret
-    const authHeader = req.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
-
-    if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+    const authError = authorizeCronRequest(req)
+    if (authError) {
       log.error('Unauthorized cron request', undefined, {
-        hasAuth: !!authHeader,
+        hasAuth: !!req.headers.get('authorization'),
         ip: req.headers.get('x-forwarded-for') || 'unknown'
       })
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return authError
     }
 
     log.info('Starting scheduled cleanup of unverified accounts')

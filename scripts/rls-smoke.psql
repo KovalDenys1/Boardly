@@ -16,7 +16,9 @@ DECLARE
     'Players',
     'FriendRequests',
     'Friendships',
-    'SpyLocations'
+    'SpyLocations',
+    'GameStateSnapshots',
+    'AdminAuditLogs'
   ];
   required_functions TEXT[] := ARRAY[
     'get_current_user_id',
@@ -103,7 +105,11 @@ BEGIN
       ('Lobbies', 'Anyone can view lobbies'),
       ('FriendRequests', 'Users can view own friend requests'),
       ('Friendships', 'Users can view own friendships'),
-      ('SpyLocations', 'Anyone can view active spy locations')
+      ('SpyLocations', 'Anyone can view active spy locations'),
+      ('GameStateSnapshots', 'Players can view snapshots in their games'),
+      ('GameStateSnapshots', 'Service role can manage game state snapshots'),
+      ('AdminAuditLogs', 'Admins can view audit logs'),
+      ('AdminAuditLogs', 'Service role can manage admin audit logs')
   )
   SELECT ARRAY_AGG(format('%s on %s', rp.policy_name, rp.table_name))
   INTO missing_policies

@@ -3,16 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { processNotificationEmailQueue } from '@/lib/notification-queue'
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
+import { authorizeCronRequest } from '@/lib/cron-auth'
+import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 
 const log = apiLogger('GET /api/cron/game-ops')
 
-function isAuthorizedCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
-  return !!authHeader && !!cronSecret && authHeader === `Bearer ${cronSecret}`
-}
-
-type GameOpsTaskName = 'notifications' | 'turnReminders'
+type GameOpsTaskName = 'cleanup' | 'notifications' | 'turnReminders'
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error'
@@ -81,28 +77,43 @@ function toSchemaDegradedTaskResult(task: GameOpsTaskName, error: unknown) {
 }
 
 async function handleCronRequest(request: NextRequest) {
-  if (!isAuthorizedCronRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authError = authorizeCronRequest(request)
+  if (authError) return authError
 
   try {
     const baseUrl = new URL(request.url).origin
 
-    // Consolidated frequent cron to stay within Vercel cron limits.
-    // Turn reminders are rate-limited per game, so a 5-minute cadence is acceptable.
-    const [notificationsResult, turnRemindersResult] = await Promise.allSettled([
-      processNotificationEmailQueue({ baseUrl }),
-      runTurnReminderCycle({ baseUrl }),
-    ])
-
     const warnings: Array<{
       task: GameOpsTaskName
-      kind: 'schema_mismatch'
+      kind: 'schema_mismatch' | 'execution_failed'
       code?: string
       table?: string
       column?: string
       message: string
     }> = []
+
+    let cleanup: unknown
+    try {
+      cleanup = await cleanupStaleLobbiesAndGames()
+    } catch (cleanupError) {
+      warnings.push({
+        task: 'cleanup',
+        kind: 'execution_failed',
+        message: getErrorMessage(cleanupError),
+      })
+      cleanup = {
+        success: false,
+        reason: 'cleanup_failed',
+      }
+      log.error('Game ops cleanup task failed', cleanupError as Error)
+    }
+
+    // Consolidated frequent cron to stay within Vercel limits.
+    // Turn reminders are rate-limited per game and user.
+    const [notificationsResult, turnRemindersResult] = await Promise.allSettled([
+      processNotificationEmailQueue({ baseUrl }),
+      runTurnReminderCycle({ baseUrl }),
+    ])
 
     let notifications: unknown
     if (notificationsResult.status === 'fulfilled') {
@@ -141,6 +152,7 @@ async function handleCronRequest(request: NextRequest) {
     }
 
     return NextResponse.json({
+      cleanup,
       notifications,
       turnReminders,
       degraded: warnings.length > 0,

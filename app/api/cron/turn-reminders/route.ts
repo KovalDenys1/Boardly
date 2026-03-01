@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
+import { authorizeCronRequest } from '@/lib/cron-auth'
+import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 
 const log = apiLogger('GET /api/cron/turn-reminders')
 
 async function handleCronRequest(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET || process.env.NEXTAUTH_SECRET
+    const authError = authorizeCronRequest(request)
+    if (authError) return authError
 
-    if (!authHeader || !cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
+    const cleanup = await cleanupStaleLobbiesAndGames()
     const result = await runTurnReminderCycle({
       baseUrl: new URL(request.url).origin,
     })
 
     return NextResponse.json({
+      cleanup,
       ...result,
       timestamp: new Date().toISOString(),
     })

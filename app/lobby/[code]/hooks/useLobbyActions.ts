@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { restoreGameEngine, DEFAULT_GAME_TYPE } from '@/lib/game-registry'
+import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
+import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { soundManager } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
@@ -118,7 +119,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
             // Create the correct engine based on game type
             const gt = data.lobby.gameType || DEFAULT_GAME_TYPE
-            const engine = restoreGameEngine(gt, activeGame.id, parsedState)
+            const engine = await restoreGameEngineClient(gt, activeGame.id, parsedState)
             setGameEngine(engine)
           } catch (parseError) {
             clientLogger.error('Failed to parse game state:', parseError)
@@ -395,7 +396,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const data = await res.json()
 
       // Create the correct engine based on game type
-      const engine = restoreGameEngine(gameType, data.game.id, data.game.state)
+      const engine = await restoreGameEngineClient(gameType, data.game.id, data.game.state)
       setGameEngine(engine)
 
       // Set game state with players data (needed for bot detection)

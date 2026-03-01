@@ -11,11 +11,11 @@ import {
 const DEFAULT_ROUTE = '/lobby/[code]/page'
 
 const DEFAULT_BUDGETS_KIB = {
-  // Calibrated from 2026-02-25 production build baseline (see docs/PERFORMANCE_BUNDLE_BUDGET.md).
-  routeTotal: 1875,
-  routeSpecificChunk: 135,
-  sharedVendor: 1525,
-  sharedCommon: 235,
+  // Calibrated from 2026-02-27 production build baseline (see docs/PERFORMANCE_BUNDLE_BUDGET.md).
+  routeTotal: 1400,
+  routeSpecificChunk: 130,
+  sharedVendor: 256,
+  sharedCommon: 128,
 } as const
 
 function parseBudgetKiB(envName: string, defaultValue: number): number {

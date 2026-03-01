@@ -40,7 +40,6 @@ export async function GET(
         select: {
           id: true,
           username: true,
-          email: true,
         },
       },
       games: {
@@ -59,7 +58,6 @@ export async function GET(
                 select: {
                   id: true,
                   username: true,
-                  email: true,
                   isGuest: true,
                   bot: true,
                 },
@@ -83,8 +81,19 @@ export async function GET(
   const sanitizedActiveGame = activeGame
     ? {
         ...activeGame,
+        players: Array.isArray(activeGame.players)
+          ? activeGame.players.map((player: any) => {
+              if (!player?.user || typeof player.user !== 'object') return player
+              const { email: _email, ...safeUser } = player.user
+              return { ...player, user: safeUser }
+            })
+          : activeGame.players,
         state: JSON.stringify(sanitizeGameStateForSpectator(lobby.gameType, activeGame.state)),
       }
+    : null
+  const { creator, ...safeLobbyWithoutCreator } = lobby
+  const sanitizedCreator = creator
+    ? (({ email: _email, ...safeCreator }: { email?: string; [key: string]: unknown }) => safeCreator)(creator as any)
     : null
 
   const canJoinAsPlayer = (() => {
@@ -96,7 +105,8 @@ export async function GET(
 
   return NextResponse.json({
     lobby: {
-      ...lobby,
+      ...safeLobbyWithoutCreator,
+      creator: sanitizedCreator,
       games: sanitizedActiveGame ? [sanitizedActiveGame] : [],
       activeGame: sanitizedActiveGame,
     },
