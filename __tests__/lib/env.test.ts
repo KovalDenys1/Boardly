@@ -1,4 +1,4 @@
-import { validateEnv } from '@/lib/env'
+import { printEnvInfo, validateEnv } from '@/lib/env'
 
 describe('validateEnv', () => {
   const originalEnv = process.env
@@ -48,5 +48,12 @@ describe('validateEnv', () => {
     delete process.env.CRON_SECRET
 
     expect(() => validateEnv({ requireCronSecretInProduction: false })).not.toThrow()
+  })
+
+  it('allows printEnvInfo for socket runtime without CRON_SECRET when explicitly opted out', () => {
+    applyBaseEnv('production')
+    delete process.env.CRON_SECRET
+
+    expect(() => printEnvInfo({ requireCronSecretInProduction: false })).not.toThrow()
   })
 })

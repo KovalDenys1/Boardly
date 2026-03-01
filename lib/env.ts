@@ -56,7 +56,7 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>
 
-interface ValidateEnvOptions {
+export interface ValidateEnvOptions {
   requireCronSecretInProduction?: boolean
   requireSocketInternalSecretInProduction?: boolean
 }
@@ -142,8 +142,8 @@ export function getEnv(): Env {
 /**
  * Print environment configuration (with secrets masked)
  */
-export function printEnvInfo(): void {
-  const env = getEnv()
+export function printEnvInfo(options: ValidateEnvOptions = {}): void {
+  const env = validateEnv(options)
   
   console.log('🔧 Environment Configuration:')
   console.log(`  - NODE_ENV: ${env.NODE_ENV}`)
