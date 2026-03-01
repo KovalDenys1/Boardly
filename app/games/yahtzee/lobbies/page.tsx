@@ -53,7 +53,6 @@ export default function YahtzeeLobbiesPage() {
 
     if (status === 'authenticated' || isGuest) {
       loadLobbies()
-      triggerCleanup()
       let isMounted = true
 
       // Auto-refresh lobbies every 5 seconds
@@ -123,20 +122,6 @@ export default function YahtzeeLobbiesPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, isGuest, guestToken, router])
-
-  const triggerCleanup = async () => {
-    try {
-      const res = await fetch('/api/lobby/cleanup', {
-        method: 'POST',
-      })
-
-      if (!res.ok) {
-        clientLogger.warn('Cleanup returned non-ok status:', res.status)
-      }
-    } catch (error) {
-      clientLogger.log('Background cleanup skipped (non-critical):', error)
-    }
-  }
 
   const loadLobbies = async () => {
     try {
