@@ -1,8 +1,15 @@
-import { PrismaClient } from '@prisma/client'
 import { apiLogger } from './logger'
+import { prisma } from './db'
+import { sendUnverifiedAccountWarningEmail } from './email'
+import { nanoid } from 'nanoid'
 
-const prisma = new PrismaClient()
 const log = apiLogger('/cleanup/unverified-accounts')
+
+function calculateDaysUntilDeletion(createdAt: Date, totalDaysBeforeDeletion: number): number {
+  const accountAgeDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+  const daysLeft = Math.ceil(totalDaysBeforeDeletion - accountAgeDays)
+  return Math.max(0, daysLeft)
+}
 
 /**
  * Delete unverified accounts older than specified days
@@ -149,21 +156,94 @@ export async function warnUnverifiedAccounts(
       count: usersToWarn.length
     })
 
-    // TODO: Send warning emails
-    // For now, just log the accounts that would be warned
-    // You can integrate with your email service here
+    const minVerificationTokenTtlHours = 24
+    const tokenTtlHours = Math.max(minVerificationTokenTtlHours, daysBeforeDeletion * 24)
+
+    const usersWithEmailStatus = await Promise.all(
+      usersToWarn.map(async (user) => {
+        const daysUntilDeletion = calculateDaysUntilDeletion(user.createdAt, totalDaysBeforeDeletion)
+        const safeUsername = user.username || 'Player'
+
+        if (!user.email) {
+          log.warn('Skipping warning email for user without email', {
+            userId: user.id,
+            username: user.username,
+          })
+
+          return {
+            email: user.email,
+            username: user.username,
+            createdAt: user.createdAt,
+            daysUntilDeletion,
+            emailSent: false,
+            emailError: 'missing_email',
+          }
+        }
+
+        try {
+          await prisma.emailVerificationTokens.deleteMany({
+            where: { userId: user.id },
+          })
+
+          const token = nanoid(32)
+          const expires = new Date(Date.now() + tokenTtlHours * 60 * 60 * 1000)
+
+          await prisma.emailVerificationTokens.create({
+            data: {
+              userId: user.id,
+              token,
+              expires,
+            },
+          })
+
+          const emailResult = await sendUnverifiedAccountWarningEmail(
+            user.email,
+            token,
+            safeUsername,
+            daysUntilDeletion
+          )
+
+          return {
+            email: user.email,
+            username: user.username,
+            createdAt: user.createdAt,
+            daysUntilDeletion,
+            emailSent: emailResult.success,
+            emailError: emailResult.success ? undefined : (emailResult.error || 'email_send_failed'),
+          }
+        } catch (emailError) {
+          log.error('Failed to send unverified account warning email', emailError as Error, {
+            userId: user.id,
+            email: user.email,
+          })
+
+          return {
+            email: user.email,
+            username: user.username,
+            createdAt: user.createdAt,
+            daysUntilDeletion,
+            emailSent: false,
+            emailError: emailError instanceof Error ? emailError.message : 'email_send_failed',
+          }
+        }
+      })
+    )
+
+    const emailsSent = usersWithEmailStatus.filter((user) => user.emailSent).length
+    const emailFailures = usersWithEmailStatus.length - emailsSent
+
+    log.info('Unverified warning email run completed', {
+      attempted: usersWithEmailStatus.length,
+      emailsSent,
+      emailFailures,
+      tokenTtlHours,
+    })
 
     return {
       warned: usersToWarn.length,
-      users: usersToWarn.map(u => ({
-        email: u.email,
-        username: u.username,
-        createdAt: u.createdAt,
-        daysUntilDeletion: Math.ceil(
-          (totalDaysBeforeDeletion - 
-            (Date.now() - u.createdAt.getTime()) / (1000 * 60 * 60 * 24))
-        )
-      }))
+      emailsSent,
+      emailFailures,
+      users: usersWithEmailStatus,
     }
 
   } catch (error) {
