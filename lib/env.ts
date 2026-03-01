@@ -56,11 +56,21 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>
 
+interface ValidateEnvOptions {
+  requireCronSecretInProduction?: boolean
+  requireSocketInternalSecretInProduction?: boolean
+}
+
 /**
  * Validate environment variables on startup
  * Throws an error if validation fails
  */
-export function validateEnv(): Env {
+export function validateEnv(options: ValidateEnvOptions = {}): Env {
+  const {
+    requireCronSecretInProduction = true,
+    requireSocketInternalSecretInProduction = true,
+  } = options
+
   try {
     const env = envSchema.parse(process.env)
     
@@ -83,11 +93,11 @@ export function validateEnv(): Env {
         console.warn('⚠️  NEXTAUTH_SECRET not set. Auth token validation and guest socket auth may fail.')
       }
 
-      if (!env.SOCKET_SERVER_INTERNAL_SECRET) {
+      if (requireSocketInternalSecretInProduction && !env.SOCKET_SERVER_INTERNAL_SECRET) {
         throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production')
       }
 
-      if (!env.CRON_SECRET) {
+      if (requireCronSecretInProduction && !env.CRON_SECRET) {
         throw new Error('CRON_SECRET is required in production')
       }
     }
