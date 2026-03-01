@@ -20,8 +20,8 @@
 
 ### Browser CSP layer
 
-- Production CSP uses nonce-based `script-src` with `'strict-dynamic'`.
-- Production script policy must not rely on `'unsafe-inline'` or `'unsafe-eval'`.
+- Production CSP keeps `script-src` locked to `'self'` plus explicit trusted domains, and disallows `'unsafe-eval'`.
+- Production currently allows `'unsafe-inline'` to support Next.js 15 app-router bootstrap scripts on statically rendered routes.
 - Development keeps relaxed script directives only where needed for local tooling/HMR.
 
 ### Database safety layer (RLS)
