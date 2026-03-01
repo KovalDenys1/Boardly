@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Redis } from '@upstash/redis'
 import { logger } from './logger'
 
 interface RateLimitConfig {
@@ -15,6 +14,15 @@ interface InMemoryRateLimitStore {
   }
 }
 
+interface SharedRateLimitStoreClient {
+  incr(key: string): Promise<unknown>
+  expire(key: string, ttlSeconds: number): Promise<unknown>
+}
+
+interface UpstashRedisModule {
+  Redis: new (config: { url: string; token: string }) => SharedRateLimitStoreClient
+}
+
 // In-memory store for rate limiting (use Redis in production for multi-instance deployments)
 const inMemoryStore: InMemoryRateLimitStore = {}
 const REDIS_ERROR_LOG_INTERVAL_MS = 60 * 1000
@@ -22,17 +30,25 @@ const REDIS_ERROR_LOG_INTERVAL_MS = 60 * 1000
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000
 let lastCleanupAt = 0
 let lastRedisErrorLogAt = 0
-let upstashRedisClient: Redis | null | undefined = undefined
+let upstashRedisClient: SharedRateLimitStoreClient | null | undefined = undefined
+let upstashRedisClientPromise: Promise<SharedRateLimitStoreClient | null> | null = null
 
 function isSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
 function resolveRateLimitBackend(): 'shared' | 'memory' {
-  return getUpstashRedisClient() ? 'shared' : 'memory'
+  const hasSharedConfig =
+    Boolean(process.env.UPSTASH_REDIS_REST_URL) && Boolean(process.env.UPSTASH_REDIS_REST_TOKEN)
+
+  if (!hasSharedConfig) {
+    return 'memory'
+  }
+
+  return upstashRedisClient === null ? 'memory' : 'shared'
 }
 
-function getUpstashRedisClient(): Redis | null {
+async function getUpstashRedisClient(): Promise<SharedRateLimitStoreClient | null> {
   if (upstashRedisClient !== undefined) {
     return upstashRedisClient
   }
@@ -45,12 +61,28 @@ function getUpstashRedisClient(): Redis | null {
     return upstashRedisClient
   }
 
-  upstashRedisClient = new Redis({
-    url,
-    token,
-  })
+  if (!upstashRedisClientPromise) {
+    upstashRedisClientPromise = import('@upstash/redis')
+      .then((module) => {
+        const RedisConstructor = (module as UpstashRedisModule).Redis
+        if (typeof RedisConstructor !== 'function') {
+          throw new Error('Upstash Redis module did not expose Redis constructor')
+        }
 
-  return upstashRedisClient
+        upstashRedisClient = new RedisConstructor({ url, token })
+        return upstashRedisClient
+      })
+      .catch((error) => {
+        logRedisErrorOncePerWindow(error)
+        upstashRedisClient = null
+        return null
+      })
+      .finally(() => {
+        upstashRedisClientPromise = null
+      })
+  }
+
+  return upstashRedisClientPromise
 }
 
 function logRedisErrorOncePerWindow(error: unknown) {
@@ -100,7 +132,7 @@ async function consumeSharedRateLimit(
   windowMs: number,
   now: number
 ): Promise<{ count: number; resetTime: number } | null> {
-  const redis = getUpstashRedisClient()
+  const redis = await getUpstashRedisClient()
   if (!redis) {
     return null
   }
@@ -241,6 +273,7 @@ export const __rateLimitTestUtils = {
   },
   resetSharedClient() {
     upstashRedisClient = undefined
+    upstashRedisClientPromise = null
   },
   getBackend() {
     return resolveRateLimitBackend()
