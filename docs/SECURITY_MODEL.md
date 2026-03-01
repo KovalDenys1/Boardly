@@ -31,17 +31,18 @@
 - `DATABASE_URL`: PostgreSQL connection string.
 - `NEXTAUTH_SECRET`: NextAuth JWT/session signing, minimum 32 characters.
 - `SOCKET_SERVER_INTERNAL_SECRET`: internal socket endpoints (`/api/notify`, `/metrics`), minimum 16 characters.
+- `CRON_SECRET`: dedicated cron endpoint auth secret, minimum 32 characters.
 
 ### Optional and conditional
 
 - `GUEST_JWT_SECRET`: overrides guest token signing secret.
-- `CRON_SECRET`: only for cron endpoints.
 
 ### Usage rules
 
 - Never expose secrets through `NEXT_PUBLIC_*`.
 - Never log raw secrets.
 - Keep a dedicated internal socket secret (no fallback to unrelated app secrets).
+- Keep cron auth isolated to `CRON_SECRET` only (no fallback to `NEXTAUTH_SECRET`).
 - Rotate secrets after incidents and on schedule.
 
 ### Rotation checklist

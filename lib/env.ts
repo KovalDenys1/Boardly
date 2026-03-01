@@ -47,6 +47,7 @@ const envSchema = z.object({
   
   // Security
   ALLOWED_ORIGINS: z.string().optional(),
+  CRON_SECRET: z.string().min(32, 'CRON_SECRET must be at least 32 characters').optional(),
 
   // Analytics access control
   ANALYTICS_ALLOWED_USER_IDS: z.string().optional(),
@@ -84,6 +85,10 @@ export function validateEnv(): Env {
 
       if (!env.SOCKET_SERVER_INTERNAL_SECRET) {
         throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production')
+      }
+
+      if (!env.CRON_SECRET) {
+        throw new Error('CRON_SECRET is required in production')
       }
     }
     
@@ -162,6 +167,7 @@ export function printEnvInfo(): void {
   
   console.log(`  - Socket.IO URL: ${env.NEXT_PUBLIC_SOCKET_URL || 'Not set (using default)'}`)
   console.log(`  - Socket Internal Secret: ${env.SOCKET_SERVER_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set'}`)
+  console.log(`  - Cron Secret: ${env.CRON_SECRET ? '✅ Set' : '⚠️  Not set'}`)
   console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set'}`)
   console.log(
     `  - Analytics Access Allowlist: ${

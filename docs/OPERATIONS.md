@@ -70,6 +70,7 @@ Recommended:
 
 - `DIRECT_URL` (for migrations)
 - `GUEST_JWT_SECRET` (guest token signing isolation)
+- `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
@@ -87,6 +88,7 @@ Canonical secrets only:
 
 - `NEXTAUTH_SECRET`
 - `SOCKET_SERVER_INTERNAL_SECRET`
+- `CRON_SECRET`
 
 Migration from deprecated aliases:
 
@@ -94,8 +96,10 @@ Migration from deprecated aliases:
 2. Ensure `NEXTAUTH_SECRET` is set and has at least 32 characters.
 3. Remove `SOCKET_INTERNAL_SECRET` from all app/socket environments.
 4. Ensure `SOCKET_SERVER_INTERNAL_SECRET` is set and has at least 16 characters.
-5. Redeploy Next.js app and socket service together.
-6. Verify `/api/notify` and internal metrics auth still succeed.
+5. Ensure `CRON_SECRET` is set and scheduler jobs send `Authorization: Bearer ${CRON_SECRET}`.
+6. Do not use `NEXTAUTH_SECRET` for cron endpoint authorization.
+7. Redeploy Next.js app and socket service together.
+8. Verify `/api/notify`, internal metrics auth, and `/api/cron/*` auth still succeed.
 
 ## Build and deploy
 
@@ -185,7 +189,7 @@ Check:
 Check:
 
 - `OPS_ALERT_WEBHOOK_URL` is configured and valid
-- cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts`
+- cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts` (no `NEXTAUTH_SECRET` fallback)
 - if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
