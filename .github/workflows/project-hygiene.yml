@@ -1,0 +1,75 @@
+name: Project Hygiene
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run without mutating project items"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      owner:
+        description: "Project owner login override (user/org)"
+        required: false
+        type: string
+      project_number:
+        description: "Project number override"
+        required: false
+        type: string
+
+concurrency:
+  group: project-hygiene
+  cancel-in-progress: false
+
+jobs:
+  project-hygiene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      repository-projects: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Validate required configuration
+        env:
+          PROJECT_HYGIENE_TOKEN: ${{ secrets.PROJECT_HYGIENE_TOKEN }}
+          PROJECT_HYGIENE_PROJECT_NUMBER: ${{ vars.PROJECT_HYGIENE_PROJECT_NUMBER }}
+          INPUT_PROJECT_NUMBER: ${{ inputs.project_number }}
+        run: |
+          PROJECT_NUMBER="${INPUT_PROJECT_NUMBER:-$PROJECT_HYGIENE_PROJECT_NUMBER}"
+
+          if [ -z "$PROJECT_HYGIENE_TOKEN" ]; then
+            echo "Missing required GitHub secret: PROJECT_HYGIENE_TOKEN"
+            exit 1
+          fi
+
+          if [ -z "$PROJECT_NUMBER" ]; then
+            echo "Missing project number. Set repo variable PROJECT_HYGIENE_PROJECT_NUMBER or provide workflow input project_number."
+            exit 1
+          fi
+
+      - name: Run project hygiene
+        env:
+          PROJECT_HYGIENE_TOKEN: ${{ secrets.PROJECT_HYGIENE_TOKEN }}
+          PROJECT_HYGIENE_OWNER: ${{ inputs.owner || vars.PROJECT_HYGIENE_OWNER || github.repository_owner }}
+          PROJECT_HYGIENE_PROJECT_NUMBER: ${{ inputs.project_number || vars.PROJECT_HYGIENE_PROJECT_NUMBER }}
+          PROJECT_HYGIENE_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+        run: npm run ops:project-hygiene

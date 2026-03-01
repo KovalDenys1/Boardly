@@ -79,9 +79,12 @@ Recommended:
 - `CLEANUP_GUEST_DAYS` (optional guest retention window, defaults to `3`)
 - `REPLAY_RETENTION_DAYS` (optional replay retention window for finished/abandoned/cancelled games, defaults to `90`)
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (optional shared rate-limit backend for production; when absent, app falls back to in-memory limiter)
-- GitHub Actions scheduler secrets (if using `.github/workflows/reliability-alerts-cron.yml`):
+- GitHub Actions scheduler configuration:
 - `RELIABILITY_ALERTS_CRON_URL` (for example `https://boardly.online/api/cron/reliability-alerts`)
 - `CRON_SECRET` (must match the app env value used by the endpoint)
+- `PROJECT_HYGIENE_TOKEN` (PAT used by `.github/workflows/project-hygiene.yml`; needs read/write access to project items plus issue/PR read access)
+- repo variable `PROJECT_HYGIENE_PROJECT_NUMBER` (target GitHub Project v2 number, for example `1`)
+- optional repo variable `PROJECT_HYGIENE_OWNER` (user/org login; defaults to repository owner)
 
 ## Secret migration notes
 
@@ -242,3 +245,29 @@ npm run ops:kpi:report -- --hours=24 --baseline-days=7
 # Run load scenario and produce fail-rate report
 npm run ops:load -- --iterations=80 --concurrency=12 --game-type=tic_tac_toe --report-path=reports/ops-load.json
 ```
+
+## Project board hygiene automation
+
+Workflow: `.github/workflows/project-hygiene.yml`
+
+- Schedule: hourly (`0 * * * *`)
+- Manual run: GitHub Actions `workflow_dispatch`
+- Dry run: set `dry_run=true` in manual dispatch inputs
+
+Local/manual execution examples:
+
+```bash
+# Dry run with explicit owner/project
+npm run ops:project-hygiene -- --dry-run --owner=KovalDenys1 --project=1
+
+# Mutating run via env config
+PROJECT_HYGIENE_OWNER=KovalDenys1 \
+PROJECT_HYGIENE_PROJECT_NUMBER=1 \
+PROJECT_HYGIENE_TOKEN=<token> \
+npm run ops:project-hygiene
+```
+
+Token scope notes for `PROJECT_HYGIENE_TOKEN`:
+
+- Fine-grained PAT: read access to Issues and Pull requests, plus write access to Projects for the target owner project.
+- Classic PAT fallback: include `repo` and `project`.

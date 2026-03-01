@@ -43,6 +43,7 @@
     "ops:alerts:check": "tsx scripts/check-reliability-alerts.ts",
     "ops:kpi:report": "tsx scripts/report-operational-kpis.ts",
     "ops:load": "tsx scripts/run-operational-load.ts",
+    "ops:project-hygiene": "tsx scripts/project-hygiene.ts",
     "find-stuck-games": "tsx scripts/find-stuck-games.ts",
     "fix-stuck-games": "tsx scripts/find-stuck-games.ts --fix",
     "fix-game-statuses": "tsx scripts/fix-game-statuses.ts",
