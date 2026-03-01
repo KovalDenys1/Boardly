@@ -1,10 +1,18 @@
 'use client'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
+
+interface FeatureCard {
+  emoji: string
+  titleKey: TranslationKeys
+  descriptionKey: TranslationKeys
+  delay: string
+}
 
 export default function FeaturesGrid() {
   const { t } = useTranslation()
   
-  const features = [
+  const features: FeatureCard[] = [
     {
       emoji: '⚡',
       titleKey: 'home.features.realTime.title',
@@ -44,8 +52,8 @@ export default function FeaturesGrid() {
           }}
         >
           <div className="text-4xl mb-4" style={{ height: '3rem', display: 'flex', alignItems: 'center' }}>{feature.emoji}</div>
-          <h3 className="text-xl font-bold mb-2 break-words" style={{ minHeight: '1.75rem' }}>{t(feature.titleKey as any)}</h3>
-          <p className="text-white/80 text-sm break-words leading-relaxed" style={{ minHeight: '3rem' }}>{t(feature.descriptionKey as any)}</p>
+          <h3 className="text-xl font-bold mb-2 break-words" style={{ minHeight: '1.75rem' }}>{t(feature.titleKey)}</h3>
+          <p className="text-white/80 text-sm break-words leading-relaxed" style={{ minHeight: '3rem' }}>{t(feature.descriptionKey)}</p>
         </div>
       ))}
     </div>

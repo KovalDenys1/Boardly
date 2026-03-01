@@ -4,15 +4,16 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 
 interface Game {
   id: string
-  nameKey: string
+  nameKey: TranslationKeys
   emoji: string
-  descriptionKey: string
+  descriptionKey: TranslationKeys
   players: string
-  difficultyKey: string
+  difficultyKey: TranslationKeys
   status: 'available' | 'coming-soon'
   route?: string
   color: string
@@ -210,8 +211,8 @@ export default function GamesPage() {
         return a.status === 'available' ? -1 : 1
       }
       // Within the same status group, sort alphabetically by translated name
-      const nameA = t(a.nameKey as any).toLowerCase()
-      const nameB = t(b.nameKey as any).toLowerCase()
+      const nameA = t(a.nameKey).toLowerCase()
+      const nameB = t(b.nameKey).toLowerCase()
       return nameA.localeCompare(nameB)
     })
 
@@ -312,8 +313,8 @@ export default function GamesPage() {
               </div>
 
               {/* Game Info */}
-              <h3 className="text-2xl font-bold mb-2 break-words">{t(game.nameKey as any)}</h3>
-              <p className="text-white/80 text-sm mb-4 break-words leading-relaxed flex-grow">{t(game.descriptionKey as any)}</p>
+              <h3 className="text-2xl font-bold mb-2 break-words">{t(game.nameKey)}</h3>
+              <p className="text-white/80 text-sm mb-4 break-words leading-relaxed flex-grow">{t(game.descriptionKey)}</p>
 
               {/* Game Details */}
               <div className="space-y-2 mb-4">
@@ -324,7 +325,7 @@ export default function GamesPage() {
                 <div className="flex items-center gap-2 text-sm flex-wrap">
                   <span className="text-white/60">⚡</span>
                   <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200 break-words">
-                    {t('games.difficulty')}: {t(game.difficultyKey as any)}
+                    {t('games.difficulty')}: {t(game.difficultyKey)}
                   </span>
                 </div>
               </div>

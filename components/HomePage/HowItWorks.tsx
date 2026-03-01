@@ -1,10 +1,18 @@
 'use client'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
+
+interface HowItWorksStep {
+  number: number
+  bgColor: string
+  titleKey: TranslationKeys
+  descriptionKey: TranslationKeys
+}
 
 export default function HowItWorks() {
   const { t } = useTranslation()
   
-  const steps = [
+  const steps: HowItWorksStep[] = [
     {
       number: 1,
       bgColor: 'bg-blue-500',
@@ -34,8 +42,8 @@ export default function HowItWorks() {
             <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${step.bgColor} text-white font-bold text-2xl mb-4 shadow-lg`} style={{ width: '64px', height: '64px' }}>
               {step.number}
             </div>
-            <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(step.titleKey as any)}</h3>
-            <p className="text-white/80 mb-0">{t(step.descriptionKey as any)}</p>
+            <h3 className="text-xl font-bold mb-2" style={{ minHeight: '1.75rem' }}>{t(step.titleKey)}</h3>
+            <p className="text-white/80 mb-0">{t(step.descriptionKey)}</p>
           </div>
         ))}
       </div>
