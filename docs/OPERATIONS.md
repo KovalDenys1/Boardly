@@ -254,6 +254,18 @@ Workflow: `.github/workflows/project-hygiene.yml`
 - Manual run: GitHub Actions `workflow_dispatch`
 - Dry run: set `dry_run=true` in manual dispatch inputs
 
+Workflow: `.github/workflows/project-auto-add.yml`
+
+- Trigger: immediately on `issues.opened/reopened` and `pull_request.opened/reopened`
+- Action: adds new issue/PR cards to the configured Project v2
+- Owner resolution: tries `PROJECT_HYGIENE_OWNER` as user first, then as organization
+
+Required configuration (for both workflows):
+
+- GitHub Secret: `PROJECT_HYGIENE_TOKEN`
+- Repository Variable: `PROJECT_HYGIENE_PROJECT_NUMBER`
+- Optional Repository Variable: `PROJECT_HYGIENE_OWNER` (defaults to `github.repository_owner`)
+
 Local/manual execution examples:
 
 ```bash

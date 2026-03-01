@@ -1,0 +1,117 @@
+name: Project Auto Add
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+  pull_request:
+    types:
+      - opened
+      - reopened
+
+concurrency:
+  group: project-auto-add-${{ github.event.issue.node_id || github.event.pull_request.node_id }}
+  cancel-in-progress: false
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      repository-projects: write
+    steps:
+      - name: Validate required configuration
+        env:
+          PROJECT_HYGIENE_TOKEN: ${{ secrets.PROJECT_HYGIENE_TOKEN }}
+          PROJECT_HYGIENE_PROJECT_NUMBER: ${{ vars.PROJECT_HYGIENE_PROJECT_NUMBER }}
+        run: |
+          if [ -z "$PROJECT_HYGIENE_TOKEN" ]; then
+            echo "Missing required GitHub secret: PROJECT_HYGIENE_TOKEN"
+            exit 1
+          fi
+
+          if [ -z "$PROJECT_HYGIENE_PROJECT_NUMBER" ]; then
+            echo "Missing required repository variable: PROJECT_HYGIENE_PROJECT_NUMBER"
+            exit 1
+          fi
+
+      - name: Resolve content node id
+        id: content
+        run: |
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            echo "content_id=${{ github.event.issue.node_id }}" >> "$GITHUB_OUTPUT"
+            echo "content_url=${{ github.event.issue.html_url }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "content_id=${{ github.event.pull_request.node_id }}" >> "$GITHUB_OUTPUT"
+            echo "content_url=${{ github.event.pull_request.html_url }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Add issue/PR to project
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_HYGIENE_TOKEN }}
+          PROJECT_OWNER: ${{ vars.PROJECT_HYGIENE_OWNER || github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_HYGIENE_PROJECT_NUMBER }}
+          CONTENT_ID: ${{ steps.content.outputs.content_id }}
+          CONTENT_URL: ${{ steps.content.outputs.content_url }}
+        run: |
+          set -euo pipefail
+
+          USER_QUERY='query($owner:String!,$projectNumber:Int!){ user(login:$owner){ projectV2(number:$projectNumber){ id } } }'
+          ORG_QUERY='query($owner:String!,$projectNumber:Int!){ organization(login:$owner){ projectV2(number:$projectNumber){ id } } }'
+          ADD_ITEM_MUTATION='mutation($projectId:ID!,$contentId:ID!){ addProjectV2ItemById(input:{projectId:$projectId,contentId:$contentId}){ item { id } } }'
+
+          PROJECT_ID="$(
+            gh api graphql \
+              -f query="$USER_QUERY" \
+              -F owner="$PROJECT_OWNER" \
+              -F projectNumber="$PROJECT_NUMBER" \
+              --jq '.data.user.projectV2.id // empty' 2>/dev/null || true
+          )"
+
+          if [ -z "$PROJECT_ID" ]; then
+            PROJECT_ID="$(
+              gh api graphql \
+                -f query="$ORG_QUERY" \
+                -F owner="$PROJECT_OWNER" \
+                -F projectNumber="$PROJECT_NUMBER" \
+                --jq '.data.organization.projectV2.id // empty' 2>/dev/null || true
+            )"
+          fi
+
+          if [ -z "$PROJECT_ID" ]; then
+            echo "Unable to resolve Project v2 id for owner='$PROJECT_OWNER' number='$PROJECT_NUMBER'."
+            exit 1
+          fi
+
+          set +e
+          ADD_OUTPUT="$(
+            gh api graphql \
+              -f query="$ADD_ITEM_MUTATION" \
+              -F projectId="$PROJECT_ID" \
+              -F contentId="$CONTENT_ID" 2>&1
+          )"
+          ADD_EXIT=$?
+          set -e
+
+          if [ "$ADD_EXIT" -ne 0 ]; then
+            if echo "$ADD_OUTPUT" | grep -Eiq 'already exists|already added|must not already exist'; then
+              echo "Item already present in project: $CONTENT_URL"
+              exit 0
+            fi
+
+            echo "$ADD_OUTPUT"
+            exit "$ADD_EXIT"
+          fi
+
+          ITEM_ID="$(printf '%s' "$ADD_OUTPUT" | jq -r '.data.addProjectV2ItemById.item.id // empty')"
+          if [ -z "$ITEM_ID" ]; then
+            echo "Unexpected addProjectV2ItemById response:"
+            echo "$ADD_OUTPUT"
+            exit 1
+          fi
+
+          echo "Added to project: $CONTENT_URL -> $ITEM_ID"
