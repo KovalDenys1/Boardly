@@ -175,6 +175,18 @@ Check:
 - token is created through `/api/auth/guest-session`
 - `NEXTAUTH_SECRET` or `GUEST_JWT_SECRET` is configured
 
+### CSRF blocks authenticated API writes
+
+Symptoms:
+
+- `403` response with `Invalid origin. Possible CSRF attack.` on `POST/PUT/PATCH/DELETE` to `/api/*`
+
+Check:
+
+- frontend request is same-origin (or origin is explicitly allowed)
+- browser sends expected `Origin` or `Referer` headers
+- deployment origin / `CORS_ORIGIN` / `ALLOWED_ORIGINS` values are correct
+
 ### Reconnect reliability regressed
 
 Check:

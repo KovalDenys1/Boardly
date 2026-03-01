@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { getSecurityHeaders } from '@/lib/csrf'
+import { getSecurityHeaders, verifyCsrfToken } from '@/lib/csrf'
 import { getServerSocketUrl } from '@/lib/socket-url'
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
@@ -40,6 +40,13 @@ const ALLOWED_CORS_ORIGIN_SET = new Set(
     .map((origin) => normalizeCorsOrigin(origin))
     .filter((origin): origin is string => origin !== null)
 )
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+const AUTH_SESSION_COOKIE_NAMES = [
+  'next-auth.session-token',
+  '__Secure-next-auth.session-token',
+  'authjs.session-token',
+  '__Secure-authjs.session-token',
+]
 
 function isLocalDevelopmentOrigin(origin: string): boolean {
   try {
@@ -63,6 +70,10 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
   }
 
   return null
+}
+
+function hasAuthenticatedSessionCookie(request: NextRequest): boolean {
+  return AUTH_SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name))
 }
 
 function buildCspHeaderValue(nonce: string | null) {
@@ -184,6 +195,14 @@ export async function middleware(request: NextRequest) {
     // Handle preflight requests
     if (request.method === 'OPTIONS') {
       return new NextResponse(null, { status: 200, headers: response.headers })
+    }
+
+    const isUnsafeMethod = !SAFE_METHODS.has(request.method.toUpperCase())
+    if (isUnsafeMethod && hasAuthenticatedSessionCookie(request) && !verifyCsrfToken(request)) {
+      return NextResponse.json(
+        { error: 'Invalid origin. Possible CSRF attack.' },
+        { status: 403 }
+      )
     }
   }
 
