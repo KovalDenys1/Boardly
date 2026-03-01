@@ -23,6 +23,8 @@ services:
         sync: false
       - key: NEXTAUTH_SECRET
         sync: false
+      - key: SOCKET_SERVER_INTERNAL_SECRET
+        sync: false
       - key: GUEST_JWT_SECRET
         sync: false
     healthCheckPath: /health
