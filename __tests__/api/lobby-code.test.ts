@@ -113,6 +113,8 @@ describe('GET /api/lobby/[code]', () => {
     })
     const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any
     expect(queryArgs.select.creator.select.email).toBeUndefined()
+    expect(queryArgs.select.games.include.players.include.user.select.isGuest).toBe(true)
+    expect(queryArgs.select.games.include.players.include.user.select.bot.select.difficulty).toBe(true)
     expect(queryArgs.select.games.include.players.include.user.select.email).toBeUndefined()
   })
 
@@ -144,6 +146,8 @@ describe('GET /api/lobby/[code]', () => {
                 id: 'user-2',
                 username: 'beta',
                 email: 'beta@example.com',
+                isGuest: false,
+                bot: { difficulty: 'hard' },
               },
             },
           ],
@@ -160,8 +164,12 @@ describe('GET /api/lobby/[code]', () => {
     expect(response.status).toBe(200)
     expect(data.activeGame?.id).toBe('game-playing')
     expect(data.activeGame?.players?.[0]?.user?.email).toBeUndefined()
+    expect(data.activeGame?.players?.[0]?.user?.isGuest).toBe(false)
+    expect(data.activeGame?.players?.[0]?.user?.isBot).toBe(true)
+    expect(data.activeGame?.players?.[0]?.user?.bot).toEqual({ difficulty: 'hard' })
     expect(data.game?.id).toBe('game-playing')
     expect(data.game?.players?.[0]?.user?.email).toBeUndefined()
+    expect(data.game?.players?.[0]?.user?.isBot).toBe(true)
     expect(data.lobby?.games).toHaveLength(1)
     expect(data.lobby?.games?.[0]?.id).toBe('game-playing')
     expect(data.lobby?.games?.[0]?.players?.[0]?.user?.email).toBeUndefined()

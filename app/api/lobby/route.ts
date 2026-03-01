@@ -7,6 +7,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { sanitizeLobbyCreatorIdentity } from '@/lib/lobby-response'
 import { hashLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 
@@ -302,6 +303,7 @@ export async function GET(request: NextRequest) {
               password: true,
               creator: {
                 select: {
+                  id: true,
                   username: true,
                 },
               },
@@ -409,9 +411,7 @@ export async function GET(request: NextRequest) {
 
     const sanitizedLobbies = filteredLobbies.map(lobby => {
       const { password, creator, ...safeLobby } = lobby
-      const sanitizedCreator = creator
-        ? (({ email: _email, ...safeCreator }: { email?: string; [key: string]: unknown }) => safeCreator)(creator)
-        : null
+      const sanitizedCreator = sanitizeLobbyCreatorIdentity(creator)
 
       return {
         ...safeLobby,

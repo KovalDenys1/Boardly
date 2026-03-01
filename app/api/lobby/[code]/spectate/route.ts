@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { sanitizeGameStateForSpectator } from '@/lib/spectator-state'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
@@ -59,7 +60,11 @@ export async function GET(
                   id: true,
                   username: true,
                   isGuest: true,
-                  bot: true,
+                  bot: {
+                    select: {
+                      difficulty: true,
+                    },
+                  },
                 },
               },
             },
@@ -83,18 +88,15 @@ export async function GET(
         ...activeGame,
         players: Array.isArray(activeGame.players)
           ? activeGame.players.map((player: any) => {
-              if (!player?.user || typeof player.user !== 'object') return player
-              const { email: _email, ...safeUser } = player.user
-              return { ...player, user: safeUser }
+              const safeUser = sanitizeLobbyUserIdentity(player?.user)
+              return safeUser ? { ...player, user: safeUser } : player
             })
           : activeGame.players,
         state: JSON.stringify(sanitizeGameStateForSpectator(lobby.gameType, activeGame.state)),
       }
     : null
   const { creator, ...safeLobbyWithoutCreator } = lobby
-  const sanitizedCreator = creator
-    ? (({ email: _email, ...safeCreator }: { email?: string; [key: string]: unknown }) => safeCreator)(creator as any)
-    : null
+  const sanitizedCreator = sanitizeLobbyCreatorIdentity(creator)
 
   const canJoinAsPlayer = (() => {
     const game = activeGame

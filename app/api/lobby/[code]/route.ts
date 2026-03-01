@@ -8,6 +8,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
@@ -97,7 +98,12 @@ export async function GET(
                   select: {
                     id: true,
                     username: true,
-                    bot: true,  // Bot relation
+                    isGuest: true,
+                    bot: {
+                      select: {
+                        difficulty: true,
+                      },
+                    },
                   },
                 },
               },
@@ -510,17 +516,14 @@ export async function GET(
           ...activeGame,
           players: Array.isArray(activeGame.players)
             ? activeGame.players.map((player: any) => {
-                if (!player?.user || typeof player.user !== 'object') return player
-                const { email: _email, ...safeUser } = player.user
-                return { ...player, user: safeUser }
+                const safeUser = sanitizeLobbyUserIdentity(player?.user)
+                return safeUser ? { ...player, user: safeUser } : player
               })
             : activeGame.players,
         }
       : null
     const { creator, ...safeLobbyWithoutCreator } = safeLobby
-    const sanitizedCreator = creator
-      ? (({ email: _email, ...safeCreator }: { email?: string; [key: string]: unknown }) => safeCreator)(creator as any)
-      : null
+    const sanitizedCreator = sanitizeLobbyCreatorIdentity(creator)
 
     return NextResponse.json({
       lobby: {
