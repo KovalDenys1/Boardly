@@ -41,7 +41,12 @@ describe('cleanupStaleLobbiesAndGames', () => {
         games: [],
       },
     ] as any)
-    mockPrisma.lobbies.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.lobbies.updateMany
+      .mockResolvedValueOnce({ count: 1 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any)
+    mockPrisma.games.updateMany
+      .mockResolvedValueOnce({ count: 0 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any)
 
     const result = await cleanupStaleLobbiesAndGames({
       now: new Date('2026-02-27T21:00:00.000Z'),
@@ -101,7 +106,11 @@ describe('cleanupStaleLobbiesAndGames', () => {
     mockPrisma.games.updateMany
       .mockResolvedValueOnce({ count: 1 } as any)
       .mockResolvedValueOnce({ count: 1 } as any)
-    mockPrisma.lobbies.updateMany.mockResolvedValue({ count: 2 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any)
+    mockPrisma.lobbies.updateMany
+      .mockResolvedValueOnce({ count: 2 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any)
 
     const result = await cleanupStaleLobbiesAndGames({
       now,
@@ -136,6 +145,50 @@ describe('cleanupStaleLobbiesAndGames', () => {
         data: expect.objectContaining({
           status: 'abandoned',
           abandonedAt: now,
+        }),
+      })
+    )
+  })
+
+  it('finalizes stale games globally even when per-lobby scan is empty', async () => {
+    mockPrisma.lobbies.findMany.mockResolvedValue([] as any)
+    mockPrisma.games.updateMany
+      .mockResolvedValueOnce({ count: 2 } as any)
+      .mockResolvedValueOnce({ count: 3 } as any)
+    mockPrisma.lobbies.updateMany.mockResolvedValueOnce({ count: 4 } as any)
+
+    const result = await cleanupStaleLobbiesAndGames({
+      now: new Date('2026-02-27T21:00:00.000Z'),
+      waitingStaleHours: 1,
+      playingStaleHours: 2,
+    })
+
+    expect(result.scannedLobbies).toBe(0)
+    expect(result.scannedActiveGames).toBe(0)
+    expect(result.cancelledWaitingGames).toBe(2)
+    expect(result.abandonedPlayingGames).toBe(3)
+    expect(result.deactivatedLobbies).toBe(4)
+
+    expect(mockPrisma.games.updateMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'waiting',
+        }),
+        data: expect.objectContaining({
+          status: 'cancelled',
+        }),
+      })
+    )
+
+    expect(mockPrisma.games.updateMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'playing',
+        }),
+        data: expect.objectContaining({
+          status: 'abandoned',
         }),
       })
     )

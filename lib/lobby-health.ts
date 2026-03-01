@@ -112,6 +112,8 @@ export async function cleanupStaleLobbiesAndGames(
   const lobbiesToDeactivate = new Set<string>()
   const waitingGamesToCancel = new Set<string>()
   const playingGamesToAbandon = new Set<string>()
+  const waitingStaleCutoff = new Date(now.getTime() - waitingStaleHours * 60 * 60 * 1000)
+  const playingStaleCutoff = new Date(now.getTime() - playingStaleHours * 60 * 60 * 1000)
 
   for (const lobby of lobbies) {
     const activeGame = pickRelevantLobbyGame<CleanupLobbyGame>(lobby.games as CleanupLobbyGame[])
@@ -187,12 +189,73 @@ export async function cleanupStaleLobbiesAndGames(
     result.deactivatedLobbies = updated.count
   }
 
+  // Global backstop:
+  // ensure stale waiting/playing games are finalized even if their lobbies are already inactive
+  // or skipped by the per-lobby batch scan above.
+  const staleWaitingUpdated = await prisma.games.updateMany({
+    where: {
+      status: 'waiting',
+      updatedAt: {
+        lte: waitingStaleCutoff,
+      },
+    },
+    data: {
+      status: 'cancelled',
+    },
+  })
+  result.cancelledWaitingGames += staleWaitingUpdated.count
+
+  const stalePlayingUpdated = await prisma.games.updateMany({
+    where: {
+      status: 'playing',
+      OR: [
+        {
+          lastMoveAt: {
+            lte: playingStaleCutoff,
+          },
+        },
+        {
+          updatedAt: {
+            lte: playingStaleCutoff,
+          },
+        },
+      ],
+    },
+    data: {
+      status: 'abandoned',
+      abandonedAt: now,
+    },
+  })
+  result.abandonedPlayingGames += stalePlayingUpdated.count
+
+  // Final pass deactivates any lobby that no longer has waiting/playing games.
+  const globallyDeactivatedLobbies = await prisma.lobbies.updateMany({
+    where: {
+      isActive: true,
+      games: {
+        none: {
+          status: {
+            in: ['waiting', 'playing'],
+          },
+        },
+      },
+    },
+    data: {
+      isActive: false,
+      spectatorCount: 0,
+    },
+  })
+  result.deactivatedLobbies += globallyDeactivatedLobbies.count
+
   logger.info('Lobby health cleanup cycle completed', {
     scannedLobbies: result.scannedLobbies,
     scannedActiveGames: result.scannedActiveGames,
     deactivatedLobbies: result.deactivatedLobbies,
     cancelledWaitingGames: result.cancelledWaitingGames,
     abandonedPlayingGames: result.abandonedPlayingGames,
+    staleWaitingBackstopUpdated: staleWaitingUpdated.count,
+    stalePlayingBackstopUpdated: stalePlayingUpdated.count,
+    globallyDeactivatedLobbies: globallyDeactivatedLobbies.count,
     waitingStaleHours,
     playingStaleHours,
     batchLimit,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
 import { authorizeCronRequest } from '@/lib/cron-auth'
+import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
 
 const log = apiLogger('GET /api/cron/turn-reminders')
 
@@ -10,11 +11,13 @@ async function handleCronRequest(request: NextRequest) {
     const authError = authorizeCronRequest(request)
     if (authError) return authError
 
+    const cleanup = await cleanupStaleLobbiesAndGames()
     const result = await runTurnReminderCycle({
       baseUrl: new URL(request.url).origin,
     })
 
     return NextResponse.json({
+      cleanup,
       ...result,
       timestamp: new Date().toISOString(),
     })
