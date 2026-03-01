@@ -74,7 +74,9 @@ i18n
     },
     detection: {
       // Order of detection methods
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      // Keep first client render aligned with SSR output (htmlTag from server),
+      // then switch to persisted language after hydration in Providers.
+      order: ['htmlTag'],
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },
@@ -86,4 +88,3 @@ i18n
 export default i18n
 export { availableLocales, defaultLocale }
 export type { Locale }
-
