@@ -38,8 +38,8 @@ import {
   SocketRooms
 } from './types/socket-events'
 
-// Validate environment variables on startup
-validateEnv()
+// Socket runtime does not serve /api/cron routes, so CRON_SECRET is not required here.
+validateEnv({ requireCronSecretInProduction: false })
 printEnvInfo()
 
 const port = Number(process.env.PORT) || 3001

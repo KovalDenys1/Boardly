@@ -42,4 +42,11 @@ describe('validateEnv', () => {
 
     expect(() => validateEnv()).not.toThrow()
   })
+
+  it('allows production socket runtime without CRON_SECRET when explicitly opted out', () => {
+    applyBaseEnv('production')
+    delete process.env.CRON_SECRET
+
+    expect(() => validateEnv({ requireCronSecretInProduction: false })).not.toThrow()
+  })
 })
