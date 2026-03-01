@@ -2,7 +2,7 @@
 
 import { signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
 
@@ -23,19 +23,29 @@ export function MobileMenu({
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
   const canAccessGames = isAuthenticated || isGuestSession
 
   const isActive = (path: string) => pathname === path
 
+  const clearCloseTimeout = useCallback(() => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+  }, [])
+
   const closeMenu = useCallback(() => {
+    clearCloseTimeout()
     setIsClosing(true)
-    setTimeout(() => {
+    closeTimeoutRef.current = setTimeout(() => {
       setMobileMenuOpen(false)
       setIsClosing(false)
+      closeTimeoutRef.current = null
     }, 300) // Match animation duration
-  }, [])
+  }, [clearCloseTimeout])
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -69,8 +79,13 @@ export function MobileMenu({
     if (mobileMenuOpen) {
       closeMenu()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+  }, [pathname, mobileMenuOpen, closeMenu])
+
+  useEffect(() => {
+    return () => {
+      clearCloseTimeout()
+    }
+  }, [clearCloseTimeout])
 
   return (
     <>
@@ -80,6 +95,8 @@ export function MobileMenu({
           if (mobileMenuOpen) {
             closeMenu()
           } else {
+            clearCloseTimeout()
+            setIsClosing(false)
             setMobileMenuOpen(true)
           }
         }}
