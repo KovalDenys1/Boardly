@@ -121,6 +121,56 @@ export default function GamesPage() {
       status: 'coming-soon',
       color: 'from-green-600 to-lime-400'
     },
+    {
+      id: 'guess-my-drawing',
+      nameKey: 'games.guess_my_drawing.name',
+      emoji: '🎨',
+      descriptionKey: 'games.guess_my_drawing.description',
+      players: '3-10',
+      difficultyKey: 'games.guess_my_drawing.difficulty',
+      status: 'coming-soon',
+      color: 'from-cyan-500 to-blue-600'
+    },
+    {
+      id: 'liars-party',
+      nameKey: 'games.liars_party.name',
+      emoji: '🎭',
+      descriptionKey: 'games.liars_party.description',
+      players: '4-12',
+      difficultyKey: 'games.liars_party.difficulty',
+      status: 'coming-soon',
+      color: 'from-rose-500 to-orange-500'
+    },
+    {
+      id: 'fake-artist',
+      nameKey: 'games.fake_artist.name',
+      emoji: '🖌️',
+      descriptionKey: 'games.fake_artist.description',
+      players: '4-10',
+      difficultyKey: 'games.fake_artist.difficulty',
+      status: 'coming-soon',
+      color: 'from-fuchsia-500 to-violet-600'
+    },
+    {
+      id: 'telephone-doodle',
+      nameKey: 'games.telephone_doodle.name',
+      emoji: '📞',
+      descriptionKey: 'games.telephone_doodle.description',
+      players: '3-12',
+      difficultyKey: 'games.telephone_doodle.difficulty',
+      status: 'coming-soon',
+      color: 'from-sky-500 to-indigo-600'
+    },
+    {
+      id: 'alibi-night',
+      nameKey: 'games.alibi_night.name',
+      emoji: '🕶️',
+      descriptionKey: 'games.alibi_night.description',
+      players: '4-12',
+      difficultyKey: 'games.alibi_night.difficulty',
+      status: 'coming-soon',
+      color: 'from-amber-500 to-red-600'
+    },
   ]
 
   // Handle authentication redirect in useEffect to avoid hydration issues

@@ -528,6 +528,31 @@ const en = {
       description: 'Act out or draw the word for your team to guess!',
       difficulty: 'Medium',
     },
+    guess_my_drawing: {
+      name: 'Sketch & Guess',
+      description: 'Draw a secret prompt and race to guess each other\'s sketches!',
+      difficulty: 'Medium',
+    },
+    liars_party: {
+      name: 'Liar\'s Party',
+      description: 'Bluff, read the room, and catch the best liars before they fool everyone.',
+      difficulty: 'Hard',
+    },
+    fake_artist: {
+      name: 'Fake Artist',
+      description: 'One player does not know the prompt. Spot the fake before they blend in.',
+      difficulty: 'Medium',
+    },
+    telephone_doodle: {
+      name: 'Telephone Doodle',
+      description: 'Pass text to drawing to text in a chain, then reveal the hilarious final result.',
+      difficulty: 'Easy',
+    },
+    alibi_night: {
+      name: 'Alibi Night',
+      description: 'Invent alibis, challenge stories, and vote out the most suspicious player.',
+      difficulty: 'Hard',
+    },
   },
   game: {
     ui: {

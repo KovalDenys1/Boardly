@@ -527,6 +527,31 @@ const no = {
       name: 'Krokodille',
       description: 'Spill ut eller tegn ordet for at laget ditt skal gjette!',
       difficulty: 'Middels'
+    },
+    guess_my_drawing: {
+      name: 'Tegn og gjett',
+      description: 'Tegn en hemmelig ledetråd og gjett hverandres skisser så raskt du kan!',
+      difficulty: 'Middels'
+    },
+    liars_party: {
+      name: 'Løgnerfest',
+      description: 'Bløff, les bordet og avslør de beste løgnerne før de lurer alle.',
+      difficulty: 'Vanskelig'
+    },
+    fake_artist: {
+      name: 'Falsk kunstner',
+      description: 'Én spiller kjenner ikke ledetråden. Finn den falske kunstneren før avstemningen.',
+      difficulty: 'Middels'
+    },
+    telephone_doodle: {
+      name: 'Tegnet telefon',
+      description: 'Send tekst -> tegning -> tekst i kjede og se hvor morsomt budskapet ender.',
+      difficulty: 'Lett'
+    },
+    alibi_night: {
+      name: 'Alibi-kveld',
+      description: 'Finn på alibier, utfordre historier og stem ut den mest mistenkelige spilleren.',
+      difficulty: 'Vanskelig'
     }
   },
   game: {
