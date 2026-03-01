@@ -57,24 +57,31 @@ export async function POST(request: NextRequest) {
     })
 
     if (user && !user.emailVerified) {
-      await prisma.emailVerificationTokens.deleteMany({
-        where: { userId: user.id },
-      })
+      try {
+        await prisma.emailVerificationTokens.deleteMany({
+          where: { userId: user.id },
+        })
 
-      const token = nanoid(32)
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        const token = nanoid(32)
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-      await prisma.emailVerificationTokens.create({
-        data: {
+        await prisma.emailVerificationTokens.create({
+          data: {
+            userId: user.id,
+            token,
+            expires,
+          },
+        })
+
+        await sendVerificationEmail(user.email ?? normalizedEmail, token, user.username || 'User')
+
+        log.info('Verification email resent', { userId: user.id })
+      } catch (dispatchError) {
+        log.warn('Verification resend processing failed', {
           userId: user.id,
-          token,
-          expires,
-        },
-      })
-
-      await sendVerificationEmail(user.email ?? normalizedEmail, token, user.username || 'User')
-
-      log.info('Verification email resent', { userId: user.id })
+          error: dispatchError instanceof Error ? dispatchError.message : 'Unknown error',
+        })
+      }
     } else {
       log.info('Verification resend accepted without token issue', {
         hasUser: !!user,
