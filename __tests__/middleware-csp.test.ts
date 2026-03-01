@@ -28,7 +28,7 @@ describe('middleware CSP policy', () => {
     mockGetToken.mockResolvedValue(null as any)
   })
 
-  it('uses nonce-based script-src policy without unsafe directives in non-development environments', async () => {
+  it('uses production-safe script-src policy compatible with Next.js runtime bootstrap', async () => {
     const request = new NextRequest('http://localhost:3000/games', {
       method: 'GET',
     })
@@ -42,10 +42,11 @@ describe('middleware CSP policy', () => {
 
     expect(csp).toBeTruthy()
     expect(csp).toContain('script-src')
-    expect(csp).toContain("'strict-dynamic'")
-    expect(csp).toMatch(/'nonce-[^']+'/)
+    expect(csp).toContain("'unsafe-inline'")
     expect(scriptSrcDirective).toBeTruthy()
-    expect(scriptSrcDirective).not.toContain("'unsafe-inline'")
+    expect(scriptSrcDirective).toContain("'self'")
+    expect(scriptSrcDirective).not.toContain("'strict-dynamic'")
+    expect(scriptSrcDirective).not.toMatch(/'nonce-[^']+'/)
     expect(scriptSrcDirective).not.toContain("'unsafe-eval'")
   })
 })

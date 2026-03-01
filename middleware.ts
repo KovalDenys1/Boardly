@@ -76,7 +76,7 @@ function hasAuthenticatedSessionCookie(request: NextRequest): boolean {
   return AUTH_SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name))
 }
 
-function buildCspHeaderValue(nonce: string | null) {
+function buildCspHeaderValue() {
   const connectSrcCandidates = new Set<string>([
     "'self'",
     SOCKET_URL,
@@ -110,9 +110,12 @@ function buildCspHeaderValue(nonce: string | null) {
   }
 
   const connectSrcValue = Array.from(connectSrcCandidates).join(' ')
+  // Next.js 15 app-router output includes inline bootstrap scripts without nonce
+  // across statically rendered routes. Keep production CSP compatible with that
+  // output to avoid blocking core Next.js chunk/bootstrap execution.
   const scriptSrcValue = IS_DEVELOPMENT
     ? "'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
-    : `'self' 'nonce-${nonce}' 'strict-dynamic' https://vercel.live https://accounts.google.com https://apis.google.com`
+    : "'self' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
 
   return `
     default-src 'self';
@@ -132,17 +135,7 @@ function buildCspHeaderValue(nonce: string | null) {
 }
 
 export async function middleware(request: NextRequest) {
-  const nonce = IS_DEVELOPMENT ? null : crypto.randomUUID().replace(/-/g, '')
-  const requestHeaders = new Headers(request.headers)
-  if (nonce) {
-    requestHeaders.set('x-nonce', nonce)
-  }
-
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+  const response = NextResponse.next()
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
@@ -177,7 +170,7 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
-  response.headers.set('Content-Security-Policy', buildCspHeaderValue(nonce))
+  response.headers.set('Content-Security-Policy', buildCspHeaderValue())
 
   // Add CORS headers for API routes
   if (pathname.startsWith('/api')) {

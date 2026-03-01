@@ -214,8 +214,8 @@ Check:
 
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
 
-- `Content-Security-Policy` includes nonce-based `script-src` with `'strict-dynamic'`
-- `Content-Security-Policy` does not include `'unsafe-inline'` in `script-src`
+- `Content-Security-Policy` `script-src` includes `'self'` and trusted script origins
+- `Content-Security-Policy` `script-src` includes `'unsafe-inline'` (required by current Next.js 15 bootstrap output)
 - `Content-Security-Policy` does not include `'unsafe-eval'` in `script-src`
 
 Example:

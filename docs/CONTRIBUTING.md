@@ -18,6 +18,7 @@ npm run dev:all
 4. Run verification commands.
 5. Open PR into `develop` with issue reference.
 6. Release via PR from `develop` to `main` (no direct pushes to protected branches).
+7. After PR merge, delete the local task branch (`git branch -d <branch>`). Remote source branches are auto-deleted by repository settings.
 
 ## Verification commands
 
