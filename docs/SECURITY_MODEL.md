@@ -12,6 +12,12 @@
 - API routes validate actor identity and permissions before state mutation.
 - Rate limiting is applied on sensitive routes.
 
+### Browser CSP layer
+
+- Production CSP uses nonce-based `script-src` with `'strict-dynamic'`.
+- Production script policy must not rely on `'unsafe-inline'` or `'unsafe-eval'`.
+- Development keeps relaxed script directives only where needed for local tooling/HMR.
+
 ### Database safety layer (RLS)
 
 - RLS policies are used as defense-in-depth for direct DB access scenarios.

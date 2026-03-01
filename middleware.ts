@@ -65,7 +65,7 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
   return null
 }
 
-function buildCspHeaderValue() {
+function buildCspHeaderValue(nonce: string | null) {
   const connectSrcCandidates = new Set<string>([
     "'self'",
     SOCKET_URL,
@@ -99,10 +99,13 @@ function buildCspHeaderValue() {
   }
 
   const connectSrcValue = Array.from(connectSrcCandidates).join(' ')
+  const scriptSrcValue = IS_DEVELOPMENT
+    ? "'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com"
+    : `'self' 'nonce-${nonce}' 'strict-dynamic' https://vercel.live https://accounts.google.com https://apis.google.com`
 
   return `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://accounts.google.com https://apis.google.com;
+    script-src ${scriptSrcValue};
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
@@ -117,10 +120,18 @@ function buildCspHeaderValue() {
   `.replace(/\s{2,}/g, ' ').trim()
 }
 
-const CSP_HEADER_VALUE = buildCspHeaderValue()
-
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
+  const nonce = IS_DEVELOPMENT ? null : crypto.randomUUID().replace(/-/g, '')
+  const requestHeaders = new Headers(request.headers)
+  if (nonce) {
+    requestHeaders.set('x-nonce', nonce)
+  }
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
@@ -155,7 +166,7 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
-  response.headers.set('Content-Security-Policy', CSP_HEADER_VALUE)
+  response.headers.set('Content-Security-Policy', buildCspHeaderValue(nonce))
 
   // Add CORS headers for API routes
   if (pathname.startsWith('/api')) {

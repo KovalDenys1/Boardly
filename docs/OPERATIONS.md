@@ -194,6 +194,20 @@ Check:
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
 - run manual dry-run: `npm run ops:alerts:check -- --dry-run`
 
+### CSP hardening verification (preview/production)
+
+Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
+
+- `Content-Security-Policy` includes nonce-based `script-src` with `'strict-dynamic'`
+- `Content-Security-Policy` does not include `'unsafe-inline'` in `script-src`
+- `Content-Security-Policy` does not include `'unsafe-eval'` in `script-src`
+
+Example:
+
+```bash
+curl -I https://boardly.online/games | grep -i content-security-policy
+```
+
 ### Replay storage grows over time
 
 Check:
