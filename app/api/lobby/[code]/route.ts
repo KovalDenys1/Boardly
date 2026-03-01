@@ -8,6 +8,8 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
 import { getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import {
   hashLobbyPassword,
   isHashedLobbyPassword,
@@ -18,6 +20,18 @@ import { toPersistedGameType } from '@/lib/game-type-storage'
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const UNLIMITED_SPECTATORS_VALUE = 0
+function resolveTurnTimerSeconds(turnTimer: unknown): number {
+  if (typeof turnTimer !== 'number' || !Number.isFinite(turnTimer)) return 0
+  return Math.max(0, Math.floor(turnTimer))
+}
+
+function resolveLastMoveAtDate(lastMoveAt: unknown): Date | undefined {
+  if (typeof lastMoveAt === 'number' && Number.isFinite(lastMoveAt)) {
+    return new Date(lastMoveAt)
+  }
+  return undefined
+}
+
 const updateLobbySettingsSchema = z
   .object({
     maxPlayers: z.number().int().min(2).max(10).optional(),
@@ -97,6 +111,85 @@ export async function GET(
 
     const { password, ...safeLobby } = lobby
     const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished }) as any | null
+
+    if (
+      activeGame &&
+      activeGame.status === 'playing' &&
+      (safeLobby.gameType || activeGame.gameType) === 'telephone_doodle'
+    ) {
+      const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
+      if (turnTimerSeconds > 0) {
+        try {
+          const parsedState = JSON.parse(activeGame.state)
+          const telephoneGame = new TelephoneDoodleGame(activeGame.id)
+          telephoneGame.restoreState(parsedState as any)
+
+          const timeoutResolution = telephoneGame.applyTimeoutFallback(turnTimerSeconds)
+          if (timeoutResolution.changed) {
+            const nextState = telephoneGame.getState()
+            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+
+            const updateResult = await prisma.games.updateMany({
+              where: {
+                id: activeGame.id,
+                updatedAt: activeGame.updatedAt,
+              },
+              data: {
+                state: JSON.stringify(nextState),
+                status: nextState.status,
+                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+                updatedAt: new Date(),
+              },
+            })
+
+            if (updateResult.count > 0) {
+              activeGame.state = JSON.stringify(nextState)
+              activeGame.status = nextState.status
+              if (lastMoveAtDate) {
+                activeGame.lastMoveAt = lastMoveAtDate
+              }
+
+              await appendGameReplaySnapshot({
+                gameId: activeGame.id,
+                playerId: null,
+                actionType: 'telephone_doodle:timeout-fallback',
+                actionPayload: {
+                  source: 'lobby-get',
+                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+                  autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
+                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+                },
+                state: nextState,
+              })
+
+              await notifySocket(`lobby:${safeLobby.code}`, 'telephone-doodle-action', {
+                action: 'timeout-fallback',
+                playerId: null,
+                data: {
+                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+                  autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
+                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+                },
+                state: nextState,
+              })
+
+              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
+                action: 'state-change',
+                payload: { state: nextState },
+              })
+            }
+          }
+        } catch (error) {
+          const log = apiLogger('GET /api/lobby/[code]')
+          log.warn('Telephone Doodle timeout fallback on lobby GET failed', {
+            code,
+            gameId: activeGame.id,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+    }
+
     const sanitizedActiveGame = activeGame
       ? {
           ...activeGame,

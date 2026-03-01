@@ -185,4 +185,70 @@ describe('TelephoneDoodleGame (MVP scaffold)', () => {
     expect(dataOfState(twoRoundGame.getState()).phase).toBe('reveal')
     expect(dataOfState(twoRoundGame.getState()).round).toBe(2)
   })
+
+  it('exposes assigned chain and pending players for reconnect-safe clients', () => {
+    expect(game.startGame()).toBe(true)
+
+    expect(game.getAssignedChainIdForPlayer('player2')).toBe('chain-player2')
+    expect(game.getPendingPlayerIdsForCurrentStep()).toEqual(['player1', 'player2', 'player3'])
+
+    submitStep(game, 'player1', resolveExpectedChainId('player1', 'prompt', 1), 'Prompt by player1')
+    expect(game.getPendingPlayerIdsForCurrentStep()).toEqual(['player2', 'player3'])
+  })
+
+  it('auto-submits missing players and advances phase when timeout expires', () => {
+    expect(game.startGame()).toBe(true)
+
+    submitStep(game, 'player1', resolveExpectedChainId('player1', 'prompt', 1), 'Prompt by player1')
+    const phaseStartAt = game.getState().lastMoveAt as number
+
+    const timeoutResult = game.applyTimeoutFallback(30, phaseStartAt + 30_000)
+    const state = game.getState()
+    const data = dataOfState(state)
+
+    expect(timeoutResult.changed).toBe(true)
+    expect(timeoutResult.timeoutWindowsConsumed).toBe(1)
+    expect(timeoutResult.phaseTransitions).toBe(1)
+    expect(timeoutResult.autoSubmittedSteps).toBe(2)
+    expect(data.phase).toBe('drawing')
+    expect(data.submittedPlayerIds).toEqual([])
+    expect(state.lastMoveAt).toBe(phaseStartAt + 30_000)
+
+    const autoPromptSteps = data.chains
+      .flatMap((chain) => chain.steps)
+      .filter((step) => step.round === 1 && step.phase === 'prompt' && step.autoSubmitted)
+
+    expect(autoPromptSteps).toHaveLength(2)
+    expect(autoPromptSteps.map((step) => step.playerId).sort()).toEqual(['player2', 'player3'])
+  })
+
+  it('consumes multiple timeout windows and auto-transitions through all step phases', () => {
+    expect(game.startGame()).toBe(true)
+
+    const phaseStartAt = game.getState().lastMoveAt as number
+    const timeoutResult = game.applyTimeoutFallback(30, phaseStartAt + 90_000)
+    const data = dataOfState(game.getState())
+
+    expect(timeoutResult.changed).toBe(true)
+    expect(timeoutResult.timeoutWindowsConsumed).toBe(3)
+    expect(timeoutResult.phaseTransitions).toBe(3)
+    expect(timeoutResult.autoSubmittedSteps).toBe(9)
+    expect(data.round).toBe(1)
+    expect(data.phase).toBe('reveal')
+  })
+
+  it('auto-advances reveal on timeout and finishes when all chains are revealed', () => {
+    expect(game.startGame()).toBe(true)
+
+    submitPhase(game, 'prompt', 1)
+    submitPhase(game, 'drawing', 1)
+    submitPhase(game, 'caption', 1)
+
+    const revealStartAt = game.getState().lastMoveAt as number
+    const timeoutResult = game.applyTimeoutFallback(20, revealStartAt + 60_000)
+
+    expect(timeoutResult.changed).toBe(true)
+    expect(timeoutResult.revealAdvances).toBe(3)
+    expect(game.getState().status).toBe('finished')
+  })
 })

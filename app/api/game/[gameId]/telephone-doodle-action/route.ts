@@ -31,6 +31,13 @@ function resolveLastMoveAtDate(lastMoveAt: unknown): Date | undefined {
   return undefined
 }
 
+function resolveTurnTimerSeconds(turnTimer: unknown): number {
+  if (typeof turnTimer !== 'number' || !Number.isFinite(turnTimer)) {
+    return 0
+  }
+  return Math.max(0, Math.floor(turnTimer))
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ gameId: string }> }
@@ -81,6 +88,7 @@ export async function POST(
           select: {
             code: true,
             gameType: true,
+            turnTimer: true,
           },
         },
       },
@@ -109,6 +117,71 @@ export async function POST(
 
     const telephoneGame = new TelephoneDoodleGame(gameId)
     telephoneGame.restoreState(parsedState as any)
+
+    const persistTelephoneState = async (
+      nextState: ReturnType<TelephoneDoodleGame['getState']>,
+      actionType: string,
+      actionPayload: Record<string, unknown> | undefined,
+      actingPlayerId?: string | null,
+      emitActionEvent?: {
+        action: string
+        playerId?: string | null
+        data?: Record<string, unknown>
+      }
+    ) => {
+      const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+
+      await prisma.games.update({
+        where: { id: gameId },
+        data: {
+          state: JSON.stringify(nextState),
+          status: nextState.status,
+          ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+          updatedAt: new Date(),
+        },
+      })
+
+      await appendGameReplaySnapshot({
+        gameId,
+        playerId: actingPlayerId ?? null,
+        actionType,
+        actionPayload,
+        state: nextState,
+      })
+
+      if (game.lobby?.code) {
+        if (emitActionEvent) {
+          await notifySocket(`lobby:${game.lobby.code}`, 'telephone-doodle-action', {
+            action: emitActionEvent.action,
+            playerId: emitActionEvent.playerId ?? null,
+            data: emitActionEvent.data ?? {},
+            state: nextState,
+          })
+        }
+
+        await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
+          action: 'state-change',
+          payload: { state: nextState },
+        })
+      }
+    }
+
+    const turnTimerSeconds = resolveTurnTimerSeconds(game.lobby?.turnTimer)
+    const timeoutResolution = telephoneGame.applyTimeoutFallback(turnTimerSeconds)
+    const timeoutFallbackApplied = timeoutResolution.changed
+
+    if (timeoutFallbackApplied) {
+      log.info('Applied Telephone Doodle timeout fallback before action', {
+        gameId,
+        userId,
+        turnTimerSeconds,
+        timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+        phaseTransitions: timeoutResolution.phaseTransitions,
+        revealAdvances: timeoutResolution.revealAdvances,
+        autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
+        autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+      })
+    }
 
     const currentState = telephoneGame.getState()
     const gameData = currentState.data as TelephoneDoodleGameData
@@ -172,47 +245,65 @@ export async function POST(
 
     const moveAccepted = telephoneGame.makeMove(move)
     if (!moveAccepted) {
+      if (timeoutFallbackApplied) {
+        const stateAfterTimeout = telephoneGame.getState()
+        await persistTelephoneState(
+          stateAfterTimeout,
+          'telephone_doodle:timeout-fallback',
+          {
+            timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+            autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
+            autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+          },
+          null,
+          {
+            action: 'timeout-fallback',
+            playerId: null,
+            data: {
+              timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+              autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
+              autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+            },
+          }
+        )
+
+        return NextResponse.json(
+          {
+            error: 'Move expired due to timeout fallback',
+            code: 'STEP_TIMEOUT_ADVANCED',
+            state: stateAfterTimeout,
+          },
+          { status: 409 }
+        )
+      }
+
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
 
     const updatedState = telephoneGame.getState()
-    const lastMoveAtDate = resolveLastMoveAtDate(updatedState.lastMoveAt)
-
-    await prisma.games.update({
-      where: { id: gameId },
-      data: {
-        state: JSON.stringify(updatedState),
-        status: updatedState.status,
-        ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-        updatedAt: new Date(),
-      },
-    })
-
-    await appendGameReplaySnapshot({
-      gameId,
-      playerId: userId,
-      actionType: `telephone_doodle:${parsedBody.data.action}`,
-      actionPayload: move.data,
-      state: updatedState,
-    })
-
-    if (game.lobby?.code) {
-      await notifySocket(`lobby:${game.lobby.code}`, 'telephone-doodle-action', {
+    await persistTelephoneState(
+      updatedState,
+      `telephone_doodle:${parsedBody.data.action}`,
+      move.data,
+      userId,
+      {
         action: parsedBody.data.action,
         playerId: userId,
         data: move.data,
-        state: updatedState,
-      })
-
-      await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
-        action: 'state-change',
-        payload: { state: updatedState },
-      })
-    }
+      }
+    )
 
     return NextResponse.json({
       success: true,
       state: updatedState,
+      timeoutFallbackApplied,
+      timeoutFallback: timeoutFallbackApplied
+        ? {
+            timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
+            autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
+            autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
+          }
+        : undefined,
     })
   } catch (error) {
     log.error('Error processing Telephone Doodle action', error as Error)
