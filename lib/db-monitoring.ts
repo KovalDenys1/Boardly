@@ -71,16 +71,14 @@ class DatabaseMonitor {
    * Setup Prisma middleware to track queries
    */
   private setupPrismaMiddleware() {
-    interface PrismaMiddlewareParams {
-      model?: string
-      action: string
-      args: Record<string, unknown>
-      dataPath: string[]
-      runInTransaction: boolean
-    }
-    
-    // @ts-ignore - Prisma middleware typing
-    prisma.$use(async (params: PrismaMiddlewareParams, next: (params: PrismaMiddlewareParams) => Promise<unknown>) => {
+    type PrismaMiddleware = Parameters<typeof prisma.$use>[0]
+    type PrismaMiddlewareParams = Parameters<PrismaMiddleware>[0]
+    type PrismaMiddlewareNext = Parameters<PrismaMiddleware>[1]
+
+    const middleware: PrismaMiddleware = async (
+      params: PrismaMiddlewareParams,
+      next: PrismaMiddlewareNext
+    ) => {
       const startTime = Date.now()
 
       try {
@@ -112,7 +110,9 @@ class DatabaseMonitor {
 
         throw error
       }
-    })
+    }
+
+    prisma.$use(middleware)
   }
 
   /**
