@@ -1,15 +1,38 @@
 #!/usr/bin/env tsx
 
-import { getExistingSmokeTests, npmCommand, printHeader, printStep, runChecked } from './git-hook-common'
+import {
+  getExistingSmokeTests,
+  npmCommand,
+  printHeader,
+  printStep,
+  runCapture,
+  runChecked,
+} from './git-hook-common'
 
 function printUsage() {
   console.log('Boardly git hook: pre-push')
+  console.log('')
+  console.log('Safety:')
+  console.log('- Blocks direct pushes to main (override with BOARDLY_ALLOW_MAIN_PUSH=1)')
   console.log('')
   console.log('Runs:')
   console.log('- npm run db:generate')
   console.log('- npm run check:locales')
   console.log('- npm run ci:quick')
   console.log('- Jest smoke tests (or full npm test when BOARDLY_HOOK_FULL_TESTS=1)')
+}
+
+function assertMainPushIsAllowed() {
+  if (process.env.BOARDLY_ALLOW_MAIN_PUSH === '1') {
+    return
+  }
+
+  const currentBranch = runCapture('git', ['rev-parse', '--abbrev-ref', 'HEAD']).stdout
+  if (currentBranch === 'main') {
+    throw new Error(
+      'Direct pushes to main are blocked by policy. Create a PR from develop (or set BOARDLY_ALLOW_MAIN_PUSH=1 for emergency).',
+    )
+  }
 }
 
 function runSmokeOrFullTests() {
@@ -39,6 +62,7 @@ function main() {
   }
 
   printHeader('Boardly pre-push hook')
+  assertMainPushIsAllowed()
 
   printStep('Prisma client generate', 'npm run db:generate')
   runChecked(npmCommand, ['run', 'db:generate'])
