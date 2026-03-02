@@ -159,7 +159,8 @@ export async function notifySocket(
   room: string,
   event: string,
   data: SocketNotificationData,
-  debounceMs: number = 100
+  debounceMs: number = 100,
+  requestTimeoutMs: number = 2000
 ): Promise<boolean> {
   const key = buildNotificationKey(room, event, data)
 
@@ -178,6 +179,9 @@ export async function notifySocket(
       notificationQueue.delete(key)
       pendingPromises.delete(key)
 
+      const controller = new AbortController()
+      const requestTimeout = setTimeout(() => controller.abort(), Math.max(200, requestTimeoutMs))
+
       try {
         const socketUrl = getServerSocketUrl()
         const response = await fetch(`${socketUrl}/api/notify`, {
@@ -187,14 +191,27 @@ export async function notifySocket(
             ...getSocketInternalAuthHeaders(),
           },
           body: JSON.stringify({ room, event, data }),
+          signal: controller.signal,
         })
         resolve(response.ok)
       } catch (error) {
+        const isTimeout = (error as Error)?.name === 'AbortError'
+
         // Log error but don't throw - socket notifications are non-critical
         if (logger) {
-          logger.error('Failed to notify socket server:', error as Error)
+          if (isTimeout) {
+            logger.warn?.('Socket notification request timed out', {
+              room,
+              event,
+              requestTimeoutMs: Math.max(200, requestTimeoutMs),
+            })
+          } else {
+            logger.error('Failed to notify socket server:', error as Error)
+          }
         }
         resolve(false)
+      } finally {
+        clearTimeout(requestTimeout)
       }
     }, debounceMs)
 
