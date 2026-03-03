@@ -26,7 +26,18 @@ export async function POST(
   try {
     const paramsData = await params
     gameId = paramsData.gameId
-    const { botUserId, lobbyCode } = await request.json()
+    const requestBody = await request.json()
+    const { botUserId, lobbyCode, triggerSource, triggeredAt, turnEndToBotTriggerMs } = requestBody
+    const resolvedTriggerSource =
+      typeof triggerSource === 'string' && triggerSource.length > 0 ? triggerSource : 'unknown'
+    const normalizedTriggeredAt =
+      typeof triggeredAt === 'number' && Number.isFinite(triggeredAt) ? triggeredAt : null
+    const triggerToBotApiLatencyMs =
+      normalizedTriggeredAt !== null ? Math.max(0, Date.now() - normalizedTriggeredAt) : null
+    const normalizedTurnEndToBotTriggerMs =
+      typeof turnEndToBotTriggerMs === 'number' && Number.isFinite(turnEndToBotTriggerMs)
+        ? Math.max(0, turnEndToBotTriggerMs)
+        : null
 
     if (!botUserId) {
       return NextResponse.json({ error: 'Bot user ID required' }, { status: 400 })
@@ -34,7 +45,10 @@ export async function POST(
 
     log.info('Bot turn endpoint called', {
       gameId: gameId,
-      botUserId
+      botUserId,
+      triggerSource: resolvedTriggerSource,
+      triggerToBotApiLatencyMs,
+      turnEndToBotTriggerMs: normalizedTurnEndToBotTriggerMs,
     })
 
     // Check if bot turn is already in progress for this game
