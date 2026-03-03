@@ -23,6 +23,7 @@ interface AutoActionContext {
 const autoActionDebounceMap = new Map<string, number>()
 const AUTO_ACTION_DEBOUNCE_MS = 2000
 const AUTO_ACTION_DEBOUNCE_TTL_MS = 60000
+const STATE_CHANGE_NOTIFY_TIMEOUT_MS = 750
 
 function normalizeTimestamp(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -372,14 +373,6 @@ export async function POST(
       )
     }
 
-    await appendGameReplaySnapshot({
-      gameId,
-      playerId: userId,
-      actionType: move.type,
-      actionPayload: move.data,
-      state: newState,
-    })
-
     // Log state transitions for debugging
     if (statusChanged) {
       log.info('Game status changed', {
@@ -427,6 +420,21 @@ export async function POST(
     }
 
     const authoritativeState = gameEngine.getState()
+    const replaySnapshotPromise = appendGameReplaySnapshot({
+      gameId,
+      playerId: userId,
+      actionType: move.type,
+      actionPayload: move.data,
+      state: newState,
+    }).catch((replayError) => {
+      log.warn('Failed to append replay snapshot', {
+        gameId,
+        userId,
+        moveType: move.type,
+        error: replayError,
+      })
+    })
+
     const scoreSyncPromise = changedPlayerUpdates.length > 0
       ? Promise.all(changedPlayerUpdates)
       : Promise.resolve([])
@@ -438,10 +446,12 @@ export async function POST(
           action: 'state-change',
           payload: authoritativeState,
         },
-        0
+        0,
+        STATE_CHANGE_NOTIFY_TIMEOUT_MS
       ),
       scoreSyncPromise,
     ])
+    void replaySnapshotPromise
 
     if (!serverBroadcasted) {
       log.warn('Failed to broadcast authoritative state snapshot', {

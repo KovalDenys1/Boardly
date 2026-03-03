@@ -243,7 +243,8 @@ describe('POST /api/game/[gameId]/state', () => {
       expect.objectContaining({
         action: 'state-change',
       }),
-      0
+      0,
+      expect.any(Number)
     )
     expect(payload.game.id).toBe('game-123')
     expect(payload.serverBroadcasted).toBe(true)
