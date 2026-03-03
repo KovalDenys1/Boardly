@@ -283,3 +283,57 @@ Token scope notes for `PROJECT_HYGIENE_TOKEN`:
 
 - Fine-grained PAT: read access to Issues and Pull requests, plus write access to Projects for the target owner project.
 - Classic PAT fallback: include `repo` and `project`.
+
+## UX/performance sweep closeout (`#131`)
+
+Use this checklist to close the UX/performance epic after ticket branches are merged to `develop`.
+
+### Execution order, outcomes, and owner
+
+| Ticket | Dependency order | Expected outcome | Owner |
+| --- | --- | --- | --- |
+| `#127` | 1 | Perceived move registration latency is reduced with optimistic feedback and safe reconcile paths. | Ticket author / assignee |
+| `#128` | 2 | Bot handoff delay is short, predictable, and configurable without race-condition regressions. | Ticket author / assignee |
+| `#129` | 3 | Leave flow redirects to `/games` quickly with bounded fallback and cleanup integrity. | Ticket author / assignee |
+| `#130` | 4 | Terminal lifecycle states (`finished/abandoned/cancelled`) resolve to deterministic UI/redirect paths. | Ticket author / assignee |
+| `#126` | 5 | Mobile/tablet layout overflows are removed across core lobby/game/profile routes. | Ticket author / assignee |
+
+### Final regression pass (epic gate)
+
+Run from an up-to-date local `develop`:
+
+```bash
+git checkout develop
+git pull --ff-only origin develop
+npm install
+npm run ci:quick
+npm test -- --runTestsByPath \
+  __tests__/app/useLobbyRouteState.test.ts \
+  __tests__/app/lobby-page-fallbacks.test.tsx \
+  __tests__/api/game-state.test.ts \
+  __tests__/api/lobby-code.test.ts \
+  __tests__/lib/lobby-snapshot.test.ts \
+  __tests__/lib/bots/tic-tac-toe-bot.test.ts \
+  __tests__/lib/bots/rock-paper-scissors-bot.test.ts \
+  __tests__/socket/handlers/game-action.test.ts \
+  __tests__/socket/handlers/leave-lobby.test.ts \
+  __tests__/socket/disconnect-sync.test.ts
+```
+
+When `#128` follow-up is merged, extend this command with:
+
+```bash
+__tests__/lib/bots/bot-ux-timing.test.ts
+```
+
+Manual smoke matrix (required):
+
+- Desktop: create -> join -> start -> play -> reconnect -> leave -> finish.
+- Mobile phone viewport: lobby + game playability, no horizontal overflow, CTA visibility.
+- Tablet viewport: lobby + game playability, no clipped controls or wrapped action bars.
+
+Closeout note in issue `#131` should include:
+
+- linked PRs for `#126-#130`
+- automated regression command results
+- manual smoke result summary (desktop/mobile/tablet)
