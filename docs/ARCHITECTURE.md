@@ -54,6 +54,16 @@ Important safeguards:
 - room-based broadcasting (`lobby:<code>`)
 - disconnect handling with turn advancement for disconnected active players
 
+## Lobby lifecycle redirect rules
+
+Client lifecycle handling follows one shared decision path:
+
+- redirect immediately when game status becomes terminal (`abandoned`, `cancelled`)
+- redirect when lobby is inactive and game is no longer in an active state (`waiting`, `playing`)
+- always use bounded navigation (`router.replace` + timed hard fallback) to avoid stuck lobby screens
+
+This logic is centralized in `lib/lobby-lifecycle.ts` and reused across main and dedicated lobby pages.
+
 ## Auth and identity model
 
 ### Registered users
