@@ -454,10 +454,14 @@ describe('POST /api/game/[gameId]/state', () => {
       }),
     )
     const [, requestInit] = mockFetch.mock.calls[0]
-    expect(JSON.parse(requestInit.body)).toEqual({
-      botUserId: 'bot-1',
-      lobbyCode: 'ABCD12',
-    })
+    expect(JSON.parse(requestInit.body)).toEqual(
+      expect.objectContaining({
+        botUserId: 'bot-1',
+        lobbyCode: 'ABCD12',
+        triggerSource: 'state-route-auto',
+        triggeredAt: expect.any(Number),
+      })
+    )
   })
 
   it('auto-triggers RPS bot turn when bot has not submitted choice', async () => {
@@ -526,6 +530,84 @@ describe('POST /api/game/[gameId]/state', () => {
       expect.objectContaining({
         method: 'POST',
       }),
+    )
+    const [, requestInit] = mockFetch.mock.calls[0]
+    expect(JSON.parse(requestInit.body)).toEqual(
+      expect.objectContaining({
+        botUserId: 'bot-1',
+        lobbyCode: 'ABCD12',
+        triggerSource: 'state-route-auto',
+        triggeredAt: expect.any(Number),
+      })
+    )
+  })
+
+  it('auto-triggers Yahtzee bot turn when next player is bot', async () => {
+    const yahtzeeState = {
+      ...persistedState,
+      status: 'playing',
+      currentPlayerIndex: 1,
+      lastMoveAt: Date.now(),
+      data: {
+        ...persistedState.data,
+        rollsLeft: 3,
+      },
+    }
+
+    const yahtzeeDbGame = {
+      ...dbGame,
+      lobby: {
+        ...dbGame.lobby,
+        gameType: 'yahtzee',
+      },
+      players: [
+        { id: 'db-player-1', userId: 'player-1', user: { id: 'player-1', bot: null } },
+        {
+          id: 'db-player-bot',
+          userId: 'bot-1',
+          user: { id: 'bot-1', bot: { id: 'bot-meta-1' } },
+        },
+      ],
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => yahtzeeState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'bot-1' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0 },
+        { id: 'bot-1', score: 0 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(yahtzeeDbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(buildRequest({
+      move: { type: 'score', data: { category: 'chance' } },
+    }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:3000/api/game/game-123/bot-turn',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    )
+    const [, requestInit] = mockFetch.mock.calls[0]
+    expect(JSON.parse(requestInit.body)).toEqual(
+      expect.objectContaining({
+        botUserId: 'bot-1',
+        lobbyCode: 'ABCD12',
+        triggerSource: 'state-route-auto',
+        triggeredAt: expect.any(Number),
+      })
     )
   })
 })

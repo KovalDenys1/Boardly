@@ -24,6 +24,7 @@ const autoActionDebounceMap = new Map<string, number>()
 const AUTO_ACTION_DEBOUNCE_MS = 2000
 const AUTO_ACTION_DEBOUNCE_TTL_MS = 60000
 const STATE_CHANGE_NOTIFY_TIMEOUT_MS = 750
+const BOT_TURN_TRIGGER_TIMEOUT_MS = 15000
 
 function normalizeTimestamp(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -78,6 +79,86 @@ function shouldDebounceAutoAction(key: string): boolean {
   }
 
   return false
+}
+
+function resolveTurnEndToBotTriggerMs(state: unknown, triggeredAt: number): number | null {
+  const stateRecord = typeof state === 'object' && state !== null
+    ? (state as Record<string, unknown>)
+    : null
+  const lastMoveAt = normalizeTimestamp(stateRecord?.lastMoveAt)
+  if (lastMoveAt === null) return null
+
+  const latencyMs = triggeredAt - lastMoveAt
+  return Number.isFinite(latencyMs) && latencyMs >= 0 ? latencyMs : null
+}
+
+function autoTriggerBotTurn(params: {
+  request: NextRequest
+  log: ReturnType<typeof apiLogger>
+  gameId: string
+  gameType: string
+  lobbyCode: string
+  botUserId: string
+  moveType: string
+  authoritativeState: unknown
+}) {
+  const { request, log, gameId, gameType, lobbyCode, botUserId, moveType, authoritativeState } = params
+  const botTurnApiUrl = `${request.nextUrl.origin}/api/game/${gameId}/bot-turn`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), BOT_TURN_TRIGGER_TIMEOUT_MS)
+  const triggeredAt = Date.now()
+  const turnEndToBotTriggerMs = resolveTurnEndToBotTriggerMs(authoritativeState, triggeredAt)
+
+  log.debug('Auto-triggering bot turn after player move', {
+    gameId,
+    gameType,
+    botUserId,
+    moveType,
+    turnEndToBotTriggerMs,
+  })
+
+  void fetch(botTurnApiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      botUserId,
+      lobbyCode,
+      triggerSource: 'state-route-auto',
+      triggeredAt,
+      turnEndToBotTriggerMs,
+    }),
+    signal: controller.signal,
+  })
+    .then(async (botResponse) => {
+      clearTimeout(timeoutId)
+      if (!botResponse.ok) {
+        const errorPayload = await botResponse.json().catch(() => null)
+        log.warn('Auto-triggered bot turn failed', {
+          gameId,
+          botUserId,
+          status: botResponse.status,
+          error: errorPayload,
+        })
+      }
+    })
+    .catch((triggerError) => {
+      clearTimeout(timeoutId)
+      if ((triggerError as Error)?.name === 'AbortError') {
+        log.warn('Auto-triggered bot turn request timed out', {
+          gameId,
+          botUserId,
+        })
+        return
+      }
+
+      log.warn('Failed to auto-trigger bot turn request', {
+        gameId,
+        botUserId,
+        error: triggerError,
+      })
+    })
 }
 
 export async function POST(
@@ -435,6 +516,43 @@ export async function POST(
       })
     })
 
+    const requestPlayerIsBot = !!playerRecord.user?.bot
+    const botPlayers = gamePlayers.filter((player) => !!player.user?.bot)
+    let botUserIdToTrigger: string | null = null
+
+    if (!requestPlayerIsBot && authoritativeState.status === 'playing' && botPlayers.length > 0) {
+      if (game.lobby.gameType === 'rock_paper_scissors' && gameMove.type === 'submit-choice') {
+        const rpsData = (authoritativeState as { data?: { playersReady?: string[] } }).data
+        const playersReady = Array.isArray(rpsData?.playersReady) ? rpsData.playersReady : []
+        const pendingBot = botPlayers.find((player) => !playersReady.includes(player.userId))
+        if (pendingBot) {
+          botUserIdToTrigger = pendingBot.userId
+        }
+      } else if (
+        game.lobby.gameType === 'tic_tac_toe' ||
+        game.lobby.gameType === 'yahtzee'
+      ) {
+        const currentPlayerId = enginePlayers[authoritativeState.currentPlayerIndex]?.id
+        const currentBotPlayer = botPlayers.find((player) => player.userId === currentPlayerId)
+        if (currentBotPlayer) {
+          botUserIdToTrigger = currentBotPlayer.userId
+        }
+      }
+    }
+
+    if (botUserIdToTrigger) {
+      autoTriggerBotTurn({
+        request,
+        log,
+        gameId,
+        gameType: game.lobby.gameType,
+        lobbyCode: game.lobby.code,
+        botUserId: botUserIdToTrigger,
+        moveType: gameMove.type,
+        authoritativeState,
+      })
+    }
+
     const scoreSyncPromise = changedPlayerUpdates.length > 0
       ? Promise.all(changedPlayerUpdates)
       : Promise.resolve([])
@@ -459,79 +577,6 @@ export async function POST(
         lobbyCode: game.lobby.code,
         userId,
       })
-    }
-
-    const requestPlayerIsBot = !!playerRecord.user?.bot
-    const botPlayers = gamePlayers.filter((player) => !!player.user?.bot)
-    let botUserIdToTrigger: string | null = null
-
-    if (!requestPlayerIsBot && authoritativeState.status === 'playing' && botPlayers.length > 0) {
-      if (game.lobby.gameType === 'tic_tac_toe') {
-        const currentPlayerId = enginePlayers[authoritativeState.currentPlayerIndex]?.id
-        const currentBotPlayer = botPlayers.find((player) => player.userId === currentPlayerId)
-        if (currentBotPlayer) {
-          botUserIdToTrigger = currentBotPlayer.userId
-        }
-      } else if (game.lobby.gameType === 'rock_paper_scissors' && gameMove.type === 'submit-choice') {
-        const rpsData = (authoritativeState as { data?: { playersReady?: string[] } }).data
-        const playersReady = Array.isArray(rpsData?.playersReady) ? rpsData.playersReady : []
-        const pendingBot = botPlayers.find((player) => !playersReady.includes(player.userId))
-        if (pendingBot) {
-          botUserIdToTrigger = pendingBot.userId
-        }
-      }
-    }
-
-    if (botUserIdToTrigger) {
-      const botTurnApiUrl = `${request.nextUrl.origin}/api/game/${gameId}/bot-turn`
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000)
-
-      log.debug('Auto-triggering bot turn after player move', {
-        gameId,
-        gameType: game.lobby.gameType,
-        botUserId: botUserIdToTrigger,
-      })
-
-      void fetch(botTurnApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          botUserId: botUserIdToTrigger,
-          lobbyCode: game.lobby.code,
-        }),
-        signal: controller.signal,
-      })
-        .then(async (botResponse) => {
-          clearTimeout(timeoutId)
-          if (!botResponse.ok) {
-            const errorPayload = await botResponse.json().catch(() => null)
-            log.warn('Auto-triggered bot turn failed', {
-              gameId,
-              botUserId: botUserIdToTrigger,
-              status: botResponse.status,
-              error: errorPayload,
-            })
-          }
-        })
-        .catch((triggerError) => {
-          clearTimeout(timeoutId)
-          if ((triggerError as Error)?.name === 'AbortError') {
-            log.warn('Auto-triggered bot turn request timed out', {
-              gameId,
-              botUserId: botUserIdToTrigger,
-            })
-            return
-          }
-
-          log.warn('Failed to auto-trigger bot turn request', {
-            gameId,
-            botUserId: botUserIdToTrigger,
-            error: triggerError,
-          })
-        })
     }
 
     const response = {
