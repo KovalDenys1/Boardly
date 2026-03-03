@@ -34,6 +34,24 @@ describe('lobby snapshot helpers', () => {
     expect((pickRelevantLobbyGame(games, { includeFinished: true }) as any)?.id).toBe('finished-1')
   })
 
+  it('includes abandoned/cancelled games when includeFinished=true', () => {
+    const games = [
+      {
+        id: 'cancelled-1',
+        status: 'cancelled',
+        updatedAt: '2026-02-13T11:00:00.000Z',
+      },
+      {
+        id: 'abandoned-1',
+        status: 'abandoned',
+        updatedAt: '2026-02-13T12:00:00.000Z',
+      },
+    ] as any[]
+
+    expect(pickRelevantLobbyGame(games)).toBeNull()
+    expect((pickRelevantLobbyGame(games, { includeFinished: true }) as any)?.id).toBe('abandoned-1')
+  })
+
   it('normalizes payload using activeGame fallback chain', () => {
     const payload = {
       lobby: {

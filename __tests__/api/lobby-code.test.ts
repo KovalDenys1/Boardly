@@ -188,6 +188,23 @@ describe('GET /api/lobby/[code]', () => {
     expect(data.error).toBe('Lobby not found')
   })
 
+  it('should include terminal statuses when includeFinished=true', async () => {
+    mockPrisma.lobbies.findUnique.mockResolvedValue(mockLobby as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123?includeFinished=true')
+    const response = await GET(request, { params: { code: 'ABC123' } })
+    expect(response.status).toBe(200)
+
+    const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any
+    expect(queryArgs.select.games.where.status.in).toEqual([
+      'waiting',
+      'playing',
+      'finished',
+      'abandoned',
+      'cancelled',
+    ])
+  })
+
   it('should handle database errors gracefully', async () => {
     mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('Database error'))
 

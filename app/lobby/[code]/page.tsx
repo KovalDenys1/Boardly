@@ -129,6 +129,8 @@ const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-p
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
+const TERMINAL_GAME_STATUSES = new Set(['abandoned', 'cancelled'])
+const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -228,6 +230,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
   const isLeavingLobbyRef = React.useRef(false)
+  const lifecycleRedirectInFlightRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
   const hasLobbyPageInteractionRef = React.useRef(false)
@@ -277,13 +280,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     []
   )
 
-  const leaveRedirectTarget = React.useMemo(
-    () => `/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`,
+  const lifecycleRedirectTarget = React.useMemo(
+    () => `/games/${(lobby?.gameType as string) || DEFAULT_GAME_TYPE}/lobbies`,
     [lobby?.gameType]
   )
 
   const navigateAfterLeave = React.useCallback(() => {
-    router.replace(leaveRedirectTarget)
+    router.replace(lifecycleRedirectTarget)
 
     if (typeof window === 'undefined') {
       return
@@ -291,14 +294,45 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     window.setTimeout(() => {
       if (window.location.pathname.startsWith(`/lobby/${code}`)) {
-        window.location.assign(leaveRedirectTarget)
+        window.location.assign(lifecycleRedirectTarget)
       }
     }, LEAVE_REDIRECT_FALLBACK_MS)
-  }, [router, leaveRedirectTarget, code])
+  }, [router, lifecycleRedirectTarget, code])
 
   useEffect(() => {
-    void router.prefetch(leaveRedirectTarget)
-  }, [router, leaveRedirectTarget])
+    void router.prefetch(lifecycleRedirectTarget)
+  }, [router, lifecycleRedirectTarget])
+
+  const triggerLifecycleRedirect = React.useCallback(
+    (reason: string, options?: { toastKey?: string }) => {
+      if (isLeavingLobbyRef.current || lifecycleRedirectInFlightRef.current) {
+        return
+      }
+
+      lifecycleRedirectInFlightRef.current = true
+
+      if (options?.toastKey) {
+        showToast.error(options.toastKey, undefined, undefined, { id: 'lifecycle-redirect' })
+      }
+
+      clientLogger.warn('Triggering lobby lifecycle redirect', {
+        code,
+        reason,
+        target: lifecycleRedirectTarget,
+      })
+
+      router.replace(lifecycleRedirectTarget)
+
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+            window.location.assign(lifecycleRedirectTarget)
+          }
+        }, LIFECYCLE_REDIRECT_FALLBACK_MS)
+      }
+    },
+    [router, lifecycleRedirectTarget, code]
+  )
 
   // Helper functions
   const getCurrentUserId = useCallback(() => {
@@ -386,6 +420,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         const parsedState = typeof state === 'string'
           ? JSON.parse(state)
           : state
+
+        const parsedStatus =
+          typeof parsedState?.status === 'string' ? parsedState.status : null
+        if (parsedStatus && TERMINAL_GAME_STATUSES.has(parsedStatus)) {
+          triggerLifecycleRedirect(`game-update:${parsedStatus}`, {
+            toastKey: 'lobby.gameAbandoned',
+          })
+          return
+        }
 
         if (game?.id) {
           const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
@@ -513,7 +556,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound])
+  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound, triggerLifecycleRedirect])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -635,40 +678,44 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
-    const reason = data.reason
-    if (reason === 'no_human_players') {
-      showToast.error('lobby.gameAbandoned')
-    } else if (reason === 'insufficient_players') {
-      showToast.error('lobby.gameAbandoned')
-    }
-
-    // Refresh lobby data
     if (loadLobbyRef.current) {
-      loadLobbyRef.current()
+      void loadLobbyRef.current()
     }
 
-    // Navigate back to lobby list after a short delay
-    setTimeout(() => {
-      router.push(`/games/${lobby?.gameType as string || DEFAULT_GAME_TYPE}/lobbies`)
-    }, 3000)
-  }, [router, lobby])
+    triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`, {
+      toastKey: 'lobby.gameAbandoned',
+    })
+  }, [triggerLifecycleRedirect])
 
-  const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
+  const onPlayerLeft = useCallback((data: {
+    userId: string
+    username?: string
+    playerName?: string
+    remainingPlayers?: number
+  }) => {
     clientLogger.log('📡 Player left:', data)
 
     if (isLeavingLobbyRef.current) {
       return
     }
 
-    if (data.username) {
-      showToast.info('toast.playerLeft', undefined, { player: data.username })
+    const departedPlayerName = data.username || data.playerName
+    if (departedPlayerName) {
+      showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+    }
+
+    if (typeof data.remainingPlayers === 'number' && data.remainingPlayers <= 1) {
+      triggerLifecycleRedirect('player-left:insufficient-players', {
+        toastKey: 'lobby.gameAbandoned',
+      })
+      return
     }
 
     // Refresh lobby data
     if (loadLobbyRef.current) {
-      loadLobbyRef.current()
+      void loadLobbyRef.current()
     }
-  }, [])
+  }, [triggerLifecycleRedirect])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
   const canJoinSocketLobbyRoom = React.useMemo(() => {
@@ -681,7 +728,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return true
     }
 
-    const activeGameFromState = game
+    const activeGameFromState =
+      game && ['waiting', 'playing', 'finished'].includes(String(game.status))
+        ? game
+        : null
     const activeGameFromLobby = Array.isArray(lobbyData.games)
       ? lobbyData.games.find((candidate: any) => ['waiting', 'playing'].includes(candidate?.status))
       : null
@@ -1241,6 +1291,30 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+
+  useEffect(() => {
+    if (isLeavingLobbyRef.current) {
+      return
+    }
+
+    const lobbyIsInactive = !!lobby && (lobby as any).isActive === false
+    const currentGameStatus = typeof game?.status === 'string' ? game.status : null
+    const isTerminalGameStatus =
+      typeof currentGameStatus === 'string' && TERMINAL_GAME_STATUSES.has(currentGameStatus)
+
+    if (isTerminalGameStatus) {
+      triggerLifecycleRedirect(`local-game-status:${currentGameStatus}`, {
+        toastKey: 'lobby.gameAbandoned',
+      })
+      return
+    }
+
+    if (lobbyIsInactive && currentGameStatus !== 'playing' && currentGameStatus !== 'waiting') {
+      triggerLifecycleRedirect('local-lobby-inactive', {
+        toastKey: 'lobby.gameAbandoned',
+      })
+    }
+  }, [game?.status, lobby, triggerLifecycleRedirect])
 
   // Reset mobile-only UI state when a new Yahtzee game starts without a page reload
   // (e.g. host starts game, rematch starts, or socket-driven transition).
