@@ -4,6 +4,7 @@ class SoundManager {
   private initialized: boolean = false
   private userInteracted: boolean = false
   private playingSounds: Set<string> = new Set()
+  private readonly retriggerableSounds: Set<string> = new Set(['click', 'diceRoll'])
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -49,7 +50,7 @@ class SoundManager {
     Object.entries(soundFiles).forEach(([key, path]) => {
       try {
         const audio = new Audio()
-        audio.preload = 'none' // Changed from 'auto' to prevent cache issues in production
+        audio.preload = this.retriggerableSounds.has(key) ? 'auto' : 'metadata'
         audio.volume = 0.7 // Set default volume to 70%
         
         // Set src after creating audio element to avoid immediate loading issues
@@ -97,8 +98,10 @@ class SoundManager {
       return
     }
 
-    // Prevent overlapping sounds unless forced
-    if (!options.force && this.playingSounds.has(soundName)) {
+    const isRetriggerable = this.retriggerableSounds.has(soundName)
+
+    // Prevent overlapping sounds unless forced (or retriggerable by design)
+    if (!options.force && !isRetriggerable && this.playingSounds.has(soundName)) {
       return
     }
 

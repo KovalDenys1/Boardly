@@ -167,10 +167,10 @@ export default function LobbyInfo({
             </p>
           </div>
 
-          <div className="flex w-full lg:w-auto items-center gap-2">
+          <div className="flex w-full lg:w-auto flex-wrap sm:flex-nowrap items-center gap-2">
             <button
               onClick={handleCopyInvite}
-              className="inline-flex flex-1 lg:flex-none items-center justify-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all text-xs sm:text-sm font-semibold text-white"
+              className="inline-flex min-w-0 flex-1 lg:flex-none items-center justify-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all text-xs sm:text-sm font-semibold text-white"
             >
               <span className="shrink-0">🔗</span>
               <span className="truncate">{t('game.ui.copyInvite')}</span>
@@ -179,7 +179,7 @@ export default function LobbyInfo({
               onClick={onSoundToggle}
               aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
               aria-pressed={soundEnabled}
-              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+              className="shrink-0 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
               title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
             >
               {soundEnabled ? '🔊' : '🔇'}
@@ -187,9 +187,10 @@ export default function LobbyInfo({
             <button
               onClick={onLeave}
               aria-label={t('game.ui.leave')}
-              className="px-4 py-2 bg-red-500/35 hover:bg-red-500/55 text-white rounded-xl font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+              className="inline-flex shrink-0 items-center justify-center gap-1 px-3 sm:px-4 py-2 bg-red-500/35 hover:bg-red-500/55 text-white rounded-xl font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
             >
-              🚪 {t('game.ui.leave')}
+              <span aria-hidden>🚪</span>
+              <span className="hidden sm:inline">{t('game.ui.leave')}</span>
             </button>
           </div>
         </div>
@@ -210,13 +211,13 @@ export default function LobbyInfo({
             }
           >
             <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.playersInLobbyTitle')}</p>
-            <p className="mt-1 text-sm font-semibold text-white">
+            <p className="mt-1 text-sm font-semibold text-white break-words">
               {t('lobby.playerOccupancy', { current: currentPlayers, max: maxPlayers })}
             </p>
           </div>
           <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
             <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.gameTypeLabel')}</p>
-            <p className="mt-1 text-sm font-semibold text-white">{gameMeta?.name ?? t('lobby.gameUnknown')}</p>
+            <p className="mt-1 text-sm font-semibold text-white break-words">{gameMeta?.name ?? t('lobby.gameUnknown')}</p>
           </div>
           <div
             className={`rounded-xl border border-white/15 bg-white/5 px-3 py-2 ${
@@ -231,7 +232,7 @@ export default function LobbyInfo({
             aria-label={canEditLobbySettings ? t('game.ui.timeLimit') : undefined}
           >
             <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.timeLimit')}</p>
-            <p className="mt-1 text-sm font-semibold text-white">
+            <p className="mt-1 text-sm font-semibold text-white break-words">
               {lobby?.turnTimer ? `${lobby.turnTimer}s ${t('game.ui.perTurn')}` : '—'}
             </p>
           </div>
@@ -248,7 +249,7 @@ export default function LobbyInfo({
             aria-label={canEditLobbySettings ? t('game.ui.spectatorsLabel') : undefined}
           >
             <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.spectatorsLabel')}</p>
-            <p className="mt-1 text-sm font-semibold text-white">{spectatorsLabel}</p>
+            <p className="mt-1 text-sm font-semibold text-white break-words">{spectatorsLabel}</p>
           </div>
         </div>
 

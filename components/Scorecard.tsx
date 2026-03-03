@@ -3,6 +3,7 @@
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { YahtzeeScorecard, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
+import { soundManager } from '@/lib/sounds'
 
 interface ScorecardProps {
   scorecard: YahtzeeScorecard
@@ -150,10 +151,16 @@ const Scorecard = React.memo(function Scorecard({
       const categoryLabel = t(`yahtzee.categories.${category}`)
       const icon = categoryIcons[category]
     
+    const handleCategoryClick = () => {
+      if (state === 'filled' || state === 'disabled' || isLoading) return
+      soundManager.play('click', { force: true })
+      onSelectCategory(category)
+    }
+
     return (
       <button
         key={category}
-        onClick={() => (state !== 'filled' && state !== 'disabled') && !isLoading && onSelectCategory(category)}
+        onClick={handleCategoryClick}
         disabled={state === 'filled' || state === 'disabled' || isLoading}
         aria-label={`${categoryLabel}: ${state === 'filled' ? `Scored ${filledScore} points` : potentialScore !== null ? `Score ${potentialScore} points` : 'Not available'}`}
         aria-disabled={state === 'filled' || state === 'disabled'}
@@ -244,7 +251,10 @@ const Scorecard = React.memo(function Scorecard({
               {/* Back to My Cards button */}
               {showBackButton && onBackToMyCards && (
                 <button
-                  onClick={onBackToMyCards}
+                  onClick={() => {
+                    soundManager.play('click', { force: true })
+                    onBackToMyCards()
+                  }}
                   className="bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors font-semibold"
                   style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(6px, 0.6vw, 10px)' }}
                 >
@@ -254,7 +264,10 @@ const Scorecard = React.memo(function Scorecard({
               {/* Current Turn button */}
               {showCurrentTurnButton && onGoToCurrentTurn && (
                 <button
-                  onClick={onGoToCurrentTurn}
+                  onClick={() => {
+                    soundManager.play('click', { force: true })
+                    onGoToCurrentTurn()
+                  }}
                   className="bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-semibold"
                   style={{ fontSize: 'clamp(9px, 0.7vw, 11px)', padding: 'clamp(3px, 0.3vh, 6px) clamp(6px, 0.6vw, 10px)' }}
                 >
