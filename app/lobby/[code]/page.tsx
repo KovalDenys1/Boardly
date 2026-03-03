@@ -87,6 +87,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import type { BotDifficulty } from '@/lib/bot-profiles'
+import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 
 function CenteredLoadingFallback() {
   return (
@@ -131,6 +132,7 @@ const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const TERMINAL_GAME_STATUSES = new Set(['abandoned', 'cancelled'])
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
+type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
@@ -234,6 +236,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
   const hasLobbyPageInteractionRef = React.useRef(false)
+  const leaveStartedAtRef = React.useRef<number | null>(null)
+  const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
+  const leaveApiStatusCodeRef = React.useRef<number | null>(null)
 
   // Mark initial load as complete after 2 seconds
   useEffect(() => {
@@ -285,8 +290,29 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     [lobby?.gameType]
   )
 
+  const trackLeaveRedirectEvent = React.useCallback(
+    (navigation: 'router_replace' | 'window_assign_fallback') => {
+      const leaveStartedAt = leaveStartedAtRef.current
+      if (leaveStartedAt === null) return
+
+      trackLobbyLeaveRedirect({
+        durationMs: Date.now() - leaveStartedAt,
+        isGuest,
+        source: 'lobby_page',
+        navigation,
+        apiOutcome: leaveApiOutcomeRef.current,
+        ...(typeof leaveApiStatusCodeRef.current === 'number'
+          ? { statusCode: leaveApiStatusCodeRef.current }
+          : {}),
+        ...(typeof lobby?.gameType === 'string' ? { gameType: lobby.gameType } : {}),
+      })
+    },
+    [isGuest, lobby?.gameType]
+  )
+
   const navigateAfterLeave = React.useCallback(() => {
     router.replace(lifecycleRedirectTarget)
+    trackLeaveRedirectEvent('router_replace')
 
     if (typeof window === 'undefined') {
       return
@@ -294,10 +320,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     window.setTimeout(() => {
       if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+        trackLeaveRedirectEvent('window_assign_fallback')
         window.location.assign(lifecycleRedirectTarget)
       }
     }, LEAVE_REDIRECT_FALLBACK_MS)
-  }, [router, lifecycleRedirectTarget, code])
+  }, [router, lifecycleRedirectTarget, code, trackLeaveRedirectEvent])
 
   useEffect(() => {
     void router.prefetch(lifecycleRedirectTarget)
@@ -1123,6 +1150,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     isLeavingLobbyRef.current = true
     setShowLeaveConfirmModal(false)
+    leaveStartedAtRef.current = Date.now()
+    leaveApiOutcomeRef.current = 'pending'
+    leaveApiStatusCodeRef.current = null
 
     if (socket) {
       socket.emit('leave-lobby', code)
@@ -1142,9 +1172,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     })
       .then(async (res) => {
         clearTimeout(timeoutId)
+        leaveApiStatusCodeRef.current = res.status
         const data = await res.json().catch(() => null)
 
         if (!res.ok) {
+          leaveApiOutcomeRef.current = 'non_ok'
           clientLogger.warn('Leave lobby API returned non-ok status; using local redirect fallback', {
             code,
             status: res.status,
@@ -1153,6 +1185,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           return
         }
 
+        leaveApiOutcomeRef.current = 'ok'
         if (data?.gameAbandoned) {
           showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
           return
@@ -1163,6 +1196,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       .catch((error) => {
         clearTimeout(timeoutId)
         if ((error as Error)?.name === 'AbortError') {
+          leaveApiOutcomeRef.current = 'timeout'
           clientLogger.warn('Leave lobby API timed out; local redirect already performed', {
             code,
             timeoutMs: LEAVE_REQUEST_TIMEOUT_MS,
@@ -1170,6 +1204,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           return
         }
 
+        leaveApiOutcomeRef.current = 'error'
         clientLogger.warn('Leave lobby API failed; local redirect fallback used', {
           code,
           error,

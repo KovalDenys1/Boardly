@@ -1,5 +1,6 @@
 import {
   MOVE_APPLY_TARGET_MS,
+  trackLobbyLeaveRedirect,
   trackMoveSubmitApplied,
   trackStartAloneAutoBotResult,
   trackSocketAuthRefreshFailed,
@@ -99,6 +100,28 @@ describe('analytics reliability alerts', () => {
       success: true,
       reason: 'started',
       is_guest: true,
+    })
+  })
+
+  it('tracks leave-to-redirect telemetry with navigation and API outcome metadata', () => {
+    trackLobbyLeaveRedirect({
+      durationMs: 188.2,
+      isGuest: false,
+      source: 'lobby_page',
+      navigation: 'window_assign_fallback',
+      apiOutcome: 'timeout',
+      statusCode: 504,
+      gameType: 'yahtzee',
+    })
+
+    expect(mockTrack).toHaveBeenCalledWith('lobby_leave_redirect', {
+      latency_ms: 188,
+      is_guest: false,
+      source: 'lobby_page',
+      navigation: 'window_assign_fallback',
+      api_outcome: 'timeout',
+      status_code: 504,
+      game_type: 'yahtzee',
     })
   })
 })
