@@ -84,7 +84,7 @@ export async function GET(
           where: {
             status: {
               in: includeFinished
-                ? ['waiting', 'playing', 'finished']
+                ? ['waiting', 'playing', 'finished', 'abandoned', 'cancelled']
                 : ['waiting', 'playing'],
             },
           },

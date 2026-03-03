@@ -1,4 +1,4 @@
-type LobbyGameStatus = 'waiting' | 'playing' | 'finished'
+type LobbyGameStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
 interface LobbyGameLike {
   status?: string | null
@@ -23,10 +23,14 @@ export interface NormalizedLobbySnapshot {
 function getStatusPriority(status: string | null | undefined, includeFinished: boolean): number {
   switch (status) {
     case 'playing':
-      return 3
+      return 5
     case 'waiting':
-      return 2
+      return 4
     case 'finished':
+      return includeFinished ? 3 : 0
+    case 'abandoned':
+      return includeFinished ? 2 : 0
+    case 'cancelled':
       return includeFinished ? 1 : 0
     default:
       return 0
@@ -84,5 +88,11 @@ export function normalizeLobbySnapshotResponse(
 }
 
 export function isLobbyGameStatus(value: unknown): value is LobbyGameStatus {
-  return value === 'waiting' || value === 'playing' || value === 'finished'
+  return (
+    value === 'waiting' ||
+    value === 'playing' ||
+    value === 'finished' ||
+    value === 'abandoned' ||
+    value === 'cancelled'
+  )
 }
