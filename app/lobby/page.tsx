@@ -311,18 +311,18 @@ function LobbyListPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="mb-2 text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white break-words">
               🎮 {t('lobby.title')}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">{t('lobby.subtitle')}</p>
+            <p className="text-gray-600 dark:text-gray-400 break-words">{t('lobby.subtitle')}</p>
           </div>
           <button
             onClick={() => router.push('/games')}
-            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+            className="w-full sm:w-auto px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
           >
             ← {t('lobby.backToGames')}
           </button>
@@ -338,18 +338,18 @@ function LobbyListPageContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Quick Join Card */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-shadow">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
               🔍 {t('lobby.quickJoin')}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               {t('lobby.quickJoinDescription')}
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <input
                 type="text"
                 placeholder={t('lobby.enterCode')}
-                className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-lg"
+                className="w-full flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-base sm:text-lg"
                 value={joinCode}
                 onChange={(e) => setJoinCode(sanitizeLobbyCode(e.target.value))}
                 maxLength={LOBBY_CODE_LENGTH}
@@ -358,7 +358,7 @@ function LobbyListPageContent() {
               <button
                 onClick={handleJoinByCode}
                 disabled={joinCode.length !== LOBBY_CODE_LENGTH}
-                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
+                className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg"
               >
                 {t('lobby.join')}
               </button>
@@ -398,10 +398,10 @@ function LobbyListPageContent() {
 
           {selectedQuickRule ? (
             <div className="rounded-xl bg-blue-600/20 border border-blue-400/40 px-4 py-3">
-              <p className="text-sm font-semibold text-blue-100 mb-1">
+              <p className="text-sm font-semibold text-blue-100 mb-1 break-words">
                 {selectedQuickRule.icon} {selectedQuickRule.label}
               </p>
-              <p className="text-sm text-blue-50">{selectedQuickRule.rule}</p>
+              <p className="text-sm text-blue-50 break-words">{selectedQuickRule.rule}</p>
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
@@ -422,16 +422,16 @@ function LobbyListPageContent() {
 
         {/* Active Lobbies */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-words">
                 {t('lobby.activeLobbies')}
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 break-words">
                 {t('lobby.lobbiesCount', { count: lobbies.length })}
               </p>
               {lastUpdatedAt && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 break-words">
                   {t('lobby.lastUpdated', {
                     time: new Date(lastUpdatedAt).toLocaleTimeString(),
                   })}
@@ -441,7 +441,7 @@ function LobbyListPageContent() {
             <button
               onClick={loadLobbies}
               disabled={refreshing || loading}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="self-start p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title={t('lobby.refresh')}
             >
               <svg

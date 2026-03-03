@@ -28,12 +28,12 @@ export default function Header() {
   return (
     <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
-        <div className="flex justify-between" style={{ height: '100%', alignItems: 'center' }}>
+        <div className="flex items-center justify-between gap-3 sm:gap-4 min-w-0" style={{ height: '100%' }}>
           {/* Logo and main navigation */}
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-1">
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-2 text-2xl font-bold text-white hover:scale-105 transition-transform whitespace-nowrap"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xl sm:text-2xl font-bold text-white hover:scale-105 transition-transform"
             >
               🎲 Boardly
             </button>
@@ -46,11 +46,11 @@ export default function Header() {
           </div>
 
           {/* User menu and language switcher */}
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Guest indicator */}
             {isGuest && guestName && (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
-                <span className="text-yellow-100 text-sm">👤 {guestName}</span>
+                <span className="max-w-[140px] truncate text-yellow-100 text-sm">👤 {guestName}</span>
               </div>
             )}
 

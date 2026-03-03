@@ -434,8 +434,8 @@ export default function ProfilePage() {
             <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3 sm:mb-4">
               <span className="text-3xl sm:text-4xl">👤</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">{t('profile.title')}</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2 break-words">{t('profile.title')}</h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 break-words">
               Manage your account settings
             </p>
           </div>
@@ -599,7 +599,7 @@ export default function ProfilePage() {
                     <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
                       <div className="flex items-center gap-3">
                         <span className="text-xl sm:text-2xl flex-shrink-0">🔵</span>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-medium text-sm sm:text-base">Google</div>
                           {linkedAccounts.google && (
                             <div className="text-xs text-green-600 dark:text-green-400">✓ Connected</div>
@@ -629,7 +629,7 @@ export default function ProfilePage() {
                     <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
                       <div className="flex items-center gap-3">
                         <span className="text-xl sm:text-2xl flex-shrink-0">⚫</span>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-medium text-sm sm:text-base">GitHub</div>
                           {linkedAccounts.github && (
                             <div className="text-xs text-green-600 dark:text-green-400">✓ Connected</div>
@@ -659,7 +659,7 @@ export default function ProfilePage() {
                     <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 sm:px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all hover:shadow-md">
                       <div className="flex items-center gap-3">
                         <span className="text-xl sm:text-2xl flex-shrink-0">🟣</span>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-medium text-sm sm:text-base">Discord</div>
                           {linkedAccounts.discord && (
                             <div className="text-xs text-green-600 dark:text-green-400">✓ Connected</div>
@@ -766,17 +766,17 @@ export default function ProfilePage() {
           {activeTab === 'settings' && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold mb-1">{t('profile.settings.title')}</h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                <h2 className="text-xl sm:text-2xl font-bold mb-1 break-words">{t('profile.settings.title')}</h2>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 break-words">
                   {t('profile.settings.subtitle')}
                 </p>
               </div>
 
               {/* Language Settings */}
               <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-3 mb-4 min-w-0">
                   <span className="text-2xl">🌐</span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-lg font-semibold mb-1">{t('profile.settings.language.title')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.language.subtitle')}</p>
                   </div>
@@ -795,14 +795,14 @@ export default function ProfilePage() {
 
               {/* Theme Settings */}
               <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-3 mb-4 min-w-0">
                   <span className="text-2xl">🎨</span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-lg font-semibold mb-1">{t('profile.settings.theme.title')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.theme.subtitle')}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     onClick={() => updateSetting('theme', 'light')}
                     className={`p-4 border-2 rounded-lg transition-all ${settings.theme === 'light'
@@ -838,9 +838,9 @@ export default function ProfilePage() {
 
               {/* Notification Settings */}
               <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-3 mb-4 min-w-0">
                   <span className="text-2xl">🔔</span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-lg font-semibold mb-1">{t('profile.settings.notifications.title')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.notifications.subtitle')}</p>
                   </div>
@@ -964,9 +964,9 @@ export default function ProfilePage() {
 
               {/* Privacy Settings */}
               <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-3 mb-4 min-w-0">
                   <span className="text-2xl">🔒</span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-lg font-semibold mb-1">{t('profile.settings.privacy.title')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.privacy.subtitle')}</p>
                   </div>
@@ -1001,9 +1001,9 @@ export default function ProfilePage() {
 
               {/* Game Preferences */}
               <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-3 mb-4 min-w-0">
                   <span className="text-2xl">🎮</span>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-lg font-semibold mb-1">{t('profile.settings.game.title')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.settings.game.subtitle')}</p>
                   </div>
@@ -1048,12 +1048,12 @@ export default function ProfilePage() {
               {/* Save Button */}
               {settingsChanged && (
                 <div className="sticky bottom-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500 rounded-lg shadow-lg">
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div className="flex-1 min-w-0">
                       <p className="font-semibold text-blue-900 dark:text-blue-100">
                         You have unsaved changes
                       </p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <p className="text-sm text-blue-700 dark:text-blue-300 break-words">
                         Don't forget to save your settings
                       </p>
                     </div>

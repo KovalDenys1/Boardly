@@ -47,11 +47,11 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
   }, [hasActiveFilters])
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
       {/* Header with toggle button */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">
             🔍 {t('lobby.filters.title')}
           </h3>
           {hasActiveFilters && (
@@ -60,18 +60,18 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
-              className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="w-full sm:w-auto px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               {t('lobby.filters.clearAll')}
             </button>
           )}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            className="flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
           >
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {showFilters ? t('lobby.filters.hideFilters') : t('lobby.filters.showFilters')}
