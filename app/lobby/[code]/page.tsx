@@ -127,6 +127,9 @@ const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-p
   loading: () => <CenteredLoadingFallback />,
 })
 
+const LEAVE_REQUEST_TIMEOUT_MS = 2500
+const LEAVE_REDIRECT_FALLBACK_MS = 1500
+
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
   const params = useParams()
@@ -273,6 +276,29 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     },
     []
   )
+
+  const leaveRedirectTarget = React.useMemo(
+    () => `/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`,
+    [lobby?.gameType]
+  )
+
+  const navigateAfterLeave = React.useCallback(() => {
+    router.replace(leaveRedirectTarget)
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.setTimeout(() => {
+      if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+        window.location.assign(leaveRedirectTarget)
+      }
+    }, LEAVE_REDIRECT_FALLBACK_MS)
+  }, [router, leaveRedirectTarget, code])
+
+  useEffect(() => {
+    void router.prefetch(leaveRedirectTarget)
+  }, [router, leaveRedirectTarget])
 
   // Helper functions
   const getCurrentUserId = useCallback(() => {
@@ -1044,54 +1070,63 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (isLeavingLobbyRef.current) {
       return
     }
+
     isLeavingLobbyRef.current = true
     setShowLeaveConfirmModal(false)
 
-    try {
-      const res = await fetchWithGuest(`/api/lobby/${code}/leave`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    if (socket) {
+      socket.emit('leave-lobby', code)
+      socket.disconnect()
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
+
+    void fetchWithGuest(`/api/lobby/${code}/leave`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      keepalive: true,
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        clearTimeout(timeoutId)
+        const data = await res.json().catch(() => null)
+
+        if (!res.ok) {
+          clientLogger.warn('Leave lobby API returned non-ok status; using local redirect fallback', {
+            code,
+            status: res.status,
+            error: data,
+          })
+          return
+        }
+
+        if (data?.gameAbandoned) {
+          showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
+          return
+        }
+
+        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId)
+        if ((error as Error)?.name === 'AbortError') {
+          clientLogger.warn('Leave lobby API timed out; local redirect already performed', {
+            code,
+            timeoutMs: LEAVE_REQUEST_TIMEOUT_MS,
+          })
+          return
+        }
+
+        clientLogger.warn('Leave lobby API failed; local redirect fallback used', {
+          code,
+          error,
+        })
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        showToast.error('errors.general', undefined, {
-          message: (typeof data?.error === 'string' && data.error) || 'Failed to leave lobby',
-        })
-        clientLogger.error('Failed to leave lobby:', data.error)
-        isLeavingLobbyRef.current = false
-        return
-      }
-
-      // Disconnect socket
-      if (socket) {
-        socket.emit('leave-lobby', code)
-        socket.disconnect()
-      }
-
-      // Show appropriate message
-      if (data.gameAbandoned) {
-        showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
-      } else {
-        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
-      }
-
-      // Redirect
-      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
-    } catch (error) {
-      clientLogger.error('Error leaving lobby:', error)
-      showToast.errorFrom(error, 'toast.leaveLobbyFailed')
-
-      // Fallback: disconnect and redirect anyway
-      if (socket) {
-        socket.emit('leave-lobby', code)
-        socket.disconnect()
-      }
-      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
-    }
+    navigateAfterLeave()
   }
 
   const handleAddBot = async () => {

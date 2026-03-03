@@ -33,6 +33,9 @@ interface TicTacToeLobbyPageProps {
     code: string
 }
 
+const LEAVE_REQUEST_TIMEOUT_MS = 2500
+const LEAVE_REDIRECT_FALLBACK_MS = 1500
+
 export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
@@ -47,6 +50,25 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
+    const isLeavingLobbyRef = React.useRef(false)
+
+    const navigateAfterLeave = useCallback(() => {
+        router.replace('/games')
+
+        if (typeof window === 'undefined') {
+            return
+        }
+
+        window.setTimeout(() => {
+            if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+                window.location.assign('/games')
+            }
+        }, LEAVE_REDIRECT_FALLBACK_MS)
+    }, [router, code])
+
+    useEffect(() => {
+        void router.prefetch('/games')
+    }, [router])
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -326,22 +348,54 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     }, [gameEngine, game, getCurrentUserId])
 
     const handleLeave = async () => {
-        try {
-            await fetchWithGuest(`/api/lobby/${code}/leave`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+        if (isLeavingLobbyRef.current) {
+            return
+        }
+
+        isLeavingLobbyRef.current = true
+        setShowLeaveConfirmModal(false)
+
+        if (socket?.connected) {
+            socket.emit('leave-lobby', code)
+            socket.disconnect()
+        }
+
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
+
+        void fetchWithGuest(`/api/lobby/${code}/leave`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true,
+            signal: controller.signal,
+        })
+            .then(async (response) => {
+                clearTimeout(timeoutId)
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => null)
+                    clientLogger.warn('Tic-Tac-Toe leave API returned non-ok status', {
+                        code,
+                        status: response.status,
+                        payload,
+                    })
+                }
+            })
+            .catch((error) => {
+                clearTimeout(timeoutId)
+                if ((error as Error)?.name === 'AbortError') {
+                    clientLogger.warn('Tic-Tac-Toe leave API timed out after redirect', {
+                        code,
+                        timeoutMs: LEAVE_REQUEST_TIMEOUT_MS,
+                    })
+                    return
+                }
+                clientLogger.warn('Tic-Tac-Toe leave API failed after redirect', {
+                    code,
+                    error,
+                })
             })
 
-            if (socket?.connected) {
-                socket.emit('leave-lobby', code)
-                socket.disconnect()
-            }
-
-            router.push('/games')
-        } catch (error) {
-            clientLogger.error('Error leaving lobby:', error)
-            showToast.errorFrom(error, 'games.tictactoe.game.leaveFailed')
-        }
+        navigateAfterLeave()
     }
 
     const handlePlayAgain = useCallback(async () => {
