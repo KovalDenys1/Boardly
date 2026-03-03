@@ -44,7 +44,7 @@ export default function LobbyStats({ totalLobbies, waitingLobbies, playingLobbie
       {stats.map((stat, index) => (
         <div
           key={stat.label}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition-all hover:-translate-y-1 animate-fade-in"
+          className="min-w-0 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition-all hover:-translate-y-1 animate-fade-in"
           style={{ animationDelay: `${index * 0.1}s` }}
         >
           <div className="flex items-center justify-between mb-2">
@@ -53,7 +53,7 @@ export default function LobbyStats({ totalLobbies, waitingLobbies, playingLobbie
               {stat.value}
             </span>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{stat.label}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium break-words">{stat.label}</p>
         </div>
       ))}
     </div>

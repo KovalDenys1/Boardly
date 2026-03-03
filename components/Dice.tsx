@@ -53,7 +53,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
 
   const handleClick = () => {
     if (!disabled) {
-      soundManager.play('click')
+      soundManager.play('click', { force: true })
       onToggleHold()
     }
   }

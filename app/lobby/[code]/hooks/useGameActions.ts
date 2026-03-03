@@ -425,9 +425,33 @@ export function useGameActions(props: UseGameActionsProps) {
       data: { category },
       timestamp: new Date(),
     }
+    const shouldApplyOptimisticScore = !isAutoAction
+    const previousEngine = gameEngine
     const submitStartedAt = Date.now()
     let responseStatus: number | undefined
     let moveMetricTracked = false
+
+    if (shouldApplyOptimisticScore) {
+      try {
+        const optimisticEngine = new YahtzeeGame(game.id)
+        optimisticEngine.restoreState(gameEngine.getState())
+        const optimisticApplied = optimisticEngine.makeMove(move)
+
+        if (!optimisticApplied) {
+          setIsMoveInProgress(false)
+          setIsScoring(false)
+          showToast.error('toast.scoreFailed')
+          return null
+        }
+
+        // Apply optimistic turn + score update for instant feedback.
+        setGameEngine(optimisticEngine)
+        setHeld([false, false, false, false, false])
+        soundManager.play('score', { force: true })
+      } catch (optimisticError) {
+        clientLogger.warn('Failed to apply optimistic score update', optimisticError)
+      }
+    }
 
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -509,7 +533,9 @@ export function useGameActions(props: UseGameActionsProps) {
         }
       }
 
-      soundManager.play('score')
+      if (isAutoAction) {
+        soundManager.play('score', { force: true })
+      }
 
       // Track score action
       trackPlayerAction({
@@ -603,6 +629,9 @@ export function useGameActions(props: UseGameActionsProps) {
         })
       }
       if (!isAutoAction) {
+        if (shouldApplyOptimisticScore) {
+          setGameEngine(previousEngine)
+        }
         setHeld(preMoveHeld)
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.scoreFailed')

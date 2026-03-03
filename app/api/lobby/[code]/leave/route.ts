@@ -1,17 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { getServerSocketUrl, getSocketInternalAuthHeaders } from '@/lib/socket-url'
+import { notifySocket } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 
 const limiter = rateLimit(rateLimitPresets.api)
+const SOCKET_NOTIFY_DEBOUNCE_MS = 0
+
+function emitLobbyEvent(
+  log: ReturnType<typeof apiLogger>,
+  code: string,
+  event: string,
+  data: Record<string, unknown>
+) {
+  void notifySocket(`lobby:${code}`, event, data, SOCKET_NOTIFY_DEBOUNCE_MS)
+    .then((sent) => {
+      if (!sent) {
+        log.warn('Failed to emit lobby leave event', {
+          code,
+          event,
+        })
+      }
+    })
+    .catch((error) => {
+      log.warn('Lobby leave socket emit errored', {
+        code,
+        event,
+        error,
+      })
+    })
+}
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  const log = apiLogger('POST /api/lobby/[code]/leave')
+
   try {
     // Rate limit leave requests
     const rateLimitResult = await limiter(req)
@@ -90,20 +117,19 @@ export async function POST(
       where: { id: player.id }
     })
 
-    // Get remaining players count
-    const remainingPlayers = await prisma.players.count({
-      where: { gameId: activeGame.id }
-    })
-
-    // Get remaining human players (non-bots)
-    const remainingHumanPlayers = await prisma.players.count({
-      where: {
-        gameId: activeGame.id,
-        user: {
-          bot: null  // Human players don't have bot relation
+    const [remainingPlayers, remainingHumanPlayers] = await Promise.all([
+      prisma.players.count({
+        where: { gameId: activeGame.id }
+      }),
+      prisma.players.count({
+        where: {
+          gameId: activeGame.id,
+          user: {
+            bot: null  // Human players don't have bot relation
+          }
         }
-      }
-    })
+      }),
+    ])
 
     // Different behavior based on game status
     if (activeGame.status === 'waiting') {
@@ -146,24 +172,7 @@ export async function POST(
         data: { isActive: false }
       })
 
-      // Notify other players via socket
-      try {
-        const socketUrl = getServerSocketUrl()
-        await fetch(`${socketUrl}/api/notify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getSocketInternalAuthHeaders(),
-          },
-          body: JSON.stringify({
-            room: `lobby:${code}`,
-            event: 'game-abandoned',
-            data: { reason: 'no_human_players' }
-          })
-        })
-      } catch (err) {
-        console.error('Failed to notify via socket:', err)
-      }
+      emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -190,24 +199,7 @@ export async function POST(
         data: { isActive: false }
       })
 
-      // Notify remaining player(s) via socket
-      try {
-        const socketUrl = getServerSocketUrl()
-        await fetch(`${socketUrl}/api/notify`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getSocketInternalAuthHeaders(),
-          },
-          body: JSON.stringify({
-            room: `lobby:${code}`,
-            event: 'game-abandoned',
-            data: { reason: 'insufficient_players' }
-          })
-        })
-      } catch (err) {
-        console.error('Failed to notify via socket:', err)
-      }
+      emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -218,28 +210,11 @@ export async function POST(
     }
 
     // If multiple players remain (human or bot), continue the game
-    // Notify other players via socket
-    try {
-      const socketUrl = getServerSocketUrl()
-      await fetch(`${socketUrl}/api/notify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getSocketInternalAuthHeaders(),
-        },
-        body: JSON.stringify({
-          room: `lobby:${code}`,
-          event: 'player-left',
-          data: {
-            playerId: userId,
-            playerName: player.user.username || player.user.email || 'Guest',
-            remainingPlayers
-          }
-        })
-      })
-    } catch (err) {
-      console.error('Failed to notify via socket:', err)
-    }
+    emitLobbyEvent(log, code, 'player-left', {
+      playerId: userId,
+      playerName: player.user.username || player.user.email || 'Guest',
+      remainingPlayers,
+    })
 
     return NextResponse.json({
       message: 'You left the lobby',
@@ -247,7 +222,6 @@ export async function POST(
       lobbyDeactivated: false
     })
   } catch (error: any) {
-    const log = apiLogger('POST /api/lobby/[code]/leave')
     log.error('Leave lobby error', error)
     return NextResponse.json(
       { error: 'Failed to leave lobby' },

@@ -67,7 +67,9 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h3 className="font-bold text-lg text-gray-900 dark:text-white">{lobby.name}</h3>
+            <h3 className="max-w-full truncate font-bold text-lg text-gray-900 dark:text-white" title={lobby.name}>
+              {lobby.name}
+            </h3>
             <span className="font-mono bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-bold text-sm">
               {lobby.code}
             </span>
@@ -88,7 +90,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
             <span className={`px-2.5 py-1 rounded-full font-semibold ${statusClass}`}>
               {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
             </span>
-            <span className="px-2.5 py-1 rounded-full font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+            <span className="max-w-full truncate px-2.5 py-1 rounded-full font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
               {gamePresentation.icon + ' '}
               {gamePresentation.label}
             </span>
@@ -116,7 +118,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
                 onClick={() => onWatchLobby(lobby.code)}
                 className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold"
               >
-                {t('lobby.watch')}
+                <span className="block truncate">{t('lobby.watch')}</span>
               </button>
             )}
             <button
@@ -124,7 +126,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
               onClick={() => onOpenLobby(lobby.code)}
               className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
             >
-              {t('lobby.openLobby')}
+              <span className="block truncate">{t('lobby.openLobby')}</span>
             </button>
           </div>
         </div>

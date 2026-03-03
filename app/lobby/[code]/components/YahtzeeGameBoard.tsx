@@ -4,6 +4,7 @@ import CelebrationBanner from '@/components/CelebrationBanner'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 import { CelebrationEvent } from '@/lib/celebrations'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { soundManager } from '@/lib/sounds'
 
 interface GameBoardProps {
   gameEngine: YahtzeeGame
@@ -116,7 +117,10 @@ export default function GameBoard({
 
         {/* Roll Button */}
         <button
-          onClick={onRollDice}
+          onClick={() => {
+            soundManager.play('click', { force: true })
+            onRollDice()
+          }}
           aria-label={`${t('yahtzee.ui.rollDice')}. ${t('yahtzee.ui.rollsLeft', { count: rollsLeft })}`}
           disabled={
             !isMyTurn ||

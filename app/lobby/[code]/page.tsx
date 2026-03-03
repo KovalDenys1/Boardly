@@ -127,6 +127,11 @@ const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-p
   loading: () => <CenteredLoadingFallback />,
 })
 
+const LEAVE_REQUEST_TIMEOUT_MS = 2500
+const LEAVE_REDIRECT_FALLBACK_MS = 1500
+const TERMINAL_GAME_STATUSES = new Set(['abandoned', 'cancelled'])
+const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
+
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
   const router = useRouter()
   const params = useParams()
@@ -225,6 +230,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
   const isLeavingLobbyRef = React.useRef(false)
+  const lifecycleRedirectInFlightRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
   const hasLobbyPageInteractionRef = React.useRef(false)
@@ -272,6 +278,60 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       soundManager.play(soundName, options)
     },
     []
+  )
+
+  const lifecycleRedirectTarget = React.useMemo(
+    () => `/games/${(lobby?.gameType as string) || DEFAULT_GAME_TYPE}/lobbies`,
+    [lobby?.gameType]
+  )
+
+  const navigateAfterLeave = React.useCallback(() => {
+    router.replace(lifecycleRedirectTarget)
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.setTimeout(() => {
+      if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+        window.location.assign(lifecycleRedirectTarget)
+      }
+    }, LEAVE_REDIRECT_FALLBACK_MS)
+  }, [router, lifecycleRedirectTarget, code])
+
+  useEffect(() => {
+    void router.prefetch(lifecycleRedirectTarget)
+  }, [router, lifecycleRedirectTarget])
+
+  const triggerLifecycleRedirect = React.useCallback(
+    (reason: string, options?: { toastKey?: string }) => {
+      if (isLeavingLobbyRef.current || lifecycleRedirectInFlightRef.current) {
+        return
+      }
+
+      lifecycleRedirectInFlightRef.current = true
+
+      if (options?.toastKey) {
+        showToast.error(options.toastKey, undefined, undefined, { id: 'lifecycle-redirect' })
+      }
+
+      clientLogger.warn('Triggering lobby lifecycle redirect', {
+        code,
+        reason,
+        target: lifecycleRedirectTarget,
+      })
+
+      router.replace(lifecycleRedirectTarget)
+
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+            window.location.assign(lifecycleRedirectTarget)
+          }
+        }, LIFECYCLE_REDIRECT_FALLBACK_MS)
+      }
+    },
+    [router, lifecycleRedirectTarget, code]
   )
 
   // Helper functions
@@ -360,6 +420,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         const parsedState = typeof state === 'string'
           ? JSON.parse(state)
           : state
+
+        const parsedStatus =
+          typeof parsedState?.status === 'string' ? parsedState.status : null
+        if (parsedStatus && TERMINAL_GAME_STATUSES.has(parsedStatus)) {
+          triggerLifecycleRedirect(`game-update:${parsedStatus}`, {
+            toastKey: 'lobby.gameAbandoned',
+          })
+          return
+        }
 
         if (game?.id) {
           const gt = lobby?.gameType as string || DEFAULT_GAME_TYPE
@@ -458,7 +527,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 // Play dice roll sound for other players' rolls (not our own)
                 if (lastRoll.playerId !== currentUserId) {
-                  playAmbientSound('diceRoll')
+                  playAmbientSound('diceRoll', { force: true })
                 }
 
                 const newRollEntry: RollHistoryEntry = {
@@ -487,7 +556,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     } else {
       clientLogger.warn('📡 game-update received but no state found:', payload)
     }
-  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound])
+  }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound, triggerLifecycleRedirect])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
@@ -560,30 +629,35 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const botName = event.botName || 'Bot'
 
     // Add bot action to roll history ONLY if dice are present (after roll, not before)
-    if (event.type === 'roll' && event.data?.dice && gameEngine) {
-      const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
-      const playerCount = game?.players?.length || 1
-      const turnNumber = Math.floor(currentRound / playerCount) + 1
-
-      setRollHistory(prev => {
-        const newRollEntry: RollHistoryEntry = {
-          id: `bot-${Date.now()}-${Math.random()}`,
-          type: 'roll',
-          playerName: botName,
-          dice: event.data.dice,
-          rollNumber: event.data.rollNumber || 1,
-          turnNumber: turnNumber,
-          held: normalizeHeldIndexes(event.data.held),
-          isBot: true,
-          timestamp: Date.now(),
-        }
-
-        return [...prev, newRollEntry].slice(-20)
-      })
-
-      // Play sound ONLY after roll completes AND not during initial load
-      // Use force option to ensure sound plays even if previous roll sound is still playing
+    if (event.type === 'roll' && event.data?.dice) {
+      // Play sound as soon as roll result is received.
       playAmbientSound('diceRoll', { force: true })
+
+      if (gameEngine) {
+        const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
+        const playerCount = game?.players?.length || 1
+        const turnNumber = Math.floor(currentRound / playerCount) + 1
+
+        setRollHistory(prev => {
+          const newRollEntry: RollHistoryEntry = {
+            id: `bot-${Date.now()}-${Math.random()}`,
+            type: 'roll',
+            playerName: botName,
+            dice: event.data.dice,
+            rollNumber: event.data.rollNumber || 1,
+            turnNumber: turnNumber,
+            held: normalizeHeldIndexes(event.data.held),
+            isBot: true,
+            timestamp: Date.now(),
+          }
+
+          return [...prev, newRollEntry].slice(-20)
+        })
+      }
+    }
+
+    if (event.type === 'hold' && event.data?.held?.length) {
+      playAmbientSound('click', { force: true })
     }
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
@@ -604,40 +678,44 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
-    const reason = data.reason
-    if (reason === 'no_human_players') {
-      showToast.error('lobby.gameAbandoned')
-    } else if (reason === 'insufficient_players') {
-      showToast.error('lobby.gameAbandoned')
-    }
-
-    // Refresh lobby data
     if (loadLobbyRef.current) {
-      loadLobbyRef.current()
+      void loadLobbyRef.current()
     }
 
-    // Navigate back to lobby list after a short delay
-    setTimeout(() => {
-      router.push(`/games/${lobby?.gameType as string || DEFAULT_GAME_TYPE}/lobbies`)
-    }, 3000)
-  }, [router, lobby])
+    triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`, {
+      toastKey: 'lobby.gameAbandoned',
+    })
+  }, [triggerLifecycleRedirect])
 
-  const onPlayerLeft = useCallback((data: { userId: string; username: string }) => {
+  const onPlayerLeft = useCallback((data: {
+    userId: string
+    username?: string
+    playerName?: string
+    remainingPlayers?: number
+  }) => {
     clientLogger.log('📡 Player left:', data)
 
     if (isLeavingLobbyRef.current) {
       return
     }
 
-    if (data.username) {
-      showToast.info('toast.playerLeft', undefined, { player: data.username })
+    const departedPlayerName = data.username || data.playerName
+    if (departedPlayerName) {
+      showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+    }
+
+    if (typeof data.remainingPlayers === 'number' && data.remainingPlayers <= 1) {
+      triggerLifecycleRedirect('player-left:insufficient-players', {
+        toastKey: 'lobby.gameAbandoned',
+      })
+      return
     }
 
     // Refresh lobby data
     if (loadLobbyRef.current) {
-      loadLobbyRef.current()
+      void loadLobbyRef.current()
     }
-  }, [])
+  }, [triggerLifecycleRedirect])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
   const canJoinSocketLobbyRoom = React.useMemo(() => {
@@ -650,7 +728,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return true
     }
 
-    const activeGameFromState = game
+    const activeGameFromState =
+      game && ['waiting', 'playing', 'finished'].includes(String(game.status))
+        ? game
+        : null
     const activeGameFromLobby = Array.isArray(lobbyData.games)
       ? lobbyData.games.find((candidate: any) => ['waiting', 'playing'].includes(candidate?.status))
       : null
@@ -1039,54 +1120,63 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (isLeavingLobbyRef.current) {
       return
     }
+
     isLeavingLobbyRef.current = true
     setShowLeaveConfirmModal(false)
 
-    try {
-      const res = await fetchWithGuest(`/api/lobby/${code}/leave`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    if (socket) {
+      socket.emit('leave-lobby', code)
+      socket.disconnect()
+    }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
+
+    void fetchWithGuest(`/api/lobby/${code}/leave`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      keepalive: true,
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        clearTimeout(timeoutId)
+        const data = await res.json().catch(() => null)
+
+        if (!res.ok) {
+          clientLogger.warn('Leave lobby API returned non-ok status; using local redirect fallback', {
+            code,
+            status: res.status,
+            error: data,
+          })
+          return
+        }
+
+        if (data?.gameAbandoned) {
+          showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
+          return
+        }
+
+        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId)
+        if ((error as Error)?.name === 'AbortError') {
+          clientLogger.warn('Leave lobby API timed out; local redirect already performed', {
+            code,
+            timeoutMs: LEAVE_REQUEST_TIMEOUT_MS,
+          })
+          return
+        }
+
+        clientLogger.warn('Leave lobby API failed; local redirect fallback used', {
+          code,
+          error,
+        })
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        showToast.error('errors.general', undefined, {
-          message: (typeof data?.error === 'string' && data.error) || 'Failed to leave lobby',
-        })
-        clientLogger.error('Failed to leave lobby:', data.error)
-        isLeavingLobbyRef.current = false
-        return
-      }
-
-      // Disconnect socket
-      if (socket) {
-        socket.emit('leave-lobby', code)
-        socket.disconnect()
-      }
-
-      // Show appropriate message
-      if (data.gameAbandoned) {
-        showToast.info('lobby.gameAbandoned', undefined, undefined, { id: 'leave-lobby-result' })
-      } else {
-        showToast.success('lobby.leftLobby', undefined, undefined, { id: 'leave-lobby-result' })
-      }
-
-      // Redirect
-      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
-    } catch (error) {
-      clientLogger.error('Error leaving lobby:', error)
-      showToast.errorFrom(error, 'toast.leaveLobbyFailed')
-
-      // Fallback: disconnect and redirect anyway
-      if (socket) {
-        socket.emit('leave-lobby', code)
-        socket.disconnect()
-      }
-      router.push(`/games/${lobby?.gameType || DEFAULT_GAME_TYPE}/lobbies`)
-    }
+    navigateAfterLeave()
   }
 
   const handleAddBot = async () => {
@@ -1201,6 +1291,30 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+
+  useEffect(() => {
+    if (isLeavingLobbyRef.current) {
+      return
+    }
+
+    const lobbyIsInactive = !!lobby && (lobby as any).isActive === false
+    const currentGameStatus = typeof game?.status === 'string' ? game.status : null
+    const isTerminalGameStatus =
+      typeof currentGameStatus === 'string' && TERMINAL_GAME_STATUSES.has(currentGameStatus)
+
+    if (isTerminalGameStatus) {
+      triggerLifecycleRedirect(`local-game-status:${currentGameStatus}`, {
+        toastKey: 'lobby.gameAbandoned',
+      })
+      return
+    }
+
+    if (lobbyIsInactive && currentGameStatus !== 'playing' && currentGameStatus !== 'waiting') {
+      triggerLifecycleRedirect('local-lobby-inactive', {
+        toastKey: 'lobby.gameAbandoned',
+      })
+    }
+  }, [game?.status, lobby, triggerLifecycleRedirect])
 
   // Reset mobile-only UI state when a new Yahtzee game starts without a page reload
   // (e.g. host starts game, rematch starts, or socket-driven transition).
@@ -1449,6 +1563,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => {
+                          soundManager.play('click', { force: true })
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
@@ -1463,7 +1578,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
                       </button>
                       <button
-                        onClick={() => setShowLeaveConfirmModal(true)}
+                        onClick={() => {
+                          soundManager.play('click', { force: true })
+                          setShowLeaveConfirmModal(true)
+                        }}
                         aria-label={t('game.ui.leave')}
                         className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                       >
@@ -1510,6 +1628,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
+                          soundManager.play('click', { force: true })
                           const newState = soundManager.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
@@ -1525,7 +1644,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="hidden sm:inline text-xs">Sound</span>
                       </button>
                       <button
-                        onClick={() => setShowLeaveConfirmModal(true)}
+                        onClick={() => {
+                          soundManager.play('click', { force: true })
+                          setShowLeaveConfirmModal(true)
+                        }}
                         aria-label="Leave game"
                         className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                       >
