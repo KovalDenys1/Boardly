@@ -10,6 +10,7 @@ import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { BotDifficulty, MoveCallback } from '../core/bot-types'
 import { clientLogger } from '@/lib/client-logger'
 import { getCategoryDisplayName } from '@/lib/celebrations'
+import { resolveBotUxDelayMs } from '../core/bot-ux-timing'
 
 export interface YahtzeeBotActionEvent {
     type: 'thinking' | 'roll' | 'hold' | 'score'
@@ -54,7 +55,7 @@ export class YahtzeeBotExecutor {
                 botName: botPlayer.name,
                 message: `${botPlayer.name} is thinking...`,
             })
-            await this.delay(300)
+            await this.delay(difficulty, 300)
 
             // Execute turn step by step
             let rollNumber = 0
@@ -72,6 +73,7 @@ export class YahtzeeBotExecutor {
                         decision,
                         bot,
                         botPlayer.name,
+                        difficulty,
                         gameEngine,
                         onMove,
                         onBotAction
@@ -86,6 +88,7 @@ export class YahtzeeBotExecutor {
                         bot,
                         botPlayer.name,
                         rollNumber,
+                        difficulty,
                         gameEngine,
                         onMove,
                         onBotAction
@@ -101,6 +104,7 @@ export class YahtzeeBotExecutor {
                     decision,
                     bot,
                     botPlayer.name,
+                    difficulty,
                     gameEngine,
                     onMove,
                     onBotAction
@@ -123,11 +127,12 @@ export class YahtzeeBotExecutor {
         bot: YahtzeeBot,
         botName: string,
         rollNumber: number,
+        difficulty: BotDifficulty,
         gameEngine: YahtzeeGame,
         onMove: MoveCallback,
         onBotAction?: (event: YahtzeeBotActionEvent) => void
     ): Promise<void> {
-        await this.delay(200)
+        await this.delay(difficulty, 200)
 
         onBotAction?.({
             type: 'roll',
@@ -156,7 +161,7 @@ export class YahtzeeBotExecutor {
         })
 
         if (heldIndices.length > 0) {
-            await this.delay(150)
+            await this.delay(difficulty, 150)
             onBotAction?.({
                 type: 'hold',
                 botName,
@@ -169,7 +174,7 @@ export class YahtzeeBotExecutor {
             })
         }
 
-        await this.delay(400)
+        await this.delay(difficulty, 400)
     }
 
     /**
@@ -179,6 +184,7 @@ export class YahtzeeBotExecutor {
         decision: YahtzeeBotDecision,
         bot: YahtzeeBot,
         botName: string,
+        difficulty: BotDifficulty,
         gameEngine: YahtzeeGame,
         onMove: MoveCallback,
         onBotAction?: (event: YahtzeeBotActionEvent) => void
@@ -190,7 +196,7 @@ export class YahtzeeBotExecutor {
         const dice = gameEngine.getDice()
         const score = calculateScore(dice, decision.category)
 
-        await this.delay(300)
+        await this.delay(difficulty, 300)
 
         const categoryName = getCategoryDisplayName(decision.category)
         onBotAction?.({
@@ -204,7 +210,7 @@ export class YahtzeeBotExecutor {
             message: `${botName} scores ${score} in ${categoryName}`,
         })
 
-        await this.delay(200)
+        await this.delay(difficulty, 200)
 
         const move = bot.decisionToMove(decision)
         await onMove(move)
@@ -215,7 +221,8 @@ export class YahtzeeBotExecutor {
     /**
      * Delay helper
      */
-    private static delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms))
+    private static delay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
+        const delayMs = resolveBotUxDelayMs(difficulty, baseMs)
+        return new Promise(resolve => setTimeout(resolve, delayMs))
     }
 }
