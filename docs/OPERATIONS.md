@@ -72,6 +72,7 @@ Recommended:
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
+- `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
