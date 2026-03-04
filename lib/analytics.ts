@@ -101,6 +101,16 @@ interface StartAloneAutoBotResultEvent {
   isGuest: boolean
 }
 
+interface LobbyLeaveRedirectEvent {
+  durationMs: number
+  isGuest: boolean
+  source: 'lobby_page' | 'tic_tac_toe_page'
+  navigation: 'router_replace' | 'window_assign_fallback'
+  apiOutcome: 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
+  statusCode?: number
+  gameType?: string
+}
+
 function normalizeDurationMs(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.round(value))
@@ -386,6 +396,25 @@ export function trackLobbyCreateReady(event: LobbyCreateReadyEvent): void {
       is_guest: event.isGuest,
     })
   }
+}
+
+export function trackLobbyLeaveRedirect(event: LobbyLeaveRedirectEvent): void {
+  const durationMs = normalizeDurationMs(event.durationMs)
+
+  track('lobby_leave_redirect', {
+    latency_ms: durationMs,
+    is_guest: event.isGuest,
+    source: event.source,
+    navigation: event.navigation,
+    api_outcome: event.apiOutcome,
+    ...(typeof event.statusCode === 'number' ? { status_code: event.statusCode } : {}),
+    ...(event.gameType ? { game_type: event.gameType } : {}),
+  })
+
+  clientLogger.log('[analytics] Lobby leave redirect', {
+    latencyMs: durationMs,
+    ...event,
+  })
 }
 
 /**

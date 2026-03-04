@@ -19,7 +19,8 @@ import TicTacToeGameBoard from '@/components/TicTacToeGameBoard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
-import { trackMoveSubmitApplied } from '@/lib/analytics'
+import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
+import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 
 interface Lobby {
     id: string
@@ -27,6 +28,7 @@ interface Lobby {
     gameType: string
     creatorId: string
     name: string
+    isActive?: boolean
 }
 
 interface TicTacToeLobbyPageProps {
@@ -35,6 +37,8 @@ interface TicTacToeLobbyPageProps {
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
+const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
+type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const router = useRouter()
@@ -51,9 +55,34 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const isLeavingLobbyRef = React.useRef(false)
+    const lifecycleRedirectInFlightRef = React.useRef(false)
+    const leaveStartedAtRef = React.useRef<number | null>(null)
+    const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
+    const leaveApiStatusCodeRef = React.useRef<number | null>(null)
+
+    const trackLeaveRedirectEvent = useCallback(
+        (navigation: 'router_replace' | 'window_assign_fallback') => {
+            const leaveStartedAt = leaveStartedAtRef.current
+            if (leaveStartedAt === null) return
+
+            trackLobbyLeaveRedirect({
+                durationMs: Date.now() - leaveStartedAt,
+                isGuest,
+                source: 'tic_tac_toe_page',
+                navigation,
+                apiOutcome: leaveApiOutcomeRef.current,
+                ...(typeof leaveApiStatusCodeRef.current === 'number'
+                    ? { statusCode: leaveApiStatusCodeRef.current }
+                    : {}),
+                gameType: 'tic_tac_toe',
+            })
+        },
+        [isGuest]
+    )
 
     const navigateAfterLeave = useCallback(() => {
         router.replace('/games')
+        trackLeaveRedirectEvent('router_replace')
 
         if (typeof window === 'undefined') {
             return
@@ -61,14 +90,38 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
         window.setTimeout(() => {
             if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+                trackLeaveRedirectEvent('window_assign_fallback')
                 window.location.assign('/games')
             }
         }, LEAVE_REDIRECT_FALLBACK_MS)
-    }, [router, code])
+    }, [router, code, trackLeaveRedirectEvent])
 
     useEffect(() => {
         void router.prefetch('/games')
     }, [router])
+
+    const triggerLifecycleRedirect = useCallback((reason: string) => {
+        if (isLeavingLobbyRef.current || lifecycleRedirectInFlightRef.current) {
+            return
+        }
+
+        lifecycleRedirectInFlightRef.current = true
+        showToast.error('lobby.gameAbandoned', undefined, undefined, { id: 'ttt-lifecycle-redirect' })
+        clientLogger.warn('Tic-Tac-Toe lifecycle redirect triggered', {
+            code,
+            reason,
+            target: '/games',
+        })
+        router.replace('/games')
+
+        if (typeof window !== 'undefined') {
+            window.setTimeout(() => {
+                if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+                    window.location.assign('/games')
+                }
+            }, LIFECYCLE_REDIRECT_FALLBACK_MS)
+        }
+    }, [router, code])
 
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
@@ -136,6 +189,17 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             setLoading(false)
         }
     }, [code, router])
+
+    useEffect(() => {
+        const redirectReason = resolveLifecycleRedirectReason({
+            gameStatus: game?.status,
+            lobbyIsActive: lobby?.isActive,
+        })
+
+        if (redirectReason) {
+            triggerLifecycleRedirect(redirectReason)
+        }
+    }, [game?.status, lobby?.isActive, triggerLifecycleRedirect])
 
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {
@@ -354,6 +418,9 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
         isLeavingLobbyRef.current = true
         setShowLeaveConfirmModal(false)
+        leaveStartedAtRef.current = Date.now()
+        leaveApiOutcomeRef.current = 'pending'
+        leaveApiStatusCodeRef.current = null
 
         if (socket?.connected) {
             socket.emit('leave-lobby', code)
@@ -371,24 +438,30 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         })
             .then(async (response) => {
                 clearTimeout(timeoutId)
+                leaveApiStatusCodeRef.current = response.status
                 if (!response.ok) {
+                    leaveApiOutcomeRef.current = 'non_ok'
                     const payload = await response.json().catch(() => null)
                     clientLogger.warn('Tic-Tac-Toe leave API returned non-ok status', {
                         code,
                         status: response.status,
                         payload,
                     })
+                } else {
+                    leaveApiOutcomeRef.current = 'ok'
                 }
             })
             .catch((error) => {
                 clearTimeout(timeoutId)
                 if ((error as Error)?.name === 'AbortError') {
+                    leaveApiOutcomeRef.current = 'timeout'
                     clientLogger.warn('Tic-Tac-Toe leave API timed out after redirect', {
                         code,
                         timeoutMs: LEAVE_REQUEST_TIMEOUT_MS,
                     })
                     return
                 }
+                leaveApiOutcomeRef.current = 'error'
                 clientLogger.warn('Tic-Tac-Toe leave API failed after redirect', {
                     code,
                     error,

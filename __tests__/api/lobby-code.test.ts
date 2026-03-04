@@ -428,6 +428,73 @@ describe('POST /api/lobby/[code]/leave', () => {
     })
   })
 
+  it('deactivates waiting lobby when host leaves and only bot players remain', async () => {
+    const waitingLobbyWithHostAndBot = {
+      ...mockLobby,
+      creatorId: 'user-123',
+      games: [
+        {
+          id: 'game-123',
+          status: 'waiting',
+          players: [
+            {
+              id: 'player-host',
+              userId: 'user-123',
+              gameId: 'game-123',
+              user: {
+                id: 'user-123',
+                username: 'host-user',
+                bot: null,
+              },
+            },
+            {
+              id: 'player-bot',
+              userId: 'bot-user-1',
+              gameId: 'game-123',
+              user: {
+                id: 'bot-user-1',
+                username: 'ai-bot',
+                bot: { id: 'bot-1' },
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: 'user-123',
+      username: 'host-user',
+      suspended: false,
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(waitingLobbyWithHostAndBot as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-host' } as any)
+    mockPrisma.players.count
+      .mockResolvedValueOnce(1) // remaining players (bot only)
+      .mockResolvedValueOnce(0) // remaining human players
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
+      method: 'POST',
+    })
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual(
+      expect.objectContaining({
+        gameEnded: false,
+        lobbyDeactivated: true,
+      })
+    )
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith({
+      where: { id: 'lobby-123' },
+      data: { isActive: false },
+    })
+    expect(mockPrisma.games.update).not.toHaveBeenCalled()
+    expect(mockNotifySocket).not.toHaveBeenCalled()
+  })
+
   it('should return success when player is already absent from lobby', async () => {
     const lobbyWithoutPlayer = {
       ...mockLobby,
@@ -576,5 +643,80 @@ describe('POST /api/lobby/[code]/leave', () => {
     )
 
     resolveNotify?.(true)
+  })
+
+  it('abandons playing game when leave results in bot-only players', async () => {
+    const playingLobbyWithBotLeft = {
+      ...mockLobby,
+      games: [
+        {
+          id: 'game-123',
+          status: 'playing',
+          players: [
+            {
+              id: 'player-human',
+              userId: 'user-123',
+              gameId: 'game-123',
+              user: {
+                id: 'user-123',
+                username: 'testuser',
+                bot: null,
+              },
+            },
+            {
+              id: 'player-bot',
+              userId: 'bot-user-1',
+              gameId: 'game-123',
+              user: {
+                id: 'bot-user-1',
+                username: 'ai-bot',
+                bot: { id: 'bot-1' },
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: 'user-123',
+      username: 'testuser',
+      suspended: false,
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(playingLobbyWithBotLeft as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-human' } as any)
+    mockPrisma.players.count
+      .mockResolvedValueOnce(1) // remaining players
+      .mockResolvedValueOnce(0) // remaining human players
+    mockPrisma.games.update.mockResolvedValue({ id: 'game-123', status: 'abandoned' } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({ id: 'lobby-123', isActive: false } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
+      method: 'POST',
+    })
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual(
+      expect.objectContaining({
+        gameEnded: true,
+        gameAbandoned: true,
+        lobbyDeactivated: true,
+      })
+    )
+    expect(mockPrisma.games.update).toHaveBeenCalledWith({
+      where: { id: 'game-123' },
+      data: expect.objectContaining({
+        status: 'abandoned',
+      }),
+    })
+    expect(mockNotifySocket).toHaveBeenCalledWith(
+      'lobby:ABC123',
+      'game-abandoned',
+      expect.objectContaining({ reason: 'no_human_players' }),
+      0
+    )
   })
 })

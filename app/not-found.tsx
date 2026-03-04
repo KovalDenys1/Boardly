@@ -7,79 +7,64 @@ export default function NotFound() {
   const router = useRouter()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-      <div className="card max-w-2xl w-full text-center animate-bounce-in">
-        {/* 404 Animation */}
-        <div className="mb-8">
-          <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 animate-pulse">
+    <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-slate-950 text-slate-100">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.25),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.2),transparent_40%)]"
+      />
+
+      <div className="relative mx-auto grid h-full w-full max-w-4xl place-items-center p-3 sm:p-5">
+        <div className="w-full max-w-2xl rounded-3xl border border-white/15 bg-white/10 px-4 py-5 text-center shadow-2xl backdrop-blur-xl sm:px-7 sm:py-7">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
+            Boardly • Lost Route
+          </p>
+
+          <h1 className="text-[clamp(4.5rem,22vw,9rem)] font-black leading-none tracking-tight text-transparent [text-shadow:0_0_32px_rgba(56,189,248,0.4)] bg-gradient-to-b from-cyan-200 via-sky-300 to-emerald-300 bg-clip-text">
             404
           </h1>
-          <div className="text-6xl mb-4 animate-bounce">
-            🎲❌🎲
-          </div>
-        </div>
 
-        {/* Message */}
-        <h2 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
-          Oops! Page Not Found
-        </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-          The page you're looking for seems to have rolled away...
-          <br />
-          Maybe it got a Yahtzee and left to celebrate! 🎉
-        </p>
+          <p className="mx-auto mt-3 max-w-lg text-[clamp(1rem,2.8vw,1.3rem)] font-semibold text-white">
+            Page not found. This turn ended outside the board.
+          </p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-slate-200/85 sm:text-base">
+            Return to lobby list or jump home to start a new game.
+          </p>
 
-        {/* Actions */}
-        <div className="space-y-4">
-          <Link
-            href="/"
-            className="btn btn-primary w-full md:w-auto px-8 py-4 text-lg inline-block"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span>🏠</span>
-              <span>Go Home</span>
-            </span>
-          </Link>
-          
-          <button
-            onClick={() => router.back()}
-            className="btn btn-secondary w-full md:w-auto px-8 py-4 text-lg ml-0 md:ml-4 mt-4 md:mt-0"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span>⬅️</span>
-              <span>Go Back</span>
-            </span>
-          </button>
-        </div>
-
-        {/* Popular Links */}
-        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-300">
-            Maybe you were looking for:
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
             <Link
               href="/lobby"
-              className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+              className="btn bg-cyan-500 text-slate-950 hover:bg-cyan-400 focus-visible:ring-cyan-300"
             >
-              <div className="text-2xl mb-2 group-hover:scale-125 transition-transform">🎮</div>
-              <div className="font-semibold">Browse Lobbies</div>
+              Browse Lobbies
             </Link>
             <Link
-              href="/lobby/create"
-              className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group"
+              href="/"
+              className="btn bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/40"
             >
-              <div className="text-2xl mb-2 group-hover:scale-125 transition-transform">✨</div>
-              <div className="font-semibold">Create Lobby</div>
+              Go Home
+            </Link>
+            <button
+              onClick={() => router.back()}
+              className="btn bg-emerald-500 text-slate-950 hover:bg-emerald-400 focus-visible:ring-emerald-300 sm:col-span-2"
+            >
+              Go Back
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm">
+            <Link
+              href="/lobby/create"
+              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100 transition-colors hover:bg-white/20"
+            >
+              Create Lobby
+            </Link>
+            <Link
+              href="/games"
+              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100 transition-colors hover:bg-white/20"
+            >
+              Games
             </Link>
           </div>
-        </div>
-
-        {/* Fun fact */}
-        <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            💡 <strong>Did you know?</strong> The chances of rolling a Yahtzee on the first roll are 1 in 1,296!
-          </p>
         </div>
       </div>
     </div>

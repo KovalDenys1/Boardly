@@ -2,6 +2,7 @@ import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { BotDifficulty, MoveCallback } from '../core/bot-types'
 import { TicTacToeBot } from './tic-tac-toe-bot'
 import { clientLogger } from '@/lib/client-logger'
+import { resolveBotUxDelayMs } from '../core/bot-ux-timing'
 
 export interface TicTacToeBotActionEvent {
   type: 'thinking' | 'place'
@@ -34,7 +35,7 @@ export class TicTacToeBotExecutor {
       message: `${botPlayer.name} is thinking...`,
     })
 
-    await this.delay(250)
+    await this.delay(difficulty, 250)
 
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
@@ -58,7 +59,8 @@ export class TicTacToeBotExecutor {
     })
   }
 
-  private static delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+  private static delay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
+    const delayMs = resolveBotUxDelayMs(difficulty, baseMs)
+    return new Promise((resolve) => setTimeout(resolve, delayMs))
   }
 }

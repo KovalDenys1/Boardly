@@ -2,6 +2,7 @@ import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
 import { BotDifficulty, MoveCallback } from '../core/bot-types'
 import { RockPaperScissorsBot } from './rock-paper-scissors-bot'
 import { clientLogger } from '@/lib/client-logger'
+import { resolveBotUxDelayMs } from '../core/bot-ux-timing'
 
 export interface RockPaperScissorsBotActionEvent {
   type: 'thinking' | 'choice'
@@ -30,7 +31,7 @@ export class RockPaperScissorsBotExecutor {
       message: `${botPlayer.name} is thinking...`,
     })
 
-    await this.delay(200)
+    await this.delay(difficulty, 200)
 
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
@@ -47,7 +48,8 @@ export class RockPaperScissorsBotExecutor {
     })
   }
 
-  private static delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+  private static delay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
+    const delayMs = resolveBotUxDelayMs(difficulty, baseMs)
+    return new Promise((resolve) => setTimeout(resolve, delayMs))
   }
 }
