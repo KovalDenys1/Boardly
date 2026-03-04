@@ -87,6 +87,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import type { BotDifficulty } from '@/lib/bot-profiles'
+import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 
 function CenteredLoadingFallback() {
@@ -130,7 +131,6 @@ const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-p
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
-const TERMINAL_GAME_STATUSES = new Set(['abandoned', 'cancelled'])
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
@@ -450,7 +450,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
         const parsedStatus =
           typeof parsedState?.status === 'string' ? parsedState.status : null
-        if (parsedStatus && TERMINAL_GAME_STATUSES.has(parsedStatus)) {
+        if (isTerminalGameStatus(parsedStatus)) {
           triggerLifecycleRedirect(`game-update:${parsedStatus}`, {
             toastKey: 'lobby.gameAbandoned',
           })
@@ -1332,20 +1332,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
-    const lobbyIsInactive = !!lobby && (lobby as any).isActive === false
-    const currentGameStatus = typeof game?.status === 'string' ? game.status : null
-    const isTerminalGameStatus =
-      typeof currentGameStatus === 'string' && TERMINAL_GAME_STATUSES.has(currentGameStatus)
+    const redirectReason = resolveLifecycleRedirectReason({
+      gameStatus: game?.status,
+      lobbyIsActive: (lobby as any)?.isActive,
+    })
 
-    if (isTerminalGameStatus) {
-      triggerLifecycleRedirect(`local-game-status:${currentGameStatus}`, {
-        toastKey: 'lobby.gameAbandoned',
-      })
-      return
-    }
-
-    if (lobbyIsInactive && currentGameStatus !== 'playing' && currentGameStatus !== 'waiting') {
-      triggerLifecycleRedirect('local-lobby-inactive', {
+    if (redirectReason) {
+      triggerLifecycleRedirect(redirectReason, {
         toastKey: 'lobby.gameAbandoned',
       })
     }

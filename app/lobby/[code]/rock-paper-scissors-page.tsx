@@ -17,12 +17,15 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
+import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+
+type RpsLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
 interface RPSGame {
     id: string
     lobbyCode: string
     gameType: string
-    status: 'waiting' | 'playing' | 'finished'
+    status: RpsLifecycleStatus
     currentPlayerIndex: number
     players: Array<{ id: string; name: string }>
     data: RockPaperScissorsGameData
@@ -31,7 +34,8 @@ interface RPSGame {
 interface LobbyData {
     id: string
     code: string
-    status: 'waiting' | 'playing' | 'finished'
+    status: RpsLifecycleStatus
+    isActive?: boolean
     gameId?: string
     gameType?: string
     game?: RPSGame
@@ -40,6 +44,8 @@ interface LobbyData {
 interface RockPaperScissorsLobbyPageProps {
     code: string
 }
+
+const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 
 export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLobbyPageProps) {
     const router = useRouter()
@@ -55,9 +61,37 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const socketRef = useRef<Socket | null>(null)
+    const lifecycleRedirectInFlightRef = useRef(false)
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
+
+    useEffect(() => {
+        void router.prefetch('/games')
+    }, [router])
+
+    const triggerLifecycleRedirect = useCallback((reason: string) => {
+        if (lifecycleRedirectInFlightRef.current) {
+            return
+        }
+
+        lifecycleRedirectInFlightRef.current = true
+        showToast.error('lobby.gameAbandoned', undefined, undefined, { id: 'rps-lifecycle-redirect' })
+        clientLogger.warn('RPS lifecycle redirect triggered', {
+            code,
+            reason,
+            target: '/games',
+        })
+        router.replace('/games')
+
+        if (typeof window !== 'undefined') {
+            window.setTimeout(() => {
+                if (window.location.pathname.startsWith(`/lobby/${code}`)) {
+                    window.location.assign('/games')
+                }
+            }, LIFECYCLE_REDIRECT_FALLBACK_MS)
+        }
+    }, [router, code])
 
     const parseRpsState = useCallback((state: unknown): RockPaperScissorsGameData => {
         const defaultState: RockPaperScissorsGameData = {
@@ -109,6 +143,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                 id: lobbyPayload.id,
                 code: lobbyPayload.code,
                 status: 'waiting',
+                isActive: lobbyPayload.isActive,
                 gameType: lobbyPayload.gameType,
             }
         }
@@ -120,11 +155,20 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             }))
             : []
 
+        const normalizedStatus: RpsLifecycleStatus =
+            activeGame.status === 'waiting' ||
+            activeGame.status === 'playing' ||
+            activeGame.status === 'finished' ||
+            activeGame.status === 'abandoned' ||
+            activeGame.status === 'cancelled'
+                ? activeGame.status
+                : 'waiting'
+
         const normalizedGame: RPSGame = {
             id: activeGame.id,
             lobbyCode: lobbyPayload.code,
             gameType: activeGame.gameType || lobbyPayload.gameType || 'rock_paper_scissors',
-            status: activeGame.status,
+            status: normalizedStatus,
             currentPlayerIndex: typeof activeGame.currentPlayerIndex === 'number'
                 ? activeGame.currentPlayerIndex
                 : 0,
@@ -136,6 +180,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             id: lobbyPayload.id,
             code: lobbyPayload.code,
             status: normalizedGame.status,
+            isActive: lobbyPayload.isActive,
             gameId: normalizedGame.id,
             gameType: lobbyPayload.gameType,
             game: normalizedGame,
@@ -168,6 +213,17 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             setLoading(false)
         }
     }, [code, t, normalizeLobbyResponse])
+
+    useEffect(() => {
+        const redirectReason = resolveLifecycleRedirectReason({
+            gameStatus: lobby?.status,
+            lobbyIsActive: lobby?.isActive,
+        })
+
+        if (redirectReason) {
+            triggerLifecycleRedirect(redirectReason)
+        }
+    }, [lobby?.status, lobby?.isActive, triggerLifecycleRedirect])
 
     // Initialize Socket.IO connection
     useEffect(() => {
