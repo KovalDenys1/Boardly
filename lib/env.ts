@@ -37,6 +37,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_SOCKET_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().optional(),
   SOCKET_SERVER_INTERNAL_SECRET: z.string().min(16, 'SOCKET_SERVER_INTERNAL_SECRET must be at least 16 characters').optional(),
+  BOT_UX_DELAY_MS: z.string().optional(),
+  BOT_UX_DELAY_SCALE: z.string().optional(),
+  BOT_UX_DELAY_MIN_MS: z.string().optional(),
+  BOT_UX_DELAY_MAX_MS: z.string().optional(),
   
   // Server Configuration
   HOSTNAME: z.string().default('0.0.0.0'),
@@ -177,6 +181,11 @@ export function printEnvInfo(options: ValidateEnvOptions = {}): void {
   
   console.log(`  - Socket.IO URL: ${env.NEXT_PUBLIC_SOCKET_URL || 'Not set (using default)'}`)
   console.log(`  - Socket Internal Secret: ${env.SOCKET_SERVER_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set'}`)
+  console.log(`  - Bot UX Delay Override: ${env.BOT_UX_DELAY_MS || 'auto'}`)
+  console.log(`  - Bot UX Delay Scale: ${env.BOT_UX_DELAY_SCALE || '0.55 (default)'}`)
+  console.log(
+    `  - Bot UX Delay Range: ${env.BOT_UX_DELAY_MIN_MS || '0'}-${env.BOT_UX_DELAY_MAX_MS || '1200'} ms`
+  )
   console.log(`  - Cron Secret: ${env.CRON_SECRET ? '✅ Set' : '⚠️  Not set'}`)
   console.log(`  - CORS Origin: ${env.CORS_ORIGIN || 'Not set'}`)
   console.log(
