@@ -3,11 +3,13 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { RegisteredGameType } from '@/lib/game-catalog'
+import { showToast } from '@/lib/i18n-toast'
 import {
   trackLobbyCreateRequest,
   type AnalyticsGameType,
@@ -131,6 +133,8 @@ function isSelectableGameType(value: string | null | undefined): value is GameTy
 
 import { Disclosure } from '@headlessui/react'
 
+const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
+
 function CreateLobbyPage() {
   const { t } = useTranslation()
   const router = useRouter()
@@ -160,6 +164,8 @@ function CreateLobbyPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
+  const [showFriendsModal, setShowFriendsModal] = useState(false)
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -182,6 +188,11 @@ function CreateLobbyPage() {
       router.push('/')
     }
   }, [status, isGuest, router])
+
+  const handlePartySelection = async (friendIds: string[]) => {
+    setSelectedFriendIds(friendIds)
+    showToast.success('toast.saved')
+  }
 
   if (!gameInfo) {
     return (
@@ -283,6 +294,43 @@ function CreateLobbyPage() {
         startedAt: createStartedAt,
         isGuest,
       })
+
+      if (!isGuest && selectedFriendIds.length > 0) {
+        try {
+          const inviteResponse = await fetch(`/api/lobby/${lobbyCode}/invite`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ friendIds: selectedFriendIds }),
+          })
+
+          const inviteResult = await inviteResponse.json().catch(() => null)
+          if (!inviteResponse.ok) {
+            clientLogger.warn('Lobby created but party invite request failed', {
+              lobbyCode,
+              status: inviteResponse.status,
+              error: inviteResult,
+            })
+          } else {
+            clientLogger.log('Party invite flow completed during lobby creation', {
+              lobbyCode,
+              invitedCount:
+                typeof inviteResult?.invitedCount === 'number'
+                  ? inviteResult.invitedCount
+                  : selectedFriendIds.length,
+              skippedCount: Array.isArray(inviteResult?.skippedFriendIds)
+                ? inviteResult.skippedFriendIds.length
+                : 0,
+            })
+          }
+        } catch (inviteError) {
+          clientLogger.warn('Lobby created but party invite request threw an error', {
+            lobbyCode,
+            error: inviteError,
+          })
+        }
+      }
 
       clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
       router.push(`/lobby/${lobbyCode}`)
@@ -642,6 +690,33 @@ function CreateLobbyPage() {
                 </p>
               </div>
 
+              {!isGuest && (
+                <div className="rounded-xl border border-white/20 bg-white/10 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-white">👥 {t('lobby.invite.title')}</p>
+                      <p className="text-xs text-white/70">
+                        {t('lobby.invite.description')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowFriendsModal(true)}
+                      className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all"
+                    >
+                      {selectedFriendIds.length > 0
+                        ? t('lobby.invite.send', { count: selectedFriendIds.length })
+                        : t('lobby.invite.title')}
+                    </button>
+                  </div>
+                  {selectedFriendIds.length > 0 && (
+                    <p className="mt-3 text-xs text-emerald-200">
+                      {t('lobby.invite.send', { count: selectedFriendIds.length })}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Game Mode - Only for games that support it */}
               {gameInfo.settings.hasGameModes && (
                 <div>
@@ -769,6 +844,17 @@ function CreateLobbyPage() {
           </div>
         </div>
       </section>
+
+      {!isGuest && (
+        <FriendsListModal
+          isOpen={showFriendsModal}
+          onClose={() => setShowFriendsModal(false)}
+          onSelect={handlePartySelection}
+          initialSelectedFriendIds={selectedFriendIds}
+          confirmLabel={t('common.save')}
+          lobbyCode="pending-lobby"
+        />
+      )}
     </div>
   )
 }
