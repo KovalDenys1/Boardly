@@ -148,6 +148,24 @@ describe('Guest mode API endpoints', () => {
     expect(mockPrisma.lobbies.create).toHaveBeenCalled()
   })
 
+  it('rejects lobby creation for temporarily unavailable game type', async () => {
+    const req = new NextRequest('http://localhost:3000/api/lobby', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Guest Lobby',
+        maxPlayers: 2,
+        gameType: 'rock_paper_scissors',
+      }),
+    })
+
+    const response = await CREATE_LOBBY(req)
+    const data = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(data.error).toBe('Game type is temporarily unavailable')
+    expect(mockPrisma.lobbies.create).not.toHaveBeenCalled()
+  })
+
   it('joins waiting lobby as guest player', async () => {
     mockPrisma.lobbies.findUnique.mockResolvedValue({
       id: 'lobby_1',
