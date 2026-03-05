@@ -51,7 +51,22 @@ require('whatwg-fetch')
 
 // Mock nanoid for lobby code generation
 jest.mock('nanoid', () => ({
-  customAlphabet: () => () => 'AB12CD',
+  customAlphabet: (alphabet, size) => {
+    let counter = 0
+    return () => {
+      // Deterministic generator that respects alphabet and requested size.
+      // This keeps tests stable while matching runtime signature.
+      const start = counter
+      counter += 1
+
+      let code = ''
+      for (let i = 0; i < size; i += 1) {
+        code += alphabet[(start + i) % alphabet.length]
+      }
+
+      return code
+    }
+  },
   nanoid: () => 'test-id-123',
 }))
 
