@@ -82,6 +82,12 @@ export async function POST(request: NextRequest) {
     if (!isSupportedGameType(gameType)) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
+    if (gameType === 'rock_paper_scissors') {
+      return NextResponse.json(
+        { error: 'Game type is temporarily unavailable' },
+        { status: 409 }
+      )
+    }
 
     const persistedGameType = toPersistedGameType(gameType)
     const hashedLobbyPassword = await hashLobbyPassword(password)

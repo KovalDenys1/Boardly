@@ -118,6 +118,16 @@ const GAME_INFO: Record<GameType, GameInfo> = {
   },
 }
 
+const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<GameType>(['rock_paper_scissors'])
+
+function isSelectableGameType(value: string | null | undefined): value is GameType {
+  if (typeof value !== 'string' || !(value in GAME_INFO)) {
+    return false
+  }
+
+  return !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(value as GameType)
+}
+
 
 import { Disclosure } from '@headlessui/react'
 
@@ -128,7 +138,10 @@ function CreateLobbyPage() {
   const { data: session, status } = useSession()
   const { isGuest } = useGuest()
 
-  const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
+  const requestedGameType = searchParams.get('gameType')
+  const [selectedGameType, setSelectedGameType] = useState<GameType>(
+    isSelectableGameType(requestedGameType) ? requestedGameType : 'yahtzee'
+  )
   const gameInfo = GAME_INFO[selectedGameType]
 
   const [formData, setFormData] = useState({
@@ -313,6 +326,7 @@ function CreateLobbyPage() {
             {/* 1. Game Type Selector - clean scrollable list */}
             <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO)
+                .filter(([key]) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(key as GameType))
                 .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
                 .map(([key, info]) => (
                 <button
@@ -379,7 +393,7 @@ function CreateLobbyPage() {
                 </label>
 
                 {gameInfo.allowedPlayers.length === 1 ? (
-                  // Static display for games with fixed player count (e.g., Tic-Tac-Toe, Rock Paper Scissors)
+                  // Static display for games with fixed player count (e.g., Tic-Tac-Toe)
                   <div className="flex flex-col items-center py-2">
                     <div className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
                       <span className="text-2xl font-extrabold text-white">
