@@ -348,11 +348,10 @@ function CreateLobbyPage() {
             <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🎮 {t('lobby.create.lobbyName')} *
+                  🎮 {t('lobby.create.lobbyName')}
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder={t('lobby.create.lobbyNamePlaceholder')}
                   maxLength={LOBBY_NAME_MAX}
                   className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
