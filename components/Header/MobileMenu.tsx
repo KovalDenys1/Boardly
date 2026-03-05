@@ -24,6 +24,7 @@ export function MobileMenu({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const previousPathnameRef = useRef(pathname)
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
   const canAccessGames = isAuthenticated || isGuestSession
@@ -76,7 +77,10 @@ export function MobileMenu({
 
   // Close on route change
   useEffect(() => {
-    if (mobileMenuOpen) {
+    const pathnameChanged = previousPathnameRef.current !== pathname
+    previousPathnameRef.current = pathname
+
+    if (mobileMenuOpen && pathnameChanged) {
       closeMenu()
     }
   }, [pathname, mobileMenuOpen, closeMenu])
