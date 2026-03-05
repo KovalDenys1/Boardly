@@ -26,7 +26,8 @@ const createLobbySchema = z.object({
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
-const MAX_LOBBY_CODE_ATTEMPTS = 10
+const NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK = 10
+const MAX_LOBBY_CODE_ATTEMPTS = 20
 const UNLIMITED_SPECTATORS_VALUE = 0
 
 function isLobbyCodeConflict(error: unknown): boolean {
@@ -145,7 +146,9 @@ export async function POST(request: NextRequest) {
       | null = null
 
     for (let attempt = 1; attempt <= MAX_LOBBY_CODE_ATTEMPTS; attempt += 1) {
-      const code = generateLobbyCode()
+      const code = generateLobbyCode({
+        fallbackToAlphanumeric: attempt > NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK,
+      })
       const resolvedLobbyName =
         normalizedLobbyName.length > 0 ? normalizedLobbyName : `Lobby ${code}`
 
