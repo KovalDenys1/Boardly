@@ -14,7 +14,7 @@ import { toPersistedGameType } from '@/lib/game-type-storage'
 const log = apiLogger('/api/lobby')
 
 const createLobbySchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().trim().max(50).optional().default(''),
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(10).default(6),
   allowSpectators: z.boolean().default(false),
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     const persistedGameType = toPersistedGameType(gameType)
+    const normalizedLobbyName = name.trim()
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
@@ -145,12 +146,14 @@ export async function POST(request: NextRequest) {
 
     for (let attempt = 1; attempt <= MAX_LOBBY_CODE_ATTEMPTS; attempt += 1) {
       const code = generateLobbyCode()
+      const resolvedLobbyName =
+        normalizedLobbyName.length > 0 ? normalizedLobbyName : `Lobby ${code}`
 
       try {
         lobby = await prisma.lobbies.create({
           data: {
             code,
-            name,
+            name: resolvedLobbyName,
             password: hashedLobbyPassword,
             maxPlayers,
             allowSpectators,

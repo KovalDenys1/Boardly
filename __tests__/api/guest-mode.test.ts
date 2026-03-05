@@ -148,6 +148,37 @@ describe('Guest mode API endpoints', () => {
     expect(mockPrisma.lobbies.create).toHaveBeenCalled()
   })
 
+  it('creates lobby with generated name when request omits name', async () => {
+    mockPrisma.lobbies.create.mockResolvedValue({
+      id: 'lobby_2',
+      code: 'TEST123',
+      name: 'Lobby TEST123',
+      games: [
+        {
+          id: 'game_2',
+          status: 'waiting',
+          players: [{ userId: guestUser.id, position: 0 }],
+        },
+      ],
+    } as any)
+
+    const req = new NextRequest('http://localhost:3000/api/lobby', {
+      method: 'POST',
+      body: JSON.stringify({
+        maxPlayers: 4,
+        gameType: 'yahtzee',
+      }),
+    })
+
+    const response = await CREATE_LOBBY(req)
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.lobby.name).toBe('Lobby TEST123')
+    const createArgs = mockPrisma.lobbies.create.mock.calls[0][0] as any
+    expect(createArgs.data.name).toBe('Lobby TEST123')
+  })
+
   it('rejects lobby creation for temporarily unavailable game type', async () => {
     const req = new NextRequest('http://localhost:3000/api/lobby', {
       method: 'POST',
