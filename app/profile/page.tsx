@@ -26,6 +26,24 @@ interface LinkedAccounts {
 }
 
 type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'settings'
+const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'settings']
+
+function isTabType(value: string | null): value is TabType {
+  return value !== null && PROFILE_TABS.includes(value as TabType)
+}
+
+type SettingsState = {
+  language: string
+  theme: 'light' | 'dark' | 'system'
+  emailNotifications: boolean
+  pushNotifications: boolean
+  soundEffects: boolean
+  profileVisibility: 'public' | 'friends' | 'private'
+  showOnlineStatus: boolean
+  autoJoin: boolean
+  confirmMoves: boolean
+  animations: boolean
+}
 
 type NotificationPreferences = {
   gameInvites: boolean
@@ -33,6 +51,19 @@ type NotificationPreferences = {
   friendRequests: boolean
   friendAccepted: boolean
   unsubscribedAll: boolean
+}
+
+const DEFAULT_SETTINGS: SettingsState = {
+  language: 'en',
+  theme: 'system',
+  emailNotifications: true,
+  pushNotifications: false,
+  soundEffects: true,
+  profileVisibility: 'public',
+  showOnlineStatus: true,
+  autoJoin: false,
+  confirmMoves: true,
+  animations: true,
 }
 
 export default function ProfilePage() {
@@ -60,18 +91,7 @@ export default function ProfilePage() {
     friendAccepted: true,
     unsubscribedAll: false,
   })
-  const [settings, setSettings] = useState({
-    language: 'en',
-    theme: 'system',
-    emailNotifications: true,
-    pushNotifications: false,
-    soundEffects: true,
-    profileVisibility: 'public',
-    showOnlineStatus: true,
-    autoJoin: false,
-    confirmMoves: true,
-    animations: true,
-  })
+  const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
 
   useEffect(() => {
     if (!sessionUserName) return
@@ -109,13 +129,54 @@ export default function ProfilePage() {
 
   // Check if account was just linked
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('linked') === 'true') {
+    if (typeof window === 'undefined') return
+
+    const currentUrl = new URL(window.location.href)
+    if (currentUrl.searchParams.get('linked') === 'true') {
       showToast.success('toast.accountLinked')
-      // Remove query param
-      window.history.replaceState({}, '', '/profile')
+
+      currentUrl.searchParams.delete('linked')
+      window.history.replaceState(
+        {},
+        '',
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+      )
     }
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const currentUrl = new URL(window.location.href)
+    const tabFromQuery = currentUrl.searchParams.get('tab')
+    if (isTabType(tabFromQuery)) {
+      setActiveTab(tabFromQuery)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const currentUrl = new URL(window.location.href)
+    const tabInQuery = currentUrl.searchParams.get('tab')
+    const nextTabInQuery = activeTab === 'profile' ? null : activeTab
+
+    if (tabInQuery === nextTabInQuery) {
+      return
+    }
+
+    if (!nextTabInQuery) {
+      currentUrl.searchParams.delete('tab')
+    } else {
+      currentUrl.searchParams.set('tab', nextTabInQuery)
+    }
+
+    window.history.replaceState(
+      {},
+      '',
+      `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    )
+  }, [activeTab])
 
   useEffect(() => {
     const fetchLinkedAccounts = async () => {
@@ -137,22 +198,26 @@ export default function ProfilePage() {
 
       // Load settings from localStorage
       const savedLanguage = localStorage.getItem('language') || 'en'
-      const savedTheme = localStorage.getItem('theme') || 'system'
+      const savedThemeRaw = localStorage.getItem('theme')
+      const savedTheme: SettingsState['theme'] =
+        savedThemeRaw === 'light' || savedThemeRaw === 'dark' ? savedThemeRaw : 'system'
       const savedSettings = localStorage.getItem('userSettings')
 
       if (savedSettings) {
         try {
           const parsed = JSON.parse(savedSettings)
           setSettings({
+            ...DEFAULT_SETTINGS,
+            ...(typeof parsed === 'object' && parsed !== null ? parsed : {}),
             language: savedLanguage,
             theme: savedTheme,
-            ...parsed
           })
-        } catch (e) {
+        } catch {
           // Use defaults if parsing fails
         }
       } else {
-        setSettings(prev => ({
+        setSettings((prev) => ({
+          ...DEFAULT_SETTINGS,
           ...prev,
           language: savedLanguage,
           theme: savedTheme
@@ -223,14 +288,12 @@ export default function ProfilePage() {
       // Update session with new username
       await update({
         user: {
+          name: username,
           username: username,
         },
       })
 
       showToast.success('toast.profileUpdated')
-
-      // Reload page to reflect changes everywhere
-      window.location.reload()
     } catch (error) {
       showToast.errorFrom(error, 'toast.error')
     } finally {
@@ -369,18 +432,15 @@ export default function ProfilePage() {
 
       showToast.success('profile.settings.saved')
       setSettingsChanged(false)
-
-      // Reload to apply all settings
-      setTimeout(() => window.location.reload(), 500)
-    } catch (error) {
+    } catch {
       showToast.error('profile.settings.error')
     } finally {
       setSavingSettings(false)
     }
   }
 
-  const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }))
+  const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+    setSettings((prev) => ({ ...prev, [key]: value }))
     setSettingsChanged(true)
   }
 
@@ -404,6 +464,18 @@ export default function ProfilePage() {
   const handleBackNavigation = () => {
     navigateBackFromProfile(router)
   }
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab)
+  }
+
+  const tabItems: Array<{ id: TabType; icon: string; label: string }> = [
+    { id: 'profile', icon: '👤', label: t('profile.title') },
+    { id: 'friends', icon: '👥', label: t('profile.friends.title') },
+    { id: 'history', icon: '🎮', label: t('profile.gameHistory.title') },
+    { id: 'stats', icon: '📊', label: t('profile.stats.title') },
+    { id: 'settings', icon: '⚙️', label: t('profile.settings.title') },
+  ]
 
   if (status === 'loading') {
     return (
@@ -442,63 +514,37 @@ export default function ProfilePage() {
 
           {/* Tabs Navigation - Mobile optimized with scroll */}
           <div className="mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto">
-            <nav className="flex gap-2 sm:gap-4 min-w-max">
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === 'profile'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            <nav
+              role="tablist"
+              aria-label={t('profile.title')}
+              className="flex gap-2 sm:gap-4 min-w-max"
+            >
+              {tabItems.map((tab) => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`profile-tab-panel-${tab.id}`}
+                  id={`profile-tab-${tab.id}`}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+                    activeTab === tab.id
+                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
-              >
-                <span className="inline sm:hidden">👤</span>
-                <span className="hidden sm:inline">👤 {t('profile.title')}</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('friends')}
-                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === 'friends'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="inline sm:hidden">👥</span>
-                <span className="hidden sm:inline">👥 {t('profile.friends.title')}</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === 'history'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="inline sm:hidden">🎮</span>
-                <span className="hidden sm:inline">🎮 {t('profile.gameHistory.title')}</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === 'settings'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="inline sm:hidden">⚙️</span>
-                <span className="hidden sm:inline">⚙️ {t('profile.settings.title')}</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('stats')}
-                className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${activeTab === 'stats'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-              >
-                <span className="inline sm:hidden">📊</span>
-                <span className="hidden sm:inline">📊 Statistics</span>
-              </button>
+                >
+                  <span className="inline sm:hidden">{tab.icon}</span>
+                  <span className="hidden sm:inline">
+                    {tab.icon} {tab.label}
+                  </span>
+                </button>
+              ))}
             </nav>
           </div>
 
           {/* Tab Content */}
           {activeTab === 'profile' && (
-            <div>
+            <div role="tabpanel" id="profile-tab-panel-profile" aria-labelledby="profile-tab-profile">
 
               {/* Email Verification Banner - Only show for email/password accounts */}
               {session?.user?.email && !session?.user?.emailVerified && !linkedAccounts.google && !linkedAccounts.github && !linkedAccounts.discord && (
@@ -737,21 +783,21 @@ export default function ProfilePage() {
 
           {/* Friends Tab */}
           {activeTab === 'friends' && (
-            <div>
+            <div role="tabpanel" id="profile-tab-panel-friends" aria-labelledby="profile-tab-friends">
               <Friends />
             </div>
           )}
 
           {/* Game History Tab */}
           {activeTab === 'history' && (
-            <div>
+            <div role="tabpanel" id="profile-tab-panel-history" aria-labelledby="profile-tab-history">
               <GameHistory />
             </div>
           )}
 
           {/* Statistics Tab */}
           {activeTab === 'stats' && (
-            <div>
+            <div role="tabpanel" id="profile-tab-panel-stats" aria-labelledby="profile-tab-stats">
               {session?.user?.id ? (
                 <PlayerStatsDashboard userId={session.user.id} />
               ) : (
@@ -764,7 +810,12 @@ export default function ProfilePage() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && (
-            <div className="space-y-6">
+            <div
+              role="tabpanel"
+              id="profile-tab-panel-settings"
+              aria-labelledby="profile-tab-settings"
+              className="space-y-6"
+            >
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold mb-1 break-words">{t('profile.settings.title')}</h2>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 break-words">
@@ -849,7 +900,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.emailNotifications}
-                      onCheckedChange={(checked) => updateSetting('emailNotifications', checked)}
+                      onCheckedChange={(checked) => updateSetting('emailNotifications', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
@@ -860,7 +911,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.pushNotifications}
-                      onCheckedChange={(checked) => updateSetting('pushNotifications', checked)}
+                      onCheckedChange={(checked) => updateSetting('pushNotifications', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
@@ -871,7 +922,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.soundEffects}
-                      onCheckedChange={(checked) => updateSetting('soundEffects', checked)}
+                      onCheckedChange={(checked) => updateSetting('soundEffects', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
@@ -977,7 +1028,9 @@ export default function ProfilePage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('profile.settings.privacy.profileVisibilityDesc')}</p>
                     <select
                       value={settings.profileVisibility}
-                      onChange={(e) => updateSetting('profileVisibility', e.target.value)}
+                      onChange={(e) =>
+                        updateSetting('profileVisibility', e.target.value as SettingsState['profileVisibility'])
+                      }
                       className="input w-full"
                     >
                       <option value="public">🌍 {t('profile.settings.privacy.public')}</option>
@@ -988,7 +1041,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.showOnlineStatus}
-                      onCheckedChange={(checked) => updateSetting('showOnlineStatus', checked)}
+                      onCheckedChange={(checked) => updateSetting('showOnlineStatus', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
@@ -1012,7 +1065,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.autoJoin}
-                      onCheckedChange={(checked) => updateSetting('autoJoin', checked)}
+                      onCheckedChange={(checked) => updateSetting('autoJoin', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
@@ -1023,7 +1076,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.confirmMoves}
-                      onCheckedChange={(checked) => updateSetting('confirmMoves', checked)}
+                      onCheckedChange={(checked) => updateSetting('confirmMoves', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
@@ -1034,7 +1087,7 @@ export default function ProfilePage() {
                   <Label className="flex items-start gap-3 cursor-pointer">
                     <Checkbox
                       checked={settings.animations}
-                      onCheckedChange={(checked) => updateSetting('animations', checked)}
+                      onCheckedChange={(checked) => updateSetting('animations', Boolean(checked))}
                       className="mt-1"
                     />
                     <div>
