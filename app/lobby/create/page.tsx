@@ -3,11 +3,13 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { RegisteredGameType } from '@/lib/game-catalog'
+import { showToast } from '@/lib/i18n-toast'
 import {
   trackLobbyCreateRequest,
   type AnalyticsGameType,
@@ -118,8 +120,20 @@ const GAME_INFO: Record<GameType, GameInfo> = {
   },
 }
 
+const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<GameType>(['rock_paper_scissors'])
+
+function isSelectableGameType(value: string | null | undefined): value is GameType {
+  if (typeof value !== 'string' || !(value in GAME_INFO)) {
+    return false
+  }
+
+  return !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(value as GameType)
+}
+
 
 import { Disclosure } from '@headlessui/react'
+
+const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 
 function CreateLobbyPage() {
   const { t } = useTranslation()
@@ -128,7 +142,10 @@ function CreateLobbyPage() {
   const { data: session, status } = useSession()
   const { isGuest } = useGuest()
 
-  const [selectedGameType, setSelectedGameType] = useState<GameType>((searchParams.get('gameType') as GameType) || 'yahtzee')
+  const requestedGameType = searchParams.get('gameType')
+  const [selectedGameType, setSelectedGameType] = useState<GameType>(
+    isSelectableGameType(requestedGameType) ? requestedGameType : 'yahtzee'
+  )
   const gameInfo = GAME_INFO[selectedGameType]
 
   const [formData, setFormData] = useState({
@@ -147,6 +164,8 @@ function CreateLobbyPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
+  const [showFriendsModal, setShowFriendsModal] = useState(false)
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -169,6 +188,11 @@ function CreateLobbyPage() {
       router.push('/')
     }
   }, [status, isGuest, router])
+
+  const handlePartySelection = async (friendIds: string[]) => {
+    setSelectedFriendIds(friendIds)
+    showToast.success('toast.saved')
+  }
 
   if (!gameInfo) {
     return (
@@ -271,6 +295,43 @@ function CreateLobbyPage() {
         isGuest,
       })
 
+      if (!isGuest && selectedFriendIds.length > 0) {
+        try {
+          const inviteResponse = await fetch(`/api/lobby/${lobbyCode}/invite`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ friendIds: selectedFriendIds }),
+          })
+
+          const inviteResult = await inviteResponse.json().catch(() => null)
+          if (!inviteResponse.ok) {
+            clientLogger.warn('Lobby created but party invite request failed', {
+              lobbyCode,
+              status: inviteResponse.status,
+              error: inviteResult,
+            })
+          } else {
+            clientLogger.log('Party invite flow completed during lobby creation', {
+              lobbyCode,
+              invitedCount:
+                typeof inviteResult?.invitedCount === 'number'
+                  ? inviteResult.invitedCount
+                  : selectedFriendIds.length,
+              skippedCount: Array.isArray(inviteResult?.skippedFriendIds)
+                ? inviteResult.skippedFriendIds.length
+                : 0,
+            })
+          }
+        } catch (inviteError) {
+          clientLogger.warn('Lobby created but party invite request threw an error', {
+            lobbyCode,
+            error: inviteError,
+          })
+        }
+      }
+
       clientLogger.log('✅ Lobby created successfully, redirecting to:', lobbyCode)
       router.push(`/lobby/${lobbyCode}`)
     } catch (err) {
@@ -313,6 +374,7 @@ function CreateLobbyPage() {
             {/* 1. Game Type Selector - clean scrollable list */}
             <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO)
+                .filter(([key]) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(key as GameType))
                 .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
                 .map(([key, info]) => (
                 <button
@@ -334,11 +396,10 @@ function CreateLobbyPage() {
             <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🎮 {t('lobby.create.lobbyName')} *
+                  🎮 {t('lobby.create.lobbyName')}
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder={t('lobby.create.lobbyNamePlaceholder')}
                   maxLength={LOBBY_NAME_MAX}
                   className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
@@ -379,7 +440,7 @@ function CreateLobbyPage() {
                 </label>
 
                 {gameInfo.allowedPlayers.length === 1 ? (
-                  // Static display for games with fixed player count (e.g., Tic-Tac-Toe, Rock Paper Scissors)
+                  // Static display for games with fixed player count (e.g., Tic-Tac-Toe)
                   <div className="flex flex-col items-center py-2">
                     <div className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
                       <span className="text-2xl font-extrabold text-white">
@@ -629,6 +690,33 @@ function CreateLobbyPage() {
                 </p>
               </div>
 
+              {!isGuest && (
+                <div className="rounded-xl border border-white/20 bg-white/10 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-white">👥 {t('lobby.invite.title')}</p>
+                      <p className="text-xs text-white/70">
+                        {t('lobby.invite.description')}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowFriendsModal(true)}
+                      className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all"
+                    >
+                      {selectedFriendIds.length > 0
+                        ? t('lobby.invite.send', { count: selectedFriendIds.length })
+                        : t('lobby.invite.title')}
+                    </button>
+                  </div>
+                  {selectedFriendIds.length > 0 && (
+                    <p className="mt-3 text-xs text-emerald-200">
+                      {t('lobby.invite.send', { count: selectedFriendIds.length })}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Game Mode - Only for games that support it */}
               {gameInfo.settings.hasGameModes && (
                 <div>
@@ -756,6 +844,17 @@ function CreateLobbyPage() {
           </div>
         </div>
       </section>
+
+      {!isGuest && (
+        <FriendsListModal
+          isOpen={showFriendsModal}
+          onClose={() => setShowFriendsModal(false)}
+          onSelect={handlePartySelection}
+          initialSelectedFriendIds={selectedFriendIds}
+          confirmLabel={t('common.save')}
+          lobbyCode="pending-lobby"
+        />
+      )}
     </div>
   )
 }

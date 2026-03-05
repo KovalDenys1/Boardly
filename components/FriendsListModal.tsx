@@ -20,7 +20,10 @@ interface Friend {
 interface FriendsListModalProps {
   isOpen: boolean
   onClose: () => void
-  onInvite: (friendIds: string[]) => Promise<{ invitedCount: number; skippedCount: number }>
+  onInvite?: (friendIds: string[]) => Promise<{ invitedCount: number; skippedCount: number }>
+  onSelect?: (friendIds: string[]) => Promise<void> | void
+  initialSelectedFriendIds?: string[]
+  confirmLabel?: string
   lobbyCode: string
 }
 
@@ -28,6 +31,9 @@ export default function FriendsListModal({
   isOpen, 
   onClose, 
   onInvite,
+  onSelect,
+  initialSelectedFriendIds = [],
+  confirmLabel,
   lobbyCode 
 }: FriendsListModalProps) {
   const { t } = useTranslation()
@@ -91,8 +97,9 @@ export default function FriendsListModal({
   useEffect(() => {
     if (isOpen) {
       loadFriends()
+      setSelectedFriends(new Set(initialSelectedFriendIds))
     }
-  }, [isOpen])
+  }, [isOpen, initialSelectedFriendIds])
 
   const loadFriends = async () => {
     try {
@@ -129,6 +136,19 @@ export default function FriendsListModal({
 
     setInviting(true)
     try {
+      const selectedIds = Array.from(selectedFriends)
+
+      if (onSelect) {
+        await onSelect(selectedIds)
+        setSelectedFriends(new Set())
+        onClose()
+        return
+      }
+
+      if (!onInvite) {
+        throw new Error('Invite handler is not configured')
+      }
+
       const result = await onInvite(Array.from(selectedFriends))
       if (result.skippedCount > 0) {
         showToast.info('toast.inviteSkippedUsers', undefined, { count: result.skippedCount })
@@ -254,7 +274,7 @@ export default function FriendsListModal({
               >
                 {inviting
                   ? t('common.loading')
-                  : t('lobby.invite.send', { count: selectedFriends.size })}
+                  : confirmLabel || (onSelect ? t('common.save') : t('lobby.invite.send', { count: selectedFriends.size }))}
               </button>
               <button
                 onClick={onClose}

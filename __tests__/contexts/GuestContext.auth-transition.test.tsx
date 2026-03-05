@@ -116,6 +116,18 @@ describe('GuestContext auth transitions', () => {
       expect(result.current.isGuest).toBe(false)
     })
 
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/user/upgrade-guest',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'X-Guest-Token': 'token-2',
+          },
+        })
+      )
+    })
+
     expect(result.current.guestId).toBeNull()
     expect(result.current.guestName).toBeNull()
     expect(result.current.guestToken).toBeNull()
@@ -124,4 +136,3 @@ describe('GuestContext auth transitions', () => {
     expect(window.localStorage.getItem(GUEST_TOKEN_KEY)).toBeNull()
   })
 })
-

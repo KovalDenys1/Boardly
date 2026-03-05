@@ -14,7 +14,7 @@ import { toPersistedGameType } from '@/lib/game-type-storage'
 const log = apiLogger('/api/lobby')
 
 const createLobbySchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().trim().max(50).optional().default(''),
   password: z.string().optional(),
   maxPlayers: z.number().min(2).max(10).default(6),
   allowSpectators: z.boolean().default(false),
@@ -26,7 +26,8 @@ const createLobbySchema = z.object({
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
-const MAX_LOBBY_CODE_ATTEMPTS = 10
+const NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK = 10
+const MAX_LOBBY_CODE_ATTEMPTS = 20
 const UNLIMITED_SPECTATORS_VALUE = 0
 
 function isLobbyCodeConflict(error: unknown): boolean {
@@ -82,8 +83,15 @@ export async function POST(request: NextRequest) {
     if (!isSupportedGameType(gameType)) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
+    if (gameType === 'rock_paper_scissors') {
+      return NextResponse.json(
+        { error: 'Game type is temporarily unavailable' },
+        { status: 409 }
+      )
+    }
 
     const persistedGameType = toPersistedGameType(gameType)
+    const normalizedLobbyName = name.trim()
     const hashedLobbyPassword = await hashLobbyPassword(password)
     const normalizedTicTacToeRounds = gameType === 'tic_tac_toe' ? (ticTacToeRounds ?? null) : undefined
     const normalizedMemoryDifficulty = gameType === 'memory' ? (memoryDifficulty ?? 'easy') : undefined
@@ -138,13 +146,17 @@ export async function POST(request: NextRequest) {
       | null = null
 
     for (let attempt = 1; attempt <= MAX_LOBBY_CODE_ATTEMPTS; attempt += 1) {
-      const code = generateLobbyCode()
+      const code = generateLobbyCode({
+        fallbackToAlphanumeric: attempt > NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK,
+      })
+      const resolvedLobbyName =
+        normalizedLobbyName.length > 0 ? normalizedLobbyName : `Lobby ${code}`
 
       try {
         lobby = await prisma.lobbies.create({
           data: {
             code,
-            name,
+            name: resolvedLobbyName,
             password: hashedLobbyPassword,
             maxPlayers,
             allowSpectators,
