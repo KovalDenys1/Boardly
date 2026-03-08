@@ -39,6 +39,15 @@ jest.mock('@/lib/game-replay', () => ({
   appendGameReplaySnapshot: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/rate-limit', () => {
+  const gameLimiter = jest.fn(() => Promise.resolve(null))
+  return {
+    rateLimit: jest.fn(() => gameLimiter),
+    rateLimitPresets: { game: {} },
+    __gameLimiter: gameLimiter,
+  }
+})
+
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
     debug: jest.fn(),
@@ -55,6 +64,9 @@ const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket
 const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
   typeof appendGameReplaySnapshot
 >
+const rateLimitModule = jest.requireMock('@/lib/rate-limit') as {
+  __gameLimiter: jest.Mock
+}
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
 
@@ -112,6 +124,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    rateLimitModule.__gameLimiter.mockResolvedValue(null)
     mockNotifySocket.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockFetch.mockResolvedValue({
@@ -140,6 +153,18 @@ describe('POST /api/game/[gameId]/state', () => {
 
     expect(response.status).toBe(401)
     expect(await response.json()).toEqual({ error: 'Unauthorized' })
+  })
+
+  it('returns 429 when request exceeds game action rate limit', async () => {
+    rateLimitModule.__gameLimiter.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429 })
+    )
+
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+
+    expect(response.status).toBe(429)
   })
 
   it('returns 400 for invalid move payload', async () => {

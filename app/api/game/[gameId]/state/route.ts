@@ -7,6 +7,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
 import { notifySocket } from '@/lib/socket-url'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -25,6 +26,7 @@ const AUTO_ACTION_DEBOUNCE_MS = 2000
 const AUTO_ACTION_DEBOUNCE_TTL_MS = 60000
 const STATE_CHANGE_NOTIFY_TIMEOUT_MS = 750
 const BOT_TURN_TRIGGER_TIMEOUT_MS = 15000
+const limiter = rateLimit(rateLimitPresets.game)
 
 function normalizeTimestamp(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
@@ -168,6 +170,11 @@ export async function POST(
   const log = apiLogger('POST /api/game/[gameId]/state')
 
   try {
+    const rateLimitResult = await limiter(request)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
+
     const { gameId } = await params
 
     const requestUser = await getRequestAuthUser(request)
