@@ -832,6 +832,9 @@ const gracefulShutdown = async (signal: string) => {
   isShuttingDown = true
   logger.info(`${signal} received - starting graceful shutdown`)
 
+  // Cancel delayed disconnect timers before shutting down DB/socket resources.
+  disconnectSyncManager.dispose()
+
   // Stop accepting new connections
   server.close(() => {
     logger.info('HTTP server closed')
