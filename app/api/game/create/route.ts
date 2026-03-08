@@ -464,6 +464,24 @@ export async function POST(request: NextRequest) {
 
       // Trigger bot turn via separate HTTP request (fire and forget)
       const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
+      const internalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+      const forwardedAuthorization = request.headers.get('authorization')
+      const forwardedGuestToken = request.headers.get('X-Guest-Token')
+      const botTurnHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+
+      if (internalSecret) {
+        botTurnHeaders['X-Internal-Secret'] = internalSecret
+      }
+
+      if (forwardedAuthorization) {
+        botTurnHeaders.authorization = forwardedAuthorization
+      }
+
+      if (forwardedGuestToken) {
+        botTurnHeaders['X-Guest-Token'] = forwardedGuestToken
+      }
 
       // Add timeout to prevent hanging
       const controller = new AbortController()
@@ -471,9 +489,7 @@ export async function POST(request: NextRequest) {
 
       fetch(botApiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: botTurnHeaders,
         body: JSON.stringify({
           botUserId: dbCurrentPlayer.userId,
           lobbyCode: lobby.code,

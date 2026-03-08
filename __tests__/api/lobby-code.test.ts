@@ -13,6 +13,7 @@ import { notifySocket } from '@/lib/socket-url'
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
   prisma: {
+    $transaction: jest.fn(),
     lobbies: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -88,6 +89,7 @@ describe('GET /api/lobby/[code]', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -349,6 +351,39 @@ describe('POST /api/lobby/[code]', () => {
     const data = await response.json()
     expect(data.player).toBeDefined()
     expect(data.game).toBeDefined()
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.$transaction.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ isolationLevel: 'Serializable' })
+    )
+  })
+
+  it('should return 400 when lobby is full', async () => {
+    const gameWithPlayers = {
+      ...mockGame,
+      players: [],
+      state: JSON.stringify({ scores: [] }),
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      ...mockLobby,
+      maxPlayers: 2,
+      games: [gameWithPlayers],
+    } as any)
+    mockPrisma.players.findUnique.mockResolvedValue(null)
+    mockPrisma.players.count.mockResolvedValue(2)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    const response = await POST(request, { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('Lobby is full')
+    expect(mockPrisma.players.create).not.toHaveBeenCalled()
   })
 })
 

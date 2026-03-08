@@ -58,6 +58,7 @@ const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunc
 >
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
+const originalSocketSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
 
 describe('POST /api/game/[gameId]/state', () => {
   const mockAuthUser = {
@@ -114,6 +115,7 @@ describe('POST /api/game/[gameId]/state', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
     mockNotifySocket.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockFetch.mockResolvedValue({
@@ -125,6 +127,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   afterAll(() => {
     global.fetch = originalFetch
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalSocketSecret
   })
 
   const buildRequest = (body: unknown) =>
@@ -525,6 +528,10 @@ describe('POST /api/game/[gameId]/state', () => {
       'http://localhost:3000/api/game/game-123/bot-turn',
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'X-Internal-Secret': 'test-internal-secret',
+        }),
       }),
     )
     const [, requestInit] = mockFetch.mock.calls[0]
@@ -603,6 +610,10 @@ describe('POST /api/game/[gameId]/state', () => {
       'http://localhost:3000/api/game/game-123/bot-turn',
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'X-Internal-Secret': 'test-internal-secret',
+        }),
       }),
     )
     const [, requestInit] = mockFetch.mock.calls[0]
@@ -672,6 +683,10 @@ describe('POST /api/game/[gameId]/state', () => {
       'http://localhost:3000/api/game/game-123/bot-turn',
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          'X-Internal-Secret': 'test-internal-secret',
+        }),
       }),
     )
     const [, requestInit] = mockFetch.mock.calls[0]
