@@ -428,21 +428,69 @@ export async function POST(
 
     const lastMoveAtDate = resolveLastMoveAtDate(newState.lastMoveAt)
 
-    // Optimistic concurrency control:
-    // apply update only if game row is still at the same revision we loaded.
-    const gameUpdateResult = await prisma.games.updateMany({
-      where: {
-        id: gameId,
-        currentTurn: game.currentTurn,
-        updatedAt: game.updatedAt,
-      },
-      data: {
-        state: JSON.stringify(newState),
-        status: newState.status,
-        currentTurn: newState.currentPlayerIndex,
-        ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-        updatedAt: new Date(),
-      },
+    // Update player scores. Scorecard is optional and available only for games that implement getScorecard().
+    const getScorecard =
+      typeof (gameEngine as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
+        ? (gameEngine as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
+        : null
+    const enginePlayers = gameEngine.getPlayers()
+    const gamePlayers = game.players as GamePlayer[]
+    const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
+    const changedPlayerUpdates: Array<{ id: string; score: number; scorecard: string }> = []
+
+    for (const player of enginePlayers as Player[]) {
+      const dbPlayer = dbPlayersByUserId.get(player.id)
+      if (!dbPlayer) continue
+
+      const nextScore = typeof player.score === 'number' ? player.score : 0
+      const nextScorecard = JSON.stringify(
+        getScorecard ? getScorecard(player.id) : {}
+      )
+
+      if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
+        continue
+      }
+
+      changedPlayerUpdates.push({
+        id: dbPlayer.id,
+        score: nextScore,
+        scorecard: nextScorecard,
+      })
+    }
+
+    const gameUpdateResult = await prisma.$transaction(async (tx) => {
+      // Optimistic concurrency control:
+      // apply update only if game row is still at the same revision we loaded.
+      const gameUpdate = await tx.games.updateMany({
+        where: {
+          id: gameId,
+          currentTurn: game.currentTurn,
+          updatedAt: game.updatedAt,
+        },
+        data: {
+          state: JSON.stringify(newState),
+          status: newState.status,
+          currentTurn: newState.currentPlayerIndex,
+          ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+          updatedAt: new Date(),
+        },
+      })
+
+      if (gameUpdate.count === 0) {
+        return gameUpdate
+      }
+
+      for (const scoreUpdate of changedPlayerUpdates) {
+        await tx.players.update({
+          where: { id: scoreUpdate.id },
+          data: {
+            score: scoreUpdate.score,
+            scorecard: scoreUpdate.scorecard,
+          },
+        })
+      }
+
+      return gameUpdate
     })
 
     if (gameUpdateResult.count === 0) {
@@ -464,40 +512,6 @@ export async function POST(
         newStatus: newState.status,
         winner: newState.winner
       })
-    }
-
-    // Update player scores. Scorecard is optional and available only for games that implement getScorecard().
-    const getScorecard =
-      typeof (gameEngine as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
-        ? (gameEngine as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
-        : null
-    const enginePlayers = gameEngine.getPlayers()
-    const gamePlayers = game.players as GamePlayer[]
-    const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
-    const changedPlayerUpdates: Array<Promise<unknown>> = []
-
-    for (const player of enginePlayers as Player[]) {
-      const dbPlayer = dbPlayersByUserId.get(player.id)
-      if (!dbPlayer) continue
-
-      const nextScore = typeof player.score === 'number' ? player.score : 0
-      const nextScorecard = JSON.stringify(
-        getScorecard ? getScorecard(player.id) : {}
-      )
-
-      if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
-        continue
-      }
-
-      changedPlayerUpdates.push(
-        prisma.players.update({
-          where: { id: dbPlayer.id },
-          data: {
-            score: nextScore,
-            scorecard: nextScorecard,
-          },
-        })
-      )
     }
 
     const authoritativeState = gameEngine.getState()
@@ -553,22 +567,16 @@ export async function POST(
       })
     }
 
-    const scoreSyncPromise = changedPlayerUpdates.length > 0
-      ? Promise.all(changedPlayerUpdates)
-      : Promise.resolve([])
-    const [serverBroadcasted] = await Promise.all([
-      notifySocket(
-        `lobby:${game.lobby.code}`,
-        'game-update',
-        {
-          action: 'state-change',
-          payload: authoritativeState,
-        },
-        0,
-        STATE_CHANGE_NOTIFY_TIMEOUT_MS
-      ),
-      scoreSyncPromise,
-    ])
+    const serverBroadcasted = await notifySocket(
+      `lobby:${game.lobby.code}`,
+      'game-update',
+      {
+        action: 'state-change',
+        payload: authoritativeState,
+      },
+      0,
+      STATE_CHANGE_NOTIFY_TIMEOUT_MS
+    )
     void replaySnapshotPromise
 
     if (!serverBroadcasted) {

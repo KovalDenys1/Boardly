@@ -13,6 +13,7 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
+    $transaction: jest.fn(),
     games: {
       findUnique: jest.fn(),
       updateMany: jest.fn(),
@@ -112,6 +113,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
     mockNotifySocket.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockFetch.mockResolvedValue({
@@ -248,6 +250,78 @@ describe('POST /api/game/[gameId]/state', () => {
     )
     expect(payload.game.id).toBe('game-123')
     expect(payload.serverBroadcasted).toBe(true)
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns 409 when optimistic concurrency update affects zero rows', async () => {
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 1,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-2' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 10 },
+        { id: 'player-2', score: 5 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 0 } as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(409)
+    expect(payload.code).toBe('STATE_CONFLICT')
+    expect(mockPrisma.players.update).not.toHaveBeenCalled()
+    expect(mockNotifySocket).not.toHaveBeenCalled()
+  })
+
+  it('returns 500 when score update fails after game update attempt', async () => {
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 1,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-2' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 10 },
+        { id: 'player-2', score: 5 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(dbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.players.update.mockRejectedValue(new Error('score update failed'))
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(payload.error).toBe('Internal server error')
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1)
+    expect(mockNotifySocket).not.toHaveBeenCalled()
   })
 
   it('rejects auto-action while turn timer is still active based on authoritative state timestamp', async () => {
