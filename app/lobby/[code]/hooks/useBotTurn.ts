@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { GameEngine } from '@/lib/game-engine'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 interface GamePlayer {
   userId: string
@@ -59,7 +60,7 @@ export function useBotTurn({
     clientLogger.log('🤖 Triggering bot turn for:', botUserId)
 
     try {
-      const response = await fetch(`/api/game/${gameId}/bot-turn`, {
+      const response = await fetchWithGuest(`/api/game/${gameId}/bot-turn`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ botUserId, lobbyCode: code }),
