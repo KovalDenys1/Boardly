@@ -15,11 +15,20 @@ jest.mock('@/lib/socket-url', () => ({
 }))
 
 const mockGetToken = getToken as jest.MockedFunction<typeof getToken>
+const originalInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+const originalCronSecret = process.env.CRON_SECRET
 
 describe('middleware CSRF enforcement', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetToken.mockResolvedValue(null as any)
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
+    process.env.CRON_SECRET = 'test-cron-secret'
+  })
+
+  afterAll(() => {
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalInternalSecret
+    process.env.CRON_SECRET = originalCronSecret
   })
 
   it('allows same-origin authenticated unsafe API requests', async () => {
@@ -52,11 +61,38 @@ describe('middleware CSRF enforcement', () => {
     expect(payload.error).toBe('Invalid origin. Possible CSRF attack.')
   })
 
-  it('does not enforce CSRF when no authenticated session cookie is present', async () => {
+  it('rejects cross-origin unsafe API requests without trusted server credentials', async () => {
     const request = new NextRequest('http://localhost:3000/api/friends/request', {
       method: 'POST',
       headers: {
         origin: 'https://evil.example',
+      },
+    })
+
+    const response = await middleware(request)
+
+    expect(response.status).toBe(403)
+  })
+
+  it('allows cross-origin internal requests with valid internal secret header', async () => {
+    const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
+      method: 'POST',
+      headers: {
+        origin: 'https://evil.example',
+        'X-Internal-Secret': 'test-internal-secret',
+      },
+    })
+
+    const response = await middleware(request)
+
+    expect(response.status).not.toBe(403)
+  })
+
+  it('allows machine requests with valid cron bearer token even without origin header', async () => {
+    const request = new NextRequest('http://localhost:3000/api/cron/maintenance', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer test-cron-secret',
       },
     })
 
