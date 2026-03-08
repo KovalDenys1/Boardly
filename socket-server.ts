@@ -162,6 +162,7 @@ const socketRateLimiter = createSocketRateLimiter({
   staleThresholdMs: 60000,
 })
 const RATE_LIMIT_CLEANUP_INTERVAL = 60000 // Clean up every 60 seconds
+const SPECTATOR_MEMBERS_SWEEP_INTERVAL = 120000 // Purge stale spectator cache every 2 minutes
 
 function checkRateLimit(socketId: string): boolean {
   return socketRateLimiter.checkRateLimit(socketId)
@@ -382,6 +383,65 @@ function getSpectatorSnapshot(lobbyCode: string) {
   return { count: spectators.length, spectators }
 }
 
+async function sweepStaleSpectatorLobbyMemberships() {
+  const trackedLobbyCodes = Array.from(spectatorMembersByLobby.keys())
+  if (trackedLobbyCodes.length === 0) {
+    return
+  }
+
+  try {
+    const activeLobbies = await prisma.lobbies.findMany({
+      where: {
+        code: {
+          in: trackedLobbyCodes,
+        },
+        isActive: true,
+      },
+      select: {
+        code: true,
+      },
+    })
+
+    const activeLobbyCodeSet = new Set(activeLobbies.map((lobby) => lobby.code))
+    const staleLobbyCodes = trackedLobbyCodes.filter((lobbyCode) => !activeLobbyCodeSet.has(lobbyCode))
+
+    if (staleLobbyCodes.length === 0) {
+      return
+    }
+
+    for (const lobbyCode of staleLobbyCodes) {
+      spectatorMembersByLobby.delete(lobbyCode)
+    }
+
+    await Promise.all(
+      staleLobbyCodes.map((lobbyCode) =>
+        prisma.lobbies.updateMany({
+          where: {
+            code: lobbyCode,
+            spectatorCount: {
+              gt: 0,
+            },
+          },
+          data: {
+            spectatorCount: 0,
+          },
+        })
+      )
+    )
+
+    io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
+
+    logger.info('Purged stale spectator membership cache entries', {
+      purgedCount: staleLobbyCodes.length,
+      lobbyCodes: staleLobbyCodes,
+    })
+  } catch (error) {
+    logger.error('Failed to sweep stale spectator membership cache', error as Error, {
+      trackedLobbies: trackedLobbyCodes.length,
+    })
+  }
+}
+
 async function handleSpectatorJoin(socket: SpectatorMembershipSocket, lobbyCode: string) {
   socketMonitor.trackEvent('join-spectators')
   try {
@@ -583,6 +643,10 @@ setInterval(() => {
   }
 }, RATE_LIMIT_CLEANUP_INTERVAL)
 
+setInterval(() => {
+  void sweepStaleSpectatorLobbyMemberships()
+}, SPECTATOR_MEMBERS_SWEEP_INTERVAL)
+
 // Authentication middleware
 io.use(
   createSocketAuthMiddleware({
@@ -650,6 +714,9 @@ const handlePlayerTyping = createPlayerTypingHandler({
   checkRateLimit,
   isSocketAuthorizedForLobby,
   getUserDisplayName,
+  emitWithMetadata: (room, event, data) => {
+    emitWithMetadata(io, room, event, data)
+  },
 })
 
 const { handleDisconnecting, handleDisconnect } = createConnectionLifecycleHandlers({

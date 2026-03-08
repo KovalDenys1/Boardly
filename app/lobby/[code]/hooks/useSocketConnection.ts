@@ -73,7 +73,7 @@ export function useSocketConnection({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const joinRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const joinAckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastProcessedSequenceRef = useRef(0)
+  const lastProcessedSequenceByEventRef = useRef<Map<string, number>>(new Map())
   const isRejoiningRef = useRef(false)
   const hasJoinedLobbyRef = useRef(false)
   const shouldSyncAfterJoinRef = useRef(false)
@@ -550,9 +550,9 @@ export function useSocketConnection({
           code
         )
 
-        // Reset dedup cursor on each fresh transport session.
+        // Reset dedup cursors on each fresh transport session.
         // Server sequence counters are in-memory and can reset on restart/redeploy.
-        lastProcessedSequenceRef.current = 0
+        lastProcessedSequenceByEventRef.current.clear()
 
         setIsConnected(true)
         setIsReconnecting(false)
@@ -800,15 +800,18 @@ export function useSocketConnection({
         handler: (payload: any) => void
       ) => {
         try {
-          if (data?.sequenceId !== undefined) {
-            if (data.sequenceId <= lastProcessedSequenceRef.current) {
+          if (typeof data?.sequenceId === 'number' && Number.isFinite(data.sequenceId)) {
+            const lastProcessedSequence = lastProcessedSequenceByEventRef.current.get(eventName) ?? 0
+
+            if (data.sequenceId <= lastProcessedSequence) {
               clientLogger.warn(`⚠️ Dropped duplicate ${eventName} event`, {
                 sequenceId: data.sequenceId,
-                lastProcessed: lastProcessedSequenceRef.current,
+                lastProcessed: lastProcessedSequence,
               })
               return
             }
-            lastProcessedSequenceRef.current = data.sequenceId
+
+            lastProcessedSequenceByEventRef.current.set(eventName, data.sequenceId)
           }
 
           handler(data)
@@ -823,7 +826,9 @@ export function useSocketConnection({
       newSocket.on(SocketEvents.CHAT_MESSAGE, (data) =>
         handleEventWithDeduplication('chat-message', data, onChatMessageRef.current)
       )
-      newSocket.on(SocketEvents.PLAYER_TYPING, (data) => onPlayerTypingRef.current(data))
+      newSocket.on(SocketEvents.PLAYER_TYPING, (data) =>
+        handleEventWithDeduplication('player-typing', data, onPlayerTypingRef.current)
+      )
       newSocket.on(SocketEvents.LOBBY_UPDATE, (data) =>
         handleEventWithDeduplication('lobby-update', data, onLobbyUpdateRef.current)
       )
