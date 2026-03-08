@@ -536,6 +536,37 @@ describe('useSocketConnection', () => {
 
       expect(onGameUpdate).toHaveBeenCalledTimes(2)
     })
+
+    it('does not drop lower sequence events from different event types', async () => {
+      const onGameUpdate = jest.fn()
+      const onChatMessage = jest.fn()
+      renderHook(() =>
+        useSocketConnection({
+          ...defaultProps,
+          onGameUpdate,
+          onChatMessage,
+        })
+      )
+
+      await waitForSocketInit()
+      await flushAsync(10)
+
+      const gameUpdateHandler = getHandler<(data: any) => void>('game-update')
+      const chatMessageHandler = getHandler<(data: any) => void>('chat-message')
+
+      await act(async () => {
+        chatMessageHandler?.({ sequenceId: 50, id: 'c1', message: 'hello' })
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      await act(async () => {
+        gameUpdateHandler?.({ sequenceId: 49, payload: { state: { id: 's1' } } })
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
+
+      expect(onChatMessage).toHaveBeenCalledTimes(1)
+      expect(onGameUpdate).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('Cleanup', () => {

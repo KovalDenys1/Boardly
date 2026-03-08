@@ -151,4 +151,56 @@ describe('createDisconnectSyncManager', () => {
       })
     )
   })
+
+  it('does not remove players from games that already left waiting state', async () => {
+    const prisma = {
+      games: {
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({
+            id: 'game-1',
+            players: [
+              {
+                id: 'player-1',
+                userId: user.id,
+                user: {
+                  username: 'Alice',
+                  email: 'alice@example.com',
+                  bot: null,
+                },
+              },
+            ],
+          }),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      players: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      lobbies: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+    }
+
+    const deps = createDeps({
+      disconnectGraceMs: 10,
+      prisma: prisma as unknown as DisconnectSyncOptions['prisma'],
+    })
+    const manager = createDisconnectSyncManager(deps)
+
+    manager.scheduleAbruptDisconnectForLobby('ABCD', user)
+
+    await new Promise((resolve) => setTimeout(resolve, 40))
+
+    expect(prisma.players.deleteMany).toHaveBeenCalledWith({
+      where: {
+        gameId: 'game-1',
+        userId: user.id,
+        game: {
+          status: 'waiting',
+        },
+      },
+    })
+    expect(deps.emitWithMetadata).not.toHaveBeenCalled()
+    expect(prisma.lobbies.updateMany).not.toHaveBeenCalled()
+  })
 })

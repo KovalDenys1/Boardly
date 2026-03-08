@@ -157,6 +157,7 @@ function createDependencies(overrides?: Record<string, unknown>) {
     checkRateLimit: deps.checkRateLimit,
     isSocketAuthorizedForLobby,
     getUserDisplayName: deps.getUserDisplayName,
+    emitWithMetadata: deps.emitWithMetadata,
   })
 
   const leaveLobby = createLeaveLobbyHandler({
@@ -269,11 +270,12 @@ describe('Socket event critical flow', () => {
       username: socket.data.user.username,
     })
 
-    expect(socket.roomEmits).toContainEqual({
-      room: SocketRooms.lobby('ABCD'),
-      event: SocketEvents.PLAYER_TYPING,
-      payload: { userId: 'user-1', username: 'Alice' },
-    })
+    expect(deps.emitWithMetadata).toHaveBeenNthCalledWith(
+      2,
+      SocketRooms.lobby('ABCD'),
+      SocketEvents.PLAYER_TYPING,
+      { userId: 'user-1', username: 'Alice' }
+    )
 
     deps.leaveLobby(socket, 'ABCD')
 
