@@ -108,6 +108,24 @@ function autoTriggerBotTurn(params: {
   const timeoutId = setTimeout(() => controller.abort(), BOT_TURN_TRIGGER_TIMEOUT_MS)
   const triggeredAt = Date.now()
   const turnEndToBotTriggerMs = resolveTurnEndToBotTriggerMs(authoritativeState, triggeredAt)
+  const internalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+  const forwardedAuthorization = request.headers.get('authorization')
+  const forwardedGuestToken = request.headers.get('X-Guest-Token')
+  const botTurnHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (internalSecret) {
+    botTurnHeaders['X-Internal-Secret'] = internalSecret
+  }
+
+  if (forwardedAuthorization) {
+    botTurnHeaders.authorization = forwardedAuthorization
+  }
+
+  if (forwardedGuestToken) {
+    botTurnHeaders['X-Guest-Token'] = forwardedGuestToken
+  }
 
   log.debug('Auto-triggering bot turn after player move', {
     gameId,
@@ -119,9 +137,7 @@ function autoTriggerBotTurn(params: {
 
   void fetch(botTurnApiUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: botTurnHeaders,
     body: JSON.stringify({
       botUserId,
       lobbyCode,

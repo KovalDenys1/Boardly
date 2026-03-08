@@ -8,6 +8,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -26,6 +27,22 @@ export async function POST(
   try {
     const paramsData = await params
     gameId = paramsData.gameId
+    const configuredInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+    const providedInternalSecret = request.headers.get('X-Internal-Secret')
+    const hasConfiguredInternalSecret =
+      typeof configuredInternalSecret === 'string' && configuredInternalSecret.length > 0
+    const isAuthorizedInternalRequest =
+      hasConfiguredInternalSecret && providedInternalSecret === configuredInternalSecret
+    const requestUser = isAuthorizedInternalRequest ? null : await getRequestAuthUser(request)
+
+    if (!isAuthorizedInternalRequest && !requestUser?.id) {
+      log.warn('Unauthorized bot turn request', {
+        gameId: gameId,
+        hasInternalSecret: !!providedInternalSecret,
+      })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const requestBody = await request.json()
     const { botUserId, lobbyCode, triggerSource, triggeredAt, turnEndToBotTriggerMs } = requestBody
     const resolvedTriggerSource =
@@ -117,6 +134,17 @@ export async function POST(
     if (!game) {
       log.error('Game not found', undefined, { gameId: gameId })
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
+    }
+
+    if (!isAuthorizedInternalRequest && requestUser?.id) {
+      const isParticipant = game.players.some((player) => player.userId === requestUser.id)
+      if (!isParticipant) {
+        log.warn('Forbidden bot turn request from non-participant', {
+          gameId: game.id,
+          requesterId: requestUser.id,
+        })
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     const gameType = game.lobby.gameType
