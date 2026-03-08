@@ -112,6 +112,29 @@ describe('Game Registry', () => {
       expect(restored.getState().status).toBe('playing')
     })
 
+    it('should preserve custom game config when restoring from saved state', () => {
+      const original = createGameEngine('yahtzee', 'restore-cfg', {
+        maxPlayers: 6,
+        minPlayers: 2,
+        timeLimit: 12,
+        rules: { targetRounds: 5, hardMode: true },
+      })
+      original.addPlayer({ id: 'p1', name: 'Player 1' })
+      original.addPlayer({ id: 'p2', name: 'Player 2' })
+
+      const savedState = original.getState()
+      const restored = restoreGameEngine('yahtzee', 'restore-cfg', savedState)
+
+      expect(restored.getConfig()).toEqual(original.getConfig())
+      expect(restored.getConfig().maxPlayers).toBe(6)
+      expect(restored.getConfig().rules).toEqual(
+        expect.objectContaining({
+          targetRounds: 5,
+          hardMode: true,
+        })
+      )
+    })
+
     it('should throw error for unknown game types', () => {
       expect(() => restoreGameEngine('unknown', 'id', {}))
         .toThrow('Unknown game type')

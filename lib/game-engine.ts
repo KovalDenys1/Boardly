@@ -26,11 +26,36 @@ export interface GameState<TGameData = unknown> {
   updatedAt: Date;
 }
 
+export interface RestorableGameState<TGameData = unknown> extends GameState<TGameData> {
+  config?: GameConfig;
+}
+
 export interface GameConfig {
   maxPlayers: number;
   minPlayers: number;
   timeLimit?: number; // in minutes
   rules?: Record<string, any>;
+}
+
+function cloneDeep<T>(value: T): T {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return new Date(value.getTime()) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneDeep(item)) as T;
+  }
+
+  const cloned: Record<string, unknown> = {};
+  for (const [key, itemValue] of Object.entries(value as Record<string, unknown>)) {
+    cloned[key] = cloneDeep(itemValue);
+  }
+
+  return cloned as T;
 }
 
 /**
@@ -87,6 +112,10 @@ export abstract class GameEngine {
   }
 
   removePlayer(playerId: string): boolean {
+    if (this.state.status === 'playing') {
+      return false;
+    }
+
     const index = this.state.players.findIndex(p => p.id === playerId);
     if (index === -1) return false;
 
@@ -119,6 +148,10 @@ export abstract class GameEngine {
   }
 
   makeMove(move: Move): boolean {
+    if (this.state.status !== 'playing' && !this.canProcessMoveWhenNotPlaying(move)) {
+      return false;
+    }
+
     if (!this.validateMove(move)) {
       return false;
     }
@@ -147,13 +180,22 @@ export abstract class GameEngine {
     return true;
   }
 
+  // Override in rare cases where a move must be allowed outside "playing" status.
+  // Default remains deny-by-default for defense in depth.
+  protected canProcessMoveWhenNotPlaying(_move: Move): boolean {
+    return false;
+  }
+
   private nextPlayer(): void {
     this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % this.state.players.length;
     this.state.lastMoveAt = Date.now(); // Track when turn changed
   }
 
-  getState(): GameState {
-    return { ...this.state };
+  getState(): RestorableGameState {
+    return {
+      ...this.state,
+      config: cloneDeep(this.config),
+    };
   }
 
   getCurrentPlayer(): Player | null {
@@ -177,12 +219,19 @@ export abstract class GameEngine {
   }
 
   // Method to restore state from saved data
-  restoreState(savedState: GameState): void {
+  restoreState(savedState: RestorableGameState): void {
     // Ensure players is an array when restoring state
     if (savedState && typeof savedState === 'object') {
+      const { config, ...stateWithoutConfig } = savedState;
       this.state = {
-        ...savedState,
-        players: Array.isArray(savedState.players) ? savedState.players : [],
+        ...cloneDeep(stateWithoutConfig),
+        players: Array.isArray(savedState.players)
+          ? cloneDeep(savedState.players)
+          : [],
+      };
+
+      if (config && typeof config === 'object') {
+        this.config = cloneDeep(config);
       }
     }
   }
