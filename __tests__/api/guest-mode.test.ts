@@ -14,6 +14,7 @@ import { getOrCreateBotUser } from '@/lib/bot-helpers'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
+    $transaction: jest.fn(),
     lobbies: {
       findUnique: jest.fn(),
       create: jest.fn(),
@@ -112,6 +113,7 @@ describe('Guest mode API endpoints', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
     mockGetRequestAuthUser.mockResolvedValue(guestUser)
   })
 
