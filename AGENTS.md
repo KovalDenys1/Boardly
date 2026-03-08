@@ -48,7 +48,10 @@ Core flow:
 - Open PRs from task branches into `develop`. Do not push task commits directly to `develop`.
 - Promote to production only through PRs from `develop` into `main`.
 - Treat direct pushes to `main` and `develop` as emergency-only exceptions.
-- After PR merge, delete the local task branch (`git branch -d <branch>`). The remote branch is auto-deleted by repository settings.
+- After PR merge, delete the local task branch (`git branch -d <branch>`) in the same work session. The remote branch is auto-deleted by repository settings.
+- After each merge wave, run local branch cleanup and keep only long-lived branches (`main`, `develop`) plus the currently active task branch.
+- Prefer fewer, larger-coherent PRs over many tiny PRs: if fixes are tightly related and touch the same subsystem, batch them into one task branch/PR.
+- Before opening a new PR, check open PR count; if there are already 3+ open fix PRs to `develop`, prioritize merging existing PRs first unless it's a production blocker.
 
 ## Fast Command Cookbook
 
