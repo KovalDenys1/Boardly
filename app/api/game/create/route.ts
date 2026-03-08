@@ -361,7 +361,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Spy locations are not configured',
-            details: error instanceof Error ? error.message : 'Unable to resolve Spy locations',
+            code: 'SPY_LOCATIONS_UNAVAILABLE',
           },
           { status: 500 }
         )
@@ -533,7 +533,7 @@ export async function POST(request: NextRequest) {
     log.error('Create game error', error as Error)
     return NextResponse.json({
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      code: 'GAME_CREATE_FAILED'
     }, { status: 500 })
   }
 }

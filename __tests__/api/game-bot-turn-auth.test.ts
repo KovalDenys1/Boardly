@@ -4,6 +4,8 @@
 
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/game/[gameId]/bot-turn/route'
+import { prisma } from '@/lib/db'
+import { restoreGameEngine } from '@/lib/game-registry'
 import { getRequestAuthUser } from '@/lib/request-auth'
 
 jest.mock('@/lib/db', () => ({
@@ -57,6 +59,7 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
+const mockRestoreGameEngine = restoreGameEngine as jest.MockedFunction<typeof restoreGameEngine>
 const originalSocketSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
 
 function buildRequest(body: unknown, headers: Record<string, string> = {}) {
@@ -132,5 +135,64 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ error: 'Bot user ID required' })
     expect(mockGetRequestAuthUser).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns sanitized 500 response when bot turn execution fails unexpectedly', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({
+      id: 'player-1',
+      username: 'Player 1',
+      suspended: false,
+      isGuest: false,
+    } as any)
+
+    ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
+      id: 'game-123',
+      state: JSON.stringify({
+        players: [
+          { id: 'player-1', score: 0 },
+          { id: 'bot-1', score: 0 },
+        ],
+      }),
+      status: 'playing',
+      currentTurn: 0,
+      players: [
+        {
+          id: 'db-player-1',
+          userId: 'player-1',
+          score: 0,
+          scorecard: null,
+          user: { id: 'player-1', bot: null },
+        },
+        {
+          id: 'db-player-bot',
+          userId: 'bot-1',
+          score: 0,
+          scorecard: null,
+          user: { id: 'bot-1', bot: { id: 'bot-meta-1' } },
+        },
+      ],
+      lobby: {
+        id: 'lobby-123',
+        code: 'ABCD12',
+        gameType: 'tic_tac_toe',
+      },
+    } as any)
+    mockRestoreGameEngine.mockImplementation(() => {
+      throw new Error('sensitive bot engine failure')
+    })
+
+    const response = await POST(
+      buildRequest({
+        botUserId: 'bot-1',
+        lobbyCode: 'ABCD12',
+      }),
+      { params: Promise.resolve({ gameId: 'game-123' }) }
+    )
+    const payload = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(payload.error).toBe('Internal server error')
+    expect(payload.code).toBe('BOT_TURN_FAILED')
+    expect(payload.details).toBeUndefined()
   })
 })

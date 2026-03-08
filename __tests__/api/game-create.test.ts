@@ -635,6 +635,27 @@ describe('POST /api/game/create', () => {
     )
   })
 
+  it('returns generic 500 response without internal details on unexpected failures', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+    mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('sensitive database failure'))
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'yahtzee',
+        lobbyId: 'lobby-123',
+        config: { maxPlayers: 4, minPlayers: 2 },
+      }),
+    })
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error).toBe('Internal server error')
+    expect(data.code).toBe('GAME_CREATE_FAILED')
+    expect(data.details).toBeUndefined()
+  })
+
   it('should initialize game state correctly', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue({
