@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
@@ -23,6 +24,15 @@ import { toPersistedGameType } from '@/lib/game-type-storage'
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const UNLIMITED_SPECTATORS_VALUE = 0
+const MAX_JOIN_SERIALIZABLE_RETRIES = 2
+
+class LobbyFullError extends Error {
+  constructor() {
+    super('Lobby is full')
+    this.name = 'LobbyFullError'
+  }
+}
+
 function resolveTurnTimerSeconds(turnTimer: unknown): number {
   if (typeof turnTimer !== 'number' || !Number.isFinite(turnTimer)) return 0
   return Math.max(0, Math.floor(turnTimer))
@@ -658,36 +668,62 @@ export async function POST(
       return NextResponse.json({ game, player: existingPlayer })
     }
 
-    // Count current players
-    const playerCount = await prisma.players.count({
-      where: { gameId: game.id },
-    })
+    let player: any
+    let attempt = 0
 
-    if (playerCount >= lobby.maxPlayers) {
-      return NextResponse.json(
-        { error: 'Lobby is full' },
-        { status: 400 }
-      )
-    }
+    while (true) {
+      try {
+        player = await prisma.$transaction(
+          async (tx) => {
+            const playerCount = await tx.players.count({
+              where: { gameId: game.id },
+            })
 
-    // Add player to game
-    const player = await prisma.players.create({
-      data: {
-        gameId: game.id,
-        userId: userId,
-        position: playerCount,
-        scorecard: JSON.stringify({}),
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            isGuest: true,
+            if (playerCount >= lobby.maxPlayers) {
+              throw new LobbyFullError()
+            }
+
+            return tx.players.create({
+              data: {
+                gameId: game.id,
+                userId: userId,
+                position: playerCount,
+                scorecard: JSON.stringify({}),
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    isGuest: true,
+                  },
+                },
+              },
+            })
           },
-        },
-      },
-    })
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        )
+        break
+      } catch (error) {
+        if (error instanceof LobbyFullError) {
+          return NextResponse.json(
+            { error: 'Lobby is full' },
+            { status: 400 }
+          )
+        }
+
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034' &&
+          attempt < MAX_JOIN_SERIALIZABLE_RETRIES
+        ) {
+          attempt += 1
+          continue
+        }
+
+        throw error
+      }
+    }
 
     // Notify all clients via WebSocket that a player joined
     await notifySocket(
