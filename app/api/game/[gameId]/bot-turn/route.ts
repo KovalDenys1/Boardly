@@ -177,7 +177,6 @@ export async function POST(
     log.info('Game found, processing bot turn', {
       gameId: game.id,
       gameType,
-      statePreview: game.state?.substring(0, 100)
     })
 
     // Parse game state with error handling
@@ -437,8 +436,8 @@ export async function POST(
     })
 
     return NextResponse.json({
-      error: 'Failed to execute bot turn',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error',
+      code: 'BOT_TURN_FAILED',
     }, { status: 500 })
   } finally {
     if (lockAcquired && lockKey) {

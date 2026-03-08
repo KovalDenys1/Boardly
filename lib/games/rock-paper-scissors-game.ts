@@ -157,12 +157,8 @@ export class RockPaperScissorsGame extends GameEngine {
         })
 
         // Update scores
-        if (!gameData.scores[player1.id]) {
-            gameData.scores[player1.id] = 0
-        }
-        if (!gameData.scores[player2.id]) {
-            gameData.scores[player2.id] = 0
-        }
+        gameData.scores[player1.id] ??= 0
+        gameData.scores[player2.id] ??= 0
 
         if (roundWinner === player1.id) {
             gameData.scores[player1.id] += 1

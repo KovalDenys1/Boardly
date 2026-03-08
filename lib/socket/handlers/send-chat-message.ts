@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { SocketEvents, SocketRooms } from '../../../types/socket-events'
 import { EmitSocketErrorFn, SendChatMessageSocket } from './types'
 
@@ -80,7 +81,7 @@ export function createSendChatMessageHandler({
       const senderUsername = getUserDisplayName(socket.data.user)
 
       emitWithMetadata(SocketRooms.lobby(normalizedLobbyCode), SocketEvents.CHAT_MESSAGE, {
-        id: Date.now().toString(),
+        id: randomUUID(),
         userId: senderUserId,
         username: senderUsername,
         message: normalizedMessage,

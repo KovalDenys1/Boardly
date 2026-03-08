@@ -216,6 +216,8 @@ describe('GET /api/lobby/[code]', () => {
 
     expect(response.status).toBe(500)
     expect(data.error).toBe('Internal server error')
+    expect(data.code).toBe('LOBBY_FETCH_FAILED')
+    expect(data.details).toBeUndefined()
   })
 })
 

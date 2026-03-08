@@ -15,7 +15,7 @@ import { Prisma } from '@prisma/client'
 const limiter = rateLimit(rateLimitPresets.auth)
 
 const guestSessionSchema = z.object({
-  guestName: z.string().trim().min(2).max(20),
+  guestName: z.string().trim().min(2).max(20).regex(/^[\w\s-]+$/u, 'Invalid characters'),
   guestToken: z.string().optional(),
 })
 
