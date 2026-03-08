@@ -85,13 +85,21 @@ describe('GameEngine', () => {
     it('should adjust current player index when removing', () => {
       game.addPlayer(player1)
       game.addPlayer(player2)
-      game.startGame()
       
       // Remove first player (current player)
       game.removePlayer('p1')
       
       const currentPlayer = game.getCurrentPlayer()
       expect(currentPlayer?.id).toBe('p2')
+    })
+
+    it('should not remove players while game is playing', () => {
+      game.addPlayer(player1)
+      game.addPlayer(player2)
+      game.startGame()
+
+      expect(game.removePlayer('p1')).toBe(false)
+      expect(game.getPlayers()).toHaveLength(2)
     })
   })
 
@@ -164,6 +172,38 @@ describe('GameEngine', () => {
       // Current player should not change
       const current = game.getCurrentPlayer()
       expect(current?.id).toBe('p1')
+    })
+
+    it('should reject moves when game status is not playing', () => {
+      const waitingMove: Move = {
+        playerId: 'p1',
+        type: 'valid',
+        data: {},
+        timestamp: new Date(),
+      }
+
+      expect(game.makeMove(waitingMove)).toBe(false)
+
+      game.startGame()
+      const playingMove: Move = {
+        playerId: 'p1',
+        type: 'valid',
+        data: {},
+        timestamp: new Date(),
+      }
+      expect(game.makeMove(playingMove)).toBe(true)
+
+      const finishedState = game.getState()
+      finishedState.status = 'finished'
+      game.restoreState(finishedState)
+
+      const afterFinishMove: Move = {
+        playerId: 'p2',
+        type: 'valid',
+        data: {},
+        timestamp: new Date(),
+      }
+      expect(game.makeMove(afterFinishMove)).toBe(false)
     })
 
     it('should detect win condition manually', () => {
@@ -249,8 +289,41 @@ describe('GameEngine', () => {
       }
       
       game.restoreState(corruptedState)
-      
+
       expect(game.getPlayers()).toEqual([])
+    })
+
+    it('should restore config from persisted state payload', () => {
+      const savedState = game.getState()
+      const restoredConfig = {
+        maxPlayers: 6,
+        minPlayers: 2,
+        timeLimit: 15,
+        rules: { speedMode: true },
+      }
+
+      game.restoreState({
+        ...savedState,
+        config: restoredConfig,
+      })
+
+      expect(game.getConfig()).toEqual(restoredConfig)
+    })
+
+    it('should deep clone restored nested state objects', () => {
+      game.addPlayer(player1)
+      game.addPlayer(player2)
+      game.startGame()
+
+      const externalState = game.getState()
+      game.restoreState(externalState)
+
+      ;(externalState.data as { value: number }).value = 999
+      externalState.players[0].name = 'Mutated outside'
+
+      const restored = game.getState()
+      expect((restored.data as { value: number }).value).not.toBe(999)
+      expect(restored.players[0].name).not.toBe('Mutated outside')
     })
   })
 

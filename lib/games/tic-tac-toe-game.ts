@@ -172,6 +172,10 @@ export class TicTacToeGame extends GameEngine {
     ]
   }
 
+  protected canProcessMoveWhenNotPlaying(move: Move): boolean {
+    return move.type === 'next-round' && this.state.status === 'finished'
+  }
+
   protected shouldAdvanceTurn(move: Move): boolean {
     if (move.type === 'next-round') {
       return false
