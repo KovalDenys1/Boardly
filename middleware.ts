@@ -41,12 +41,6 @@ const ALLOWED_CORS_ORIGIN_SET = new Set(
     .filter((origin): origin is string => origin !== null)
 )
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
-const AUTH_SESSION_COOKIE_NAMES = [
-  'next-auth.session-token',
-  '__Secure-next-auth.session-token',
-  'authjs.session-token',
-  '__Secure-authjs.session-token',
-]
 
 function isLocalDevelopmentOrigin(origin: string): boolean {
   try {
@@ -72,8 +66,20 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
   return null
 }
 
-function hasAuthenticatedSessionCookie(request: NextRequest): boolean {
-  return AUTH_SESSION_COOKIE_NAMES.some((name) => request.cookies.has(name))
+function hasValidInternalSecret(request: NextRequest): boolean {
+  const configuredSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+  if (!configuredSecret) return false
+  return request.headers.get('X-Internal-Secret') === configuredSecret
+}
+
+function hasValidCronAuthorization(request: NextRequest): boolean {
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) return false
+  return request.headers.get('authorization') === `Bearer ${cronSecret}`
+}
+
+function isTrustedServerRequest(request: NextRequest): boolean {
+  return hasValidInternalSecret(request) || hasValidCronAuthorization(request)
 }
 
 function buildCspHeaderValue() {
@@ -191,7 +197,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const isUnsafeMethod = !SAFE_METHODS.has(request.method.toUpperCase())
-    if (isUnsafeMethod && hasAuthenticatedSessionCookie(request) && !verifyCsrfToken(request)) {
+    if (isUnsafeMethod && !isTrustedServerRequest(request) && !verifyCsrfToken(request)) {
       return NextResponse.json(
         { error: 'Invalid origin. Possible CSRF attack.' },
         { status: 403 }

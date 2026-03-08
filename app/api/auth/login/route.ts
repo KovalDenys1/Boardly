@@ -43,6 +43,11 @@ async function loginHandler(request: NextRequest) {
     throw new AuthenticationError('Invalid credentials')
   }
 
+  if (user.suspended) {
+    log.warn('Login blocked: Account suspended', { email, userId: user.id })
+    throw new AuthenticationError('Account suspended')
+  }
+
   // Create JWT token
   const token = createToken({ userId: user.id, email: user.email ?? email })
 

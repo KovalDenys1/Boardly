@@ -181,7 +181,7 @@ export interface PlayerReadyPayload extends BaseEventPayload {
   isReady: boolean
 }
 
-export interface PlayerTypingPayload {
+export interface PlayerTypingPayload extends BaseEventPayload {
   lobbyCode: string
   userId: string
   username: string

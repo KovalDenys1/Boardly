@@ -297,12 +297,19 @@ export function createDisconnectSyncManager({
       return { handled: false, gameId: waitingGame.id }
     }
 
-    await prisma.players.deleteMany({
+    const deleteResult = await prisma.players.deleteMany({
       where: {
         gameId: waitingGame.id,
         userId: user.id,
+        game: {
+          status: 'waiting',
+        },
       },
     })
+
+    if (deleteResult.count === 0) {
+      return { handled: false, gameId: waitingGame.id }
+    }
 
     const remainingPlayers = waitingGame.players.filter((player) => player.userId !== user.id)
     const remainingHumanPlayers = remainingPlayers.filter((player) => !player.user.bot).length

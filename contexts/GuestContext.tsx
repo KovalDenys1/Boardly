@@ -37,6 +37,7 @@ export function GuestProvider({ children }: { children: ReactNode }) {
     const [guestName, setGuestName] = useState<string | null>(null)
     const [guestToken, setGuestToken] = useState<string | null>(null)
     const guestStateGenerationRef = useRef(0)
+    const lastUpgradeAttemptTokenRef = useRef<string | null>(null)
 
     const applyGuestSession = useCallback((session: GuestSessionResponse, generation = guestStateGenerationRef.current) => {
         // Ignore stale async results from previous guest sessions.
@@ -137,22 +138,59 @@ export function GuestProvider({ children }: { children: ReactNode }) {
 
     // Never keep guest mode active when authenticated user session exists.
     useEffect(() => {
-        if (status !== 'authenticated') return
-
-        if (guestId || guestName || guestToken) {
-            clearGuestMode()
+        if (status !== 'authenticated') {
+            lastUpgradeAttemptTokenRef.current = null
             return
         }
 
-        if (typeof window !== 'undefined') {
-            const hasStoredGuest =
-                Boolean(localStorage.getItem(GUEST_ID_KEY)) ||
-                Boolean(localStorage.getItem(GUEST_NAME_KEY)) ||
-                Boolean(localStorage.getItem(GUEST_TOKEN_KEY))
+        if (typeof window === 'undefined') return
 
+        const storedGuestId = localStorage.getItem(GUEST_ID_KEY)
+        const storedGuestName = localStorage.getItem(GUEST_NAME_KEY)
+        const storedGuestToken = localStorage.getItem(GUEST_TOKEN_KEY)
+        const activeGuestToken = guestToken || storedGuestToken
+        const hasStoredGuest =
+            Boolean(storedGuestId) ||
+            Boolean(storedGuestName) ||
+            Boolean(storedGuestToken) ||
+            Boolean(guestId) ||
+            Boolean(guestName) ||
+            Boolean(guestToken)
+
+        if (!activeGuestToken) {
             if (hasStoredGuest) {
                 clearGuestMode()
             }
+            return
+        }
+
+        if (lastUpgradeAttemptTokenRef.current === activeGuestToken) {
+            return
+        }
+
+        lastUpgradeAttemptTokenRef.current = activeGuestToken
+        let cancelled = false
+
+        ;(async () => {
+            try {
+                await fetch('/api/user/upgrade-guest', {
+                    method: 'POST',
+                    headers: {
+                        'X-Guest-Token': activeGuestToken,
+                    },
+                })
+            } catch {
+                // Ignore migration failures in client state transition path.
+                // The backend migration is idempotent and can be retried safely.
+            } finally {
+                if (!cancelled) {
+                    clearGuestMode()
+                }
+            }
+        })()
+
+        return () => {
+            cancelled = true
         }
     }, [status, guestId, guestName, guestToken, clearGuestMode])
 

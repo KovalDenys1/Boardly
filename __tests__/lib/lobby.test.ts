@@ -1,28 +1,32 @@
 // Override the global nanoid mock for this test to actually generate random codes
 jest.mock('nanoid', () => ({
-  customAlphabet: () => () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  customAlphabet: (alphabet: string, size: number) => () => {
     let result = ''
-    for (let i = 0; i < 6; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)]
+    for (let i = 0; i < size; i++) {
+      result += alphabet[Math.floor(Math.random() * alphabet.length)]
     }
     return result
   },
   nanoid: () => 'test-id-123',
 }))
 
-import { generateLobbyCode } from '@/lib/lobby'
+import { generateLobbyCode, LOBBY_CODE_LENGTH } from '@/lib/lobby'
 
 describe('Lobby Utilities', () => {
   describe('generateLobbyCode', () => {
-    it('should generate a 6-character code', () => {
+    it('should generate a fixed-length code', () => {
       const code = generateLobbyCode()
-      expect(code).toHaveLength(6)
+      expect(code).toHaveLength(LOBBY_CODE_LENGTH)
     })
 
-    it('should generate codes with only uppercase letters and numbers', () => {
+    it('should generate digit-only codes by default', () => {
       const code = generateLobbyCode()
-      expect(code).toMatch(/^[A-Z0-9]{6}$/)
+      expect(code).toMatch(/^\d{4}$/)
+    })
+
+    it('should generate alphanumeric codes when fallback is enabled', () => {
+      const code = generateLobbyCode({ fallbackToAlphanumeric: true })
+      expect(code).toMatch(/^[A-Z0-9]{4}$/)
     })
 
     it('should generate unique codes', () => {
@@ -33,9 +37,9 @@ describe('Lobby Utilities', () => {
         codes.add(generateLobbyCode())
       }
 
-      // With 36^6 = 2,176,782,336 possible combinations,
-      // collisions should be rare in 100 attempts
-      expect(codes.size).toBeGreaterThan(95)
+      // With 10^4 = 10,000 possible numeric combinations,
+      // collisions should still be relatively rare in 100 attempts.
+      expect(codes.size).toBeGreaterThan(90)
     })
 
     it('should generate different codes on consecutive calls', () => {
@@ -49,7 +53,7 @@ describe('Lobby Utilities', () => {
     it('should generate codes without lowercase letters', () => {
       const codes = Array.from({ length: 100 }, () => generateLobbyCode())
       
-      codes.forEach(code => {
+      codes.forEach((code) => {
         expect(code).not.toMatch(/[a-z]/)
       })
     })
@@ -57,7 +61,7 @@ describe('Lobby Utilities', () => {
     it('should generate codes without special characters', () => {
       const codes = Array.from({ length: 100 }, () => generateLobbyCode())
       
-      codes.forEach(code => {
+      codes.forEach((code) => {
         expect(code).not.toMatch(/[^A-Z0-9]/)
       })
     })

@@ -243,7 +243,8 @@ export function restoreGameEngine(
   gameId: string,
   savedState: any,
 ): GameEngine {
-  const engine = createGameEngine(gameType, gameId)
+  const savedConfig = extractSavedGameConfig(savedState)
+  const engine = createGameEngine(gameType, gameId, savedConfig)
   engine.restoreState(savedState)
   return engine
 }
@@ -305,4 +306,44 @@ export function isSupportedGameType(value: string): value is SupportedGameType {
     (value === 'liars_party' && isLiarsPartyEnabled()) ||
     (value === 'fake_artist' && isFakeArtistEnabled())
   )
+}
+
+function extractSavedGameConfig(savedState: unknown): Partial<GameConfig> | undefined {
+  if (!savedState || typeof savedState !== 'object') {
+    return undefined
+  }
+
+  const maybeConfig = (savedState as { config?: unknown }).config
+  if (!maybeConfig || typeof maybeConfig !== 'object') {
+    return undefined
+  }
+
+  const rawConfig = maybeConfig as Partial<GameConfig>
+  const normalized: Partial<GameConfig> = {}
+
+  if (
+    typeof rawConfig.minPlayers === 'number' &&
+    Number.isFinite(rawConfig.minPlayers) &&
+    rawConfig.minPlayers > 0
+  ) {
+    normalized.minPlayers = Math.floor(rawConfig.minPlayers)
+  }
+
+  if (
+    typeof rawConfig.maxPlayers === 'number' &&
+    Number.isFinite(rawConfig.maxPlayers) &&
+    rawConfig.maxPlayers > 0
+  ) {
+    normalized.maxPlayers = Math.floor(rawConfig.maxPlayers)
+  }
+
+  if (typeof rawConfig.timeLimit === 'number' && Number.isFinite(rawConfig.timeLimit)) {
+    normalized.timeLimit = rawConfig.timeLimit
+  }
+
+  if (rawConfig.rules && typeof rawConfig.rules === 'object' && !Array.isArray(rawConfig.rules)) {
+    normalized.rules = { ...(rawConfig.rules as Record<string, unknown>) }
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined
 }

@@ -78,8 +78,7 @@ export default function GamesPage() {
       descriptionKey: 'games.rock_paper_scissors.description',
       players: '2',
       difficultyKey: 'games.rock_paper_scissors.difficulty',
-      status: 'available',
-      route: '/lobby/create?gameType=rock_paper_scissors',
+      status: 'coming-soon',
       color: 'from-indigo-400 to-purple-500'
     },
     {

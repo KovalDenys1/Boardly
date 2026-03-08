@@ -9,19 +9,20 @@ describe('createPlayerTypingHandler', () => {
     const checkRateLimit = jest.fn().mockReturnValue(true)
     const isSocketAuthorizedForLobby = jest.fn().mockReturnValue(true)
     const getUserDisplayName = jest.fn().mockReturnValue('Alice')
+    const emitWithMetadata = jest.fn()
 
     return {
       socketMonitor,
       checkRateLimit,
       isSocketAuthorizedForLobby,
       getUserDisplayName,
+      emitWithMetadata,
       ...overrides,
     }
   }
 
   function createSocket() {
-    const emit = jest.fn()
-    const to = jest.fn().mockReturnValue({ emit })
+    const to = jest.fn()
     const socket = {
       id: 'socket-1',
       data: {
@@ -33,13 +34,13 @@ describe('createPlayerTypingHandler', () => {
       rooms: new Set<string>(['socket-1', 'lobby:LOBBY1']),
       to,
     }
-    return { socket, to, emit }
+    return { socket }
   }
 
   it('broadcasts typing event to lobby peers when request is valid', () => {
     const deps = createDeps()
     const handler = createPlayerTypingHandler(deps)
-    const { socket, to, emit } = createSocket()
+    const { socket } = createSocket()
 
     handler(socket, {
       lobbyCode: ' LOBBY1 ',
@@ -50,8 +51,34 @@ describe('createPlayerTypingHandler', () => {
     expect(deps.socketMonitor.trackEvent).toHaveBeenCalledWith('player-typing')
     expect(deps.checkRateLimit).toHaveBeenCalledWith('socket-1')
     expect(deps.isSocketAuthorizedForLobby).toHaveBeenCalledWith(socket, 'LOBBY1')
-    expect(to).toHaveBeenCalledWith(SocketRooms.lobby('LOBBY1'))
-    expect(emit).toHaveBeenCalledWith(SocketEvents.PLAYER_TYPING, {
+    expect(deps.emitWithMetadata).toHaveBeenCalledWith(
+      SocketRooms.lobby('LOBBY1'),
+      SocketEvents.PLAYER_TYPING,
+      {
+        userId: 'user-1',
+        username: 'Alice',
+      }
+    )
+  })
+
+  it('throttles typing events per user and lobby to one event every 2 seconds', () => {
+    let now = 1000
+    const deps = createDeps({
+      now: () => now,
+    })
+    const handler = createPlayerTypingHandler(deps)
+    const { socket } = createSocket()
+
+    handler(socket, { lobbyCode: 'LOBBY1', userId: 'u', username: 'n' })
+    handler(socket, { lobbyCode: 'LOBBY1', userId: 'u', username: 'n' })
+
+    expect(deps.emitWithMetadata).toHaveBeenCalledTimes(1)
+
+    now += 2000
+    handler(socket, { lobbyCode: 'LOBBY1', userId: 'u', username: 'n' })
+
+    expect(deps.emitWithMetadata).toHaveBeenCalledTimes(2)
+    expect(deps.emitWithMetadata).toHaveBeenNthCalledWith(2, SocketRooms.lobby('LOBBY1'), SocketEvents.PLAYER_TYPING, {
       userId: 'user-1',
       username: 'Alice',
     })
@@ -62,12 +89,12 @@ describe('createPlayerTypingHandler', () => {
       checkRateLimit: jest.fn().mockReturnValue(false),
     })
     const handler = createPlayerTypingHandler(deps)
-    const { socket, to } = createSocket()
+    const { socket } = createSocket()
 
     handler(socket, { lobbyCode: 'LOBBY1', userId: 'u', username: 'n' })
 
     expect(deps.socketMonitor.trackEvent).toHaveBeenCalledWith('player-typing')
-    expect(to).not.toHaveBeenCalled()
+    expect(deps.emitWithMetadata).not.toHaveBeenCalled()
   })
 
   it('stops when lobby code is missing or not authorized', () => {
@@ -75,23 +102,23 @@ describe('createPlayerTypingHandler', () => {
       isSocketAuthorizedForLobby: jest.fn().mockReturnValue(false),
     })
     const handler = createPlayerTypingHandler(deps)
-    const { socket, to } = createSocket()
+    const { socket } = createSocket()
 
     handler(socket, { lobbyCode: '   ', userId: 'u', username: 'n' })
     handler(socket, { lobbyCode: 'LOBBY1', userId: 'u', username: 'n' })
 
     expect(deps.isSocketAuthorizedForLobby).toHaveBeenCalledTimes(1)
-    expect(to).not.toHaveBeenCalled()
+    expect(deps.emitWithMetadata).not.toHaveBeenCalled()
   })
 
   it('ignores malformed payload before auth checks', () => {
     const deps = createDeps()
     const handler = createPlayerTypingHandler(deps)
-    const { socket, to } = createSocket()
+    const { socket } = createSocket()
 
     handler(socket, { userId: 'u', username: 'n' } as any)
 
     expect(deps.isSocketAuthorizedForLobby).not.toHaveBeenCalled()
-    expect(to).not.toHaveBeenCalled()
+    expect(deps.emitWithMetadata).not.toHaveBeenCalled()
   })
 })
