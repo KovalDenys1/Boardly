@@ -14,6 +14,7 @@
  */
 
 import { prisma } from '../lib/db'
+import { parsePersistedGameState } from '../lib/persisted-game-state'
 
 interface GameStateMismatch {
     id: string
@@ -55,8 +56,7 @@ async function findStatusMismatches() {
 
     for (const game of games) {
         try {
-            // Parse game state JSON
-            const state = JSON.parse(game.state)
+            const state = parsePersistedGameState<{ status?: string; winner?: string }>(game.state)
 
             // Check if state has a status field and it differs from DB
             if (state.status && state.status !== game.status) {

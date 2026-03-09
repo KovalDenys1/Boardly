@@ -121,7 +121,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         setGame(activeGame)
         if (activeGame.state) {
           try {
-            const parsedState = JSON.parse(activeGame.state)
+            const parsedState =
+              typeof activeGame.state === 'string'
+                ? JSON.parse(activeGame.state)
+                : activeGame.state
 
             // Create the correct engine based on game type
             const gt = data.lobby.gameType || DEFAULT_GAME_TYPE

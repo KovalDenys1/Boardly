@@ -8,6 +8,7 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { liarsPartyActionRequestSchema } from '@/lib/validation/liars-party'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -97,7 +98,7 @@ export async function POST(
 
     let parsedState: unknown
     try {
-      parsedState = JSON.parse(game.state)
+      parsedState = parsePersistedGameState(game.state)
     } catch {
       return NextResponse.json({ error: 'Corrupted game state' }, { status: 500 })
     }
@@ -124,7 +125,7 @@ export async function POST(
       await prisma.games.update({
         where: { id: gameId },
         data: {
-          state: JSON.stringify(nextState),
+          state: toPersistedGameStateInput(nextState),
           status: nextState.status,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
           updatedAt: new Date(),

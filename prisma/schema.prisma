@@ -137,7 +137,7 @@ model Lobbies {
   gameType        String         @default("yahtzee")
   createdAt       DateTime       @default(now()) @db.Timestamptz(3)
   creatorId       String
-  creator         Users          @relation("LobbyCreator", fields: [creatorId], references: [id])
+  creator         Users          @relation("LobbyCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   games           Games[]
   invites         LobbyInvites[]
 
@@ -170,8 +170,8 @@ model LobbyInvites {
 model Games {
   id          String               @id @default(cuid())
   lobbyId     String
-  lobby       Lobbies              @relation(fields: [lobbyId], references: [id])
-  state       String               @db.Text // JSON string with game state
+  lobby       Lobbies              @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  state       Json                 @db.JsonB
   status      GameStatus           @default(waiting)
   gameType    GameType             @default(yahtzee)
   abandonedAt DateTime?            @db.Timestamptz(3)
@@ -184,6 +184,7 @@ model Games {
 
   @@index([lobbyId])
   @@index([status])
+  @@index([gameType, status])
   @@index([createdAt])
 }
 
@@ -219,6 +220,10 @@ enum GameType {
   memory
   chess
   guess_the_spy
+  telephone_doodle
+  sketch_and_guess
+  liars_party
+  fake_artist
   uno
   other
 }

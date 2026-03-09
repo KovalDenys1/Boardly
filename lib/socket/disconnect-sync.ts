@@ -6,6 +6,7 @@ import {
   setPlayerConnectionInState,
   TurnState,
 } from '../disconnected-turn'
+import { parsePersistedGameState, toPersistedGameStateInput, type PersistedGameStateValue } from '../persisted-game-state'
 
 type LogContext = Record<string, unknown>
 
@@ -34,7 +35,7 @@ interface ActiveGamePlayerRecord {
 
 interface ActiveLobbyGameRecord {
   id: string
-  state: string
+  state: PersistedGameStateValue
   currentTurn: number
   updatedAt: Date
   players: ActiveGamePlayerRecord[]
@@ -153,7 +154,7 @@ export function createDisconnectSyncManager({
 
       let parsedState: TurnState
       try {
-        parsedState = JSON.parse(activeGame.state) as TurnState
+        parsedState = parsePersistedGameState<TurnState>(activeGame.state)
       } catch (error) {
         logger.warn('Failed to parse game state during connection sync', {
           lobbyCode,
@@ -199,12 +200,12 @@ export function createDisconnectSyncManager({
           : activeGame.currentTurn
 
       const updateData: {
-        state: string
+        state: ReturnType<typeof toPersistedGameStateInput>
         currentTurn: number
         updatedAt: Date
         lastMoveAt?: Date
       } = {
-        state: JSON.stringify(parsedState),
+        state: toPersistedGameStateInput(parsedState),
         currentTurn: nextCurrentTurn,
         updatedAt: new Date(),
       }

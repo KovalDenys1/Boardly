@@ -18,6 +18,7 @@ import {
   verifyLobbyPassword,
 } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -141,7 +142,7 @@ export async function POST(
           lobbyId: lobby.id,
           gameType: toPersistedGameType(runtimeGameType),
           status: 'waiting',
-          state: JSON.stringify(initialState),
+          state: toPersistedGameStateInput(initialState),
           players: {
             create: {
               userId: guestUser.id,

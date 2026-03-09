@@ -12,6 +12,7 @@ import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -185,7 +186,7 @@ export async function POST(request: NextRequest) {
             lobbyId: lobbyId,
             status: 'waiting',
             gameType: persistedGameType,
-            state: JSON.stringify(initialWaitingState),
+            state: toPersistedGameStateInput(initialWaitingState),
             players: {
               create: finishedGame.players.map((p, index) => ({
                 userId: p.userId,
@@ -389,7 +390,7 @@ export async function POST(request: NextRequest) {
     const game = await prisma.games.update({
       where: { id: waitingGame.id },
       data: {
-        state: JSON.stringify(gameEngine.getState()),
+        state: toPersistedGameStateInput(gameEngine.getState()),
         status: 'playing',
         gameType: persistedGameType,
         updatedAt: new Date(),
