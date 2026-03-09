@@ -111,6 +111,53 @@ export default function RootLayout({
   }
 
   const isProduction = process.env.NODE_ENV === 'production'
+  const devServiceWorkerResetScript = !isProduction
+    ? `(() => {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return;
+  }
+
+  const reloadKey = '__boardly_dev_sw_reset__';
+
+  const reset = async () => {
+    let changed = false;
+
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      if (registrations.length > 0) {
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+        changed = true;
+      }
+    } catch {}
+
+    try {
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        const boardlyCacheKeys = cacheKeys.filter((key) => key.startsWith('boardly-pwa-'));
+        if (boardlyCacheKeys.length > 0) {
+          await Promise.all(boardlyCacheKeys.map((key) => caches.delete(key)));
+          changed = true;
+        }
+      }
+    } catch {}
+
+    if (!changed) {
+      window.sessionStorage.removeItem(reloadKey);
+      return;
+    }
+
+    if (window.sessionStorage.getItem(reloadKey) === '1') {
+      window.sessionStorage.removeItem(reloadKey);
+      return;
+    }
+
+    window.sessionStorage.setItem(reloadKey, '1');
+    window.location.reload();
+  };
+
+  void reset();
+})();`
+    : null
 
   return (
     <html lang="en">
@@ -160,6 +207,12 @@ export default function RootLayout({
             __html: 'body{margin:0}header{min-height:64px;height:64px}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
         />
+        {devServiceWorkerResetScript && (
+          <script
+            suppressHydrationWarning
+            dangerouslySetInnerHTML={{ __html: devServiceWorkerResetScript }}
+          />
+        )}
         
         <script
           type="application/ld+json"
