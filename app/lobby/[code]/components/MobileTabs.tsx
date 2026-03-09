@@ -1,6 +1,6 @@
 'use client'
 
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 
 export type TabId = 'game' | 'scorecard' | 'players' | 'chat'
 
@@ -30,7 +30,7 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
             <button
               key={tab.id}
               onClick={() => {
-                soundManager.play('click', { force: true })
+                sounds.play('click', { force: true })
                 onTabChange(tab.id)
               }}
               className={`relative flex flex-col items-center justify-center py-2 px-1 transition-all duration-200 min-h-[56px] ${

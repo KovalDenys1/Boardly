@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { trackLobbyJoined, trackGameStarted, trackStartAloneAutoBotResult } from '@/lib/analytics'
