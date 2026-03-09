@@ -1,24 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { Prisma, GameStatus } from '@prisma/client'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { isAdminUser } from '@/lib/admin-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { calculateUserStats } from '@/lib/stats-calculator'
+import { getUserStatsDashboard } from '@/lib/user-stats-dashboard'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('GET /api/user/[id]/stats')
-const STATS_CACHE_TTL_MS = 60 * 1000
-
-interface StatsCacheEntry {
-  signature: string
-  expiresAt: number
-  payload: unknown
-}
-
-const statsCache = new Map<string, StatsCacheEntry>()
 
 function parseDateRangeParam(raw: string | null, { endOfDay }: { endOfDay: boolean }): Date | null {
   if (!raw) return null
@@ -86,91 +76,20 @@ export async function GET(
       )
     }
 
-    const where: Prisma.GamesWhereInput = {
-      players: {
-        some: {
-          userId: targetUserId,
-        },
-      },
-      status: {
-        in: [GameStatus.finished, GameStatus.abandoned, GameStatus.cancelled],
-      },
-    }
-
-    if (fromDate || toDate) {
-      where.createdAt = {}
-      if (fromDate) {
-        where.createdAt.gte = fromDate
-      }
-      if (toDate) {
-        where.createdAt.lte = toDate
-      }
-    }
-
-    const cacheKey = `${targetUserId}|${fromDate?.toISOString() ?? 'none'}|${toDate?.toISOString() ?? 'none'}`
-    const cacheSnapshot = await prisma.games.aggregate({
-      where,
-      _count: {
-        id: true,
-      },
-      _max: {
-        updatedAt: true,
-      },
-    })
-    const cacheSignature = `${cacheSnapshot._count.id}:${cacheSnapshot._max.updatedAt?.toISOString() ?? 'none'}`
-    const cachedEntry = statsCache.get(cacheKey)
-    if (cachedEntry && cachedEntry.signature === cacheSignature && Date.now() < cachedEntry.expiresAt) {
-      return NextResponse.json(cachedEntry.payload, {
-        headers: {
-          'Cache-Control': 'private, max-age=60',
-          'X-Stats-Cache': 'hit',
-        },
-      })
-    }
-
-    const games = await prisma.games.findMany({
-      where,
-      select: {
-        id: true,
-        gameType: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        players: {
-          select: {
-            userId: true,
-            score: true,
-            finalScore: true,
-            isWinner: true,
-            placement: true,
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-    })
-
-    const stats = calculateUserStats(targetUserId, games, {
+    const payload = await getUserStatsDashboard(prisma, targetUserId, {
       from: fromDate,
       to: toDate,
     })
-    const payload = {
-      userId: targetUserId,
-      ...stats,
-    }
-    statsCache.set(cacheKey, {
-      signature: cacheSignature,
-      expiresAt: Date.now() + STATS_CACHE_TTL_MS,
-      payload,
-    })
 
     return NextResponse.json(
-      payload,
+      {
+        userId: targetUserId,
+        ...payload,
+      },
       {
         headers: {
           'Cache-Control': 'private, max-age=60',
-          'X-Stats-Cache': 'miss',
+          'X-Stats-Cache': 'bypass',
         },
       }
     )
