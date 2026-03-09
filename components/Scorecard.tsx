@@ -206,12 +206,12 @@ const Scorecard = React.memo(function Scorecard({
   const total = upperTotal + bonus + lowerTotal
 
   return (
-    <div className={`h-full flex flex-col bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 overflow-x-hidden ${
+    <div className={`min-h-full sm:h-full flex flex-col bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 overflow-x-hidden sm:overflow-hidden ${
       !isCurrentPlayer ? 'opacity-90' : ''
     }`} style={{ borderRadius: 'clamp(12px, 1.2vw, 24px)' }}>
       {/* TWO COLUMN LAYOUT - ADAPTIVE WITH SCROLL - Single column on mobile */}
-      <div className="flex-1 overflow-hidden" style={{ padding: 'clamp(10px, 1vw, 20px)' }}>
-        <div className="h-full grid grid-cols-1 sm:grid-cols-2 scorecard-columns" style={{ gap: 'clamp(8px, 0.8vw, 20px)' }}>
+      <div className="flex-1 overflow-visible sm:overflow-hidden" style={{ padding: 'clamp(10px, 1vw, 20px)' }}>
+        <div className="min-h-full sm:h-full grid grid-cols-1 sm:grid-cols-2 scorecard-columns" style={{ gap: 'clamp(8px, 0.8vw, 20px)' }}>
           {/* LEFT COLUMN: Upper Section */}
           <div className="flex flex-col min-h-0">
             <div className="flex items-center justify-between flex-shrink-0" style={{ marginBottom: 'clamp(6px, 0.6vh, 10px)', gap: 'clamp(6px, 0.6vw, 12px)' }}>
@@ -233,7 +233,7 @@ const Scorecard = React.memo(function Scorecard({
             
             <div className="flex-1 flex flex-col min-h-0">
               {/* Categories - full height */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
+              <div className="flex-1 overflow-visible sm:overflow-y-auto overflow-x-hidden pr-1 min-h-0 flex flex-col justify-start sm:justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
                 {upperSection.map(renderCategory)}
               </div>
             </div>
@@ -278,7 +278,7 @@ const Scorecard = React.memo(function Scorecard({
             
             <div className="flex-1 flex flex-col min-h-0">
               {/* Categories - full height */}
-              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 min-h-0 flex flex-col justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
+              <div className="flex-1 overflow-visible sm:overflow-y-auto overflow-x-hidden pr-1 min-h-0 flex flex-col justify-start sm:justify-evenly" style={{ gap: 'clamp(4px, 0.4vh, 8px)' }}>
                 {lowerSection.map(renderCategory)}
               </div>
             </div>

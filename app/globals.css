@@ -135,12 +135,19 @@
   --secondary-600: 124, 58, 237;
   --success-500: 34, 197, 94;
   --error-500: 239, 68, 68;
+  --mobile-tabs-offset: 5.75rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
     --background-rgb: 18, 18, 18;
+  }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  :root {
+    --mobile-tabs-offset: calc(5.75rem + env(safe-area-inset-bottom));
   }
 }
 

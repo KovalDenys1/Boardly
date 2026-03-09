@@ -24,14 +24,7 @@ describe('lobby lifecycle helpers', () => {
     ).toBe('local-game-status:cancelled')
   })
 
-  it('returns local inactive redirect reason when lobby is inactive and game is not active', () => {
-    expect(
-      resolveLifecycleRedirectReason({
-        gameStatus: 'finished',
-        lobbyIsActive: false,
-      })
-    ).toBe('local-lobby-inactive')
-
+  it('returns local inactive redirect reason when lobby is inactive and there is no settled game to show', () => {
     expect(
       resolveLifecycleRedirectReason({
         gameStatus: null,
@@ -40,7 +33,7 @@ describe('lobby lifecycle helpers', () => {
     ).toBe('local-lobby-inactive')
   })
 
-  it('does not redirect while game is active even if lobby flag is false', () => {
+  it('does not redirect while game is active or finished even if lobby flag is false', () => {
     expect(
       resolveLifecycleRedirectReason({
         gameStatus: 'playing',
@@ -51,6 +44,13 @@ describe('lobby lifecycle helpers', () => {
     expect(
       resolveLifecycleRedirectReason({
         gameStatus: 'waiting',
+        lobbyIsActive: false,
+      })
+    ).toBeNull()
+
+    expect(
+      resolveLifecycleRedirectReason({
+        gameStatus: 'finished',
         lobbyIsActive: false,
       })
     ).toBeNull()

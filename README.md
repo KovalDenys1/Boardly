@@ -80,6 +80,7 @@ npm run db:rls:smoke
 ## Documentation map
 
 - Project docs index: `docs/README.md`
+- Full local-only setup: `docs/LOCAL_SETUP.md`
 - Product direction: `docs/PROJECT_VISION.md`
 - System design and data flows: `docs/ARCHITECTURE.md`
 - Local/prod operations and deployment: `docs/OPERATIONS.md`

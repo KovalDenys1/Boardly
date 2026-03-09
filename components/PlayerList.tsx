@@ -116,7 +116,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-full flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-auto md:h-full flex flex-col">
         <button
           onClick={() => {
             soundManager.play('click', { force: true })
@@ -132,7 +132,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             </span>
           )}
         </button>
-        <div className="space-y-1.5 overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
+        <div className="space-y-1.5 overflow-visible md:overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
           {sortedPlayers.map((player, index) => {
             // Use player.position (actual game index) instead of sorted index
             const isCurrentTurn = player.position === currentTurn

@@ -1793,7 +1793,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="p-4 space-y-4">
+                    <div className="min-h-full p-4 space-y-4">
                       <GameBoard
                         gameEngine={gameEngine}
                         game={game}
@@ -1817,7 +1817,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
-                    <div className="p-4">
+                    <div className="min-h-full p-4">
                       {(() => {
                         const currentUserId = getCurrentUserId()
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
@@ -1855,7 +1855,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Players Tab */}
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
-                    <div className="p-4 space-y-4">
+                    <div className="min-h-full p-4 space-y-4">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
@@ -1879,7 +1879,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Chat Tab */}
                   <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
-                    <div className="h-full">
+                    <div
+                      className="min-h-full"
+                      style={{
+                        height: 'calc(100% - var(--mobile-tabs-offset))',
+                      }}
+                    >
                       <Chat
                         messages={chatMessages}
                         onSendMessage={(message) => {
