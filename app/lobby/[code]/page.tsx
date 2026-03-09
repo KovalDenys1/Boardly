@@ -21,7 +21,6 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 
-// Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
   twos: 'Twos',
@@ -54,7 +53,6 @@ function normalizeHeldIndexes(rawHeld: unknown): number[] {
     .map((value) => Number(value))
 }
 
-// Database player type
 interface DBPlayer {
   id: string
   userId: string
@@ -73,7 +71,6 @@ interface DBPlayer {
   }
 }
 
-// New modular imports
 import { useSocketConnection } from './hooks/useSocketConnection'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
@@ -140,11 +137,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const { data: session, status } = useSession()
   const { isGuest, guestId, guestName, guestToken } = useGuest()
   const code = params.code as string
-
-  // Log session status for debugging
-  useEffect(() => {
-    clientLogger.log('Session status:', { status, isGuest, hasSession: !!session, userId: session?.user?.id })
-  }, [status, isGuest, session])
 
   // Core state
   const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
