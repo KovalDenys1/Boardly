@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
@@ -270,17 +270,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
-  // Sync soundEnabled state with soundManager on mount
+  // Sync soundEnabled state with sounds on mount
   useEffect(() => {
-    setSoundEnabled(soundManager.isEnabled())
+    setSoundEnabled(sounds.isEnabled())
   }, [])
 
   const playAmbientSound = useCallback(
     (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
       if (isInitialLoadRef.current) return
-      if (!soundManager.hasUserInteracted()) return
+      if (!sounds.hasUserInteracted()) return
       if (!hasLobbyPageInteractionRef.current) return
-      soundManager.play(soundName, options)
+      sounds.play(soundName, options)
     },
     []
   )
@@ -1501,9 +1501,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             canEditSettings={isCreator && !startingGame}
             onUpdateSettings={updateLobbySettings}
             onSoundToggle={() => {
-              soundManager.toggle()
-              setSoundEnabled(soundManager.isEnabled())
-              showToast.success(soundManager.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
+              sounds.toggle()
+              setSoundEnabled(sounds.isEnabled())
+              showToast.success(sounds.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
             }}
             onLeave={handleLeaveLobby}
           />
@@ -1591,8 +1591,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
-                          const newState = soundManager.toggle()
+                          sounds.play('click', { force: true })
+                          const newState = sounds.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
@@ -1607,7 +1607,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       </button>
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
+                          sounds.play('click', { force: true })
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label={t('game.ui.leave')}
@@ -1656,8 +1656,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
-                          const newState = soundManager.toggle()
+                          sounds.play('click', { force: true })
+                          const newState = sounds.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
@@ -1673,7 +1673,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       </button>
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
+                          sounds.play('click', { force: true })
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label="Leave game"

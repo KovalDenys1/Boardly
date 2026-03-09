@@ -3,7 +3,7 @@
 import React from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { YahtzeeScorecard, YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 
 interface ScorecardProps {
   scorecard: YahtzeeScorecard
@@ -153,7 +153,7 @@ const Scorecard = React.memo(function Scorecard({
     
     const handleCategoryClick = () => {
       if (state === 'filled' || state === 'disabled' || isLoading) return
-      soundManager.play('click', { force: true })
+      sounds.play('click', { force: true })
       onSelectCategory(category)
     }
 
@@ -252,7 +252,7 @@ const Scorecard = React.memo(function Scorecard({
               {showBackButton && onBackToMyCards && (
                 <button
                   onClick={() => {
-                    soundManager.play('click', { force: true })
+                    sounds.play('click', { force: true })
                     onBackToMyCards()
                   }}
                   className="bg-purple-500 hover:bg-purple-600 text-white rounded-md transition-colors font-semibold"
@@ -265,7 +265,7 @@ const Scorecard = React.memo(function Scorecard({
               {showCurrentTurnButton && onGoToCurrentTurn && (
                 <button
                   onClick={() => {
-                    soundManager.play('click', { force: true })
+                    sounds.play('click', { force: true })
                     onGoToCurrentTurn()
                   }}
                   className="bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors font-semibold"

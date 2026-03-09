@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -379,7 +379,7 @@ export default function WaitingRoom({
           <div className="space-y-4">
             <button
               onClick={() => {
-                soundManager.play('click')
+                sounds.play('click')
                 onStartGame()
               }}
               disabled={!canStartImmediately}
@@ -408,7 +408,7 @@ export default function WaitingRoom({
                       key={difficulty}
                       type="button"
                       onClick={() => {
-                        soundManager.play('click')
+                        sounds.play('click')
                         onBotDifficultyChange(difficulty)
                       }}
                       className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
@@ -429,7 +429,7 @@ export default function WaitingRoom({
               {supportsBots && canAddMorePlayers && (
                 <button
                   onClick={() => {
-                    soundManager.play('click')
+                    sounds.play('click')
                     onAddBot()
                   }}
                   disabled={!canAddMorePlayers}
@@ -446,7 +446,7 @@ export default function WaitingRoom({
               {onInviteFriends && canAddMorePlayers && (
                 <button
                   onClick={() => {
-                    soundManager.play('click')
+                    sounds.play('click')
                     onInviteFriends()
                   }}
                   disabled={!canAddMorePlayers}

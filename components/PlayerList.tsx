@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import Modal from './Modal'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 
 interface Player {
   id: string
@@ -119,7 +119,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-auto md:h-full flex flex-col">
         <button
           onClick={() => {
-            soundManager.play('click', { force: true })
+            sounds.play('click', { force: true })
             setIsModalOpen(true)
           }}
           className="text-sm font-bold mb-3 flex items-center gap-2 flex-shrink-0 w-full text-left hover:opacity-70 transition-opacity cursor-pointer"
@@ -148,7 +148,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 key={`player-${player.id}-${player.userId}`}
                 onClick={() => {
                   if (!onPlayerClick) return
-                  soundManager.play('click', { force: true })
+                  sounds.play('click', { force: true })
                   onPlayerClick(player.userId)
                 }}
                 className={`

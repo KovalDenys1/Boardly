@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 
 interface DiceProps {
   value: number
@@ -53,7 +53,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
 
   const handleClick = () => {
     if (!disabled) {
-      soundManager.play('click', { force: true })
+      sounds.play('click', { force: true })
       onToggleHold()
     }
   }

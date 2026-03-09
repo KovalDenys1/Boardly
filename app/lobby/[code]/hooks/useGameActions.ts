@@ -3,7 +3,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, Move } from '@/lib/game-engine'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { showToast } from '@/lib/i18n-toast'
@@ -177,7 +177,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsRolling(true)
 
     // Play sound immediately for instant feedback (force to ensure it plays)
-    soundManager.play('diceRoll', { force: true })
+    sounds.play('diceRoll', { force: true })
 
     // NOTE: We don't update dice values optimistically because:
     // 1. Client random != server random (will cause "flicker" when values change)
@@ -447,7 +447,7 @@ export function useGameActions(props: UseGameActionsProps) {
         // Apply optimistic turn + score update for instant feedback.
         setGameEngine(optimisticEngine)
         setHeld([false, false, false, false, false])
-        soundManager.play('score', { force: true })
+        sounds.play('score', { force: true })
       } catch (optimisticError) {
         clientLogger.warn('Failed to apply optimistic score update', optimisticError)
       }
@@ -534,7 +534,7 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       if (isAutoAction) {
-        soundManager.play('score', { force: true })
+        sounds.play('score', { force: true })
       }
 
       // Track score action
@@ -604,7 +604,7 @@ export function useGameActions(props: UseGameActionsProps) {
       } else {
         const nextPlayer = newEngine.getCurrentPlayer()
         // Play turn change sound once when turn changes
-        soundManager.play('turnChange')
+        sounds.play('turnChange')
 
         // Only show "next turn" toast if it's NOT our turn now
         // (don't show to the player who just scored)

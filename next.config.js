@@ -1,4 +1,5 @@
 const { withSentryConfig } = require("@sentry/nextjs")
+const path = require("path")
 
 const envDevOrigins = (process.env.CORS_ORIGIN || '')
   .split(',')
@@ -42,9 +43,7 @@ const nextConfig = {
   
   // Experimental features for better performance
   experimental: {
-    optimizePackageImports: ['react-hot-toast', 'next-auth', 'react-i18next'],
-    // Enable modern optimizations
-    optimisticClientCache: true,
+    optimizePackageImports: ['react-hot-toast', 'next-auth'],
     // Note: optimizeCss requires critters package, disabled to avoid build issues
     // optimizeCss: true,
   },
@@ -60,7 +59,20 @@ const nextConfig = {
   // Output configuration for better caching
   output: 'standalone',
   
+  // Turbopack alias (used by `next dev` in Next.js 15+)
+  // Bypasses use-sync-external-store/shim's process.env.NODE_ENV conditional
+  // which causes React Refresh HMR to register an undefined module factory.
+  turbopack: {
+    resolveAlias: {
+      'use-sync-external-store/shim': path.resolve(__dirname, 'lib/shims/use-sync-external-store-shim.js'),
+    },
+  },
+
   webpack: (config) => {
+    // Same alias for webpack (used by `next build` and older Next.js dev).
+    config.resolve.alias['use-sync-external-store/shim'] =
+      path.resolve(__dirname, 'lib/shims/use-sync-external-store-shim.js')
+
     config.externals.push({
       'utf-8-validate': 'commonjs utf-8-validate',
       'bufferutil': 'commonjs bufferutil',
