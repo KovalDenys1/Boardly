@@ -11,30 +11,9 @@ load_workspace_env "$workspace_dir"
 
 require_command "node" "Install Node.js and ensure it is available in your PATH."
 require_env_var "DATABASE_URL" "DATABASE_URL is not set in .env/.env.local."
-require_env_var "MCP_POSTGRES_CA_CERT_PATH" "MCP_POSTGRES_CA_CERT_PATH is not set in .env/.env.local."
 
 db_url="${DATABASE_URL}"
-ca_path="${MCP_POSTGRES_CA_CERT_PATH}"
-
-resolved_ca_path="$(node - "$ca_path" "$workspace_dir" <<'NODE'
-const fs = require('fs');
-const path = require('path');
-
-const [rawPath, workspaceDir] = process.argv.slice(2);
-let fullPath = rawPath;
-
-if (!path.isAbsolute(fullPath)) {
-  fullPath = path.join(workspaceDir, fullPath);
-}
-
-if (!fs.existsSync(fullPath)) {
-  console.error(`CA file not found: ${fullPath}`);
-  process.exit(1);
-}
-
-process.stdout.write(fs.realpathSync(fullPath));
-NODE
-)"
+ca_path="${MCP_POSTGRES_CA_CERT_PATH:-}"
 
 pg_module_path=""
 pg_candidates=(
@@ -54,10 +33,31 @@ if [[ -z "$pg_module_path" ]]; then
   exit 1
 fi
 
-export NODE_EXTRA_CA_CERTS="$resolved_ca_path"
-export PGSSLROOTCERT="$resolved_ca_path"
+if [[ -n "$ca_path" ]]; then
+  resolved_ca_path="$(node - "$ca_path" "$workspace_dir" <<'NODE'
+const fs = require('fs');
+const path = require('path');
 
-db_url_with_ca="$(node - "$db_url" "$resolved_ca_path" <<'NODE'
+const [rawPath, workspaceDir] = process.argv.slice(2);
+let fullPath = rawPath;
+
+if (!path.isAbsolute(fullPath)) {
+  fullPath = path.join(workspaceDir, fullPath);
+}
+
+if (!fs.existsSync(fullPath)) {
+  console.error(`CA file not found: ${fullPath}`);
+  process.exit(1);
+}
+
+process.stdout.write(fs.realpathSync(fullPath));
+NODE
+)"
+
+  export NODE_EXTRA_CA_CERTS="$resolved_ca_path"
+  export PGSSLROOTCERT="$resolved_ca_path"
+
+  db_url="$(node - "$db_url" "$resolved_ca_path" <<'NODE'
 const [rawUrl, resolvedCaPath] = process.argv.slice(2);
 const u = new URL(rawUrl);
 
@@ -69,8 +69,9 @@ u.searchParams.set('sslmode', 'verify-full');
 process.stdout.write(u.toString());
 NODE
 )"
+fi
 
-export DATABASE_URL="$db_url_with_ca"
+export DATABASE_URL="$db_url"
 export PG_MCP_SMOKE_SQL="$sql"
 export PG_MCP_SMOKE_PG_MODULE_PATH="$pg_module_path"
 
