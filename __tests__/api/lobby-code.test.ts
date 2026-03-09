@@ -4,7 +4,7 @@
 // @ts-nocheck - Jest mocks for Prisma are complex to type
 
 import { NextRequest } from 'next/server'
-import { GET, POST } from '@/app/api/lobby/[code]/route'
+import { GET, POST, PATCH } from '@/app/api/lobby/[code]/route'
 import { POST as LEAVE } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
@@ -386,6 +386,63 @@ describe('POST /api/lobby/[code]', () => {
     expect(response.status).toBe(400)
     expect(data.error).toBe('Lobby is full')
     expect(mockPrisma.players.create).not.toHaveBeenCalled()
+  })
+
+  it('returns sanitized 500 response when join fails unexpectedly', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('Sensitive database details'))
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+    const response = await POST(request, { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error).toBe('Internal server error')
+    expect(data.code).toBe('LOBBY_JOIN_FAILED')
+    expect(data.details).toBeUndefined()
+  })
+})
+
+describe('PATCH /api/lobby/[code]', () => {
+  const mockSession = {
+    user: {
+      id: 'user-123',
+      email: 'test@example.com',
+      username: 'testuser',
+    },
+  }
+
+  const mockUser = {
+    id: 'user-123',
+    email: 'test@example.com',
+    username: 'testuser',
+    isBot: false,
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('returns sanitized 500 response when settings update fails unexpectedly', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue(mockUser as any)
+    mockPrisma.lobbies.findUnique.mockRejectedValue(new Error('Sensitive settings failure'))
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123', {
+      method: 'PATCH',
+      body: JSON.stringify({ maxPlayers: 4 }),
+    })
+    const response = await PATCH(request, { params: { code: 'ABC123' } as any })
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error).toBe('Failed to update lobby settings')
+    expect(data.code).toBe('LOBBY_UPDATE_FAILED')
+    expect(data.details).toBeUndefined()
   })
 })
 

@@ -762,7 +762,7 @@ export async function POST(
     })
     return NextResponse.json({
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      code: 'LOBBY_JOIN_FAILED',
     }, { status: 500 })
   }
 }
@@ -909,7 +909,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error: 'Failed to update lobby settings',
-        details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+        code: 'LOBBY_UPDATE_FAILED',
       },
       { status: 500 }
     )
