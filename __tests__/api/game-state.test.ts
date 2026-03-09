@@ -568,6 +568,15 @@ describe('POST /api/game/[gameId]/state', () => {
         triggeredAt: expect.any(Number),
       })
     )
+    expect(mockNotifySocket).toHaveBeenCalledWith(
+      'lobby:ABCD12',
+      'game-update',
+      expect.objectContaining({
+        action: 'state-change',
+      }),
+      0,
+      250
+    )
   })
 
   it('auto-triggers RPS bot turn when bot has not submitted choice', async () => {

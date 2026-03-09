@@ -26,6 +26,7 @@ const autoActionDebounceMap = new Map<string, number>()
 const AUTO_ACTION_DEBOUNCE_MS = 2000
 const AUTO_ACTION_DEBOUNCE_TTL_MS = 60000
 const STATE_CHANGE_NOTIFY_TIMEOUT_MS = 750
+const FAST_STATE_CHANGE_NOTIFY_TIMEOUT_MS = 250
 const BOT_TURN_TRIGGER_TIMEOUT_MS = 15000
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -93,6 +94,12 @@ function resolveTurnEndToBotTriggerMs(state: unknown, triggeredAt: number): numb
 
   const latencyMs = triggeredAt - lastMoveAt
   return Number.isFinite(latencyMs) && latencyMs >= 0 ? latencyMs : null
+}
+
+function resolveStateChangeNotifyTimeoutMs(gameType: string): number {
+  return gameType === 'tic_tac_toe'
+    ? FAST_STATE_CHANGE_NOTIFY_TIMEOUT_MS
+    : STATE_CHANGE_NOTIFY_TIMEOUT_MS
 }
 
 function autoTriggerBotTurn(params: {
@@ -599,7 +606,7 @@ export async function POST(
         payload: authoritativeState,
       },
       0,
-      STATE_CHANGE_NOTIFY_TIMEOUT_MS
+      resolveStateChangeNotifyTimeoutMs(game.lobby.gameType)
     )
     void replaySnapshotPromise
 
