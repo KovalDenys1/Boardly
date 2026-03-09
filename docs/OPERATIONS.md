@@ -2,6 +2,8 @@
 
 ## Local development
 
+For a full local-only walkthrough without hosted services, start with `docs/LOCAL_SETUP.md`.
+
 ### Prerequisites
 
 - Node.js 18+

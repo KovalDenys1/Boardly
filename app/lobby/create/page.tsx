@@ -365,14 +365,14 @@ function CreateLobbyPage() {
   }
 
   return (
-    <div className={`bg-gradient-to-br ${gameInfo.gradient} flex flex-col`}>
+    <div className={`min-h-[calc(100dvh-64px)] bg-gradient-to-br ${gameInfo.gradient} flex flex-col`}>
       <section
         className="flex flex-col w-full px-4 py-4 md:py-0 md:h-[calc(100vh-64px)] md:items-center md:justify-center flex-shrink-0"
       >
         <div className="w-full max-w-4xl flex flex-col items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-visible md:overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
             {/* 1. Game Type Selector - clean scrollable list */}
-            <div className="md:w-1/4 w-full flex flex-col overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
+            <div className="md:w-1/4 w-full flex flex-col overflow-visible md:overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO)
                 .filter(([key]) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(key as GameType))
                 .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
@@ -393,10 +393,10 @@ function CreateLobbyPage() {
               ))}
             </div>
             {/* 2. Form */}
-            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-y-auto max-h-[70vh] md:max-h-none">
+            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-visible md:overflow-y-auto max-h-none">
               <div>
                 <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🎮 {t('lobby.create.lobbyName')}
+                  🎮 {t('lobby.create.lobbyName')} <span className="font-medium text-white/70">({t('common.optional')})</span>
                 </label>
                 <input
                   type="text"

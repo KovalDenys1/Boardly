@@ -1,5 +1,6 @@
 const TERMINAL_GAME_STATUSES = ['abandoned', 'cancelled'] as const
 const NON_TERMINAL_ACTIVE_STATUSES = new Set(['waiting', 'playing'])
+const NON_TERMINAL_SETTLED_STATUSES = new Set(['finished'])
 
 export type TerminalGameStatus = (typeof TERMINAL_GAME_STATUSES)[number]
 
@@ -19,7 +20,11 @@ export function resolveLifecycleRedirectReason(params: {
     return `local-game-status:${normalizedGameStatus}`
   }
 
-  if (lobbyIsActive === false && !NON_TERMINAL_ACTIVE_STATUSES.has(normalizedGameStatus || '')) {
+  if (
+    lobbyIsActive === false &&
+    !NON_TERMINAL_ACTIVE_STATUSES.has(normalizedGameStatus || '') &&
+    !NON_TERMINAL_SETTLED_STATUSES.has(normalizedGameStatus || '')
+  ) {
     return 'local-lobby-inactive'
   }
 

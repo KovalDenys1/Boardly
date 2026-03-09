@@ -2,6 +2,8 @@
 
 ## Development setup
 
+For the full local-only workflow, see `docs/LOCAL_SETUP.md`.
+
 ```bash
 npm install
 cp .env.example .env.local
