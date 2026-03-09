@@ -111,7 +111,7 @@
     "jest-environment-jsdom": "^30.2.0",
     "lefthook": "^1.13.6",
     "markdownlint": "^0.40.0",
-    "markdownlint-cli": "^0.47.0",
+    "markdownlint-cli": "^0.48.0",
     "node-fetch": "^2.7.0",
     "prisma": "^5.22.0",
     "supertest": "^7.1.4",
@@ -121,7 +121,22 @@
   },
   "overrides": {
     "rollup": "^4.59.0",
-    "minimatch": "^9.0.7",
+    "@modelcontextprotocol/server-filesystem": {
+      "@modelcontextprotocol/sdk": "^1.27.1",
+      "minimatch": "^10.2.4"
+    },
+    "@modelcontextprotocol/server-github": {
+      "@modelcontextprotocol/sdk": "^1.27.1"
+    },
+    "@modelcontextprotocol/server-memory": {
+      "@modelcontextprotocol/sdk": "^1.27.1"
+    },
+    "@modelcontextprotocol/server-postgres": {
+      "@modelcontextprotocol/sdk": "^1.27.1"
+    },
+    "@hono/node-server": "^1.19.10",
+    "express-rate-limit": "^8.2.2",
+    "hono": "^4.12.4",
     "serialize-javascript": "^7.0.3",
     "schema-utils": {
       "ajv": "^8.18.0"

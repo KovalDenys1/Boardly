@@ -12,20 +12,10 @@ Import-WorkspaceEnv -WorkspaceDir $workspaceDir
 
 Assert-Command -CommandName "node" -InstallHint "Install Node.js and ensure it is available in your PATH."
 Require-EnvVar -Name "DATABASE_URL" -Message "DATABASE_URL is not set in .env/.env.local."
-Require-EnvVar -Name "MCP_POSTGRES_CA_CERT_PATH" -Message "MCP_POSTGRES_CA_CERT_PATH is not set in .env/.env.local."
 
 $dbUrl = [Environment]::GetEnvironmentVariable("DATABASE_URL", "Process")
 $caPath = [Environment]::GetEnvironmentVariable("MCP_POSTGRES_CA_CERT_PATH", "Process")
 
-if (-not [System.IO.Path]::IsPathRooted($caPath)) {
-  $caPath = Join-Path $workspaceDir $caPath
-}
-
-if (-not (Test-Path -LiteralPath $caPath)) {
-  throw "CA file not found: $caPath"
-}
-
-$caPath = (Resolve-Path -LiteralPath $caPath).Path
 $pgCandidates = @(
   (Join-Path $workspaceDir "node_modules\@modelcontextprotocol\server-postgres\node_modules\pg"),
   (Join-Path $workspaceDir "node_modules\pg")
@@ -36,30 +26,43 @@ if (-not $pgModulePath) {
   throw "Cannot find pg driver (checked: $($pgCandidates -join ', '))"
 }
 
-[Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", $caPath, "Process")
-[Environment]::SetEnvironmentVariable("PGSSLROOTCERT", $caPath, "Process")
+$dbUrlForSmoke = $dbUrl
+if (-not [string]::IsNullOrWhiteSpace($caPath)) {
+  if (-not [System.IO.Path]::IsPathRooted($caPath)) {
+    $caPath = Join-Path $workspaceDir $caPath
+  }
 
-$caPathForUrl = ($caPath -replace '\\', '/')
-$caPathEncoded = [System.Uri]::EscapeDataString($caPathForUrl)
-$dbUrlWithCa = $dbUrl
-if ($dbUrlWithCa -notmatch '([?&])sslrootcert=') {
-  $separator = if ($dbUrlWithCa.Contains("?")) { "&" } else { "?" }
-  $dbUrlWithCa = $dbUrlWithCa + $separator + "sslrootcert=" + $caPathEncoded
-}
-if ($dbUrlWithCa -match '([?&])sslmode=') {
-  $sslModeRegex = New-Object System.Text.RegularExpressions.Regex("(?i)([?&]sslmode=)[^&]*")
-  $dbUrlWithCa = $sslModeRegex.Replace($dbUrlWithCa, '$1verify-full', 1)
-}
-else {
-  $separator = if ($dbUrlWithCa.Contains("?")) { "&" } else { "?" }
-  $dbUrlWithCa = $dbUrlWithCa + $separator + "sslmode=verify-full"
+  if (-not (Test-Path -LiteralPath $caPath)) {
+    throw "CA file not found: $caPath"
+  }
+
+  $caPath = (Resolve-Path -LiteralPath $caPath).Path
+  [Environment]::SetEnvironmentVariable("NODE_EXTRA_CA_CERTS", $caPath, "Process")
+  [Environment]::SetEnvironmentVariable("PGSSLROOTCERT", $caPath, "Process")
+
+  $caPathForUrl = ($caPath -replace '\\', '/')
+  $caPathEncoded = [System.Uri]::EscapeDataString($caPathForUrl)
+  if ($dbUrlForSmoke -notmatch '([?&])sslrootcert=') {
+    $separator = if ($dbUrlForSmoke.Contains("?")) { "&" } else { "?" }
+    $dbUrlForSmoke = $dbUrlForSmoke + $separator + "sslrootcert=" + $caPathEncoded
+  }
+  if ($dbUrlForSmoke -match '([?&])sslmode=') {
+    $sslModeRegex = New-Object System.Text.RegularExpressions.Regex("(?i)([?&]sslmode=)[^&]*")
+    $dbUrlForSmoke = $sslModeRegex.Replace($dbUrlForSmoke, '$1verify-full', 1)
+  }
+  else {
+    $separator = if ($dbUrlForSmoke.Contains("?")) { "&" } else { "?" }
+    $dbUrlForSmoke = $dbUrlForSmoke + $separator + "sslmode=verify-full"
+  }
 }
 
-[Environment]::SetEnvironmentVariable("DATABASE_URL", $dbUrlWithCa, "Process")
+[Environment]::SetEnvironmentVariable("DATABASE_URL", $dbUrlForSmoke, "Process")
 
-$env:NODE_EXTRA_CA_CERTS = $caPath
-$env:PGSSLROOTCERT = $caPath
-$env:DATABASE_URL = $dbUrlWithCa
+if (-not [string]::IsNullOrWhiteSpace($caPath)) {
+  $env:NODE_EXTRA_CA_CERTS = $caPath
+  $env:PGSSLROOTCERT = $caPath
+}
+$env:DATABASE_URL = $dbUrlForSmoke
 $env:PG_MCP_SMOKE_SQL = $Sql
 $env:PG_MCP_SMOKE_PG_MODULE_PATH = $pgModulePath
 

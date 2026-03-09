@@ -159,6 +159,7 @@ backup_*.sql
 *.sh
 !scripts/mcp-*.sh
 !scripts/codex-*.sh
+!scripts/export-postgres-mcp-ca.sh
 !scripts/test-mcp-postgres-driver.sh
 setup-*.*
 # .env-template.*
