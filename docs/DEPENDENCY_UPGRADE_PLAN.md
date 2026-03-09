@@ -18,12 +18,12 @@ Version checks in this document were verified against:
 | `@prisma/client` + `prisma` | `5.22.0` | `7.4.2` | major | Blocked by Prisma 7 migration work in [`lib/db.ts`](../lib/db.ts) and CLI config changes |
 | `next` | `15.5.12` | `16.1.6` | major | Deferred; must be upgraded together with React |
 | `react` + `react-dom` | `18.3.1` | `19.2.4` | major | Deferred with Next 16 |
-| `socket.io` + `socket.io-client` | `4.8.1` | `4.8.3` | patch | Upgrade both together |
-| `@sentry/nextjs` | `10.27.0` | `10.42.0` | minor | Low-risk observability bump |
-| `react-i18next` | `16.3.5` | `16.5.6` | minor | Low-risk |
-| `i18next` | `25.6.3` | `25.8.15` | minor | Low-risk |
-| `resend` | `6.1.3` | `6.9.3` | minor | Low-risk |
-| `dotenv` | `17.2.3` | `17.3.1` | patch | Low-risk |
+| `socket.io` + `socket.io-client` | `4.8.3` | `4.8.3` | patch | Completed on 2026-03-09 |
+| `@sentry/nextjs` | `10.42.0` | `10.42.0` | minor | Completed on 2026-03-09 |
+| `react-i18next` | `16.5.6` | `16.5.6` | minor | Completed on 2026-03-09 |
+| `i18next` | `25.8.16` | `25.8.16` | minor | Completed on 2026-03-09 |
+| `resend` | `6.9.3` | `6.9.3` | minor | Completed on 2026-03-09 |
+| `dotenv` | `17.3.1` | `17.3.1` | patch | Completed on 2026-03-09 |
 | `tailwindcss` | `3.4.14` | `4.2.1` | major | Separate migration; config and CSS pipeline change |
 | `zod` | `3.23.8` | `4.3.6` | major | Wide validation surface across auth, env, and lobby APIs |
 | `eslint` | `8.57.1` | `10.0.3` | major | Repo still uses legacy `.eslintrc.json` |
@@ -31,18 +31,14 @@ Version checks in this document were verified against:
 
 ## Audit status
 
-`npm audit` on 2026-03-09 is not clean.
+`npm audit` is clean as of 2026-03-09.
 
-Current findings are in local development and MCP tooling, not in the shipped Next.js or Socket.IO runtime:
+Completed on 2026-03-09:
 
-- `@modelcontextprotocol/server-filesystem` pulls `@modelcontextprotocol/sdk@1.26.0`, `express-rate-limit@8.2.1`, `hono@4.11.7`, and `@hono/node-server@1.19.9`
-- `@modelcontextprotocol/server-github` and `@modelcontextprotocol/server-postgres` still resolve `@modelcontextprotocol/sdk@1.0.1`
-- `markdownlint-cli@0.47.0` resolves a vulnerable `minimatch`
+1. Wave 0 tooling cleanup for MCP and markdown tooling (`#196`)
+2. Wave 1 low-risk runtime upgrades (`#197`)
 
-This means the dependency plan now has two separate goals:
-
-1. keep application runtime dependencies current
-2. clear local tooling audit findings without destabilizing the app stack
+Remaining work is now limited to the major/framework waves below.
 
 ## Repo-specific blockers
 
@@ -83,6 +79,8 @@ This means the dependency plan now has two separate goals:
 
 ### Wave 0: development tooling audit cleanup
 
+Status: completed on 2026-03-09 via `#196`
+
 Scope:
 
 - update MCP server packages that still pull old `@modelcontextprotocol/sdk`
@@ -94,6 +92,8 @@ Reason:
 - this clears current local tooling advisories without touching app runtime behavior
 
 ### Wave 1: low-risk runtime patch and minor upgrades
+
+Status: completed on 2026-03-09 via `#197`
 
 Scope:
 
