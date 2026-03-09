@@ -72,6 +72,14 @@ const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunc
 >
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 
+function readPersistedState(value: unknown) {
+  if (typeof value === 'string') {
+    return JSON.parse(value)
+  }
+
+  return JSON.parse(JSON.stringify(value ?? null))
+}
+
 describe('POST /api/game/create', () => {
   const mockSession = {
     id: 'creator-123',
@@ -307,7 +315,7 @@ describe('POST /api/game/create', () => {
 
     let persistedState: any
     mockPrisma.games.update.mockImplementation((args: any) => {
-      persistedState = JSON.parse(args.data.state)
+      persistedState = readPersistedState(args.data.state)
       return Promise.resolve({
         ...tttWaitingGame,
         status: 'playing',
@@ -361,7 +369,7 @@ describe('POST /api/game/create', () => {
 
     let persistedState: any
     mockPrisma.games.update.mockImplementation((args: any) => {
-      persistedState = JSON.parse(args.data.state)
+      persistedState = readPersistedState(args.data.state)
       return Promise.resolve({
         ...memoryWaitingGame,
         status: 'playing',
@@ -560,7 +568,7 @@ describe('POST /api/game/create', () => {
 
     let capturedState: any
     mockPrisma.games.update.mockImplementation((args: any) => {
-      capturedState = JSON.parse(args.data.state)
+      capturedState = readPersistedState(args.data.state)
       return Promise.resolve({
         ...spyWaitingGame,
         status: 'playing',
@@ -666,7 +674,7 @@ describe('POST /api/game/create', () => {
     let capturedGameState: any
 
     mockPrisma.games.update.mockImplementation((args: any) => {
-      capturedGameState = JSON.parse(args.data.state)
+      capturedGameState = readPersistedState(args.data.state)
       return Promise.resolve({
         ...mockWaitingGame,
         status: 'playing',
