@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { createGameEngine } from '../lib/game-registry'
 import { prisma } from '../lib/db'
+import { toPersistedGameStateInput } from '../lib/persisted-game-state'
 
 type LoadGameType = 'tic_tac_toe' | 'rock_paper_scissors' | 'yahtzee'
 
@@ -181,7 +182,7 @@ async function createLobbyFixture(params: {
             create: {
               status: 'waiting',
               gameType: params.gameType,
-              state: JSON.stringify(initialState),
+              state: toPersistedGameStateInput(initialState),
               players: {
                 create: {
                   userId: params.creatorId,

@@ -3,14 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { decodeGameReplaySnapshots } from '@/lib/game-replay'
-
-function parseSerializedState(state: string): unknown {
-  try {
-    return JSON.parse(state)
-  } catch {
-    return null
-  }
-}
+import { parsePersistedGameState } from '@/lib/persisted-game-state'
 
 function shouldDownloadReplay(value: string | null): boolean {
   if (!value) return false
@@ -94,7 +87,7 @@ export async function GET(
               playerId: null,
               actionType: 'game:final-state',
               actionPayload: null,
-              state: parseSerializedState(game.state),
+              state: parsePersistedGameState(game.state),
               createdAt: game.updatedAt.toISOString(),
             },
           ]

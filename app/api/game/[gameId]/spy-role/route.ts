@@ -4,6 +4,7 @@ import { SpyGame } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { parsePersistedGameState } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -62,7 +63,7 @@ export async function GET(
 
     // Load game engine
     const spyGame = new SpyGame(gameId)
-    spyGame.loadState(JSON.parse(game.state))
+    spyGame.loadState(parsePersistedGameState(game.state))
 
     // Get role info for this specific player
     const roleInfo = spyGame.getRoleInfoForPlayer(userId)

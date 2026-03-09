@@ -10,6 +10,7 @@ import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity } from '@/lib/lobby-response'
 import { hashLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const log = apiLogger('/api/lobby')
 
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
               create: {
                 status: 'waiting',
                 gameType: persistedGameType,
-                state: JSON.stringify(initialState),
+                state: toPersistedGameStateInput(initialState),
                 players: {
                   create: {
                     userId: requestUser.id,

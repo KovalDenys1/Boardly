@@ -7,6 +7,7 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -64,7 +65,7 @@ export async function POST(
 
     // Load game engine
     const spyGame = new SpyGame(gameId)
-    spyGame.loadState(JSON.parse(game.state))
+    spyGame.loadState(parsePersistedGameState(game.state))
     const state = spyGame.getState()
     const stateData = (state.data ?? {}) as {
       phase?: SpyGamePhase
@@ -139,7 +140,7 @@ export async function POST(
     await prisma.games.update({
       where: { id: gameId },
       data: {
-        state: JSON.stringify(updatedState),
+        state: toPersistedGameStateInput(updatedState),
         status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
       },

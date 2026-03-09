@@ -8,6 +8,7 @@ import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
 import { notifySocket } from '@/lib/socket-url'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -306,7 +307,7 @@ export async function POST(
     // Recreate game engine from saved state
     let gameState: unknown
     try {
-      gameState = JSON.parse(game.state)
+      gameState = parsePersistedGameState(game.state)
 
       // Basic validation of state structure
       if (!gameState || typeof gameState !== 'object') {
@@ -491,7 +492,7 @@ export async function POST(
           updatedAt: game.updatedAt,
         },
         data: {
-          state: JSON.stringify(newState),
+          state: toPersistedGameStateInput(newState),
           status: newState.status,
           currentTurn: newState.currentPlayerIndex,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),

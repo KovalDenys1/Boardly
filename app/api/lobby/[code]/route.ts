@@ -20,6 +20,11 @@ import {
   verifyLobbyPassword,
 } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import {
+  parsePersistedGameState,
+  stringifyPersistedGameState,
+  toPersistedGameStateInput,
+} from '@/lib/persisted-game-state'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
@@ -138,7 +143,7 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = JSON.parse(activeGame.state)
+          const parsedState = parsePersistedGameState(activeGame.state)
           const telephoneGame = new TelephoneDoodleGame(activeGame.id)
           telephoneGame.restoreState(parsedState as any)
 
@@ -153,7 +158,7 @@ export async function GET(
                 updatedAt: activeGame.updatedAt,
               },
               data: {
-                state: JSON.stringify(nextState),
+                state: toPersistedGameStateInput(nextState),
                 status: nextState.status,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
@@ -267,7 +272,7 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = JSON.parse(activeGame.state)
+          const parsedState = parsePersistedGameState(activeGame.state)
           const liarsPartyGame = new LiarsPartyGame(activeGame.id)
           liarsPartyGame.restoreState(parsedState as any)
 
@@ -282,7 +287,7 @@ export async function GET(
                 updatedAt: activeGame.updatedAt,
               },
               data: {
-                state: JSON.stringify(nextState),
+                state: toPersistedGameStateInput(nextState),
                 status: nextState.status,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
@@ -398,7 +403,7 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = JSON.parse(activeGame.state)
+          const parsedState = parsePersistedGameState(activeGame.state)
           const fakeArtistGame = new FakeArtistGame(activeGame.id)
           fakeArtistGame.restoreState(parsedState as any)
 
@@ -413,7 +418,7 @@ export async function GET(
                 updatedAt: activeGame.updatedAt,
               },
               data: {
-                state: JSON.stringify(nextState),
+                state: toPersistedGameStateInput(nextState),
                 status: nextState.status,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
@@ -524,6 +529,7 @@ export async function GET(
     const sanitizedActiveGame = activeGame
       ? {
           ...activeGame,
+          state: stringifyPersistedGameState(activeGame.state),
           players: Array.isArray(activeGame.players)
             ? activeGame.players.map((player: any) => {
                 const safeUser = sanitizeLobbyUserIdentity(player?.user)
@@ -638,7 +644,7 @@ export async function POST(
         data: {
           lobbyId: lobby.id,
           gameType: toPersistedGameType(runtimeGameType),
-          state: JSON.stringify(initialState),
+          state: toPersistedGameStateInput(initialState),
           status: 'waiting',
         },
       })

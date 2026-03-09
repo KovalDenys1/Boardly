@@ -9,6 +9,7 @@ import { apiLogger } from '@/lib/logger'
 import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -180,9 +181,9 @@ export async function POST(
     })
 
     // Parse game state with error handling
-    let gameState
+    let gameState: { players: unknown[] } & Record<string, unknown>
     try {
-      gameState = JSON.parse(game.state)
+      gameState = parsePersistedGameState(game.state) as { players: unknown[] } & Record<string, unknown>
       // Validate parsed state
       if (!gameState || typeof gameState !== 'object' || !Array.isArray(gameState.players)) {
         throw new Error('Invalid game state structure')
@@ -304,7 +305,7 @@ export async function POST(
             await prisma.games.update({
               where: { id: gameId },
               data: {
-                state: JSON.stringify(newState),
+                state: toPersistedGameStateInput(newState),
                 status: newState.status,
                 currentTurn: newState.currentPlayerIndex,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
@@ -317,7 +318,7 @@ export async function POST(
               return prisma.games.update({
                 where: { id: gameId },
                 data: {
-                  state: JSON.stringify(newState),
+                  state: toPersistedGameStateInput(newState),
                   status: newState.status,
                   currentTurn: newState.currentPlayerIndex,
                   ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
