@@ -1052,7 +1052,7 @@ const no = {
         sent: 'Sendt'
       },
       addFriend: 'Legg til venn',
-      addFriendDescription: 'Koble til med venner ved å bruke brukernavnet eller vennekoden deres',
+      addFriendDescription: 'Koble til venner med profillenken deres eller vennekoden',
       noFriends: 'Ingen venner ennå',
       noFriendsDescription: 'Legg til venner for å spille sammen og spore spillhistorikken din',
       addFirstFriend: 'Legg til din første venn',
@@ -1083,7 +1083,11 @@ const no = {
       myFriendCode: 'Min vennekode',
       friendCode: 'Vennekode',
       byUsername: 'Etter brukernavn',
+      byProfileLink: 'Etter profillenke',
       byFriendCode: 'Etter vennekode',
+      profileLink: 'Profillenke',
+      profileLinkPlaceholder: 'Lim inn en Boardly-lenke eller offentlig ID',
+      profileLinkHint: 'Lim inn en full Boardly-profillenke eller offentlig profil-ID',
       friendCodeHint: 'Skriv inn 5-sifret vennekode',
       shareCodeHint: 'Del denne koden med venner for å koble til!',
       copyCode: 'Kopier kode',
@@ -1096,6 +1100,7 @@ const no = {
       errors: {
         loadFailed: 'Kunne ikke laste venner',
         usernameRequired: 'Brukernavn er påkrevd',
+        invalidProfileLink: 'Ugyldig profillenke',
         invalidFriendCode: 'Ugyldig vennekode. Må være 5 sifre.',
         sendRequestFailed: 'Kunne ikke sende venneforespørsel',
         acceptFailed: 'Kunne ikke godta venneforespørsel',
@@ -1104,6 +1109,21 @@ const no = {
         copyCodeFailed: 'Kunne ikke kopiere vennekode',
         copyLinkFailed: 'Kunne ikke kopiere profillenke'
       }
+    },
+    publicProfile: {
+      eyebrow: 'Boardly-profil',
+      subtitle: 'Se spillerens offentlige profil og send en venneforespørsel via en stabil profillenke.',
+      playerFallback: 'Spiller',
+      addFriend: 'Legg til venn',
+      addFailed: 'Kunne ikke sende venneforespørsel',
+      requestSent: 'Venneforespørsel sendt',
+      alreadyFriends: 'Dere er allerede venner',
+      requestPending: 'Venneforespørsel venter allerede',
+      reviewRequest: 'Se forespørsel',
+      signInToAdd: 'Logg inn for å legge til',
+      verifyEmailToAdd: 'Bekreft e-post for å legge til',
+      goToOwnProfile: 'Gå til min profil',
+      linkHint: 'Offentlige profillenker gjør det enklere å koble til uten å dele vennekoden.',
     }
   },
   notFound: {

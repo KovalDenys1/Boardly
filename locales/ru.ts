@@ -1052,7 +1052,7 @@ const ru = {
         sent: 'Отправлено'
       },
       addFriend: 'Добавить друга',
-      addFriendDescription: 'Свяжитесь с друзьями, используя их имя пользователя или код друга',
+      addFriendDescription: 'Добавляйте друзей через ссылку на профиль или код друга',
       noFriends: 'Пока нет друзей',
       noFriendsDescription: 'Добавьте друзей, чтобы играть вместе и отслеживать историю игр',
       addFirstFriend: 'Добавьте вашего первого друга',
@@ -1083,7 +1083,11 @@ const ru = {
       myFriendCode: 'Мой код друга',
       friendCode: 'Код друга',
       byUsername: 'По имени пользователя',
+      byProfileLink: 'По ссылке профиля',
       byFriendCode: 'По коду друга',
+      profileLink: 'Ссылка на профиль',
+      profileLinkPlaceholder: 'Вставьте ссылку Boardly или публичный ID',
+      profileLinkHint: 'Вставьте полную ссылку на профиль Boardly или публичный ID профиля',
       friendCodeHint: 'Введите 5-значный код друга',
       shareCodeHint: 'Поделитесь этим кодом с друзьями для связи!',
       copyCode: 'Копировать код',
@@ -1096,6 +1100,7 @@ const ru = {
       errors: {
         loadFailed: 'Не удалось загрузить друзей',
         usernameRequired: 'Требуется имя пользователя',
+        invalidProfileLink: 'Неверная ссылка на профиль',
         invalidFriendCode: 'Неверный код друга. Должно быть 5 цифр.',
         sendRequestFailed: 'Не удалось отправить запрос в друзья',
         acceptFailed: 'Не удалось принять запрос в друзья',
@@ -1104,6 +1109,21 @@ const ru = {
         copyCodeFailed: 'Не удалось скопировать код друга',
         copyLinkFailed: 'Не удалось скопировать ссылку профиля'
       }
+    },
+    publicProfile: {
+      eyebrow: 'Профиль Boardly',
+      subtitle: 'Посмотрите публичный профиль игрока и отправьте запрос в друзья по постоянной ссылке.',
+      playerFallback: 'Игрок',
+      addFriend: 'Добавить в друзья',
+      addFailed: 'Не удалось отправить запрос в друзья',
+      requestSent: 'Запрос в друзья отправлен',
+      alreadyFriends: 'Вы уже в друзьях',
+      requestPending: 'Запрос в друзья уже ожидает',
+      reviewRequest: 'Посмотреть запрос',
+      signInToAdd: 'Войти, чтобы добавить',
+      verifyEmailToAdd: 'Подтвердите почту, чтобы добавить',
+      goToOwnProfile: 'Перейти в мой профиль',
+      linkHint: 'Публичные ссылки на профиль помогают находить друг друга без кода друга.',
     }
   },
   notFound: {

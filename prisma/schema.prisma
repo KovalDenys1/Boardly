@@ -13,15 +13,16 @@ model Users {
   email         String?   @unique
   emailVerified DateTime? @db.Timestamptz(3)
   username      String?   @unique
-  friendCode    String?   @unique // Short numeric code for adding friends (e.g., "12345")
-  passwordHash  String?
-  image         String?
-  isGuest       Boolean   @default(false) // Flag for guest (temporary) users
-  role          UserRole  @default(user)
-  suspended     Boolean   @default(false)
-  lastActiveAt  DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
-  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+  friendCode      String?   @unique // Short numeric code for adding friends (e.g., "12345")
+  publicProfileId String?   @unique // Stable public ID used in shareable profile links
+  passwordHash    String?
+  image           String?
+  isGuest         Boolean   @default(false) // Flag for guest (temporary) users
+  role            UserRole  @default(user)
+  suspended       Boolean   @default(false)
+  lastActiveAt    DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
 
   accounts Accounts[]
   sessions Sessions[]
