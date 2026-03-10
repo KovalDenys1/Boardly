@@ -7,11 +7,15 @@ import { POST } from '@/app/api/game/[gameId]/bot-turn/route'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { executeBotTurn } from '@/lib/bots'
+import { notifySocket } from '@/lib/socket-url'
+import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
     games: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     players: {
       update: jest.fn(),
@@ -60,6 +64,11 @@ jest.mock('@/lib/logger', () => ({
 
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 const mockRestoreGameEngine = restoreGameEngine as jest.MockedFunction<typeof restoreGameEngine>
+const mockExecuteBotTurn = executeBotTurn as jest.MockedFunction<typeof executeBotTurn>
+const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
+  typeof appendGameReplaySnapshot
+>
 const originalSocketSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
 
 function buildRequest(body: unknown, headers: Record<string, string> = {}) {
@@ -77,6 +86,9 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
+    ;(prisma.games.update as jest.Mock).mockResolvedValue({} as any)
+    mockNotifySocket.mockResolvedValue(true as any)
+    mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
   })
 
   afterAll(() => {
@@ -194,5 +206,124 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
     expect(payload.error).toBe('Internal server error')
     expect(payload.code).toBe('BOT_TURN_FAILED')
     expect(payload.details).toBeUndefined()
+  })
+
+  it('skips unchanged score writes and uses fast notify timeout for Tic-Tac-Toe bot turns', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({
+      id: 'player-1',
+      username: 'Player 1',
+      suspended: false,
+      isGuest: false,
+    } as any)
+
+    const initialState = {
+      players: [
+        { id: 'player-1', score: 0 },
+        { id: 'bot-1', score: 0 },
+      ],
+      status: 'playing',
+      currentPlayerIndex: 1,
+      data: {
+        board: [
+          ['X', null, null],
+          [null, null, null],
+          [null, null, null],
+        ],
+        currentSymbol: 'O',
+      },
+    }
+    const updatedState = {
+      ...initialState,
+      currentPlayerIndex: 0,
+      lastMoveAt: Date.now(),
+      updatedAt: new Date().toISOString(),
+      data: {
+        ...initialState.data,
+        board: [
+          ['X', 'O', null],
+          [null, null, null],
+          [null, null, null],
+        ],
+        currentSymbol: 'X',
+      },
+    }
+
+    ;(prisma.games.findUnique as jest.Mock).mockResolvedValue({
+      id: 'game-123',
+      state: JSON.stringify(initialState),
+      status: 'playing',
+      currentTurn: 1,
+      players: [
+        {
+          id: 'db-player-1',
+          userId: 'player-1',
+          score: 0,
+          scorecard: '{}',
+          user: { id: 'player-1', bot: null },
+        },
+        {
+          id: 'db-player-bot',
+          userId: 'bot-1',
+          score: 0,
+          scorecard: '{}',
+          user: { id: 'bot-1', bot: { id: 'bot-meta-1' } },
+        },
+      ],
+      lobby: {
+        id: 'lobby-123',
+        code: 'ABCD12',
+        gameType: 'tic_tac_toe',
+      },
+    } as any)
+
+    mockRestoreGameEngine.mockReturnValue({
+      getState: jest
+        .fn()
+        .mockReturnValueOnce(initialState)
+        .mockReturnValueOnce(updatedState)
+        .mockReturnValue(updatedState),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0 },
+        { id: 'bot-1', score: 0 },
+      ]),
+      makeMove: jest.fn().mockReturnValue(true),
+    } as any)
+
+    mockExecuteBotTurn.mockImplementation(async (_gameType, _engine, _botUserId, _difficulty, onMove) => {
+      await onMove({
+        playerId: 'bot-1',
+        type: 'place',
+        data: { row: 0, col: 1 },
+        timestamp: new Date(),
+      } as any)
+    })
+
+    const response = await POST(
+      buildRequest({
+        botUserId: 'bot-1',
+        lobbyCode: 'ABCD12',
+      }),
+      { params: Promise.resolve({ gameId: 'game-123' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(prisma.games.update).toHaveBeenCalledTimes(1)
+    expect(prisma.players.update).not.toHaveBeenCalled()
+    expect(mockAppendGameReplaySnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gameId: 'game-123',
+        playerId: 'bot-1',
+        actionType: 'bot:place',
+      })
+    )
+    expect(mockNotifySocket).toHaveBeenCalledWith(
+      'lobby:ABCD12',
+      'game-update',
+      expect.objectContaining({
+        action: 'state-change',
+      }),
+      0,
+      250
+    )
   })
 })
