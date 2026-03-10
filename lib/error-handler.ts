@@ -15,7 +15,7 @@ export class AppError extends Error {
     public message: string,
     public statusCode: number = 500,
     public code?: string,
-    public details?: any
+    public details?: unknown
   ) {
     super(message)
     this.name = 'AppError'
@@ -24,7 +24,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: unknown) {
     super(message, 400, 'VALIDATION_ERROR', details)
     this.name = 'ValidationError'
   }
@@ -240,10 +240,10 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
 /**
  * Async error handler wrapper for API routes
  */
-export function withErrorHandler(
-  handler: (...args: any[]) => Promise<NextResponse>
+export function withErrorHandler<T extends unknown[]>(
+  handler: (...args: T) => Promise<NextResponse>
 ) {
-  return async (...args: any[]): Promise<NextResponse> => {
+  return async (...args: T): Promise<NextResponse> => {
     try {
       return await handler(...args)
     } catch (error) {
@@ -256,7 +256,7 @@ export function withErrorHandler(
  * Assert that a value is truthy or throw an error
  */
 export function assert(
-  condition: any,
+  condition: unknown,
   message: string,
   ErrorClass: typeof AppError = AppError
 ): asserts condition {

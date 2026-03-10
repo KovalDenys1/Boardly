@@ -94,6 +94,7 @@ describe('useSocketConnection', () => {
       username: 'TestUser',
       email: 'test@example.com',
     },
+    expires: '9999-01-01',
   }
 
   const defaultProps = {

@@ -10,6 +10,7 @@ import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/
 import { getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
+import { type RestorableGameState } from '@/lib/game-engine'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
@@ -133,7 +134,7 @@ export async function GET(
     }
 
     const { password, ...safeLobby } = lobby
-    const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished }) as any | null
+    const activeGame = pickRelevantLobbyGame(safeLobby.games, { includeFinished })
 
     if (
       activeGame &&
@@ -143,9 +144,9 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = parsePersistedGameState(activeGame.state)
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const telephoneGame = new TelephoneDoodleGame(activeGame.id)
-          telephoneGame.restoreState(parsedState as any)
+          telephoneGame.restoreState(parsedState)
 
           const timeoutResolution = telephoneGame.applyTimeoutFallback(turnTimerSeconds)
           if (timeoutResolution.changed) {
@@ -175,7 +176,7 @@ export async function GET(
               }
 
               const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: any) => ({
+                .map((entry: Record<string, unknown>) => ({
                   id: typeof entry?.id === 'string' ? entry.id : '',
                   userId: typeof entry?.userId === 'string' ? entry.userId : '',
                   score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
@@ -272,9 +273,9 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = parsePersistedGameState(activeGame.state)
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const liarsPartyGame = new LiarsPartyGame(activeGame.id)
-          liarsPartyGame.restoreState(parsedState as any)
+          liarsPartyGame.restoreState(parsedState)
 
           const timeoutResolution = liarsPartyGame.applyTimeoutFallback(turnTimerSeconds)
           if (timeoutResolution.changed) {
@@ -304,7 +305,7 @@ export async function GET(
               }
 
               const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: any) => ({
+                .map((entry: Record<string, unknown>) => ({
                   id: typeof entry?.id === 'string' ? entry.id : '',
                   userId: typeof entry?.userId === 'string' ? entry.userId : '',
                   score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
@@ -403,9 +404,9 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = parsePersistedGameState(activeGame.state)
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const fakeArtistGame = new FakeArtistGame(activeGame.id)
-          fakeArtistGame.restoreState(parsedState as any)
+          fakeArtistGame.restoreState(parsedState)
 
           const timeoutResolution = fakeArtistGame.applyTimeoutFallback(turnTimerSeconds)
           if (timeoutResolution.changed) {
@@ -435,7 +436,7 @@ export async function GET(
               }
 
               const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: any) => ({
+                .map((entry: Record<string, unknown>) => ({
                   id: typeof entry?.id === 'string' ? entry.id : '',
                   userId: typeof entry?.userId === 'string' ? entry.userId : '',
                   score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
@@ -531,7 +532,7 @@ export async function GET(
           ...activeGame,
           state: stringifyPersistedGameState(activeGame.state),
           players: Array.isArray(activeGame.players)
-            ? activeGame.players.map((player: any) => {
+            ? activeGame.players.map((player) => {
                 const safeUser = sanitizeLobbyUserIdentity(player?.user)
                 return safeUser ? { ...player, user: safeUser } : player
               })
@@ -674,7 +675,7 @@ export async function POST(
       return NextResponse.json({ game, player: existingPlayer })
     }
 
-    let player: any
+    let player: Prisma.PlayersGetPayload<{ include: { user: { select: { id: true; username: true; isGuest: true } } } }>
     let attempt = 0
 
     while (true) {
@@ -826,12 +827,7 @@ export async function PATCH(
       )
     }
 
-    const activeGame = pickRelevantLobbyGame(lobby.games as any[]) as
-      | {
-          status: string
-          players?: Array<{ id: string }>
-        }
-      | null
+    const activeGame = pickRelevantLobbyGame(lobby.games)
     if (activeGame?.status === 'playing') {
       return NextResponse.json(
         { error: 'Lobby settings cannot be changed after game start' },

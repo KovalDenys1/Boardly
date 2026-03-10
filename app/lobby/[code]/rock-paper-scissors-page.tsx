@@ -14,7 +14,7 @@ import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
+import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
@@ -105,7 +105,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
         if (!state) return defaultState
 
-        let parsed: any = state
+        let parsed: unknown = state
         if (typeof state === 'string') {
             try {
                 parsed = JSON.parse(state)
@@ -114,22 +114,24 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             }
         }
 
-        const data = parsed?.data
+        const data = (parsed as Record<string, unknown>)?.data
         if (!data || typeof data !== 'object') {
             return defaultState
         }
 
+        const dataRecord = data as Record<string, unknown>
         return {
             ...defaultState,
-            ...data,
-            scores: typeof data.scores === 'object' && data.scores ? data.scores : {},
-            playerChoices: typeof data.playerChoices === 'object' && data.playerChoices ? data.playerChoices : {},
-            rounds: Array.isArray(data.rounds) ? data.rounds : [],
-            playersReady: Array.isArray(data.playersReady) ? data.playersReady : [],
+            mode: (dataRecord.mode as RockPaperScissorsGameData['mode']) ?? defaultState.mode,
+            gameWinner: typeof dataRecord.gameWinner === 'string' ? dataRecord.gameWinner : null,
+            scores: typeof dataRecord.scores === 'object' && dataRecord.scores ? dataRecord.scores as Record<string, number> : {},
+            playerChoices: typeof dataRecord.playerChoices === 'object' && dataRecord.playerChoices ? dataRecord.playerChoices as Record<string, RPSChoice | null> : {},
+            rounds: Array.isArray(dataRecord.rounds) ? dataRecord.rounds as RockPaperScissorsGameData['rounds'] : [],
+            playersReady: Array.isArray(dataRecord.playersReady) ? dataRecord.playersReady as string[] : [],
         }
     }, [])
 
-    const normalizeLobbyResponse = useCallback((payload: any): LobbyData | null => {
+    const normalizeLobbyResponse = useCallback((payload: LobbySnapshotLike | null | undefined): LobbyData | null => {
         const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(payload, {
             includeFinished: true,
         })
@@ -149,9 +151,9 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         }
 
         const players = Array.isArray(activeGame.players)
-            ? activeGame.players.map((player: any) => ({
-                id: player?.userId || player?.id || '',
-                name: player?.user?.username || player?.name || 'Unknown',
+            ? activeGame.players.map((player: Record<string, unknown>) => ({
+                id: String(player?.userId || player?.id || ''),
+                name: String((player?.user as Record<string, unknown>)?.username || player?.name || 'Unknown'),
             }))
             : []
 
@@ -395,7 +397,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
                     const responsePlayers = Array.isArray(payload?.game?.players)
                         ? payload.game.players
-                            .map((player: any) => ({
+                            .map((player: Record<string, unknown>) => ({
                                 id: typeof player?.id === 'string' ? player.id : '',
                                 name: typeof player?.name === 'string' ? player.name : 'Unknown',
                             }))

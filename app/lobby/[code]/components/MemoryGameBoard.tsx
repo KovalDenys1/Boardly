@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Move, Player } from '@/lib/game-engine'
 import type { MemoryCard, MemoryGameData } from '@/lib/games/memory-game'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -44,7 +44,7 @@ function getPlayerDisplayName(player: LobbyPlayer): string {
 
 function getDifficultyLabel(
   difficulty: MemoryGameData['difficulty'] | undefined,
-  t: (key: any, options?: any) => string,
+  t: (key: TranslationKeys, options?: string | Record<string, unknown>) => string,
 ): string {
   if (difficulty === 'medium') return t('lobby.create.difficultyMedium')
   if (difficulty === 'hard') return t('lobby.create.difficultyHard')

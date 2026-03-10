@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
-import { Move } from '@/lib/game-engine'
+import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
@@ -96,15 +96,15 @@ export async function POST(
       return NextResponse.json({ error: 'Player not in this game' }, { status: 403 })
     }
 
-    let parsedState: unknown
+    let parsedState: RestorableGameState
     try {
-      parsedState = parsePersistedGameState(game.state)
+      parsedState = parsePersistedGameState<RestorableGameState>(game.state)
     } catch {
       return NextResponse.json({ error: 'Corrupted game state' }, { status: 500 })
     }
 
     const liarsPartyGame = new LiarsPartyGame(gameId)
-    liarsPartyGame.restoreState(parsedState as any)
+    liarsPartyGame.restoreState(parsedState)
     const gamePlayersByUserId = new Map(
       game.players.map((entry) => [entry.userId, entry])
     )

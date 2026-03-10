@@ -8,7 +8,8 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
-import { SocketEvents } from '@/types/socket-events'
+import { SocketEvents, JoinedSpectatorsPayload, SpectatorJoinedPayload, SpectatorLeftPayload, SpectatorChatMessagePayload } from '@/types/socket-events'
+import type { Lobby, Game, GamePlayer } from '@/types/game'
 
 type SpectatorUser = {
   userId: string
@@ -16,8 +17,8 @@ type SpectatorUser = {
 }
 
 type SpectatorLobbyResponse = {
-  lobby: any
-  activeGame: any
+  lobby: Lobby
+  activeGame: Game | null
   canJoinAsPlayer: boolean
 }
 
@@ -30,12 +31,12 @@ type SpectatorChatMessage = {
   timestamp?: number
 }
 
-function isRecord(value: unknown): value is Record<string, any> {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; players: any[] }) {
-  const data = isRecord(state.data) ? state.data : {}
+function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; players: GamePlayer[] }) {
+  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
   const dice = Array.isArray(data.dice) ? data.dice : []
   const held = Array.isArray(data.held) ? data.held : []
   const scores = Array.isArray(data.scores) ? data.scores : []
@@ -45,7 +46,7 @@ function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; p
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-5 gap-2">
-        {dice.map((die: any, index: number) => (
+        {dice.map((die: unknown, index: number) => (
           <div
             key={`${index}-${die}`}
             className={`rounded-xl border p-3 text-center text-xl font-bold ${
@@ -68,11 +69,11 @@ function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; p
       <div className="rounded-xl border p-3">
         <h3 className="mb-2 font-semibold">Scorecards</h3>
         <div className="space-y-2">
-          {players.map((player: any, index: number) => {
+          {players.map((player: GamePlayer, index: number) => {
             const scorecard = isRecord(scores[index]) ? scores[index] : {}
             const filled = Object.keys(scorecard).length
             const total = Object.values(scorecard).reduce(
-              (sum, value) => sum + (typeof value === 'number' ? value : 0),
+              (sum: number, value) => sum + (typeof value === 'number' ? value : 0),
               0
             )
             return (
@@ -94,18 +95,18 @@ function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; p
 }
 
 function ReadOnlyTicTacToeView({ state }: { state: Record<string, any> }) {
-  const data = isRecord(state.data) ? state.data : {}
+  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
   const board = Array.isArray(data.board) ? data.board : []
   return (
     <div className="space-y-4">
       <div className="mx-auto grid w-fit grid-cols-3 gap-2 rounded-xl border p-3">
-        {board.flatMap((row: any, rowIndex: number) =>
-          (Array.isArray(row) ? row : [null, null, null]).map((cell: any, colIndex: number) => (
+        {board.flatMap((row: unknown, rowIndex: number) =>
+          (Array.isArray(row) ? row : [null, null, null]).map((cell: unknown, colIndex: number) => (
             <div
               key={`${rowIndex}-${colIndex}`}
               className="flex h-16 w-16 items-center justify-center rounded-lg border bg-gray-50 text-2xl font-bold dark:bg-gray-800"
             >
-              {cell || ''}
+              {typeof cell === 'string' || typeof cell === 'number' ? cell : ''}
             </div>
           ))
         )}
@@ -118,15 +119,15 @@ function ReadOnlyTicTacToeView({ state }: { state: Record<string, any> }) {
   )
 }
 
-function ReadOnlyRpsView({ state, players }: { state: Record<string, any>; players: any[] }) {
-  const data = isRecord(state.data) ? state.data : {}
-  const scores = isRecord(data.scores) ? data.scores : {}
+function ReadOnlyRpsView({ state, players }: { state: Record<string, any>; players: GamePlayer[] }) {
+  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
+  const scores = (isRecord(data.scores) ? data.scores : {}) as Record<string, unknown>
   const rounds = Array.isArray(data.rounds) ? data.rounds : []
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-2">
-        {players.map((player: any, index: number) => {
-          const playerId = player.userId || player.user?.id
+        {players.map((player: GamePlayer, index: number) => {
+          const playerId = player.userId
           return (
             <div key={player.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
               <span>{player.user?.username || player.user?.email || `Player ${index + 1}`}</span>
@@ -138,9 +139,9 @@ function ReadOnlyRpsView({ state, players }: { state: Record<string, any>; playe
       <div className="rounded-xl border p-3">
         <div className="mb-2 text-sm font-semibold">Recent Rounds ({rounds.length})</div>
         <div className="space-y-2 text-sm">
-          {rounds.slice(-5).map((round: any, index: number) => (
-            <div key={`${index}-${round.winner || 'none'}`} className="rounded-lg border px-3 py-2">
-              Winner: {round.winner || 'pending'} • choices hidden until reveal logic
+          {rounds.slice(-5).map((round: Record<string, unknown>, index: number) => (
+            <div key={`${index}-${typeof round.winner === 'string' ? round.winner : 'none'}`} className="rounded-lg border px-3 py-2">
+              Winner: {typeof round.winner === 'string' ? round.winner : 'pending'} • choices hidden until reveal logic
             </div>
           ))}
           {rounds.length === 0 && <div className="text-gray-500">No completed rounds yet</div>}
@@ -151,7 +152,7 @@ function ReadOnlyRpsView({ state, players }: { state: Record<string, any>; playe
 }
 
 function ReadOnlySpyView({ state }: { state: Record<string, any> }) {
-  const data = isRecord(state.data) ? state.data : {}
+  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
   const questionHistory = Array.isArray(data.questionHistory) ? data.questionHistory : []
   return (
     <div className="space-y-4">
@@ -168,13 +169,13 @@ function ReadOnlySpyView({ state }: { state: Record<string, any> }) {
       <div className="rounded-xl border p-3">
         <div className="mb-2 text-sm font-semibold">Recent Q&A (sanitized)</div>
         <div className="space-y-2 text-sm">
-          {questionHistory.slice(-5).map((entry: any, index: number) => (
-            <div key={`${index}-${entry.timestamp || index}`} className="rounded-lg border px-3 py-2">
+          {questionHistory.slice(-5).map((entry: Record<string, unknown>, index: number) => (
+            <div key={`${index}-${typeof entry.timestamp === 'number' ? entry.timestamp : index}`} className="rounded-lg border px-3 py-2">
               <div className="font-medium">
-                {entry.askerName || 'Player'} → {entry.targetName || 'Player'}
+                {typeof entry.askerName === 'string' ? entry.askerName : 'Player'} → {typeof entry.targetName === 'string' ? entry.targetName : 'Player'}
               </div>
-              <div className="text-gray-600 dark:text-gray-300">{entry.question || '-'}</div>
-              <div className="text-gray-500 dark:text-gray-400">{entry.answer || '-'}</div>
+              <div className="text-gray-600 dark:text-gray-300">{typeof entry.question === 'string' ? entry.question : '-'}</div>
+              <div className="text-gray-500 dark:text-gray-400">{typeof entry.answer === 'string' ? entry.answer : '-'}</div>
             </div>
           ))}
           {questionHistory.length === 0 && <div className="text-gray-500">No questions yet</div>}
@@ -191,7 +192,7 @@ function ReadOnlySpectatorBoard({
 }: {
   gameType: string
   parsedState: Record<string, any> | null
-  players: any[]
+  players: GamePlayer[]
 }) {
   if (!parsedState) {
     return <div className="text-sm text-gray-500">Game state unavailable</div>
@@ -285,13 +286,13 @@ export default function SpectatorLobbyPage() {
         socket?.emit(SocketEvents.JOIN_SPECTATORS, code)
       })
 
-      socket.on(SocketEvents.JOINED_SPECTATORS, (payload: any) => {
+      socket.on(SocketEvents.JOINED_SPECTATORS, (payload: JoinedSpectatorsPayload) => {
         if (payload?.lobbyCode !== code) return
         setSpectators(Array.isArray(payload?.spectators) ? payload.spectators : [])
         setSpectatorCount(typeof payload?.count === 'number' ? payload.count : 0)
       })
 
-      socket.on(SocketEvents.SPECTATOR_JOINED, (payload: any) => {
+      socket.on(SocketEvents.SPECTATOR_JOINED, (payload: SpectatorJoinedPayload) => {
         if (payload?.lobbyCode !== code) return
         if (typeof payload?.count === 'number') {
           setSpectatorCount(payload.count)
@@ -305,7 +306,7 @@ export default function SpectatorLobbyPage() {
         }
       })
 
-      socket.on(SocketEvents.SPECTATOR_LEFT, (payload: any) => {
+      socket.on(SocketEvents.SPECTATOR_LEFT, (payload: SpectatorLeftPayload) => {
         if (payload?.lobbyCode !== code) return
         if (typeof payload?.count === 'number') {
           setSpectatorCount(payload.count)
@@ -315,7 +316,7 @@ export default function SpectatorLobbyPage() {
         }
       })
 
-      socket.on(SocketEvents.SPECTATOR_CHAT_MESSAGE, (payload: any) => {
+      socket.on(SocketEvents.SPECTATOR_CHAT_MESSAGE, (payload: SpectatorChatMessagePayload) => {
         if (payload?.lobbyCode !== code) return
         if (typeof payload?.id !== 'string' || typeof payload?.message !== 'string') return
         setChatMessages((prev) => {
@@ -471,7 +472,7 @@ export default function SpectatorLobbyPage() {
             <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900">
               <h2 className="mb-3 text-lg font-bold">Players ({players.length}/{data.lobby.maxPlayers})</h2>
               <div className="space-y-2">
-                {players.map((player: any) => (
+                {players.map((player: GamePlayer) => (
                   <div key={player.id} className="rounded-lg border px-3 py-2 text-sm">
                     {player.user?.username || player.user?.email || 'Player'}
                   </div>

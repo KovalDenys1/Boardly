@@ -199,7 +199,7 @@ if (isMain) {
     disconnect: true,
   })
     .then((result) => {
-      logger.info('Cleanup script finished', result)
+      logger.info('Cleanup script finished', { ...result })
       process.exit(0)
     })
     .catch((error) => {

@@ -31,14 +31,14 @@ export async function POST(req: NextRequest) {
       scannedLobbies: cleanup.scannedLobbies,
       scannedActiveGames: cleanup.scannedActiveGames,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     log.error('Cleanup error', error)
 
     return NextResponse.json(
       {
         message: 'Cleanup failed',
         deactivatedCount: 0,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }
     )

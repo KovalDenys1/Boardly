@@ -805,7 +805,7 @@ function CreateLobbyPage() {
             <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-4 md:p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
               <div className="text-5xl mb-2">{gameInfo.emoji}</div>
               <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
-              <div className="text-white/80 mb-2 text-sm">{t(`games.${gameInfo.translationKey}.description` as any)}</div>
+              <div className="text-white/80 mb-2 text-sm">{t(`games.${gameInfo.translationKey}.description` as Parameters<typeof t>[0])}</div>
               <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
                   👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}

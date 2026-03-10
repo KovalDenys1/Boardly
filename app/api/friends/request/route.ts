@@ -208,7 +208,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    let whereClause: any = {
+    let whereClause: Prisma.FriendRequestsWhereInput = {
       status: 'pending'
     }
 

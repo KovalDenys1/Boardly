@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { Move, Player } from '@/lib/game-engine'
+import { Move, Player, GameEngine } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
+import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 import { notifySocket } from '@/lib/socket-url'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -331,7 +331,7 @@ export async function POST(
       }, { status: 500 })
     }
 
-    let gameEngine: any
+    let gameEngine: GameEngine
 
     // Use registry to restore the correct engine for this game type
     try {
@@ -342,7 +342,7 @@ export async function POST(
 
     if (isAutoAction) {
       const snapshot = autoActionContext.turnSnapshot
-      const serverState = gameEngine.getState() as any
+      const serverState = gameEngine.getState()
       const serverCurrentPlayer = gameEngine.getCurrentPlayer()
       const serverStateUpdatedAt = normalizeTimestamp(serverState?.updatedAt)
       const snapshotUpdatedAt = normalizeTimestamp(snapshot.updatedAt)
@@ -361,8 +361,8 @@ export async function POST(
         snapshotLastMoveAt === serverLastMoveAt
 
       const getRollsLeft =
-        typeof (gameEngine as { getRollsLeft?: () => number }).getRollsLeft === 'function'
-          ? (gameEngine as { getRollsLeft: () => number }).getRollsLeft.bind(gameEngine)
+        typeof (gameEngine as unknown as { getRollsLeft?: () => number }).getRollsLeft === 'function'
+          ? (gameEngine as unknown as { getRollsLeft: () => number }).getRollsLeft.bind(gameEngine)
           : null
       const serverRollsLeft = getRollsLeft ? getRollsLeft() : null
 
@@ -444,7 +444,7 @@ export async function POST(
         .filter((player) => !!player.user?.bot)
         .map((player) => player.userId)
     )
-    const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as any, botUserIds)
+    const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as unknown as TurnState, botUserIds)
     const statusChanged = game.status !== newState.status
     const oldStatus = game.status
 
@@ -461,8 +461,8 @@ export async function POST(
 
     // Update player scores. Scorecard is optional and available only for games that implement getScorecard().
     const getScorecard =
-      typeof (gameEngine as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
-        ? (gameEngine as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
+      typeof (gameEngine as unknown as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
+        ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
         : null
     const enginePlayers = gameEngine.getPlayers()
     const gamePlayers = game.players as GamePlayer[]

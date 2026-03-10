@@ -4,7 +4,7 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
-import { trackLobbyJoined, trackGameStarted, trackStartAloneAutoBotResult } from '@/lib/analytics'
+import { trackLobbyJoined, trackGameStarted, trackStartAloneAutoBotResult, type AnalyticsGameType } from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -12,6 +12,10 @@ import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import type { Socket } from 'socket.io-client'
+import type { Game, GamePlayer, Lobby } from '@/types/game'
+import type { GameEngine } from '@/lib/game-engine'
+import type { RollHistoryEntry } from '@/components/RollHistory'
+import type { CelebrationEvent } from '@/lib/celebrations'
 
 interface ChatMessage {
   id: string
@@ -24,15 +28,15 @@ interface ChatMessage {
 
 interface UseLobbyActionsProps {
   code: string
-  lobby: any
-  game: any | null
-  setGame: (game: any) => void
-  setLobby: (lobby: any) => void
-  setGameEngine: (engine: any) => void
+  lobby: Lobby | null
+  game: Game | null
+  setGame: (game: Game | null) => void
+  setLobby: (lobby: Lobby | null) => void
+  setGameEngine: (engine: GameEngine | null) => void
   setTimerActive: (active: boolean) => void
   setTimeLeft: (time: number) => void
-  setRollHistory: (history: any[]) => void
-  setCelebrationEvent: (event: any) => void
+  setRollHistory: (history: RollHistoryEntry[]) => void
+  setCelebrationEvent: (event: CelebrationEvent | null) => void
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   socket: Socket | null
   isGuest: boolean
@@ -62,6 +66,53 @@ interface LobbySettingsUpdatePayload {
   maxPlayers?: number
   turnTimer?: number
   allowSpectators?: boolean
+}
+
+const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
+  'yahtzee',
+  'tic_tac_toe',
+  'rock_paper_scissors',
+  'guess_the_spy',
+  'memory',
+])
+
+function normalizeAnalyticsGameType(
+  value: unknown,
+  fallback: AnalyticsGameType = DEFAULT_GAME_TYPE,
+): AnalyticsGameType {
+  if (typeof value === 'string' && ANALYTICS_GAME_TYPES.has(value as AnalyticsGameType)) {
+    return value as AnalyticsGameType
+  }
+
+  return fallback
+}
+
+function readFiniteNumber(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function coerceGame(value: unknown): Game | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const candidate = value as Partial<Game> & {
+    state?: unknown
+    players?: unknown
+    currentTurn?: unknown
+  }
+
+  if (
+    typeof candidate.id !== 'string' ||
+    typeof candidate.status !== 'string' ||
+    !('state' in candidate) ||
+    !Array.isArray(candidate.players) ||
+    typeof candidate.currentTurn !== 'number'
+  ) {
+    return null
+  }
+
+  return candidate as Game
 }
 
 export function useLobbyActions(props: UseLobbyActionsProps) {
@@ -109,26 +160,29 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
 
       const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data)
-      setLobby(lobbyPayload)
-      if (lobbyPayload?.code) {
+      const normalizedLobby = (lobbyPayload as Lobby | null) ?? null
+      const normalizedGame = coerceGame(activeGame)
+
+      setLobby(normalizedLobby)
+      if (normalizedLobby?.code) {
         finalizePendingLobbyCreateMetric({
-          lobbyCode: lobbyPayload.code,
-          fallbackGameType: lobbyPayload.gameType || DEFAULT_GAME_TYPE,
+          lobbyCode: normalizedLobby.code,
+          fallbackGameType: normalizedLobby.gameType || DEFAULT_GAME_TYPE,
         })
       }
 
-      if (activeGame) {
-        setGame(activeGame)
-        if (activeGame.state) {
+      if (normalizedGame) {
+        setGame(normalizedGame)
+        if (normalizedGame.state) {
           try {
             const parsedState =
-              typeof activeGame.state === 'string'
-                ? JSON.parse(activeGame.state)
-                : activeGame.state
+              typeof normalizedGame.state === 'string'
+                ? JSON.parse(normalizedGame.state)
+                : normalizedGame.state
 
             // Create the correct engine based on game type
-            const gt = data.lobby.gameType || DEFAULT_GAME_TYPE
-            const engine = await restoreGameEngineClient(gt, activeGame.id, parsedState)
+            const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
+            const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
             setGameEngine(engine)
           } catch (parseError) {
             clientLogger.error('Failed to parse game state:', parseError)
@@ -136,8 +190,8 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
           }
         }
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
@@ -205,9 +259,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         botName,
         botDifficulty,
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (options?.auto) {
-        clientLogger.warn('Auto bot addition skipped:', err.message)
+        clientLogger.warn('Auto bot addition skipped:', err instanceof Error ? err.message : String(err))
         return { success: false }
       }
 
@@ -270,7 +324,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
-        gameType: lobby?.gameType || DEFAULT_GAME_TYPE,
+        gameType: normalizeAnalyticsGameType(lobby?.gameType),
         isPrivate: !!lobby?.isPrivate,
       })
 
@@ -283,13 +337,13 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         type: 'system'
       }
       setChatMessages(prev => [...prev, joinMessage])
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     }
   }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
   const handleStartGame = useCallback(async () => {
-    if (!game) return
+    if (!game || !lobby?.id) return
     if (startGameInFlightRef.current) {
       clientLogger.warn('Start game already in progress, ignoring duplicate request', { code })
       return
@@ -303,7 +357,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     try {
       setStartingGame(true)
-      const requirements = getLobbyPlayerRequirements(lobby?.gameType)
+      const lobbyGameType =
+        typeof lobby.gameType === 'string' ? lobby.gameType : DEFAULT_GAME_TYPE
+      const requirements = getLobbyPlayerRequirements(lobbyGameType)
       const gameType = requirements.gameType || DEFAULT_GAME_TYPE
       const supportsBots = requirements.supportsBots
       const requiredMinPlayers = requirements.minPlayersRequired
@@ -382,12 +438,15 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         body: JSON.stringify({
           gameType,
           lobbyId: lobby.id,
-          config: { maxPlayers: lobby.maxPlayers, minPlayers: requiredMinPlayers }
+          config: {
+            maxPlayers: readFiniteNumber(lobby.maxPlayers, 4),
+            minPlayers: requiredMinPlayers,
+          }
         }),
       })
 
       if (!res.ok) {
-        let errorPayload: any = null
+        let errorPayload: { error?: string; details?: string; [key: string]: unknown } | null = null
 
         try {
           errorPayload = await res.json()
@@ -422,19 +481,19 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
       // Track game start
       const players = data.game.players || []
-      const botCount = players.filter((p: any) => p.user?.bot).length
+      const botCount = players.filter((p: GamePlayer) => p.user?.bot).length
       trackGameStarted({
         lobbyCode: code,
-        gameType: lobby?.gameType || DEFAULT_GAME_TYPE,
+        gameType: normalizeAnalyticsGameType(lobby.gameType),
         isPrivate: !!lobby?.isPrivate,
-        maxPlayers: lobby?.maxPlayers || 4,
+        maxPlayers: readFiniteNumber(lobby.maxPlayers, 4),
         playerCount: players.length,
         hasBot: botCount > 0,
         botCount,
       })
       reportAutoBotFlowResult(true, 'started')
 
-      const turnTimerLimit = lobby?.turnTimer || 60
+      const turnTimerLimit = readFiniteNumber(lobby.turnTimer, 60)
       setTimerActive(true)
       setTimeLeft(turnTimerLimit)
 
@@ -460,7 +519,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         loadLobbyRef.current().catch(err => clientLogger.error('Failed to reload lobby:', err))
       }
       // Sound will play automatically via socket event handler
-    } catch (error: any) {
+    } catch (error: unknown) {
       reportAutoBotFlowResult(false, 'start_failed')
       showToast.dismiss('start-game')
       showToast.errorFrom(error, 'toast.gameStartFailed')

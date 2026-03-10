@@ -26,6 +26,7 @@ export interface GamePlayer {
   user?: {
     id: string
     username: string
+    email?: string
     bot?: {
       id: string
       userId: string
@@ -81,6 +82,26 @@ export interface ChatMessagePayload {
 export interface PlayerTypingPayload {
   userId: string
   username: string
+}
+
+// Lobby object shape (shared between hooks and pages)
+export interface Lobby {
+  id: string
+  gameType: string
+  isPrivate?: boolean
+  maxPlayers?: number
+  turnTimer?: number
+  name?: string
+  code?: string
+  status?: string
+  hostId?: string
+  creatorId?: string
+  allowSpectators?: boolean
+  isActive?: boolean
+  games?: Game[]
+  creator?: { username?: string; email?: string }
+  spectatorCount?: number
+  [key: string]: unknown
 }
 
 // Bot move visualization (game-agnostic)

@@ -45,7 +45,7 @@ interface GameResult {
   finishedAt: string | null
   abandonedAt: string | null
   players: Player[]
-  state: any // Game-specific state (Yahtzee scorecard, etc.)
+  state: Record<string, unknown> // Game-specific state (Yahtzee scorecard, etc.)
 }
 
 interface GameResultsModalProps {
@@ -115,7 +115,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
   function renderYahtzeeScorecard() {
     if (!game || game.gameType !== 'yahtzee' || !game.state?.gameData) return null
 
-    const gameData = game.state.gameData
+    const gameData = game.state.gameData as Record<string, unknown>
     const categories: YahtzeeCategory[] = [...ALL_CATEGORIES]
 
     return (
@@ -146,8 +146,10 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
                     {t(`yahtzee.categories.${category}`)}
                   </td>
                   {game.players.map((player) => {
-                    const playerData = gameData.players?.[player.id]
-                    const score = playerData?.scores?.[category]
+                    const allPlayersData = gameData.players as Record<string, Record<string, unknown>> | undefined
+                    const playerData = allPlayersData?.[player.id]
+                    const scoresData = playerData?.scores as Record<string, unknown> | undefined
+                    const score = scoresData?.[category] as number | null | undefined
                     return (
                       <td
                         key={player.id}

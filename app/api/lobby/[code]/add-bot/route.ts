@@ -61,7 +61,7 @@ export async function POST(
       return NextResponse.json({ error: 'Only lobby creator can add bots' }, { status: 403 })
     }
 
-    const activeGame = lobby.games.find((g: any) => ['waiting', 'playing'].includes(g.status))
+    const activeGame = lobby.games.find((g) => ['waiting', 'playing'].includes(g.status))
 
     if (!activeGame) {
       return NextResponse.json({ error: 'No active game in lobby' }, { status: 400 })
@@ -86,7 +86,7 @@ export async function POST(
 
     // Allow multiple bots. Generate a unique display name per difficulty profile
     // so each bot maps to a distinct bot user.
-    const sameDifficultyBotCount = activeGame.players.filter((p: any) => {
+    const sameDifficultyBotCount = activeGame.players.filter((p) => {
       const bot = p.user?.bot
       return !!bot && bot.botType === lobby.gameType && bot.difficulty === botDifficulty
     }).length

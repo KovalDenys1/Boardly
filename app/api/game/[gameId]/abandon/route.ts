@@ -80,7 +80,7 @@ export async function POST(
       where: { id: gameId },
       data: {
         status: 'abandoned',
-        abandonedAt: new Date() as any // TypeScript cache issue - field exists in schema
+        abandonedAt: new Date() // TypeScript cache issue - field exists in schema
       }
     })
 
@@ -96,7 +96,7 @@ export async function POST(
       gameId,
       humanPlayersLeft: humanPlayersCount
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     log.error('Abandon game error', error)
     return NextResponse.json(
       { error: 'Failed to abandon game' },

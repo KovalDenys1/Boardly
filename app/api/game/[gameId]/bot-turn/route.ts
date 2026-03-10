@@ -6,10 +6,11 @@ import { Move } from '@/lib/game-engine'
 import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
-import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
+import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { type BaseBotActionEvent } from '@/lib/bots/core/bot-types'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
@@ -263,9 +264,9 @@ export async function POST(
     log.info('Bot difficulty', { difficulty: botDifficulty })
 
     // Helper function to broadcast bot actions in real-time
-    const broadcastBotAction = async (event: any) => {
+    const broadcastBotAction = async (event: BaseBotActionEvent) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', event)
+      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', { ...event })
     }
 
     // Dispatch to the appropriate bot executor based on game type
@@ -294,10 +295,10 @@ export async function POST(
           const newState = gameEngine.getState()
           const botUserIds = new Set(
             game.players
-              .filter((player: any) => !!player.user?.bot)
-              .map((player: any) => player.userId)
+              .filter((player) => !!player.user?.bot)
+              .map((player) => player.userId)
           )
-          const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as any, botUserIds)
+          const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as unknown as TurnState, botUserIds)
           const statusChanged = game.status !== newState.status
           const oldStatus = game.status
           const lastMoveAtDate = typeof newState.lastMoveAt === 'number' && Number.isFinite(newState.lastMoveAt)
@@ -399,13 +400,17 @@ export async function POST(
               })
             })
 
-            for (const scoreUpdate of changedPlayerUpdates) {
+          // Update player scores - do this sequentially to avoid connection issues
+          // Vercel serverless + Supabase pooler can have timeout issues with parallel queries
+          for (const player of gameEngine.getPlayers()) {
+            const dbPlayer = game.players.find((p) => p.userId === player.id)
+            if (dbPlayer) {
               try {
                 await prisma.players.update({
                   where: { id: scoreUpdate.id },
                   data: {
-                    score: scoreUpdate.score,
-                    scorecard: scoreUpdate.scorecard,
+                    score: player.score || 0,
+                    scorecard: JSON.stringify((gameEngine as { getScorecard?: (id: string) => unknown }).getScorecard?.(player.id) ?? {}),
                   },
                 }).catch(async () => {
                   // Retry once on connection error
@@ -414,8 +419,8 @@ export async function POST(
                   return prisma.players.update({
                     where: { id: scoreUpdate.id },
                     data: {
-                      score: scoreUpdate.score,
-                      scorecard: scoreUpdate.scorecard,
+                      score: player.score || 0,
+                      scorecard: JSON.stringify((gameEngine as { getScorecard?: (id: string) => unknown }).getScorecard?.(player.id) ?? {}),
                     },
                   })
                 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createGameEngine, getGameMetadata, isSupportedGameType } from '@/lib/game-registry'
+import { type GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
@@ -320,7 +321,7 @@ export async function POST(request: NextRequest) {
     const gameEngine = createGameEngine(
       gameType,
       `game_${Date.now()}`,
-      Object.keys(startConfig).length > 0 ? (startConfig as any) : undefined
+      Object.keys(startConfig).length > 0 ? (startConfig as Partial<GameConfig>) : undefined
     )
 
     // Add players to the game - sort so bots go last

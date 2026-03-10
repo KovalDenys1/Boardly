@@ -5,10 +5,11 @@ import { YahtzeeCategory } from '@/lib/yahtzee'
 import { CelebrationEvent } from '@/lib/celebrations'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { sounds } from '@/lib/sounds'
+import type { Game } from '@/types/game'
 
 interface GameBoardProps {
   gameEngine: YahtzeeGame
-  game: any
+  game: Game
   isMyTurn: boolean
   timeLeft: number
   turnTimerLimit: number // Total time limit for percentage calculation

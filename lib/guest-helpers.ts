@@ -19,7 +19,7 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
 
         if (existingGuest) {
             // Update last active timestamp and username only if it changed
-            const updateData: any = {
+            const updateData: { lastActiveAt: Date; username?: string } = {
                 lastActiveAt: new Date(),
             }
 
@@ -87,9 +87,9 @@ export async function getOrCreateGuestUser(guestId: string, guestName: string) {
 
             log.info('Created new guest user', { guestId, username: newGuest.username })
             return newGuest
-        } catch (createError: any) {
+        } catch (createError: unknown) {
             // Handle race condition: if username was taken between check and create
-            if (createError?.code === 'P2002') {
+            if (typeof createError === 'object' && createError !== null && (createError as Record<string, unknown>).code === 'P2002') {
                 log.warn('Race condition detected during guest user creation, retrying with unique suffix', {
                     guestId,
                     attemptedUsername: uniqueUsername

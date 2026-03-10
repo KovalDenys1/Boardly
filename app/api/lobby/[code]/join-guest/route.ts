@@ -102,12 +102,12 @@ export async function POST(
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
-    const activeGame = pickRelevantLobbyGame(lobby.games as any[])
+    const activeGame = pickRelevantLobbyGame(lobby.games)
 
     // Check if guest is already in the lobby
     if (activeGame) {
       const existingPlayer = activeGame.players.find(
-        (p: any) => p.userId === guestUser.id
+        (p) => p.userId === guestUser.id
       )
       if (existingPlayer) {
         return NextResponse.json(
@@ -201,7 +201,7 @@ export async function POST(
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     log.error('Error joining as guest', error)
     return NextResponse.json(
       { error: 'Failed to join as guest' },

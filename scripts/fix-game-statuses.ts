@@ -13,6 +13,7 @@
  *   npm run fix-game-statuses --fix  # Actually fix the games
  */
 
+import { GameStatus } from '@prisma/client'
 import { prisma } from '../lib/db'
 import { parsePersistedGameState } from '../lib/persisted-game-state'
 
@@ -134,7 +135,7 @@ async function fixStatusMismatches(mismatches: GameStateMismatch[], dryRun: bool
             await prisma.games.update({
                 where: { id: mismatch.id },
                 data: {
-                    status: mismatch.stateStatus as any, // Cast to avoid TypeScript issues
+                    status: mismatch.stateStatus as GameStatus,
                     updatedAt: new Date(),
                 },
             })

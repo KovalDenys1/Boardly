@@ -71,7 +71,7 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
     },
 
     async updateUser(user: Partial<AdapterUser> & Pick<AdapterUser, 'id'>) {
-      const data: any = {}
+      const data: Partial<{ username: string | null; email: string | null; emailVerified: Date | null; image: string | null }> = {}
       if (user.name !== undefined) data.username = user.name
       if (user.email !== undefined) data.email = user.email
       if (user.emailVerified !== undefined) data.emailVerified = user.emailVerified
