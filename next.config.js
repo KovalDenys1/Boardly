@@ -64,7 +64,7 @@ const nextConfig = {
   // which causes React Refresh HMR to register an undefined module factory.
   turbopack: {
     resolveAlias: {
-      'use-sync-external-store/shim': path.resolve(__dirname, 'lib/shims/use-sync-external-store-shim.js'),
+      'use-sync-external-store/shim': './lib/shims/use-sync-external-store-shim.js',
     },
   },
 
