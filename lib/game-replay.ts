@@ -1,11 +1,13 @@
 import { Prisma } from '@prisma/client'
-import { gzipSync, gunzipSync } from 'node:zlib'
+import { promisify } from 'node:util'
+import { gunzipSync, gzip } from 'node:zlib'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 
 const log = apiLogger('game-replay')
 const DEFAULT_STATE_ENCODING = 'gzip-base64'
 const MAX_SNAPSHOTS_PER_GAME = 500
+const gzipAsync = promisify(gzip)
 
 export interface ReplaySnapshotWriteInput {
   gameId: string
@@ -46,13 +48,13 @@ function toReplayActionPayload(value: unknown): Prisma.InputJsonValue | undefine
   }
 }
 
-function encodeState(state: unknown): {
+async function encodeState(state: unknown): Promise<{
   stateCompressed: string
   stateEncoding: string
   stateSize: number
-} {
+}> {
   const rawState = JSON.stringify(state ?? null)
-  const compressed = gzipSync(Buffer.from(rawState, 'utf-8')).toString('base64')
+  const compressed = (await gzipAsync(Buffer.from(rawState, 'utf-8'))).toString('base64')
 
   return {
     stateCompressed: compressed,
@@ -81,7 +83,7 @@ export async function appendGameReplaySnapshot(input: ReplaySnapshotWriteInput):
   if (!input.gameId || !input.actionType) return
 
   try {
-    const encodedState = encodeState(input.state)
+    const encodedState = await encodeState(input.state)
     const safeActionPayload = toReplayActionPayload(input.actionPayload)
 
     await prisma.$transaction(async (tx) => {

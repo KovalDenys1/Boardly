@@ -3,7 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { buildOperationalEventRecord, OPERATIONAL_EVENT_NAMES } from '@/lib/operational-events'
+import {
+  buildOperationalEventRecord,
+  OPERATIONAL_EVENT_NAMES,
+  type OperationalEventPayload,
+  type OperationalPayloadValue,
+} from '@/lib/operational-events'
 import { rateLimit } from '@/lib/rate-limit'
 
 const log = apiLogger('POST /api/ops/events')
@@ -14,9 +19,10 @@ const limiter = rateLimit({
 })
 
 const payloadValueSchema = z.union([z.string(), z.number().finite(), z.boolean(), z.null()])
+const payloadSchema = z.record(z.string(), payloadValueSchema)
 const requestSchema = z.object({
   eventName: z.enum(OPERATIONAL_EVENT_NAMES),
-  payload: z.record(payloadValueSchema).default({}),
+  payload: payloadSchema.default({}),
   eventAt: z.union([z.number(), z.string()]).optional(),
 })
 
@@ -45,6 +51,12 @@ function resolveOccurredAt(rawEventAt: string | number | undefined): Date {
   return new Date(timestamp)
 }
 
+function toOperationalEventPayload(
+  payload: Record<string, OperationalPayloadValue>
+): OperationalEventPayload {
+  return payload
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rateLimitResult = await limiter(request)
@@ -67,7 +79,7 @@ export async function POST(request: NextRequest) {
     const occurredAt = resolveOccurredAt(parsed.data.eventAt)
     const normalized = buildOperationalEventRecord({
       eventName: parsed.data.eventName,
-      payload: parsed.data.payload,
+      payload: toOperationalEventPayload(parsed.data.payload),
     })
 
     await prisma.operationalEvents.create({

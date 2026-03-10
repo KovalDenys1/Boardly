@@ -10,6 +10,7 @@ import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/
 import { getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
+import { type RestorableGameState } from '@/lib/game-engine'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
@@ -20,6 +21,11 @@ import {
   verifyLobbyPassword,
 } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import {
+  parsePersistedGameState,
+  stringifyPersistedGameState,
+  toPersistedGameStateInput,
+} from '@/lib/persisted-game-state'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
@@ -128,7 +134,7 @@ export async function GET(
     }
 
     const { password, ...safeLobby } = lobby
-    const activeGame = pickRelevantLobbyGame(safeLobby.games as any[], { includeFinished }) as any | null
+    const activeGame = pickRelevantLobbyGame(safeLobby.games, { includeFinished })
 
     if (
       activeGame &&
@@ -138,9 +144,9 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = JSON.parse(activeGame.state)
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const telephoneGame = new TelephoneDoodleGame(activeGame.id)
-          telephoneGame.restoreState(parsedState as any)
+          telephoneGame.restoreState(parsedState)
 
           const timeoutResolution = telephoneGame.applyTimeoutFallback(turnTimerSeconds)
           if (timeoutResolution.changed) {
@@ -153,7 +159,7 @@ export async function GET(
                 updatedAt: activeGame.updatedAt,
               },
               data: {
-                state: JSON.stringify(nextState),
+                state: toPersistedGameStateInput(nextState),
                 status: nextState.status,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
@@ -170,7 +176,7 @@ export async function GET(
               }
 
               const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: any) => ({
+                .map((entry: Record<string, unknown>) => ({
                   id: typeof entry?.id === 'string' ? entry.id : '',
                   userId: typeof entry?.userId === 'string' ? entry.userId : '',
                   score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
@@ -267,9 +273,9 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = JSON.parse(activeGame.state)
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const liarsPartyGame = new LiarsPartyGame(activeGame.id)
-          liarsPartyGame.restoreState(parsedState as any)
+          liarsPartyGame.restoreState(parsedState)
 
           const timeoutResolution = liarsPartyGame.applyTimeoutFallback(turnTimerSeconds)
           if (timeoutResolution.changed) {
@@ -282,7 +288,7 @@ export async function GET(
                 updatedAt: activeGame.updatedAt,
               },
               data: {
-                state: JSON.stringify(nextState),
+                state: toPersistedGameStateInput(nextState),
                 status: nextState.status,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
@@ -299,7 +305,7 @@ export async function GET(
               }
 
               const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: any) => ({
+                .map((entry: Record<string, unknown>) => ({
                   id: typeof entry?.id === 'string' ? entry.id : '',
                   userId: typeof entry?.userId === 'string' ? entry.userId : '',
                   score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
@@ -398,9 +404,9 @@ export async function GET(
       const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
       if (turnTimerSeconds > 0) {
         try {
-          const parsedState = JSON.parse(activeGame.state)
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const fakeArtistGame = new FakeArtistGame(activeGame.id)
-          fakeArtistGame.restoreState(parsedState as any)
+          fakeArtistGame.restoreState(parsedState)
 
           const timeoutResolution = fakeArtistGame.applyTimeoutFallback(turnTimerSeconds)
           if (timeoutResolution.changed) {
@@ -413,7 +419,7 @@ export async function GET(
                 updatedAt: activeGame.updatedAt,
               },
               data: {
-                state: JSON.stringify(nextState),
+                state: toPersistedGameStateInput(nextState),
                 status: nextState.status,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 updatedAt: new Date(),
@@ -430,7 +436,7 @@ export async function GET(
               }
 
               const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: any) => ({
+                .map((entry: Record<string, unknown>) => ({
                   id: typeof entry?.id === 'string' ? entry.id : '',
                   userId: typeof entry?.userId === 'string' ? entry.userId : '',
                   score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
@@ -524,8 +530,9 @@ export async function GET(
     const sanitizedActiveGame = activeGame
       ? {
           ...activeGame,
+          state: stringifyPersistedGameState(activeGame.state),
           players: Array.isArray(activeGame.players)
-            ? activeGame.players.map((player: any) => {
+            ? activeGame.players.map((player) => {
                 const safeUser = sanitizeLobbyUserIdentity(player?.user)
                 return safeUser ? { ...player, user: safeUser } : player
               })
@@ -555,7 +562,7 @@ export async function GET(
     })
     return NextResponse.json({
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      code: 'LOBBY_FETCH_FAILED',
     }, { status: 500 })
   }
 }
@@ -638,7 +645,7 @@ export async function POST(
         data: {
           lobbyId: lobby.id,
           gameType: toPersistedGameType(runtimeGameType),
-          state: JSON.stringify(initialState),
+          state: toPersistedGameStateInput(initialState),
           status: 'waiting',
         },
       })
@@ -668,7 +675,7 @@ export async function POST(
       return NextResponse.json({ game, player: existingPlayer })
     }
 
-    let player: any
+    let player: Prisma.PlayersGetPayload<{ include: { user: { select: { id: true; username: true; isGuest: true } } } }>
     let attempt = 0
 
     while (true) {
@@ -762,7 +769,7 @@ export async function POST(
     })
     return NextResponse.json({
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+      code: 'LOBBY_JOIN_FAILED',
     }, { status: 500 })
   }
 }
@@ -820,12 +827,7 @@ export async function PATCH(
       )
     }
 
-    const activeGame = pickRelevantLobbyGame(lobby.games as any[]) as
-      | {
-          status: string
-          players?: Array<{ id: string }>
-        }
-      | null
+    const activeGame = pickRelevantLobbyGame(lobby.games)
     if (activeGame?.status === 'playing') {
       return NextResponse.json(
         { error: 'Lobby settings cannot be changed after game start' },
@@ -909,7 +911,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error: 'Failed to update lobby settings',
-        details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+        code: 'LOBBY_UPDATE_FAILED',
       },
       { status: 500 }
     )

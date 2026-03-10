@@ -2,6 +2,8 @@
 
 ## Local development
 
+For a full local-only walkthrough without hosted services, start with `docs/LOCAL_SETUP.md`.
+
 ### Prerequisites
 
 - Node.js 18+
@@ -72,6 +74,7 @@ Recommended:
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
+- `MCP_POSTGRES_CA_CERT_PATH` (optional for hosted/TLS PostgreSQL used by MCP scripts; not needed for local localhost PostgreSQL)
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
@@ -153,6 +156,26 @@ Recommended verification after each phase:
 - one realtime gameplay flow (create/join/play/reconnect) if gameplay timestamps changed
 
 ## Common troubleshooting
+
+### MCP Postgres health check fails with `self-signed certificate in certificate chain`
+
+For hosted PostgreSQL with a custom CA chain, export the CA bundle once and write `MCP_POSTGRES_CA_CERT_PATH` into your env file:
+
+```bash
+bash scripts/export-postgres-mcp-ca.sh
+```
+
+Windows PowerShell equivalent:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/export-postgres-mcp-ca.ps1
+```
+
+Then rerun:
+
+```bash
+bash scripts/codex-mcp-health-check.sh
+```
 
 ### Render build hangs after Prisma datasource log
 

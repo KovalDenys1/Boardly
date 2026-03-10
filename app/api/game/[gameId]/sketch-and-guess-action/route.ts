@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { SketchAndGuessGame } from '@/lib/games/sketch-and-guess-game'
-import { Move } from '@/lib/game-engine'
+import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { sketchAndGuessActionRequestSchema } from '@/lib/validation/sketch-and-guess'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -95,15 +96,15 @@ export async function POST(
       return NextResponse.json({ error: 'Player not in this game' }, { status: 403 })
     }
 
-    let parsedState: unknown
+    let parsedState: RestorableGameState
     try {
-      parsedState = JSON.parse(game.state)
+      parsedState = parsePersistedGameState<RestorableGameState>(game.state)
     } catch {
       return NextResponse.json({ error: 'Corrupted game state' }, { status: 500 })
     }
 
     const sketchGame = new SketchAndGuessGame(gameId)
-    sketchGame.restoreState(parsedState as any)
+    sketchGame.restoreState(parsedState)
 
     const gamePlayersByUserId = new Map(
       game.players.map((entry) => [entry.userId, entry])
@@ -125,7 +126,7 @@ export async function POST(
       await prisma.games.update({
         where: { id: gameId },
         data: {
-          state: JSON.stringify(nextState),
+          state: toPersistedGameStateInput(nextState),
           status: nextState.status,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
           updatedAt: new Date(),

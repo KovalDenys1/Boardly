@@ -13,7 +13,7 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
   const { t } = useTranslation()
   const [showFilters, setShowFilters] = useState(() => hasActiveLobbyFilters(filters))
 
-  const handleFilterChange = (key: keyof LobbyFilterOptions, value: any) => {
+  const handleFilterChange = (key: keyof LobbyFilterOptions, value: LobbyFilterOptions[typeof key]) => {
     onFiltersChange({ ...filters, [key]: value })
   }
 

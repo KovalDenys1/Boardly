@@ -203,7 +203,7 @@ export const sounds = {
         toggle: () => false,
         isEnabled: () => false,
         hasUserInteracted: () => false,
-      } as any
+      } as unknown as SoundManager
     }
     
     if (!soundManagerInstance) {
@@ -238,6 +238,3 @@ export const sounds = {
     return this.instance.hasUserInteracted()
   },
 }
-
-// Deprecated: Use 'sounds' instead
-export const soundManager = sounds

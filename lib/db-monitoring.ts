@@ -241,7 +241,7 @@ class DatabaseMonitor {
   /**
    * Get detailed connection pool info (PostgreSQL specific)
    */
-  async getConnectionPoolInfo(): Promise<any> {
+  async getConnectionPoolInfo(): Promise<unknown> {
     try {
       const result = await prisma.$queryRaw`
         SELECT 

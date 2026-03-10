@@ -99,7 +99,7 @@ const io = new SocketIOServer(server, {
   allowUpgrades: true, // Allow upgrade from polling to websocket after connection
   upgradeTimeout: 30000, // 30 seconds for upgrade
   maxHttpBufferSize: 1e6, // 1MB - sufficient for game data
-  allowEIO3: true, // Support older clients
+  allowEIO3: false,
 })
 
 const onlinePresence = createOnlinePresence(io, logger)

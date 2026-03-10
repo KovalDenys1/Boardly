@@ -10,7 +10,7 @@ import {
   isSocketAuthorizedForLobby,
   markSocketLobbyAuthorized,
   revokeSocketLobbyAuthorization,
-} from '../../lib/socket/socket-server-helpers'
+} from './socket-server-helpers'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
 
 type TestSocket = {

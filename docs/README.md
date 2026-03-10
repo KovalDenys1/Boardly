@@ -5,12 +5,14 @@ This folder contains the canonical project documentation.
 ## Core docs
 
 - `docs/PROJECT_VISION.md` - product goals, long-term direction, and decision principles
+- `docs/LOCAL_SETUP.md` - full local-only setup with local PostgreSQL and local app/socket services
 - `docs/ARCHITECTURE.md` - technical architecture, data model, websocket flow, game engine patterns
 - `docs/OPERATIONS.md` - environment setup, local runbook, deployment, troubleshooting
 - `docs/ROADMAP.md` - active priorities and near-term milestones
 - `docs/CONTRIBUTING.md` - workflow and engineering standards
 - `docs/SECURITY_MODEL.md` - auth boundaries, RLS posture, secrets policy
 - `docs/REALTIME_TELEMETRY.md` - reconnect telemetry events, dashboards, SLOs, alerts
+- `docs/DEPENDENCY_UPGRADE_PLAN.md` - staged dependency maintenance plan and migration sequencing
 
 ## Specialized docs
 

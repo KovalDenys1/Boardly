@@ -12,7 +12,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { Game } from '@/types/game'
+import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import TicTacToeGameBoard from '@/components/TicTacToeGameBoard'
@@ -40,6 +40,29 @@ const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
+function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState | null {
+    if (!payload || typeof payload !== 'object') {
+        return null
+    }
+
+    const updatePayload = payload as GameUpdatePayload
+    if (updatePayload.action !== 'state-change') {
+        return null
+    }
+
+    const rawPayload = updatePayload.payload
+    if (!rawPayload || typeof rawPayload !== 'object') {
+        return null
+    }
+
+    const nestedState = (rawPayload as Record<string, unknown>).state
+    if (nestedState && typeof nestedState === 'object') {
+        return nestedState as AnyGameState
+    }
+
+    return rawPayload as AnyGameState
+}
+
 export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
@@ -56,6 +79,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const isLeavingLobbyRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
+    const activeGameIdRef = React.useRef<string | null>(null)
     const leaveStartedAtRef = React.useRef<number | null>(null)
     const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
     const leaveApiStatusCodeRef = React.useRef<number | null>(null)
@@ -126,6 +150,39 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
+
+    const applyAuthoritativeState = useCallback(
+        (gameId: string, authoritativeState: unknown, statusOverride?: Game['status']): boolean => {
+            if (!authoritativeState || typeof authoritativeState !== 'object') {
+                return false
+            }
+
+            const authoritativeEngine = new TicTacToeGame(gameId)
+            authoritativeEngine.restoreState(authoritativeState as AnyGameState)
+            const resolvedState = authoritativeEngine.getState()
+
+            setGameEngine(authoritativeEngine)
+            setGame((prevGame) => {
+                if (!prevGame || prevGame.id !== gameId) {
+                    return prevGame
+                }
+
+                return {
+                    ...prevGame,
+                    status: (statusOverride ?? resolvedState.status) as Game['status'],
+                    currentTurn: resolvedState.currentPlayerIndex,
+                    state: JSON.stringify(authoritativeState),
+                }
+            })
+
+            return true
+        },
+        []
+    )
+
+    useEffect(() => {
+        activeGameIdRef.current = game?.id ?? null
+    }, [game?.id])
 
     // Load lobby data
     const loadLobby = useCallback(async () => {
@@ -272,19 +329,8 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             }
 
             const authoritativeState = data?.game?.state
-            if (authoritativeState) {
-                const authoritativeEngine = new TicTacToeGame(game.id)
-                authoritativeEngine.restoreState(authoritativeState)
-                setGameEngine(authoritativeEngine)
-                setGame((prevGame) => {
-                    if (!prevGame) return prevGame
-                    return {
-                        ...prevGame,
-                        status: data?.game?.status ?? prevGame.status,
-                        currentTurn: authoritativeState.currentPlayerIndex,
-                        state: JSON.stringify(authoritativeState),
-                    }
-                })
+            if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) {
+                await loadLobby()
             }
 
             trackMoveSubmitApplied({
@@ -335,7 +381,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         } finally {
             setIsMoveSubmitting(false)
         }
-    }, [gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
 
     // Socket connection
     useEffect(() => {
@@ -379,10 +425,18 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 newSocket.emit('join-lobby', code)
             })
 
-            newSocket.on('game-update', (payload: any) => {
+            newSocket.on('game-update', (payload: Record<string, unknown>) => {
                 clientLogger.log('📡 Game update received:', payload)
-                // Reload to get latest state from server
-                loadLobby()
+                const activeGameId = activeGameIdRef.current
+                const directState = extractAuthoritativeStateFromGameUpdate(payload)
+
+                if (directState && activeGameId) {
+                    applyAuthoritativeState(activeGameId, directState)
+                    return
+                }
+
+                // Fallback for non-state updates or before the local game is initialized.
+                void loadLobby()
             })
 
             newSocket.on('disconnect', () => {
@@ -403,7 +457,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 activeSocket?.close()
             }
         }
-    }, [status, isGuest, guestToken, code, loadLobby])
+    }, [applyAuthoritativeState, status, isGuest, guestToken, code, loadLobby])
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false
@@ -530,20 +584,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 }
 
                 const authoritativeState = data?.game?.state
-                if (authoritativeState) {
-                    const authoritativeEngine = new TicTacToeGame(game.id)
-                    authoritativeEngine.restoreState(authoritativeState)
-                    setGameEngine(authoritativeEngine)
-                    setGame((prevGame) => {
-                        if (!prevGame) return prevGame
-                        return {
-                            ...prevGame,
-                            status: data?.game?.status ?? prevGame.status,
-                            currentTurn: authoritativeState.currentPlayerIndex,
-                            state: JSON.stringify(authoritativeState),
-                        }
-                    })
-                } else {
+                if (!authoritativeState || !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) {
                     await loadLobby()
                 }
 
@@ -607,7 +648,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         } finally {
             setIsRematchSubmitting(false)
         }
-    }, [code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router, isGuest])
+    }, [applyAuthoritativeState, code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router, isGuest])
 
     if (loading) {
         return (

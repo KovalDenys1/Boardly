@@ -18,6 +18,7 @@ import {
   verifyLobbyPassword,
 } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 const joinGuestSchema = z.object({
@@ -101,12 +102,12 @@ export async function POST(
     const guestName = guestUser.username || requestedGuestName
     const guestToken = createGuestToken(guestUser.id, guestName)
 
-    const activeGame = pickRelevantLobbyGame(lobby.games as any[])
+    const activeGame = pickRelevantLobbyGame(lobby.games)
 
     // Check if guest is already in the lobby
     if (activeGame) {
       const existingPlayer = activeGame.players.find(
-        (p: any) => p.userId === guestUser.id
+        (p) => p.userId === guestUser.id
       )
       if (existingPlayer) {
         return NextResponse.json(
@@ -141,7 +142,7 @@ export async function POST(
           lobbyId: lobby.id,
           gameType: toPersistedGameType(runtimeGameType),
           status: 'waiting',
-          state: JSON.stringify(initialState),
+          state: toPersistedGameStateInput(initialState),
           players: {
             create: {
               userId: guestUser.id,
@@ -200,7 +201,7 @@ export async function POST(
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     log.error('Error joining as guest', error)
     return NextResponse.json(
       { error: 'Failed to join as guest' },

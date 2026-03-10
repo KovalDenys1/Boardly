@@ -84,7 +84,7 @@ export default function LoginForm() {
         router.push(returnUrl)
         router.refresh()
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast.errorFrom(err, 'auth.login.error')
     } finally {
       setLoading(false)
@@ -103,13 +103,13 @@ export default function LoginForm() {
       })
       
       await signIn(provider, { callbackUrl: returnUrl })
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError((err as Error).message)
       showToast.errorFrom(err, 'auth.login.oauthError')
       
       trackError({
         errorType: 'auth',
-        errorMessage: `OAuth ${provider} failed: ${err.message}`,
+        errorMessage: `OAuth ${provider} failed: ${(err as Error).message}`,
         component: 'LoginForm',
         severity: 'medium',
       })

@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 import { BOT_DIFFICULTIES, type BotDifficulty } from '@/lib/bot-profiles'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
+import type { Game, Lobby, GamePlayer } from '@/types/game'
+import type { GameEngine } from '@/lib/game-engine'
 
 interface WaitingRoomProps {
-  game: any
-  lobby: any
-  gameEngine: any
+  game: Game | null
+  lobby: Lobby
+  gameEngine: GameEngine | null
   minPlayers: number
   canEditSettings?: boolean
   botDifficulty: BotDifficulty
@@ -50,7 +52,7 @@ export default function WaitingRoom({
   const maxPlayers = lobby?.maxPlayers || 4
   const openSlots = Math.max(maxPlayers - playerCount, 0)
   const missingPlayers = Math.max(minPlayers - playerCount, 0)
-  const hasBot = game?.players?.some((p: any) => !!p.user?.bot)
+  const hasBot = game?.players?.some((p: GamePlayer) => !!p.user?.bot)
   const gameMeta = getGameMetadata(lobby.gameType)
   const supportsBots = hasBotSupport(lobby.gameType)
   const canEditLobbySettings = Boolean(canEditSettings && onUpdateSettings)
@@ -325,9 +327,9 @@ export default function WaitingRoom({
           </div>
 
           <div className="space-y-2.5">
-            {game.players.map((p: any, index: number) => {
+            {game.players.map((p: GamePlayer, index: number) => {
               const isBot = !!p.user?.bot
-              const playerName = p.user.name || p.user.username || p.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+              const playerName = p.user?.username || p.user?.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
               const isCurrentUser = p.userId === getCurrentUserId()
               const botDifficultyValue = p.user?.bot?.difficulty as BotDifficulty | undefined
               const botDifficultyLabel = botDifficultyValue ? difficultyLabelMap[botDifficultyValue] : null
@@ -379,7 +381,7 @@ export default function WaitingRoom({
           <div className="space-y-4">
             <button
               onClick={() => {
-                soundManager.play('click')
+                sounds.play('click')
                 onStartGame()
               }}
               disabled={!canStartImmediately}
@@ -408,7 +410,7 @@ export default function WaitingRoom({
                       key={difficulty}
                       type="button"
                       onClick={() => {
-                        soundManager.play('click')
+                        sounds.play('click')
                         onBotDifficultyChange(difficulty)
                       }}
                       className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
@@ -429,7 +431,7 @@ export default function WaitingRoom({
               {supportsBots && canAddMorePlayers && (
                 <button
                   onClick={() => {
-                    soundManager.play('click')
+                    sounds.play('click')
                     onAddBot()
                   }}
                   disabled={!canAddMorePlayers}
@@ -446,7 +448,7 @@ export default function WaitingRoom({
               {onInviteFriends && canAddMorePlayers && (
                 <button
                   onClick={() => {
-                    soundManager.play('click')
+                    sounds.play('click')
                     onInviteFriends()
                   }}
                   disabled={!canAddMorePlayers}

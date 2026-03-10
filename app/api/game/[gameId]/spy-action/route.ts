@@ -6,6 +6,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -68,7 +69,7 @@ export async function POST(
 
     // Load game engine
     const spyGame = new SpyGame(gameId)
-    spyGame.loadState(JSON.parse(game.state))
+    spyGame.loadState(parsePersistedGameState(game.state))
 
     // Build move object
     const move = {
@@ -99,7 +100,7 @@ export async function POST(
     await prisma.games.update({
       where: { id: gameId },
       data: {
-        state: JSON.stringify(updatedState),
+        state: toPersistedGameStateInput(updatedState),
         status: updatedState.status, // Sync status from game engine
         updatedAt: new Date(),
         ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),

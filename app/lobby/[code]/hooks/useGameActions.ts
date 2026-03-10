@@ -3,7 +3,7 @@ import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { GameEngine, Move } from '@/lib/game-engine'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import { showToast } from '@/lib/i18n-toast'
@@ -57,11 +57,13 @@ function isAutoActionContext(value: unknown): value is AutoActionContext {
   )
 }
 
-function isExpectedAutoActionSkip(status: number, error: any): boolean {
+function isExpectedAutoActionSkip(status: number, error: unknown): boolean {
   if (status === 202) return true
   if (status === 409) return true
 
-  const code = error?.code
+  const code = typeof error === 'object' && error !== null
+    ? (error as Record<string, unknown>).code
+    : undefined
   return code === 'TURN_ALREADY_ENDED' || code === 'AUTO_ACTION_DEBOUNCED' || code === 'STATE_CONFLICT'
 }
 
@@ -177,7 +179,7 @@ export function useGameActions(props: UseGameActionsProps) {
     setIsRolling(true)
 
     // Play sound immediately for instant feedback (force to ensure it plays)
-    soundManager.play('diceRoll', { force: true })
+    sounds.play('diceRoll', { force: true })
 
     // NOTE: We don't update dice values optimistically because:
     // 1. Client random != server random (will cause "flicker" when values change)
@@ -336,7 +338,7 @@ export function useGameActions(props: UseGameActionsProps) {
       moveMetricTracked = true
 
       return newEngine
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (!moveMetricTracked) {
         trackMoveSubmitApplied({
           gameType: 'yahtzee',
@@ -355,7 +357,7 @@ export function useGameActions(props: UseGameActionsProps) {
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.rollFailed')
       } else {
-        clientLogger.log('⏱️ Auto roll failed or skipped', { message: error?.message })
+        clientLogger.log('⏱️ Auto roll failed or skipped', { message: error instanceof Error ? error.message : undefined })
       }
       return null
     } finally {
@@ -447,7 +449,7 @@ export function useGameActions(props: UseGameActionsProps) {
         // Apply optimistic turn + score update for instant feedback.
         setGameEngine(optimisticEngine)
         setHeld([false, false, false, false, false])
-        soundManager.play('score', { force: true })
+        sounds.play('score', { force: true })
       } catch (optimisticError) {
         clientLogger.warn('Failed to apply optimistic score update', optimisticError)
       }
@@ -534,7 +536,7 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       if (isAutoAction) {
-        soundManager.play('score', { force: true })
+        sounds.play('score', { force: true })
       }
 
       // Track score action
@@ -582,7 +584,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
         // Safety check: ensure game.players exists and is an array
         const winnerPlayer = winner?.id && Array.isArray(game.players)
-          ? game.players.find((p: any) => p.userId === winner.id)
+          ? game.players.find((p: GamePlayer) => p.userId === winner.id)
           : null
 
         trackGameCompleted({
@@ -604,7 +606,7 @@ export function useGameActions(props: UseGameActionsProps) {
       } else {
         const nextPlayer = newEngine.getCurrentPlayer()
         // Play turn change sound once when turn changes
-        soundManager.play('turnChange')
+        sounds.play('turnChange')
 
         // Only show "next turn" toast if it's NOT our turn now
         // (don't show to the player who just scored)
@@ -614,7 +616,7 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       return newEngine
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (!moveMetricTracked) {
         trackMoveSubmitApplied({
           gameType: 'yahtzee',
@@ -636,7 +638,7 @@ export function useGameActions(props: UseGameActionsProps) {
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.scoreFailed')
       } else {
-        clientLogger.log('⏱️ Auto score failed or skipped', { message: error?.message })
+        clientLogger.log('⏱️ Auto score failed or skipped', { message: error instanceof Error ? error.message : undefined })
       }
       return null
     } finally {

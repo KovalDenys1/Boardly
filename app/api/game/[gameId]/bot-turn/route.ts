@@ -6,14 +6,24 @@ import { Move } from '@/lib/game-engine'
 import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
-import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
+import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { type BaseBotActionEvent } from '@/lib/bots/core/bot-types'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
 // In-memory lock to prevent concurrent bot turns for the same game
 const botTurnLocks = new Map<string, boolean>()
+const DEFAULT_BOT_STATE_NOTIFY_TIMEOUT_MS = 2000
+const FAST_BOT_STATE_NOTIFY_TIMEOUT_MS = 250
+
+function resolveBotStateNotifyTimeoutMs(gameType: string): number {
+  return gameType === 'tic_tac_toe'
+    ? FAST_BOT_STATE_NOTIFY_TIMEOUT_MS
+    : DEFAULT_BOT_STATE_NOTIFY_TIMEOUT_MS
+}
 
 export async function POST(
   request: NextRequest,
@@ -177,13 +187,12 @@ export async function POST(
     log.info('Game found, processing bot turn', {
       gameId: game.id,
       gameType,
-      statePreview: game.state?.substring(0, 100)
     })
 
     // Parse game state with error handling
-    let gameState
+    let gameState: { players: unknown[] } & Record<string, unknown>
     try {
-      gameState = JSON.parse(game.state)
+      gameState = parsePersistedGameState(game.state) as { players: unknown[] } & Record<string, unknown>
       // Validate parsed state
       if (!gameState || typeof gameState !== 'object' || !Array.isArray(gameState.players)) {
         throw new Error('Invalid game state structure')
@@ -255,9 +264,9 @@ export async function POST(
     log.info('Bot difficulty', { difficulty: botDifficulty })
 
     // Helper function to broadcast bot actions in real-time
-    const broadcastBotAction = async (event: any) => {
+    const broadcastBotAction = async (event: BaseBotActionEvent) => {
       // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', event)
+      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', { ...event })
     }
 
     // Dispatch to the appropriate bot executor based on game type
@@ -286,10 +295,10 @@ export async function POST(
           const newState = gameEngine.getState()
           const botUserIds = new Set(
             game.players
-              .filter((player: any) => !!player.user?.bot)
-              .map((player: any) => player.userId)
+              .filter((player) => !!player.user?.bot)
+              .map((player) => player.userId)
           )
-          const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as any, botUserIds)
+          const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as unknown as TurnState, botUserIds)
           const statusChanged = game.status !== newState.status
           const oldStatus = game.status
           const lastMoveAtDate = typeof newState.lastMoveAt === 'number' && Number.isFinite(newState.lastMoveAt)
@@ -305,7 +314,7 @@ export async function POST(
             await prisma.games.update({
               where: { id: gameId },
               data: {
-                state: JSON.stringify(newState),
+                state: toPersistedGameStateInput(newState),
                 status: newState.status,
                 currentTurn: newState.currentPlayerIndex,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
@@ -318,7 +327,7 @@ export async function POST(
               return prisma.games.update({
                 where: { id: gameId },
                 data: {
-                  state: JSON.stringify(newState),
+                  state: toPersistedGameStateInput(newState),
                   status: newState.status,
                   currentTurn: newState.currentPlayerIndex,
                   ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
@@ -349,54 +358,79 @@ export async function POST(
               })
             }
 
-            await appendGameReplaySnapshot({
+            const getScorecard =
+              typeof (gameEngine as unknown as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
+                ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
+                : null
+            const dbPlayersByUserId = new Map(
+              game.players.map((player) => [player.userId, player])
+            )
+            const changedPlayerUpdates: Array<{ id: string; score: number; scorecard: string }> = []
+
+            for (const player of gameEngine.getPlayers()) {
+              const dbPlayer = dbPlayersByUserId.get(player.id)
+              if (!dbPlayer) continue
+
+              const nextScore = typeof player.score === 'number' ? player.score : 0
+              const nextScorecard = JSON.stringify(getScorecard ? getScorecard(player.id) : {})
+
+              if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
+                continue
+              }
+
+              changedPlayerUpdates.push({
+                id: dbPlayer.id,
+                score: nextScore,
+                scorecard: nextScorecard,
+              })
+            }
+
+            const replaySnapshotPromise = appendGameReplaySnapshot({
               gameId: game.id,
               playerId: botUserId,
               actionType: `bot:${botMove.type}`,
               actionPayload: botMove.data,
               state: newState,
+            }).catch((replayError) => {
+              log.warn('Failed to append replay snapshot after bot move', {
+                gameId,
+                botUserId,
+                moveType: botMove.type,
+                error: replayError,
+              })
             })
-          } catch (dbError) {
-            log.error('Critical: Failed to save game state after retry', dbError as Error)
-            throw new Error('Database connection failed. Please try again.')
-          }
 
-          // Update player scores - do this sequentially to avoid connection issues
-          // Vercel serverless + Supabase pooler can have timeout issues with parallel queries
-          for (const player of gameEngine.getPlayers()) {
-            const dbPlayer = game.players.find((p: any) => p.userId === player.id)
-            if (dbPlayer) {
+            // Update player scores sequentially to avoid connection spikes on pooled DBs.
+            for (const scoreUpdate of changedPlayerUpdates) {
               try {
                 await prisma.players.update({
-                  where: { id: dbPlayer.id },
+                  where: { id: scoreUpdate.id },
                   data: {
-                    score: player.score || 0,
-                    scorecard: JSON.stringify((gameEngine as any).getScorecard?.(player.id) ?? {}),
+                    score: scoreUpdate.score,
+                    scorecard: scoreUpdate.scorecard,
                   },
-                }).catch(async (retryError) => {
-                  // Retry once on connection error
-                  log.warn('Player update failed, retrying...', { playerId: dbPlayer.id })
+                }).catch(async () => {
+                  log.warn('Player update failed, retrying...', { playerId: scoreUpdate.id })
                   await new Promise(resolve => setTimeout(resolve, 100))
                   return prisma.players.update({
-                    where: { id: dbPlayer.id },
+                    where: { id: scoreUpdate.id },
                     data: {
-                      score: player.score || 0,
-                      scorecard: JSON.stringify((gameEngine as any).getScorecard?.(player.id) ?? {}),
+                      score: scoreUpdate.score,
+                      scorecard: scoreUpdate.scorecard,
                     },
                   })
                 })
               } catch (playerUpdateError) {
                 log.error('Failed to update player score', playerUpdateError as Error, {
-                  playerId: dbPlayer.id,
-                  userId: player.id
+                  playerId: scoreUpdate.id,
                 })
-                // Continue with other players even if one fails
               }
             }
-          }
-          log.info('Player scores updated')
 
-          // Broadcast state update after each move - fire-and-forget
+            void replaySnapshotPromise
+            log.info('Player scores updated')
+
+          const notifyTimeoutMs = resolveBotStateNotifyTimeoutMs(gameType)
           const currentState = gameEngine.getState()
           await notifySocket(
             `lobby:${resolvedLobbyCode}`,
@@ -404,8 +438,18 @@ export async function POST(
             {
               action: 'state-change',
               payload: currentState,
-            }
+            },
+            0,
+            notifyTimeoutMs
           )
+        } catch (dbError) {
+          log.error('Critical: Failed to persist bot move state', dbError as Error, {
+            gameId,
+            botUserId,
+            moveType: botMove.type,
+          })
+          throw new Error('Database connection failed. Please try again.')
+        }
         } catch (error) {
           log.error('Error processing bot move', error as Error, {
             moveType: botMove.type,
@@ -437,8 +481,8 @@ export async function POST(
     })
 
     return NextResponse.json({
-      error: 'Failed to execute bot turn',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error',
+      code: 'BOT_TURN_FAILED',
     }, { status: 500 })
   } finally {
     if (lockAcquired && lockKey) {

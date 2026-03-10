@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
+import type { Session } from 'next-auth'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
-import { SocketEvents, ServerErrorPayload } from '@/types/socket-events'
+import { SocketEvents, ServerErrorPayload, GameAbandonedPayload, PlayerLeftPayload } from '@/types/socket-events'
+import type { BaseBotActionEvent } from '@/lib/bots'
+import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
 import { showToast } from '@/lib/i18n-toast'
 import {
   trackLobbyJoinAckTimeout,
@@ -19,9 +22,18 @@ const MAX_JOIN_ATTEMPTS = 4
 const AUTH_FAILURE_RESET_MS = 5000
 const MAX_PENDING_EMITS = 50
 
+function readSequenceId(value: unknown): number | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const candidate = (value as { sequenceId?: unknown }).sequenceId
+  return typeof candidate === 'number' && Number.isFinite(candidate) ? candidate : null
+}
+
 interface UseSocketConnectionProps {
   code: string
-  session: any
+  session: Session | null
   isGuest: boolean
   guestId: string | null
   guestName: string | null
@@ -31,15 +43,15 @@ interface UseSocketConnectionProps {
    * Prevents transient "access denied" errors before HTTP join completes.
    */
   shouldJoinLobbyRoom?: boolean
-  onGameUpdate: (data: any) => void
-  onChatMessage: (message: any) => void
-  onPlayerTyping: (data: any) => void
-  onLobbyUpdate: (data: any) => void
-  onPlayerJoined: (data: any) => void
-  onGameStarted: (data: any) => void
-  onGameAbandoned?: (data: any) => void
-  onPlayerLeft?: (data: any) => void
-  onBotAction?: (event: any) => void
+  onGameUpdate: (data: GameUpdatePayload) => void
+  onChatMessage: (message: ChatMessagePayload) => void
+  onPlayerTyping: (data: PlayerTypingPayload) => void
+  onLobbyUpdate: (data: LobbyUpdatePayload) => void
+  onPlayerJoined: (data: PlayerJoinedPayload) => void
+  onGameStarted: (data: GameStartedPayload) => void
+  onGameAbandoned?: (data: GameAbandonedPayload) => void
+  onPlayerLeft?: (data: PlayerLeftPayload) => void
+  onBotAction?: (event: BaseBotActionEvent) => void
   /** Callback to sync state after reconnection */
   onStateSync?: () => Promise<void>
 }
@@ -86,7 +98,7 @@ export function useSocketConnection({
   const authFailureCountRef = useRef(0)
   const connectionRunIdRef = useRef(0)
   const hasTrackedFinalFailureRef = useRef(false)
-  const pendingEmitQueueRef = useRef<Array<{ event: string; data: any }>>([])
+  const pendingEmitQueueRef = useRef<Array<{ event: string; data: unknown }>>([])
   const authenticatedUserId =
     typeof session?.user?.id === 'string' ? session.user.id : null
 
@@ -794,24 +806,25 @@ export function useSocketConnection({
         }
       })
 
-      const handleEventWithDeduplication = (
+      const handleEventWithDeduplication = <T>(
         eventName: string,
-        data: any,
-        handler: (payload: any) => void
+        data: T,
+        handler: (payload: T) => void
       ) => {
         try {
-          if (typeof data?.sequenceId === 'number' && Number.isFinite(data.sequenceId)) {
+          const sequenceId = readSequenceId(data)
+          if (sequenceId !== null) {
             const lastProcessedSequence = lastProcessedSequenceByEventRef.current.get(eventName) ?? 0
 
-            if (data.sequenceId <= lastProcessedSequence) {
+            if (sequenceId <= lastProcessedSequence) {
               clientLogger.warn(`⚠️ Dropped duplicate ${eventName} event`, {
-                sequenceId: data.sequenceId,
+                sequenceId,
                 lastProcessed: lastProcessedSequence,
               })
               return
             }
 
-            lastProcessedSequenceByEventRef.current.set(eventName, data.sequenceId)
+            lastProcessedSequenceByEventRef.current.set(eventName, sequenceId)
           }
 
           handler(data)
@@ -929,7 +942,7 @@ export function useSocketConnection({
   ])
 
   const emitWhenConnected = useCallback(
-    (event: string, data: any) => {
+    (event: string, data: unknown) => {
       const currentSocket = socketRef.current
       if (!currentSocket) return
 

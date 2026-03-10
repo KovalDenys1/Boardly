@@ -120,7 +120,7 @@ export class YahtzeeBot extends BaseBot<YahtzeeGame, YahtzeeBotDecision> {
             }
 
             default:
-                throw new Error(`Unknown decision type: ${(decision as any).type}`)
+                throw new Error(`Unknown decision type: ${(decision as { type: string }).type}`)
         }
     }
 

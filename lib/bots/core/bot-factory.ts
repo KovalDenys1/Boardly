@@ -5,7 +5,7 @@
 
 import { GameEngine, Move } from '@/lib/game-engine'
 import { BaseBot } from './base-bot'
-import { BotDifficulty, MoveCallback } from './bot-types'
+import { BotDifficulty, BotActionCallback, MoveCallback } from './bot-types'
 import { YahtzeeBot } from '../yahtzee/yahtzee-bot'
 import { YahtzeeBotExecutor } from '../yahtzee/yahtzee-bot-executor'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
@@ -26,16 +26,16 @@ export function createBot<T extends GameEngine>(
     gameType: RegisteredGameType,
     gameEngine: T,
     difficulty: BotDifficulty = 'medium'
-): BaseBot<T, any> {
+): BaseBot<T, unknown> {
     switch (gameType) {
         case 'yahtzee':
-            return new YahtzeeBot(gameEngine as any, difficulty) as any
+            return new YahtzeeBot(gameEngine as unknown as YahtzeeGame, difficulty) as unknown as BaseBot<T, unknown>
 
         case 'tic_tac_toe':
-            return new TicTacToeBot(gameEngine as any, difficulty) as any
+            return new TicTacToeBot(gameEngine as unknown as TicTacToeGame, difficulty) as unknown as BaseBot<T, unknown>
 
         case 'rock_paper_scissors':
-            return new RockPaperScissorsBot(gameEngine as any, difficulty) as any
+            return new RockPaperScissorsBot(gameEngine as unknown as RockPaperScissorsGame, difficulty) as unknown as BaseBot<T, unknown>
 
         // Future game bots:
         // case 'guess_the_spy':
@@ -56,7 +56,7 @@ export async function executeBotTurn(
     botUserId: string,
     difficulty: BotDifficulty,
     onMove: MoveCallback,
-    onBotAction?: (event: any) => void,
+    onBotAction?: BotActionCallback,
 ): Promise<void> {
     switch (gameType) {
         case 'yahtzee': {

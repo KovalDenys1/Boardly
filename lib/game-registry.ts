@@ -6,7 +6,7 @@
  * game classes directly, keeping shared code game-agnostic.
  */
 
-import { GameEngine, GameConfig } from './game-engine'
+import { GameEngine, GameConfig, RestorableGameState } from './game-engine'
 import { YahtzeeGame } from './games/yahtzee-game'
 import { TicTacToeGame } from './games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from './games/rock-paper-scissors-game'
@@ -241,11 +241,11 @@ export function createGameEngine(
 export function restoreGameEngine(
   gameType: string,
   gameId: string,
-  savedState: any,
+  savedState: unknown,
 ): GameEngine {
   const savedConfig = extractSavedGameConfig(savedState)
   const engine = createGameEngine(gameType, gameId, savedConfig)
-  engine.restoreState(savedState)
+  engine.restoreState(savedState as RestorableGameState)
   return engine
 }
 

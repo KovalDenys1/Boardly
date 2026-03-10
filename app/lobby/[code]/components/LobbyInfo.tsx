@@ -3,10 +3,11 @@ import { useRouter } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { Game, Lobby } from '@/types/game'
 
 interface LobbyInfoProps {
-  lobby: any
-  game: any
+  lobby: Lobby
+  game: Game | null
   soundEnabled: boolean
   canEditSettings?: boolean
   onUpdateSettings?: (updates: {

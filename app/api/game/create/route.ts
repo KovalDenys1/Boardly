@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { createGameEngine, getGameMetadata, isSupportedGameType } from '@/lib/game-registry'
+import { type GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
 import { notifySocket } from '@/lib/socket-url'
@@ -12,6 +13,7 @@ import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { toPersistedGameType } from '@/lib/game-type-storage'
+import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -185,7 +187,7 @@ export async function POST(request: NextRequest) {
             lobbyId: lobbyId,
             status: 'waiting',
             gameType: persistedGameType,
-            state: JSON.stringify(initialWaitingState),
+            state: toPersistedGameStateInput(initialWaitingState),
             players: {
               create: finishedGame.players.map((p, index) => ({
                 userId: p.userId,
@@ -319,7 +321,7 @@ export async function POST(request: NextRequest) {
     const gameEngine = createGameEngine(
       gameType,
       `game_${Date.now()}`,
-      Object.keys(startConfig).length > 0 ? (startConfig as any) : undefined
+      Object.keys(startConfig).length > 0 ? (startConfig as Partial<GameConfig>) : undefined
     )
 
     // Add players to the game - sort so bots go last
@@ -361,7 +363,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Spy locations are not configured',
-            details: error instanceof Error ? error.message : 'Unable to resolve Spy locations',
+            code: 'SPY_LOCATIONS_UNAVAILABLE',
           },
           { status: 500 }
         )
@@ -389,7 +391,7 @@ export async function POST(request: NextRequest) {
     const game = await prisma.games.update({
       where: { id: waitingGame.id },
       data: {
-        state: JSON.stringify(gameEngine.getState()),
+        state: toPersistedGameStateInput(gameEngine.getState()),
         status: 'playing',
         gameType: persistedGameType,
         updatedAt: new Date(),
@@ -533,7 +535,7 @@ export async function POST(request: NextRequest) {
     log.error('Create game error', error as Error)
     return NextResponse.json({
       error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      code: 'GAME_CREATE_FAILED'
     }, { status: 500 })
   }
 }

@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
 
       showToast.success('auth.forgotPassword.success')
       setSent(true)
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast.errorFrom(err, 'auth.forgotPassword.error')
     } finally {
       setLoading(false)

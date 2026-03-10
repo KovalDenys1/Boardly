@@ -7,13 +7,14 @@ import { useSession } from 'next-auth/react'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ConnectionStatus } from '@/components/ConnectionStatus'
-import { soundManager } from '@/lib/sounds'
+import { sounds } from '@/lib/sounds'
 import { useConfetti } from '@/hooks/useConfetti'
 import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
-import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
+import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep, Lobby } from '@/types/game'
+import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
@@ -21,7 +22,6 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
 
-// Category display names for UI
 const CATEGORY_DISPLAY_NAMES: Record<YahtzeeCategory, string> = {
   ones: 'Ones',
   twos: 'Twos',
@@ -54,7 +54,6 @@ function normalizeHeldIndexes(rawHeld: unknown): number[] {
     .map((value) => Number(value))
 }
 
-// Database player type
 interface DBPlayer {
   id: string
   userId: string
@@ -73,7 +72,6 @@ interface DBPlayer {
   }
 }
 
-// New modular imports
 import { useSocketConnection } from './hooks/useSocketConnection'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
@@ -141,13 +139,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const { isGuest, guestId, guestName, guestToken } = useGuest()
   const code = params.code as string
 
-  // Log session status for debugging
-  useEffect(() => {
-    clientLogger.log('Session status:', { status, isGuest, hasSession: !!session, userId: session?.user?.id })
-  }, [status, isGuest, session])
-
   // Core state
-  const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
+  const [lobby, setLobby] = useState<Lobby | null>(null)
   const [game, setGame] = useState<Game | null>(null)
   const [gameEngine, setGameEngine] = useState<GameEngine | null>(null)
   const [loading, setLoading] = useState(true)
@@ -270,17 +263,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [])
 
-  // Sync soundEnabled state with soundManager on mount
+  // Sync soundEnabled state with sounds on mount
   useEffect(() => {
-    setSoundEnabled(soundManager.isEnabled())
+    setSoundEnabled(sounds.isEnabled())
   }, [])
 
   const playAmbientSound = useCallback(
     (soundName: string, options?: { volume?: number; loop?: boolean; force?: boolean }) => {
       if (isInitialLoadRef.current) return
-      if (!soundManager.hasUserInteracted()) return
+      if (!sounds.hasUserInteracted()) return
       if (!hasLobbyPageInteractionRef.current) return
-      soundManager.play(soundName, options)
+      sounds.play(soundName, options)
     },
     []
   )
@@ -379,7 +372,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [gameEngine, game, getCurrentUserId])
 
   // Track previous current player to detect turn changes
-  const prevCurrentPlayerIdRef = React.useRef<string | undefined>()
+  const prevCurrentPlayerIdRef = React.useRef<string | undefined>(undefined)
 
   // Auto-reset selectedPlayerId when turn changes (only if viewing current player's card automatically)
   useEffect(() => {
@@ -592,7 +585,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [chatMinimized])
 
-  const typingTimeoutRef = React.useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
 
   const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
     const currentUserId = isGuest ? guestId : session?.user?.id
@@ -650,7 +643,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     playAmbientSound('gameStart')
   }, [isGuest, guestId, session?.user?.id, lobby?.creatorId, playAmbientSound])
 
-  const onBotAction = useCallback((event: any) => {
+  const onBotAction = useCallback((event: BaseBotActionEvent) => {
     clientLogger.log('🤖 Received bot-action:', event)
 
     const botName = event.botName || 'Bot'
@@ -664,16 +657,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
         const playerCount = game?.players?.length || 1
         const turnNumber = Math.floor(currentRound / playerCount) + 1
+        const yahtzeeEvent = event as YahtzeeBotActionEvent
 
         setRollHistory(prev => {
           const newRollEntry: RollHistoryEntry = {
             id: `bot-${Date.now()}-${Math.random()}`,
             type: 'roll',
             playerName: botName,
-            dice: event.data.dice,
-            rollNumber: event.data.rollNumber || 1,
+            dice: yahtzeeEvent.data?.dice ?? [],
+            rollNumber: yahtzeeEvent.data?.rollNumber ?? 1,
             turnNumber: turnNumber,
-            held: normalizeHeldIndexes(event.data.held),
+            held: normalizeHeldIndexes(yahtzeeEvent.data?.held),
             isBot: true,
             timestamp: Date.now(),
           }
@@ -683,7 +677,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     }
 
-    if (event.type === 'hold' && event.data?.held?.length) {
+    if (event.type === 'hold' && Array.isArray((event as YahtzeeBotActionEvent).data?.held) && ((event as YahtzeeBotActionEvent).data?.held?.length ?? 0) > 0) {
       playAmbientSound('click', { force: true })
     }
 
@@ -750,8 +744,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return false
     }
 
-    const lobbyData = lobby as any
-    if (lobbyData.creatorId === currentUserIdForMembership) {
+    const lobbyData = lobby
+    if (lobbyData?.creatorId === currentUserIdForMembership) {
       return true
     }
 
@@ -759,13 +753,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       game && ['waiting', 'playing', 'finished'].includes(String(game.status))
         ? game
         : null
-    const activeGameFromLobby = Array.isArray(lobbyData.games)
-      ? lobbyData.games.find((candidate: any) => ['waiting', 'playing'].includes(candidate?.status))
+    const activeGameFromLobby = Array.isArray(lobbyData?.games)
+      ? lobbyData.games!.find((candidate: Game) => ['waiting', 'playing'].includes(String(candidate?.status)))
       : null
     const activeGame = activeGameFromState || activeGameFromLobby
     const players = Array.isArray(activeGame?.players) ? activeGame.players : []
 
-    return players.some((player: any) => player?.userId === currentUserIdForMembership)
+    return players.some((player: GamePlayer) => player?.userId === currentUserIdForMembership)
   }, [lobby, game, currentUserIdForMembership])
 
   // Socket connection hook - must be before useLobbyActions
@@ -852,7 +846,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })
 
   // Create refs for game actions to use in timer callback
-  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
+  const handleScoreRef = React.useRef<((category: YahtzeeCategory, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
   const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
 
   const buildAutoActionContext = React.useCallback(
@@ -1334,7 +1328,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     const redirectReason = resolveLifecycleRedirectReason({
       gameStatus: game?.status,
-      lobbyIsActive: (lobby as any)?.isActive,
+      lobbyIsActive: lobby?.isActive,
     })
 
     if (redirectReason) {
@@ -1501,9 +1495,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             canEditSettings={isCreator && !startingGame}
             onUpdateSettings={updateLobbySettings}
             onSoundToggle={() => {
-              soundManager.toggle()
-              setSoundEnabled(soundManager.isEnabled())
-              showToast.success(soundManager.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
+              sounds.toggle()
+              setSoundEnabled(sounds.isEnabled())
+              showToast.success(sounds.isEnabled() ? 'game.ui.soundOn' : 'game.ui.soundOff')
             }}
             onLeave={handleLeaveLobby}
           />
@@ -1591,8 +1585,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
-                          const newState = soundManager.toggle()
+                          sounds.play('click', { force: true })
+                          const newState = sounds.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
@@ -1607,7 +1601,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       </button>
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
+                          sounds.play('click', { force: true })
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label={t('game.ui.leave')}
@@ -1656,8 +1650,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
-                          const newState = soundManager.toggle()
+                          sounds.play('click', { force: true })
+                          const newState = sounds.toggle()
                           setSoundEnabled(newState)
                           showToast.success(newState ? 'game.ui.soundOn' : 'game.ui.soundOff', undefined, undefined, {
                             duration: 2000,
@@ -1673,7 +1667,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       </button>
                       <button
                         onClick={() => {
-                          soundManager.play('click', { force: true })
+                          sounds.play('click', { force: true })
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label="Leave game"
@@ -1793,7 +1787,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="p-4 space-y-4">
+                    <div className="min-h-full p-4 space-y-4">
                       <GameBoard
                         gameEngine={gameEngine}
                         game={game}
@@ -1817,7 +1811,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
-                    <div className="p-4">
+                    <div className="min-h-full p-4">
                       {(() => {
                         const currentUserId = getCurrentUserId()
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
@@ -1855,7 +1849,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Players Tab */}
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
-                    <div className="p-4 space-y-4">
+                    <div className="min-h-full p-4 space-y-4">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
@@ -1879,7 +1873,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Chat Tab */}
                   <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
-                    <div className="h-full">
+                    <div
+                      className="min-h-full"
+                      style={{
+                        height: 'calc(100% - var(--mobile-tabs-offset))',
+                      }}
+                    >
                       <Chat
                         messages={chatMessages}
                         onSendMessage={(message) => {

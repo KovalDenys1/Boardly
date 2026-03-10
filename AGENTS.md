@@ -48,7 +48,10 @@ Core flow:
 - Open PRs from task branches into `develop`. Do not push task commits directly to `develop`.
 - Promote to production only through PRs from `develop` into `main`.
 - Treat direct pushes to `main` and `develop` as emergency-only exceptions.
-- After PR merge, delete the local task branch (`git branch -d <branch>`). The remote branch is auto-deleted by repository settings.
+- After PR merge, delete the local task branch (`git branch -d <branch>`) in the same work session. The remote branch is auto-deleted by repository settings.
+- After each merge wave, run local branch cleanup and keep only long-lived branches (`main`, `develop`) plus the currently active task branch.
+- Prefer fewer, larger-coherent PRs over many tiny PRs: if fixes are tightly related and touch the same subsystem, batch them into one task branch/PR.
+- Before opening a new PR, check open PR count; if there are already 3+ open fix PRs to `develop`, prioritize merging existing PRs first unless it's a production blocker.
 
 ## Fast Command Cookbook
 
@@ -145,6 +148,14 @@ Requirements:
 External MCP scaffold template (not auto-registered):
 
 - `docs/codex-mcp.external-template.toml`
+
+## Next.js MCP
+
+- The repo now includes root `.mcp.json` for `next-devtools-mcp`.
+- For Next.js runtime MCP, start the app with `npm run dev` (or `npm run dev:all` if you also need the socket server). Next.js 16 exposes the MCP endpoint automatically during dev.
+- Use `nextjs_index` first to discover the running server, then `nextjs_call` for tools like `get_project_metadata`, `get_routes`, and `get_errors`.
+- `get_errors` and `get_page_metadata` are only useful after opening the app in a real browser session.
+- `next dev` may rewrite `tsconfig.json` and `next-env.d.ts` for local type integration. Do not commit those changes unless they are intentional and reviewed.
 
 ## Owner Preferences (Codex Collaboration Defaults)
 

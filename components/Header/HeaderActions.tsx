@@ -5,14 +5,16 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
+import { UserAvatar } from './UserAvatar'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
   userName?: string | null
   userEmail?: string | null
+  userImage?: string | null
 }
 
-export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderActionsProps) {
+export function HeaderActions({ isAuthenticated, userName, userEmail, userImage }: HeaderActionsProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
@@ -85,10 +87,16 @@ export function HeaderActions({ isAuthenticated, userName, userEmail }: HeaderAc
       </div>
       <button
         onClick={handleProfileNavigation}
-        className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-purple-600 font-bold hover:scale-110 transition-transform shadow-sm"
+        className="overflow-hidden rounded-full bg-white/15 p-0.5 hover:scale-110 transition-transform shadow-sm"
         title={t('header.profile', 'Profile')}
       >
-        {userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?'}
+        <UserAvatar
+          image={userImage}
+          userName={userName}
+          userEmail={userEmail}
+          className="h-9 w-9 bg-white text-purple-600"
+          textClassName="text-sm font-bold"
+        />
       </button>
       <button
         onClick={handleSignOut}

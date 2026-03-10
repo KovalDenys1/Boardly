@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
-import { Move } from '@/lib/game-engine'
+import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { fakeArtistActionRequestSchema } from '@/lib/validation/fake-artist'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -104,15 +105,15 @@ export async function POST(
       return NextResponse.json({ error: 'Only lobby host can advance this phase' }, { status: 403 })
     }
 
-    let parsedState: unknown
+    let parsedState: RestorableGameState
     try {
-      parsedState = JSON.parse(game.state)
+      parsedState = parsePersistedGameState<RestorableGameState>(game.state)
     } catch {
       return NextResponse.json({ error: 'Corrupted game state' }, { status: 500 })
     }
 
     const fakeArtistGame = new FakeArtistGame(gameId)
-    fakeArtistGame.restoreState(parsedState as any)
+    fakeArtistGame.restoreState(parsedState)
     const gamePlayersByUserId = new Map(
       game.players.map((entry) => [entry.userId, entry])
     )
@@ -133,7 +134,7 @@ export async function POST(
       await prisma.games.update({
         where: { id: gameId },
         data: {
-          state: JSON.stringify(nextState),
+          state: toPersistedGameStateInput(nextState),
           status: nextState.status,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
           updatedAt: new Date(),

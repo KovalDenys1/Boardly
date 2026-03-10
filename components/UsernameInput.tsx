@@ -23,6 +23,10 @@ interface UsernameCheckResult {
   error?: string
 }
 
+export function isCurrentUsernameValue(value: string, currentUsername?: string): boolean {
+  return Boolean(currentUsername && value === currentUsername)
+}
+
 export default function UsernameInput({
   value,
   onChange,
@@ -69,20 +73,20 @@ export default function UsernameInput({
 
   // Debounced username check
   useEffect(() => {
-    // If username matches current username, it's valid
-    if (currentUsername && value === currentUsername) {
-      setStatus('available')
-      setSuggestions([])
-      setValidationError('')
+    // Current username is valid, but should stay visually neutral until edited.
+    if (isCurrentUsernameValue(value, currentUsername)) {
+      setStatus((prev) => (prev === 'idle' ? prev : 'idle'))
+      setSuggestions((prev) => (prev.length === 0 ? prev : []))
+      setValidationError((prev) => (prev ? '' : prev))
       onAvailabilityChange?.(true)
       return
     }
 
     // Don't check if empty or less than 3 characters
     if (!value || value.length < 3) {
-      setStatus('idle')
-      setSuggestions([])
-      setValidationError('')
+      setStatus((prev) => (prev === 'idle' ? prev : 'idle'))
+      setSuggestions((prev) => (prev.length === 0 ? prev : []))
+      setValidationError((prev) => (prev ? '' : prev))
       onAvailabilityChange?.(false)
       return
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
+import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 import { apiLogger } from '@/lib/logger'
 import {
   AuthenticationError,
@@ -31,11 +32,14 @@ async function getFriendCodeHandler(_req: NextRequest) {
     throw new AuthorizationError('Email verification required')
   }
 
-  const friendCode = await ensureUserHasFriendCode(session.user.id)
+  const [friendCode, publicProfileId] = await Promise.all([
+    ensureUserHasFriendCode(session.user.id),
+    ensureUserHasPublicProfileId(session.user.id),
+  ])
 
   log.info('Friend code retrieved', { userId: session.user.id })
 
-  return NextResponse.json({ friendCode })
+  return NextResponse.json({ friendCode, publicProfileId })
 }
 
 export const GET = withErrorHandler(getFriendCodeHandler)

@@ -22,7 +22,7 @@ type RecursiveKeyOf<TObj extends object> = {
  */
 type I18nTranslationHook = ReturnType<typeof useTranslationOriginal>
 type TypedI18nTranslationHook = Omit<I18nTranslationHook, 't'> & {
-  t: (key: TranslationKeys, options?: any) => string
+  t: (key: TranslationKeys, options?: string | Record<string, unknown>) => string
 }
 
 export function useTranslation() {
@@ -40,7 +40,7 @@ export function useTranslation() {
  * const message = t('common.loading')
  * ```
  */
-export function t(key: TranslationKeys, options?: any): string {
+export function t(key: TranslationKeys, options?: string | Record<string, unknown>): string {
   // This requires i18n to be initialized
   const i18n = require('@/i18n').default
   return i18n.t(key, options)

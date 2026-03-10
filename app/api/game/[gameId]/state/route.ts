@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { Move, Player } from '@/lib/game-engine'
+import { Move, Player, GameEngine } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { advanceTurnPastDisconnectedPlayers } from '@/lib/disconnected-turn'
+import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 import { notifySocket } from '@/lib/socket-url'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -25,6 +26,7 @@ const autoActionDebounceMap = new Map<string, number>()
 const AUTO_ACTION_DEBOUNCE_MS = 2000
 const AUTO_ACTION_DEBOUNCE_TTL_MS = 60000
 const STATE_CHANGE_NOTIFY_TIMEOUT_MS = 750
+const FAST_STATE_CHANGE_NOTIFY_TIMEOUT_MS = 250
 const BOT_TURN_TRIGGER_TIMEOUT_MS = 15000
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -92,6 +94,12 @@ function resolveTurnEndToBotTriggerMs(state: unknown, triggeredAt: number): numb
 
   const latencyMs = triggeredAt - lastMoveAt
   return Number.isFinite(latencyMs) && latencyMs >= 0 ? latencyMs : null
+}
+
+function resolveStateChangeNotifyTimeoutMs(gameType: string): number {
+  return gameType === 'tic_tac_toe'
+    ? FAST_STATE_CHANGE_NOTIFY_TIMEOUT_MS
+    : STATE_CHANGE_NOTIFY_TIMEOUT_MS
 }
 
 function autoTriggerBotTurn(params: {
@@ -306,7 +314,7 @@ export async function POST(
     // Recreate game engine from saved state
     let gameState: unknown
     try {
-      gameState = JSON.parse(game.state)
+      gameState = parsePersistedGameState(game.state)
 
       // Basic validation of state structure
       if (!gameState || typeof gameState !== 'object') {
@@ -323,7 +331,7 @@ export async function POST(
       }, { status: 500 })
     }
 
-    let gameEngine: any
+    let gameEngine: GameEngine
 
     // Use registry to restore the correct engine for this game type
     try {
@@ -334,7 +342,7 @@ export async function POST(
 
     if (isAutoAction) {
       const snapshot = autoActionContext.turnSnapshot
-      const serverState = gameEngine.getState() as any
+      const serverState = gameEngine.getState()
       const serverCurrentPlayer = gameEngine.getCurrentPlayer()
       const serverStateUpdatedAt = normalizeTimestamp(serverState?.updatedAt)
       const snapshotUpdatedAt = normalizeTimestamp(snapshot.updatedAt)
@@ -353,8 +361,8 @@ export async function POST(
         snapshotLastMoveAt === serverLastMoveAt
 
       const getRollsLeft =
-        typeof (gameEngine as { getRollsLeft?: () => number }).getRollsLeft === 'function'
-          ? (gameEngine as { getRollsLeft: () => number }).getRollsLeft.bind(gameEngine)
+        typeof (gameEngine as unknown as { getRollsLeft?: () => number }).getRollsLeft === 'function'
+          ? (gameEngine as unknown as { getRollsLeft: () => number }).getRollsLeft.bind(gameEngine)
           : null
       const serverRollsLeft = getRollsLeft ? getRollsLeft() : null
 
@@ -436,7 +444,7 @@ export async function POST(
         .filter((player) => !!player.user?.bot)
         .map((player) => player.userId)
     )
-    const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as any, botUserIds)
+    const disconnectedTurnResult = advanceTurnPastDisconnectedPlayers(newState as unknown as TurnState, botUserIds)
     const statusChanged = game.status !== newState.status
     const oldStatus = game.status
 
@@ -453,8 +461,8 @@ export async function POST(
 
     // Update player scores. Scorecard is optional and available only for games that implement getScorecard().
     const getScorecard =
-      typeof (gameEngine as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
-        ? (gameEngine as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
+      typeof (gameEngine as unknown as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
+        ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
         : null
     const enginePlayers = gameEngine.getPlayers()
     const gamePlayers = game.players as GamePlayer[]
@@ -491,7 +499,7 @@ export async function POST(
           updatedAt: game.updatedAt,
         },
         data: {
-          state: JSON.stringify(newState),
+          state: toPersistedGameStateInput(newState),
           status: newState.status,
           currentTurn: newState.currentPlayerIndex,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
@@ -598,7 +606,7 @@ export async function POST(
         payload: authoritativeState,
       },
       0,
-      STATE_CHANGE_NOTIFY_TIMEOUT_MS
+      resolveStateChangeNotifyTimeoutMs(game.lobby.gameType)
     )
     void replaySnapshotPromise
 

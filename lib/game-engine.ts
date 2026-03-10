@@ -95,7 +95,7 @@ export abstract class GameEngine {
   }
 
   // Abstract methods to be implemented by specific games
-  abstract getInitialGameData(): any;
+  abstract getInitialGameData(): unknown;
   abstract validateMove(move: Move): boolean;
   abstract processMove(move: Move): void;
   abstract checkWinCondition(): Player | null;

@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
+import { extractPublicProfileId } from '@/lib/public-profile'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request')
@@ -32,24 +33,45 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { receiverUsername } = await req.json()
+    const { receiverUsername, receiverPublicProfileId } = await req.json() as {
+      receiverUsername?: string
+      receiverPublicProfileId?: string
+    }
 
-    if (!receiverUsername) {
+    const normalizedUsername =
+      typeof receiverUsername === 'string' ? receiverUsername.trim() : ''
+    const normalizedPublicProfileId =
+      typeof receiverPublicProfileId === 'string'
+        ? extractPublicProfileId(receiverPublicProfileId)
+        : null
+
+    if (!normalizedUsername && !receiverPublicProfileId) {
       return NextResponse.json(
-        { error: 'Receiver username is required' },
+        { error: 'Receiver username or profile link is required' },
+        { status: 400 }
+      )
+    }
+
+    if (receiverPublicProfileId && !normalizedPublicProfileId) {
+      return NextResponse.json(
+        { error: 'Invalid public profile link' },
         { status: 400 }
       )
     }
 
     const senderId = session.user.id
 
-    // Get receiver
-    const receiver = await prisma.users.findUnique({
-      where: { username: receiverUsername },
-      select: { id: true, username: true, bot: true }
-    })
+    const receiver = normalizedPublicProfileId
+      ? await prisma.users.findUnique({
+          where: { publicProfileId: normalizedPublicProfileId },
+          select: { id: true, username: true, bot: true, isGuest: true },
+        })
+      : await prisma.users.findUnique({
+          where: { username: normalizedUsername },
+          select: { id: true, username: true, bot: true, isGuest: true },
+        })
 
-    if (!receiver) {
+    if (!receiver || receiver.isGuest) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -183,7 +205,7 @@ export async function GET(req: NextRequest) {
     }
 
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -199,27 +221,20 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type') || 'received' // received, sent, all
 
-    const user = await prisma.users.findUnique({
-      where: { email: session.user.email },
-      select: { id: true }
-    })
+    const userId = session.user.id
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    let whereClause: any = {
+    let whereClause: Prisma.FriendRequestsWhereInput = {
       status: 'pending'
     }
 
     if (type === 'received') {
-      whereClause.receiverId = user.id
+      whereClause.receiverId = userId
     } else if (type === 'sent') {
-      whereClause.senderId = user.id
+      whereClause.senderId = userId
     } else if (type === 'all') {
       whereClause.OR = [
-        { senderId: user.id },
-        { receiverId: user.id }
+        { senderId: userId },
+        { receiverId: userId }
       ]
     }
 
@@ -247,7 +262,7 @@ export async function GET(req: NextRequest) {
     })
 
     log.info('Friend requests fetched', {
-      userId: user.id,
+      userId,
       type,
       count: requests.length
     })

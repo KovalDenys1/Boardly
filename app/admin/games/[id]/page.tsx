@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAdminSession } from '@/lib/admin-auth'
+import { stringifyPersistedGameState } from '@/lib/persisted-game-state'
 import AdminForceEndGameButton from '../../_components/AdminForceEndGameButton'
 import AdminDeleteGameButton from '../../_components/AdminDeleteGameButton'
 
@@ -63,7 +64,7 @@ export default async function AdminGameDetailPage({ params }: { params: Promise<
 
   if (!game) notFound()
 
-  let statePreview = game.state
+  let statePreview = stringifyPersistedGameState(game.state)
   if (statePreview.length > 5000) {
     statePreview = `${statePreview.slice(0, 5000)}\n... (truncated)`
   }

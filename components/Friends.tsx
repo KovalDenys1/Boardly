@@ -9,6 +9,7 @@ import LoadingSpinner from './LoadingSpinner'
 import { io, Socket } from 'socket.io-client'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
+import { buildPublicProfilePath, extractPublicProfileId } from '@/lib/public-profile'
 
 interface Friend {
   id: string
@@ -45,6 +46,7 @@ interface FriendRequest {
 }
 
 type TabType = 'friends' | 'requests' | 'sent'
+type AddMethod = 'link' | 'code'
 
 export default function Friends() {
   const { t } = useTranslation()
@@ -54,11 +56,12 @@ export default function Friends() {
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchUsername, setSearchUsername] = useState('')
+  const [profileLinkInput, setProfileLinkInput] = useState('')
   const [friendCode, setFriendCode] = useState('')
   const [myFriendCode, setMyFriendCode] = useState<string>('')
+  const [myPublicProfileId, setMyPublicProfileId] = useState<string>('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [addByCode, setAddByCode] = useState(false)
+  const [addMethod, setAddMethod] = useState<AddMethod>('link')
   const [addLoading, setAddLoading] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const [socket, setSocket] = useState<Socket | null>(null)
@@ -185,6 +188,7 @@ export default function Friends() {
     if (!session?.user?.emailVerified) {
       clientLogger.warn('Email not verified, skipping friend code load')
       setMyFriendCode('')
+      setMyPublicProfileId('')
       return
     }
 
@@ -194,11 +198,22 @@ export default function Friends() {
       
       const data = await res.json()
       setMyFriendCode(data.friendCode || '')
-      clientLogger.log('My friend code loaded', { code: data.friendCode })
+      setMyPublicProfileId(data.publicProfileId || '')
+      clientLogger.log('My friend code loaded', {
+        code: data.friendCode,
+        publicProfileId: data.publicProfileId,
+      })
     } catch (error) {
       clientLogger.error('Error loading friend code:', error)
     }
   }, [session?.user?.emailVerified])
+
+  const closeAddModal = useCallback(() => {
+    setShowAddModal(false)
+    setProfileLinkInput('')
+    setFriendCode('')
+    setAddMethod('link')
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
@@ -221,11 +236,13 @@ export default function Friends() {
     return () => clearInterval(refreshInterval)
   }, [loadFriends, loadRequests, loadMyFriendCode])
 
-  const handleSendRequest = async (e: React.FormEvent) => {
+  const handleSendRequest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!searchUsername.trim()) {
-      showToast.error('profile.friends.errors.usernameRequired')
+    const publicProfileId = extractPublicProfileId(profileLinkInput)
+
+    if (!publicProfileId) {
+      showToast.error('profile.friends.errors.invalidProfileLink')
       return
     }
 
@@ -235,7 +252,7 @@ export default function Friends() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          receiverUsername: searchUsername.trim()
+          receiverPublicProfileId: publicProfileId,
         })
       })
 
@@ -246,8 +263,7 @@ export default function Friends() {
       }
 
       showToast.success('profile.friends.requestSent')
-      setSearchUsername('')
-      setShowAddModal(false)
+      closeAddModal()
       await loadRequests()
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
@@ -256,9 +272,9 @@ export default function Friends() {
     } finally {
       setAddLoading(false)
     }
-  }
+  }, [closeAddModal, loadRequests, profileLinkInput])
 
-  const handleSendRequestByCode = async (e: React.FormEvent) => {
+  const handleSendRequestByCode = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
     const cleanCode = friendCode.replace(/\s/g, '')
@@ -284,8 +300,7 @@ export default function Friends() {
       }
 
       showToast.success('profile.friends.requestSent')
-      setFriendCode('')
-      setShowAddModal(false)
+      closeAddModal()
       await loadRequests()
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
@@ -294,7 +309,7 @@ export default function Friends() {
     } finally {
       setAddLoading(false)
     }
-  }
+  }, [closeAddModal, friendCode, loadRequests])
 
   const copyFriendCode = async () => {
     if (!myFriendCode) return
@@ -309,10 +324,10 @@ export default function Friends() {
   }
 
   const copyProfileLink = async () => {
-    if (!myFriendCode) return
+    if (!myPublicProfileId) return
     
     try {
-      const profileUrl = `${window.location.origin}/add-friend/${myFriendCode}`
+      const profileUrl = `${window.location.origin}${buildPublicProfilePath(myPublicProfileId)}`
       await navigator.clipboard.writeText(profileUrl)
       showToast.success('profile.friends.profileLinkCopied')
     } catch (error) {
@@ -447,31 +462,30 @@ export default function Friends() {
       {myFriendCode && session?.user?.emailVerified && (
         <div className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-[2px]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🎯</span>
                 <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
                   {t('profile.friends.myFriendCode')}
                 </h3>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex">
                 <button
                   onClick={copyFriendCode}
-                  className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-sm text-white shadow-md transition-all hover:scale-105 hover:bg-blue-600 active:scale-95"
                   title={t('profile.friends.copyCode')}
                 >
-                  <span className="flex items-center gap-1.5">
-                    📋 {t('profile.friends.copyCode')}
-                  </span>
+                  <span>📋</span>
+                  <span className="hidden sm:inline">{t('profile.friends.copyCode')}</span>
                 </button>
                 <button
                   onClick={copyProfileLink}
-                  className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
+                  disabled={!myPublicProfileId}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-purple-500 px-3 py-1.5 text-sm text-white shadow-md transition-all hover:scale-105 hover:bg-purple-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
                   title={t('profile.friends.copyLink')}
                 >
-                  <span className="flex items-center gap-1.5">
-                    🔗 {t('profile.friends.copyLink')}
-                  </span>
+                  <span>🔗</span>
+                  <span className="hidden sm:inline">{t('profile.friends.copyLink')}</span>
                 </button>
               </div>
             </div>
@@ -846,27 +860,27 @@ export default function Friends() {
             </div>
 
             <div className="p-6">
-              {/* Toggle between username and friend code */}
+              {/* Toggle between profile link and friend code */}
               <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setAddByCode(false)}
+                  onClick={() => setAddMethod('link')}
                   className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
-                    !addByCode
+                    addMethod === 'link'
                       ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md scale-105'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
                 >
                   <span className="flex items-center justify-center gap-2">
-                    <span className="text-lg">📧</span>
-                    {t('profile.friends.byUsername')}
+                    <span className="text-lg">🔗</span>
+                    {t('profile.friends.byProfileLink')}
                   </span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAddByCode(true)}
+                  onClick={() => setAddMethod('code')}
                   className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
-                    addByCode
+                    addMethod === 'code'
                       ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md scale-105'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
@@ -878,21 +892,24 @@ export default function Friends() {
                 </button>
               </div>
 
-              {!addByCode ? (
+              {addMethod === 'link' ? (
                 <form onSubmit={handleSendRequest} className="space-y-5">
                   <div>
                     <label className="flex text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 items-center gap-2">
-                      <span>👤</span>
-                      {t('profile.friends.username')}
+                      <span>🔗</span>
+                      {t('profile.friends.profileLink')}
                     </label>
                     <input
                       type="text"
-                      value={searchUsername}
-                      onChange={(e) => setSearchUsername(e.target.value)}
-                      placeholder={t('profile.friends.usernamePlaceholder')}
+                      value={profileLinkInput}
+                      onChange={(e) => setProfileLinkInput(e.target.value)}
+                      placeholder={t('profile.friends.profileLinkPlaceholder')}
                       className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       required
                     />
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      {t('profile.friends.profileLinkHint')}
+                    </p>
                   </div>
                   <div className="flex gap-3 pt-4">
                     <button
@@ -914,12 +931,7 @@ export default function Friends() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowAddModal(false)
-                        setSearchUsername('')
-                        setFriendCode('')
-                        setAddByCode(false)
-                      }}
+                      onClick={closeAddModal}
                       className="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all hover:scale-105 active:scale-95"
                     >
                       {t('common.cancel')}
@@ -966,12 +978,7 @@ export default function Friends() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowAddModal(false)
-                        setSearchUsername('')
-                        setFriendCode('')
-                        setAddByCode(false)
-                      }}
+                      onClick={closeAddModal}
                       className="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all hover:scale-105 active:scale-95"
                     >
                       {t('common.cancel')}

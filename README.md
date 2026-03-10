@@ -80,6 +80,7 @@ npm run db:rls:smoke
 ## Documentation map
 
 - Project docs index: `docs/README.md`
+- Full local-only setup: `docs/LOCAL_SETUP.md`
 - Product direction: `docs/PROJECT_VISION.md`
 - System design and data flows: `docs/ARCHITECTURE.md`
 - Local/prod operations and deployment: `docs/OPERATIONS.md`
@@ -87,6 +88,7 @@ npm run db:rls:smoke
 - Contribution workflow: `docs/CONTRIBUTING.md`
 - Security model details: `docs/SECURITY_MODEL.md`
 - Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
+- Dependency maintenance plan: `docs/DEPENDENCY_UPGRADE_PLAN.md`
 - Bot developer guide: `lib/bots/README.md`
 - Migrations and RLS notes: `prisma/migrations/README.md`
 - AI agent instructions: `.github/copilot-instructions.md`

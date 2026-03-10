@@ -14,7 +14,7 @@ export enum LogLevel {
 }
 
 interface LogContext {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 interface LogEntry {
@@ -79,7 +79,7 @@ class Logger {
     console.log(JSON.stringify(entry))
   }
 
-  private log(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
+  private log(level: LogLevel, message: string, context?: LogContext, error?: unknown): void {
     if (!this.shouldLog(level)) {
       return
     }
@@ -92,13 +92,21 @@ class Logger {
     }
 
     if (error) {
-      entry.stack = error.stack
-      if (!entry.context) {
-        entry.context = {}
-      }
-      entry.context.error = {
-        name: error.name,
-        message: error.message,
+      const err = error instanceof Error ? error : undefined
+      if (err) {
+        entry.stack = err.stack
+        if (!entry.context) {
+          entry.context = {}
+        }
+        entry.context.error = {
+          name: err.name,
+          message: err.message,
+        }
+      } else {
+        if (!entry.context) {
+          entry.context = {}
+        }
+        entry.context.error = String(error)
       }
     }
 
@@ -133,7 +141,7 @@ class Logger {
   /**
    * Log errors
    */
-  error(message: string, error?: Error, context?: LogContext): void {
+  error(message: string, error?: unknown, context?: LogContext): void {
     this.log(LogLevel.ERROR, message, context, error)
   }
 
@@ -144,7 +152,7 @@ class Logger {
     const childLogger = new Logger()
     const originalLog = childLogger.log.bind(childLogger)
     
-    childLogger.log = (level: LogLevel, message: string, context?: LogContext, error?: Error) => {
+    childLogger.log = (level: LogLevel, message: string, context?: LogContext, error?: unknown) => {
       const mergedContext = { ...defaultContext, ...context }
       originalLog(level, message, mergedContext, error)
     }

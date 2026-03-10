@@ -35,7 +35,8 @@ export class TicTacToeBotExecutor {
       message: `${botPlayer.name} is thinking...`,
     })
 
-    await this.delay(difficulty, 250)
+    // Keep Tic-Tac-Toe bot turns snappy because each move is a single action.
+    await this.delay(difficulty, 120)
 
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
