@@ -5,12 +5,14 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
+import { UserAvatar } from './UserAvatar'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
   isAdmin?: boolean
   userName?: string | null
   userEmail?: string | null
+  userImage?: string | null
 }
 
 export function MobileMenu({
@@ -18,6 +20,7 @@ export function MobileMenu({
   isAdmin = false,
   userName,
   userEmail,
+  userImage,
 }: MobileMenuProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -176,18 +179,18 @@ export function MobileMenu({
                 style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
               >
                 <div className="flex items-center gap-4">
-                  <div
-                    className="rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg"
+                  <UserAvatar
+                    image={isGuestSession ? null : userImage}
+                    userName={isGuestSession ? guestName : userName}
+                    userEmail={isGuestSession ? null : userEmail}
+                    className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                    textClassName="font-bold"
                     style={{
                       width: 'clamp(48px, 5vw, 64px)',
                       height: 'clamp(48px, 5vw, 64px)',
                       fontSize: 'clamp(20px, 2vw, 26px)'
                     }}
-                  >
-                    {isGuestSession
-                      ? (guestName?.[0]?.toUpperCase() || 'G')
-                      : (userName?.[0]?.toUpperCase() || userEmail?.[0]?.toUpperCase() || '?')}
-                  </div>
+                  />
                   <div className="flex-1 min-w-0">
                     <p
                       className="font-semibold text-gray-900 dark:text-white truncate"

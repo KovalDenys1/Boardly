@@ -65,6 +65,7 @@ export default function Header() {
                 isAuthenticated={isAuthenticated}
                 userName={session?.user?.name}
                 userEmail={session?.user?.email}
+                userImage={session?.user?.image}
               />
             )}
 
@@ -73,6 +74,7 @@ export default function Header() {
               isAdmin={isAdmin}
               userName={session?.user?.name}
               userEmail={session?.user?.email}
+              userImage={session?.user?.image}
             />
           </div>
         </div>
