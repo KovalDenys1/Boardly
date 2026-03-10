@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { sendWelcomeEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { ensureUserHasFriendCode } from '@/lib/friend-code'
+import { normalizeProfileEmail } from '@/lib/profile-email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,15 +31,24 @@ export async function POST(request: NextRequest) {
     // Get user details for welcome email and check if already verified
     const user = await prisma.users.findUnique({
       where: { id: verificationToken.userId },
-      select: { id: true, email: true, username: true, emailVerified: true },
+      select: {
+        id: true,
+        email: true,
+        pendingEmail: true,
+        username: true,
+        emailVerified: true,
+      },
     })
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // If already verified, return success (idempotent)
-    if (user.emailVerified) {
+    const pendingEmail = user.pendingEmail ? normalizeProfileEmail(user.pendingEmail) : null
+    const hasPendingEmailChange = Boolean(pendingEmail)
+
+    // If already verified and there is no pending email change, return success (idempotent)
+    if (user.emailVerified && !hasPendingEmailChange) {
       // Clean up token and return success
       await prisma.emailVerificationTokens.delete({
         where: { token },
@@ -48,10 +58,19 @@ export async function POST(request: NextRequest) {
 
     // Use transaction to ensure atomicity and prevent race conditions
     await prisma.$transaction(async (tx) => {
-      // Update user email verification status
+      const updateData = hasPendingEmailChange
+        ? {
+            email: pendingEmail,
+            pendingEmail: null,
+            emailVerified: new Date(),
+          }
+        : {
+            emailVerified: new Date(),
+          }
+
       await tx.users.update({
         where: { id: verificationToken.userId },
-        data: { emailVerified: new Date() },
+        data: updateData,
       })
 
       // Delete the verification token
@@ -67,8 +86,8 @@ export async function POST(request: NextRequest) {
         log.warn('Failed to generate friend code (non-critical)', { error })
       })
 
-    // Send welcome email after successful verification (non-blocking)
-    if (user.email) {
+    // Send welcome email after first successful verification (non-blocking)
+    if (!hasPendingEmailChange && !user.emailVerified && user.email) {
       sendWelcomeEmail(user.email, user.username || 'Player')
         .catch((error) => {
           const log = apiLogger('POST /api/auth/verify-email')
@@ -76,7 +95,11 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    return NextResponse.json({ message: 'Email verified successfully' })
+    return NextResponse.json({
+      message: hasPendingEmailChange
+        ? 'New email verified successfully'
+        : 'Email verified successfully',
+    })
   } catch (error) {
     const log = apiLogger('POST /api/auth/verify-email')
     log.error('Email verification error', error as Error)

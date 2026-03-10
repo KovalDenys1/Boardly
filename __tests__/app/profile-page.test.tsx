@@ -16,6 +16,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: { language: 'en' },
   }),
 }))
 
@@ -94,6 +95,19 @@ describe('ProfilePage', () => {
   const mockSessionUpdate = jest.fn().mockResolvedValue({})
   const originalFetch = global.fetch
   const mockFetch = jest.fn()
+  const baseProfileUser = {
+    id: 'user-1',
+    username: 'Player One',
+    email: 'user@example.com',
+    pendingEmail: null,
+    image: null,
+    emailVerified: '2026-01-01T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    publicProfileId: 'public-user-1',
+    friendsCount: 4,
+    gamesPlayed: 12,
+    linkedAccountsCount: 0,
+  }
 
   beforeAll(() => {
     ;(global as any).fetch = mockFetch
@@ -154,7 +168,19 @@ describe('ProfilePage', () => {
       }
 
       if (url.includes('/api/user/profile') && method === 'PATCH') {
-        return mockJsonResponse({ success: true })
+        const payload = JSON.parse(String(init?.body || '{}'))
+        return mockJsonResponse({
+          success: true,
+          user: {
+            ...baseProfileUser,
+            username: payload.username || baseProfileUser.username,
+            pendingEmail: payload.email || null,
+          },
+        })
+      }
+
+      if (url.includes('/api/user/profile') && method === 'GET') {
+        return mockJsonResponse({ user: baseProfileUser })
       }
 
       return mockJsonResponse({})

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -12,6 +12,7 @@ import PlayerStatsDashboard from '@/components/PlayerStatsDashboard'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
+import { UserAvatar } from '@/components/Header/UserAvatar'
 
 interface LinkedAccount {
   provider: string
@@ -53,6 +54,49 @@ type NotificationPreferences = {
   unsubscribedAll: boolean
 }
 
+type ProfileSummary = {
+  id: string
+  username: string | null
+  email: string | null
+  pendingEmail: string | null
+  image: string | null
+  emailVerified: string | null
+  createdAt: string
+  publicProfileId: string | null
+  friendsCount: number
+  gamesPlayed: number
+  linkedAccountsCount: number
+}
+
+type InlineEditorField = 'username' | 'email'
+type InlineEditorStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
+
+function getInlineEditorErrorStatus(
+  field: InlineEditorField,
+  message: string
+): Exclude<InlineEditorStatus, 'idle' | 'checking' | 'available'> {
+  const normalizedMessage = message.toLowerCase()
+
+  if (
+    normalizedMessage.includes('taken') ||
+    normalizedMessage.includes('already in use') ||
+    normalizedMessage.includes('already used') ||
+    normalizedMessage.includes('already taken')
+  ) {
+    return 'taken'
+  }
+
+  if (
+    normalizedMessage.includes('invalid') ||
+    normalizedMessage.includes('must') ||
+    normalizedMessage.includes('only contain')
+  ) {
+    return 'invalid'
+  }
+
+  return field === 'email' && normalizedMessage.includes('email') ? 'invalid' : 'error'
+}
+
 const DEFAULT_SETTINGS: SettingsState = {
   language: 'en',
   theme: 'system',
@@ -67,7 +111,7 @@ const DEFAULT_SETTINGS: SettingsState = {
 }
 
 export default function ProfilePage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { data: session, update, status } = useSession()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('profile')
@@ -79,7 +123,13 @@ export default function ProfilePage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
-  const sessionUserName = session?.user?.name || ''
+  const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
+  const [editingField, setEditingField] = useState<InlineEditorField | null>(null)
+  const [editingValue, setEditingValue] = useState('')
+  const [editingStatus, setEditingStatus] = useState<InlineEditorStatus>('idle')
+  const [editingMessage, setEditingMessage] = useState('')
+  const [submittingInlineEdit, setSubmittingInlineEdit] = useState(false)
+  const sessionUserName = profileSummary?.username || session?.user?.name || ''
 
   // Settings state
   const [settingsChanged, setSettingsChanged] = useState(false)
@@ -92,6 +142,62 @@ export default function ProfilePage() {
     unsubscribedAll: false,
   })
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
+
+  const currentUsername = profileSummary?.username?.trim() || session?.user?.name || ''
+  const currentEmail = profileSummary?.email?.trim() || session?.user?.email || ''
+  const pendingEmail = profileSummary?.pendingEmail?.trim() || ''
+  const displayName = currentUsername || currentEmail.split('@')[0] || 'Player'
+  const effectiveEmailVerified = Boolean(profileSummary?.emailVerified || session?.user?.emailVerified)
+
+  const memberSinceLabel = useMemo(() => {
+    if (!profileSummary?.createdAt) {
+      return '—'
+    }
+
+    return new Date(profileSummary.createdAt).toLocaleDateString(i18n.language || undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }, [i18n.language, profileSummary?.createdAt])
+
+  const summaryCards = useMemo(
+    () => [
+      {
+        id: 'friends',
+        label: t('profile.friends.title'),
+        value: String(profileSummary?.friendsCount ?? 0),
+      },
+      {
+        id: 'games',
+        label: t('profile.stats.gamesPlayed'),
+        value: String(profileSummary?.gamesPlayed ?? 0),
+      },
+      {
+        id: 'memberSince',
+        label: t('profile.memberSince'),
+        value: memberSinceLabel,
+      },
+      {
+        id: 'premium',
+        label: t('profile.premiumAccount'),
+        value: t('profile.comingSoon'),
+      },
+    ],
+    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.gamesPlayed, t]
+  )
+
+  const fetchProfileSummary = useCallback(async () => {
+    const res = await fetch('/api/user/profile', { cache: 'no-store' })
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to load profile')
+    }
+
+    setProfileSummary(data.user)
+    return data.user as ProfileSummary
+  }, [])
 
   useEffect(() => {
     if (!sessionUserName) return
@@ -109,7 +215,9 @@ export default function ProfilePage() {
   useEffect(() => {
     const refreshOnFocus = () => {
       if (status === 'authenticated') {
-        update().catch(() => { })
+        update()
+          .then(() => fetchProfileSummary().catch(() => {}))
+          .catch(() => { })
       }
     }
 
@@ -125,7 +233,7 @@ export default function ProfilePage() {
       window.removeEventListener('focus', refreshOnFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [status, update])
+  }, [fetchProfileSummary, status, update])
 
   // Check if account was just linked
   useEffect(() => {
@@ -194,6 +302,9 @@ export default function ProfilePage() {
     }
 
     if (status === 'authenticated') {
+      fetchProfileSummary().catch((error) => {
+        showToast.errorFrom(error, 'toast.error')
+      })
       fetchLinkedAccounts()
 
       // Load settings from localStorage
@@ -236,7 +347,213 @@ export default function ProfilePage() {
         })
         .catch(() => {})
     }
-  }, [status])
+  }, [fetchProfileSummary, status])
+
+  useEffect(() => {
+    if (!editingField) {
+      return
+    }
+
+    const trimmedValue = editingValue.trim()
+
+    if (!trimmedValue) {
+      setEditingStatus('idle')
+      setEditingMessage(t('profile.inline.makeChange'))
+      return
+    }
+
+    if (editingField === 'username') {
+      if (trimmedValue === currentUsername) {
+        setEditingStatus('idle')
+        setEditingMessage(t('profile.inline.makeChange'))
+        return
+      }
+
+      if (trimmedValue.length < 3) {
+        setEditingStatus('invalid')
+        setEditingMessage(t('auth.username.tooShort', 'Username must be at least 3 characters'))
+        return
+      }
+
+      if (trimmedValue.length > 20) {
+        setEditingStatus('invalid')
+        setEditingMessage(t('auth.username.tooLong', 'Username must be at most 20 characters'))
+        return
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(trimmedValue)) {
+        setEditingStatus('invalid')
+        setEditingMessage(t('auth.username.invalidChars', 'Username can only contain letters, numbers, and underscores'))
+        return
+      }
+
+      setEditingStatus('checking')
+      setEditingMessage(t('auth.username.checking', 'Checking availability...'))
+
+      const timeoutId = window.setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/user/check-username?username=${encodeURIComponent(trimmedValue)}`)
+          const data = await res.json()
+
+          if (!res.ok) {
+            throw new Error(data.error || 'Failed to check username')
+          }
+
+          if (data.error) {
+            setEditingStatus('invalid')
+            setEditingMessage(data.error)
+            return
+          }
+
+          if (data.available) {
+            setEditingStatus('available')
+            setEditingMessage(t('auth.username.available', 'Username is available!'))
+            return
+          }
+
+          setEditingStatus('taken')
+          setEditingMessage(t('auth.username.taken', 'Username is already taken'))
+        } catch (error) {
+          setEditingStatus('error')
+          setEditingMessage(
+            error instanceof Error ? error.message : t('profile.inline.checkFailed')
+          )
+        }
+      }, 350)
+
+      return () => window.clearTimeout(timeoutId)
+    }
+
+    const normalizedEmail = trimmedValue.toLowerCase()
+    if (normalizedEmail === currentEmail.toLowerCase() || normalizedEmail === pendingEmail.toLowerCase()) {
+      setEditingStatus('idle')
+      setEditingMessage(t('profile.inline.makeChange'))
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setEditingStatus('invalid')
+      setEditingMessage(t('profile.inline.invalidEmail'))
+      return
+    }
+
+    setEditingStatus('checking')
+    setEditingMessage(t('profile.inline.checkingEmail'))
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/user/check-email?email=${encodeURIComponent(normalizedEmail)}`)
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to check email')
+        }
+
+        if (data.error) {
+          setEditingStatus('invalid')
+          setEditingMessage(data.error)
+          return
+        }
+
+        if (data.available) {
+          setEditingStatus('available')
+          setEditingMessage(t('profile.inline.emailAvailable'))
+          return
+        }
+
+        setEditingStatus('taken')
+        setEditingMessage(t('profile.inline.emailTaken'))
+      } catch (error) {
+        setEditingStatus('error')
+        setEditingMessage(
+          error instanceof Error ? error.message : t('profile.inline.checkFailed')
+        )
+      }
+    }, 350)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [currentEmail, currentUsername, editingField, editingValue, pendingEmail, t])
+
+  const beginInlineEdit = (field: InlineEditorField) => {
+    const initialValue = field === 'username' ? currentUsername : (pendingEmail || currentEmail)
+    setEditingField(field)
+    setEditingValue(initialValue)
+    setEditingStatus('idle')
+    setEditingMessage(t('profile.inline.makeChange'))
+  }
+
+  const cancelInlineEdit = () => {
+    setEditingField(null)
+    setEditingValue('')
+    setEditingStatus('idle')
+    setEditingMessage('')
+  }
+
+  const handleInlineEditSubmit = async () => {
+    if (!editingField) {
+      return
+    }
+
+    const trimmedValue = editingValue.trim()
+    const hasChanged =
+      editingField === 'username'
+        ? trimmedValue !== currentUsername
+        : trimmedValue.toLowerCase() !== (pendingEmail || currentEmail).toLowerCase()
+
+    if (!hasChanged || editingStatus !== 'available') {
+      return
+    }
+
+    setSubmittingInlineEdit(true)
+
+    try {
+      const payload =
+        editingField === 'username'
+          ? { username: trimmedValue }
+          : { email: trimmedValue.toLowerCase() }
+
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update profile')
+      }
+
+      setProfileSummary(data.user)
+
+      if (editingField === 'username') {
+        const nextUsername = data.user?.username || trimmedValue
+        setUsername(nextUsername)
+        await update({
+          user: {
+            name: nextUsername,
+            username: nextUsername,
+          },
+        })
+        showToast.success('toast.profileUpdated')
+      } else {
+        showToast.success('toast.verificationSent')
+      }
+
+      cancelInlineEdit()
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t('profile.inline.checkFailed')
+
+      setEditingStatus(getInlineEditorErrorStatus(editingField, message))
+      setEditingMessage(message)
+      showToast.errorFrom(error, 'toast.error')
+    } finally {
+      setSubmittingInlineEdit(false)
+    }
+  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -257,7 +574,6 @@ export default function ProfilePage() {
     }
 
     // Check if username is same as current
-    const currentUsername = (session?.user as { username?: string })?.username || session?.user?.name
     if (username === currentUsername) {
       showToast.error('toast.usernameSame')
       return
@@ -285,11 +601,18 @@ export default function ProfilePage() {
         throw new Error(data.error || 'Failed to update profile')
       }
 
+      if (data.user) {
+        setProfileSummary(data.user)
+      }
+
+      const updatedUsername = data.user?.username || username
+      setUsername(updatedUsername)
+
       // Update session with new username
       await update({
         user: {
-          name: username,
-          username: username,
+          name: updatedUsername,
+          username: updatedUsername,
         },
       })
 
@@ -325,6 +648,7 @@ export default function ProfilePage() {
       showToast.success('toast.verificationSent')
       // Refresh session to get updated emailVerified status
       await update()
+      await fetchProfileSummary()
     } catch (error) {
       showToast.errorFrom(error, 'toast.error')
     } finally {
@@ -477,6 +801,17 @@ export default function ProfilePage() {
     { id: 'settings', icon: '⚙️', label: t('profile.settings.title') },
   ]
 
+  const inlineEditorHasChanges = editingField
+    ? editingField === 'username'
+      ? editingValue.trim() !== currentUsername
+      : editingValue.trim().toLowerCase() !== (pendingEmail || currentEmail).toLowerCase()
+    : false
+
+  const inlineEditorCanSubmit =
+    inlineEditorHasChanges &&
+    editingStatus === 'available' &&
+    !submittingInlineEdit
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
@@ -493,31 +828,208 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-2 sm:p-4">
       <div className="max-w-4xl mx-auto pt-16 sm:pt-20 pb-4">
         <div className="card animate-scale-in">
-          {/* Header - Adaptive sizing */}
-          <div className="mb-4 sm:mb-6">
-            <button
-              type="button"
-              onClick={handleBackNavigation}
-              className="mb-3 inline-flex items-center gap-2 text-sm sm:text-base font-medium text-blue-700 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
-            >
-              <span aria-hidden>←</span>
-              <span>Back</span>
-            </button>
-            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mb-3 sm:mb-4">
-              <span className="text-3xl sm:text-4xl">👤</span>
+          <div className="mb-6 rounded-[28px] border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur sm:mb-8 sm:p-6 lg:p-8 dark:border-slate-700/70 dark:bg-slate-900/50">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  onClick={handleBackNavigation}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 transition-colors hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+                >
+                  <span aria-hidden>←</span>
+                  <span>{t('common.back')}</span>
+                </button>
+
+                <div className="mt-4">
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                    {t('profile.title')}
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base dark:text-slate-300">
+                    {t('profile.inline.headerHint')}
+                  </p>
+                </div>
+
+                <div className="mt-6 grid gap-3">
+                  <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                          {t('profile.username')}
+                        </p>
+                        <button
+                          type="button"
+                          onDoubleClick={() => beginInlineEdit('username')}
+                          className="mt-2 block max-w-full text-left text-xl font-semibold text-slate-900 transition-colors hover:text-blue-700 dark:text-white dark:hover:text-blue-300"
+                        >
+                          <span className="block truncate">
+                            {currentUsername || t('profile.inline.noValue')}
+                          </span>
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => beginInlineEdit('username')}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-300"
+                        aria-label={t('profile.inline.editUsername')}
+                      >
+                        {t('profile.inline.edit')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                          {t('profile.email')}
+                        </p>
+                        <button
+                          type="button"
+                          onDoubleClick={() => beginInlineEdit('email')}
+                          className="mt-2 block max-w-full text-left text-base font-medium text-slate-900 transition-colors hover:text-blue-700 dark:text-white dark:hover:text-blue-300"
+                        >
+                          <span className="block truncate">{currentEmail || t('profile.inline.noValue')}</span>
+                        </button>
+                        {pendingEmail && (
+                          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+                            <span className="min-w-0 break-all">
+                              {t('profile.inline.pendingEmailNotice', { email: pendingEmail })}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleResendVerification}
+                              disabled={showResendVerification}
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-950 transition-colors hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {showResendVerification
+                                ? t('common.loading')
+                                : t('profile.inline.resendVerification')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => beginInlineEdit('email')}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:text-blue-300"
+                        aria-label={t('profile.inline.editEmail')}
+                      >
+                        {t('profile.inline.edit')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {editingField && (
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 shadow-sm dark:border-blue-500/30 dark:bg-blue-500/10">
+                      <div className="flex flex-col gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                            {editingField === 'username'
+                              ? t('profile.inline.editUsername')
+                              : t('profile.inline.editEmail')}
+                          </p>
+                        </div>
+
+                        <input
+                          type={editingField === 'email' ? 'email' : 'text'}
+                          value={editingValue}
+                          onChange={(event) => setEditingValue(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              cancelInlineEdit()
+                            }
+
+                            if (event.key === 'Enter' && inlineEditorCanSubmit) {
+                              void handleInlineEditSubmit()
+                            }
+                          }}
+                          className={`input ${
+                            editingStatus === 'available'
+                              ? 'border-green-500 dark:border-green-400'
+                              : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
+                                ? 'border-red-500 dark:border-red-400'
+                                : ''
+                          }`}
+                          autoFocus
+                        />
+
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <p
+                            className={`text-sm ${
+                              editingStatus === 'available'
+                                ? 'text-green-700 dark:text-green-300'
+                                : editingStatus === 'taken' || editingStatus === 'invalid' || editingStatus === 'error'
+                                  ? 'text-red-700 dark:text-red-300'
+                                  : 'text-slate-600 dark:text-slate-300'
+                            }`}
+                          >
+                            {editingMessage}
+                          </p>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <button
+                              type="button"
+                              onClick={() => void handleInlineEditSubmit()}
+                              disabled={!inlineEditorCanSubmit}
+                              className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {submittingInlineEdit ? t('common.loading') : t('profile.inline.confirm')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelInlineEdit}
+                              className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                            >
+                              {t('profile.inline.cancel')}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="shrink-0 lg:w-[240px] xl:w-[260px]">
+                <div className="flex h-full flex-col items-center justify-center rounded-[28px] border border-slate-200 bg-gradient-to-br from-blue-50 to-white p-5 text-center shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-950">
+                  <UserAvatar
+                    image={profileSummary?.image || session?.user?.image || null}
+                    userName={currentUsername || displayName}
+                    userEmail={currentEmail}
+                    className="h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg sm:h-28 sm:w-28 lg:h-32 lg:w-32"
+                    textClassName="text-3xl font-bold"
+                  />
+                  <p className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+                    {displayName}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {t('profile.inline.avatarCaption')}
+                  </p>
+                </div>
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2 break-words">{t('profile.title')}</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 break-words">
-              Manage your account settings
-            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {summaryCards.map((card) => (
+                <div
+                  key={card.id}
+                  className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                    {card.label}
+                  </p>
+                  <p className="mt-3 text-lg font-semibold text-slate-900 dark:text-white sm:text-xl">
+                    {card.value}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Tabs Navigation - Mobile optimized with scroll */}
-          <div className="mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto">
+          <div className="mb-4 sm:mb-6 border-b border-gray-200 dark:border-gray-700">
             <nav
               role="tablist"
               aria-label={t('profile.title')}
-              className="flex gap-2 sm:gap-4 min-w-max"
+              className="grid grid-cols-5 gap-1 sm:gap-2"
             >
               {tabItems.map((tab) => (
                 <button
@@ -527,15 +1039,16 @@ export default function ProfilePage() {
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`px-3 sm:px-4 py-2 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+                  className={`min-w-0 rounded-t-2xl border-b-2 px-2 py-3 text-center font-medium transition-colors ${
                     activeTab === tab.id
-                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
+                      : 'border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-slate-800 dark:hover:text-gray-200'
                   }`}
                 >
-                  <span className="inline sm:hidden">{tab.icon}</span>
-                  <span className="hidden sm:inline">
-                    {tab.icon} {tab.label}
+                  <span className="text-base sm:hidden">{tab.icon}</span>
+                  <span className="hidden items-center justify-center gap-2 sm:inline-flex">
+                    <span aria-hidden>{tab.icon}</span>
+                    <span className="truncate text-xs lg:text-sm">{tab.label}</span>
                   </span>
                 </button>
               ))}
@@ -547,7 +1060,7 @@ export default function ProfilePage() {
             <div role="tabpanel" id="profile-tab-panel-profile" aria-labelledby="profile-tab-profile">
 
               {/* Email Verification Banner - Only show for email/password accounts */}
-              {session?.user?.email && !session?.user?.emailVerified && !linkedAccounts.google && !linkedAccounts.github && !linkedAccounts.discord && (
+              {currentEmail && !effectiveEmailVerified && !linkedAccounts.google && !linkedAccounts.github && !linkedAccounts.discord && (
                 <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
                   <div className="flex items-start gap-2 sm:gap-3">
                     <span className="text-xl sm:text-2xl flex-shrink-0">⚠️</span>
@@ -575,16 +1088,18 @@ export default function ProfilePage() {
                 {/* Email (read-only) */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Email {session?.user?.emailVerified && <span className="text-green-600 dark:text-green-400 text-xs sm:text-sm">✓ Verified</span>}
+                    Email {effectiveEmailVerified && <span className="text-green-600 dark:text-green-400 text-xs sm:text-sm">✓ Verified</span>}
                   </label>
                   <input
                     type="email"
-                    value={session?.user?.email || ''}
+                    value={currentEmail}
                     disabled
                     className="input bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-sm sm:text-base"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Email cannot be changed
+                    {pendingEmail
+                      ? t('profile.inline.pendingEmailHelp', { email: pendingEmail })
+                      : t('profile.inline.changeEmailHint')}
                   </p>
                 </div>
 
@@ -594,7 +1109,7 @@ export default function ProfilePage() {
                     value={username}
                     onChange={setUsername}
                     onAvailabilityChange={setUsernameAvailable}
-                    currentUsername={session?.user?.name || undefined}
+                    currentUsername={currentUsername || undefined}
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">

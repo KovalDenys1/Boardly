@@ -301,19 +301,23 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Refresh mutable user flags/status on update trigger
-      if (trigger === 'update' && token.email) {
-        const tokenEmail = String(token.email).trim().toLowerCase()
-        const dbUser = await prisma.users.findFirst({
-          where: {
-            email: {
-              equals: tokenEmail,
-              mode: 'insensitive',
-            },
+      // Refresh mutable user fields/status on update trigger
+      if (trigger === 'update' && token.id) {
+        const dbUser = await prisma.users.findUnique({
+          where: { id: String(token.id) },
+          select: {
+            email: true,
+            username: true,
+            image: true,
+            emailVerified: true,
+            role: true,
+            suspended: true,
           },
-          select: { emailVerified: true, role: true, suspended: true }
         })
         if (dbUser) {
+          token.email = dbUser.email
+          token.name = dbUser.username
+          token.picture = dbUser.image
           token.emailVerified = dbUser.emailVerified
           token.role = dbUser.role
           token.suspended = dbUser.suspended
