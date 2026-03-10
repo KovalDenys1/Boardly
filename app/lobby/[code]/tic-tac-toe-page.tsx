@@ -379,7 +379,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 newSocket.emit('join-lobby', code)
             })
 
-            newSocket.on('game-update', (payload: any) => {
+            newSocket.on('game-update', (payload: Record<string, unknown>) => {
                 clientLogger.log('📡 Game update received:', payload)
                 // Reload to get latest state from server
                 loadLobby()

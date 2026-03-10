@@ -89,10 +89,10 @@ export async function POST(
     }
 
     const playerOwnedGame =
-      lobby.games.find((game: any) =>
-        game.players.some((p: any) => p.userId === userId)
+      lobby.games.find((game) =>
+        game.players.some((p) => p.userId === userId)
       ) || null
-    const activeGame = playerOwnedGame || pickRelevantLobbyGame(lobby.games as any[])
+    const activeGame = playerOwnedGame || pickRelevantLobbyGame(lobby.games)
 
     if (!activeGame) {
       return NextResponse.json(
@@ -102,7 +102,7 @@ export async function POST(
     }
 
     // Find player in the game
-    const player = activeGame.players.find((p: any) => p.userId === userId)
+    const player = activeGame.players.find((p) => p.userId === userId)
 
     if (!player) {
       return NextResponse.json({
@@ -162,7 +162,7 @@ export async function POST(
         where: { id: activeGame.id },
         data: {
           status: 'abandoned',
-          abandonedAt: new Date() as any // TypeScript cache issue - field exists in schema
+          abandonedAt: new Date() // TypeScript cache issue - field exists in schema
         }
       })
 
@@ -189,7 +189,7 @@ export async function POST(
         where: { id: activeGame.id },
         data: {
           status: 'abandoned',
-          abandonedAt: new Date() as any
+          abandonedAt: new Date()
         }
       })
 
@@ -221,7 +221,7 @@ export async function POST(
       gameEnded: false,
       lobbyDeactivated: false
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     log.error('Leave lobby error', error)
     return NextResponse.json(
       { error: 'Failed to leave lobby' },

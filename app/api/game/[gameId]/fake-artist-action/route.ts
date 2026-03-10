@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
-import { Move } from '@/lib/game-engine'
+import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
@@ -105,15 +105,15 @@ export async function POST(
       return NextResponse.json({ error: 'Only lobby host can advance this phase' }, { status: 403 })
     }
 
-    let parsedState: unknown
+    let parsedState: RestorableGameState
     try {
-      parsedState = parsePersistedGameState(game.state)
+      parsedState = parsePersistedGameState<RestorableGameState>(game.state)
     } catch {
       return NextResponse.json({ error: 'Corrupted game state' }, { status: 500 })
     }
 
     const fakeArtistGame = new FakeArtistGame(gameId)
-    fakeArtistGame.restoreState(parsedState as any)
+    fakeArtistGame.restoreState(parsedState)
     const gamePlayersByUserId = new Map(
       game.players.map((entry) => [entry.userId, entry])
     )

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db'
 import { generateLobbyCode } from '@/lib/lobby'
 import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
@@ -258,7 +259,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
 
     // Build where clause
-    const where: any = { isActive: true }
+    const where: Prisma.LobbiesWhereInput = { isActive: true }
 
     if (gameType) {
       where.gameType = gameType
@@ -283,7 +284,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Get lobbies with game status filter
-    const gameStatusFilter: any = {}
+    const gameStatusFilter: Prisma.GamesWhereInput = {}
     if (status === 'waiting') {
       gameStatusFilter.status = 'waiting'
     } else if (status === 'playing') {
@@ -359,7 +360,7 @@ export async function GET(request: NextRequest) {
           queryTimeout = null
         }
       }
-    })()) as any[]
+    })()) as Awaited<ReturnType<typeof prisma.lobbies.findMany<{ where: Prisma.LobbiesWhereInput; select: { id: true; code: true; name: true; maxPlayers: true; allowSpectators: true; maxSpectators: true; spectatorCount: true; turnTimer: true; isActive: true; gameType: true; createdAt: true; creatorId: true; password: true; creator: { select: { id: true; username: true } }; games: { where: Prisma.GamesWhereInput; select: { id: true; status: true; updatedAt: true; _count: { select: { players: true } }; players: { select: { user: { select: { bot: true } } } } } } } }>>>
 
     // Normalize lobbies to a single relevant active game record.
     const lobbiesWithRelevantGame = lobbies
@@ -371,7 +372,7 @@ export async function GET(request: NextRequest) {
           games: [game],
         }
       })
-      .filter(Boolean) as any[]
+      .filter((lobby): lobby is NonNullable<typeof lobby> => lobby !== null)
 
     // Filter by player count if specified AND filter out games with only bots or no human players
     let filteredLobbies = lobbiesWithRelevantGame.filter(lobby => {
@@ -384,7 +385,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Count human (non-bot) players using bot relation
-      const humanPlayerCount = game.players?.filter((p: any) => !p.user.bot).length || 0
+      const humanPlayerCount = game.players?.filter((p) => !p.user?.bot).length || 0
 
       // Exclude games with no human players (abandoned or bot-only games)
       if (humanPlayerCount === 0) return false

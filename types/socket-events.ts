@@ -390,7 +390,7 @@ export interface LobbySettingsUpdatePayload extends BaseEventPayload {
  * Type guard to check if event has sequence ID
  */
 export function hasSequenceId(event: unknown): event is BaseEventPayload & { sequenceId: number } {
-  return typeof event === 'object' && event !== null && 'sequenceId' in event && typeof (event as any).sequenceId === 'number'
+  return typeof event === 'object' && event !== null && 'sequenceId' in event && typeof (event as Record<string, unknown>).sequenceId === 'number'
 }
 
 /**

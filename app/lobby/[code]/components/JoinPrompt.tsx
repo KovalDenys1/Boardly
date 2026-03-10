@@ -2,7 +2,13 @@ import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface JoinPromptProps {
-  lobby: any
+  lobby: {
+    code?: string
+    name?: string
+    isPrivate?: boolean
+    gameType?: string
+    [key: string]: unknown
+  }
   password: string
   setPassword: (password: string) => void
   error: string | null

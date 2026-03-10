@@ -13,7 +13,8 @@ import type { RollHistoryEntry } from '@/components/RollHistory'
 import { detectCelebration, CelebrationEvent } from '@/lib/celebrations'
 import { analyzeResults } from '@/lib/yahtzee-results'
 import { clientLogger } from '@/lib/client-logger'
-import { Game, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep } from '@/types/game'
+import { Game, GamePlayer, GameUpdatePayload, PlayerJoinedPayload, GameStartedPayload, LobbyUpdatePayload, ChatMessagePayload, PlayerTypingPayload, BotMoveStep, Lobby } from '@/types/game'
+import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
@@ -139,7 +140,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const code = params.code as string
 
   // Core state
-  const [lobby, setLobby] = useState<Record<string, unknown> | null>(null)
+  const [lobby, setLobby] = useState<Lobby | null>(null)
   const [game, setGame] = useState<Game | null>(null)
   const [gameEngine, setGameEngine] = useState<GameEngine | null>(null)
   const [loading, setLoading] = useState(true)
@@ -642,7 +643,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     playAmbientSound('gameStart')
   }, [isGuest, guestId, session?.user?.id, lobby?.creatorId, playAmbientSound])
 
-  const onBotAction = useCallback((event: any) => {
+  const onBotAction = useCallback((event: BaseBotActionEvent) => {
     clientLogger.log('🤖 Received bot-action:', event)
 
     const botName = event.botName || 'Bot'
@@ -656,16 +657,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
         const playerCount = game?.players?.length || 1
         const turnNumber = Math.floor(currentRound / playerCount) + 1
+        const yahtzeeEvent = event as YahtzeeBotActionEvent
 
         setRollHistory(prev => {
           const newRollEntry: RollHistoryEntry = {
             id: `bot-${Date.now()}-${Math.random()}`,
             type: 'roll',
             playerName: botName,
-            dice: event.data.dice,
-            rollNumber: event.data.rollNumber || 1,
+            dice: yahtzeeEvent.data?.dice ?? [],
+            rollNumber: yahtzeeEvent.data?.rollNumber ?? 1,
             turnNumber: turnNumber,
-            held: normalizeHeldIndexes(event.data.held),
+            held: normalizeHeldIndexes(yahtzeeEvent.data?.held),
             isBot: true,
             timestamp: Date.now(),
           }
@@ -675,7 +677,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     }
 
-    if (event.type === 'hold' && event.data?.held?.length) {
+    if (event.type === 'hold' && Array.isArray((event as YahtzeeBotActionEvent).data?.held) && ((event as YahtzeeBotActionEvent).data?.held?.length ?? 0) > 0) {
       playAmbientSound('click', { force: true })
     }
 
@@ -742,8 +744,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return false
     }
 
-    const lobbyData = lobby as any
-    if (lobbyData.creatorId === currentUserIdForMembership) {
+    const lobbyData = lobby
+    if (lobbyData?.creatorId === currentUserIdForMembership) {
       return true
     }
 
@@ -751,13 +753,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       game && ['waiting', 'playing', 'finished'].includes(String(game.status))
         ? game
         : null
-    const activeGameFromLobby = Array.isArray(lobbyData.games)
-      ? lobbyData.games.find((candidate: any) => ['waiting', 'playing'].includes(candidate?.status))
+    const activeGameFromLobby = Array.isArray(lobbyData?.games)
+      ? lobbyData.games!.find((candidate: Game) => ['waiting', 'playing'].includes(String(candidate?.status)))
       : null
     const activeGame = activeGameFromState || activeGameFromLobby
     const players = Array.isArray(activeGame?.players) ? activeGame.players : []
 
-    return players.some((player: any) => player?.userId === currentUserIdForMembership)
+    return players.some((player: GamePlayer) => player?.userId === currentUserIdForMembership)
   }, [lobby, game, currentUserIdForMembership])
 
   // Socket connection hook - must be before useLobbyActions
@@ -844,7 +846,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })
 
   // Create refs for game actions to use in timer callback
-  const handleScoreRef = React.useRef<((category: any, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
+  const handleScoreRef = React.useRef<((category: YahtzeeCategory, autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
   const handleRollDiceRef = React.useRef<((autoActionContext?: AutoActionContext) => Promise<GameEngine | null>) | null>(null)
 
   const buildAutoActionContext = React.useCallback(
@@ -1326,7 +1328,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     const redirectReason = resolveLifecycleRedirectReason({
       gameStatus: game?.status,
-      lobbyIsActive: (lobby as any)?.isActive,
+      lobbyIsActive: lobby?.isActive,
     })
 
     if (redirectReason) {

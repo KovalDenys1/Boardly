@@ -82,12 +82,12 @@ export async function GET(
     return NextResponse.json({ error: 'Spectator mode is disabled for this lobby' }, { status: 403 })
   }
 
-  const activeGame = pickRelevantLobbyGame(lobby.games as any[], { includeFinished }) as any | null
+  const activeGame = pickRelevantLobbyGame(lobby.games, { includeFinished })
   const sanitizedActiveGame = activeGame
     ? {
         ...activeGame,
         players: Array.isArray(activeGame.players)
-          ? activeGame.players.map((player: any) => {
+          ? activeGame.players.map((player) => {
               const safeUser = sanitizeLobbyUserIdentity(player?.user)
               return safeUser ? { ...player, user: safeUser } : player
             })

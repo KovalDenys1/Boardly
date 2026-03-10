@@ -34,11 +34,11 @@ async function findStuckGames() {
 
   console.log(`Found ${playingGames.length} games in "playing" status\n`)
 
-  const stuckGames: any[] = []
+  const stuckGames: Array<(typeof playingGames)[number] & { humanCount: number; botCount: number; age: number }> = []
 
   for (const game of playingGames) {
-    const humanPlayers = game.players.filter((p: any) => !p.user.bot)
-    const botPlayers = game.players.filter((p: any) => p.user.bot)
+    const humanPlayers = game.players.filter((p) => !p.user.bot)
+    const botPlayers = game.players.filter((p) => p.user.bot)
     
     // Game is stuck if:
     // 1. No human players remain (only bots)
@@ -94,7 +94,7 @@ async function fixStuckGames() {
     },
     data: {
       status: 'abandoned',
-      abandonedAt: new Date() as any // TypeScript cache issue
+      abandonedAt: new Date()
     }
   })
 
@@ -123,13 +123,13 @@ async function fixStuckGames() {
 
   let abandonedCount = 0
   for (const game of oldGames) {
-    const humanPlayers = game.players.filter((p: any) => !p.user.bot)
+    const humanPlayers = game.players.filter((p) => !p.user.bot)
     if (humanPlayers.length <= 1) {
       await prisma.games.update({
         where: { id: game.id },
         data: {
           status: 'abandoned',
-          abandonedAt: new Date() as any
+          abandonedAt: new Date()
         }
       })
       abandonedCount++

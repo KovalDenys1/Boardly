@@ -57,11 +57,13 @@ function isAutoActionContext(value: unknown): value is AutoActionContext {
   )
 }
 
-function isExpectedAutoActionSkip(status: number, error: any): boolean {
+function isExpectedAutoActionSkip(status: number, error: unknown): boolean {
   if (status === 202) return true
   if (status === 409) return true
 
-  const code = error?.code
+  const code = typeof error === 'object' && error !== null
+    ? (error as Record<string, unknown>).code
+    : undefined
   return code === 'TURN_ALREADY_ENDED' || code === 'AUTO_ACTION_DEBOUNCED' || code === 'STATE_CONFLICT'
 }
 
@@ -336,7 +338,7 @@ export function useGameActions(props: UseGameActionsProps) {
       moveMetricTracked = true
 
       return newEngine
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (!moveMetricTracked) {
         trackMoveSubmitApplied({
           gameType: 'yahtzee',
@@ -355,7 +357,7 @@ export function useGameActions(props: UseGameActionsProps) {
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.rollFailed')
       } else {
-        clientLogger.log('⏱️ Auto roll failed or skipped', { message: error?.message })
+        clientLogger.log('⏱️ Auto roll failed or skipped', { message: error instanceof Error ? error.message : undefined })
       }
       return null
     } finally {
@@ -582,7 +584,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
         // Safety check: ensure game.players exists and is an array
         const winnerPlayer = winner?.id && Array.isArray(game.players)
-          ? game.players.find((p: any) => p.userId === winner.id)
+          ? game.players.find((p: GamePlayer) => p.userId === winner.id)
           : null
 
         trackGameCompleted({
@@ -614,7 +616,7 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       return newEngine
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (!moveMetricTracked) {
         trackMoveSubmitApplied({
           gameType: 'yahtzee',
@@ -636,7 +638,7 @@ export function useGameActions(props: UseGameActionsProps) {
         await reconcileAfterMoveError()
         showToast.errorFrom(error, 'toast.scoreFailed')
       } else {
-        clientLogger.log('⏱️ Auto score failed or skipped', { message: error?.message })
+        clientLogger.log('⏱️ Auto score failed or skipped', { message: error instanceof Error ? error.message : undefined })
       }
       return null
     } finally {

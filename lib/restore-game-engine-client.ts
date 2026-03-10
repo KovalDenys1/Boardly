@@ -1,4 +1,4 @@
-import type { GameEngine } from './game-engine'
+import type { GameEngine, RestorableGameState } from './game-engine'
 import {
   DEFAULT_GAME_TYPE,
   isSupportedGameType,
@@ -64,6 +64,6 @@ export async function restoreGameEngineClient(
 ): Promise<GameEngine> {
   const normalizedType = normalizeGameType(gameType)
   const engine = await createGameEngineClient(normalizedType, gameId)
-  engine.restoreState(savedState as any)
+  engine.restoreState(savedState as RestorableGameState)
   return engine
 }

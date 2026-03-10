@@ -112,16 +112,16 @@ async function testConnection() {
     
     await prisma.$disconnect()
     process.exit(0)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Database connection failed!\n')
-    
-    if (error.code === 'P1001') {
+    const err = error as { code?: string; message?: string }
+    if (err.code === 'P1001') {
       console.error('Error: Cannot reach database server')
       console.error('Check if the host/port are correct\n')
-    } else if (error.code === 'P1002') {
+    } else if (err.code === 'P1002') {
       console.error('Error: Connection timeout')
       console.error('The database server is not responding\n')
-    } else if (error.message.includes('Authentication failed')) {
+    } else if (err.message?.includes('Authentication failed')) {
       console.error('Error: Invalid credentials')
       console.error('The username or password is incorrect\n')
       console.error('📝 To fix this:')
@@ -131,7 +131,7 @@ async function testConnection() {
       console.error('4. Update DATABASE_URL in .env')
       console.error('5. Make sure to use the actual password (not [YOUR-PASSWORD])\n')
     } else {
-      console.error('Error details:', error.message)
+      console.error('Error details:', err.message)
       console.error()
     }
     

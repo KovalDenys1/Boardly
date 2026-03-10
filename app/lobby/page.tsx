@@ -101,7 +101,7 @@ function LobbyListPageContent() {
       
       // Handle case where API returns error but with 200 status
       if ('error' in data) {
-        clientLogger.warn('Lobbies loaded with error:', (data as any).error)
+        clientLogger.warn('Lobbies loaded with error:', (data as Record<string, unknown>).error)
       }
 
       setHasLoadError(false)

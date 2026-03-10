@@ -70,7 +70,7 @@ async function main() {
       })
 
       console.log(`\n🗑️  Accounts to be deleted (${oldUnverifiedCount} total):`)
-      accountsToDelete.forEach((user: any) => {
+      accountsToDelete.forEach((user) => {
         const daysOld = Math.floor(
           (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
         )
