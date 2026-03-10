@@ -26,7 +26,6 @@ export function createBot<T extends GameEngine>(
     gameType: RegisteredGameType,
     gameEngine: T,
     difficulty: BotDifficulty = 'medium'
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): BaseBot<T, unknown> {
     switch (gameType) {
         case 'yahtzee':
