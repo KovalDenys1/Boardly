@@ -371,7 +371,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [gameEngine, game, getCurrentUserId])
 
   // Track previous current player to detect turn changes
-  const prevCurrentPlayerIdRef = React.useRef<string | undefined>()
+  const prevCurrentPlayerIdRef = React.useRef<string | undefined>(undefined)
 
   // Auto-reset selectedPlayerId when turn changes (only if viewing current player's card automatically)
   useEffect(() => {
@@ -584,7 +584,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [chatMinimized])
 
-  const typingTimeoutRef = React.useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
 
   const onPlayerTyping = useCallback((data: PlayerTypingPayload) => {
     const currentUserId = isGuest ? guestId : session?.user?.id
