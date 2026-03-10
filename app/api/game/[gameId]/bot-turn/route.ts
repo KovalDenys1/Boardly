@@ -363,7 +363,7 @@ export async function POST(
                 ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
                 : null
             const dbPlayersByUserId = new Map(
-              game.players.map((player: any) => [player.userId, player])
+              game.players.map((player) => [player.userId, player])
             )
             const changedPlayerUpdates: Array<{ id: string; score: number; scorecard: string }> = []
 
@@ -400,27 +400,23 @@ export async function POST(
               })
             })
 
-          // Update player scores - do this sequentially to avoid connection issues
-          // Vercel serverless + Supabase pooler can have timeout issues with parallel queries
-          for (const player of gameEngine.getPlayers()) {
-            const dbPlayer = game.players.find((p) => p.userId === player.id)
-            if (dbPlayer) {
+            // Update player scores sequentially to avoid connection spikes on pooled DBs.
+            for (const scoreUpdate of changedPlayerUpdates) {
               try {
                 await prisma.players.update({
                   where: { id: scoreUpdate.id },
                   data: {
-                    score: player.score || 0,
-                    scorecard: JSON.stringify((gameEngine as { getScorecard?: (id: string) => unknown }).getScorecard?.(player.id) ?? {}),
+                    score: scoreUpdate.score,
+                    scorecard: scoreUpdate.scorecard,
                   },
                 }).catch(async () => {
-                  // Retry once on connection error
                   log.warn('Player update failed, retrying...', { playerId: scoreUpdate.id })
                   await new Promise(resolve => setTimeout(resolve, 100))
                   return prisma.players.update({
                     where: { id: scoreUpdate.id },
                     data: {
-                      score: player.score || 0,
-                      scorecard: JSON.stringify((gameEngine as { getScorecard?: (id: string) => unknown }).getScorecard?.(player.id) ?? {}),
+                      score: scoreUpdate.score,
+                      scorecard: scoreUpdate.scorecard,
                     },
                   })
                 })
@@ -428,15 +424,11 @@ export async function POST(
                 log.error('Failed to update player score', playerUpdateError as Error, {
                   playerId: scoreUpdate.id,
                 })
-                // Continue with other players even if one fails
               }
             }
+
             void replaySnapshotPromise
-          } catch (dbError) {
-            log.error('Critical: Failed to save game state after retry', dbError as Error)
-            throw new Error('Database connection failed. Please try again.')
-          }
-          log.info('Player scores updated')
+            log.info('Player scores updated')
 
           const notifyTimeoutMs = resolveBotStateNotifyTimeoutMs(gameType)
           const currentState = gameEngine.getState()
@@ -450,6 +442,14 @@ export async function POST(
             0,
             notifyTimeoutMs
           )
+        } catch (dbError) {
+          log.error('Critical: Failed to persist bot move state', dbError as Error, {
+            gameId,
+            botUserId,
+            moveType: botMove.type,
+          })
+          throw new Error('Database connection failed. Please try again.')
+        }
         } catch (error) {
           log.error('Error processing bot move', error as Error, {
             moveType: botMove.type,
