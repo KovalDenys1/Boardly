@@ -149,6 +149,14 @@ External MCP scaffold template (not auto-registered):
 
 - `docs/codex-mcp.external-template.toml`
 
+## Next.js MCP
+
+- The repo now includes root `.mcp.json` for `next-devtools-mcp`.
+- For Next.js runtime MCP, start the app with `npm run dev` (or `npm run dev:all` if you also need the socket server). Next.js 16 exposes the MCP endpoint automatically during dev.
+- Use `nextjs_index` first to discover the running server, then `nextjs_call` for tools like `get_project_metadata`, `get_routes`, and `get_errors`.
+- `get_errors` and `get_page_metadata` are only useful after opening the app in a real browser session.
+- `next dev` may rewrite `tsconfig.json` and `next-env.d.ts` for local type integration. Do not commit those changes unless they are intentional and reviewed.
+
 ## Owner Preferences (Codex Collaboration Defaults)
 
 Use these defaults unless the user overrides them in the current chat.
