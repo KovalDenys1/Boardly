@@ -2,8 +2,11 @@ import {
   AppBuildManifest,
   BundleBudgets,
   calculateBundleMetrics,
+  calculateBundleMetricsFromFiles,
   evaluateBundleBudgets,
+  extractClientReferenceChunks,
   formatKiB,
+  normalizeClientReferenceChunkPath,
   normalizeManifestFilePath,
 } from '@/lib/bundle-budget'
 
@@ -32,6 +35,11 @@ describe('bundle-budget helpers', () => {
   it('normalizes manifest file paths', () => {
     expect(normalizeManifestFilePath('/static/chunks/a.js')).toBe('static/chunks/a.js')
     expect(normalizeManifestFilePath('static/chunks/a.js')).toBe('static/chunks/a.js')
+  })
+
+  it('normalizes client reference chunk paths', () => {
+    expect(normalizeClientReferenceChunkPath('/_next/static/chunks/a.js')).toBe('static/chunks/a.js')
+    expect(normalizeClientReferenceChunkPath('static/chunks/a.js')).toBe('static/chunks/a.js')
   })
 
   it('calculates route and shared chunk metrics', () => {
@@ -84,5 +92,50 @@ describe('bundle-budget helpers', () => {
 
   it('formats KiB values with one decimal place', () => {
     expect(formatKiB(1536)).toBe('1.5 KiB')
+  })
+
+  it('extracts unique js chunks from client reference manifests', () => {
+    const chunks = extractClientReferenceChunks({
+      clientModules: {
+        alpha: {
+          chunks: ['/_next/static/chunks/shared.js', '/_next/static/chunks/feature.js', '/_next/static/css/route.css'],
+        },
+        beta: {
+          chunks: ['/_next/static/chunks/shared.js', '/_next/static/chunks/extra.js'],
+        },
+      },
+    })
+
+    expect(chunks).toEqual(['static/chunks/shared.js', 'static/chunks/feature.js', 'static/chunks/extra.js'])
+  })
+
+  it('calculates metrics from explicit file lists', () => {
+    const metrics = calculateBundleMetricsFromFiles({
+      route: '/lobby/[code]/page',
+      routeFiles: [
+        '/static/chunks/vendor-a.js',
+        '/static/chunks/common-a.js',
+        '/static/chunks/route-a.js',
+        '/static/chunks/route-a.js',
+        '/static/css/ignored.css',
+      ],
+      routeSpecificFiles: ['/static/chunks/route-a.js'],
+      getFileSize: (filePath) =>
+        ({
+          'static/chunks/vendor-a.js': 500_000,
+          'static/chunks/common-a.js': 100_000,
+          'static/chunks/route-a.js': 120_000,
+        })[filePath] ?? 0,
+    })
+
+    expect(metrics.routeFiles).toEqual([
+      'static/chunks/vendor-a.js',
+      'static/chunks/common-a.js',
+      'static/chunks/route-a.js',
+    ])
+    expect(metrics.routeTotalBytes).toBe(720_000)
+    expect(metrics.routeSpecificChunkBytes).toBe(120_000)
+    expect(metrics.sharedVendorBytes).toBe(500_000)
+    expect(metrics.sharedCommonBytes).toBe(100_000)
   })
 })
