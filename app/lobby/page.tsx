@@ -15,10 +15,8 @@ import { clientLogger } from '@/lib/client-logger'
 import {
   buildLobbyQueryParams,
   hasActiveLobbyFilters,
-  LOBBY_CODE_LENGTH,
   LobbyFilterOptions,
   normalizeGameTypeFilter,
-  sanitizeLobbyCode,
 } from '@/lib/lobby-filters'
 import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
@@ -41,6 +39,17 @@ interface LobbyListResponse {
   }
 }
 
+interface LoadLobbiesOptions {
+  minimumRefreshingMs?: number
+  indicatorMode?: 'manual' | 'auto' | 'silent'
+}
+
+const AUTO_REFRESH_INTERVAL_MS = 15000
+const REFRESH_SPIN_DURATION_MS = 900
+const AUTO_REFRESH_FEEDBACK_MS = REFRESH_SPIN_DURATION_MS * 2
+const MANUAL_REFRESH_FEEDBACK_MS = REFRESH_SPIN_DURATION_MS * 2
+const MANUAL_REFRESH_SUCCESS_MS = 1200
+
 function LobbyListPageContent() {
   const { t, ready } = useTranslation()
   const router = useRouter()
@@ -54,9 +63,8 @@ function LobbyListPageContent() {
   const [stats, setStats] = useState(EMPTY_LOBBY_STATS)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshIndicatorMode, setRefreshIndicatorMode] = useState<'idle' | 'manual' | 'auto' | 'updated'>('idle')
   const [hasLoadError, setHasLoadError] = useState(false)
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
-  const [joinCode, setJoinCode] = useState('')
   const [filters, setFilters] = useState<LobbyFilterOptions>({
     gameType: initialGameTypeFilter,
     status: 'all',
@@ -65,17 +73,39 @@ function LobbyListPageContent() {
   })
   const loadRequestIdRef = useRef(0)
   const loadAbortControllerRef = useRef<AbortController | null>(null)
-  const loadLobbiesRef = useRef<() => Promise<void>>(async () => {})
+  const loadLobbiesRef = useRef<(options?: LoadLobbiesOptions) => Promise<boolean>>(async () => false)
   const initializedRef = useRef(false)
+  const refreshIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const manualRefreshInFlightRef = useRef(false)
 
-  const loadLobbies = useCallback(async () => {
+  const clearRefreshIndicatorTimeout = useCallback(() => {
+    if (refreshIndicatorTimeoutRef.current) {
+      clearTimeout(refreshIndicatorTimeoutRef.current)
+      refreshIndicatorTimeoutRef.current = null
+    }
+  }, [])
+
+  const loadLobbies = useCallback(async (options?: LoadLobbiesOptions): Promise<boolean> => {
     const requestId = ++loadRequestIdRef.current
     const isInitialLoad = !initializedRef.current
+    const loadStartedAt = Date.now()
+    const indicatorMode = isInitialLoad ? 'silent' : options?.indicatorMode ?? 'silent'
+
+    if (indicatorMode === 'auto' && manualRefreshInFlightRef.current) {
+      return false
+    }
+
     if (isInitialLoad) {
       setLoading(true)
     } else {
       setRefreshing(true)
     }
+
+    if (indicatorMode !== 'silent') {
+      clearRefreshIndicatorTimeout()
+      setRefreshIndicatorMode(indicatorMode)
+    }
+
     loadAbortControllerRef.current?.abort()
     const controller = new AbortController()
     loadAbortControllerRef.current = controller
@@ -96,7 +126,7 @@ function LobbyListPageContent() {
       const data: LobbyListResponse = await res.json()
 
       if (controller.signal.aborted || requestId !== loadRequestIdRef.current) {
-        return
+        return false
       }
       
       // Handle case where API returns error but with 200 status
@@ -105,12 +135,12 @@ function LobbyListPageContent() {
       }
 
       setHasLoadError(false)
-      setLastUpdatedAt(Date.now())
       setLobbies(data.lobbies || [])
       setStats(data.stats || EMPTY_LOBBY_STATS)
+      return true
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        return
+        return false
       }
       clientLogger.error('Failed to load lobbies:', error)
       setHasLoadError(true)
@@ -119,16 +149,63 @@ function LobbyListPageContent() {
         setLobbies([])
         setStats(EMPTY_LOBBY_STATS)
       }
+      return false
     } finally {
       if (requestId === loadRequestIdRef.current) {
-        if (isInitialLoad) {
-          setLoading(false)
-        } else {
-          setRefreshing(false)
+        if (!isInitialLoad) {
+          const elapsedMs = Date.now() - loadStartedAt
+          const remainingFeedbackMs = Math.max(0, (options?.minimumRefreshingMs ?? 0) - elapsedMs)
+          const elapsedAfterFeedbackMs = elapsedMs + remainingFeedbackMs
+          const remainderMs = elapsedAfterFeedbackMs % REFRESH_SPIN_DURATION_MS
+          const remainingCycleMs = remainderMs === 0 ? 0 : REFRESH_SPIN_DURATION_MS - remainderMs
+          const totalRemainingMs = remainingFeedbackMs + remainingCycleMs
+
+          if (totalRemainingMs > 0) {
+            await new Promise((resolve) => setTimeout(resolve, totalRemainingMs))
+          }
+        }
+
+        if (requestId === loadRequestIdRef.current) {
+          if (isInitialLoad) {
+            setLoading(false)
+          } else {
+            setRefreshing(false)
+          }
+
+          if (indicatorMode === 'auto') {
+            setRefreshIndicatorMode('idle')
+          }
         }
       }
     }
-  }, [filters])
+  }, [clearRefreshIndicatorTimeout, filters])
+
+  const handleRefresh = useCallback(async () => {
+    if (loading || manualRefreshInFlightRef.current || refreshIndicatorMode === 'updated') {
+      return
+    }
+
+    manualRefreshInFlightRef.current = true
+    clearRefreshIndicatorTimeout()
+    setRefreshIndicatorMode('manual')
+
+    const didRefresh = await loadLobbies({
+      minimumRefreshingMs: MANUAL_REFRESH_FEEDBACK_MS,
+      indicatorMode: 'manual',
+    })
+    manualRefreshInFlightRef.current = false
+
+    if (!didRefresh) {
+      setRefreshIndicatorMode('idle')
+      return
+    }
+
+    setRefreshIndicatorMode('updated')
+    refreshIndicatorTimeoutRef.current = setTimeout(() => {
+      setRefreshIndicatorMode('idle')
+      refreshIndicatorTimeoutRef.current = null
+    }, MANUAL_REFRESH_SUCCESS_MS)
+  }, [clearRefreshIndicatorTimeout, loadLobbies, loading, refreshIndicatorMode])
 
   useEffect(() => {
     const gameTypeFromQuery = normalizeGameTypeFilter(searchParams.get('gameType'))
@@ -167,17 +244,22 @@ function LobbyListPageContent() {
 
     void initializeLobbyList()
 
-    // Auto-refresh lobbies every 5 seconds
+    // Socket updates are primary; polling is just a fallback to recover from missed events.
     const refreshInterval = setInterval(() => {
-      void loadLobbiesRef.current()
-    }, 5000)
+      void loadLobbiesRef.current({
+        minimumRefreshingMs: AUTO_REFRESH_FEEDBACK_MS,
+        indicatorMode: 'auto',
+      })
+    }, AUTO_REFRESH_INTERVAL_MS)
 
     return () => {
       cancelled = true
       clearInterval(refreshInterval)
       loadAbortControllerRef.current?.abort()
+      clearRefreshIndicatorTimeout()
+      manualRefreshInFlightRef.current = false
     }
-  }, [])
+  }, [clearRefreshIndicatorTimeout])
 
   // Socket connection effect
   useEffect(() => {
@@ -193,7 +275,10 @@ function LobbyListPageContent() {
 
     const handleLobbyListUpdate = () => {
       clientLogger.log('📡 Lobby list update received')
-      void loadLobbiesRef.current()
+      void loadLobbiesRef.current({
+        minimumRefreshingMs: AUTO_REFRESH_FEEDBACK_MS,
+        indicatorMode: 'auto',
+      })
     }
 
     const handleDisconnect = () => {
@@ -262,34 +347,25 @@ function LobbyListPageContent() {
     }
   }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken])
 
-  const handleJoinByCode = () => {
-    const normalizedCode = sanitizeLobbyCode(joinCode)
-    setJoinCode(normalizedCode)
-    if (normalizedCode.length !== LOBBY_CODE_LENGTH) return
-    router.push(`/lobby/${normalizedCode}`)
-  }
-
   const hasActiveFilters = hasActiveLobbyFilters(filters)
+  const isManualRefreshing = refreshIndicatorMode === 'manual'
+  const isAutoRefreshing = refreshIndicatorMode === 'auto'
+  const isRefreshUpdated = refreshIndicatorMode === 'updated'
+  const isRefreshLocked = loading || isManualRefreshing || isRefreshUpdated
   // Wait for i18n to be ready before rendering
   if (!ready || !i18n.isInitialized) {
     return <LoadingSkeleton />
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/60 to-indigo-100/80 pb-8 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-600/10" />
-        <div className="absolute -right-40 top-20 h-96 w-96 rounded-full bg-purple-400/15 blur-3xl dark:bg-purple-600/10" />
-        <div className="absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-indigo-400/15 blur-3xl dark:bg-indigo-600/10" />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 pb-8">
       <div className="relative mx-auto max-w-6xl px-3 pt-16 sm:px-6 sm:pt-20 lg:px-8">
         <div className="space-y-6 animate-scale-in">
-          <section className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
+          <section className="relative overflow-hidden rounded-3xl border border-t-0 border-white/85 bg-white/90 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
             <div className="p-5 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0 flex-1">
+              <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0 flex-1 xl:max-w-3xl">
                   <button
                     type="button"
                     onClick={() => router.push('/games')}
@@ -299,7 +375,7 @@ function LobbyListPageContent() {
                     <span>{t('lobby.backToGames')}</span>
                   </button>
 
-                  <div className="mt-5">
+                  <div className="mt-5 xl:max-w-2xl">
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
                       {t('lobby.title')}
                     </h1>
@@ -309,20 +385,13 @@ function LobbyListPageContent() {
                   </div>
 
                   <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200/70 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700/70">
+                    <span className="inline-flex rounded-full bg-white/92 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-white/90 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700/70">
                       {t('lobby.lobbiesCount', { count: lobbies.length })}
                     </span>
-                    {lastUpdatedAt && (
-                      <span className="inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200/70 dark:bg-slate-800/80 dark:text-slate-400 dark:ring-slate-700/70">
-                        {t('lobby.lastUpdated', {
-                          time: new Date(lastUpdatedAt).toLocaleTimeString(),
-                        })}
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                <div className="shrink-0 xl:w-[280px]">
+                <div className="shrink-0 xl:w-[360px] 2xl:w-[400px]">
                   <button
                     type="button"
                     onClick={() => router.push('/lobby/create')}
@@ -363,45 +432,12 @@ function LobbyListPageContent() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/60 bg-white/70 p-5 shadow-xl shadow-slate-200/40 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {t('lobby.quickJoin')}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {t('lobby.quickJoinDescription')}
-                </p>
-              </div>
-              <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-2xl text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
-                🔍
-              </div>
+          <section className="rounded-3xl border border-white/85 bg-white/90 p-5 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
+            <div className="border-b border-slate-200/70 pb-6 dark:border-slate-700/70">
+              <LobbyFilters embedded filters={filters} onFiltersChange={setFilters} />
             </div>
 
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <input
-                type="text"
-                placeholder={t('lobby.enterCode')}
-                className="w-full flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 font-mono text-base text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900/70 dark:text-white"
-                value={joinCode}
-                onChange={(e) => setJoinCode(sanitizeLobbyCode(e.target.value))}
-                maxLength={LOBBY_CODE_LENGTH}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
-              />
-              <button
-                onClick={handleJoinByCode}
-                disabled={joinCode.length !== LOBBY_CODE_LENGTH}
-                className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-              >
-                {t('lobby.join')}
-              </button>
-            </div>
-          </section>
-
-          <LobbyFilters filters={filters} onFiltersChange={setFilters} />
-
-          <section className="rounded-3xl border border-white/60 bg-white/70 p-5 shadow-xl shadow-slate-200/40 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mb-6 flex flex-col gap-3 pt-6 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <h2 className="text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">
                   {t('lobby.activeLobbies')}
@@ -411,20 +447,50 @@ function LobbyListPageContent() {
                 </p>
               </div>
               <button
-                onClick={loadLobbies}
-                disabled={refreshing || loading}
-                className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+                onClick={handleRefresh}
+                disabled={loading || isManualRefreshing}
+                aria-disabled={isRefreshLocked}
+                className={`inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-sm font-medium transition-[opacity,box-shadow,background-color,border-color,color] duration-300 ease-out ${
+                  isRefreshUpdated
+                    ? 'cursor-default border-emerald-200/90 bg-emerald-50/95 text-emerald-700 shadow-sm shadow-emerald-100/80'
+                    : isManualRefreshing
+                      ? 'cursor-wait border-blue-200/90 bg-white text-slate-700 shadow-md shadow-blue-100/80'
+                      : isAutoRefreshing
+                        ? 'border-blue-100/90 bg-white/95 text-slate-700 shadow-sm shadow-blue-100/70'
+                        : 'border-white/90 bg-white text-slate-700 shadow-sm hover:bg-white hover:shadow-md'
+                } ${loading ? 'cursor-not-allowed opacity-50' : ''} dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:shadow-none ${
+                  isRefreshUpdated ? 'dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200' : ''
+                }`}
                 title={t('lobby.refresh')}
               >
-                <svg
-                  className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>{t('lobby.refresh')}</span>
+                <span className="relative inline-flex h-4 w-4 items-center justify-center">
+                  <svg
+                    className={`absolute h-4 w-4 transition-opacity duration-200 ${
+                      isRefreshUpdated ? 'opacity-0' : 'opacity-100'
+                    } ${(isManualRefreshing || isAutoRefreshing) ? 'animate-spin [animation-duration:900ms]' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <svg
+                    className={`absolute h-4 w-4 text-emerald-600 transition-opacity duration-200 dark:text-emerald-300 ${
+                      isRefreshUpdated ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12.5l4.2 4.2L19 7.2" />
+                  </svg>
+                </span>
+                <span className="min-w-[4.75rem] text-center">
+                  {isManualRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : t('lobby.refresh')}
+                </span>
+                <span className="sr-only" aria-live="polite">
+                  {isAutoRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : ''}
+                </span>
               </button>
             </div>
 

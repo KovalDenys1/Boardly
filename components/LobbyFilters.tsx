@@ -7,13 +7,14 @@ import { hasActiveLobbyFilters, LobbyFilterOptions } from '@/lib/lobby-filters'
 interface LobbyFiltersProps {
   filters: LobbyFilterOptions
   onFiltersChange: (filters: LobbyFilterOptions) => void
+  embedded?: boolean
 }
 
-export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersProps) {
+export default function LobbyFilters({ filters, onFiltersChange, embedded = false }: LobbyFiltersProps) {
   const { t } = useTranslation()
   const [showFilters, setShowFilters] = useState(() => hasActiveLobbyFilters(filters))
   const inputClassName =
-    'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100'
+    'w-full rounded-xl border border-white/90 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm shadow-indigo-900/5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100'
 
   const handleFilterChange = (key: keyof LobbyFilterOptions, value: LobbyFilterOptions[typeof key]) => {
     onFiltersChange({ ...filters, [key]: value })
@@ -48,9 +49,9 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
     }
   }, [hasActiveFilters])
 
-  return (
-    <div className="rounded-3xl border border-white/60 bg-white/70 p-5 shadow-xl shadow-slate-200/40 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  const content = (
+    <>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white break-words">
@@ -90,14 +91,14 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="flex-1 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-white/90 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
               >
                 {t('lobby.filters.clearAll')}
               </button>
             )}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/90 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <span>
                 {showFilters ? t('lobby.filters.hideFilters') : t('lobby.filters.showFilters')}
@@ -166,7 +167,7 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
               </select>
               <button
                 onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl border border-white/90 bg-white text-slate-600 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800"
                 title={filters.sortOrder === 'asc' ? t('lobby.sort.asc') : t('lobby.sort.desc')}
               >
                 <svg
@@ -212,6 +213,16 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
           </div>
         </div>
       )}
+    </>
+  )
+
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <div className="rounded-3xl border border-white/85 bg-white/90 p-5 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
+      {content}
     </div>
   )
 }

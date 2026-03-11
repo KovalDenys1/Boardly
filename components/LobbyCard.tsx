@@ -62,14 +62,14 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
 
   return (
     <article
-      className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-900/60 dark:hover:border-blue-500/30"
+      className="group relative overflow-hidden rounded-2xl border border-white/90 bg-white/96 p-5 shadow-sm shadow-indigo-900/5 transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-900/60 dark:hover:border-blue-500/30"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
       <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 opacity-0 transition-opacity group-hover:opacity-100" />
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-xl shadow-sm dark:bg-slate-800/80">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-white/90 dark:bg-slate-800/80 dark:ring-0">
               {gamePresentation.icon}
             </span>
             <div className="min-w-0 flex-1">
@@ -77,7 +77,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
                 <h3 className="max-w-full truncate text-lg font-bold text-slate-900 dark:text-white" title={lobby.name}>
                   {lobby.name}
                 </h3>
-                <span className="rounded-full bg-blue-100 px-2.5 py-1 font-mono text-xs font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+                <span className="rounded-full bg-blue-100 px-2.5 py-1 font-mono text-xs font-bold text-blue-700 ring-1 ring-blue-200/80 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-0">
                   {lobby.code}
                 </span>
               </div>
@@ -124,7 +124,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
                 {occupancyPercent}%
               </span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-800">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all"
                 style={{ width: `${occupancyPercent}%` }}
@@ -139,7 +139,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
               <button
                 type="button"
                 onClick={() => onWatchLobby(lobby.code)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 lg:flex-none"
+                className="flex-1 rounded-xl border border-white/90 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 lg:flex-none"
               >
                 <span className="block truncate">{t('lobby.watch')}</span>
               </button>

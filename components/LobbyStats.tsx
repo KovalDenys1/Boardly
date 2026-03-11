@@ -52,11 +52,11 @@ export default function LobbyStats({ totalLobbies, waitingLobbies, playingLobbie
       {stats.map((stat) => (
         <div
           key={stat.id}
-          className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50"
+          className="group relative overflow-hidden rounded-2xl border border-white/90 bg-white/96 p-4 shadow-sm shadow-indigo-900/5 transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50"
         >
           <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${stat.accent} opacity-0 transition-opacity group-hover:opacity-100`} />
           <div className="flex items-start justify-between gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xl shadow-sm dark:bg-slate-700/70">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-white/90 dark:bg-slate-700/70 dark:ring-0">
               {stat.icon}
             </div>
             <span className={`mt-1 inline-flex h-2.5 w-2.5 rounded-full ${stat.dot}`} />
