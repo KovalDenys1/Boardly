@@ -17,6 +17,25 @@ const GAME_HISTORY_STATUS_KEYS = {
   cancelled: 'profile.gameHistory.cancelled',
 } as const satisfies Record<string, TranslationKeys>
 
+const GAME_TYPE_FILTER_OPTIONS = [
+  'all',
+  'yahtzee',
+  'chess',
+  'guess_the_spy',
+  'tic_tac_toe',
+  'rock_paper_scissors',
+  'memory',
+  'uno',
+] as const
+
+const STATUS_FILTER_OPTIONS = [
+  'all',
+  'finished',
+  'playing',
+  'abandoned',
+  'cancelled',
+] as const
+
 interface Player {
   id: string
   username: string | null
@@ -57,6 +76,14 @@ interface GameHistoryResponse {
   }
 }
 
+function getFilterSelectClassName(isActive: boolean): string {
+  return `w-full appearance-none rounded-xl border bg-white px-4 py-2.5 pr-10 text-sm font-medium shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:bg-gray-900 ${
+    isActive
+      ? 'border-blue-500 text-blue-700 dark:border-blue-400 dark:text-blue-300'
+      : 'border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-200'
+  }`
+}
+
 export default function GameHistory() {
   const { t } = useTranslation()
   const [games, setGames] = useState<GameHistoryItem[]>([])
@@ -69,7 +96,7 @@ export default function GameHistory() {
   const [hasMore, setHasMore] = useState(false)
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const [selectedReplayGameId, setSelectedReplayGameId] = useState<string | null>(null)
-  
+
   const limit = 20
 
   const loadGames = useCallback(async () => {
@@ -148,11 +175,23 @@ export default function GameHistory() {
   }
 
   function formatStatusLabel(status: string): string {
+    if (status === 'all') {
+      return t('profile.gameHistory.allStatuses')
+    }
+
     const key = GAME_HISTORY_STATUS_KEYS[status as keyof typeof GAME_HISTORY_STATUS_KEYS]
     if (key) {
       return t(key)
     }
     return status.replace(/_/g, ' ')
+  }
+
+  function formatGameTypeFilterLabel(gameType: string): string {
+    if (gameType === 'all') {
+      return t('profile.gameHistory.allGames')
+    }
+
+    return formatGameTypeLabel(gameType)
   }
 
   if (loading && games.length === 0) {
@@ -176,42 +215,65 @@ export default function GameHistory() {
       />
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="min-w-0">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.gameHistory.status')}
-          </label>
-          <select
-            value={statusFilter}
-            onChange={(e) => handleStatusFilterChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            <option value="all">{t('profile.gameHistory.allStatuses')}</option>
-            <option value="finished">{t('profile.gameHistory.finished')}</option>
-            <option value="playing">{t('profile.gameHistory.playing')}</option>
-            <option value="abandoned">{t('profile.gameHistory.abandoned')}</option>
-            <option value="cancelled">{t('profile.gameHistory.cancelled')}</option>
-          </select>
-        </div>
+      <div className="rounded-2xl border border-gray-200 bg-white/95 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/95 sm:p-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_1fr] lg:items-stretch">
+          <fieldset className="min-w-0 lg:flex lg:flex-col lg:justify-center">
+            <legend className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+              {t('profile.gameHistory.gameType')}
+            </legend>
+            <div className="mt-3 lg:flex lg:flex-1 lg:items-center">
+              <div className="relative w-full max-w-sm lg:max-w-md">
+                <select
+                  id="game-history-game-type"
+                  name="gameType"
+                  value={gameTypeFilter}
+                  onChange={(event) => handleGameTypeFilterChange(event.target.value)}
+                  className={getFilterSelectClassName(gameTypeFilter !== 'all')}
+                >
+                  {GAME_TYPE_FILTER_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {formatGameTypeFilterLabel(option)}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400"
+                >
+                  ▾
+                </span>
+              </div>
+            </div>
+          </fieldset>
 
-        <div className="min-w-0">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('profile.gameHistory.gameType')}
-          </label>
-          <select
-            value={gameTypeFilter}
-            onChange={(e) => handleGameTypeFilterChange(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          >
-            <option value="all">{t('profile.gameHistory.allGames')}</option>
-            <option value="yahtzee">Yahtzee</option>
-            <option value="chess">Chess</option>
-            <option value="guess_the_spy">Guess the Spy</option>
-            <option value="tic_tac_toe">Tic Tac Toe</option>
-            <option value="rock_paper_scissors">Rock Paper Scissors</option>
-            <option value="memory">Memory</option>
-            <option value="uno">Uno</option>
-          </select>
+          <fieldset className="min-w-0 lg:flex lg:flex-col lg:justify-center">
+            <legend className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+              {t('profile.gameHistory.status')}
+            </legend>
+            <div className="mt-3 lg:flex lg:flex-1 lg:items-center">
+              <div className="relative w-full max-w-sm">
+                <select
+                  id="game-history-status"
+                  name="status"
+                  value={statusFilter}
+                  onChange={(event) => handleStatusFilterChange(event.target.value)}
+                  className={getFilterSelectClassName(statusFilter !== 'all')}
+                >
+                  {STATUS_FILTER_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {formatStatusLabel(option)}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400"
+                >
+                  ▾
+                </span>
+              </div>
+            </div>
+          </fieldset>
         </div>
       </div>
 
@@ -286,10 +348,13 @@ export default function GameHistory() {
               </button>
 
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                {/* Click hint */}
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium break-words">
+                <button
+                  type="button"
+                  onClick={() => setSelectedGameId(game.id)}
+                  className="w-full text-left text-xs font-medium text-blue-600 transition-colors hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-blue-400 dark:hover:text-blue-300 sm:w-auto"
+                >
                   {t('profile.gameHistory.clickToView')} →
-                </div>
+                </button>
                 <button
                   onClick={() => setSelectedReplayGameId(game.id)}
                   disabled={!game.hasReplay}

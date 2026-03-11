@@ -49,14 +49,27 @@ interface DateRange {
   to: string
 }
 
+type RangePreset = 30 | 90 | 'all'
+
 function toDateInputValue(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
 function buildDefaultRange(): DateRange {
+  return buildRangeForPreset(30)
+}
+
+function buildRangeForPreset(preset: RangePreset): DateRange {
+  if (preset === 'all') {
+    return {
+      from: '',
+      to: '',
+    }
+  }
+
   const now = new Date()
   const from = new Date(now)
-  from.setDate(now.getDate() - 30)
+  from.setDate(now.getDate() - preset)
 
   return {
     from: toDateInputValue(from),
@@ -70,7 +83,7 @@ interface PlayerStatsDashboardProps {
 
 export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardProps) {
   const { t } = useTranslation()
-  const [draftRange, setDraftRange] = useState<DateRange>(() => buildDefaultRange())
+  const [rangePreset, setRangePreset] = useState<RangePreset>(30)
   const [appliedRange, setAppliedRange] = useState<DateRange>(() => buildDefaultRange())
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,41 +122,83 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
     void loadStats()
   }, [loadStats])
 
-  const trendPoints = useMemo(() => {
+  const selectPreset = (preset: RangePreset) => {
+    setRangePreset(preset)
+    setAppliedRange(buildRangeForPreset(preset))
+  }
+
+  const summaryCards = useMemo(() => {
     if (!stats) return []
-    return stats.trends.slice(-30)
-  }, [stats])
 
-  const trendMax = useMemo(() => {
-    const maxValue = trendPoints.reduce((acc, point) => Math.max(acc, point.gamesPlayed), 0)
-    return maxValue > 0 ? maxValue : 1
-  }, [trendPoints])
+    return [
+      {
+        id: 'games',
+        label: t('profile.stats.dashboard.summary.totalGames'),
+        value: String(stats.overall.totalGames),
+      },
+      {
+        id: 'wins',
+        label: t('profile.stats.gamesWon'),
+        value: String(stats.overall.wins),
+      },
+      {
+        id: 'winRate',
+        label: t('profile.stats.dashboard.summary.winRate'),
+        value: `${stats.overall.winRate}%`,
+      },
+      {
+        id: 'favoriteGame',
+        label: t('profile.stats.dashboard.summary.favoriteGame'),
+        value: stats.overall.favoriteGame
+          ? formatGameTypeLabel(stats.overall.favoriteGame)
+          : t('profile.stats.dashboard.common.notAvailable'),
+      },
+    ]
+  }, [stats, t])
 
-  const applyDateRange = () => {
-    if (draftRange.from && draftRange.to && draftRange.from > draftRange.to) {
-      setError(t('profile.stats.dashboard.filters.invalidRange'))
-      return
-    }
-    setAppliedRange(draftRange)
-  }
+  const recordItems = useMemo(() => {
+    if (!stats) return []
 
-  const applyPreset = (days: number | 'all') => {
-    if (days === 'all') {
-      setDraftRange({ from: '', to: '' })
-      setAppliedRange({ from: '', to: '' })
-      return
-    }
+    return [
+      {
+        id: 'wins',
+        label: t('profile.stats.dashboard.summary.wins'),
+        value: stats.overall.wins,
+      },
+      {
+        id: 'losses',
+        label: t('profile.stats.dashboard.summary.losses'),
+        value: stats.overall.losses,
+      },
+      {
+        id: 'draws',
+        label: t('profile.stats.dashboard.summary.draws'),
+        value: stats.overall.draws,
+      },
+    ]
+  }, [stats, t])
 
-    const now = new Date()
-    const from = new Date(now)
-    from.setDate(now.getDate() - days)
-    const range = {
-      from: toDateInputValue(from),
-      to: toDateInputValue(now),
-    }
-    setDraftRange(range)
-    setAppliedRange(range)
-  }
+  const quickFacts = useMemo(() => {
+    if (!stats) return []
+
+    return [
+      {
+        id: 'avgDuration',
+        label: t('profile.stats.dashboard.summary.avgDuration'),
+        value: `${stats.overall.avgGameDurationMinutes}${t('profile.stats.dashboard.summary.minutesSuffix')}`,
+      },
+      {
+        id: 'currentStreak',
+        label: t('profile.stats.dashboard.summary.currentStreak'),
+        value: String(stats.overall.currentWinStreak),
+      },
+      {
+        id: 'bestStreak',
+        label: t('profile.stats.dashboard.summary.bestStreak'),
+        value: String(stats.overall.longestWinStreak),
+      },
+    ]
+  }, [stats, t])
 
   if (loading && !stats) {
     return (
@@ -154,64 +209,49 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-          {t('profile.stats.dashboard.title')}
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          {t('profile.stats.dashboard.subtitle')}
-        </p>
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 sm:p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              {t('profile.stats.dashboard.title')}
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              {t('profile.stats.dashboard.subtitle')}
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_auto_1fr] items-end">
-          <div className="w-full">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-              {t('profile.stats.dashboard.filters.from')}
-            </label>
-            <input
-              type="date"
-              value={draftRange.from}
-              onChange={(event) => setDraftRange((prev) => ({ ...prev, from: event.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm"
-            />
-          </div>
-          <div className="w-full">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
-              {t('profile.stats.dashboard.filters.to')}
-            </label>
-            <input
-              type="date"
-              value={draftRange.to}
-              onChange={(event) => setDraftRange((prev) => ({ ...prev, to: event.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={applyDateRange}
-            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-          >
-            {t('profile.stats.dashboard.filters.apply')}
-          </button>
-          <div className="flex flex-wrap gap-2 xl:justify-end">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
             <button
               type="button"
-              onClick={() => applyPreset(30)}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-semibold"
+              onClick={() => selectPreset(30)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                rangePreset === 30
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'
+              }`}
             >
               {t('profile.stats.dashboard.filters.last30Days')}
             </button>
             <button
               type="button"
-              onClick={() => applyPreset(90)}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-semibold"
+              onClick={() => selectPreset(90)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                rangePreset === 90
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'
+              }`}
             >
               {t('profile.stats.dashboard.filters.last90Days')}
             </button>
             <button
               type="button"
-              onClick={() => applyPreset('all')}
-              className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-xs font-semibold"
+              onClick={() => selectPreset('all')}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                rangePreset === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'
+              }`}
             >
               {t('profile.stats.dashboard.filters.allTime')}
             </button>
@@ -227,154 +267,120 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
       {stats && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.totalGames')}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.totalGames}</p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.winRate')}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.winRate}%</p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.avgDuration')}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {stats.overall.avgGameDurationMinutes}
-                {t('profile.stats.dashboard.summary.minutesSuffix')}
-              </p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.favoriteGame')}
-              </p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                {stats.overall.favoriteGame
-                  ? formatGameTypeLabel(stats.overall.favoriteGame)
-                  : t('profile.stats.dashboard.common.notAvailable')}
-              </p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {summaryCards.map((card) => (
+              <div
+                key={card.id}
+                className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+              >
+                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {card.label}
+                </p>
+                <p className="mt-3 text-lg font-bold text-gray-900 dark:text-gray-100 sm:text-2xl">
+                  {card.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {t('profile.stats.dashboard.summary.wld')}
-              </p>
-              <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {stats.overall.wins} / {stats.overall.losses} / {stats.overall.draws}
-              </p>
+              </h3>
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                {recordItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl bg-gray-50 px-3 py-4 text-center dark:bg-gray-900/70"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.currentStreak')}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.currentWinStreak}</p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.bestStreak')}
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.overall.longestWinStreak}</p>
-            </div>
-            <div className="min-w-0 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {t('profile.stats.dashboard.summary.generated')}
-              </p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-words">
-                {new Date(stats.generatedAt).toLocaleString()}
-              </p>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {t('profile.stats.dashboard.summary.quickFacts')}
+              </h3>
+              <div className="mt-4 space-y-3">
+                {quickFacts.map((fact) => (
+                  <div
+                    key={fact.id}
+                    className="flex items-center justify-between gap-4 rounded-xl bg-gray-50 px-3 py-3 dark:bg-gray-900/70"
+                  >
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {fact.label}
+                    </span>
+                    <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                      {fact.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
               {t('profile.stats.dashboard.sections.byGame.title')}
             </h3>
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              {t('profile.stats.dashboard.sections.byGame.subtitle')}
+            </p>
             {stats.byGame.length === 0 ? (
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {t('profile.stats.dashboard.sections.byGame.empty')}
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.game')}</th>
-                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.played')}</th>
-                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.wld')}</th>
-                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.winRate')}</th>
-                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.avgScore')}</th>
-                      <th className="py-2 pr-4">{t('profile.stats.dashboard.sections.byGame.columns.bestScore')}</th>
-                      <th className="py-2">{t('profile.stats.dashboard.sections.byGame.columns.lastPlayed')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.byGame.map((item) => (
-                      <tr key={item.gameType} className="border-b border-gray-100 dark:border-gray-800">
-                        <td className="max-w-[14rem] py-2 pr-4 font-semibold text-gray-900 dark:text-gray-100 truncate">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {stats.byGame.map((item) => (
+                  <div
+                    key={item.gameType}
+                    className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/70"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
                           {formatGameTypeLabel(item.gameType)}
-                        </td>
-                        <td className="py-2 pr-4">{item.gamesPlayed}</td>
-                        <td className="py-2 pr-4">
-                          {item.wins}/{item.losses}/{item.draws}
-                        </td>
-                        <td className="py-2 pr-4">{item.winRate}%</td>
-                        <td className="py-2 pr-4">{item.avgScore ?? t('profile.stats.dashboard.common.notAvailable')}</td>
-                        <td className="py-2 pr-4">{item.bestScore ?? t('profile.stats.dashboard.common.notAvailable')}</td>
-                        <td className="py-2">
+                        </p>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          {t('profile.stats.dashboard.sections.byGame.columns.played')}: {item.gamesPlayed}
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-blue-700 shadow-sm dark:bg-gray-800 dark:text-blue-300">
+                        {item.winRate}%
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                      <div className="rounded-xl bg-white px-3 py-2 dark:bg-gray-800">
+                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                          {t('profile.stats.dashboard.summary.wins')}
+                        </p>
+                        <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
+                          {item.wins}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-white px-3 py-2 dark:bg-gray-800">
+                        <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                          {t('profile.stats.dashboard.sections.byGame.columns.lastPlayed')}
+                        </p>
+                        <p className="mt-1 font-semibold text-gray-900 dark:text-gray-100">
                           {item.lastPlayed
                             ? new Date(item.lastPlayed).toLocaleDateString()
                             : t('profile.stats.dashboard.common.notAvailable')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
-              {t('profile.stats.dashboard.sections.recentTrend.title')}
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              {t('profile.stats.dashboard.sections.recentTrend.subtitle')}
-            </p>
-            {trendPoints.length === 0 ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('profile.stats.dashboard.sections.recentTrend.empty')}
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <div className="flex items-end gap-2 min-w-[720px] h-44">
-                  {trendPoints.map((point) => (
-                    <div key={point.date} className="flex flex-col items-center gap-2">
-                      <div className="flex items-end gap-1 h-36">
-                        <div
-                          className="w-2 rounded-t bg-blue-500"
-                          style={{ height: `${(point.gamesPlayed / trendMax) * 100}%` }}
-                          title={t('profile.stats.dashboard.sections.recentTrend.gamesTooltip', {
-                            date: point.date,
-                            count: point.gamesPlayed,
-                          })}
-                        />
-                        <div
-                          className="w-2 rounded-t bg-emerald-500"
-                          style={{ height: `${(point.wins / trendMax) * 100}%` }}
-                          title={t('profile.stats.dashboard.sections.recentTrend.winsTooltip', {
-                            date: point.date,
-                            count: point.wins,
-                          })}
-                        />
+                        </p>
                       </div>
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400">{point.date.slice(5)}</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

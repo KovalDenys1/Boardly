@@ -13,10 +13,13 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }))
 
+const mockTranslate = (key: string) => key
+const mockI18n = { language: 'en' }
+
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'en' },
+    t: mockTranslate,
+    i18n: mockI18n,
   }),
 }))
 
@@ -183,6 +186,10 @@ describe('ProfilePage', () => {
         return mockJsonResponse({ user: baseProfileUser })
       }
 
+      if (url.includes('/api/user/check-email')) {
+        return mockJsonResponse({ available: true, email: 'new@example.com' })
+      }
+
       return mockJsonResponse({})
     })
   })
@@ -213,13 +220,21 @@ describe('ProfilePage', () => {
     expect(screen.getByText('mock-game-history')).toBeTruthy()
   })
 
+  it('hides cancel and disables save when there are no profile changes', async () => {
+    render(<ProfilePage />)
+
+    const saveButton = await screen.findByRole('button', { name: 'profile.edit.save' })
+    expect((saveButton as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.queryByRole('button', { name: 'profile.edit.cancel' })).toBeNull()
+  })
+
   it('updates profile username via API and session update', async () => {
     render(<ProfilePage />)
 
     const usernameInput = await screen.findByLabelText('username-input')
     fireEvent.change(usernameInput, { target: { value: 'Player Two' } })
 
-    fireEvent.click(screen.getByRole('button', { name: /save changes/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'profile.edit.save' }))
 
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -237,5 +252,86 @@ describe('ProfilePage', () => {
       },
     })
     expect(mockShowToast.success).toHaveBeenCalledWith('toast.profileUpdated')
+  })
+
+  it('updates profile email via the form and requests verification', async () => {
+    render(<ProfilePage />)
+
+    const emailInput = await screen.findByLabelText('profile-email-input')
+    fireEvent.change(emailInput, { target: { value: 'new@example.com' } })
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/user/check-email?email=new%40example.com'
+      )
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'profile.edit.save' }))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/user/profile',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ email: 'new@example.com' }),
+        })
+      )
+    })
+
+    expect(mockShowToast.success).toHaveBeenCalledWith('toast.verificationSent')
+  })
+
+  it('keeps email draft in sync between the header editor and the profile form', async () => {
+    render(<ProfilePage />)
+
+    fireEvent.doubleClick(await screen.findByTitle('profile.inline.editEmail'))
+
+    const inlineEmailInput = await screen.findByLabelText('inline-email-input')
+    const profileEmailInput = await screen.findByLabelText('profile-email-input')
+
+    fireEvent.change(inlineEmailInput, { target: { value: 'draft@example.com' } })
+    expect((profileEmailInput as HTMLInputElement).value).toBe('draft@example.com')
+
+    fireEvent.change(profileEmailInput, { target: { value: 'draft-2@example.com' } })
+    expect((inlineEmailInput as HTMLInputElement).value).toBe('draft-2@example.com')
+  })
+
+  it('keeps username draft in sync between the header editor and the profile form', async () => {
+    render(<ProfilePage />)
+
+    fireEvent.doubleClick(await screen.findByTitle('profile.inline.editUsername'))
+
+    const inlineUsernameInput = await screen.findByLabelText('inline-username-input')
+    const profileUsernameInput = await screen.findByLabelText('username-input')
+
+    fireEvent.change(inlineUsernameInput, { target: { value: 'DraftName' } })
+    expect((profileUsernameInput as HTMLInputElement).value).toBe('DraftName')
+
+    fireEvent.change(profileUsernameInput, { target: { value: 'DraftNameTwo' } })
+    expect((inlineUsernameInput as HTMLInputElement).value).toBe('DraftNameTwo')
+  })
+
+  it('does not force a session update when the page regains visibility', async () => {
+    render(<ProfilePage />)
+
+    await screen.findByRole('heading', { name: 'profile.title' })
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/user/profile', { cache: 'no-store' })
+    })
+
+    mockSessionUpdate.mockClear()
+    mockFetch.mockClear()
+
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+
+    fireEvent(document, new Event('visibilitychange'))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/user/profile', { cache: 'no-store' })
+    })
+    expect(mockSessionUpdate).not.toHaveBeenCalled()
   })
 })
