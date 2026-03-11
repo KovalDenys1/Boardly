@@ -1,5 +1,6 @@
 'use client'
 
+import type { KeyboardEvent } from 'react'
 import { signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -33,6 +34,13 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   const handleProfileNavigation = () => {
     navigateToProfile(router, pathname)
+  }
+
+  const handleProfileTextKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handleProfileNavigation()
+    }
   }
 
   if (isGuestSession) {
@@ -75,15 +83,31 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   return (
     <div className="hidden md:flex items-center gap-2 lg:gap-4 min-w-0">
-      <div className="min-w-0 max-w-[220px] lg:max-w-[280px] text-right">
-        <p className="truncate text-sm font-medium text-white">
+      <div className="min-w-0 max-w-[220px] self-center text-right lg:max-w-[280px]">
+        <div className="flex flex-col items-end justify-center leading-tight">
+        <span
+          role="link"
+          tabIndex={0}
+          onClick={handleProfileNavigation}
+          onKeyDown={handleProfileTextKeyDown}
+          className="inline-block max-w-full cursor-pointer truncate text-sm font-medium text-white"
+          title={t('header.profile', 'Profile')}
+        >
           {userName || userEmail}
-        </p>
+        </span>
         {userName && userEmail && (
-          <p className="truncate text-xs text-white/70">
-            {userEmail}
-          </p>
+            <span
+              role="link"
+              tabIndex={0}
+              onClick={handleProfileNavigation}
+              onKeyDown={handleProfileTextKeyDown}
+              className="mt-0.5 inline-block max-w-full cursor-pointer truncate text-xs text-white/70"
+              title={t('header.profile', 'Profile')}
+            >
+              {userEmail}
+            </span>
         )}
+        </div>
       </div>
       <button
         onClick={handleProfileNavigation}

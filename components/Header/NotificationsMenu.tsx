@@ -160,16 +160,16 @@ export function NotificationsMenu() {
       <button
         type="button"
         onClick={() => setOpen((previousValue) => !previousValue)}
-        className="relative rounded-xl p-2 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+        className="relative rounded-full p-2 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
         aria-label={t('header.openNotifications')}
         title={badgeLabel}
       >
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={1.8}
-            d="M14.857 17.082a23.848 23.848 0 0 1 3.054 1.31A8.967 8.967 0 0 1 12 21a8.967 8.967 0 0 1-5.911-2.608 23.848 23.848 0 0 1 3.054-1.31m5.714 0a24.255 24.255 0 0 0 5.714 0m-5.714 0a3 3 0 1 1-5.714 0m5.714 0H9.143m11.357 0c.53-.145 1.04-.319 1.529-.521A2.25 2.25 0 0 0 23.25 14.25V11.25a8.25 8.25 0 1 0-16.5 0v3a2.25 2.25 0 0 0 1.221 2.011c.489.202.999.376 1.529.521"
+            strokeWidth={1.75}
+            d="M15 17h5l-1.405-1.405A2.03 2.03 0 0 1 18 14.159V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 1 1-6 0m6 0H9"
           />
         </svg>
         {unreadCount > 0 && (
@@ -188,7 +188,7 @@ export function NotificationsMenu() {
             aria-label={t('common.close')}
           />
 
-          <div className="fixed left-3 right-3 top-20 z-50 rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur md:absolute md:left-auto md:right-0 md:top-full md:mt-3 md:w-[24rem] dark:border-slate-700/70 dark:bg-slate-900/95">
+          <div className="fixed left-3 right-3 top-[5.75rem] z-50 rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-[21.75rem] dark:border-slate-700/70 dark:bg-slate-900/95">
             <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-4 dark:border-slate-700/70">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
