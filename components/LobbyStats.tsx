@@ -14,46 +14,59 @@ export default function LobbyStats({ totalLobbies, waitingLobbies, playingLobbie
 
   const stats = [
     {
+      id: 'total',
       label: t('lobby.stats.total'),
       value: totalLobbies,
       icon: '🎮',
-      color: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
+      accent: 'from-blue-500 to-indigo-500',
+      dot: 'bg-blue-500 dark:bg-blue-300',
     },
     {
+      id: 'waiting',
       label: t('lobby.stats.waiting'),
       value: waitingLobbies,
       icon: '⏳',
-      color: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
+      accent: 'from-amber-500 to-orange-500',
+      dot: 'bg-amber-500 dark:bg-amber-300',
     },
     {
+      id: 'playing',
       label: t('lobby.stats.playing'),
       value: playingLobbies,
       icon: '🎲',
-      color: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+      accent: 'from-emerald-500 to-teal-500',
+      dot: 'bg-emerald-500 dark:bg-emerald-300',
     },
     {
+      id: 'players',
       label: t('lobby.stats.players'),
       value: totalPlayers,
       icon: '👥',
-      color: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300',
+      accent: 'from-purple-500 to-fuchsia-500',
+      dot: 'bg-purple-500 dark:bg-purple-300',
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {stats.map((stat, index) => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {stats.map((stat) => (
         <div
-          key={stat.label}
-          className="min-w-0 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition-all hover:-translate-y-1 animate-fade-in"
-          style={{ animationDelay: `${index * 0.1}s` }}
+          key={stat.id}
+          className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50"
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl">{stat.icon}</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-bold ${stat.color}`}>
-              {stat.value}
-            </span>
+          <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${stat.accent} opacity-0 transition-opacity group-hover:opacity-100`} />
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-xl shadow-sm dark:bg-slate-700/70">
+              {stat.icon}
+            </div>
+            <span className={`mt-1 inline-flex h-2.5 w-2.5 rounded-full ${stat.dot}`} />
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium break-words">{stat.label}</p>
+          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+            {stat.label}
+          </p>
+          <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
+            {stat.value}
+          </p>
         </div>
       ))}
     </div>

@@ -7,6 +7,10 @@ type RouterLike = {
   back: () => void
 }
 
+type NavigateToProfileOptions = {
+  tab?: string
+}
+
 type ProfileReturnState = {
   href: string
   scrollY: number
@@ -131,14 +135,27 @@ export function restoreProfileScrollIfNeeded() {
   clearState(PROFILE_SCROLL_RESTORE_KEY)
 }
 
-export function navigateToProfile(router: RouterLike, pathname: string | null | undefined) {
-  if (pathname === PROFILE_PATH) {
+export function navigateToProfile(
+  router: RouterLike,
+  pathname: string | null | undefined,
+  options?: NavigateToProfileOptions,
+) {
+  const requestedTab = options?.tab
+  const targetHref =
+    requestedTab && requestedTab !== 'profile'
+      ? `${PROFILE_PATH}?tab=${encodeURIComponent(requestedTab)}`
+      : PROFILE_PATH
+
+  if (pathname === PROFILE_PATH && !requestedTab) {
     navigateBackFromProfile(router)
     return
   }
 
-  saveCurrentRouteForProfileNavigation()
-  router.push(PROFILE_PATH)
+  if (pathname !== PROFILE_PATH) {
+    saveCurrentRouteForProfileNavigation()
+  }
+
+  router.push(targetHref)
 }
 
 export function navigateBackFromProfile(

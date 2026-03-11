@@ -348,6 +348,8 @@ enum NotificationType {
 
 enum NotificationChannel {
   email
+  in_app
+  push
 }
 
 enum NotificationStatus {
@@ -363,6 +365,7 @@ model NotificationPreferences {
   userId String @unique
   user   Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  inAppNotifications Boolean @default(true)
   gameInvites     Boolean @default(true)
   turnReminders   Boolean @default(true)
   friendRequests  Boolean @default(true)
@@ -385,12 +388,15 @@ model Notifications {
   dedupeKey   String?
   reason      String?
   payload     Json?
+  readAt      DateTime?           @db.Timestamptz(3)
   processedAt DateTime?           @db.Timestamptz(3)
   sentAt      DateTime?           @db.Timestamptz(3)
   createdAt   DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime            @updatedAt @db.Timestamptz(3)
 
   @@index([userId, createdAt])
+  @@index([userId, channel, createdAt])
+  @@index([userId, channel, readAt, createdAt])
   @@index([type, channel, status, createdAt])
   @@index([dedupeKey])
 }

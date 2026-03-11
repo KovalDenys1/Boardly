@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './db'
 
 export type NotificationPreferenceSnapshot = {
+  inAppNotifications: boolean
   gameInvites: boolean
   turnReminders: boolean
   friendRequests: boolean
@@ -19,6 +20,7 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
   const prefs = await prisma.notificationPreferences.findUnique({
     where: { userId },
     select: {
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: true,
       friendRequests: true,
@@ -29,6 +31,7 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
 
   return (
     prefs ?? {
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: true,
       friendRequests: true,
@@ -50,6 +53,7 @@ export async function upsertNotificationPreferences(
     },
     update: data,
     select: {
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: true,
       friendRequests: true,

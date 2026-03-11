@@ -8,6 +8,7 @@ import {
 } from '@/lib/notification-preferences'
 
 const updateSchema = z.object({
+  inAppNotifications: z.boolean().optional(),
   gameInvites: z.boolean().optional(),
   turnReminders: z.boolean().optional(),
   friendRequests: z.boolean().optional(),

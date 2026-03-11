@@ -284,7 +284,23 @@ const ru = {
     login: 'Войти',
     register: 'Регистрация',
     logout: 'Выйти',
-    menu: 'Меню'
+    menu: 'Меню',
+    notifications: 'Уведомления',
+    openNotifications: 'Открыть уведомления',
+    notificationsUnread: '{{count}} непрочитано',
+    notificationsUnread_one: '{{count}} непрочитано',
+    notificationsUnread_other: '{{count}} непрочитано',
+    notificationsEmpty: 'Пока нет уведомлений',
+    markAllRead: 'Отметить всё как прочитанное',
+    notificationDefaultGame: 'игру',
+    notificationsItems: {
+      default: 'Открыть уведомление',
+      friendRequest: '{{name}} отправил(а) вам запрос в друзья',
+      friendAccepted: '{{name}} принял(а) ваш запрос в друзья',
+      gameInvite: '{{name}} приглашает вас сыграть в {{game}}',
+      rematchInvite: '{{name}} приглашает вас на реванш в {{game}}',
+      turnReminder: 'Сейчас ваш ход в {{game}}',
+    }
   },
   home: {
     title: 'Играйте в настольные игры онлайн с друзьями',
@@ -925,11 +941,12 @@ const ru = {
       winRate: 'Процент побед',
       dashboard: {
         title: 'Ваши результаты',
-        subtitle: 'Простая сводка по играм, победам и любимым игровым режимам.',
+        subtitle: 'Выберите игру, чтобы увидеть статистику именно по этому режиму.',
         filters: {
           last30Days: '30 дн.',
           last90Days: '90 дн.',
-          allTime: 'За всё время'
+          allTime: 'За всё время',
+          gameLabel: 'Игра'
         },
         summary: {
           totalGames: 'Всего игр',
@@ -941,14 +958,16 @@ const ru = {
           wins: 'Победы',
           losses: 'Поражения',
           draws: 'Ничьи',
+          drawRate: 'Процент ничьих',
           quickFacts: 'Коротко',
           currentStreak: 'Текущая серия',
           bestStreak: 'Лучшая серия'
         },
         sections: {
           byGame: {
-            title: 'По играм',
-            subtitle: 'Игровые режимы, в которые вы играете чаще всего, и ваши результаты в них.',
+            title: 'Аналитика по игре',
+            subtitle: 'Выберите режим, чтобы посмотреть статистику только по этой игре.',
+            selectedDescription: 'Эти показатели относятся только к выбранной игре.',
             empty: 'В выбранном диапазоне нет завершённых игр.',
             columns: {
               game: 'Игра',
@@ -1024,11 +1043,14 @@ const ru = {
       },
       notifications: {
         title: 'Уведомления',
-        subtitle: 'Управляйте способом получения обновлений',
+        subtitle: 'Управляйте тем, как Boardly связывается с вами через email и уведомления внутри приложения.',
         email: 'Email уведомления',
-        emailDesc: 'Получайте приглашения в игры и обновления на email',
+        emailDesc: 'Это главный переключатель email-уведомлений, который сохраняется в аккаунте.',
+        inApp: 'Внутренние уведомления',
+        inAppDesc: 'Показывать уведомления в inbox в хедере для приглашений, напоминаний и активности друзей.',
         push: 'Push уведомления',
         pushDesc: 'Уведомления браузера для обновлений в реальном времени',
+        pushSoon: 'Push-уведомления пока недоступны.',
         sound: 'Звуковые эффекты',
         soundDesc: 'Воспроизводить звуки для игровых действий и уведомлений',
         categories: {

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { queueFriendAcceptedNotificationEmail } from '@/lib/friend-notification-emails'
+import { createInAppNotification, markInAppNotificationReadByDedupeKey } from '@/lib/in-app-notifications'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request/accept')
@@ -139,6 +140,22 @@ export async function POST(
       friendshipId: friendship.id,
       baseUrl: new URL(req.url).origin,
     })
+
+    await Promise.all([
+      markInAppNotificationReadByDedupeKey(friendRequest.receiver.id, `friend_request:${requestId}`),
+      createInAppNotification({
+        userId: friendRequest.sender.id,
+        type: 'friend_accepted',
+        dedupeKey: `friend_accepted:${requestId}`,
+        payload: {
+          requestId,
+          friendshipId: friendship.id,
+          accepterId: friendRequest.receiver.id,
+          accepterName: friendRequest.receiver.username || 'Player',
+          href: '/profile?tab=friends',
+        },
+      }),
+    ])
 
     return NextResponse.json({
       success: true,

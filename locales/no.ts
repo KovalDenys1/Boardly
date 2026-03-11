@@ -284,7 +284,23 @@ const no = {
     login: 'Logg inn',
     register: 'Registrer',
     logout: 'Logg ut',
-    menu: 'Meny'
+    menu: 'Meny',
+    notifications: 'Varsler',
+    openNotifications: 'Åpne varsler',
+    notificationsUnread: '{{count}} uleste',
+    notificationsUnread_one: '{{count}} ulest',
+    notificationsUnread_other: '{{count}} uleste',
+    notificationsEmpty: 'Ingen varsler ennå',
+    markAllRead: 'Marker alle som lest',
+    notificationDefaultGame: 'spill',
+    notificationsItems: {
+      default: 'Åpne varsel',
+      friendRequest: '{{name}} sendte deg en venneforespørsel',
+      friendAccepted: '{{name}} godtok venneforespørselen din',
+      gameInvite: '{{name}} inviterte deg til å spille {{game}}',
+      rematchInvite: '{{name}} inviterte deg til en {{game}}-revansj',
+      turnReminder: 'Det er din tur i {{game}}',
+    }
   },
   home: {
     title: 'Spill brettspill på nett med venner',
@@ -925,11 +941,12 @@ const no = {
       winRate: 'Vinnrate',
       dashboard: {
         title: 'Dine resultater',
-        subtitle: 'En enkel oversikt over spillene dine, seire og favorittspill.',
+        subtitle: 'Velg et spill for å se en tydeligere oversikt for akkurat den modusen.',
         filters: {
           last30Days: '30 d',
           last90Days: '90 d',
-          allTime: 'Hele perioden'
+          allTime: 'Hele perioden',
+          gameLabel: 'Spill'
         },
         summary: {
           totalGames: 'Totalt antall spill',
@@ -941,14 +958,16 @@ const no = {
           wins: 'Seire',
           losses: 'Tap',
           draws: 'Uavgjort',
+          drawRate: 'Uavgjort-rate',
           quickFacts: 'Kort fortalt',
           currentStreak: 'Nåværende streak',
           bestStreak: 'Beste streak'
         },
         sections: {
           byGame: {
-            title: 'Per spill',
-            subtitle: 'Spilltypene du spiller mest og hvordan det går i hver av dem.',
+            title: 'Spillanalyse',
+            subtitle: 'Velg en spillmodus for å se statistikk bare for det spillet.',
+            selectedDescription: 'Disse tallene gjelder bare for den valgte spillmodusen.',
             empty: 'Ingen fullførte spill i valgt periode.',
             columns: {
               game: 'Spill',
@@ -1024,11 +1043,14 @@ const no = {
       },
       notifications: {
         title: 'Varsler',
-        subtitle: 'Administrer hvordan du mottar oppdateringer',
+        subtitle: 'Styr hvordan Boardly når deg via e-post og varsler i appen.',
         email: 'E-postvarsler',
-        emailDesc: 'Motta spillinvitasjoner og oppdateringer via e-post',
+        emailDesc: 'Dette er hovedbryteren for e-postvarsler og lagres på kontoen din.',
+        inApp: 'Varsler i appen',
+        inAppDesc: 'Vis varsler i innboksen i toppmenyen for invitasjoner, påminnelser og venneaktivitet.',
         push: 'Push-varsler',
         pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
+        pushSoon: 'Push-varsler er ikke tilgjengelige ennå.',
         sound: 'Lydeffekter',
         soundDesc: 'Spill av lyder for spillhandlinger og varsler',
         categories: {

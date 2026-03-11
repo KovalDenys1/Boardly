@@ -49,6 +49,7 @@ describe('friend notification email helpers', () => {
     mockSendFriendAcceptedEmail.mockResolvedValue({ success: true })
     mockCreateNotificationUnsubscribeToken.mockReturnValue('token-123')
     mockGetNotificationPreferences.mockResolvedValue({
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: true,
       friendRequests: true,
@@ -95,6 +96,7 @@ describe('friend notification email helpers', () => {
 
   it('skips friend accepted email when recipient disabled friendAccepted notifications', async () => {
     mockGetNotificationPreferences.mockResolvedValue({
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: true,
       friendRequests: true,

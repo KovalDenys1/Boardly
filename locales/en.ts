@@ -285,6 +285,22 @@ const en = {
     register: 'Register',
     logout: 'Logout',
     menu: 'Menu',
+    notifications: 'Notifications',
+    openNotifications: 'Open notifications',
+    notificationsUnread: '{{count}} unread',
+    notificationsUnread_one: '{{count}} unread',
+    notificationsUnread_other: '{{count}} unread',
+    notificationsEmpty: 'No notifications yet',
+    markAllRead: 'Mark all as read',
+    notificationDefaultGame: 'game',
+    notificationsItems: {
+      default: 'Open notification',
+      friendRequest: '{{name}} sent you a friend request',
+      friendAccepted: '{{name}} accepted your friend request',
+      gameInvite: '{{name}} invited you to play {{game}}',
+      rematchInvite: '{{name}} invited you to a {{game}} rematch',
+      turnReminder: 'It is your turn in {{game}}',
+    },
   },
   home: {
     title: 'Play Board Games Online with Friends',
@@ -925,11 +941,12 @@ const en = {
       winRate: 'Win Rate',
       dashboard: {
         title: 'Your results',
-        subtitle: 'A simple overview of your games, wins, and favorite game modes.',
+        subtitle: 'Choose a game to see a clearer breakdown for that mode.',
         filters: {
           last30Days: '30d',
           last90Days: '90d',
           allTime: 'All time',
+          gameLabel: 'Game',
         },
         summary: {
           totalGames: 'Total games',
@@ -941,14 +958,16 @@ const en = {
           wins: 'Wins',
           losses: 'Losses',
           draws: 'Draws',
+          drawRate: 'Draw rate',
           quickFacts: 'Quick facts',
           currentStreak: 'Current streak',
           bestStreak: 'Best streak',
         },
         sections: {
           byGame: {
-            title: 'By game',
-            subtitle: 'Your most-played game modes and how you do in each one.',
+            title: 'Game analytics',
+            subtitle: 'Pick a game mode to view stats only for that game.',
+            selectedDescription: 'These numbers apply only to the selected game mode.',
             empty: 'No completed games in selected range.',
             columns: {
               game: 'Game',
@@ -1030,11 +1049,14 @@ const en = {
       // Notifications
       notifications: {
         title: 'Notifications',
-        subtitle: 'Manage how you receive updates',
+        subtitle: 'Control how Boardly reaches you across email and in-app alerts.',
         email: 'Email Notifications',
-        emailDesc: 'Receive game invites and updates via email',
+        emailDesc: 'This is your main email notification switch and is saved to your account.',
+        inApp: 'In-app Notifications',
+        inAppDesc: 'Show alerts in the header inbox for invites, reminders, and friend activity.',
         push: 'Push Notifications',
         pushDesc: 'Browser notifications for real-time updates',
+        pushSoon: 'Push notifications are not available yet.',
         sound: 'Sound Effects',
         soundDesc: 'Play sounds for in-game actions and notifications',
         categories: {

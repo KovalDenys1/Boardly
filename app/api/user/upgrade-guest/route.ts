@@ -186,6 +186,8 @@ async function upgradeGuestInTransaction(
       await tx.notificationPreferences.update({
         where: { userId: targetUserId },
         data: {
+          inAppNotifications:
+            targetNotificationPreferences.inAppNotifications || sourceNotificationPreferences.inAppNotifications,
           gameInvites: targetNotificationPreferences.gameInvites || sourceNotificationPreferences.gameInvites,
           turnReminders: targetNotificationPreferences.turnReminders || sourceNotificationPreferences.turnReminders,
           friendRequests: targetNotificationPreferences.friendRequests || sourceNotificationPreferences.friendRequests,

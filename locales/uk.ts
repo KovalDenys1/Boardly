@@ -287,6 +287,22 @@ const uk: Translation = {
     register: 'Реєстрація',
     logout: 'Вийти',
     menu: 'Меню',
+    notifications: 'Сповіщення',
+    openNotifications: 'Відкрити сповіщення',
+    notificationsUnread: '{{count}} непрочитано',
+    notificationsUnread_one: '{{count}} непрочитано',
+    notificationsUnread_other: '{{count}} непрочитано',
+    notificationsEmpty: 'Поки немає сповіщень',
+    markAllRead: 'Позначити все як прочитане',
+    notificationDefaultGame: 'гру',
+    notificationsItems: {
+      default: 'Відкрити сповіщення',
+      friendRequest: '{{name}} надіслав(ла) вам запит у друзі',
+      friendAccepted: '{{name}} прийняв(ла) ваш запит у друзі',
+      gameInvite: '{{name}} запросив(ла) вас зіграти в {{game}}',
+      rematchInvite: '{{name}} запросив(ла) вас на реванш у {{game}}',
+      turnReminder: 'Зараз ваш хід у {{game}}',
+    },
   },
   home: {
     title: 'Грайте в настільні ігри онлайн з друзями',
@@ -927,11 +943,12 @@ const uk: Translation = {
       winRate: 'Відсоток перемог',
       dashboard: {
         title: 'Ваші результати',
-        subtitle: 'Простий огляд ваших ігор, перемог і улюблених режимів.',
+        subtitle: 'Виберіть гру, щоб побачити статистику саме для цього режиму.',
         filters: {
           last30Days: '30 днів',
           last90Days: '90 днів',
           allTime: 'За весь час',
+          gameLabel: 'Гра',
         },
         summary: {
           totalGames: 'Всього ігор',
@@ -943,14 +960,16 @@ const uk: Translation = {
           wins: 'Перемоги',
           losses: 'Поразки',
           draws: 'Нічиї',
+          drawRate: 'Відсоток нічиїх',
           quickFacts: 'Коротко',
           currentStreak: 'Поточна серія',
           bestStreak: 'Найкраща серія',
         },
         sections: {
           byGame: {
-            title: 'За іграми',
-            subtitle: 'Режими, у які ви граєте найчастіше, і ваші результати в них.',
+            title: 'Аналітика за грою',
+            subtitle: 'Оберіть режим, щоб переглянути статистику лише для цієї гри.',
+            selectedDescription: 'Ці показники стосуються лише вибраної гри.',
             empty: 'У вибраному діапазоні немає завершених ігор.',
             columns: {
               game: 'Гра',
@@ -1032,11 +1051,14 @@ const uk: Translation = {
       // Notifications
       notifications: {
         title: 'Сповіщення',
-        subtitle: 'Керуйте способом отримання оновлень',
+        subtitle: 'Керуйте тим, як Boardly зв’язується з вами через email та сповіщення всередині застосунку.',
         email: 'Email сповіщення',
-        emailDesc: 'Отримуйте запрошення до ігор та оновлення на email',
+        emailDesc: 'Це головний перемикач email-сповіщень, який зберігається у вашому акаунті.',
+        inApp: 'Сповіщення в застосунку',
+        inAppDesc: 'Показувати сповіщення в inbox у хедері для запрошень, нагадувань та активності друзів.',
         push: 'Push сповіщення',
         pushDesc: 'Сповіщення браузера для оновлень у реальному часі',
+        pushSoon: 'Push-сповіщення поки недоступні.',
         sound: 'Звукові ефекти',
         soundDesc: 'Відтворювати звуки для ігрових дій та сповіщень',
         categories: {

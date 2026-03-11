@@ -215,6 +215,7 @@ describe('POST /api/user/upgrade-guest', () => {
     mockTx.notificationPreferences.findUnique
       .mockResolvedValueOnce({
         userId: 'guest-1',
+        inAppNotifications: true,
         gameInvites: true,
         turnReminders: true,
         friendRequests: true,
@@ -223,6 +224,7 @@ describe('POST /api/user/upgrade-guest', () => {
       })
       .mockResolvedValueOnce({
         userId: 'user-1',
+        inAppNotifications: false,
         gameInvites: false,
         turnReminders: false,
         friendRequests: false,
