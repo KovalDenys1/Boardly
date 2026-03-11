@@ -999,6 +999,16 @@ const no = {
       title: 'Innstillinger',
       subtitle: 'Tilpass din opplevelse',
       changePassword: 'Endre passord',
+      sections: {
+        appearance: {
+          title: 'Utseende',
+          subtitle: 'Språk, tema og visuelle grensesnittvalg.',
+        },
+        privacyGame: {
+          title: 'Personvern og spill',
+          subtitle: 'Kontroller synlighet og hvordan kampene oppleves.',
+        },
+      },
       language: {
         title: 'Språk',
         subtitle: 'Velg foretrukket språk for grensesnittet',

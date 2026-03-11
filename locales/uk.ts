@@ -1001,6 +1001,16 @@ const uk: Translation = {
       title: 'Налаштування',
       subtitle: 'Налаштуйте свій досвід',
       changePassword: 'Змінити пароль',
+      sections: {
+        appearance: {
+          title: 'Оформлення',
+          subtitle: 'Мова, тема та візуальні налаштування інтерфейсу.',
+        },
+        privacyGame: {
+          title: 'Приватність і гра',
+          subtitle: 'Керуйте видимістю та тим, як відчуваються матчі.',
+        },
+      },
 
       // Language
       language: {

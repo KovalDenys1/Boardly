@@ -13,6 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import { availableLocales, defaultLocale } from '@/i18n'
+import { applyThemeMode, getStoredThemeMode, normalizeThemeMode, type ThemeMode } from '@/lib/theme'
 
 interface LinkedAccount {
   provider: string
@@ -30,13 +32,18 @@ type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'settings'
 const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'settings']
 const PROFILE_VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000
 
+function normalizeProfileLocale(value: string | null | undefined): string {
+  const normalized = value?.toLowerCase().split('-')[0] || defaultLocale
+  return (availableLocales as readonly string[]).includes(normalized) ? normalized : defaultLocale
+}
+
 function isTabType(value: string | null): value is TabType {
   return value !== null && PROFILE_TABS.includes(value as TabType)
 }
 
 type SettingsState = {
   language: string
-  theme: 'light' | 'dark' | 'system'
+  theme: ThemeMode
   emailNotifications: boolean
   pushNotifications: boolean
   soundEffects: boolean
@@ -329,10 +336,10 @@ export default function ProfilePage() {
       fetchLinkedAccounts()
 
       // Load settings from localStorage
-      const savedLanguage = localStorage.getItem('language') || 'en'
-      const savedThemeRaw = localStorage.getItem('theme')
-      const savedTheme: SettingsState['theme'] =
-        savedThemeRaw === 'light' || savedThemeRaw === 'dark' ? savedThemeRaw : 'system'
+      const savedLanguage = normalizeProfileLocale(
+        localStorage.getItem('i18nextLng') || localStorage.getItem('language') || i18n.language
+      )
+      const savedTheme = getStoredThemeMode(localStorage)
       const savedSettings = localStorage.getItem('userSettings')
 
       if (savedSettings) {
@@ -368,7 +375,30 @@ export default function ProfilePage() {
         })
         .catch(() => {})
     }
-  }, [fetchProfileSummary, status])
+  }, [fetchProfileSummary, i18n.language, status])
+
+  useEffect(() => {
+    const syncSettingsLanguage = (nextLanguage?: string) => {
+      const normalizedLanguage = normalizeProfileLocale(nextLanguage || i18n.language)
+      setSettings((prev) => (
+        prev.language === normalizedLanguage
+          ? prev
+          : { ...prev, language: normalizedLanguage }
+      ))
+    }
+
+    syncSettingsLanguage(i18n.language)
+
+    if (typeof i18n.on === 'function' && typeof i18n.off === 'function') {
+      i18n.on('languageChanged', syncSettingsLanguage)
+
+      return () => {
+        i18n.off('languageChanged', syncSettingsLanguage)
+      }
+    }
+
+    return undefined
+  }, [i18n])
 
   useEffect(() => {
     if (!editingField) {
@@ -866,9 +896,13 @@ export default function ProfilePage() {
   const handleSaveSettings = async () => {
     setSavingSettings(true)
     try {
+      const normalizedLanguage = normalizeProfileLocale(settings.language)
+      const normalizedTheme = normalizeThemeMode(settings.theme)
+
       // Save to localStorage
-      localStorage.setItem('language', settings.language)
-      localStorage.setItem('theme', settings.theme)
+      localStorage.setItem('language', normalizedLanguage)
+      localStorage.setItem('i18nextLng', normalizedLanguage)
+      localStorage.setItem('theme', normalizedTheme)
       localStorage.setItem('userSettings', JSON.stringify({
         emailNotifications: settings.emailNotifications,
         pushNotifications: settings.pushNotifications,
@@ -880,22 +914,11 @@ export default function ProfilePage() {
         animations: settings.animations,
       }))
 
-      // Apply theme
-      if (settings.theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else if (settings.theme === 'light') {
-        document.documentElement.classList.remove('dark')
-      } else {
-        // System preference
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
-      }
+      applyThemeMode(normalizedTheme)
 
-      // Trigger language change
-      window.dispatchEvent(new Event('languageChange'))
+      if (normalizeProfileLocale(i18n.language) !== normalizedLanguage) {
+        await i18n.changeLanguage(normalizedLanguage)
+      }
 
       // Save server-side email notification preferences
       const prefsRes = await fetch('/api/user/notification-preferences', {
@@ -917,6 +940,27 @@ export default function ProfilePage() {
   }
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+    if (key === 'language') {
+      const normalizedLanguage = normalizeProfileLocale(String(value))
+      setSettings((prev) => ({ ...prev, language: normalizedLanguage }))
+      localStorage.setItem('language', normalizedLanguage)
+      localStorage.setItem('i18nextLng', normalizedLanguage)
+
+      if (normalizeProfileLocale(i18n.language) !== normalizedLanguage) {
+        void i18n.changeLanguage(normalizedLanguage)
+      }
+
+      return
+    }
+
+    if (key === 'theme') {
+      const normalizedTheme = normalizeThemeMode(String(value))
+      setSettings((prev) => ({ ...prev, theme: normalizedTheme }))
+      localStorage.setItem('theme', normalizedTheme)
+      applyThemeMode(normalizedTheme)
+      return
+    }
+
     setSettings((prev) => ({ ...prev, [key]: value }))
     setSettingsChanged(true)
   }
@@ -1101,6 +1145,13 @@ export default function ProfilePage() {
     setEditingStatus('idle')
     setEditingMessage('')
   }
+
+  const settingsSectionClassName =
+    'rounded-3xl border border-slate-200/60 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/60 sm:p-6'
+  const settingsSurfaceClassName =
+    'rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700/60 dark:bg-slate-800/60'
+  const settingsToggleCardClassName =
+    'flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-800/60 dark:hover:bg-slate-800'
 
   if (status === 'loading') {
     return (
@@ -1576,281 +1627,362 @@ export default function ProfilePage() {
               aria-labelledby="profile-tab-settings"
               className="space-y-5"
             >
-              <div>
+              <div className="max-w-2xl">
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('profile.settings.title')}</h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {t('profile.settings.subtitle')}
                 </p>
               </div>
 
-              {/* Language Settings */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50 sm:p-6">
-                <div className="flex items-start gap-3.5 mb-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m10.5 21 5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 0 1 6-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 0 1-3.827-5.802" /></svg>
+              <div className="grid gap-5 xl:grid-cols-12">
+                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {t('profile.settings.sections.appearance.title')}
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {t('profile.settings.sections.appearance.subtitle')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('profile.settings.language.title')}</h3>
-                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{t('profile.settings.language.subtitle')}</p>
-                  </div>
-                </div>
-                <select
-                  value={settings.language}
-                  onChange={(e) => updateSetting('language', e.target.value)}
-                  className="w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:ring-blue-500/20"
-                >
-                  <option value="en">English</option>
-                  <option value="uk">Українська</option>
-                  <option value="ru">Русский</option>
-                  <option value="no">Norsk</option>
-                </select>
-              </div>
 
-              {/* Theme Settings */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50 sm:p-6">
-                <div className="flex items-start gap-3.5 mb-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-500/15 dark:text-purple-400">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 0 0 5.304 0l6.401-6.402M6.75 21A3.75 3.75 0 0 1 3 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 0 0 3.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008Z" /></svg>
+                  <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+                    <div className={settingsSurfaceClassName}>
+                      <label className="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+                        {t('profile.settings.language.title')}
+                      </label>
+                      <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
+                        {t('profile.settings.language.subtitle')}
+                      </p>
+                      <select
+                        value={settings.language}
+                        onChange={(e) => updateSetting('language', e.target.value)}
+                        className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:ring-blue-500/20"
+                      >
+                        <option value="en">English</option>
+                        <option value="uk">Українська</option>
+                        <option value="ru">Русский</option>
+                        <option value="no">Norsk</option>
+                      </select>
+                    </div>
+
+                    <div className={settingsSurfaceClassName}>
+                      <div className="mb-3">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {t('profile.settings.theme.title')}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                          {t('profile.settings.theme.subtitle')}
+                        </p>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {([
+                          { value: 'light' as const, icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>, label: t('profile.settings.theme.light') },
+                          { value: 'dark' as const, icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>, label: t('profile.settings.theme.dark') },
+                          { value: 'system' as const, icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" /></svg>, label: t('profile.settings.theme.system') },
+                        ] as const).map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => updateSetting('theme', opt.value)}
+                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
+                              settings.theme === opt.value
+                                ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400 dark:bg-blue-500/15 dark:text-blue-300'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <span className={settings.theme === opt.value ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}>
+                              {opt.icon}
+                            </span>
+                            <span className="text-sm font-semibold">{opt.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
+                </section>
+
+                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('profile.settings.theme.title')}</h3>
-                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{t('profile.settings.theme.subtitle')}</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {t('profile.settings.notifications.title')}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {t('profile.settings.notifications.subtitle')}
+                    </p>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {([
-                    { value: 'light' as const, icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>, label: t('profile.settings.theme.light') },
-                    { value: 'dark' as const, icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>, label: t('profile.settings.theme.dark') },
-                    { value: 'system' as const, icon: <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" /></svg>, label: t('profile.settings.theme.system') },
-                  ] as const).map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => updateSetting('theme', opt.value)}
-                      className={`flex flex-col items-center gap-2 rounded-xl p-4 transition-all ${
-                        settings.theme === opt.value
-                          ? 'bg-blue-50 text-blue-700 ring-2 ring-blue-500 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-blue-400'
-                          : 'bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 dark:bg-slate-700/50 dark:text-slate-400 dark:ring-slate-600 dark:hover:bg-slate-700'
+
+                  <div className="mt-5 space-y-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Label className={settingsToggleCardClassName}>
+                        <div className="min-w-0 pr-3">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.email')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.emailDesc')}
+                          </div>
+                        </div>
+                        <Checkbox
+                          checked={settings.emailNotifications}
+                          onCheckedChange={(checked) => updateSetting('emailNotifications', Boolean(checked))}
+                          className="mt-0.5 shrink-0"
+                        />
+                      </Label>
+
+                      <Label className={settingsToggleCardClassName}>
+                        <div className="min-w-0 pr-3">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.push')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.pushDesc')}
+                          </div>
+                        </div>
+                        <Checkbox
+                          checked={settings.pushNotifications}
+                          onCheckedChange={(checked) => updateSetting('pushNotifications', Boolean(checked))}
+                          className="mt-0.5 shrink-0"
+                        />
+                      </Label>
+                    </div>
+
+                    <div
+                      className={`rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 transition-opacity dark:border-slate-700/60 dark:bg-slate-800/50 ${
+                        settings.emailNotifications ? 'opacity-100' : 'opacity-65'
                       }`}
                     >
-                      <span className={settings.theme === opt.value ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}>{opt.icon}</span>
-                      <span className="text-sm font-semibold">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notification Settings */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50 sm:p-6">
-                <div className="flex items-start gap-3.5 mb-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('profile.settings.notifications.title')}</h3>
-                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.subtitle')}</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.emailNotifications}
-                      onCheckedChange={(checked) => updateSetting('emailNotifications', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.email')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.emailDesc')}</div>
-                    </div>
-                  </Label>
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.pushNotifications}
-                      onCheckedChange={(checked) => updateSetting('pushNotifications', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.push')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.pushDesc')}</div>
-                    </div>
-                  </Label>
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.soundEffects}
-                      onCheckedChange={(checked) => updateSetting('soundEffects', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.sound')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.soundDesc')}</div>
-                    </div>
-                  </Label>
-
-                  <div className="mt-2 rounded-xl border border-slate-200/60 bg-slate-50/50 p-4 dark:border-slate-700/40 dark:bg-slate-800/30">
-                    <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                       {t('profile.settings.notifications.categories.title')}
                     </p>
+                      <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/55">
+                        <Label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
+                        <Checkbox
+                          checked={notificationPreferences.unsubscribedAll}
+                          onCheckedChange={(checked) => updateNotificationPreference('unsubscribedAll', Boolean(checked))}
+                          disabled={!settings.emailNotifications}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.categories.unsubscribeAll')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.categories.unsubscribeAllDesc')}
+                          </div>
+                        </div>
+                        </Label>
 
-                    <Label className="flex items-start gap-3 cursor-pointer rounded-lg p-2.5 transition-colors hover:bg-white dark:hover:bg-slate-700/30 mb-1">
-                      <Checkbox
-                        checked={notificationPreferences.unsubscribedAll}
-                        onCheckedChange={(checked) => updateNotificationPreference('unsubscribedAll', Boolean(checked))}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.categories.unsubscribeAll')}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.categories.unsubscribeAllDesc')}</div>
-                      </div>
-                    </Label>
+                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                        <Checkbox
+                          checked={notificationPreferences.gameInvites}
+                          onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
+                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.categories.gameInvites')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.categories.gameInvitesDesc')}
+                          </div>
+                        </div>
+                        </Label>
 
-                    <Label className="flex items-start gap-3 cursor-pointer rounded-lg p-2.5 transition-colors hover:bg-white dark:hover:bg-slate-700/30 mb-1">
-                      <Checkbox
-                        checked={notificationPreferences.gameInvites}
-                        onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
-                        disabled={notificationPreferences.unsubscribedAll}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.categories.gameInvites')}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.categories.gameInvitesDesc')}</div>
-                      </div>
-                    </Label>
+                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                        <Checkbox
+                          checked={notificationPreferences.turnReminders}
+                          onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
+                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.categories.turnReminders')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.categories.turnRemindersDesc')}
+                          </div>
+                        </div>
+                        </Label>
 
-                    <Label className="flex items-start gap-3 cursor-pointer rounded-lg p-2.5 transition-colors hover:bg-white dark:hover:bg-slate-700/30 mb-1">
-                      <Checkbox
-                        checked={notificationPreferences.turnReminders}
-                        onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
-                        disabled={notificationPreferences.unsubscribedAll}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.categories.turnReminders')}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.categories.turnRemindersDesc')}</div>
-                      </div>
-                    </Label>
+                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                        <Checkbox
+                          checked={notificationPreferences.friendRequests}
+                          onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
+                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.categories.friendRequests')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.categories.friendRequestsDesc')}
+                          </div>
+                        </div>
+                        </Label>
 
-                    <Label className="flex items-start gap-3 cursor-pointer rounded-lg p-2.5 transition-colors hover:bg-white dark:hover:bg-slate-700/30 mb-1">
-                      <Checkbox
-                        checked={notificationPreferences.friendRequests}
-                        onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
-                        disabled={notificationPreferences.unsubscribedAll}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.categories.friendRequests')}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.categories.friendRequestsDesc')}</div>
+                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                        <Checkbox
+                          checked={notificationPreferences.friendAccepted}
+                          onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
+                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.notifications.categories.friendAccepted')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.categories.friendAcceptedDesc')}
+                          </div>
+                        </div>
+                        </Label>
                       </div>
-                    </Label>
-
-                    <Label className="flex items-start gap-3 cursor-pointer rounded-lg p-2.5 transition-colors hover:bg-white dark:hover:bg-slate-700/30">
-                      <Checkbox
-                        checked={notificationPreferences.friendAccepted}
-                        onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
-                        disabled={notificationPreferences.unsubscribedAll}
-                        className="mt-0.5"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.notifications.categories.friendAccepted')}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.notifications.categories.friendAcceptedDesc')}</div>
-                      </div>
-                    </Label>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </section>
 
-              {/* Privacy Settings */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50 sm:p-6">
-                <div className="flex items-start gap-3.5 mb-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
-                  </div>
+                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('profile.settings.privacy.title')}</h3>
-                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{t('profile.settings.privacy.subtitle')}</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {t('profile.settings.privacy.title')}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {t('profile.settings.privacy.subtitle')}
+                    </p>
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">{t('profile.settings.privacy.profileVisibility')}</label>
-                    <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.privacy.profileVisibilityDesc')}</p>
-                    <select
-                      value={settings.profileVisibility}
-                      onChange={(e) =>
-                        updateSetting('profileVisibility', e.target.value as SettingsState['profileVisibility'])
-                      }
-                      className="w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:ring-blue-500/20"
-                    >
-                      <option value="public">🌍 {t('profile.settings.privacy.public')}</option>
-                      <option value="friends">👥 {t('profile.settings.privacy.friendsOnly')}</option>
-                      <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
-                    </select>
-                  </div>
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.showOnlineStatus}
-                      onCheckedChange={(checked) => updateSetting('showOnlineStatus', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.privacy.showOnline')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.privacy.showOnlineDesc')}</div>
-                    </div>
-                  </Label>
-                </div>
-              </div>
 
-              {/* Game Preferences */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50 sm:p-6">
-                <div className="flex items-start gap-3.5 mb-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z" /></svg>
+                  <div className="mt-5">
+                    <div className={settingsSurfaceClassName}>
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          {t('profile.settings.privacy.profileVisibility')}
+                        </label>
+                        <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+                          {t('profile.settings.privacy.profileVisibilityDesc')}
+                        </p>
+                        <select
+                          value={settings.profileVisibility}
+                          onChange={(e) =>
+                            updateSetting('profileVisibility', e.target.value as SettingsState['profileVisibility'])
+                          }
+                          className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:ring-blue-500/20"
+                        >
+                          <option value="public">🌍 {t('profile.settings.privacy.public')}</option>
+                          <option value="friends">👥 {t('profile.settings.privacy.friendsOnly')}</option>
+                          <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
+                        </select>
+                      </div>
+
+                      <Label className="mt-4 flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
+                        <div className="min-w-0 pr-3">
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {t('profile.settings.privacy.showOnline')}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.privacy.showOnlineDesc')}
+                          </div>
+                        </div>
+                        <Checkbox
+                          checked={settings.showOnlineStatus}
+                          onCheckedChange={(checked) => updateSetting('showOnlineStatus', Boolean(checked))}
+                          className="mt-0.5 shrink-0"
+                        />
+                      </Label>
+                    </div>
                   </div>
+                </section>
+
+                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('profile.settings.game.title')}</h3>
-                    <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{t('profile.settings.game.subtitle')}</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {t('profile.settings.game.title')}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {t('profile.settings.game.subtitle')}
+                    </p>
                   </div>
-                </div>
-                <div className="space-y-3">
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.autoJoin}
-                      onCheckedChange={(checked) => updateSetting('autoJoin', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.game.autoJoin')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.game.autoJoinDesc')}</div>
+
+                  <div className="mt-5">
+                    <div className={settingsSurfaceClassName}>
+                      <div className="space-y-3">
+                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
+                          <div className="min-w-0 pr-3">
+                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                              {t('profile.settings.game.autoJoin')}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {t('profile.settings.game.autoJoinDesc')}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={settings.autoJoin}
+                            onCheckedChange={(checked) => updateSetting('autoJoin', Boolean(checked))}
+                            className="mt-0.5 shrink-0"
+                          />
+                        </Label>
+
+                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
+                          <div className="min-w-0 pr-3">
+                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                              {t('profile.settings.game.confirmMoves')}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {t('profile.settings.game.confirmMovesDesc')}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={settings.confirmMoves}
+                            onCheckedChange={(checked) => updateSetting('confirmMoves', Boolean(checked))}
+                            className="mt-0.5 shrink-0"
+                          />
+                        </Label>
+
+                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
+                          <div className="min-w-0 pr-3">
+                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                              {t('profile.settings.notifications.sound')}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {t('profile.settings.notifications.soundDesc')}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={settings.soundEffects}
+                            onCheckedChange={(checked) => updateSetting('soundEffects', Boolean(checked))}
+                            className="mt-0.5 shrink-0"
+                          />
+                        </Label>
+
+                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
+                          <div className="min-w-0 pr-3">
+                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                              {t('profile.settings.game.animations')}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {t('profile.settings.game.animationsDesc')}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={settings.animations}
+                            onCheckedChange={(checked) => updateSetting('animations', Boolean(checked))}
+                            className="mt-0.5 shrink-0"
+                          />
+                        </Label>
+                      </div>
                     </div>
-                  </Label>
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.confirmMoves}
-                      onCheckedChange={(checked) => updateSetting('confirmMoves', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.game.confirmMoves')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.game.confirmMovesDesc')}</div>
-                    </div>
-                  </Label>
-                  <Label className="flex items-start gap-3 cursor-pointer rounded-xl p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                    <Checkbox
-                      checked={settings.animations}
-                      onCheckedChange={(checked) => updateSetting('animations', Boolean(checked))}
-                      className="mt-0.5"
-                    />
-                    <div>
-                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('profile.settings.game.animations')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('profile.settings.game.animationsDesc')}</div>
-                    </div>
-                  </Label>
-                </div>
+                  </div>
+                </section>
               </div>
 
               {/* Save Button */}
               {settingsChanged && (
-                <div className="sticky bottom-4 overflow-hidden rounded-2xl border border-blue-200/60 bg-white/90 shadow-xl shadow-blue-500/10 backdrop-blur-lg dark:border-blue-500/20 dark:bg-slate-900/90">
-                  <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500" />
-                  <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                <div className="sticky bottom-4 z-10 rounded-2xl border border-blue-200/60 bg-white/95 shadow-lg shadow-blue-500/10 backdrop-blur-lg dark:border-blue-500/20 dark:bg-slate-900/95">
+                  <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-slate-900 dark:text-white">
                         {t('profile.settings.unsaved.title')}

@@ -999,6 +999,16 @@ const en = {
       title: 'Settings',
       subtitle: 'Customize your experience',
       changePassword: 'Change Password',
+      sections: {
+        appearance: {
+          title: 'Appearance',
+          subtitle: 'Language, theme, and interface preferences.',
+        },
+        privacyGame: {
+          title: 'Privacy & Gameplay',
+          subtitle: 'Control visibility and tune how matches feel.',
+        },
+      },
 
       // Language
       language: {

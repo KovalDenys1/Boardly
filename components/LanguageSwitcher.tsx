@@ -8,7 +8,10 @@ export default function LanguageSwitcher() {
   const { i18n } = useTranslation()
 
   const handleLocaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    i18n.changeLanguage(e.target.value)
+    const nextLanguage = e.target.value
+    localStorage.setItem('language', nextLanguage)
+    localStorage.setItem('i18nextLng', nextLanguage)
+    void i18n.changeLanguage(nextLanguage)
   }
 
   const getLanguageLabel = (loc: string) => {

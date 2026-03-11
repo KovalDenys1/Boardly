@@ -14,7 +14,14 @@ jest.mock('next/navigation', () => ({
 }))
 
 const mockTranslate = (key: string) => key
-const mockI18n = { language: 'en' }
+const mockI18n = {
+  language: 'en',
+  changeLanguage: jest.fn().mockImplementation(async (nextLanguage: string) => {
+    mockI18n.language = nextLanguage
+  }),
+  on: jest.fn(),
+  off: jest.fn(),
+}
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
@@ -124,6 +131,7 @@ describe('ProfilePage', () => {
     jest.clearAllMocks()
     window.localStorage.clear()
     window.history.replaceState({}, '', '/profile')
+    mockI18n.language = 'en'
 
     mockUseRouter.mockReturnValue({
       replace: mockRouterReplace,
@@ -201,6 +209,26 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByText('mock-stats-dashboard:user-1')).toBeTruthy()
     expect(screen.queryByText('mock-game-history')).toBeNull()
+  })
+
+  it('prefers the active i18n language over stale profile language storage', async () => {
+    window.localStorage.setItem('language', 'ru')
+    window.localStorage.setItem('i18nextLng', 'en')
+
+    render(<ProfilePage />)
+
+    const settingsTab = (await screen.findAllByRole('tab')).find(
+      (tab) => tab.getAttribute('id') === 'profile-tab-settings'
+    )
+    expect(settingsTab).toBeDefined()
+    if (!settingsTab) {
+      throw new Error('Settings tab not found')
+    }
+
+    fireEvent.click(settingsTab)
+
+    const comboboxes = await screen.findAllByRole('combobox')
+    expect((comboboxes[0] as HTMLSelectElement).value).toBe('en')
   })
 
   it('updates tab query param when switching tabs', async () => {
