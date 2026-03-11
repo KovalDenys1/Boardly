@@ -6,6 +6,7 @@ import { sendVerificationEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { nanoid } from 'nanoid'
 import { apiLogger } from '@/lib/logger'
+import { normalizeProfileEmail } from '@/lib/profile-email'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/auth/resend-verification')
@@ -24,39 +25,72 @@ export async function POST(request: NextRequest) {
     // Try to get session first (for logged-in users)
     const session = await getServerSession(authOptions)
     
-    let email: string | undefined
+    let user: {
+      id: string
+      email: string | null
+      pendingEmail: string | null
+      emailVerified: Date | null
+      username: string | null
+    } | null = null
 
-    if (session?.user?.email) {
-      // User is logged in, use their session email
-      email = session.user.email
-    } else {
-      // User is not logged in, get email from request body
-      const body = await request.json()
-      email = body.email
-    }
-
-    if (typeof email !== 'string' || email.trim().length === 0) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-    }
-
-    const normalizedEmail = email.trim().toLowerCase()
-
-    const user = await prisma.users.findFirst({
-      where: {
-        email: {
-          equals: normalizedEmail,
-          mode: 'insensitive',
+    if (session?.user?.id) {
+      user = await prisma.users.findUnique({
+        where: { id: session.user.id },
+        select: {
+          id: true,
+          email: true,
+          pendingEmail: true,
+          emailVerified: true,
+          username: true,
         },
-      },
-      select: {
-        id: true,
-        email: true,
-        emailVerified: true,
-        username: true
-      }
-    })
+      })
+    } else {
+      const body = await request.json()
+      const email = body.email
 
-    if (user && !user.emailVerified) {
+      if (typeof email !== 'string' || email.trim().length === 0) {
+        return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+      }
+
+      const normalizedEmail = normalizeProfileEmail(email)
+
+      user = await prisma.users.findFirst({
+        where: {
+          OR: [
+            {
+              email: {
+                equals: normalizedEmail,
+                mode: 'insensitive',
+              },
+            },
+            {
+              pendingEmail: {
+                equals: normalizedEmail,
+                mode: 'insensitive',
+              },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          email: true,
+          pendingEmail: true,
+          emailVerified: true,
+          username: true,
+        },
+      })
+    }
+
+    const hasPendingEmailChange = Boolean(user?.pendingEmail)
+    const needsVerification = hasPendingEmailChange || Boolean(user && !user.emailVerified)
+
+    if (user && needsVerification) {
+      const verificationTarget = user.pendingEmail || user.email
+
+      if (!verificationTarget) {
+        return NextResponse.json(GENERIC_RESEND_RESPONSE)
+      }
+
       try {
         await prisma.emailVerificationTokens.deleteMany({
           where: { userId: user.id },
@@ -73,9 +107,12 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        await sendVerificationEmail(user.email ?? normalizedEmail, token, user.username || 'User')
+        await sendVerificationEmail(verificationTarget, token, user.username || 'User')
 
-        log.info('Verification email resent', { userId: user.id })
+        log.info('Verification email resent', {
+          userId: user.id,
+          pendingEmailChange: hasPendingEmailChange,
+        })
       } catch (dispatchError) {
         log.warn('Verification resend processing failed', {
           userId: user.id,
@@ -85,7 +122,7 @@ export async function POST(request: NextRequest) {
     } else {
       log.info('Verification resend accepted without token issue', {
         hasUser: !!user,
-        alreadyVerified: !!user?.emailVerified,
+        alreadyVerified: !!user?.emailVerified && !hasPendingEmailChange,
       })
     }
 

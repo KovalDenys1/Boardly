@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
+import { getThemeInitScript } from '@/lib/theme'
 
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
@@ -111,6 +112,7 @@ export default function RootLayout({
   }
 
   const isProduction = process.env.NODE_ENV === 'production'
+  const themeInitScript = getThemeInitScript()
   const devServiceWorkerResetScript = !isProduction
     ? `(() => {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -206,6 +208,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: 'body{margin:0}header{min-height:64px;height:64px}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
+        />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
         {devServiceWorkerResetScript && (
           <script
