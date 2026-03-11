@@ -136,13 +136,13 @@
   --success-500: 34, 197, 94;
   --error-500: 239, 68, 68;
   --mobile-tabs-offset: 5.75rem;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-rgb: 18, 18, 18;
-  }
+html.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 18, 18, 18;
+  color-scheme: dark;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {

@@ -139,3 +139,41 @@ export function isInternalEndpointAuthorized(
   const providedSecret = extractInternalRequestSecret(req)
   return !!providedSecret && providedSecret === socketInternalSecret
 }
+
+describe('socket-server-helpers', () => {
+  it('extracts the internal secret from the dedicated header', () => {
+    const req = {
+      headers: {
+        'x-socket-internal-secret': 'secret-value',
+      },
+    } as unknown as IncomingMessage
+
+    expect(extractInternalRequestSecret(req)).toBe('secret-value')
+  })
+
+  it('falls back to bearer authorization header', () => {
+    const req = {
+      headers: {
+        authorization: 'Bearer bearer-secret',
+      },
+    } as unknown as IncomingMessage
+
+    expect(extractInternalRequestSecret(req)).toBe('bearer-secret')
+  })
+
+  it('tracks lobby authorization only when the room is joined', () => {
+    const socket: SocketWithLobbyAuthorization = {
+      data: {},
+      rooms: new Set<string>(),
+    }
+
+    markSocketLobbyAuthorized(socket, 'ABC123')
+    expect(isSocketAuthorizedForLobby(socket, 'ABC123')).toBe(false)
+
+    socket.rooms.add(SocketRooms.lobby('ABC123'))
+    expect(isSocketAuthorizedForLobby(socket, 'ABC123')).toBe(true)
+
+    revokeSocketLobbyAuthorization(socket, 'ABC123')
+    expect(isSocketAuthorizedForLobby(socket, 'ABC123')).toBe(false)
+  })
+})

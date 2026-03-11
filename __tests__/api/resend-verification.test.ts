@@ -13,6 +13,7 @@ import { nanoid } from 'nanoid'
 jest.mock('@/lib/db', () => ({
   prisma: {
     users: {
+      findUnique: jest.fn(),
       findFirst: jest.fn(),
     },
     emailVerificationTokens: {
@@ -99,6 +100,7 @@ describe('POST /api/auth/resend-verification', () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-1',
       email: 'verified@example.com',
+      pendingEmail: null,
       emailVerified: new Date('2026-01-01T00:00:00.000Z'),
       username: 'verified-user',
     } as any)
@@ -122,6 +124,7 @@ describe('POST /api/auth/resend-verification', () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-2',
       email: 'pending@example.com',
+      pendingEmail: null,
       emailVerified: null,
       username: 'pending-user',
     } as any)
@@ -158,6 +161,7 @@ describe('POST /api/auth/resend-verification', () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-3',
       email: 'pending2@example.com',
+      pendingEmail: null,
       emailVerified: null,
       username: 'pending-user-2',
     } as any)
@@ -180,5 +184,54 @@ describe('POST /api/auth/resend-verification', () => {
     })
     expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalled()
     expect(mockSendVerificationEmail).toHaveBeenCalled()
+  })
+
+  it('uses pending email for authenticated users with an email change in progress', async () => {
+    mockGetServerSession.mockResolvedValue({
+      user: {
+        id: 'user-4',
+      },
+    } as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: 'user-4',
+      email: 'old@example.com',
+      pendingEmail: 'new@example.com',
+      emailVerified: new Date('2026-01-01T00:00:00.000Z'),
+      username: 'player-four',
+    } as any)
+    mockPrisma.emailVerificationTokens.deleteMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.emailVerificationTokens.create.mockResolvedValue({ id: 'token-4' } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+
+    const response = await POST(request)
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual({
+      success: true,
+      message: 'If an unverified account exists for this email, a verification message was sent.',
+    })
+    expect(mockPrisma.users.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'user-4' },
+      })
+    )
+    expect(mockPrisma.emailVerificationTokens.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-4',
+          token: 'mock-verification-token',
+        }),
+      })
+    )
+    expect(mockSendVerificationEmail).toHaveBeenCalledWith(
+      'new@example.com',
+      'mock-verification-token',
+      'player-four'
+    )
   })
 })

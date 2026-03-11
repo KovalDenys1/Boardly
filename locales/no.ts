@@ -875,6 +875,7 @@ const no = {
       checking: 'Sjekker tilgjengelighet...',
       available: 'Brukernavn er tilgjengelig!',
       taken: 'Brukernavn er allerede tatt',
+      tooShort: 'Brukernavnet må være minst 3 tegn',
       tooLong: 'Brukernavn må være maksimalt 20 tegn',
       invalidChars: 'Brukernavn kan bare inneholde bokstaver, tall og understrek',
       suggestions: 'Prøv disse tilgjengelige brukernavnene'
@@ -884,23 +885,51 @@ const no = {
     title: 'Profil',
     username: 'Brukernavn',
     email: 'E-post',
+    loading: 'Laster profil...',
+    playerFallback: 'Spiller',
+    verified: 'Bekreftet',
+    saving: 'Lagrer...',
+    sending: 'Sender...',
     memberSince: 'Medlem siden',
+    premiumAccount: 'Premium-konto',
+    comingSoon: 'Kommer snart',
+    verificationBanner: {
+      title: 'E-post ikke bekreftet',
+      description: 'Bekreft e-postadressen din for å låse opp alle funksjoner. Ubekreftede kontoer kan bli slettet automatisk etter 7 dager.',
+      resend: 'Send bekreftelsesmail på nytt',
+    },
+    inline: {
+      headerHint: 'Dobbeltklikk på navn eller e-post for å redigere',
+      makeChange: 'Gjør en endring for å fortsette',
+      edit: 'Rediger',
+      editUsername: 'Rediger brukernavn',
+      editEmail: 'Rediger e-post',
+      confirm: 'Bekreft',
+      cancel: 'Avbryt',
+      invalidEmail: 'Skriv inn en gyldig e-postadresse',
+      checkingEmail: 'Sjekker e-posttilgjengelighet...',
+      emailAvailable: 'E-posten er tilgjengelig',
+      emailTaken: 'Denne e-posten er allerede i bruk',
+      checkFailed: 'Kunne ikke validere denne verdien akkurat nå',
+      pendingEmailNotice: 'Venter på bekreftelse: {{email}}',
+      pendingEmailHelp: 'Venter på bekreftelse for {{email}}. Bruk knappen over for å sende på nytt ved behov',
+      changeEmailHint: 'Du kan oppdatere e-posten her eller ved å dobbeltklikke den i headeren over',
+      avatarCaption: 'Profilbilde',
+      noValue: 'Ikke satt',
+      resendVerification: 'Send på nytt',
+    },
     stats: {
       title: 'Statistikk',
       gamesPlayed: 'Spill spilt',
       gamesWon: 'Spill vunnet',
       winRate: 'Vinnrate',
       dashboard: {
-        title: 'Statistikkpanel',
-        subtitle: 'Resultatoversikt, per-spill-oversikt og nylig trend.',
+        title: 'Dine resultater',
+        subtitle: 'En enkel oversikt over spillene dine, seire og favorittspill.',
         filters: {
-          from: 'Fra',
-          to: 'Til',
-          apply: 'Bruk',
           last30Days: '30 d',
           last90Days: '90 d',
-          allTime: 'Hele perioden',
-          invalidRange: 'Fra-dato må være tidligere enn til-dato.'
+          allTime: 'Hele perioden'
         },
         summary: {
           totalGames: 'Totalt antall spill',
@@ -909,13 +938,17 @@ const no = {
           minutesSuffix: 'm',
           favoriteGame: 'Favorittspill',
           wld: 'Seire / Tap / Uavgjort',
+          wins: 'Seire',
+          losses: 'Tap',
+          draws: 'Uavgjort',
+          quickFacts: 'Kort fortalt',
           currentStreak: 'Nåværende streak',
-          bestStreak: 'Beste streak',
-          generated: 'Generert'
+          bestStreak: 'Beste streak'
         },
         sections: {
           byGame: {
-            title: 'Resultater per spill',
+            title: 'Per spill',
+            subtitle: 'Spilltypene du spiller mest og hvordan det går i hver av dem.',
             empty: 'Ingen fullførte spill i valgt periode.',
             columns: {
               game: 'Spill',
@@ -927,26 +960,55 @@ const no = {
               lastPlayed: 'Sist spilt'
             }
           },
-          recentTrend: {
-            title: 'Nylig trend',
-            subtitle: 'Blå = spilte spill, grønn = seire (siste 30 aktivitetspunkter).',
-            empty: 'Ingen trenddata i valgt periode.',
-            gamesTooltip: '{{date}}: {{count}} spill',
-            winsTooltip: '{{date}}: {{count}} seire'
-          }
         },
         common: {
           notAvailable: '—'
         },
         errors: {
-          failedToLoad: 'Kunne ikke laste statistikk'
+          failedToLoad: 'Kunne ikke laste statistikk',
+          unavailable: 'Kan ikke laste statistikk akkurat nå.',
         }
       }
+    },
+    linkedAccounts: {
+      title: 'Tilkoblede kontoer',
+      subtitle: 'Koble til sosiale kontoer for rask innlogging. Du kan logge inn med hvilken som helst tilkoblet konto.',
+      connected: 'Tilkoblet',
+      unlink: 'Koble fra',
+      connect: 'Koble til',
+      unlinkConfirm: 'Er du sikker på at du vil koble fra {{provider}}-kontoen din?',
+    },
+    dangerZone: {
+      title: 'Faresone',
+      description: 'Når du sletter kontoen din, finnes det ingen vei tilbake. Vær helt sikker.',
+      deleteAccount: 'Slett konto',
+      confirmTitle: 'Er du helt sikker? Denne handlingen kan ikke angres!',
+      confirmDescription: 'Vi sender en bekreftelsesmail til {{email}}. Klikk på lenken i e-posten for å slette kontoen permanent.',
+      sendDeletionEmail: 'Send slettemail',
+    },
+    errors: {
+      loadFailed: 'Kunne ikke laste profilen',
+      checkUsernameFailed: 'Kunne ikke sjekke brukernavn',
+      checkEmailFailed: 'Kunne ikke sjekke e-post',
+      updateFailed: 'Kunne ikke oppdatere profilen',
+      resendVerificationFailed: 'Kunne ikke sende bekreftelsesmail på nytt',
+      requestDeletionFailed: 'Kunne ikke be om sletting av konto',
+      unlinkFailed: 'Kunne ikke koble fra konto',
     },
     settings: {
       title: 'Innstillinger',
       subtitle: 'Tilpass din opplevelse',
       changePassword: 'Endre passord',
+      sections: {
+        appearance: {
+          title: 'Utseende',
+          subtitle: 'Språk, tema og visuelle grensesnittvalg.',
+        },
+        privacyGame: {
+          title: 'Personvern og spill',
+          subtitle: 'Kontroller synlighet og hvordan kampene oppleves.',
+        },
+      },
       language: {
         title: 'Språk',
         subtitle: 'Velg foretrukket språk for grensesnittet',
@@ -968,7 +1030,20 @@ const no = {
         push: 'Push-varsler',
         pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
         sound: 'Lydeffekter',
-        soundDesc: 'Spill av lyder for spillhandlinger og varsler'
+        soundDesc: 'Spill av lyder for spillhandlinger og varsler',
+        categories: {
+          title: 'Kategorier for e-postvarsler',
+          unsubscribeAll: 'Meld av alle e-postvarsler',
+          unsubscribeAllDesc: 'Overstyrer alle kategoriene nedenfor',
+          gameInvites: 'Spillinvitasjoner og revansjer',
+          gameInvitesDesc: 'Send meg e-post når venner inviterer meg til en lobby eller revansje',
+          turnReminders: 'Påminnelser om tur',
+          turnRemindersDesc: 'For langvarige spill (fremtidig)',
+          friendRequests: 'Venneforespørsler',
+          friendRequestsDesc: 'For fremtidige e-postvarsler om venner',
+          friendAccepted: 'Venneforespørsel godtatt',
+          friendAcceptedDesc: 'For fremtidige e-postvarsler om venner',
+        }
       },
       privacy: {
         title: 'Personvern',
@@ -992,7 +1067,12 @@ const no = {
         animationsDesc: 'Aktiver jevne animasjoner og overganger'
       },
       saved: 'Innstillinger lagret',
-      error: 'Kunne ikke lagre innstillinger'
+      error: 'Kunne ikke lagre innstillinger',
+      unsaved: {
+        title: 'Du har ulagrede endringer',
+        description: 'Ikke glem å lagre innstillingene dine',
+        save: 'Lagre innstillinger',
+      }
     },
     edit: {
       title: 'Rediger profil',
@@ -1020,6 +1100,25 @@ const no = {
       unavailable: 'Replay utilgjengelig',
       noData: 'Replay-data er ikke tilgjengelig for dette spillet ennå',
       loadFailed: 'Kunne ikke laste replay',
+      overview: 'Oversikt',
+      lobbyCode: 'Lobby',
+      players: 'Spillere',
+      totalSteps: 'Steg',
+      started: 'Startet',
+      updated: 'Oppdatert',
+      timeline: 'Tidslinje',
+      currentStep: 'Nåværende steg',
+      status: 'Status',
+      currentTurn: 'Nåværende tur',
+      winner: 'Vinner',
+      phase: 'Fase',
+      round: 'Runde',
+      roundValue: 'Runde {{value}}',
+      stepLabel: 'Steg {{value}}',
+      scoreboard: 'Poengtavle',
+      advancedDetails: 'Tekniske detaljer',
+      rankValue: 'Plass #{{value}}',
+      draw: 'Uavgjort',
       play: 'Spill av',
       pause: 'Pause',
       stepBack: 'Steg tilbake',
@@ -1034,7 +1133,24 @@ const no = {
       unknownAction: 'Ukjent handling',
       system: 'System',
       actionPayload: 'Handlingsdata',
-      state: 'Spilltilstand'
+      state: 'Spilltilstand',
+      gameStarted: 'Spillet startet',
+      gameFinished: 'Spillet er ferdig',
+      roundStarted: 'Runden startet',
+      timeoutResolved: 'Tidsavbrudd håndtert',
+      botMove: 'Bot-trekk',
+      choiceLocked: 'Valg bekreftet',
+      movePlayed: 'Trekk utført',
+      diceRolled: 'Terning kastet',
+      diceHeld: 'Terning holdt',
+      scoreRecorded: 'Poeng registrert',
+      voteSubmitted: 'Stemme sendt',
+      stepSubmitted: 'Steg sendt',
+      drawingSubmitted: 'Tegning sendt',
+      guessSubmitted: 'Gjetning sendt',
+      claimSubmitted: 'Påstand sendt',
+      challengeSubmitted: 'Svar på utfordring sendt',
+      roundAdvanced: 'Runden gikk videre'
     },
     gameResults: {
       title: 'Spillresultater',

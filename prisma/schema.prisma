@@ -11,6 +11,7 @@ datasource db {
 model Users {
   id            String    @id @default(cuid())
   email         String?   @unique
+  pendingEmail  String?   @unique
   emailVerified DateTime? @db.Timestamptz(3)
   username      String?   @unique
   friendCode      String?   @unique // Short numeric code for adding friends (e.g., "12345")
