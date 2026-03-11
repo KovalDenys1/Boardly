@@ -10,6 +10,7 @@ import {
   getNotificationPreferences,
 } from '@/lib/notification-preferences'
 import { recordNotificationDelivery } from '@/lib/notifications-log'
+import { createInAppNotification } from '@/lib/in-app-notifications'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 
 const inviteSchema = z.object({
@@ -165,6 +166,26 @@ export async function POST(
           invitePayload,
           0
         )
+      )
+    )
+
+    await Promise.allSettled(
+      Array.from(invitedFriends.values()).map((friend) =>
+        createInAppNotification({
+          userId: friend.id,
+          type: 'game_invite',
+          dedupeKey: `in_app:game_invite:lobby:${lobby.id}:recipient:${friend.id}`,
+          payload: {
+            lobbyId: lobby.id,
+            lobbyCode: lobby.code,
+            lobbyName: lobby.name,
+            gameType: lobby.gameType,
+            senderId: requestUser.id,
+            senderName: requestUser.username || 'Player',
+            inviteType: 'invite',
+            href: `/lobby/join/${lobby.code}`,
+          },
+        })
       )
     )
 

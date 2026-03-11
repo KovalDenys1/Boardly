@@ -169,6 +169,7 @@ describe('ProfilePage', () => {
         }
         return mockJsonResponse({
           preferences: {
+            inAppNotifications: true,
             gameInvites: true,
             turnReminders: true,
             friendRequests: true,

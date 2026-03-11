@@ -51,6 +51,12 @@ export function MobileMenu({
     }, 300) // Match animation duration
   }, [clearCloseTimeout])
 
+  const closeMenuImmediately = useCallback(() => {
+    clearCloseTimeout()
+    setIsClosing(false)
+    setMobileMenuOpen(false)
+  }, [clearCloseTimeout])
+
   const handleSignOut = async () => {
     await signOut({ redirect: false })
     router.replace('/')
@@ -62,7 +68,13 @@ export function MobileMenu({
   }
 
   const handleProfileNavigation = () => {
-    navigateToProfile(router, pathname)
+    closeMenuImmediately()
+    navigateToProfile(router, pathname, { tab: 'profile' })
+  }
+
+  const handleSettingsNavigation = () => {
+    closeMenuImmediately()
+    navigateToProfile(router, pathname, { tab: 'settings' })
   }
 
   // Prevent body scroll when menu is open
@@ -146,7 +158,7 @@ export function MobileMenu({
 
           {/* Menu panel */}
           <div
-            className={`fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden overflow-y-auto ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
+            className={`fixed top-0 right-0 bottom-0 flex h-full w-[85vw] max-w-sm flex-col bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
               }`}
             style={{
               borderLeft: '1px solid',
@@ -178,39 +190,86 @@ export function MobileMenu({
                 className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-500/5 to-purple-500/5 dark:from-blue-500/10 dark:to-purple-500/10"
                 style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
               >
-                <div className="flex items-center gap-4">
-                  <UserAvatar
-                    image={isGuestSession ? null : userImage}
-                    userName={isGuestSession ? guestName : userName}
-                    userEmail={isGuestSession ? null : userEmail}
-                    className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                    textClassName="font-bold"
-                    style={{
-                      width: 'clamp(48px, 5vw, 64px)',
-                      height: 'clamp(48px, 5vw, 64px)',
-                      fontSize: 'clamp(20px, 2vw, 26px)'
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="font-semibold text-gray-900 dark:text-white truncate"
-                      style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={handleProfileNavigation}
+                    className="group flex w-full items-center gap-4 rounded-2xl p-1 text-left transition-colors hover:bg-white/70 dark:hover:bg-gray-800/60"
+                    aria-label="Open profile"
+                  >
+                    <UserAvatar
+                      image={userImage}
+                      userName={userName}
+                      userEmail={userEmail}
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                      textClassName="font-bold"
+                      style={{
+                        width: 'clamp(48px, 5vw, 64px)',
+                        height: 'clamp(48px, 5vw, 64px)',
+                        fontSize: 'clamp(20px, 2vw, 26px)'
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate font-semibold text-gray-900 dark:text-white"
+                        style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
+                      >
+                        {userName || 'User'}
+                      </p>
+                      <p
+                        className="truncate text-gray-600 dark:text-gray-400"
+                        style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
+                      >
+                        {userEmail}
+                      </p>
+                    </div>
+                    <svg
+                      className="h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      {isGuestSession ? (guestName || 'Guest') : (userName || 'User')}
-                    </p>
-                    <p
-                      className="text-gray-600 dark:text-gray-400 truncate"
-                      style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
-                    >
-                      {isGuestSession ? 'Guest session' : userEmail}
-                    </p>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <UserAvatar
+                      image={null}
+                      userName={guestName}
+                      userEmail={null}
+                      className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                      textClassName="font-bold"
+                      style={{
+                        width: 'clamp(48px, 5vw, 64px)',
+                        height: 'clamp(48px, 5vw, 64px)',
+                        fontSize: 'clamp(20px, 2vw, 26px)'
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="truncate font-semibold text-gray-900 dark:text-white"
+                        style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
+                      >
+                        {guestName || 'Guest'}
+                      </p>
+                      <p
+                        className="truncate text-gray-600 dark:text-gray-400"
+                        style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
+                      >
+                        Guest session
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
             {/* Navigation links */}
-            <nav style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}>
+            <nav
+              className="flex-1 overflow-y-auto"
+              style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
+            >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 0.8vh, 12px)' }}>
                 <button
                   onClick={() => router.push('/')}
@@ -278,23 +337,6 @@ export function MobileMenu({
 
                     {/* Divider */}
                     <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
-
-                    {isAuthenticated && (
-                      <button
-                        onClick={handleProfileNavigation}
-                        className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/profile')
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        style={{
-                          padding: 'clamp(12px, 1.2vh, 16px)',
-                          fontSize: 'clamp(15px, 1.5vw, 17px)'
-                        }}
-                      >
-                        <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>👤</span>
-                        <span>Profile Settings</span>
-                      </button>
-                    )}
                   </>
                 )}
               </div>
@@ -302,21 +344,47 @@ export function MobileMenu({
 
             {/* Bottom actions */}
             <div
-              className="absolute bottom-0 left-0 right-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+              className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
               style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
             >
               {isAuthenticated ? (
-                <button
-                  onClick={handleSignOut}
-                  className="w-full rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
-                  style={{
-                    padding: 'clamp(14px, 1.4vh, 18px)',
-                    fontSize: 'clamp(15px, 1.5vw, 17px)'
-                  }}
-                >
-                  <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
-                  <span>Logout</span>
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={handleProfileNavigation}
+                      className="rounded-xl border-2 border-gray-300 bg-white font-semibold text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                      style={{
+                        padding: 'clamp(12px, 1.2vh, 16px)',
+                        fontSize: 'clamp(14px, 1.4vw, 16px)'
+                      }}
+                    >
+                      Profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSettingsNavigation}
+                      className="rounded-xl border-2 border-blue-300 bg-blue-50 font-semibold text-blue-700 transition-all duration-200 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+                      style={{
+                        padding: 'clamp(12px, 1.2vh, 16px)',
+                        fontSize: 'clamp(14px, 1.4vw, 16px)'
+                      }}
+                    >
+                      Settings
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                    style={{
+                      padding: 'clamp(14px, 1.4vh, 18px)',
+                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                    }}
+                  >
+                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
+                    <span>Logout</span>
+                  </button>
+                </div>
               ) : isGuestSession ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
                   <button

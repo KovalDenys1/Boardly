@@ -9,6 +9,7 @@ import {
   getNotificationPreferences,
 } from '@/lib/notification-preferences'
 import { recordNotificationDelivery } from '@/lib/notifications-log'
+import { createInAppNotification } from '@/lib/in-app-notifications'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 
 export async function POST(
@@ -140,6 +141,27 @@ export async function POST(
           rematchPayload,
           0
         )
+      )
+    )
+
+    await Promise.allSettled(
+      dedupedTargetUserIds.map((userId) =>
+        createInAppNotification({
+          userId,
+          type: 'game_invite',
+          dedupeKey: `in_app:game_invite:rematch:${latestGame.id}:recipient:${userId}`,
+          payload: {
+            lobbyId: lobby.id,
+            lobbyCode: lobby.code,
+            lobbyName: lobby.name,
+            gameType: lobby.gameType,
+            gameId: latestGame.id,
+            senderId: requestUser.id,
+            senderName: requestUser.username || 'Player',
+            inviteType: 'rematch',
+            href: `/lobby/${lobby.code}`,
+          },
+        })
       )
     )
 

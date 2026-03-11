@@ -7,6 +7,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
 import { extractPublicProfileId } from '@/lib/public-profile'
+import { createInAppNotification } from '@/lib/in-app-notifications'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request')
@@ -167,6 +168,19 @@ export async function POST(req: NextRequest) {
       requestId: friendRequest.id,
       source: 'username',
       baseUrl: new URL(req.url).origin,
+    })
+
+    await createInAppNotification({
+      userId: friendRequest.receiver.id,
+      type: 'friend_request',
+      dedupeKey: `friend_request:${friendRequest.id}`,
+      payload: {
+        requestId: friendRequest.id,
+        senderId: friendRequest.sender.id,
+        senderName: friendRequest.sender.username || 'Player',
+        source: normalizedPublicProfileId ? 'profile_link' : 'username',
+        href: '/profile?tab=friends',
+      },
     })
 
     log.info('Friend request sent', {
