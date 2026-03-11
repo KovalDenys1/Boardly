@@ -55,68 +55,91 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
   const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
   const creatorName = lobby.creator.username || t('lobby.ownerFallback')
   const gamePresentation = getGamePresentation(lobby.gameType)
+  const occupancyPercent = lobby.maxPlayers > 0 ? Math.min(100, Math.round((playerCount / lobby.maxPlayers) * 100)) : 0
   const statusClass = isPlaying
-    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-    : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+    : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
 
   return (
     <article
-      className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:shadow-lg animate-fade-in"
+      className="group relative overflow-hidden rounded-2xl border border-white/90 bg-white/96 p-5 shadow-sm shadow-indigo-900/5 transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-900/60 dark:hover:border-blue-500/30"
       style={{ animationDelay: `${index * 0.05}s` }}
     >
+      <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 opacity-0 transition-opacity group-hover:opacity-100" />
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h3 className="max-w-full truncate font-bold text-lg text-gray-900 dark:text-white" title={lobby.name}>
-              {lobby.name}
-            </h3>
-            <span className="font-mono bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-bold text-sm">
-              {lobby.code}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-white/90 dark:bg-slate-800/80 dark:ring-0">
+              {gamePresentation.icon}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="max-w-full truncate text-lg font-bold text-slate-900 dark:text-white" title={lobby.name}>
+                  {lobby.name}
+                </h3>
+                <span className="rounded-full bg-blue-100 px-2.5 py-1 font-mono text-xs font-bold text-blue-700 ring-1 ring-blue-200/80 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-0">
+                  {lobby.code}
+                </span>
+              </div>
+              <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
+                {creatorName}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+            <span className={`rounded-full px-2.5 py-1 font-semibold ${statusClass}`}>
+              {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
+            </span>
+            <span className="rounded-full bg-indigo-100 px-2.5 py-1 font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+              {gamePresentation.label}
             </span>
             <span
-              className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              className={`rounded-full px-2.5 py-1 font-semibold ${
                 lobby.isPrivate
-                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300'
-                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
               }`}
             >
               {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
             </span>
-          </div>
-
-          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">👤 {creatorName}</p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-            <span className={`px-2.5 py-1 rounded-full font-semibold ${statusClass}`}>
-              {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
-            </span>
-            <span className="max-w-full truncate px-2.5 py-1 rounded-full font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
-              {gamePresentation.icon + ' '}
-              {gamePresentation.label}
-            </span>
             {lobby.allowSpectators && (
-              <span className="px-2.5 py-1 rounded-full font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300">
+              <span className="rounded-full bg-sky-100 px-2.5 py-1 font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
                 {t('lobby.spectators', {
                   count: lobby.spectatorCount ?? 0,
                 })}
               </span>
             )}
           </div>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('lobby.playerOccupancy', {
+                  current: playerCount,
+                  max: lobby.maxPlayers,
+                })}
+              </span>
+              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                {occupancyPercent}%
+              </span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-800">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all"
+                style={{ width: `${occupancyPercent}%` }}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex w-full flex-col gap-3 lg:w-auto lg:items-end">
-          <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-            {t('lobby.playerOccupancy', {
-              current: playerCount,
-              max: lobby.maxPlayers,
-            })}
-          </span>
+        <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[180px] lg:items-end">
           <div className="flex w-full gap-2 lg:w-auto">
             {canSpectate && (
               <button
                 type="button"
                 onClick={() => onWatchLobby(lobby.code)}
-                className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold"
+                className="flex-1 rounded-xl border border-white/90 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 lg:flex-none"
               >
                 <span className="block truncate">{t('lobby.watch')}</span>
               </button>
@@ -124,7 +147,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
             <button
               type="button"
               onClick={() => onOpenLobby(lobby.code)}
-              className="flex-1 lg:flex-none px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+              className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow lg:flex-none"
             >
               <span className="block truncate">{t('lobby.openLobby')}</span>
             </button>

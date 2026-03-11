@@ -34,6 +34,10 @@ jest.mock('@/lib/notifications-log', () => ({
   recordNotificationDelivery: jest.fn(),
 }))
 
+jest.mock('@/lib/in-app-notifications', () => ({
+  createInAppNotification: jest.fn().mockResolvedValue({ created: true, id: 'in-app-1' }),
+}))
+
 jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -103,6 +107,7 @@ describe('runTurnReminderCycle', () => {
     mockSendTurnReminderEmail.mockResolvedValue({ success: true })
     mockCreateUnsubscribeToken.mockReturnValue('token-123')
     mockGetNotificationPreferences.mockResolvedValue({
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: true,
       friendRequests: true,
@@ -188,6 +193,7 @@ describe('runTurnReminderCycle', () => {
   it('skips sending when turn reminders are disabled in preferences', async () => {
     mockPrisma.games.findMany.mockResolvedValue([buildGame()])
     mockGetNotificationPreferences.mockResolvedValue({
+      inAppNotifications: true,
       gameInvites: true,
       turnReminders: false,
       friendRequests: true,

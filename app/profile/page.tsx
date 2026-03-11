@@ -44,8 +44,6 @@ function isTabType(value: string | null): value is TabType {
 type SettingsState = {
   language: string
   theme: ThemeMode
-  emailNotifications: boolean
-  pushNotifications: boolean
   soundEffects: boolean
   profileVisibility: 'public' | 'friends' | 'private'
   showOnlineStatus: boolean
@@ -55,6 +53,7 @@ type SettingsState = {
 }
 
 type NotificationPreferences = {
+  inAppNotifications: boolean
   gameInvites: boolean
   turnReminders: boolean
   friendRequests: boolean
@@ -108,8 +107,6 @@ function getInlineEditorErrorStatus(
 const DEFAULT_SETTINGS: SettingsState = {
   language: 'en',
   theme: 'system',
-  emailNotifications: true,
-  pushNotifications: false,
   soundEffects: true,
   profileVisibility: 'public',
   showOnlineStatus: true,
@@ -147,6 +144,7 @@ export default function ProfilePage() {
   const [settingsChanged, setSettingsChanged] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({
+    inAppNotifications: true,
     gameInvites: true,
     turnReminders: true,
     friendRequests: true,
@@ -161,6 +159,7 @@ export default function ProfilePage() {
   const editableEmail = pendingEmail || currentEmail
   const displayName = currentUsername || currentEmail.split('@')[0] || t('profile.playerFallback')
   const effectiveEmailVerified = Boolean(profileSummary?.emailVerified || session?.user?.emailVerified)
+  const emailNotificationsEnabled = !notificationPreferences.unsubscribedAll
 
   const memberSinceLabel = useMemo(() => {
     if (!profileSummary?.createdAt) {
@@ -904,8 +903,6 @@ export default function ProfilePage() {
       localStorage.setItem('i18nextLng', normalizedLanguage)
       localStorage.setItem('theme', normalizedTheme)
       localStorage.setItem('userSettings', JSON.stringify({
-        emailNotifications: settings.emailNotifications,
-        pushNotifications: settings.pushNotifications,
         soundEffects: settings.soundEffects,
         profileVisibility: settings.profileVisibility,
         showOnlineStatus: settings.showOnlineStatus,
@@ -968,17 +965,25 @@ export default function ProfilePage() {
   const updateNotificationPreference = (key: keyof NotificationPreferences, value: boolean) => {
     setNotificationPreferences((prev) => {
       const next = { ...prev, [key]: value }
-      if (key === 'unsubscribedAll' && value) {
-        next.gameInvites = false
-        next.turnReminders = false
-        next.friendRequests = false
-        next.friendAccepted = false
-      }
-      if (key !== 'unsubscribedAll' && value) {
+      if (
+        value &&
+        (key === 'gameInvites' ||
+          key === 'turnReminders' ||
+          key === 'friendRequests' ||
+          key === 'friendAccepted')
+      ) {
         next.unsubscribedAll = false
       }
       return next
     })
+    setSettingsChanged(true)
+  }
+
+  const updateEmailNotificationsEnabled = (enabled: boolean) => {
+    setNotificationPreferences((prev) => ({
+      ...prev,
+      unsubscribedAll: !enabled,
+    }))
     setSettingsChanged(true)
   }
 
@@ -1714,7 +1719,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="mt-5 space-y-4">
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-3 xl:grid-cols-3">
                       <Label className={settingsToggleCardClassName}>
                         <div className="min-w-0 pr-3">
                           <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
@@ -1725,8 +1730,8 @@ export default function ProfilePage() {
                           </div>
                         </div>
                         <Checkbox
-                          checked={settings.emailNotifications}
-                          onCheckedChange={(checked) => updateSetting('emailNotifications', Boolean(checked))}
+                          checked={emailNotificationsEnabled}
+                          onCheckedChange={(checked) => updateEmailNotificationsEnabled(Boolean(checked))}
                           className="mt-0.5 shrink-0"
                         />
                       </Label>
@@ -1734,23 +1739,37 @@ export default function ProfilePage() {
                       <Label className={settingsToggleCardClassName}>
                         <div className="min-w-0 pr-3">
                           <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.notifications.push')}
+                            {t('profile.settings.notifications.inApp')}
                           </div>
                           <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.notifications.pushDesc')}
+                            {t('profile.settings.notifications.inAppDesc')}
                           </div>
                         </div>
                         <Checkbox
-                          checked={settings.pushNotifications}
-                          onCheckedChange={(checked) => updateSetting('pushNotifications', Boolean(checked))}
+                          checked={notificationPreferences.inAppNotifications}
+                          onCheckedChange={(checked) => updateNotificationPreference('inAppNotifications', Boolean(checked))}
                           className="mt-0.5 shrink-0"
                         />
                       </Label>
+
+                      <div className={`${settingsToggleCardClassName} cursor-default opacity-80`}>
+                        <div className="min-w-0 pr-3">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            <span>{t('profile.settings.notifications.push')}</span>
+                            <span className="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                              {t('profile.comingSoon')}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {t('profile.settings.notifications.pushSoon')}
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div
                       className={`rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 transition-opacity dark:border-slate-700/60 dark:bg-slate-800/50 ${
-                        settings.emailNotifications ? 'opacity-100' : 'opacity-65'
+                        emailNotificationsEnabled ? 'opacity-100' : 'opacity-65'
                       }`}
                     >
                     <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -1759,26 +1778,9 @@ export default function ProfilePage() {
                       <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/55">
                         <Label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
                         <Checkbox
-                          checked={notificationPreferences.unsubscribedAll}
-                          onCheckedChange={(checked) => updateNotificationPreference('unsubscribedAll', Boolean(checked))}
-                          disabled={!settings.emailNotifications}
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.notifications.categories.unsubscribeAll')}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.notifications.categories.unsubscribeAllDesc')}
-                          </div>
-                        </div>
-                        </Label>
-
-                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
-                        <Checkbox
                           checked={notificationPreferences.gameInvites}
                           onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
-                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          disabled={!emailNotificationsEnabled}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1795,7 +1797,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.turnReminders}
                           onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
-                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          disabled={!emailNotificationsEnabled}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1812,7 +1814,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.friendRequests}
                           onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
-                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          disabled={!emailNotificationsEnabled}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1829,7 +1831,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.friendAccepted}
                           onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
-                          disabled={!settings.emailNotifications || notificationPreferences.unsubscribedAll}
+                          disabled={!emailNotificationsEnabled}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">

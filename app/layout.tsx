@@ -162,7 +162,7 @@ export default function RootLayout({
     : null
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Mobile viewport configuration with safe area support */}
         <meta 

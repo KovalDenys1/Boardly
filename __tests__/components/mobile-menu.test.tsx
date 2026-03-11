@@ -3,6 +3,7 @@ import { MobileMenu } from '@/components/Header/MobileMenu'
 
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
+const mockNavigateToProfile = jest.fn()
 let mockPathname = '/'
 
 jest.mock('next/navigation', () => ({
@@ -23,6 +24,10 @@ jest.mock('@/contexts/GuestContext', () => ({
     guestName: null,
     clearGuestMode: jest.fn(),
   }),
+}))
+
+jest.mock('@/lib/profile-navigation', () => ({
+  navigateToProfile: (...args: unknown[]) => mockNavigateToProfile(...args),
 }))
 
 describe('MobileMenu', () => {
@@ -107,5 +112,45 @@ describe('MobileMenu', () => {
 
     expect(clearTimeoutSpy).toHaveBeenCalled()
     clearTimeoutSpy.mockRestore()
+  })
+
+  it('uses profile navigation helper when tapping the user summary block', () => {
+    render(
+      <MobileMenu
+        isAuthenticated
+        isAdmin={false}
+        userName="Tester"
+        userEmail="tester@example.com"
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText('Open menu'))
+    fireEvent.click(screen.getByLabelText('Open profile'))
+
+    expect(mockNavigateToProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ push: mockPush, replace: mockReplace }),
+      '/',
+      { tab: 'profile' }
+    )
+  })
+
+  it('opens profile settings from the bottom action button', () => {
+    render(
+      <MobileMenu
+        isAuthenticated
+        isAdmin={false}
+        userName="Tester"
+        userEmail="tester@example.com"
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText('Open menu'))
+    fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+
+    expect(mockNavigateToProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ push: mockPush, replace: mockReplace }),
+      '/',
+      { tab: 'settings' }
+    )
   })
 })

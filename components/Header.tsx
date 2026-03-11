@@ -6,6 +6,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
 import { MobileMenu } from './Header/MobileMenu'
+import { NotificationsMenu } from './Header/NotificationsMenu'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
 
@@ -57,6 +58,8 @@ export default function Header() {
             <div className="hidden sm:block">
               <LanguageSwitcher />
             </div>
+
+            {isAuthenticated && !isLoading && <NotificationsMenu />}
 
             {isLoading ? (
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>

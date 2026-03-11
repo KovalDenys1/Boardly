@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { markInAppNotificationReadByDedupeKey } from '@/lib/in-app-notifications'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request/reject')
@@ -75,6 +76,8 @@ export async function POST(
       where: { id: requestId },
       data: { status: 'rejected' }
     })
+
+    await markInAppNotificationReadByDedupeKey(user.id, `friend_request:${requestId}`)
 
     log.info('Friend request rejected', {
       requestId: requestId,

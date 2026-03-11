@@ -124,16 +124,20 @@ export default function UsernameInput({
 
   return (
     <div>
-      <label className="label">{t('auth.register.username')}</label>
+      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+        {t('auth.register.username')}
+      </label>
       <div className="relative">
         <input
           type="text"
           required={required}
           disabled={disabled}
-          className={`input pr-10 ${
-            status === 'available' ? 'border-green-500 dark:border-green-500' :
-            status === 'taken' || status === 'invalid' ? 'border-red-500 dark:border-red-500' :
-            ''
+          className={`w-full rounded-xl border-2 bg-white px-4 py-3 pr-10 text-sm text-slate-900 shadow-sm outline-none transition-all focus:ring-4 dark:bg-slate-800 dark:text-white ${
+            status === 'available'
+              ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
+              : status === 'taken' || status === 'invalid'
+                ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
+                : 'border-slate-200 focus:border-blue-400 focus:ring-blue-100 dark:border-slate-600 dark:focus:ring-blue-500/20'
           }`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -184,7 +188,7 @@ export default function UsernameInput({
           </p>
         )}
         {!status || status === 'idle' ? (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {t('auth.register.usernameHint')}
           </p>
         ) : null}

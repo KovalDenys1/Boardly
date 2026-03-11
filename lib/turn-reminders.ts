@@ -9,6 +9,7 @@ import {
   hasRecentSentNotification,
   recordNotificationDelivery,
 } from './notifications-log'
+import { createInAppNotification } from './in-app-notifications'
 
 type TurnReminderCycleOptions = {
   now?: Date
@@ -236,6 +237,16 @@ export async function runTurnReminderCycle(
         })
         continue
       }
+
+      await createInAppNotification({
+        userId: recipient.id,
+        type: 'turn_reminder',
+        dedupeKey,
+        payload: {
+          ...payload,
+          href: `/lobby/${game.lobby.code}`,
+        },
+      })
 
       const prefs = await getNotificationPreferences(recipient.id)
       if (prefs.unsubscribedAll || !prefs.turnReminders) {

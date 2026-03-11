@@ -7,11 +7,14 @@ import { hasActiveLobbyFilters, LobbyFilterOptions } from '@/lib/lobby-filters'
 interface LobbyFiltersProps {
   filters: LobbyFilterOptions
   onFiltersChange: (filters: LobbyFilterOptions) => void
+  embedded?: boolean
 }
 
-export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersProps) {
+export default function LobbyFilters({ filters, onFiltersChange, embedded = false }: LobbyFiltersProps) {
   const { t } = useTranslation()
   const [showFilters, setShowFilters] = useState(() => hasActiveLobbyFilters(filters))
+  const inputClassName =
+    'w-full rounded-xl border border-white/90 bg-white px-3.5 py-3 text-sm text-slate-900 shadow-sm shadow-indigo-900/5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100'
 
   const handleFilterChange = (key: keyof LobbyFilterOptions, value: LobbyFilterOptions[typeof key]) => {
     onFiltersChange({ ...filters, [key]: value })
@@ -46,81 +49,83 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
     }
   }, [hasActiveFilters])
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
-      {/* Header with toggle button */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  const content = (
+    <>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white break-words">
-            🔍 {t('lobby.filters.title')}
-          </h3>
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white break-words">
+              {t('lobby.filters.title')}
+            </h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {t('lobby.filters.search')}
+            </p>
+          </div>
           {hasActiveFilters && (
-            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full">
+            <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-100 px-2.5 text-xs font-bold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
               {activeFilterCount}
             </span>
           )}
         </div>
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
-          {hasActiveFilters && (
-            <button
-              onClick={clearAllFilters}
-              className="w-full sm:w-auto px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              {t('lobby.filters.clearAll')}
-            </button>
-          )}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex w-full sm:w-auto justify-center items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-          >
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {showFilters ? t('lobby.filters.hideFilters') : t('lobby.filters.showFilters')}
-            </span>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1 sm:min-w-[280px]">
+            <input
+              type="text"
+              placeholder={t('lobby.filters.searchPlaceholder')}
+              value={filters.search || ''}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              className={`${inputClassName} pl-11`}
+            />
             <svg
-              className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+              className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-          </button>
+          </div>
+
+          <div className="flex gap-2">
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="flex-1 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-white/90 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                {t('lobby.filters.clearAll')}
+              </button>
+            )}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/90 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <span>
+                {showFilters ? t('lobby.filters.hideFilters') : t('lobby.filters.showFilters')}
+              </span>
+              <svg
+                className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Search bar (always visible) */}
-      <div className="mb-4">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder={t('lobby.filters.searchPlaceholder')}
-            value={filters.search || ''}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full px-4 py-3 pl-10 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-      </div>
-
-      {/* Collapsible filters */}
       {showFilters && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in">
-          {/* Game Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 border-t border-slate-200/70 pt-5 animate-fade-in dark:border-slate-700/70 md:grid-cols-2 xl:grid-cols-5">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
               {t('lobby.filters.gameType')}
             </label>
             <select
               value={filters.gameType || ''}
               onChange={(e) => handleFilterChange('gameType', e.target.value || undefined)}
-              className="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className={inputClassName}
             >
               <option value="">{t('common.all')}</option>
               <option value="yahtzee">{t('games.yahtzee.title', 'Yahtzee')}</option>
@@ -131,15 +136,14 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             </select>
           </div>
 
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
               {t('lobby.filters.status')}
             </label>
             <select
               value={filters.status || 'all'}
               onChange={(e) => handleFilterChange('status', e.target.value as 'all' | 'waiting' | 'playing')}
-              className="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className={inputClassName}
             >
               <option value="all">{t('lobby.status.all')}</option>
               <option value="waiting">{t('lobby.status.waiting')}</option>
@@ -147,16 +151,15 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             </select>
           </div>
 
-          {/* Sort By */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2 md:col-span-2 xl:col-span-1">
+            <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
               {t('lobby.sort.title')}
             </label>
             <div className="flex gap-2">
               <select
                 value={filters.sortBy || 'createdAt'}
                 onChange={(e) => handleFilterChange('sortBy', e.target.value as 'createdAt' | 'playerCount' | 'name')}
-                className="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className={`${inputClassName} flex-1`}
               >
                 <option value="createdAt">{t('lobby.sort.createdAt')}</option>
                 <option value="playerCount">{t('lobby.sort.playerCount')}</option>
@@ -164,11 +167,11 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
               </select>
               <button
                 onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl border border-white/90 bg-white text-slate-600 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800"
                 title={filters.sortOrder === 'asc' ? t('lobby.sort.asc') : t('lobby.sort.desc')}
               >
                 <svg
-                  className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform ${filters.sortOrder === 'asc' ? 'rotate-180' : ''}`}
+                  className={`h-5 w-5 transition-transform ${filters.sortOrder === 'asc' ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -179,9 +182,8 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
             </div>
           </div>
 
-          {/* Min Players */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
               {t('lobby.filters.minPlayers')}
             </label>
             <input
@@ -191,13 +193,12 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
               placeholder="1"
               value={filters.minPlayers || ''}
               onChange={(e) => handleFilterChange('minPlayers', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className={inputClassName}
             />
           </div>
 
-          {/* Max Players */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
               {t('lobby.filters.maxPlayers')}
             </label>
             <input
@@ -207,11 +208,21 @@ export default function LobbyFilters({ filters, onFiltersChange }: LobbyFiltersP
               placeholder="8"
               value={filters.maxPlayers || ''}
               onChange={(e) => handleFilterChange('maxPlayers', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className={inputClassName}
             />
           </div>
         </div>
       )}
+    </>
+  )
+
+  if (embedded) {
+    return content
+  }
+
+  return (
+    <div className="rounded-3xl border border-white/85 bg-white/90 p-5 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
+      {content}
     </div>
   )
 }
