@@ -1024,12 +1024,16 @@ const no = {
       sections: {
         appearance: {
           title: 'Utseende',
-          subtitle: 'Språk, tema og visuelle grensesnittvalg.',
+          subtitle: 'Språk og tema for denne enheten.',
         },
         privacyGame: {
           title: 'Personvern og spill',
           subtitle: 'Kontroller synlighet og hvordan kampene oppleves.',
         },
+      },
+      scope: {
+        device: 'Denne enheten',
+        account: 'Kontoen din',
       },
       language: {
         title: 'Språk',
@@ -1057,17 +1061,18 @@ const no = {
         sound: 'Lydeffekter',
         soundDesc: 'Spill av lyder for spillhandlinger og varsler',
         categories: {
-          title: 'Kategorier for e-postvarsler',
+          title: 'E-postkategorier',
+          disabledHint: 'Slå på e-postvarsler igjen for å administrere disse kategoriene.',
           unsubscribeAll: 'Meld av alle e-postvarsler',
           unsubscribeAllDesc: 'Overstyrer alle kategoriene nedenfor',
           gameInvites: 'Spillinvitasjoner og revansjer',
           gameInvitesDesc: 'Send meg e-post når venner inviterer meg til en lobby eller revansje',
           turnReminders: 'Påminnelser om tur',
-          turnRemindersDesc: 'For langvarige spill (fremtidig)',
+          turnRemindersDesc: 'Send meg e-post når det er min tur i støttede spill',
           friendRequests: 'Venneforespørsler',
-          friendRequestsDesc: 'For fremtidige e-postvarsler om venner',
+          friendRequestsDesc: 'Send meg e-post når noen sender meg en venneforespørsel',
           friendAccepted: 'Venneforespørsel godtatt',
-          friendAcceptedDesc: 'For fremtidige e-postvarsler om venner',
+          friendAcceptedDesc: 'Send meg e-post når en venneforespørsel blir godtatt',
         }
       },
       privacy: {
@@ -1076,10 +1081,13 @@ const no = {
         profileVisibility: 'Profilsynlighet',
         profileVisibilityDesc: 'Hvem kan se profilen og spillhistorikken din',
         public: 'Offentlig',
+        publicDesc: 'Alle som har profillenken din kan åpne den offentlige profilen din.',
         friendsOnly: 'Bare venner',
+        friendsOnlyDesc: 'Bare godkjente venner kan åpne den offentlige profilen din.',
         private: 'Privat',
-        showOnline: 'Vis online-status',
-        showOnlineDesc: 'La andre se når du er online'
+        privateDesc: 'Bare du kan åpne den offentlige profilen din.',
+        showOnline: 'Vis aktivitetsstatus',
+        showOnlineDesc: 'La venner se når du er aktiv i lobbyer og spill'
       },
       game: {
         title: 'Spillinnstillinger',
@@ -1091,6 +1099,7 @@ const no = {
         animations: 'Animasjoner',
         animationsDesc: 'Aktiver jevne animasjoner og overganger'
       },
+      syncing: 'Lagrer...',
       saved: 'Innstillinger lagret',
       error: 'Kunne ikke lagre innstillinger',
       unsaved: {
@@ -1254,6 +1263,11 @@ const no = {
     publicProfile: {
       eyebrow: 'Boardly-profil',
       subtitle: 'Se spillerens offentlige profil og send en venneforespørsel via en stabil profillenke.',
+      friendsOnlyTitle: 'Denne profilen er bare synlig for venner',
+      friendsOnlySubtitle: 'Send en venneforespørsel først. Når forespørselen er godkjent, kan du åpne denne profilen igjen.',
+      friendsOnlyHint: 'Denne spilleren deler bare profilen sin med godkjente venner.',
+      privateTitle: 'Denne profilen er privat',
+      privateSubtitle: 'Denne spilleren deler ikke den offentlige profilen sin akkurat nå.',
       playerFallback: 'Spiller',
       addFriend: 'Legg til venn',
       addFailed: 'Kunne ikke sende venneforespørsel',
