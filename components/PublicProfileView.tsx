@@ -196,7 +196,7 @@ export default function PublicProfileView({
               href="/"
               className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
             >
-              {t('common.home')}
+              {t('common.goHome')}
             </Link>
           </div>
         </div>

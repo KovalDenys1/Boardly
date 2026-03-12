@@ -26,7 +26,7 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'profile.publicProfile.reviewRequest': 'Review Request',
         'profile.settings.privacy.friendsOnly': 'Friends Only',
         'common.back': 'Back',
-        'common.home': 'Home',
+        'common.goHome': 'Go to Home',
       }
 
       return dictionary[key] ?? key
@@ -68,6 +68,6 @@ describe('PublicProfileView', () => {
 
     expect(screen.getByText('This profile is private')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Add Friend' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Home' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Go to Home' })).toBeTruthy()
   })
 })
