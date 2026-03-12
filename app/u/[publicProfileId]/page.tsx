@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import PublicProfileView, {
+  type PublicProfileAccessState,
   type PublicProfileRelation,
 } from '@/components/PublicProfileView'
 import { prisma } from '@/lib/db'
@@ -95,16 +96,15 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   }
 
   const profileVisibility = profile.accountPreferences?.profileVisibility ?? 'public'
+  let accessState: PublicProfileAccessState = 'available'
   if (profileVisibility === 'private' && relation !== 'self') {
-    notFound()
-  }
-
-  if (
+    accessState = 'private'
+  } else if (
     profileVisibility === 'friends' &&
     relation !== 'self' &&
     relation !== 'friends'
   ) {
-    notFound()
+    accessState = 'friends_only'
   }
 
   return (
@@ -118,6 +118,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         gamesPlayed: profile._count.players,
       }}
       initialRelation={relation}
+      accessState={accessState}
     />
   )
 }

@@ -1274,6 +1274,11 @@ const en = {
     publicProfile: {
       eyebrow: 'Boardly Profile',
       subtitle: 'View this player\'s public snapshot and connect through a stable profile link.',
+      friendsOnlyTitle: 'This profile is visible to friends only',
+      friendsOnlySubtitle: 'Send a friend request to connect first. Once the request is accepted, you can open this profile again.',
+      friendsOnlyHint: 'This player only shares their profile with accepted friends.',
+      privateTitle: 'This profile is private',
+      privateSubtitle: 'This player is not sharing their public profile right now.',
       playerFallback: 'Player',
       addFriend: 'Add Friend',
       addFailed: 'Could not send friend request',

@@ -1263,6 +1263,11 @@ const no = {
     publicProfile: {
       eyebrow: 'Boardly-profil',
       subtitle: 'Se spillerens offentlige profil og send en venneforespørsel via en stabil profillenke.',
+      friendsOnlyTitle: 'Denne profilen er bare synlig for venner',
+      friendsOnlySubtitle: 'Send en venneforespørsel først. Når forespørselen er godkjent, kan du åpne denne profilen igjen.',
+      friendsOnlyHint: 'Denne spilleren deler bare profilen sin med godkjente venner.',
+      privateTitle: 'Denne profilen er privat',
+      privateSubtitle: 'Denne spilleren deler ikke den offentlige profilen sin akkurat nå.',
       playerFallback: 'Spiller',
       addFriend: 'Legg til venn',
       addFailed: 'Kunne ikke sende venneforespørsel',

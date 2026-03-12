@@ -14,6 +14,8 @@ export type PublicProfileRelation =
   | 'friends'
   | 'self'
 
+export type PublicProfileAccessState = 'available' | 'friends_only' | 'private'
+
 export type PublicProfileViewData = {
   publicProfileId: string
   username: string | null
@@ -26,11 +28,13 @@ export type PublicProfileViewData = {
 type PublicProfileViewProps = {
   profile: PublicProfileViewData
   initialRelation: PublicProfileRelation
+  accessState?: PublicProfileAccessState
 }
 
 export default function PublicProfileView({
   profile,
   initialRelation,
+  accessState = 'available',
 }: PublicProfileViewProps) {
   const { t, i18n } = useTranslation()
   const [relation, setRelation] = useState<PublicProfileRelation>(initialRelation)
@@ -42,6 +46,15 @@ export default function PublicProfileView({
     month: 'short',
     day: 'numeric',
   })
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back()
+      return
+    }
+
+    window.location.assign('/')
+  }
 
   const handleAddFriend = async () => {
     setSubmitting(true)
@@ -155,6 +168,71 @@ export default function PublicProfileView({
     )
   }
 
+  const renderRestrictedState = () => {
+    if (accessState === 'private') {
+      return (
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-[32px] border border-white/10 bg-white/8 px-6 py-10 text-center shadow-2xl backdrop-blur-xl sm:px-10">
+          <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/10 bg-white/10 text-4xl shadow-[0_10px_40px_rgba(15,23,42,0.28)]">
+            🔒
+          </div>
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
+            {t('profile.publicProfile.eyebrow')}
+          </p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+            {t('profile.publicProfile.privateTitle')}
+          </h1>
+          <p className="mt-4 max-w-lg text-sm text-slate-200/80 sm:text-base">
+            {t('profile.publicProfile.privateSubtitle')}
+          </p>
+          <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              {t('common.back')}
+            </button>
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
+            >
+              {t('common.home')}
+            </Link>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col rounded-[32px] border border-white/10 bg-white/8 shadow-2xl backdrop-blur-xl lg:flex-row">
+        <div className="flex-1 px-6 py-8 sm:px-8 sm:py-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
+            {t('profile.publicProfile.eyebrow')}
+          </p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+            {t('profile.publicProfile.friendsOnlyTitle')}
+          </h1>
+          <p className="mt-4 max-w-xl text-sm text-slate-200/80 sm:text-base">
+            {t('profile.publicProfile.friendsOnlySubtitle')}
+          </p>
+          <div className="mt-8">
+            {renderAction()}
+          </div>
+        </div>
+        <div className="flex items-center border-t border-white/10 bg-black/15 px-6 py-8 sm:px-8 lg:w-[18rem] lg:border-l lg:border-t-0">
+          <div className="w-full rounded-3xl border border-dashed border-white/15 bg-white/5 p-5 text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300/70">
+              {t('profile.settings.privacy.friendsOnly')}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-200/80">
+              {t('profile.publicProfile.friendsOnlyHint')}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-slate-950 text-white">
       <div
@@ -163,19 +241,13 @@ export default function PublicProfileView({
       />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
+        {accessState !== 'available' ? renderRestrictedState() : (
         <div className="w-full overflow-hidden rounded-[32px] border border-white/10 bg-white/8 shadow-2xl backdrop-blur-xl">
           <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
             <div className="p-6 sm:p-8 lg:p-10">
               <button
                 type="button"
-                onClick={() => {
-                  if (window.history.length > 1) {
-                    window.history.back()
-                    return
-                  }
-
-                  window.location.assign('/')
-                }}
+                onClick={handleBack}
                 className="inline-flex items-center gap-2 text-sm font-medium text-cyan-200 transition-colors hover:text-cyan-100"
               >
                 <span aria-hidden>←</span>
@@ -247,6 +319,7 @@ export default function PublicProfileView({
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   )
