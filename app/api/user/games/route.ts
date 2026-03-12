@@ -76,50 +76,48 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch games with player data
-    const [games, totalCount] = await Promise.all([
-      prisma.games.findMany({
-        where,
-        include: {
-          lobby: {
-            select: {
-              code: true,
-              name: true,
-            },
+    const games = await prisma.games.findMany({
+      where,
+      include: {
+        lobby: {
+          select: {
+            code: true,
+            name: true,
           },
-          _count: {
-            select: {
-              snapshots: true,
-            },
+        },
+        _count: {
+          select: {
+            snapshots: true,
           },
-          players: {
-            select: {
-              id: true,
-              userId: true,
-              score: true,
-              finalScore: true,
-              placement: true,
-              isWinner: true,
-              user: {
-                select: {
-                  id: true,
-                  username: true,
-                  bot: true,  // Bot relation
-                },
+        },
+        players: {
+          select: {
+            id: true,
+            userId: true,
+            score: true,
+            finalScore: true,
+            placement: true,
+            isWinner: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                bot: true,  // Bot relation
               },
             },
-            orderBy: {
-              placement: 'asc',
-            },
+          },
+          orderBy: {
+            placement: 'asc',
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.games.count({ where }),
-    ])
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit,
+      skip: offset,
+    })
+    const totalCount = await prisma.games.count({ where })
 
     logger.info('User game history fetched successfully', {
       userId,
