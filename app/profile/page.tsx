@@ -13,8 +13,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
-import { availableLocales, defaultLocale } from '@/i18n'
-import { applyThemeMode, getStoredThemeMode, normalizeThemeMode, type ThemeMode } from '@/lib/theme'
+import { applyThemeMode, type ThemeMode } from '@/lib/theme'
+import {
+  getStoredAppearancePreferences,
+  normalizeAppearanceLocale,
+  setStoredAppearanceLocale,
+  setStoredThemePreference,
+} from '@/lib/appearance-preferences'
 
 interface LinkedAccount {
   provider: string
@@ -31,11 +36,6 @@ interface LinkedAccounts {
 type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'settings'
 const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'settings']
 const PROFILE_VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000
-
-function normalizeProfileLocale(value: string | null | undefined): string {
-  const normalized = value?.toLowerCase().split('-')[0] || defaultLocale
-  return (availableLocales as readonly string[]).includes(normalized) ? normalized : defaultLocale
-}
 
 function isTabType(value: string | null): value is TabType {
   return value !== null && PROFILE_TABS.includes(value as TabType)
@@ -332,14 +332,7 @@ export default function ProfilePage() {
       fetchLinkedAccounts()
 
       // Load local appearance settings
-      const savedLanguage = normalizeProfileLocale(
-        localStorage.getItem('i18nextLng') || localStorage.getItem('language') || defaultLocale
-      )
-      const savedTheme = getStoredThemeMode(localStorage)
-      setSettings({
-        language: savedLanguage,
-        theme: savedTheme,
-      })
+      setSettings(getStoredAppearancePreferences(localStorage))
 
       fetch('/api/user/notification-preferences', { cache: 'no-store' })
         .then(async (res) => {
@@ -372,7 +365,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const syncSettingsLanguage = (nextLanguage?: string) => {
-      const normalizedLanguage = normalizeProfileLocale(nextLanguage || i18n.language)
+      const normalizedLanguage = normalizeAppearanceLocale(nextLanguage || i18n.language)
       setSettings((prev) => (
         prev.language === normalizedLanguage
           ? prev
@@ -888,12 +881,10 @@ export default function ProfilePage() {
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     if (key === 'language') {
-      const normalizedLanguage = normalizeProfileLocale(String(value))
+      const normalizedLanguage = setStoredAppearanceLocale(localStorage, String(value))
       setSettings((prev) => ({ ...prev, language: normalizedLanguage }))
-      localStorage.setItem('language', normalizedLanguage)
-      localStorage.setItem('i18nextLng', normalizedLanguage)
 
-      if (normalizeProfileLocale(i18n.language) !== normalizedLanguage) {
+      if (normalizeAppearanceLocale(i18n.language) !== normalizedLanguage) {
         void i18n.changeLanguage(normalizedLanguage)
       }
 
@@ -901,9 +892,8 @@ export default function ProfilePage() {
     }
 
     if (key === 'theme') {
-      const normalizedTheme = normalizeThemeMode(String(value))
+      const normalizedTheme = setStoredThemePreference(localStorage, String(value))
       setSettings((prev) => ({ ...prev, theme: normalizedTheme }))
-      localStorage.setItem('theme', normalizedTheme)
       applyThemeMode(normalizedTheme)
       return
     }

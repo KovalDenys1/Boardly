@@ -2,15 +2,14 @@
 
 import { useTranslation } from '@/lib/i18n-helpers'
 import { availableLocales } from '@/locales'
+import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation()
 
   const handleLocaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextLanguage = e.target.value
-    localStorage.setItem('language', nextLanguage)
-    localStorage.setItem('i18nextLng', nextLanguage)
-    void i18n.changeLanguage(nextLanguage)
+    void i18n.changeLanguage(setStoredAppearanceLocale(localStorage, nextLanguage))
   }
 
   const getLanguageLabel = (loc: string) => {
