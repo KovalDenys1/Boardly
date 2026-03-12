@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -20,6 +21,7 @@ import {
   setStoredAppearanceLocale,
   setStoredThemePreference,
 } from '@/lib/appearance-preferences'
+import { buildPublicProfilePath } from '@/lib/public-profile'
 
 interface LinkedAccount {
   provider: string
@@ -1045,6 +1047,9 @@ export default function ProfilePage() {
     !loading &&
     (!profileUsernameChanged || usernameAvailable) &&
     (!profileEmailChanged || emailStatus === 'available')
+  const publicProfilePath = profileSummary?.publicProfileId
+    ? buildPublicProfilePath(profileSummary.publicProfileId)
+    : null
 
   const renderHeroEditableField = ({
     field,
@@ -1283,6 +1288,20 @@ export default function ProfilePage() {
                     </p>
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                       {t('profile.inline.avatarCaption')}
+                    </p>
+                    {publicProfilePath && (
+                      <Link
+                        href={publicProfilePath}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:border-blue-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-white dark:hover:border-blue-500/40 dark:hover:bg-slate-900"
+                      >
+                        <span>{t('profile.publicProfile.viewOwn')}</span>
+                        <span aria-hidden>↗</span>
+                      </Link>
+                    )}
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      {t('profile.publicProfile.previewHint')}
                     </p>
                   </div>
                 </div>

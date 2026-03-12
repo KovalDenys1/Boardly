@@ -1289,6 +1289,8 @@ const en = {
       signInToAdd: 'Sign In to Add',
       verifyEmailToAdd: 'Verify Email to Add',
       goToOwnProfile: 'Go to My Profile',
+      viewOwn: 'View Public Profile',
+      previewHint: 'Preview how other players can see your public profile.',
       linkHint: 'Public profile links make it easier to connect without sharing a friend code.',
     },
   },

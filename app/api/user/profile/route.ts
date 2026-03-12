@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { sendVerificationEmail } from '@/lib/email'
 import { apiLogger } from '@/lib/logger'
 import { isValidProfileEmail, normalizeProfileEmail } from '@/lib/profile-email'
+import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 import {
   AuthenticationError,
   ConflictError,
@@ -87,7 +88,14 @@ async function getProfileHandler() {
   }
 
   return NextResponse.json({
-    user: buildProfilePayload(user),
+    user: buildProfilePayload(
+      user.publicProfileId
+        ? user
+        : {
+            ...user,
+            publicProfileId: await ensureUserHasPublicProfileId(session.user.id),
+          }
+    ),
   })
 }
 
@@ -195,7 +203,14 @@ async function patchProfileHandler(req: NextRequest) {
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({
       message: 'No changes applied',
-      user: buildProfilePayload(currentUser),
+      user: buildProfilePayload(
+        currentUser.publicProfileId
+          ? currentUser
+          : {
+              ...currentUser,
+              publicProfileId: await ensureUserHasPublicProfileId(session.user.id),
+            }
+      ),
     })
   }
 
@@ -262,7 +277,14 @@ async function patchProfileHandler(req: NextRequest) {
     message: updateResult.verificationToken
       ? 'Profile updated. Please verify your new email address.'
       : 'Profile updated successfully',
-    user: buildProfilePayload(updateResult.user),
+    user: buildProfilePayload(
+      updateResult.user.publicProfileId
+        ? updateResult.user
+        : {
+            ...updateResult.user,
+            publicProfileId: await ensureUserHasPublicProfileId(session.user.id),
+          }
+    ),
     emailChangePending: Boolean(updateResult.verificationToken),
   })
 }
