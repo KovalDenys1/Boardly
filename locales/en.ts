@@ -1024,12 +1024,16 @@ const en = {
       sections: {
         appearance: {
           title: 'Appearance',
-          subtitle: 'Language, theme, and interface preferences.',
+          subtitle: 'Language and theme preferences for this device.',
         },
         privacyGame: {
           title: 'Privacy & Gameplay',
           subtitle: 'Control visibility and tune how matches feel.',
         },
+      },
+      scope: {
+        device: 'This device',
+        account: 'Your account',
       },
 
       // Language
@@ -1063,17 +1067,18 @@ const en = {
         sound: 'Sound Effects',
         soundDesc: 'Play sounds for in-game actions and notifications',
         categories: {
-          title: 'Email Notification Categories',
+          title: 'Email categories',
+          disabledHint: 'Turn email notifications back on to manage these categories.',
           unsubscribeAll: 'Unsubscribe from all email notifications',
           unsubscribeAllDesc: 'Overrides all categories below',
           gameInvites: 'Game invites & rematches',
           gameInvitesDesc: 'Email me when friends invite me to a lobby or rematch',
           turnReminders: 'Turn reminders',
-          turnRemindersDesc: 'For long-running games (future)',
+          turnRemindersDesc: 'Email me when it is my turn in supported games',
           friendRequests: 'Friend requests',
-          friendRequestsDesc: 'For future friend notification emails',
+          friendRequestsDesc: 'Email me when someone sends me a friend request',
           friendAccepted: 'Friend request accepted',
-          friendAcceptedDesc: 'For future friend notification emails',
+          friendAcceptedDesc: 'Email me when one of my friend requests is accepted',
         },
       },
 
@@ -1084,10 +1089,13 @@ const en = {
         profileVisibility: 'Profile Visibility',
         profileVisibilityDesc: 'Who can view your profile and game history',
         public: 'Public',
+        publicDesc: 'Anyone with your profile link can open your public profile.',
         friendsOnly: 'Friends Only',
+        friendsOnlyDesc: 'Only accepted friends can open your public profile.',
         private: 'Private',
-        showOnline: 'Show Online Status',
-        showOnlineDesc: 'Let others see when you\'re online',
+        privateDesc: 'Only you can open your public profile.',
+        showOnline: 'Show Activity Status',
+        showOnlineDesc: 'Let friends see when you\'re active in lobbies and games',
       },
 
       // Game Preferences
@@ -1102,6 +1110,7 @@ const en = {
         animationsDesc: 'Enable smooth animations and transitions',
       },
 
+      syncing: 'Saving...',
       saved: 'Settings saved successfully',
       error: 'Failed to save settings',
       unsaved: {
@@ -1265,6 +1274,11 @@ const en = {
     publicProfile: {
       eyebrow: 'Boardly Profile',
       subtitle: 'View this player\'s public snapshot and connect through a stable profile link.',
+      friendsOnlyTitle: 'This profile is visible to friends only',
+      friendsOnlySubtitle: 'Send a friend request to connect first. Once the request is accepted, you can open this profile again.',
+      friendsOnlyHint: 'This player only shares their profile with accepted friends.',
+      privateTitle: 'This profile is private',
+      privateSubtitle: 'This player is not sharing their public profile right now.',
       playerFallback: 'Player',
       addFriend: 'Add Friend',
       addFailed: 'Could not send friend request',

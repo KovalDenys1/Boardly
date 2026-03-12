@@ -1,20 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
-import { io, Socket } from 'socket.io-client'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
+
+type FriendPresence = 'offline' | 'online' | 'in_lobby' | 'in_game'
 
 interface Friend {
   id: string
   username: string | null
   avatar: string | null
   email: string
+  presence?: FriendPresence
 }
 
 interface FriendsListModalProps {
@@ -37,62 +36,10 @@ export default function FriendsListModal({
   lobbyCode 
 }: FriendsListModalProps) {
   const { t } = useTranslation()
-  const { data: session } = useSession()
   const [friends, setFriends] = useState<Friend[]>([])
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState(false)
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
-  const [socket, setSocket] = useState<Socket | null>(null)
-
-  // Setup socket connection for online status
-  useEffect(() => {
-    if (!isOpen || !session?.user?.id) return
-
-    let isMounted = true
-    let activeSocket: Socket | null = null
-
-    const connectSocket = async () => {
-      const socketUrl = getBrowserSocketUrl()
-      const socketAuth = await resolveSocketClientAuth({ isGuest: false })
-
-      if (!socketAuth || !isMounted) {
-        return
-      }
-
-      const newSocket = io(socketUrl, {
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-        transports: ['polling', 'websocket'],
-      })
-      activeSocket = newSocket
-
-      newSocket.on('online-users', (data: { userIds: string[] }) => {
-        setOnlineUsers(new Set(data.userIds))
-      })
-
-      newSocket.on('user-online', (data: { userId: string }) => {
-        setOnlineUsers(prev => new Set(prev).add(data.userId))
-      })
-
-      newSocket.on('user-offline', (data: { userId: string }) => {
-        setOnlineUsers(prev => {
-          const next = new Set(prev)
-          next.delete(data.userId)
-          return next
-        })
-      })
-
-      setSocket(newSocket)
-    }
-
-    void connectSocket()
-
-    return () => {
-      isMounted = false
-      activeSocket?.close()
-    }
-  }, [isOpen, session?.user?.id])
 
   useEffect(() => {
     if (isOpen) {
@@ -126,6 +73,15 @@ export default function FriendsListModal({
       newSelected.add(friendId)
     }
     setSelectedFriends(newSelected)
+  }
+
+  const resolvePresence = (friend: Friend): FriendPresence => friend.presence || 'offline'
+
+  const presencePriority: Record<FriendPresence, number> = {
+    in_game: 0,
+    in_lobby: 1,
+    online: 2,
+    offline: 3,
   }
 
   const handleInvite = async () => {
@@ -209,23 +165,28 @@ export default function FriendsListModal({
             </p>
 
             <div className="space-y-2 mb-6">
-              {/* Sort friends: online first, then alphabetically */}
+              {/* Sort friends by server-derived presence, then alphabetically */}
               {[...friends]
                 .sort((a, b) => {
-                  const aOnline = onlineUsers.has(a.id)
-                  const bOnline = onlineUsers.has(b.id)
-                  
-                  // Online friends first
-                  if (aOnline && !bOnline) return -1
-                  if (!aOnline && bOnline) return 1
-                  
-                  // If both online or both offline, sort alphabetically
+                  const priorityDiff =
+                    presencePriority[resolvePresence(a)] - presencePriority[resolvePresence(b)]
+                  if (priorityDiff !== 0) return priorityDiff
+
                   const aName = a.username || a.email
                   const bName = b.username || b.email
                   return aName.localeCompare(bName)
                 })
                 .map((friend) => {
-                  const isOnline = onlineUsers.has(friend.id)
+                  const presence = resolvePresence(friend)
+                  const isOnline = presence !== 'offline'
+                  const presenceLabel =
+                    presence === 'in_game'
+                      ? 'In game'
+                      : presence === 'in_lobby'
+                        ? 'In lobby'
+                        : presence === 'online'
+                          ? 'Online'
+                          : null
                   
                   return (
                     <button
@@ -251,9 +212,9 @@ export default function FriendsListModal({
                           <span className="font-medium text-gray-900 dark:text-gray-100">
                             {friend.username || friend.email}
                           </span>
-                          {isOnline && (
+                          {presenceLabel && (
                             <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                              Online
+                              {presenceLabel}
                             </span>
                           )}
                         </div>

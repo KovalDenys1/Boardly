@@ -39,12 +39,32 @@ model Users {
   sentLobbyInvites        LobbyInvites[]           @relation("LobbyInvitesSent")
   receivedLobbyInvites    LobbyInvites[]           @relation("LobbyInvitesReceived")
   adminAuditLogs          AdminAuditLogs[]         @relation("AdminAuditLogsActor")
+  accountPreferences      AccountPreferences?
   notificationPreferences NotificationPreferences?
   notifications           Notifications[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
   @@index([suspended])
+}
+
+enum ProfileVisibility {
+  public
+  friends
+  private
+}
+
+model AccountPreferences {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  user              Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileVisibility ProfileVisibility @default(public)
+  showOnlineStatus  Boolean           @default(true)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([profileVisibility])
 }
 
 enum UserRole {

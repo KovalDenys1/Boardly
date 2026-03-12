@@ -1,5 +1,4 @@
 import { createOnlinePresence } from '@/lib/socket/online-presence'
-import { SocketEvents } from '@/types/socket-events'
 
 describe('createOnlinePresence', () => {
   function createDeps() {
@@ -13,13 +12,13 @@ describe('createOnlinePresence', () => {
     }
   }
 
-  it('marks user online and broadcasts event', () => {
+  it('marks user online without broadcasting raw presence', () => {
     const { io, logger } = createDeps()
     const presence = createOnlinePresence(io, logger)
 
     presence.markUserOnline('user-1', 'socket-1')
 
-    expect(io.emit).toHaveBeenCalledWith(SocketEvents.USER_ONLINE, { userId: 'user-1' })
+    expect(io.emit).not.toHaveBeenCalled()
     expect(presence.isUserOnline('user-1')).toBe(true)
     expect(presence.getOnlineUserIds()).toEqual(['user-1'])
     expect(logger.info).toHaveBeenCalled()
@@ -33,8 +32,7 @@ describe('createOnlinePresence', () => {
     presence.markUserOnline('user-1', 'socket-2')
     presence.markUserOffline('user-1', 'socket-1')
 
-    expect(io.emit).toHaveBeenCalledTimes(2)
-    expect(io.emit).not.toHaveBeenCalledWith(SocketEvents.USER_OFFLINE, { userId: 'user-1' })
+    expect(io.emit).not.toHaveBeenCalled()
     expect(presence.isUserOnline('user-1')).toBe(true)
     expect(logger.info).toHaveBeenCalledTimes(2)
   })
@@ -46,7 +44,7 @@ describe('createOnlinePresence', () => {
     presence.markUserOnline('user-1', 'socket-1')
     presence.markUserOffline('user-1', 'socket-1')
 
-    expect(io.emit).toHaveBeenNthCalledWith(2, SocketEvents.USER_OFFLINE, { userId: 'user-1' })
+    expect(io.emit).not.toHaveBeenCalled()
     expect(presence.isUserOnline('user-1')).toBe(false)
     expect(presence.getOnlineUserIds()).toEqual([])
     expect(logger.info).toHaveBeenCalledTimes(2)
