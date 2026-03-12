@@ -9,6 +9,7 @@ import {
 
 const updateSchema = z.object({
   profileVisibility: z.enum(['public', 'friends', 'private']).optional(),
+  showOnlineStatus: z.boolean().optional(),
 })
 
 export async function GET() {

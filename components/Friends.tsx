@@ -6,9 +6,6 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import LoadingSpinner from './LoadingSpinner'
-import { io, Socket } from 'socket.io-client'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { buildPublicProfilePath, extractPublicProfileId } from '@/lib/public-profile'
 
 interface Friend {
@@ -63,83 +60,6 @@ export default function Friends() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addMethod, setAddMethod] = useState<AddMethod>('link')
   const [addLoading, setAddLoading] = useState(false)
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
-  const [socket, setSocket] = useState<Socket | null>(null)
-
-  // Setup Socket.IO for online status
-  useEffect(() => {
-    if (!session?.user?.id) {
-      clientLogger.warn('No session available for online status')
-      return
-    }
-
-    let isMounted = true
-    let activeSocket: Socket | null = null
-
-    const connectSocket = async () => {
-      const socketUrl = getBrowserSocketUrl()
-      const socketAuth = await resolveSocketClientAuth({ isGuest: false })
-
-      if (!socketAuth) {
-        clientLogger.warn('Skipping online status socket connection: auth payload unavailable')
-        return
-      }
-
-      if (!isMounted) {
-        return
-      }
-
-      clientLogger.log('🔌 Connecting socket for online status', { socketUrl })
-
-      const newSocket = io(socketUrl, {
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-        transports: ['polling', 'websocket'],
-      })
-      activeSocket = newSocket
-
-      newSocket.on('connect', () => {
-        clientLogger.log('✅ Connected to socket for online status')
-      })
-
-      newSocket.on('online-users', (data: { userIds: string[] }) => {
-        setOnlineUsers(new Set(data.userIds))
-        clientLogger.log('👥 Online users received', { count: data.userIds.length })
-      })
-
-      newSocket.on('user-online', (data: { userId: string }) => {
-        setOnlineUsers(prev => new Set(prev).add(data.userId))
-        clientLogger.log('🟢 User came online', { userId: data.userId })
-      })
-
-      newSocket.on('user-offline', (data: { userId: string }) => {
-        setOnlineUsers(prev => {
-          const next = new Set(prev)
-          next.delete(data.userId)
-          return next
-        })
-        clientLogger.log('⚫ User went offline', { userId: data.userId })
-      })
-
-      newSocket.on('disconnect', () => {
-        clientLogger.log('🔌 Disconnected from socket')
-      })
-
-      newSocket.on('connect_error', (error) => {
-        clientLogger.error('❌ Socket connection error', { error: error.message })
-      })
-
-      setSocket(newSocket)
-    }
-
-    void connectSocket()
-
-    return () => {
-      isMounted = false
-      clientLogger.log('🧹 Cleaning up socket connection')
-      activeSocket?.close()
-    }
-  }, [session?.user?.id])
 
   const loadFriends = useCallback(async () => {
     try {
@@ -410,11 +330,7 @@ export default function Friends() {
   }
 
   const resolvePresence = (friend: Friend): 'offline' | 'online' | 'in_lobby' | 'in_game' => {
-    const isOnline = onlineUsers.has(friend.id)
-    if (!isOnline) return 'offline'
-    if (friend.presence === 'in_game') return 'in_game'
-    if (friend.presence === 'in_lobby') return 'in_lobby'
-    return 'online'
+    return friend.presence || 'offline'
   }
 
   const presencePriority: Record<'offline' | 'online' | 'in_lobby' | 'in_game', number> = {

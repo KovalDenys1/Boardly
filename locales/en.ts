@@ -1086,8 +1086,8 @@ const en = {
         public: 'Public',
         friendsOnly: 'Friends Only',
         private: 'Private',
-        showOnline: 'Show Online Status',
-        showOnlineDesc: 'Let others see when you\'re online',
+        showOnline: 'Show Activity Status',
+        showOnlineDesc: 'Let friends see when you\'re active in lobbies and games',
       },
 
       // Game Preferences

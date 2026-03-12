@@ -1088,8 +1088,8 @@ const uk: Translation = {
         public: 'Публічний',
         friendsOnly: 'Тільки друзі',
         private: 'Приватний',
-        showOnline: 'Показувати онлайн статус',
-        showOnlineDesc: 'Дозволити іншим бачити, коли ви онлайн',
+        showOnline: 'Показувати статус активності',
+        showOnlineDesc: 'Дозволити друзям бачити, коли ви активні в лобі та іграх',
       },
 
       // Game Preferences

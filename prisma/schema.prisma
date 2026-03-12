@@ -59,6 +59,7 @@ model AccountPreferences {
   userId            String            @unique
   user              Users             @relation(fields: [userId], references: [id], onDelete: Cascade)
   profileVisibility ProfileVisibility @default(public)
+  showOnlineStatus  Boolean           @default(true)
   createdAt         DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime          @updatedAt @db.Timestamptz(3)
 

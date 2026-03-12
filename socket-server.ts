@@ -785,9 +785,6 @@ io.on('connection', (socket) => {
     onlinePresence.markUserOnline(userId, socket.id)
   }
 
-  // Send online users list to newly connected user
-  socket.emit(SocketEvents.ONLINE_USERS, { userIds: onlinePresence.getOnlineUserIds() })
-
   socket.on(SocketEvents.JOIN_LOBBY, async (lobbyCode: string) => {
     await handleJoinLobby(socket, lobbyCode)
   })

@@ -1078,8 +1078,8 @@ const no = {
         public: 'Offentlig',
         friendsOnly: 'Bare venner',
         private: 'Privat',
-        showOnline: 'Vis online-status',
-        showOnlineDesc: 'La andre se når du er online'
+        showOnline: 'Vis aktivitetsstatus',
+        showOnlineDesc: 'La venner se når du er aktiv i lobbyer og spill'
       },
       game: {
         title: 'Spillinnstillinger',

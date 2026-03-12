@@ -1,5 +1,4 @@
 import { Server as SocketIOServer } from 'socket.io'
-import { SocketEvents } from '../../types/socket-events'
 
 type LogContext = Record<string, unknown>
 
@@ -7,9 +6,7 @@ type LoggerLike = {
   info: (message: string, context?: LogContext) => void
 }
 
-type BroadcastEmitterLike = Pick<SocketIOServer, 'emit'>
-
-export function createOnlinePresence(io: BroadcastEmitterLike, logger: LoggerLike) {
+export function createOnlinePresence(_io: Pick<SocketIOServer, 'emit'>, logger: LoggerLike) {
   // userId -> socketIds
   const onlineUsers = new Map<string, Set<string>>()
 
@@ -19,7 +16,6 @@ export function createOnlinePresence(io: BroadcastEmitterLike, logger: LoggerLik
     }
     onlineUsers.get(userId)!.add(socketId)
 
-    io.emit(SocketEvents.USER_ONLINE, { userId })
     logger.info('User marked online', { userId, socketId, totalOnline: onlineUsers.size })
   }
 
@@ -32,7 +28,6 @@ export function createOnlinePresence(io: BroadcastEmitterLike, logger: LoggerLik
     userSockets.delete(socketId)
     if (userSockets.size === 0) {
       onlineUsers.delete(userId)
-      io.emit(SocketEvents.USER_OFFLINE, { userId })
       logger.info('User marked offline', { userId, socketId, totalOnline: onlineUsers.size })
     }
   }
@@ -52,4 +47,3 @@ export function createOnlinePresence(io: BroadcastEmitterLike, logger: LoggerLik
     isUserOnline,
   }
 }
-

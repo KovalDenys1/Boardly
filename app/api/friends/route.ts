@@ -52,6 +52,11 @@ export async function GET(req: NextRequest) {
             image: true,
             email: true,
             bot: true,  // Bot relation
+            accountPreferences: {
+              select: {
+                showOnlineStatus: true,
+              },
+            },
           }
         },
         user2: {
@@ -61,6 +66,11 @@ export async function GET(req: NextRequest) {
             image: true,
             email: true,
             bot: true,  // Bot relation
+            accountPreferences: {
+              select: {
+                showOnlineStatus: true,
+              },
+            },
           }
         }
       },
@@ -70,8 +80,10 @@ export async function GET(req: NextRequest) {
     // Map to return the friend (not the current user)
     const friends = friendships.map(friendship => {
       const friend = friendship.user1Id === userId ? friendship.user2 : friendship.user1
+      const { accountPreferences, ...friendFields } = friend
       return {
-        ...friend,
+        ...friendFields,
+        showOnlineStatus: accountPreferences?.showOnlineStatus ?? true,
         friendshipId: friendship.id,
         friendsSince: friendship.createdAt,
       }
@@ -126,9 +138,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const friendsWithPresence = friends.map((friend) => ({
+    const friendsWithPresence = friends.map(({ showOnlineStatus, ...friend }) => ({
       ...friend,
-      presence: presenceByUserId.get(friend.id) || 'offline',
+      presence: showOnlineStatus ? presenceByUserId.get(friend.id) || 'offline' : 'offline',
     }))
 
     log.info('Friends list retrieved', { userId, count: friendsWithPresence.length })

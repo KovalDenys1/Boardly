@@ -48,6 +48,7 @@ type SettingsState = {
 
 type AccountPreferences = {
   profileVisibility: 'public' | 'friends' | 'private'
+  showOnlineStatus: boolean
 }
 
 type NotificationPreferences = {
@@ -146,6 +147,7 @@ export default function ProfilePage() {
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
   const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>({
     profileVisibility: 'public',
+    showOnlineStatus: true,
   })
 
   const currentUsername = profileSummary?.username?.trim() || session?.user?.name || ''
@@ -358,7 +360,10 @@ export default function ProfilePage() {
         })
         .then((data) => {
           if (data?.preferences) {
-            setAccountPreferences(data.preferences)
+            setAccountPreferences((prev) => ({
+              ...prev,
+              ...data.preferences,
+            }))
           }
         })
         .catch(() => {})
@@ -1913,6 +1918,26 @@ export default function ProfilePage() {
                           <option value="friends">👥 {t('profile.settings.privacy.friendsOnly')}</option>
                           <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
                         </select>
+                      </div>
+                      <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                        <Label className="flex cursor-pointer items-start gap-3">
+                          <Checkbox
+                            checked={accountPreferences.showOnlineStatus}
+                            onCheckedChange={(checked) =>
+                              void updateAccountPreference('showOnlineStatus', checked === true)
+                            }
+                            disabled={accountPreferencesSaving}
+                            className="mt-0.5 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                              {t('profile.settings.privacy.showOnline')}
+                            </div>
+                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              {t('profile.settings.privacy.showOnlineDesc')}
+                            </div>
+                          </div>
+                        </Label>
                       </div>
                     </div>
                   </div>
