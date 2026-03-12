@@ -1171,6 +1171,8 @@ export default function ProfilePage() {
     'rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700/60 dark:bg-slate-800/60'
   const settingsToggleCardClassName =
     'flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-800/60 dark:hover:bg-slate-800'
+  const settingsScopeBadgeClassName =
+    'inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:bg-slate-800 dark:text-slate-300'
 
   if (status === 'loading') {
     return (
@@ -1657,9 +1659,14 @@ export default function ProfilePage() {
                 <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                        {t('profile.settings.sections.appearance.title')}
-                      </h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                          {t('profile.settings.sections.appearance.title')}
+                        </h3>
+                        <span className={settingsScopeBadgeClassName}>
+                          {t('profile.settings.scope.device')}
+                        </span>
+                      </div>
                       <p className="text-sm text-slate-500 dark:text-slate-400">
                         {t('profile.settings.sections.appearance.subtitle')}
                       </p>
@@ -1724,9 +1731,14 @@ export default function ProfilePage() {
 
                 <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {t('profile.settings.notifications.title')}
-                    </h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {t('profile.settings.notifications.title')}
+                      </h3>
+                      <span className={settingsScopeBadgeClassName}>
+                        {t('profile.settings.scope.account')}
+                      </span>
+                    </div>
                     {notificationsSaving && (
                       <span className="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {t('profile.settings.syncing')}
@@ -1773,8 +1785,8 @@ export default function ProfilePage() {
                         />
                       </Label>
 
-                      <div className={`${settingsToggleCardClassName} cursor-default opacity-80`}>
-                        <div className="min-w-0 pr-3">
+                      <div className={`${settingsToggleCardClassName} cursor-default items-center text-center opacity-80`}>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                             <span>{t('profile.settings.notifications.push')}</span>
                             <span className="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">
@@ -1793,87 +1805,98 @@ export default function ProfilePage() {
                         emailNotificationsEnabled ? 'opacity-100' : 'opacity-65'
                       }`}
                     >
-                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      {t('profile.settings.notifications.categories.title')}
-                    </p>
-                      <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/55">
-                        <Label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
-                        <Checkbox
-                          checked={notificationPreferences.gameInvites}
-                          onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled || notificationsSaving}
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.notifications.categories.gameInvites')}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.notifications.categories.gameInvitesDesc')}
-                          </div>
-                        </div>
-                        </Label>
+                      <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        {t('profile.settings.notifications.categories.title')}
+                      </p>
+                      {emailNotificationsEnabled ? (
+                        <div className="overflow-hidden rounded-xl border border-slate-200/70 bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/55">
+                          <Label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/70">
+                            <Checkbox
+                              checked={notificationPreferences.gameInvites}
+                              onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
+                              disabled={notificationsSaving}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                {t('profile.settings.notifications.categories.gameInvites')}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {t('profile.settings.notifications.categories.gameInvitesDesc')}
+                              </div>
+                            </div>
+                          </Label>
 
-                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
-                        <Checkbox
-                          checked={notificationPreferences.turnReminders}
-                          onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled || notificationsSaving}
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.notifications.categories.turnReminders')}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.notifications.categories.turnRemindersDesc')}
-                          </div>
-                        </div>
-                        </Label>
+                          <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                            <Checkbox
+                              checked={notificationPreferences.turnReminders}
+                              onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
+                              disabled={notificationsSaving}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                {t('profile.settings.notifications.categories.turnReminders')}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {t('profile.settings.notifications.categories.turnRemindersDesc')}
+                              </div>
+                            </div>
+                          </Label>
 
-                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
-                        <Checkbox
-                          checked={notificationPreferences.friendRequests}
-                          onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled || notificationsSaving}
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.notifications.categories.friendRequests')}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.notifications.categories.friendRequestsDesc')}
-                          </div>
-                        </div>
-                        </Label>
+                          <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                            <Checkbox
+                              checked={notificationPreferences.friendRequests}
+                              onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
+                              disabled={notificationsSaving}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                {t('profile.settings.notifications.categories.friendRequests')}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {t('profile.settings.notifications.categories.friendRequestsDesc')}
+                              </div>
+                            </div>
+                          </Label>
 
-                        <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
-                        <Checkbox
-                          checked={notificationPreferences.friendAccepted}
-                          onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled || notificationsSaving}
-                          className="mt-0.5 shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.notifications.categories.friendAccepted')}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.notifications.categories.friendAcceptedDesc')}
-                          </div>
+                          <Label className="flex cursor-pointer items-start gap-3 border-t border-slate-200/70 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-700/60 dark:hover:bg-slate-800/70">
+                            <Checkbox
+                              checked={notificationPreferences.friendAccepted}
+                              onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
+                              disabled={notificationsSaving}
+                              className="mt-0.5 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                {t('profile.settings.notifications.categories.friendAccepted')}
+                              </div>
+                              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {t('profile.settings.notifications.categories.friendAcceptedDesc')}
+                              </div>
+                            </div>
+                          </Label>
                         </div>
-                        </Label>
-                      </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-300/80 bg-white/70 px-4 py-3 text-sm text-slate-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400">
+                          {t('profile.settings.notifications.categories.disabledHint')}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>
 
                 <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {t('profile.settings.privacy.title')}
-                    </h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                        {t('profile.settings.privacy.title')}
+                      </h3>
+                      <span className={settingsScopeBadgeClassName}>
+                        {t('profile.settings.scope.account')}
+                      </span>
+                    </div>
                     {accountPreferencesSaving && (
                       <span className="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {t('profile.settings.syncing')}
@@ -1893,21 +1916,50 @@ export default function ProfilePage() {
                         <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
                           {t('profile.settings.privacy.profileVisibilityDesc')}
                         </p>
-                        <select
-                          value={accountPreferences.profileVisibility}
-                          onChange={(e) =>
-                            void updateAccountPreference(
-                              'profileVisibility',
-                              e.target.value as AccountPreferences['profileVisibility']
-                            )
-                          }
-                          disabled={accountPreferencesSaving}
-                          className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:ring-blue-500/20"
-                        >
-                          <option value="public">🌍 {t('profile.settings.privacy.public')}</option>
-                          <option value="friends">👥 {t('profile.settings.privacy.friendsOnly')}</option>
-                          <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
-                        </select>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          {([
+                            {
+                              value: 'public' as const,
+                              icon: '🌍',
+                              label: t('profile.settings.privacy.public'),
+                              description: t('profile.settings.privacy.publicDesc'),
+                            },
+                            {
+                              value: 'friends' as const,
+                              icon: '👥',
+                              label: t('profile.settings.privacy.friendsOnly'),
+                              description: t('profile.settings.privacy.friendsOnlyDesc'),
+                            },
+                            {
+                              value: 'private' as const,
+                              icon: '🔒',
+                              label: t('profile.settings.privacy.private'),
+                              description: t('profile.settings.privacy.privateDesc'),
+                            },
+                          ] as const).map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                void updateAccountPreference('profileVisibility', option.value)
+                              }
+                              disabled={accountPreferencesSaving}
+                              className={`rounded-2xl border px-4 py-3 text-left transition-all ${
+                                accountPreferences.profileVisibility === option.value
+                                  ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-400 dark:bg-blue-500/15 dark:text-blue-300'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 text-sm font-semibold">
+                                <span>{option.icon}</span>
+                                <span>{option.label}</span>
+                              </div>
+                              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                                {option.description}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
                         <Label className="flex cursor-pointer items-start gap-3">
