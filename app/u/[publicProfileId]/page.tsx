@@ -32,6 +32,11 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
           id: true,
         },
       },
+      accountPreferences: {
+        select: {
+          profileVisibility: true,
+        },
+      },
       _count: {
         select: {
           friendshipsInitiated: true,
@@ -87,6 +92,19 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         relation = 'can_send'
       }
     }
+  }
+
+  const profileVisibility = profile.accountPreferences?.profileVisibility ?? 'public'
+  if (profileVisibility === 'private' && relation !== 'self') {
+    notFound()
+  }
+
+  if (
+    profileVisibility === 'friends' &&
+    relation !== 'self' &&
+    relation !== 'friends'
+  ) {
+    notFound()
   }
 
   return (

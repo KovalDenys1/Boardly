@@ -1091,6 +1091,7 @@ const no = {
         animations: 'Animasjoner',
         animationsDesc: 'Aktiver jevne animasjoner og overganger'
       },
+      syncing: 'Lagrer...',
       saved: 'Innstillinger lagret',
       error: 'Kunne ikke lagre innstillinger',
       unsaved: {

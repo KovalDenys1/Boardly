@@ -1102,6 +1102,7 @@ const en = {
         animationsDesc: 'Enable smooth animations and transitions',
       },
 
+      syncing: 'Saving...',
       saved: 'Settings saved successfully',
       error: 'Failed to save settings',
       unsaved: {

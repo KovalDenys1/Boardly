@@ -44,12 +44,10 @@ function isTabType(value: string | null): value is TabType {
 type SettingsState = {
   language: string
   theme: ThemeMode
-  soundEffects: boolean
+}
+
+type AccountPreferences = {
   profileVisibility: 'public' | 'friends' | 'private'
-  showOnlineStatus: boolean
-  autoJoin: boolean
-  confirmMoves: boolean
-  animations: boolean
 }
 
 type NotificationPreferences = {
@@ -107,12 +105,6 @@ function getInlineEditorErrorStatus(
 const DEFAULT_SETTINGS: SettingsState = {
   language: 'en',
   theme: 'system',
-  soundEffects: true,
-  profileVisibility: 'public',
-  showOnlineStatus: true,
-  autoJoin: false,
-  confirmMoves: true,
-  animations: true,
 }
 
 export default function ProfilePage() {
@@ -141,8 +133,8 @@ export default function ProfilePage() {
   const sessionUserName = profileSummary?.username || session?.user?.name || ''
 
   // Settings state
-  const [settingsChanged, setSettingsChanged] = useState(false)
-  const [savingSettings, setSavingSettings] = useState(false)
+  const [notificationsSaving, setNotificationsSaving] = useState(false)
+  const [accountPreferencesSaving, setAccountPreferencesSaving] = useState(false)
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({
     inAppNotifications: true,
     gameInvites: true,
@@ -152,6 +144,9 @@ export default function ProfilePage() {
     unsubscribedAll: false,
   })
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
+  const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>({
+    profileVisibility: 'public',
+  })
 
   const currentUsername = profileSummary?.username?.trim() || session?.user?.name || ''
   const currentEmail = profileSummary?.email?.trim() || session?.user?.email || ''
@@ -334,33 +329,15 @@ export default function ProfilePage() {
       })
       fetchLinkedAccounts()
 
-      // Load settings from localStorage
+      // Load local appearance settings
       const savedLanguage = normalizeProfileLocale(
-        localStorage.getItem('i18nextLng') || localStorage.getItem('language') || i18n.language
+        localStorage.getItem('i18nextLng') || localStorage.getItem('language') || defaultLocale
       )
       const savedTheme = getStoredThemeMode(localStorage)
-      const savedSettings = localStorage.getItem('userSettings')
-
-      if (savedSettings) {
-        try {
-          const parsed = JSON.parse(savedSettings)
-          setSettings({
-            ...DEFAULT_SETTINGS,
-            ...(typeof parsed === 'object' && parsed !== null ? parsed : {}),
-            language: savedLanguage,
-            theme: savedTheme,
-          })
-        } catch {
-          // Use defaults if parsing fails
-        }
-      } else {
-        setSettings((prev) => ({
-          ...DEFAULT_SETTINGS,
-          ...prev,
-          language: savedLanguage,
-          theme: savedTheme
-        }))
-      }
+      setSettings({
+        language: savedLanguage,
+        theme: savedTheme,
+      })
 
       fetch('/api/user/notification-preferences', { cache: 'no-store' })
         .then(async (res) => {
@@ -373,8 +350,20 @@ export default function ProfilePage() {
           }
         })
         .catch(() => {})
+
+      fetch('/api/user/account-preferences', { cache: 'no-store' })
+        .then(async (res) => {
+          if (!res.ok) return null
+          return res.json()
+        })
+        .then((data) => {
+          if (data?.preferences) {
+            setAccountPreferences(data.preferences)
+          }
+        })
+        .catch(() => {})
     }
-  }, [fetchProfileSummary, i18n.language, status])
+  }, [fetchProfileSummary, status])
 
   useEffect(() => {
     const syncSettingsLanguage = (nextLanguage?: string) => {
@@ -892,50 +881,6 @@ export default function ProfilePage() {
     }
   }
 
-  const handleSaveSettings = async () => {
-    setSavingSettings(true)
-    try {
-      const normalizedLanguage = normalizeProfileLocale(settings.language)
-      const normalizedTheme = normalizeThemeMode(settings.theme)
-
-      // Save to localStorage
-      localStorage.setItem('language', normalizedLanguage)
-      localStorage.setItem('i18nextLng', normalizedLanguage)
-      localStorage.setItem('theme', normalizedTheme)
-      localStorage.setItem('userSettings', JSON.stringify({
-        soundEffects: settings.soundEffects,
-        profileVisibility: settings.profileVisibility,
-        showOnlineStatus: settings.showOnlineStatus,
-        autoJoin: settings.autoJoin,
-        confirmMoves: settings.confirmMoves,
-        animations: settings.animations,
-      }))
-
-      applyThemeMode(normalizedTheme)
-
-      if (normalizeProfileLocale(i18n.language) !== normalizedLanguage) {
-        await i18n.changeLanguage(normalizedLanguage)
-      }
-
-      // Save server-side email notification preferences
-      const prefsRes = await fetch('/api/user/notification-preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(notificationPreferences),
-      })
-      if (!prefsRes.ok) {
-        throw new Error('Failed to save notification preferences')
-      }
-
-      showToast.success('profile.settings.saved')
-      setSettingsChanged(false)
-    } catch {
-      showToast.error('profile.settings.error')
-    } finally {
-      setSavingSettings(false)
-    }
-  }
-
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     if (key === 'language') {
       const normalizedLanguage = normalizeProfileLocale(String(value))
@@ -957,35 +902,109 @@ export default function ProfilePage() {
       applyThemeMode(normalizedTheme)
       return
     }
-
-    setSettings((prev) => ({ ...prev, [key]: value }))
-    setSettingsChanged(true)
   }
 
-  const updateNotificationPreference = (key: keyof NotificationPreferences, value: boolean) => {
-    setNotificationPreferences((prev) => {
-      const next = { ...prev, [key]: value }
-      if (
-        value &&
-        (key === 'gameInvites' ||
-          key === 'turnReminders' ||
-          key === 'friendRequests' ||
-          key === 'friendAccepted')
-      ) {
-        next.unsubscribedAll = false
+  const persistNotificationPreferences = useCallback(
+    async (
+      nextPreferences: NotificationPreferences,
+      previousPreferences: NotificationPreferences
+    ) => {
+      setNotificationsSaving(true)
+
+      try {
+        const prefsRes = await fetch('/api/user/notification-preferences', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextPreferences),
+        })
+
+        if (!prefsRes.ok) {
+          throw new Error('Failed to save notification preferences')
+        }
+      } catch {
+        setNotificationPreferences(previousPreferences)
+        showToast.error('profile.settings.error')
+      } finally {
+        setNotificationsSaving(false)
       }
-      return next
-    })
-    setSettingsChanged(true)
+    },
+    []
+  )
+
+  const updateNotificationPreference = (
+    key: keyof NotificationPreferences,
+    value: boolean
+  ) => {
+    if (notificationsSaving) {
+      return
+    }
+
+    const previousPreferences = notificationPreferences
+    const nextPreferences = { ...previousPreferences, [key]: value }
+
+    if (
+      value &&
+      (key === 'gameInvites' ||
+        key === 'turnReminders' ||
+        key === 'friendRequests' ||
+        key === 'friendAccepted')
+    ) {
+      nextPreferences.unsubscribedAll = false
+    }
+
+    setNotificationPreferences(nextPreferences)
+    void persistNotificationPreferences(nextPreferences, previousPreferences)
   }
 
   const updateEmailNotificationsEnabled = (enabled: boolean) => {
-    setNotificationPreferences((prev) => ({
-      ...prev,
+    if (notificationsSaving) {
+      return
+    }
+
+    const previousPreferences = notificationPreferences
+    const nextPreferences = {
+      ...previousPreferences,
       unsubscribedAll: !enabled,
-    }))
-    setSettingsChanged(true)
+    }
+
+    setNotificationPreferences(nextPreferences)
+    void persistNotificationPreferences(nextPreferences, previousPreferences)
   }
+
+  const updateAccountPreference = useCallback(
+    async (key: keyof AccountPreferences, value: AccountPreferences[keyof AccountPreferences]) => {
+      if (accountPreferencesSaving) {
+        return
+      }
+
+      const previousPreferences = accountPreferences
+      const nextPreferences = {
+        ...previousPreferences,
+        [key]: value,
+      }
+
+      setAccountPreferences(nextPreferences)
+      setAccountPreferencesSaving(true)
+
+      try {
+        const res = await fetch('/api/user/account-preferences', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(nextPreferences),
+        })
+
+        if (!res.ok) {
+          throw new Error('Failed to save account preferences')
+        }
+      } catch {
+        setAccountPreferences(previousPreferences)
+        showToast.error('profile.settings.error')
+      } finally {
+        setAccountPreferencesSaving(false)
+      }
+    },
+    [accountPreferences, accountPreferencesSaving]
+  )
 
   const handleBackNavigation = () => {
     navigateBackFromProfile(router)
@@ -1709,14 +1728,19 @@ export default function ProfilePage() {
                 </section>
 
                 <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
-                  <div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                       {t('profile.settings.notifications.title')}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {t('profile.settings.notifications.subtitle')}
-                    </p>
+                    {notificationsSaving && (
+                      <span className="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {t('profile.settings.syncing')}
+                      </span>
+                    )}
                   </div>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {t('profile.settings.notifications.subtitle')}
+                  </p>
 
                   <div className="mt-5 space-y-4">
                     <div className="grid gap-3 xl:grid-cols-3">
@@ -1732,6 +1756,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={emailNotificationsEnabled}
                           onCheckedChange={(checked) => updateEmailNotificationsEnabled(Boolean(checked))}
+                          disabled={notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                       </Label>
@@ -1748,6 +1773,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.inAppNotifications}
                           onCheckedChange={(checked) => updateNotificationPreference('inAppNotifications', Boolean(checked))}
+                          disabled={notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                       </Label>
@@ -1780,7 +1806,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.gameInvites}
                           onCheckedChange={(checked) => updateNotificationPreference('gameInvites', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled}
+                          disabled={!emailNotificationsEnabled || notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1797,7 +1823,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.turnReminders}
                           onCheckedChange={(checked) => updateNotificationPreference('turnReminders', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled}
+                          disabled={!emailNotificationsEnabled || notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1814,7 +1840,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.friendRequests}
                           onCheckedChange={(checked) => updateNotificationPreference('friendRequests', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled}
+                          disabled={!emailNotificationsEnabled || notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1831,7 +1857,7 @@ export default function ProfilePage() {
                         <Checkbox
                           checked={notificationPreferences.friendAccepted}
                           onCheckedChange={(checked) => updateNotificationPreference('friendAccepted', Boolean(checked))}
-                          disabled={!emailNotificationsEnabled}
+                          disabled={!emailNotificationsEnabled || notificationsSaving}
                           className="mt-0.5 shrink-0"
                         />
                         <div className="min-w-0">
@@ -1849,14 +1875,19 @@ export default function ProfilePage() {
                 </section>
 
                 <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
-                  <div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                       {t('profile.settings.privacy.title')}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {t('profile.settings.privacy.subtitle')}
-                    </p>
+                    {accountPreferencesSaving && (
+                      <span className="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {t('profile.settings.syncing')}
+                      </span>
+                    )}
                   </div>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {t('profile.settings.privacy.subtitle')}
+                  </p>
 
                   <div className="mt-5">
                     <div className={settingsSurfaceClassName}>
@@ -1868,10 +1899,14 @@ export default function ProfilePage() {
                           {t('profile.settings.privacy.profileVisibilityDesc')}
                         </p>
                         <select
-                          value={settings.profileVisibility}
+                          value={accountPreferences.profileVisibility}
                           onChange={(e) =>
-                            updateSetting('profileVisibility', e.target.value as SettingsState['profileVisibility'])
+                            void updateAccountPreference(
+                              'profileVisibility',
+                              e.target.value as AccountPreferences['profileVisibility']
+                            )
                           }
+                          disabled={accountPreferencesSaving}
                           className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:focus:ring-blue-500/20"
                         >
                           <option value="public">🌍 {t('profile.settings.privacy.public')}</option>
@@ -1879,135 +1914,10 @@ export default function ProfilePage() {
                           <option value="private">🔒 {t('profile.settings.privacy.private')}</option>
                         </select>
                       </div>
-
-                      <Label className="mt-4 flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
-                        <div className="min-w-0 pr-3">
-                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                            {t('profile.settings.privacy.showOnline')}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {t('profile.settings.privacy.showOnlineDesc')}
-                          </div>
-                        </div>
-                        <Checkbox
-                          checked={settings.showOnlineStatus}
-                          onCheckedChange={(checked) => updateSetting('showOnlineStatus', Boolean(checked))}
-                          className="mt-0.5 shrink-0"
-                        />
-                      </Label>
-                    </div>
-                  </div>
-                </section>
-
-                <section className={`xl:col-span-12 ${settingsSectionClassName}`}>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {t('profile.settings.game.title')}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {t('profile.settings.game.subtitle')}
-                    </p>
-                  </div>
-
-                  <div className="mt-5">
-                    <div className={settingsSurfaceClassName}>
-                      <div className="space-y-3">
-                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
-                          <div className="min-w-0 pr-3">
-                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                              {t('profile.settings.game.autoJoin')}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                              {t('profile.settings.game.autoJoinDesc')}
-                            </div>
-                          </div>
-                          <Checkbox
-                            checked={settings.autoJoin}
-                            onCheckedChange={(checked) => updateSetting('autoJoin', Boolean(checked))}
-                            className="mt-0.5 shrink-0"
-                          />
-                        </Label>
-
-                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
-                          <div className="min-w-0 pr-3">
-                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                              {t('profile.settings.game.confirmMoves')}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                              {t('profile.settings.game.confirmMovesDesc')}
-                            </div>
-                          </div>
-                          <Checkbox
-                            checked={settings.confirmMoves}
-                            onCheckedChange={(checked) => updateSetting('confirmMoves', Boolean(checked))}
-                            className="mt-0.5 shrink-0"
-                          />
-                        </Label>
-
-                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
-                          <div className="min-w-0 pr-3">
-                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                              {t('profile.settings.notifications.sound')}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                              {t('profile.settings.notifications.soundDesc')}
-                            </div>
-                          </div>
-                          <Checkbox
-                            checked={settings.soundEffects}
-                            onCheckedChange={(checked) => updateSetting('soundEffects', Boolean(checked))}
-                            className="mt-0.5 shrink-0"
-                          />
-                        </Label>
-
-                        <Label className="flex cursor-pointer items-start justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/80 p-4 transition-colors hover:bg-white dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-900">
-                          <div className="min-w-0 pr-3">
-                            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                              {t('profile.settings.game.animations')}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                              {t('profile.settings.game.animationsDesc')}
-                            </div>
-                          </div>
-                          <Checkbox
-                            checked={settings.animations}
-                            onCheckedChange={(checked) => updateSetting('animations', Boolean(checked))}
-                            className="mt-0.5 shrink-0"
-                          />
-                        </Label>
-                      </div>
                     </div>
                   </div>
                 </section>
               </div>
-
-              {/* Save Button */}
-              {settingsChanged && (
-                <div className="sticky bottom-4 z-10 rounded-2xl border border-blue-200/60 bg-white/95 shadow-lg shadow-blue-500/10 backdrop-blur-lg dark:border-blue-500/20 dark:bg-slate-900/95">
-                  <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-slate-900 dark:text-white">
-                        {t('profile.settings.unsaved.title')}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {t('profile.settings.unsaved.description')}
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={savingSettings}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow disabled:opacity-50 sm:w-auto"
-                    >
-                      {savingSettings ? (
-                        <>
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          {t('profile.saving')}
-                        </>
-                      ) : t('profile.settings.unsaved.save')}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
