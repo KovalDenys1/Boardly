@@ -70,7 +70,7 @@ describe('HeaderActions responsive user block', () => {
       />
     )
 
-    fireEvent.click(screen.getByTitle('Profile'))
+    fireEvent.click(screen.getByRole('button', { name: 'D' }))
     expect(mockNavigateToProfile).toHaveBeenCalled()
   })
 })
