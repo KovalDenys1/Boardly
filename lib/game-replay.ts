@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/prisma/client'
 import { promisify } from 'node:util'
 import { gunzipSync, gzip } from 'node:zlib'
 import { prisma } from '@/lib/db'

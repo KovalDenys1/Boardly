@@ -1,5 +1,4 @@
 import { Server as SocketIOServer } from 'socket.io'
-import type { PrismaClient } from '@prisma/client'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
 import {
   advanceTurnPastDisconnectedPlayers,
@@ -17,10 +16,10 @@ type LoggerLike = {
 
 type RoomBroadcasterLike = Pick<SocketIOServer, 'to'>
 
-interface PrismaLike {
-  games: Pick<PrismaClient['games'], 'findFirst' | 'updateMany'>
-  players: Pick<PrismaClient['players'], 'deleteMany'>
-  lobbies: Pick<PrismaClient['lobbies'], 'updateMany'>
+type PrismaLike = {
+  games: Pick<typeof import('../db').prisma.games, 'findFirst' | 'updateMany'>
+  players: Pick<typeof import('../db').prisma.players, 'deleteMany'>
+  lobbies: Pick<typeof import('../db').prisma.lobbies, 'updateMany'>
 }
 
 interface ActiveGamePlayerRecord {

@@ -34,8 +34,8 @@ if (showHelp) {
 }
 
 // Load environment files
-dotenv.config({ path: resolve(process.cwd(), '.env'), override: true })
-dotenv.config({ path: resolve(process.cwd(), '.env.local') })
+dotenv.config({ path: resolve(process.cwd(), '.env'), override: true, quiet: true })
+dotenv.config({ path: resolve(process.cwd(), '.env.local'), quiet: true })
 
 console.log('🔍 Testing database connection...\n')
 
@@ -97,10 +97,7 @@ printConnectionDiagnostics(dbUrl, verbose)
 // Try to connect
 async function testConnection() {
   try {
-    const { PrismaClient } = await import('@prisma/client')
-    const prisma = new PrismaClient({
-      log: ['error', 'warn'],
-    })
+    const { prisma } = await import('../lib/db')
 
     console.log('⏳ Attempting to connect to database...')
     

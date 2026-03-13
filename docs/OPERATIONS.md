@@ -6,7 +6,7 @@ For a full local-only walkthrough without hosted services, start with `docs/LOCA
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ (required by Prisma 7)
 - PostgreSQL/Supabase
 - npm
 
@@ -74,7 +74,7 @@ Recommended:
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
-- `MCP_POSTGRES_CA_CERT_PATH` (optional for hosted/TLS PostgreSQL used by MCP scripts; not needed for local localhost PostgreSQL)
+- `MCP_POSTGRES_CA_CERT_PATH` (optional CA bundle path for hosted/TLS PostgreSQL used by Prisma 7 adapter and MCP scripts; not needed for local localhost PostgreSQL)
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)

@@ -1,4 +1,4 @@
-import type { ProfileVisibility } from '@prisma/client'
+import type { ProfileVisibility } from '@/prisma/client'
 import { prisma } from './db'
 
 export type AccountPreferenceSnapshot = {

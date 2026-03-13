@@ -1,4 +1,5 @@
-import { prisma } from './db'
+import { Prisma } from '@/prisma/client'
+import type { PrismaClient } from '@/prisma/client'
 import { logger } from './logger'
 
 /**
@@ -29,6 +30,7 @@ class DatabaseMonitor {
   private queryStats: QueryStats
   private queryTimes: number[] = []
   private monitoringInterval: NodeJS.Timeout | null = null
+  private prisma: Pick<PrismaClient, '$queryRaw'> | null = null
   private readonly SLOW_QUERY_THRESHOLD = 1000 // 1 second
 
   constructor() {
@@ -51,68 +53,64 @@ class DatabaseMonitor {
     }
   }
 
-  /**
-   * Initialize database monitoring
-   */
+  attachClient(prisma: Pick<PrismaClient, '$queryRaw'>) {
+    this.prisma = prisma
+  }
+
   initialize(intervalMs: number = 60000) {
-    // Set up Prisma query logging middleware
-    this.setupPrismaMiddleware()
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval)
+    }
 
     // Start periodic monitoring
     this.monitoringInterval = setInterval(() => {
-      this.collectMetrics()
+      void this.collectMetrics()
       this.logMetrics()
     }, intervalMs)
 
     logger.info('Database monitoring initialized', { intervalMs })
   }
 
-  /**
-   * Setup Prisma middleware to track queries
-   */
-  private setupPrismaMiddleware() {
-    type PrismaMiddleware = Parameters<typeof prisma.$use>[0]
-    type PrismaMiddlewareParams = Parameters<PrismaMiddleware>[0]
-    type PrismaMiddlewareNext = Parameters<PrismaMiddleware>[1]
+  createExtension() {
+    const monitor = this
 
-    const middleware: PrismaMiddleware = async (
-      params: PrismaMiddlewareParams,
-      next: PrismaMiddlewareNext
-    ) => {
-      const startTime = Date.now()
+    return Prisma.defineExtension({
+      name: 'database-monitoring',
+      query: {
+        async $allOperations({ model, operation, args, query }) {
+          const startTime = Date.now()
 
-      try {
-        const result = await next(params)
-        const duration = Date.now() - startTime
+          try {
+            const result = await query(args)
+            const duration = Date.now() - startTime
 
-        this.trackQuery(duration, false)
+            monitor.trackQuery(duration, false)
 
-        // Log slow queries
-        if (duration > this.SLOW_QUERY_THRESHOLD) {
-          logger.warn('Slow database query detected', {
-            model: params.model,
-            action: params.action,
-            duration: `${duration}ms`,
-            args: params.args,
-          })
-        }
+            if (duration > monitor.SLOW_QUERY_THRESHOLD) {
+              logger.warn('Slow database query detected', {
+                model,
+                action: operation,
+                duration: `${duration}ms`,
+                args,
+              })
+            }
 
-        return result
-      } catch (error) {
-        const duration = Date.now() - startTime
-        this.trackQuery(duration, true)
+            return result
+          } catch (error) {
+            const duration = Date.now() - startTime
+            monitor.trackQuery(duration, true)
 
-        logger.error('Database query failed', error as Error, {
-          model: params.model,
-          action: params.action,
-          duration: `${duration}ms`,
-        })
+            logger.error('Database query failed', error as Error, {
+              model,
+              action: operation,
+              duration: `${duration}ms`,
+            })
 
-        throw error
-      }
-    }
-
-    prisma.$use(middleware)
+            throw error
+          }
+        },
+      },
+    })
   }
 
   /**
@@ -154,12 +152,16 @@ class DatabaseMonitor {
    * Collect current metrics from Prisma
    */
   private async collectMetrics() {
+    if (!this.prisma) {
+      return
+    }
+
     try {
       // Prisma doesn't expose pool metrics directly, so we estimate based on query activity
       // In production, you might want to query pg_stat_activity for PostgreSQL
       
       // Try a simple query to check database connectivity
-      await prisma.$queryRaw`SELECT 1 as health_check`
+      await this.prisma.$queryRaw`SELECT 1 as health_check`
       
       this.metrics.lastUpdate = Date.now()
     } catch (error) {
@@ -204,6 +206,15 @@ class DatabaseMonitor {
    */
   async checkHealth(): Promise<{ healthy: boolean; issues: string[] }> {
     const issues: string[] = []
+    const prisma = this.prisma
+
+    if (!prisma) {
+      issues.push('Database client is not attached')
+      return {
+        healthy: false,
+        issues,
+      }
+    }
 
     try {
       // Check connectivity
@@ -242,8 +253,12 @@ class DatabaseMonitor {
    * Get detailed connection pool info (PostgreSQL specific)
    */
   async getConnectionPoolInfo(): Promise<unknown> {
+    if (!this.prisma) {
+      return null
+    }
+
     try {
-      const result = await prisma.$queryRaw`
+      const result = await this.prisma.$queryRaw`
         SELECT 
           count(*) as total_connections,
           count(*) FILTER (WHERE state = 'active') as active_connections,

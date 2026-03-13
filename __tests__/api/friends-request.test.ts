@@ -53,7 +53,7 @@ jest.mock('@/lib/friend-notification-emails', () => ({
 }))
 
 jest.mock('@/lib/in-app-notifications', () => ({
-  createInAppNotification: jest.fn(() => Promise.resolve(null)),
+  createInAppNotification: jest.fn(() => Promise.resolve()),
 }))
 
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
@@ -85,7 +85,7 @@ describe('POST /api/friends/request', () => {
     mockPrisma.friendships.findFirst.mockResolvedValue(null as any)
     mockPrisma.friendRequests.findFirst.mockResolvedValue(null as any)
     mockQueueFriendRequestNotificationEmail.mockResolvedValue({ queued: true } as any)
-    mockCreateInAppNotification.mockResolvedValue(null as any)
+    mockCreateInAppNotification.mockResolvedValue(undefined)
   })
 
   it('rejects invalid public profile links before hitting Prisma', async () => {

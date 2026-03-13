@@ -1,4 +1,4 @@
-import { Prisma, type NotificationType } from '@prisma/client'
+import { Prisma, type NotificationType } from '@/prisma/client'
 import { prisma } from './db'
 import { getNotificationPreferences } from './notification-preferences'
 

@@ -1,9 +1,8 @@
 import { cleanupUnverifiedAccounts, warnUnverifiedAccounts } from '../lib/cleanup-unverified'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
 
 async function main() {
+  const { prisma } = await import('../lib/db')
+
   console.log('🧹 Manual Cleanup of Unverified Accounts\n')
   console.log('=' .repeat(60))
 

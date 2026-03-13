@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
@@ -36,6 +35,11 @@ type UpgradeGuestResult = {
   mergedNotificationPreferences: boolean
 }
 
+type TransactionClient = Omit<
+  typeof prisma,
+  '$connect' | '$disconnect' | '$extends' | '$on' | '$transaction' | '$use'
+>
+
 function mergePlayerConflictData(
   targetPlayer: PlayerMigrationRow,
   sourcePlayer: PlayerMigrationRow
@@ -51,7 +55,7 @@ function mergePlayerConflictData(
 }
 
 async function upgradeGuestInTransaction(
-  tx: Prisma.TransactionClient,
+  tx: TransactionClient,
   guestUserId: string,
   targetUserId: string
 ): Promise<UpgradeGuestResult> {

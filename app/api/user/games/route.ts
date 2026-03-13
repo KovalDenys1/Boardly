@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger as log } from '@/lib/logger'
 import { rateLimit } from '@/lib/rate-limit'
-import { Prisma, GameStatus, GameType } from '@prisma/client'
+import { Prisma, GameStatus, GameType } from '@/prisma/client'
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
