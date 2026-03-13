@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
@@ -15,7 +16,12 @@ export default function Header() {
   const { isGuest, guestName } = useGuest()
   const router = useRouter()
   const pathname = usePathname()
+  const [isGuestUiReady, setIsGuestUiReady] = useState(false)
   useProfileNavigationTracking(pathname)
+
+  useEffect(() => {
+    setIsGuestUiReady(true)
+  }, [])
 
   // Don't show header on auth pages
   if (pathname?.startsWith('/auth')) {
@@ -25,6 +31,7 @@ export default function Header() {
   const isAuthenticated = status === 'authenticated'
   const isLoading = status === 'loading'
   const isAdmin = session?.user?.role === 'admin'
+  const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
 
   return (
     <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
@@ -42,14 +49,14 @@ export default function Header() {
             <HeaderNavigation
               isAuthenticated={isAuthenticated}
               isAdmin={isAdmin}
-              isGuest={isGuest}
+              isGuest={isGuestSession}
             />
           </div>
 
           {/* User menu and language switcher */}
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Guest indicator */}
-            {isGuest && guestName && (
+            {isGuestSession && guestName && (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
                 <span className="max-w-[140px] truncate text-yellow-100 text-sm">👤 {guestName}</span>
               </div>

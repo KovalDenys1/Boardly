@@ -1,6 +1,7 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -20,7 +21,12 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   const pathname = usePathname()
   const { t } = useTranslation()
   const { isGuest, clearGuestMode } = useGuest()
-  const isGuestSession = isGuest && !isAuthenticated
+  const [isGuestUiReady, setIsGuestUiReady] = useState(false)
+  const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
+
+  useEffect(() => {
+    setIsGuestUiReady(true)
+  }, [])
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
