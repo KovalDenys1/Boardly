@@ -55,7 +55,7 @@ export function getBrowserSocketUrl(): string {
 
 /**
  * Resolve the Socket.IO endpoint for server-side fetches
- * (API routes, middleware, etc.).
+ * (API routes, proxy, etc.).
  */
 export function getServerSocketUrl(): string {
   const socketUrl = process.env.SOCKET_SERVER_URL || process.env.NEXT_PUBLIC_SOCKET_URL

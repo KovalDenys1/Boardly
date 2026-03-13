@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
 import { POST } from '@/app/api/friends/request/route'
 import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
+import { createInAppNotification } from '@/lib/in-app-notifications'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -51,10 +52,16 @@ jest.mock('@/lib/friend-notification-emails', () => ({
   queueFriendRequestNotificationEmail: jest.fn(() => Promise.resolve({ queued: true })),
 }))
 
+jest.mock('@/lib/in-app-notifications', () => ({
+  createInAppNotification: jest.fn(() => Promise.resolve(null)),
+}))
+
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockQueueFriendRequestNotificationEmail =
   queueFriendRequestNotificationEmail as jest.MockedFunction<typeof queueFriendRequestNotificationEmail>
+const mockCreateInAppNotification =
+  createInAppNotification as jest.MockedFunction<typeof createInAppNotification>
 
 function buildRequest(body: unknown) {
   return new NextRequest('http://localhost:3000/api/friends/request', {
@@ -78,6 +85,7 @@ describe('POST /api/friends/request', () => {
     mockPrisma.friendships.findFirst.mockResolvedValue(null as any)
     mockPrisma.friendRequests.findFirst.mockResolvedValue(null as any)
     mockQueueFriendRequestNotificationEmail.mockResolvedValue({ queued: true } as any)
+    mockCreateInAppNotification.mockResolvedValue(null as any)
   })
 
   it('rejects invalid public profile links before hitting Prisma', async () => {
@@ -131,6 +139,12 @@ describe('POST /api/friends/request', () => {
     expect(mockQueueFriendRequestNotificationEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         requestId: 'request-1',
+      })
+    )
+    expect(mockCreateInAppNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'receiver-1',
+        type: 'friend_request',
       })
     )
   })
