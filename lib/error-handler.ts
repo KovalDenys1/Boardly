@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/prisma/client'
 import { logger } from './logger'
 import { DatabaseTimeoutError } from './database-errors'
 

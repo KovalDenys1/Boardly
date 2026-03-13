@@ -1,4 +1,4 @@
-import type { GameType as PrismaGameType } from '@prisma/client'
+import type { GameType as PrismaGameType } from '@/prisma/client'
 
 const PERSISTED_GAME_TYPES = new Set<PrismaGameType>([
   'yahtzee',

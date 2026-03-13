@@ -13,7 +13,7 @@ At the end of this setup you should have:
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ (required by Prisma 7)
 - npm
 - PostgreSQL 14+ running locally
 

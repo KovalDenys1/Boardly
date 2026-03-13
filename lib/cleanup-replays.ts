@@ -1,4 +1,4 @@
-import { GameStatus } from '@prisma/client'
+import { GameStatus } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 

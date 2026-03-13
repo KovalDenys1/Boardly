@@ -2,13 +2,12 @@
 
 import dotenv from 'dotenv'
 import { resolve } from 'path'
-import { PrismaClient } from '@prisma/client'
 
-dotenv.config({ path: resolve(process.cwd(), '.env'), override: true })
-dotenv.config({ path: resolve(process.cwd(), '.env.local') })
+dotenv.config({ path: resolve(process.cwd(), '.env'), override: true, quiet: true })
+dotenv.config({ path: resolve(process.cwd(), '.env.local'), quiet: true })
 
 async function main() {
-  const prisma = new PrismaClient()
+  const { prisma } = await import('../lib/db')
 
   try {
     const [total, active] = await Promise.all([

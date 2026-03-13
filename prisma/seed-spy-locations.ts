@@ -1,6 +1,8 @@
-import { PrismaClient } from '@prisma/client'
+import dotenv from 'dotenv'
+import { resolve } from 'path'
 
-const prisma = new PrismaClient()
+dotenv.config({ path: resolve(process.cwd(), '.env'), override: true, quiet: true })
+dotenv.config({ path: resolve(process.cwd(), '.env.local'), quiet: true })
 
 const spyLocations = [
   // Travel
@@ -401,34 +403,37 @@ const spyLocations = [
 ]
 
 async function main() {
-  console.log('🌍 Starting Spy game locations seed...')
+  const { prisma } = await import('../lib/db')
 
-  for (const location of spyLocations) {
-    await prisma.spyLocations.upsert({
-      where: { name: location.name },
-      update: {
-        category: location.category,
-        roles: location.roles,
-        isActive: true,
-      },
-      create: {
-        name: location.name,
-        category: location.category,
-        roles: location.roles,
-        isActive: true,
-      },
-    })
-    console.log(`✅ ${location.name} (${location.category})`)
+  try {
+    console.log('🌍 Starting Spy game locations seed...')
+
+    for (const location of spyLocations) {
+      await prisma.spyLocations.upsert({
+        where: { name: location.name },
+        update: {
+          category: location.category,
+          roles: location.roles,
+          isActive: true,
+        },
+        create: {
+          name: location.name,
+          category: location.category,
+          roles: location.roles,
+          isActive: true,
+        },
+      })
+      console.log(`✅ ${location.name} (${location.category})`)
+    }
+
+    console.log(`\n🎉 Seeded ${spyLocations.length} locations for Spy game!`)
+  } finally {
+    await prisma.$disconnect()
   }
-
-  console.log(`\n🎉 Seeded ${spyLocations.length} locations for Spy game!`)
 }
 
 main()
   .catch((e) => {
     console.error('❌ Error seeding spy locations:', e)
     process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
   })

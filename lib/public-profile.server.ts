@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/prisma/client'
 import { customAlphabet } from 'nanoid'
 import { prisma } from './db'
 import { PUBLIC_PROFILE_ID_LENGTH } from './public-profile'

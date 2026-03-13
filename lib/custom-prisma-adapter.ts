@@ -1,5 +1,9 @@
-import { PrismaClient } from '@prisma/client'
 import type { Adapter, AdapterUser, AdapterAccount, AdapterSession, VerificationToken } from 'next-auth/adapters'
+
+type AdapterPrismaClient = Pick<
+  typeof import('./db').prisma,
+  'users' | 'accounts' | 'sessions' | 'verificationTokens'
+>
 
 /**
  * Custom Prisma Adapter for NextAuth
@@ -9,7 +13,7 @@ import type { Adapter, AdapterUser, AdapterAccount, AdapterSession, Verification
  * 
  * This adapter maps between NextAuth's expectations and our actual schema.
  */
-export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
+export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
   return {
     async createUser(user: AdapterUser) {
       const username = user.name || (user.email ? user.email.split('@')[0] : null)

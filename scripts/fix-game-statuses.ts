@@ -13,7 +13,7 @@
  *   npm run fix-game-statuses --fix  # Actually fix the games
  */
 
-import { GameStatus } from '@prisma/client'
+import { GameStatus } from '../prisma/client'
 import { prisma } from '../lib/db'
 import { parsePersistedGameState } from '../lib/persisted-game-state'
 
