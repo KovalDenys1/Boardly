@@ -10,7 +10,7 @@ import { dbMonitor } from './db-monitoring'
 loadDatabaseEnv()
 
 const DEFAULT_DB_RETRY_MAX_ATTEMPTS = process.env.NODE_ENV === 'production' ? 3 : 2
-const DEFAULT_DB_QUERY_TIMEOUT_MS = process.env.NODE_ENV === 'production' ? 8000 : 12000
+const DEFAULT_DB_QUERY_TIMEOUT_MS = process.env.NODE_ENV === 'production' ? 12000 : 12000
 const DB_RETRY_MAX_ATTEMPTS = parsePositiveInt(
   process.env.DB_RETRY_MAX_ATTEMPTS,
   DEFAULT_DB_RETRY_MAX_ATTEMPTS
@@ -19,7 +19,7 @@ const DB_QUERY_TIMEOUT_MS = parseNonNegativeInt(
   process.env.DB_QUERY_TIMEOUT_MS,
   DEFAULT_DB_QUERY_TIMEOUT_MS
 )
-const RETRYABLE_PRISMA_ERROR_CODES = new Set(['P1001', 'P1002', 'P1008', 'P1017', 'P2024'])
+const RETRYABLE_PRISMA_ERROR_CODES = new Set(['P1001', 'P1002', 'P1008', 'P1017'])
 
 function loadDatabaseEnv() {
   const envLocalPath = resolve(process.cwd(), '.env.local')

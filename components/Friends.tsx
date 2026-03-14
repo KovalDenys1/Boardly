@@ -141,23 +141,28 @@ export default function Friends() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
-      await Promise.all([
-        loadFriends(), 
-        loadRequests(),
-        loadMyFriendCode()
-      ])
-      setLoading(false)
+      try {
+        await loadFriends()
+        await loadRequests()
+        await loadMyFriendCode()
+      } finally {
+        setLoading(false)
+      }
     }
-    loadData()
+    void loadData()
 
-    // Auto-refresh every 30 seconds to sync friends list
+    // Auto-refresh only the active view to avoid unnecessary DB fan-out.
     const refreshInterval = setInterval(() => {
-      loadFriends()
-      loadRequests()
-    }, 30000)
+      if (activeTab === 'friends') {
+        void loadFriends()
+        return
+      }
+
+      void loadRequests()
+    }, 60000)
 
     return () => clearInterval(refreshInterval)
-  }, [loadFriends, loadRequests, loadMyFriendCode])
+  }, [activeTab, loadFriends, loadRequests, loadMyFriendCode])
 
   const handleSendRequest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1804,9 +1804,11 @@ export default function ProfilePage() {
                         />
                       </Label>
 
-                      <div className={`${settingsToggleCardClassName} cursor-default items-center text-center opacity-80`}>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      <div
+                        className={`${settingsToggleCardClassName} cursor-default items-center justify-center text-center opacity-80`}
+                      >
+                        <div className="min-w-0 text-center">
+                          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                             <span>{t('profile.settings.notifications.push')}</span>
                             <span className="inline-flex rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                               {t('profile.comingSoon')}

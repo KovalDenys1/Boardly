@@ -10,22 +10,36 @@ import {
 } from '@/lib/notification-ui'
 
 export function NotificationsMenu() {
+  const NOTIFICATIONS_BACKGROUND_REFRESH_INTERVAL_MS = 60_000
   const router = useRouter()
   const pathname = usePathname()
   const { t, i18n } = useTranslation()
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const fetchInFlightRef = useRef(false)
+  const lastBackgroundRefreshAtRef = useRef(0)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [notifications, setNotifications] = useState<InAppNotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 
-  const fetchNotifications = useCallback(async (silent = false) => {
-    if (!silent) {
+  const fetchNotifications = useCallback(async (options?: { silent?: boolean; summary?: boolean; force?: boolean }) => {
+    const silent = options?.silent ?? false
+    const summary = options?.summary ?? false
+    const force = options?.force ?? false
+
+    if (fetchInFlightRef.current && !force) {
+      return
+    }
+
+    fetchInFlightRef.current = true
+
+    if (!silent && !summary) {
       setLoading(true)
     }
 
     try {
-      const response = await fetch('/api/notifications?limit=20', {
+      const search = summary ? '?summary=1' : '?limit=20'
+      const response = await fetch(`/api/notifications${search}`, {
         cache: 'no-store',
       })
 
@@ -34,38 +48,53 @@ export function NotificationsMenu() {
       }
 
       const data = (await response.json()) as InAppNotificationResponse
-      setNotifications(data.notifications || [])
       setUnreadCount(data.unreadCount || 0)
+
+      if (!summary) {
+        setNotifications(data.notifications || [])
+      }
     } catch {
-      if (!silent) {
+      if (!silent && !summary) {
         setNotifications([])
         setUnreadCount(0)
       }
     } finally {
-      if (!silent) {
+      fetchInFlightRef.current = false
+      if (!silent && !summary) {
         setLoading(false)
       }
     }
   }, [])
 
+  const refreshUnreadCount = useCallback((force = false) => {
+    const now = Date.now()
+
+    if (!force && now - lastBackgroundRefreshAtRef.current < NOTIFICATIONS_BACKGROUND_REFRESH_INTERVAL_MS) {
+      return
+    }
+
+    lastBackgroundRefreshAtRef.current = now
+    void fetchNotifications({ silent: true, summary: true, force })
+  }, [fetchNotifications])
+
   useEffect(() => {
-    void fetchNotifications(true)
+    refreshUnreadCount(true)
 
     const intervalId = window.setInterval(() => {
-      void fetchNotifications(true)
-    }, 60_000)
+      refreshUnreadCount()
+    }, NOTIFICATIONS_BACKGROUND_REFRESH_INTERVAL_MS)
 
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [fetchNotifications])
+  }, [refreshUnreadCount])
 
   useEffect(() => {
     if (!open) {
       return
     }
 
-    void fetchNotifications()
+    void fetchNotifications({ force: true })
   }, [fetchNotifications, open])
 
   useEffect(() => {
@@ -92,7 +121,7 @@ export function NotificationsMenu() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        void fetchNotifications(true)
+        refreshUnreadCount()
       }
     }
 
@@ -100,7 +129,7 @@ export function NotificationsMenu() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [fetchNotifications])
+  }, [refreshUnreadCount])
 
   const markNotificationsRead = useCallback(async (ids: string[]) => {
     if (ids.length === 0) {
