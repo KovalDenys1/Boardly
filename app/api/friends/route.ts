@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 
 // Force dynamic rendering (uses request.headers)
 export const dynamic = 'force-dynamic'
@@ -51,6 +52,7 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             email: true,
+            publicProfileId: true,
             bot: true,  // Bot relation
             accountPreferences: {
               select: {
@@ -65,6 +67,7 @@ export async function GET(req: NextRequest) {
             username: true,
             image: true,
             email: true,
+            publicProfileId: true,
             bot: true,  // Bot relation
             accountPreferences: {
               select: {
@@ -89,7 +92,15 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    const friendIds = friends.map((friend) => friend.id)
+    const friendsWithPublicProfiles = await Promise.all(
+      friends.map(async (friend) => ({
+        ...friend,
+        publicProfileId:
+          friend.publicProfileId || (await ensureUserHasPublicProfileId(friend.id)),
+      }))
+    )
+
+    const friendIds = friendsWithPublicProfiles.map((friend) => friend.id)
     const friendIdSet = new Set(friendIds)
     const presenceByUserId = new Map<string, FriendPresence>()
 
@@ -138,7 +149,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const friendsWithPresence = friends.map(({ showOnlineStatus, ...friend }) => ({
+    const friendsWithPresence = friendsWithPublicProfiles.map(({ showOnlineStatus, ...friend }) => ({
       ...friend,
       presence: showOnlineStatus ? presenceByUserId.get(friend.id) || 'offline' : 'offline',
     }))

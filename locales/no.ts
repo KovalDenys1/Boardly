@@ -1278,6 +1278,8 @@ const no = {
       signInToAdd: 'Logg inn for å legge til',
       verifyEmailToAdd: 'Bekreft e-post for å legge til',
       goToOwnProfile: 'Gå til min profil',
+      viewOwn: 'Åpne offentlig profil',
+      previewHint: 'Se hvordan andre spillere kan se den offentlige profilen din.',
       linkHint: 'Offentlige profillenker gjør det enklere å koble til uten å dele vennekoden.',
     }
   },

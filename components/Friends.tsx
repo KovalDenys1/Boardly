@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
@@ -13,6 +14,7 @@ interface Friend {
   username: string | null
   avatar: string | null
   email: string
+  publicProfileId: string | null
   friendshipId: string
   friendsSince: string
   presence?: 'offline' | 'online' | 'in_lobby' | 'in_game'
@@ -48,6 +50,7 @@ type AddMethod = 'link' | 'code'
 export default function Friends() {
   const { t } = useTranslation()
   const { data: session } = useSession()
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('friends')
   const [friends, setFriends] = useState<Friend[]>([])
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([])
@@ -340,6 +343,17 @@ export default function Friends() {
     offline: 3,
   }
 
+  const openFriendPublicProfile = useCallback(
+    (friend: Friend) => {
+      if (!friend.publicProfileId) {
+        return
+      }
+
+      router.push(buildPublicProfilePath(friend.publicProfileId))
+    },
+    [router]
+  )
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -550,7 +564,24 @@ export default function Friends() {
                   return (
                     <div
                       key={friend.friendshipId}
-                      className="group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-xl transition-all hover:scale-[1.02] hover:border-blue-300 dark:hover:border-blue-600"
+                      role={friend.publicProfileId ? 'link' : undefined}
+                      tabIndex={friend.publicProfileId ? 0 : undefined}
+                      onClick={friend.publicProfileId ? () => openFriendPublicProfile(friend) : undefined}
+                      onKeyDown={
+                        friend.publicProfileId
+                          ? (event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                openFriendPublicProfile(friend)
+                              }
+                            }
+                          : undefined
+                      }
+                      className={`group relative overflow-hidden rounded-xl border border-gray-200 bg-white transition-all dark:border-gray-700 dark:bg-gray-800 ${
+                        friend.publicProfileId
+                          ? 'cursor-pointer hover:scale-[1.02] hover:border-blue-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/70 dark:hover:border-blue-600'
+                          : ''
+                      }`}
                     >
                       {/* Online Status Bar */}
                       {isOnline && (
@@ -612,7 +643,10 @@ export default function Friends() {
 
                         {/* Remove Button */}
                         <button
-                          onClick={() => handleRemoveFriend(friend.friendshipId, friend.username)}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            void handleRemoveFriend(friend.friendshipId, friend.username)
+                          }}
                           className="flex-shrink-0 ml-4 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                           title={t('profile.friends.remove')}
                         >

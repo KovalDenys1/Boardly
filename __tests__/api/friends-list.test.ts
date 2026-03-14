@@ -7,6 +7,7 @@ import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
 import { GET } from '@/app/api/friends/route'
+import { ensureUserHasPublicProfileId } from '@/lib/public-profile.server'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -17,6 +18,10 @@ jest.mock('@/lib/db', () => ({
       findMany: jest.fn(),
     },
   },
+}))
+
+jest.mock('@/lib/public-profile.server', () => ({
+  ensureUserHasPublicProfileId: jest.fn(),
 }))
 
 jest.mock('next-auth', () => ({
@@ -44,12 +49,14 @@ jest.mock('@/lib/logger', () => ({
 
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
+const mockEnsureUserHasPublicProfileId =
+  ensureUserHasPublicProfileId as jest.MockedFunction<typeof ensureUserHasPublicProfileId>
 
 function buildRequest() {
   return new NextRequest('http://localhost:3000/api/friends')
 }
 
-function createFriendship(showOnlineStatus: boolean) {
+function createFriendship(showOnlineStatus: boolean, publicProfileId: string | null = 'public-friend-1') {
   return {
     id: 'friendship-1',
     user1Id: 'user-1',
@@ -70,6 +77,7 @@ function createFriendship(showOnlineStatus: boolean) {
       username: 'friend-user',
       image: null,
       email: 'friend@example.com',
+      publicProfileId,
       bot: null,
       accountPreferences: {
         showOnlineStatus,
@@ -81,6 +89,7 @@ function createFriendship(showOnlineStatus: boolean) {
 describe('GET /api/friends', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockEnsureUserHasPublicProfileId.mockResolvedValue('generated-public-friend')
     mockGetServerSession.mockResolvedValue({
       user: {
         id: 'user-1',
@@ -121,5 +130,18 @@ describe('GET /api/friends', () => {
     expect(response.status).toBe(200)
     expect(payload.friends).toHaveLength(1)
     expect(payload.friends[0].presence).toBe('in_game')
+    expect(payload.friends[0].publicProfileId).toBe('public-friend-1')
+  })
+
+  it('ensures a friend has a public profile id when it is missing', async () => {
+    mockPrisma.friendships.findMany.mockResolvedValue([createFriendship(true, null)] as any)
+    mockPrisma.games.findMany.mockResolvedValue([] as any)
+
+    const response = await GET(buildRequest())
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(mockEnsureUserHasPublicProfileId).toHaveBeenCalledWith('friend-1')
+    expect(payload.friends[0].publicProfileId).toBe('generated-public-friend')
   })
 })

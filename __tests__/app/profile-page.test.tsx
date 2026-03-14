@@ -249,6 +249,17 @@ describe('ProfilePage', () => {
     expect(screen.getByText('mock-game-history')).toBeTruthy()
   })
 
+  it('renders a link to the authenticated user public profile', async () => {
+    render(<ProfilePage />)
+
+    const publicProfileLink = await screen.findByRole('link', {
+      name: 'profile.publicProfile.viewOwn',
+    })
+
+    expect(publicProfileLink.getAttribute('href')).toBe('/u/public-user-1')
+    expect(publicProfileLink.getAttribute('target')).toBe('_blank')
+  })
+
   it('hides cancel and disables save when there are no profile changes', async () => {
     render(<ProfilePage />)
 
