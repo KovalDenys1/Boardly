@@ -4,7 +4,15 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
-import { trackLobbyJoined, trackGameStarted, trackStartAloneAutoBotResult, type AnalyticsGameType } from '@/lib/analytics'
+import {
+  trackAuth,
+  trackError,
+  trackFunnelStep,
+  trackLobbyJoined,
+  trackGameStarted,
+  trackStartAloneAutoBotResult,
+  type AnalyticsGameType,
+} from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -45,6 +53,14 @@ interface UseLobbyActionsProps {
   guestToken: string | null
   userId: string | null | undefined
   username: string | null
+  setGuestMode: (
+    name: string,
+    options?: {
+      guestId?: string
+      guestName?: string
+      guestToken?: string
+    }
+  ) => Promise<void>
   setError: (error: string) => void
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
@@ -134,6 +150,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     guestName,
     guestToken,
     username,
+    setGuestMode,
     setError,
     setLoading,
     setStartingGame,
@@ -141,10 +158,20 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   } = props
 
   const [password, setPassword] = useState('')
+  const [guestNameInput, setGuestNameInput] = useState(guestName || '')
+  const [isJoiningLobby, setIsJoiningLobby] = useState(false)
 
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
   const startGameInFlightRef = useRef(false)
+
+  useEffect(() => {
+    if (!guestName) {
+      return
+    }
+
+    setGuestNameInput(guestName)
+  }, [guestName])
 
   const loadLobby = useCallback(async () => {
     try {
@@ -292,6 +319,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   }, [setChatMessages])
 
   const handleJoinLobby = useCallback(async () => {
+    setIsJoiningLobby(true)
+    setError('')
+
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
 
@@ -339,8 +369,80 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setChatMessages(prev => [...prev, joinMessage])
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsJoiningLobby(false)
     }
   }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
+
+  const handleGuestJoinLobby = useCallback(async () => {
+    const normalizedGuestName = guestNameInput.trim()
+
+    if (!normalizedGuestName) {
+      setError('Please enter your name')
+      return
+    }
+
+    if (normalizedGuestName.length < 2 || normalizedGuestName.length > 20) {
+      setError('Name must be 2-20 characters')
+      return
+    }
+
+    setIsJoiningLobby(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/lobby/${code}/join-guest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          guestName: normalizedGuestName,
+          guestToken: guestToken || undefined,
+          password: password || undefined,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        trackError({
+          errorType: 'auth',
+          errorMessage: data.error || 'Guest join failed',
+          component: 'LobbyPageClient',
+          severity: 'medium',
+        })
+        throw new Error(data.error || 'Failed to join lobby')
+      }
+
+      await setGuestMode(data.guestName || normalizedGuestName, {
+        guestId: data.guestId,
+        guestName: data.guestName || normalizedGuestName,
+        guestToken: data.guestToken,
+      })
+
+      const joinedGame = coerceGame(data.game)
+      if (joinedGame) {
+        setGame(joinedGame)
+      }
+
+      if (loadLobbyRef.current) {
+        await loadLobbyRef.current()
+      }
+
+      trackAuth({
+        event: 'login',
+        method: 'guest',
+        success: true,
+        userId: data.guestId || undefined,
+      })
+      trackFunnelStep('guest-join')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsJoiningLobby(false)
+    }
+  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode])
 
   const handleStartGame = useCallback(async () => {
     if (!game || !lobby?.id) return
@@ -555,8 +657,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     addBotToLobby,
     announceBotJoined,
     handleJoinLobby,
+    handleGuestJoinLobby,
     handleStartGame,
     updateLobbySettings,
+    guestNameInput,
+    setGuestNameInput,
+    isJoiningLobby,
     password,
     setPassword,
   }

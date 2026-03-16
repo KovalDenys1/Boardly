@@ -71,6 +71,37 @@ describe('useLobbyRouteState', () => {
     expect(result.current.gameStatus).toBe('finished')
   })
 
+  it('loads lobby route state for unauthenticated users so invite links do not hang', async () => {
+    mockFetchWithGuest.mockResolvedValue({
+      ok: true,
+      json: async () => ({ payload: true }),
+    } as Response)
+    mockNormalizeLobbySnapshotResponse.mockReturnValue({
+      lobby: { gameType: 'yahtzee' },
+      activeGame: null,
+    } as ReturnType<typeof normalizeLobbySnapshotResponse>)
+
+    const { result } = renderHook(() =>
+      useLobbyRouteState({
+        code: 'ABCD',
+        status: 'unauthenticated',
+        isGuest: false,
+        guestToken: null,
+      })
+    )
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    expect(mockFetchWithGuest).toHaveBeenCalledWith('/api/lobby/ABCD?includeFinished=true', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    expect(result.current.gameType).toBe('yahtzee')
+    expect(result.current.gameStatus).toBeNull()
+  })
+
   it('falls back to default game type when request is not ok', async () => {
     mockFetchWithGuest.mockResolvedValue({
       ok: false,

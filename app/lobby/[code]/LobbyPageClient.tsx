@@ -136,7 +136,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const router = useRouter()
   const params = useParams()
   const { data: session, status } = useSession()
-  const { isGuest, guestId, guestName, guestToken } = useGuest()
+  const { isGuest, guestId, guestName, guestToken, setGuestMode } = useGuest()
   const code = params.code as string
 
   // Core state
@@ -797,8 +797,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     loadLobby,
     addBotToLobby,
     handleJoinLobby,
+    handleGuestJoinLobby,
     handleStartGame,
     updateLobbySettings,
+    guestNameInput,
+    setGuestNameInput,
+    isJoiningLobby,
     password,
     setPassword,
   } = useLobbyActions({
@@ -820,6 +824,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     guestToken,
     userId,
     username,
+    setGuestMode,
     setError,
     setLoading,
     setStartingGame,
@@ -1077,16 +1082,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Load lobby on mount
   useEffect(() => {
     if (status === 'loading') return
-    if (!isGuest && status === 'unauthenticated') {
-      router.push('/')
+    if (isGuest && !guestToken) {
       return
     }
 
     // Call via ref to avoid dependency on loadLobby function
     if (loadLobbyRef.current) {
-      loadLobbyRef.current()
+      void loadLobbyRef.current()
     }
-  }, [status, isGuest, guestName, code, router])
+  }, [status, isGuest, guestToken, code])
 
   // Handle bot overlay progression
   useEffect(() => {
@@ -1320,6 +1324,44 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+  const joinViewerMode = status === 'authenticated'
+    ? 'authenticated'
+    : isGuest
+      ? 'guest'
+      : 'anonymous'
+  const joinIdentityKey = status === 'authenticated'
+    ? `user:${session?.user?.id || 'authenticated'}`
+    : isGuest && guestId
+      ? `guest:${guestId}`
+      : null
+  const autoJoinAttemptKey = joinIdentityKey ? `${code}:${joinIdentityKey}` : null
+  const autoJoinAttemptedRef = React.useRef<string | null>(null)
+  const shouldAutoJoinPublicLobby = Boolean(
+    lobby &&
+    !lobby.isPrivate &&
+    !isInGame &&
+    !isGameStarted &&
+    autoJoinAttemptKey
+  )
+  const showAutoJoinLoadingState = Boolean(
+    shouldAutoJoinPublicLobby &&
+    autoJoinAttemptKey &&
+    autoJoinAttemptedRef.current === autoJoinAttemptKey &&
+    !error
+  )
+
+  useEffect(() => {
+    if (!shouldAutoJoinPublicLobby || !autoJoinAttemptKey || isJoiningLobby) {
+      return
+    }
+
+    if (autoJoinAttemptedRef.current === autoJoinAttemptKey) {
+      return
+    }
+
+    autoJoinAttemptedRef.current = autoJoinAttemptKey
+    void handleJoinLobby()
+  }, [autoJoinAttemptKey, handleJoinLobby, isJoiningLobby, shouldAutoJoinPublicLobby])
 
   useEffect(() => {
     if (isLeavingLobbyRef.current) {
@@ -1476,13 +1518,40 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       {!isInGame && !isGameStarted ? (
         /* Join Prompt - centered in full height */
         <div className="flex-1 flex items-center justify-center">
-          <JoinPrompt
-            lobby={lobby}
-            password={password}
-            setPassword={setPassword}
-            error={error}
-            onJoin={handleJoinLobby}
-          />
+          {showAutoJoinLoadingState ? (
+            <div className="max-w-xl mx-auto w-full animate-scale-in">
+              <div className="rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl p-6 sm:p-8 text-center shadow-2xl">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 border border-white/20 mb-5">
+                  <span className="text-3xl">🎮</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+                  {t('lobby.joinSection.title')}
+                </h2>
+                <p className="text-white/65 text-sm sm:text-base mb-6">
+                  {t('lobby.joinPromptPublic', { lobby: lobby.name })}
+                </p>
+                <div className="flex items-center justify-center gap-3 text-white">
+                  <LoadingSpinner />
+                  <span>{t('lobby.joinSection.join')}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <JoinPrompt
+              lobby={lobby}
+              viewerMode={joinViewerMode}
+              guestName={guestNameInput}
+              setGuestName={setGuestNameInput}
+              password={password}
+              setPassword={setPassword}
+              error={error}
+              isJoining={isJoiningLobby}
+              onJoin={handleJoinLobby}
+              onJoinAsGuest={handleGuestJoinLobby}
+              onLogin={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+              onRegister={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+            />
+          )}
         </div>
       ) : !isGameStarted ? (
         /* Waiting Room - natural layout without outer card */
