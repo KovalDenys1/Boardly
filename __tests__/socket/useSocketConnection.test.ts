@@ -273,7 +273,7 @@ describe('useSocketConnection', () => {
       expect(result.current.isConnected).toBe(false)
     })
 
-    it('should sync state only after lobby join confirmation on reconnect', async () => {
+    it('should sync state after lobby join confirmation on initial connect and reconnect', async () => {
       const onStateSync = jest.fn().mockResolvedValue(undefined)
       renderHook(() =>
         useSocketConnection({
@@ -296,8 +296,7 @@ describe('useSocketConnection', () => {
         await new Promise(resolve => setTimeout(resolve, 10))
       })
 
-      // First connection should not trigger reconnect sync.
-      expect(onStateSync).not.toHaveBeenCalled()
+      expect(onStateSync).toHaveBeenCalledTimes(1)
 
       const disconnectHandler = getHandler<(reason: string) => void>('disconnect')
       await act(async () => {
@@ -317,14 +316,14 @@ describe('useSocketConnection', () => {
       })
 
       // Reconnect should wait for JOINED_LOBBY acknowledgment.
-      expect(onStateSync).not.toHaveBeenCalled()
+      expect(onStateSync).toHaveBeenCalledTimes(1)
 
       await act(async () => {
         joinedLobbyHandler?.({ lobbyCode: defaultProps.code, success: true })
         await new Promise(resolve => setTimeout(resolve, 10))
       })
 
-      expect(onStateSync).toHaveBeenCalledTimes(1)
+      expect(onStateSync).toHaveBeenCalledTimes(2)
       expect(analytics.trackSocketReconnectRecovered).toHaveBeenCalledWith(
         expect.objectContaining({
           attemptsTotal: 2,

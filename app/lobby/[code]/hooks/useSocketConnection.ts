@@ -428,19 +428,29 @@ export function useSocketConnection({
         }
       }
 
-      const syncStateAfterReconnect = async () => {
-        if (!shouldSyncAfterJoinRef.current || !onStateSyncRef.current) {
+      const syncStateAfterLobbyJoin = async (trigger: 'initial-join' | 'reconnect') => {
+        if (!onStateSyncRef.current) {
+          shouldSyncAfterJoinRef.current = false
           return
         }
 
         shouldSyncAfterJoinRef.current = false
 
         try {
-          clientLogger.log('🔄 Syncing state after reconnect...')
+          clientLogger.log(
+            trigger === 'reconnect'
+              ? '🔄 Syncing state after reconnect...'
+              : '🔄 Syncing state after initial lobby join...'
+          )
           await onStateSyncRef.current()
           clientLogger.log('✅ State synced successfully')
         } catch (error) {
-          clientLogger.error('❌ Failed to sync state after reconnect:', error)
+          clientLogger.error(
+            trigger === 'reconnect'
+              ? '❌ Failed to sync state after reconnect:'
+              : '❌ Failed to sync state after initial lobby join:',
+            error
+          )
         }
       }
 
@@ -550,7 +560,9 @@ export function useSocketConnection({
         }
 
         flushPendingEmits()
-        void syncStateAfterReconnect()
+        const syncTrigger = shouldSyncAfterJoinRef.current ? 'reconnect' : 'initial-join'
+        shouldSyncAfterJoinRef.current = true
+        void syncStateAfterLobbyJoin(syncTrigger)
       })
 
       newSocket.on('connect', () => {

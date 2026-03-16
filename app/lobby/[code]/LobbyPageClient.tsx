@@ -130,6 +130,7 @@ const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-p
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
+const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
 type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
@@ -840,6 +841,41 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (!loadLobbyRef.current) return
     await loadLobbyRef.current()
   }, [])
+
+  useEffect(() => {
+    if (!lobby?.id || !loadLobbyRef.current) {
+      return
+    }
+
+    if (game?.status !== 'waiting' || startingGame || error) {
+      return
+    }
+
+    const syncFromServer = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return
+      }
+      if (isLeavingLobbyRef.current || !loadLobbyRef.current) {
+        return
+      }
+      void loadLobbyRef.current().catch((syncError) => {
+        clientLogger.warn(
+          'Waiting lobby fallback sync failed:',
+          syncError instanceof Error ? syncError.message : String(syncError)
+        )
+      })
+    }
+
+    const intervalId = window.setInterval(syncFromServer, WAITING_LOBBY_SYNC_INTERVAL_MS)
+    window.addEventListener('focus', syncFromServer)
+    document.addEventListener('visibilitychange', syncFromServer)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', syncFromServer)
+      document.removeEventListener('visibilitychange', syncFromServer)
+    }
+  }, [error, game?.status, lobby?.id, startingGame])
 
   // Bot turn automation hook
   const { triggerBotTurn } = useBotTurn({
