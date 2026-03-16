@@ -26,6 +26,8 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const returnUrl = searchParams.get('returnUrl') || '/'
+  const isLobbyInviteFlow =
+    returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,7 +124,7 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="card max-w-md w-full">
         {/* Invite Banner */}
-        {returnUrl.includes('/lobby/join/') && (
+        {isLobbyInviteFlow && (
           <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-300 dark:border-green-600 rounded-lg">
             <div className="flex items-center gap-3">
               <span className="text-3xl">🎮</span>

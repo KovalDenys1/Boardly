@@ -33,7 +33,7 @@ export function useLobbyRouteState({
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) {
+    if (status === 'loading') {
       return
     }
 
