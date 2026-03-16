@@ -589,6 +589,136 @@ describe('POST /api/lobby/[code]/leave', () => {
     expect(mockNotifySocket).not.toHaveBeenCalled()
   })
 
+  it('reassigns waiting lobby creator when host leaves and human players remain', async () => {
+    const waitingLobbyWithReplacementHost = {
+      ...mockLobby,
+      creatorId: 'user-123',
+      games: [
+        {
+          id: 'game-123',
+          status: 'waiting',
+          players: [
+            {
+              id: 'player-host',
+              userId: 'user-123',
+              gameId: 'game-123',
+              position: 0,
+              createdAt: new Date('2026-03-16T12:00:00.000Z'),
+              user: {
+                id: 'user-123',
+                username: 'host-user',
+                email: 'host@example.com',
+                bot: null,
+              },
+            },
+            {
+              id: 'player-456',
+              userId: 'user-456',
+              gameId: 'game-123',
+              position: 1,
+              createdAt: new Date('2026-03-16T12:00:10.000Z'),
+              user: {
+                id: 'user-456',
+                username: 'second-user',
+                email: 'second@example.com',
+                bot: null,
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: 'user-123',
+      username: 'host-user',
+      suspended: false,
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(waitingLobbyWithReplacementHost as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-host' } as any)
+    mockPrisma.players.count
+      .mockResolvedValueOnce(1) // remaining players
+      .mockResolvedValueOnce(1) // remaining human players
+    mockPrisma.players.findFirst.mockResolvedValue({
+      userId: 'user-456',
+      user: {
+        username: 'second-user',
+      },
+    } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({
+      id: 'lobby-123',
+      creatorId: 'user-456',
+      isActive: true,
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
+      method: 'POST',
+    })
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual(
+      expect.objectContaining({
+        gameEnded: false,
+        lobbyDeactivated: false,
+      })
+    )
+    expect(mockPrisma.players.findFirst).toHaveBeenCalledWith({
+      where: {
+        gameId: 'game-123',
+        user: {
+          bot: null,
+        },
+      },
+      orderBy: [
+        { position: 'asc' },
+        { createdAt: 'asc' },
+        { id: 'asc' },
+      ],
+      select: {
+        userId: true,
+        user: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    })
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith({
+      where: { id: 'lobby-123' },
+      data: { creatorId: 'user-456' },
+    })
+    expect(mockNotifySocket).toHaveBeenNthCalledWith(
+      1,
+      'lobby:ABC123',
+      'player-left',
+      expect.objectContaining({
+        userId: 'user-123',
+        playerId: 'user-123',
+        nextCreatorId: 'user-456',
+        nextCreatorName: 'second-user',
+        remainingPlayers: 1,
+      }),
+      0
+    )
+    expect(mockNotifySocket).toHaveBeenNthCalledWith(
+      2,
+      'lobby:ABC123',
+      'lobby-update',
+      {
+        lobbyCode: 'ABC123',
+        type: 'player-left',
+        data: {
+          creatorId: 'user-456',
+          creatorName: 'second-user',
+        },
+      },
+      0
+    )
+  })
+
   it('should return success when player is already absent from lobby', async () => {
     const lobbyWithoutPlayer = {
       ...mockLobby,

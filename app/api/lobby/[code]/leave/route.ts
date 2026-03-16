@@ -9,6 +9,11 @@ import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 const limiter = rateLimit(rateLimitPresets.api)
 const SOCKET_NOTIFY_DEBOUNCE_MS = 0
 
+type ReassignedCreator = {
+  userId: string
+  username: string
+}
+
 function emitLobbyEvent(
   log: ReturnType<typeof apiLogger>,
   code: string,
@@ -31,6 +36,54 @@ function emitLobbyEvent(
         error,
       })
     })
+}
+
+async function reassignLobbyCreatorIfNeeded(
+  log: ReturnType<typeof apiLogger>,
+  lobbyId: string,
+  gameId: string,
+  lobbyCode: string
+): Promise<ReassignedCreator | null> {
+  const nextCreator = await prisma.players.findFirst({
+    where: {
+      gameId,
+      user: {
+        bot: null,
+      },
+    },
+    orderBy: [
+      { position: 'asc' },
+      { createdAt: 'asc' },
+      { id: 'asc' },
+    ],
+    select: {
+      userId: true,
+      user: {
+        select: {
+          username: true,
+        },
+      },
+    },
+  })
+
+  if (!nextCreator) {
+    log.warn('Unable to find replacement lobby creator after leave', {
+      lobbyId,
+      lobbyCode,
+      gameId,
+    })
+    return null
+  }
+
+  await prisma.lobbies.update({
+    where: { id: lobbyId },
+    data: { creatorId: nextCreator.userId },
+  })
+
+  return {
+    userId: nextCreator.userId,
+    username: nextCreator.user.username || 'Player',
+  }
 }
 
 export async function POST(
@@ -131,6 +184,32 @@ export async function POST(
       }),
     ])
 
+    const creatorLeft = lobby.creatorId === userId
+    const lobbyCanStayActive =
+      activeGame.status === 'waiting'
+        ? remainingPlayers > 0 && remainingHumanPlayers > 0
+        : remainingPlayers > 1 && remainingHumanPlayers > 0
+
+    const reassignedCreator =
+      creatorLeft && lobbyCanStayActive
+        ? await reassignLobbyCreatorIfNeeded(log, lobby.id, activeGame.id, code)
+        : null
+
+    const departedPlayerName = player.user.username || player.user.email || 'Guest'
+    const playerLeftEventPayload = {
+      userId,
+      playerId: userId,
+      username: departedPlayerName,
+      playerName: departedPlayerName,
+      remainingPlayers,
+      ...(reassignedCreator
+        ? {
+            nextCreatorId: reassignedCreator.userId,
+            nextCreatorName: reassignedCreator.username,
+          }
+        : {}),
+    }
+
     // Different behavior based on game status
     if (activeGame.status === 'waiting') {
       // In waiting state, just remove player
@@ -147,6 +226,20 @@ export async function POST(
           lobbyDeactivated: true
         })
       }
+
+      emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
+      emitLobbyEvent(log, code, 'lobby-update', {
+        lobbyCode: code,
+        type: 'player-left',
+        ...(reassignedCreator
+          ? {
+              data: {
+                creatorId: reassignedCreator.userId,
+                creatorName: reassignedCreator.username,
+              },
+            }
+          : {}),
+      })
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -210,11 +303,17 @@ export async function POST(
     }
 
     // If multiple players remain (human or bot), continue the game
-    emitLobbyEvent(log, code, 'player-left', {
-      playerId: userId,
-      playerName: player.user.username || player.user.email || 'Guest',
-      remainingPlayers,
-    })
+    emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
+    if (reassignedCreator) {
+      emitLobbyEvent(log, code, 'lobby-update', {
+        lobbyCode: code,
+        type: 'player-left',
+        data: {
+          creatorId: reassignedCreator.userId,
+          creatorName: reassignedCreator.username,
+        },
+      })
+    }
 
     return NextResponse.json({
       message: 'You left the lobby',
