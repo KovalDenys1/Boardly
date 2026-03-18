@@ -78,6 +78,29 @@ type ProfileSummary = {
 
 type InlineEditorField = 'username' | 'email'
 type InlineEditorStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error'
+type PublicProfilePreviewTransitionPhase = 'idle' | 'hero-exit' | 'preview-enter' | 'preview-exit' | 'hero-enter'
+
+const PROFILE_PREVIEW_EXIT_MS = 220
+const PROFILE_PREVIEW_ENTER_MS = 420
+const PROFILE_TAB_INDICATOR_X_INSET_PX = 2
+
+function getProfilePreviewTransitionTimings() {
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return {
+      exitMs: 0,
+      enterMs: 0,
+    }
+  }
+
+  return {
+    exitMs: PROFILE_PREVIEW_EXIT_MS,
+    enterMs: PROFILE_PREVIEW_ENTER_MS,
+  }
+}
 
 function getInlineEditorErrorStatus(
   field: InlineEditorField,
@@ -128,12 +151,22 @@ export default function ProfilePage() {
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
+  const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
+    useState<PublicProfilePreviewTransitionPhase>('idle')
   const [editingField, setEditingField] = useState<InlineEditorField | null>(null)
   const [editingValue, setEditingValue] = useState('')
   const [editingStatus, setEditingStatus] = useState<InlineEditorStatus>('idle')
   const [editingMessage, setEditingMessage] = useState('')
   const [submittingInlineEdit, setSubmittingInlineEdit] = useState(false)
+  const [activeTabIndicatorStyle, setActiveTabIndicatorStyle] = useState({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  })
   const lastVisibilityRefreshAtRef = useRef(0)
+  const publicProfilePreviewTimerIdsRef = useRef<number[]>([])
+  const tabListRef = useRef<HTMLElement | null>(null)
+  const tabButtonRefs = useRef<Partial<Record<TabType, HTMLButtonElement | null>>>({})
   const sessionUserName = profileSummary?.username || session?.user?.name || ''
 
   // Settings state
@@ -1004,17 +1037,184 @@ export default function ProfilePage() {
     [accountPreferences, accountPreferencesSaving]
   )
 
+  const canPreviewPublicProfile = Boolean(profileSummary?.publicProfileId)
+  const publicProfilePreviewAccessState =
+    accountPreferences.profileVisibility === 'private'
+      ? 'private'
+      : accountPreferences.profileVisibility === 'friends'
+        ? 'friends_only'
+        : 'available'
+
   const handleBackNavigation = () => {
     navigateBackFromProfile(router)
   }
 
+  const resetPublicProfilePreviewTransition = useCallback(() => {
+    publicProfilePreviewTimerIdsRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId)
+    })
+    publicProfilePreviewTimerIdsRef.current = []
+    setShowPublicProfilePreview(false)
+    setPublicProfilePreviewTransitionPhase('idle')
+  }, [])
+
+  const schedulePublicProfilePreviewTimer = useCallback((callback: () => void, delayMs: number) => {
+    if (delayMs <= 0) {
+      callback()
+      return
+    }
+
+    const timerId = window.setTimeout(() => {
+      publicProfilePreviewTimerIdsRef.current = publicProfilePreviewTimerIdsRef.current.filter(
+        (currentTimerId) => currentTimerId !== timerId
+      )
+      callback()
+    }, delayMs)
+
+    publicProfilePreviewTimerIdsRef.current.push(timerId)
+  }, [])
+
+  const openPublicProfilePreview = useCallback(() => {
+    if (
+      !canPreviewPublicProfile ||
+      showPublicProfilePreview ||
+      publicProfilePreviewTransitionPhase !== 'idle'
+    ) {
+      return
+    }
+
+    const { exitMs, enterMs } = getProfilePreviewTransitionTimings()
+
+    setPublicProfilePreviewTransitionPhase('hero-exit')
+    schedulePublicProfilePreviewTimer(() => {
+      setShowPublicProfilePreview(true)
+      setPublicProfilePreviewTransitionPhase(enterMs > 0 ? 'preview-enter' : 'idle')
+
+      if (enterMs > 0) {
+        schedulePublicProfilePreviewTimer(() => {
+          setPublicProfilePreviewTransitionPhase('idle')
+        }, enterMs)
+      }
+    }, exitMs)
+  }, [
+    canPreviewPublicProfile,
+    publicProfilePreviewTransitionPhase,
+    schedulePublicProfilePreviewTimer,
+    showPublicProfilePreview,
+  ])
+
+  const closePublicProfilePreview = useCallback(() => {
+    if (!showPublicProfilePreview || publicProfilePreviewTransitionPhase !== 'idle') {
+      return
+    }
+
+    const { exitMs, enterMs } = getProfilePreviewTransitionTimings()
+
+    setPublicProfilePreviewTransitionPhase('preview-exit')
+    schedulePublicProfilePreviewTimer(() => {
+      setShowPublicProfilePreview(false)
+      setPublicProfilePreviewTransitionPhase(enterMs > 0 ? 'hero-enter' : 'idle')
+
+      if (enterMs > 0) {
+        schedulePublicProfilePreviewTimer(() => {
+          setPublicProfilePreviewTransitionPhase('idle')
+        }, enterMs)
+      }
+    }, exitMs)
+  }, [
+    publicProfilePreviewTransitionPhase,
+    schedulePublicProfilePreviewTimer,
+    showPublicProfilePreview,
+  ])
+  const heroPreviewTransitionClassName =
+    publicProfilePreviewTransitionPhase === 'hero-exit'
+      ? 'animate-profile-surface-exit'
+      : publicProfilePreviewTransitionPhase === 'hero-enter'
+        ? 'animate-profile-surface-enter'
+        : ''
+  const publicProfilePreviewTransitionClassName =
+    publicProfilePreviewTransitionPhase === 'preview-enter'
+      ? 'animate-profile-preview-enter'
+      : publicProfilePreviewTransitionPhase === 'preview-exit'
+        ? 'animate-profile-surface-exit'
+        : ''
+  const isPublicProfilePreviewTransitioning = publicProfilePreviewTransitionPhase !== 'idle'
+
+  useEffect(() => {
+    return () => {
+      publicProfilePreviewTimerIdsRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId)
+      })
+      publicProfilePreviewTimerIdsRef.current = []
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!canPreviewPublicProfile && showPublicProfilePreview) {
+      resetPublicProfilePreviewTransition()
+    }
+  }, [canPreviewPublicProfile, resetPublicProfilePreviewTransition, showPublicProfilePreview])
+
   const handleTabChange = (tab: TabType) => {
     if (tab !== 'profile') {
-      setShowPublicProfilePreview(false)
+      resetPublicProfilePreviewTransition()
     }
 
     setActiveTab(tab)
   }
+
+  const updateActiveTabIndicator = useCallback(() => {
+    const tabListElement = tabListRef.current
+    const activeTabButton = tabButtonRefs.current[activeTab]
+
+    if (!tabListElement || !activeTabButton) {
+      setActiveTabIndicatorStyle((currentStyle) =>
+        currentStyle.opacity === 0
+          ? currentStyle
+          : {
+              left: 0,
+              width: 0,
+              opacity: 0,
+            }
+      )
+      return
+    }
+
+    const tabListRect = tabListElement.getBoundingClientRect()
+    const activeTabRect = activeTabButton.getBoundingClientRect()
+
+    setActiveTabIndicatorStyle({
+      left: activeTabRect.left - tabListRect.left + PROFILE_TAB_INDICATOR_X_INSET_PX,
+      width: Math.max(activeTabRect.width - PROFILE_TAB_INDICATOR_X_INSET_PX * 2, 0),
+      opacity: 1,
+    })
+  }, [activeTab])
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      updateActiveTabIndicator()
+    })
+
+    const handleResize = () => {
+      updateActiveTabIndicator()
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    let resizeObserver: ResizeObserver | null = null
+    if (typeof ResizeObserver === 'function' && tabListRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        updateActiveTabIndicator()
+      })
+      resizeObserver.observe(tabListRef.current)
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      window.removeEventListener('resize', handleResize)
+      resizeObserver?.disconnect()
+    }
+  }, [updateActiveTabIndicator])
 
   const tabItems: Array<{ id: TabType; icon: string; label: string }> = [
     { id: 'profile', icon: '👤', label: t('profile.title') },
@@ -1052,13 +1252,6 @@ export default function ProfilePage() {
     !loading &&
     (!profileUsernameChanged || usernameAvailable) &&
     (!profileEmailChanged || emailStatus === 'available')
-  const canPreviewPublicProfile = Boolean(profileSummary?.publicProfileId)
-  const publicProfilePreviewAccessState =
-    accountPreferences.profileVisibility === 'private'
-      ? 'private'
-      : accountPreferences.profileVisibility === 'friends'
-        ? 'friends_only'
-        : 'available'
 
   const renderHeroEditableField = ({
     field,
@@ -1213,135 +1406,146 @@ export default function ProfilePage() {
       </div>
 
       <div className="relative max-w-5xl mx-auto px-3 pt-16 sm:px-6 sm:pt-20 lg:px-8">
-        <div className="animate-scale-in">
+        <div className="relative">
           {showPublicProfilePreview && profileSummary?.publicProfileId ? (
-            <PublicProfileView
-              profile={{
-                publicProfileId: profileSummary.publicProfileId,
-                username: profileSummary.username,
-                image: profileSummary.image,
-                createdAt: profileSummary.createdAt,
-                friendsCount: profileSummary.friendsCount,
-                gamesPlayed: profileSummary.gamesPlayed,
-              }}
-              initialRelation="login_required"
-              accessState={publicProfilePreviewAccessState}
-              mode="embedded-preview"
-              onBack={() => setShowPublicProfilePreview(false)}
-            />
+            <div
+              className={`${publicProfilePreviewTransitionClassName} ${
+                isPublicProfilePreviewTransitioning ? 'pointer-events-none' : ''
+              }`}
+            >
+              <PublicProfileView
+                profile={{
+                  publicProfileId: profileSummary.publicProfileId,
+                  username: profileSummary.username,
+                  image: profileSummary.image,
+                  createdAt: profileSummary.createdAt,
+                  friendsCount: profileSummary.friendsCount,
+                  gamesPlayed: profileSummary.gamesPlayed,
+                }}
+                initialRelation="login_required"
+                accessState={publicProfilePreviewAccessState}
+                mode="embedded-preview"
+                onBack={closePublicProfilePreview}
+              />
+            </div>
           ) : (
-            <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
-              {/* Accent gradient bar */}
-              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+            <div className={heroPreviewTransitionClassName}>
+              <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
+                {/* Accent gradient bar */}
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-              <div className="p-5 sm:p-8 lg:p-10">
-                <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-                  {/* Left: Info */}
-                  <div className="min-w-0 flex-1">
-                    <button
-                      type="button"
-                      onClick={handleBackNavigation}
-                      className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-                    >
-                      <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">←</span>
-                      <span>{t('common.back')}</span>
-                    </button>
+                <div className="p-5 sm:p-8 lg:p-10">
+                  <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+                    {/* Left: Info */}
+                    <div className="min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={handleBackNavigation}
+                        className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                      >
+                        <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">
+                          ←
+                        </span>
+                        <span>{t('common.back')}</span>
+                      </button>
 
-                    <div className="mt-5">
-                      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                        {t('profile.title')}
-                      </h1>
+                      <div className="mt-5">
+                        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                          {t('profile.title')}
+                        </h1>
+                      </div>
+
+                      <div className="mt-5 space-y-2">
+                        {renderHeroEditableField({
+                          field: 'username',
+                          value: username,
+                          title: t('profile.inline.editUsername'),
+                          displayClassName:
+                            'text-2xl font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 sm:text-3xl',
+                          inputClassName:
+                            'text-2xl font-bold tracking-tight text-slate-900 placeholder:text-slate-300 dark:text-white dark:placeholder:text-slate-500 sm:text-3xl',
+                        })}
+
+                        {renderHeroEditableField({
+                          field: 'email',
+                          value: email,
+                          title: t('profile.inline.editEmail'),
+                          displayClassName:
+                            'text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 sm:text-base',
+                          inputClassName:
+                            'text-sm text-slate-600 placeholder:text-slate-300 dark:text-slate-300 dark:placeholder:text-slate-500 sm:text-base',
+                        })}
+
+                        {pendingEmail && (
+                          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+                            <span className="min-w-0 break-all">
+                              {t('profile.inline.pendingEmailNotice', { email: pendingEmail })}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleResendVerification}
+                              disabled={showResendVerification}
+                              className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {showResendVerification
+                                ? t('common.loading')
+                                : t('profile.inline.resendVerification')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="mt-5 space-y-2">
-                      {renderHeroEditableField({
-                        field: 'username',
-                        value: username,
-                        title: t('profile.inline.editUsername'),
-                        displayClassName:
-                          'text-2xl font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 sm:text-3xl',
-                        inputClassName:
-                          'text-2xl font-bold tracking-tight text-slate-900 placeholder:text-slate-300 dark:text-white dark:placeholder:text-slate-500 sm:text-3xl',
-                      })}
-
-                      {renderHeroEditableField({
-                        field: 'email',
-                        value: email,
-                        title: t('profile.inline.editEmail'),
-                        displayClassName:
-                          'text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 sm:text-base',
-                        inputClassName:
-                          'text-sm text-slate-600 placeholder:text-slate-300 dark:text-slate-300 dark:placeholder:text-slate-500 sm:text-base',
-                      })}
-
-                      {pendingEmail && (
-                        <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="min-w-0 break-all">
-                            {t('profile.inline.pendingEmailNotice', { email: pendingEmail })}
-                          </span>
+                    {/* Right: Avatar */}
+                    <div className="shrink-0 lg:w-[250px]">
+                      <div className="flex h-full flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-blue-50/50 p-6 text-center ring-1 ring-slate-200/60 dark:from-slate-800/60 dark:to-slate-800/30 dark:ring-slate-700/50">
+                        <div className="relative">
+                          <div className="absolute -inset-1.5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 opacity-20 blur-md" />
+                          <UserAvatar
+                            image={profileSummary?.image || session?.user?.image || null}
+                            userName={currentUsername || displayName}
+                            userEmail={currentEmail}
+                            className="relative h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-xl ring-4 ring-white dark:ring-slate-800 sm:h-28 sm:w-28 lg:h-32 lg:w-32"
+                            textClassName="text-3xl font-bold"
+                          />
+                        </div>
+                        <p className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
+                          {displayName}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {t('profile.inline.avatarCaption')}
+                        </p>
+                        {canPreviewPublicProfile && (
                           <button
                             type="button"
-                            onClick={handleResendVerification}
-                            disabled={showResendVerification}
-                            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow disabled:cursor-not-allowed disabled:opacity-60"
+                            onClick={openPublicProfilePreview}
+                            disabled={isPublicProfilePreviewTransitioning}
+                            className="mt-4 inline-flex items-center justify-center rounded-2xl border border-blue-200/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:border-blue-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900/70 dark:text-white dark:hover:border-blue-500/40 dark:hover:bg-slate-900"
                           >
-                            {showResendVerification
-                              ? t('common.loading')
-                              : t('profile.inline.resendVerification')}
+                            <span>{t('profile.publicProfile.viewOwn')}</span>
                           </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right: Avatar */}
-                  <div className="shrink-0 lg:w-[250px]">
-                    <div className="flex h-full flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-blue-50/50 p-6 text-center ring-1 ring-slate-200/60 dark:from-slate-800/60 dark:to-slate-800/30 dark:ring-slate-700/50">
-                      <div className="relative">
-                        <div className="absolute -inset-1.5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 opacity-20 blur-md" />
-                        <UserAvatar
-                          image={profileSummary?.image || session?.user?.image || null}
-                          userName={currentUsername || displayName}
-                          userEmail={currentEmail}
-                          className="relative h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-xl ring-4 ring-white dark:ring-slate-800 sm:h-28 sm:w-28 lg:h-32 lg:w-32"
-                          textClassName="text-3xl font-bold"
-                        />
+                        )}
                       </div>
-                      <p className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
-                        {displayName}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {t('profile.inline.avatarCaption')}
-                      </p>
-                      {canPreviewPublicProfile && (
-                        <button
-                          type="button"
-                          onClick={() => setShowPublicProfilePreview(true)}
-                          className="mt-4 inline-flex items-center justify-center rounded-2xl border border-blue-200/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:border-blue-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-white dark:hover:border-blue-500/40 dark:hover:bg-slate-900"
-                        >
-                          <span>{t('profile.publicProfile.viewOwn')}</span>
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
 
-                {/* Summary Cards */}
-                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {summaryCards.map((card) => (
-                    <div
-                      key={card.id}
-                      className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 dark:border-slate-700/50 dark:bg-slate-800/50"
-                    >
-                      <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 opacity-0 transition-opacity group-hover:opacity-100" />
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                        {card.label}
-                      </p>
-                      <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                        {card.value}
-                      </p>
-                    </div>
-                  ))}
+                  {/* Summary Cards */}
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {summaryCards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 dark:border-slate-700/50 dark:bg-slate-800/50"
+                      >
+                        <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 opacity-0 transition-opacity group-hover:opacity-100" />
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          {card.label}
+                        </p>
+                        <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
+                          {card.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1350,21 +1554,36 @@ export default function ProfilePage() {
           {/* ── Tab Navigation ── */}
           <div className="mt-6">
             <nav
+              ref={tabListRef}
               role="tablist"
               aria-label={t('profile.title')}
-              className="flex gap-1 rounded-2xl border border-slate-200/60 bg-white/60 p-1.5 shadow-sm backdrop-blur-lg dark:border-slate-700/50 dark:bg-slate-900/50"
+              className="relative flex gap-1 rounded-2xl border border-slate-200/60 bg-white/60 p-1.5 shadow-sm backdrop-blur-lg dark:border-slate-700/50 dark:bg-slate-900/50"
             >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-0 bottom-1.5 top-1.5 rounded-xl bg-white shadow-sm ring-1 ring-slate-200/70 transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-slate-800 dark:ring-slate-700/70"
+                style={{
+                  width: activeTabIndicatorStyle.width
+                    ? `${activeTabIndicatorStyle.width}px`
+                    : undefined,
+                  transform: `translateX(${activeTabIndicatorStyle.left}px)`,
+                  opacity: activeTabIndicatorStyle.opacity,
+                }}
+              />
               {tabItems.map((tab) => (
                 <button
                   key={tab.id}
+                  ref={(node) => {
+                    tabButtonRefs.current[tab.id] = node
+                  }}
                   role="tab"
                   aria-selected={activeTab === tab.id}
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`flex-1 min-w-0 rounded-xl px-2 py-2.5 text-center text-sm font-semibold transition-all ${
+                  className={`relative z-10 flex-1 min-w-0 rounded-xl px-2 py-2.5 text-center text-sm font-semibold transition-colors duration-300 ${
                     activeTab === tab.id
-                      ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-800 dark:text-blue-400 dark:ring-slate-700/70'
+                      ? 'text-blue-700 dark:text-blue-400'
                       : 'text-slate-500 hover:bg-white/50 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
                   }`}
                 >
