@@ -249,15 +249,19 @@ describe('ProfilePage', () => {
     expect(screen.getByText('mock-game-history')).toBeTruthy()
   })
 
-  it('renders a link to the authenticated user public profile', async () => {
+  it('opens the authenticated user public profile preview inline', async () => {
     render(<ProfilePage />)
 
-    const publicProfileLink = await screen.findByRole('link', {
+    const publicProfileButton = await screen.findByRole('button', {
       name: 'profile.publicProfile.viewOwn',
     })
 
-    expect(publicProfileLink.getAttribute('href')).toBe('/u/public-user-1')
-    expect(publicProfileLink.getAttribute('target')).toBe('_blank')
+    fireEvent.click(publicProfileButton)
+
+    expect(screen.queryByText('profile.publicProfile.previewHint')).toBeNull()
+    expect(await screen.findByText('profile.publicProfile.eyebrow')).toBeTruthy()
+    expect(screen.getByText('Player One')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'profile.publicProfile.viewOwn' })).toBeNull()
   })
 
   it('hides cancel and disables save when there are no profile changes', async () => {

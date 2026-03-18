@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import PublicProfileView from '@/components/PublicProfileView'
 import { applyThemeMode, type ThemeMode } from '@/lib/theme'
 import {
   getStoredAppearancePreferences,
@@ -21,7 +22,6 @@ import {
   setStoredAppearanceLocale,
   setStoredThemePreference,
 } from '@/lib/appearance-preferences'
-import { buildPublicProfilePath } from '@/lib/public-profile'
 
 interface LinkedAccount {
   provider: string
@@ -127,6 +127,7 @@ export default function ProfilePage() {
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
+  const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [editingField, setEditingField] = useState<InlineEditorField | null>(null)
   const [editingValue, setEditingValue] = useState('')
   const [editingStatus, setEditingStatus] = useState<InlineEditorStatus>('idle')
@@ -1008,6 +1009,10 @@ export default function ProfilePage() {
   }
 
   const handleTabChange = (tab: TabType) => {
+    if (tab !== 'profile') {
+      setShowPublicProfilePreview(false)
+    }
+
     setActiveTab(tab)
   }
 
@@ -1047,9 +1052,13 @@ export default function ProfilePage() {
     !loading &&
     (!profileUsernameChanged || usernameAvailable) &&
     (!profileEmailChanged || emailStatus === 'available')
-  const publicProfilePath = profileSummary?.publicProfileId
-    ? buildPublicProfilePath(profileSummary.publicProfileId)
-    : null
+  const canPreviewPublicProfile = Boolean(profileSummary?.publicProfileId)
+  const publicProfilePreviewAccessState =
+    accountPreferences.profileVisibility === 'private'
+      ? 'private'
+      : accountPreferences.profileVisibility === 'friends'
+        ? 'friends_only'
+        : 'available'
 
   const renderHeroEditableField = ({
     field,
@@ -1205,127 +1214,138 @@ export default function ProfilePage() {
 
       <div className="relative max-w-5xl mx-auto px-3 pt-16 sm:px-6 sm:pt-20 lg:px-8">
         <div className="animate-scale-in">
-          {/* ── Hero Header Card ── */}
-          <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
-            {/* Accent gradient bar */}
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+          {showPublicProfilePreview && profileSummary?.publicProfileId ? (
+            <PublicProfileView
+              profile={{
+                publicProfileId: profileSummary.publicProfileId,
+                username: profileSummary.username,
+                image: profileSummary.image,
+                createdAt: profileSummary.createdAt,
+                friendsCount: profileSummary.friendsCount,
+                gamesPlayed: profileSummary.gamesPlayed,
+              }}
+              initialRelation="login_required"
+              accessState={publicProfilePreviewAccessState}
+              mode="embedded-preview"
+              onBack={() => setShowPublicProfilePreview(false)}
+            />
+          ) : (
+            <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/70 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
+              {/* Accent gradient bar */}
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
-            <div className="p-5 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-                {/* Left: Info */}
-                <div className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={handleBackNavigation}
-                    className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-                  >
-                    <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">←</span>
-                    <span>{t('common.back')}</span>
-                  </button>
+              <div className="p-5 sm:p-8 lg:p-10">
+                <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+                  {/* Left: Info */}
+                  <div className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={handleBackNavigation}
+                      className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                    >
+                      <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">←</span>
+                      <span>{t('common.back')}</span>
+                    </button>
 
-                  <div className="mt-5">
-                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                      {t('profile.title')}
-                    </h1>
+                    <div className="mt-5">
+                      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                        {t('profile.title')}
+                      </h1>
+                    </div>
+
+                    <div className="mt-5 space-y-2">
+                      {renderHeroEditableField({
+                        field: 'username',
+                        value: username,
+                        title: t('profile.inline.editUsername'),
+                        displayClassName:
+                          'text-2xl font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 sm:text-3xl',
+                        inputClassName:
+                          'text-2xl font-bold tracking-tight text-slate-900 placeholder:text-slate-300 dark:text-white dark:placeholder:text-slate-500 sm:text-3xl',
+                      })}
+
+                      {renderHeroEditableField({
+                        field: 'email',
+                        value: email,
+                        title: t('profile.inline.editEmail'),
+                        displayClassName:
+                          'text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 sm:text-base',
+                        inputClassName:
+                          'text-sm text-slate-600 placeholder:text-slate-300 dark:text-slate-300 dark:placeholder:text-slate-500 sm:text-base',
+                      })}
+
+                      {pendingEmail && (
+                        <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="min-w-0 break-all">
+                            {t('profile.inline.pendingEmailNotice', { email: pendingEmail })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={showResendVerification}
+                            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {showResendVerification
+                              ? t('common.loading')
+                              : t('profile.inline.resendVerification')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="mt-5 space-y-2">
-                    {renderHeroEditableField({
-                      field: 'username',
-                      value: username,
-                      title: t('profile.inline.editUsername'),
-                      displayClassName:
-                        'text-2xl font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 sm:text-3xl',
-                      inputClassName:
-                        'text-2xl font-bold tracking-tight text-slate-900 placeholder:text-slate-300 dark:text-white dark:placeholder:text-slate-500 sm:text-3xl',
-                    })}
-
-                    {renderHeroEditableField({
-                      field: 'email',
-                      value: email,
-                      title: t('profile.inline.editEmail'),
-                      displayClassName:
-                        'text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 sm:text-base',
-                      inputClassName:
-                        'text-sm text-slate-600 placeholder:text-slate-300 dark:text-slate-300 dark:placeholder:text-slate-500 sm:text-base',
-                    })}
-
-                    {pendingEmail && (
-                      <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="min-w-0 break-all">
-                          {t('profile.inline.pendingEmailNotice', { email: pendingEmail })}
-                        </span>
+                  {/* Right: Avatar */}
+                  <div className="shrink-0 lg:w-[250px]">
+                    <div className="flex h-full flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-blue-50/50 p-6 text-center ring-1 ring-slate-200/60 dark:from-slate-800/60 dark:to-slate-800/30 dark:ring-slate-700/50">
+                      <div className="relative">
+                        <div className="absolute -inset-1.5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 opacity-20 blur-md" />
+                        <UserAvatar
+                          image={profileSummary?.image || session?.user?.image || null}
+                          userName={currentUsername || displayName}
+                          userEmail={currentEmail}
+                          className="relative h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-xl ring-4 ring-white dark:ring-slate-800 sm:h-28 sm:w-28 lg:h-32 lg:w-32"
+                          textClassName="text-3xl font-bold"
+                        />
+                      </div>
+                      <p className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
+                        {displayName}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {t('profile.inline.avatarCaption')}
+                      </p>
+                      {canPreviewPublicProfile && (
                         <button
                           type="button"
-                          onClick={handleResendVerification}
-                          disabled={showResendVerification}
-                          className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={() => setShowPublicProfilePreview(true)}
+                          className="mt-4 inline-flex items-center justify-center rounded-2xl border border-blue-200/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:border-blue-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-white dark:hover:border-blue-500/40 dark:hover:bg-slate-900"
                         >
-                          {showResendVerification
-                            ? t('common.loading')
-                            : t('profile.inline.resendVerification')}
+                          <span>{t('profile.publicProfile.viewOwn')}</span>
                         </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right: Avatar */}
-                <div className="shrink-0 lg:w-[250px]">
-                  <div className="flex h-full flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-blue-50/50 p-6 text-center ring-1 ring-slate-200/60 dark:from-slate-800/60 dark:to-slate-800/30 dark:ring-slate-700/50">
-                    <div className="relative">
-                      <div className="absolute -inset-1.5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 opacity-20 blur-md" />
-                      <UserAvatar
-                        image={profileSummary?.image || session?.user?.image || null}
-                        userName={currentUsername || displayName}
-                        userEmail={currentEmail}
-                        className="relative h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-xl ring-4 ring-white dark:ring-slate-800 sm:h-28 sm:w-28 lg:h-32 lg:w-32"
-                        textClassName="text-3xl font-bold"
-                      />
+                      )}
                     </div>
-                    <p className="mt-4 text-lg font-bold text-slate-900 dark:text-white">
-                      {displayName}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      {t('profile.inline.avatarCaption')}
-                    </p>
-                    {publicProfilePath && (
-                      <Link
-                        href={publicProfilePath}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200/80 bg-white/85 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:border-blue-300 hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-white dark:hover:border-blue-500/40 dark:hover:bg-slate-900"
-                      >
-                        <span>{t('profile.publicProfile.viewOwn')}</span>
-                        <span aria-hidden>↗</span>
-                      </Link>
-                    )}
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      {t('profile.publicProfile.previewHint')}
-                    </p>
                   </div>
                 </div>
-              </div>
 
-              {/* Summary Cards */}
-              <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {summaryCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 dark:border-slate-700/50 dark:bg-slate-800/50"
-                  >
-                    <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 opacity-0 transition-opacity group-hover:opacity-100" />
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                      {card.label}
-                    </p>
-                    <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
-                      {card.value}
-                    </p>
-                  </div>
-                ))}
+                {/* Summary Cards */}
+                <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  {summaryCards.map((card) => (
+                    <div
+                      key={card.id}
+                      className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 dark:border-slate-700/50 dark:bg-slate-800/50"
+                    >
+                      <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 opacity-0 transition-opacity group-hover:opacity-100" />
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        {card.label}
+                      </p>
+                      <p className="mt-2 text-xl font-bold text-slate-900 dark:text-white">
+                        {card.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* ── Tab Navigation ── */}
           <div className="mt-6">
