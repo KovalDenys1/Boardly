@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -62,9 +64,13 @@ export default function ForgotPasswordPage() {
             >
               {t('auth.forgotPassword.sendAnother')}
             </button>
-            <Link href="/auth/login" className="btn btn-primary w-full block">
+            <button
+              type="button"
+              onClick={() => router.push(buildCurrentAuthUrl('login'))}
+              className="btn btn-primary w-full"
+            >
               {t('auth.forgotPassword.backToLogin')}
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -114,12 +120,13 @@ export default function ForgotPasswordPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           {t('auth.forgotPassword.remember')}{' '}
-          <Link 
-            href="/auth/login"
+          <button
+            type="button"
+            onClick={() => router.push(buildCurrentAuthUrl('login'))}
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >
             {t('auth.forgotPassword.loginLink')}
-          </Link>
+          </button>
         </p>
       </div>
     </div>

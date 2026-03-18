@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 
 interface MobileMenuProps {
@@ -388,7 +389,7 @@ export function MobileMenu({
               ) : isGuestSession ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
                   <button
-                    onClick={() => router.push('/auth/login')}
+                    onClick={() => router.push(buildCurrentAuthUrl('login'))}
                     className="w-full rounded-xl font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 flex items-center justify-center gap-3"
                     style={{
                       padding: 'clamp(12px, 1.2vh, 16px)',
@@ -413,7 +414,7 @@ export function MobileMenu({
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
                   <button
-                    onClick={() => router.push('/auth/login')}
+                    onClick={() => router.push(buildCurrentAuthUrl('login'))}
                     className="w-full rounded-xl font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 flex items-center justify-center gap-3"
                     style={{
                       padding: 'clamp(12px, 1.2vh, 16px)',
@@ -424,7 +425,7 @@ export function MobileMenu({
                     <span>Login</span>
                   </button>
                   <button
-                    onClick={() => router.push('/auth/register')}
+                    onClick={() => router.push(buildCurrentAuthUrl('register'))}
                     className="w-full rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
                     style={{
                       padding: 'clamp(14px, 1.4vh, 18px)',

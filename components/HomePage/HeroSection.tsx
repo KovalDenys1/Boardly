@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { showToast } from '@/lib/i18n-toast'
 
 export default function HeroSection() {
@@ -169,14 +170,14 @@ export default function HeroSection() {
           ) : (
             <>
               <button
-                onClick={() => router.push('/auth/login')}
+                onClick={() => router.push(buildCurrentAuthUrl('login'))}
                 className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
               >
                 <span className="text-2xl">🔐</span>
                 <span>{t('header.login')}</span>
               </button>
               <button
-                onClick={() => router.push('/auth/register')}
+                onClick={() => router.push(buildCurrentAuthUrl('register'))}
                 className="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
               >
                 <span className="text-2xl">🎯</span>

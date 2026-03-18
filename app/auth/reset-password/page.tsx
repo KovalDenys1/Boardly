@@ -6,6 +6,7 @@ import Link from 'next/link'
 import PasswordInput from '@/components/PasswordInput'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -53,7 +54,7 @@ function ResetPasswordForm() {
       }
 
       showToast.success('toast.passwordReset')
-      router.push('/auth/login')
+      router.push(buildCurrentAuthUrl('login'))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reset password'
       setError(errorMessage)
@@ -138,12 +139,13 @@ function ResetPasswordForm() {
 
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           Remember your password?{' '}
-          <Link
-            href="/auth/login"
+          <button
+            type="button"
+            onClick={() => router.push(buildCurrentAuthUrl('login'))}
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >
             Login
-          </Link>
+          </button>
         </p>
       </div>
     </div>
