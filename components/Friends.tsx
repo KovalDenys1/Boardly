@@ -142,15 +142,16 @@ export default function Friends() {
     const loadData = async () => {
       setLoading(true)
       try {
-        await loadFriends()
-        await loadRequests()
-        await loadMyFriendCode()
+        await Promise.all([loadFriends(), loadRequests(), loadMyFriendCode()])
       } finally {
         setLoading(false)
       }
     }
-    void loadData()
 
+    void loadData()
+  }, [loadFriends, loadRequests, loadMyFriendCode])
+
+  useEffect(() => {
     // Auto-refresh only the active view to avoid unnecessary DB fan-out.
     const refreshInterval = setInterval(() => {
       if (activeTab === 'friends') {
@@ -162,7 +163,7 @@ export default function Friends() {
     }, 60000)
 
     return () => clearInterval(refreshInterval)
-  }, [activeTab, loadFriends, loadRequests, loadMyFriendCode])
+  }, [activeTab, loadFriends, loadRequests])
 
   const handleSendRequest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
