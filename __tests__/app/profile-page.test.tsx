@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import ProfilePage from '@/app/profile/page'
@@ -249,15 +249,38 @@ describe('ProfilePage', () => {
     expect(screen.getByText('mock-game-history')).toBeTruthy()
   })
 
-  it('renders a link to the authenticated user public profile', async () => {
-    render(<ProfilePage />)
+  it('opens the authenticated user public profile preview inline after the exit transition', async () => {
+    jest.useFakeTimers()
 
-    const publicProfileLink = await screen.findByRole('link', {
-      name: 'profile.publicProfile.viewOwn',
-    })
+    try {
+      render(<ProfilePage />)
 
-    expect(publicProfileLink.getAttribute('href')).toBe('/u/public-user-1')
-    expect(publicProfileLink.getAttribute('target')).toBe('_blank')
+      const publicProfileButton = await screen.findByRole('button', {
+        name: 'profile.publicProfile.viewOwn',
+      })
+
+      fireEvent.click(publicProfileButton)
+
+      expect(screen.queryByText('profile.publicProfile.previewHint')).toBeNull()
+      expect(screen.queryByText('profile.publicProfile.eyebrow')).toBeNull()
+      expect(
+        (screen.getByRole('button', { name: 'profile.publicProfile.viewOwn' }) as HTMLButtonElement)
+          .disabled
+      ).toBe(true)
+
+      await act(async () => {
+        jest.advanceTimersByTime(220)
+      })
+
+      expect(await screen.findByText('profile.publicProfile.eyebrow')).toBeTruthy()
+      expect(screen.getByText('Player One')).toBeTruthy()
+
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'profile.publicProfile.viewOwn' })).toBeNull()
+      })
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('hides cancel and disables save when there are no profile changes', async () => {

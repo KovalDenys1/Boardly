@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
+import { buildAuthUrl } from '@/lib/auth-redirect'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -29,16 +30,22 @@ type PublicProfileViewProps = {
   profile: PublicProfileViewData
   initialRelation: PublicProfileRelation
   accessState?: PublicProfileAccessState
+  mode?: 'page' | 'embedded-preview'
+  onBack?: () => void
 }
 
 export default function PublicProfileView({
   profile,
   initialRelation,
   accessState = 'available',
+  mode = 'page',
+  onBack,
 }: PublicProfileViewProps) {
   const { t, i18n } = useTranslation()
   const [relation, setRelation] = useState<PublicProfileRelation>(initialRelation)
   const [submitting, setSubmitting] = useState(false)
+  const isEmbeddedPreview = mode === 'embedded-preview'
+  const shouldShowAction = !isEmbeddedPreview
 
   const displayName = profile.username?.trim() || t('profile.publicProfile.playerFallback')
   const memberSince = new Date(profile.createdAt).toLocaleDateString(i18n.language || undefined, {
@@ -48,6 +55,11 @@ export default function PublicProfileView({
   })
 
   const handleBack = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
+
     if (window.history.length > 1) {
       window.history.back()
       return
@@ -100,7 +112,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/profile"
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100 sm:w-auto"
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
         >
           {t('profile.publicProfile.goToOwnProfile')}
         </Link>
@@ -127,7 +139,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/profile?tab=friends"
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 sm:w-auto"
+          className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
         >
           {t('profile.publicProfile.reviewRequest')}
         </Link>
@@ -137,8 +149,8 @@ export default function PublicProfileView({
     if (relation === 'login_required') {
       return (
         <Link
-          href={`/auth/login?callbackUrl=${encodeURIComponent(`/u/${profile.publicProfileId}`)}`}
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-300 sm:w-auto"
+          href={buildAuthUrl('login', `/u/${profile.publicProfileId}`)}
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-300"
         >
           {t('profile.publicProfile.signInToAdd')}
         </Link>
@@ -149,7 +161,7 @@ export default function PublicProfileView({
       return (
         <Link
           href="/auth/verify-email"
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20 sm:w-auto"
+          className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
         >
           {t('profile.publicProfile.verifyEmailToAdd')}
         </Link>
@@ -161,7 +173,7 @@ export default function PublicProfileView({
         type="button"
         onClick={() => void handleAddFriend()}
         disabled={submitting}
-        className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? t('common.loading') : t('profile.publicProfile.addFriend')}
       </button>
@@ -192,12 +204,14 @@ export default function PublicProfileView({
             >
               {t('common.back')}
             </button>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
-            >
-              {t('common.goHome')}
-            </Link>
+            {!isEmbeddedPreview && (
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
+              >
+                {t('common.goHome')}
+              </Link>
+            )}
           </div>
         </div>
       )
@@ -215,9 +229,22 @@ export default function PublicProfileView({
           <p className="mt-4 max-w-xl text-sm text-slate-200/80 sm:text-base">
             {t('profile.publicProfile.friendsOnlySubtitle')}
           </p>
-          <div className="mt-8">
-            {renderAction()}
-          </div>
+          {isEmbeddedPreview && (
+            <div className="mt-8">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+              >
+                {t('common.back')}
+              </button>
+            </div>
+          )}
+          {shouldShowAction && (
+            <div className="mt-8">
+              {renderAction()}
+            </div>
+          )}
         </div>
         <div className="flex items-center border-t border-white/10 bg-black/15 px-6 py-8 sm:px-8 lg:w-[18rem] lg:border-l lg:border-t-0">
           <div className="w-full rounded-3xl border border-dashed border-white/15 bg-white/5 p-5 text-left">
@@ -234,13 +261,26 @@ export default function PublicProfileView({
   }
 
   return (
-    <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-slate-950 text-white">
+    <div
+      className={`relative overflow-hidden bg-slate-950 text-white ${
+        isEmbeddedPreview
+          ? 'rounded-3xl border border-slate-700/50 shadow-xl shadow-slate-950/30'
+          : 'flex min-h-[calc(100vh-64px)] items-center safe-left safe-right'
+      }`}
+      style={isEmbeddedPreview ? undefined : { minHeight: 'calc(100dvh - 64px)' }}
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(34,211,238,0.22),transparent_38%),radial-gradient(circle_at_80%_10%,rgba(96,165,250,0.18),transparent_34%),radial-gradient(circle_at_85%_85%,rgba(168,85,247,0.22),transparent_32%)]"
       />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
+      <div
+        className={`relative ${
+          isEmbeddedPreview
+            ? 'w-full px-4 py-4 sm:px-6 sm:py-6'
+            : 'mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8'
+        }`}
+      >
         {accessState !== 'available' ? renderRestrictedState() : (
         <div className="w-full overflow-hidden rounded-[32px] border border-white/10 bg-white/8 shadow-2xl backdrop-blur-xl">
           <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
@@ -287,9 +327,11 @@ export default function PublicProfileView({
                 </div>
               </div>
 
-              <div className="mt-8">
-                {renderAction()}
-              </div>
+              {shouldShowAction && (
+                <div className="mt-8">
+                  {renderAction()}
+                </div>
+              )}
             </div>
 
             <div className="relative flex items-center justify-center border-t border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.55))] p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">

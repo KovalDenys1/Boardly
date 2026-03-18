@@ -15,6 +15,7 @@ import {
   type AnalyticsGameType,
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 
 type GameType = RegisteredGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
@@ -225,7 +226,7 @@ function CreateLobbyPage() {
     try {
       // Allow both authenticated users and guests to create lobbies
       if (!session && !isGuest) {
-        router.push('/auth/login')
+        router.push(buildCurrentAuthUrl('login'))
         return
       }
 

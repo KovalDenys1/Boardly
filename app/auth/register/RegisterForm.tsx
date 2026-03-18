@@ -13,6 +13,10 @@ import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  buildAuthUrl,
+  resolveReturnUrlFromSearchParams,
+} from '@/lib/auth-redirect'
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -30,7 +34,7 @@ export default function RegisterForm() {
   const [usernameAvailable, setUsernameAvailable] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const returnUrl = searchParams.get('returnUrl') || '/'
+  const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
   const isLobbyInviteFlow =
     returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
 
@@ -307,7 +311,7 @@ export default function RegisterForm() {
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           {t('auth.register.haveAccount')}{' '}
           <Link 
-            href={`/auth/login${returnUrl !== '/' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+            href={buildAuthUrl('login', returnUrl)}
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >
             Login

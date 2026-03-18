@@ -44,6 +44,21 @@ const profile = {
 }
 
 describe('PublicProfileView', () => {
+  it('uses viewport height minus header in page mode', () => {
+    const { container } = render(
+      <PublicProfileView
+        profile={profile}
+        initialRelation="can_send"
+      />
+    )
+
+    const root = container.firstElementChild as HTMLElement
+
+    expect(root.className).toContain('min-h-[calc(100vh-64px)]')
+    expect(root.className).not.toContain('mobile-vh-100')
+    expect(root.getAttribute('style')).toContain('min-height: calc(100dvh - 64px);')
+  })
+
   it('shows a friends-only gate with a request action', () => {
     render(
       <PublicProfileView
@@ -69,5 +84,18 @@ describe('PublicProfileView', () => {
     expect(screen.getByText('This profile is private')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Add Friend' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Go to Home' })).toBeTruthy()
+  })
+
+  it('keeps the public profile as return url for sign in', () => {
+    render(
+      <PublicProfileView
+        profile={profile}
+        initialRelation="login_required"
+      />
+    )
+
+    expect(screen.getByRole('link', { name: 'Sign In to Add' }).getAttribute('href')).toBe(
+      '/auth/login?returnUrl=%2Fu%2FAbC123xYz890'
+    )
   })
 })

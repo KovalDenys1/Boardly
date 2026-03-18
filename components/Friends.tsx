@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { type ReactNode, useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -142,15 +142,16 @@ export default function Friends() {
     const loadData = async () => {
       setLoading(true)
       try {
-        await loadFriends()
-        await loadRequests()
-        await loadMyFriendCode()
+        await Promise.all([loadFriends(), loadRequests(), loadMyFriendCode()])
       } finally {
         setLoading(false)
       }
     }
-    void loadData()
 
+    void loadData()
+  }, [loadFriends, loadRequests, loadMyFriendCode])
+
+  useEffect(() => {
     // Auto-refresh only the active view to avoid unnecessary DB fan-out.
     const refreshInterval = setInterval(() => {
       if (activeTab === 'friends') {
@@ -162,7 +163,7 @@ export default function Friends() {
     }, 60000)
 
     return () => clearInterval(refreshInterval)
-  }, [activeTab, loadFriends, loadRequests, loadMyFriendCode])
+  }, [activeTab, loadFriends, loadRequests])
 
   const handleSendRequest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -359,6 +360,67 @@ export default function Friends() {
     [router]
   )
 
+  const primarySurfaceClassName =
+    'rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/60'
+  const secondarySurfaceClassName =
+    'rounded-2xl border border-slate-200/70 bg-slate-50/80 dark:border-slate-700/60 dark:bg-slate-800/60'
+  const tertiarySurfaceClassName =
+    'rounded-2xl border border-slate-200/70 bg-white/80 dark:border-slate-700/60 dark:bg-slate-900/65'
+
+  const renderAvatar = (
+    name: string,
+    avatar: string | null | undefined,
+    fallbackTextClassName = 'text-xl font-bold'
+  ) => {
+    if (avatar) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatar}
+          alt={name}
+          className="h-full w-full object-cover"
+        />
+      )
+    }
+
+    return (
+      <span className={fallbackTextClassName}>
+        {name.charAt(0).toUpperCase() || '?'}
+      </span>
+    )
+  }
+
+  const renderEmptyState = ({
+    icon,
+    title,
+    description,
+    action,
+  }: {
+    icon: string
+    title: string
+    description: string
+    action?: ReactNode
+  }) => (
+    <div className={`${primarySurfaceClassName} overflow-hidden`}>
+      <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
+        <div className="inline-flex h-16 w-16 items-center justify-center rounded-[22px] border border-slate-200/70 bg-white text-4xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
+          {icon}
+        </div>
+        <h3 className="mt-5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          {title}
+        </h3>
+        <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400 sm:text-base">
+          {description}
+        </p>
+      </div>
+      {action ? (
+        <div className="px-6 py-5 sm:px-8">
+          {action}
+        </div>
+      ) : null}
+    </div>
+  )
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -371,180 +433,160 @@ export default function Friends() {
     <div className="space-y-6">
       {/* Email Verification Required Notice */}
       {!session?.user?.emailVerified && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-xl p-5">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl">⚠️</span>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-                {t('profile.friends.emailVerificationRequired')}
-              </h3>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
-                {t('profile.friends.emailVerificationRequiredDesc')}
-              </p>
-              <a
-                href="/auth/verify-email"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
-              >
-                <span>📧</span>
-                {t('profile.friends.verifyEmail')}
-              </a>
+        <div className="overflow-hidden rounded-3xl border border-amber-200/70 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5">
+          <div className="border-l-4 border-amber-400 px-5 py-5 sm:px-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-2xl shadow-sm dark:bg-amber-500/15">
+                ⚠️
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-bold text-amber-900 dark:text-amber-200">
+                  {t('profile.friends.emailVerificationRequired')}
+                </h3>
+                <p className="mt-2 text-sm text-amber-700 dark:text-amber-300/90">
+                  {t('profile.friends.emailVerificationRequiredDesc')}
+                </p>
+                <a
+                  href="/auth/verify-email"
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-600"
+                >
+                  <span>📧</span>
+                  {t('profile.friends.verifyEmail')}
+                </a>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* My Friend Code Section - Improved Design */}
-      {myFriendCode && session?.user?.emailVerified && (
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl p-[2px]">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-5">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🎯</span>
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                  {t('profile.friends.myFriendCode')}
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:flex">
-                <button
-                  onClick={copyFriendCode}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-sm text-white shadow-md transition-all hover:scale-105 hover:bg-blue-600 active:scale-95"
-                  title={t('profile.friends.copyCode')}
-                >
-                  <span>📋</span>
-                  <span className="hidden sm:inline">{t('profile.friends.copyCode')}</span>
-                </button>
-                <button
-                  onClick={copyProfileLink}
-                  disabled={!myPublicProfileId}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-purple-500 px-3 py-1.5 text-sm text-white shadow-md transition-all hover:scale-105 hover:bg-purple-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
-                  title={t('profile.friends.copyLink')}
-                >
-                  <span>🔗</span>
-                  <span className="hidden sm:inline">{t('profile.friends.copyLink')}</span>
-                </button>
+      <div>
+        {myFriendCode && session?.user?.emailVerified ? (
+          <div className={`${primarySurfaceClassName} relative overflow-hidden`}>
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500" />
+            <div className="p-5 sm:p-6">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    {t('profile.friends.myFriendCode')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyFriendCode}
+                    className={`${secondarySurfaceClassName} mt-4 block w-full border-dashed p-4 transition-colors hover:border-blue-300/80 hover:bg-blue-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 dark:hover:border-blue-500/40 dark:hover:bg-slate-800/80 sm:p-5`}
+                    title={t('profile.friends.copyCode')}
+                    aria-label={t('profile.friends.copyCode')}
+                  >
+                    <p className="text-center font-mono text-3xl font-black tracking-[0.32em] text-slate-900 dark:text-white sm:text-4xl">
+                      {myFriendCode}
+                    </p>
+                  </button>
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                    {t('profile.friends.shareCodeHint')}
+                  </p>
+                </div>
+                <div className="lg:self-stretch">
+                  <div className="flex h-full items-center">
+                    <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-[220px] lg:grid-cols-1">
+                      <button
+                        onClick={copyFriendCode}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600"
+                        title={t('profile.friends.copyCode')}
+                      >
+                        <span>📋</span>
+                        {t('profile.friends.copyCode')}
+                      </button>
+                      <button
+                        onClick={copyProfileLink}
+                        disabled={!myPublicProfileId}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-white dark:hover:bg-slate-900"
+                        title={t('profile.friends.copyLink')}
+                      >
+                        <span>🔗</span>
+                        {t('profile.friends.copyLink')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 border-2 border-dashed border-blue-300 dark:border-blue-600">
-              <div className="text-4xl font-mono font-bold text-center tracking-[0.5em] text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
-                {myFriendCode}
-              </div>
-            </div>
-            
-            <p className="text-xs text-center text-gray-600 dark:text-gray-400 mt-3 flex items-center justify-center gap-1">
-              <span>✨</span>
+          </div>
+        ) : (
+          <div className={`${primarySurfaceClassName} p-5 sm:p-6`}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+              {t('profile.friends.myFriendCode')}
+            </p>
+            <h3 className="mt-4 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {t('profile.friends.addFriend')}
+            </h3>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
               {t('profile.friends.shareCodeHint')}
             </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Action Bar with Tabs and Add Button */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-1">
-        <div className="flex items-center justify-between gap-2">
-          {/* Tabs */}
-          <div className="flex gap-1 flex-1">
-            <button
-              onClick={() => setActiveTab('friends')}
-              className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-lg relative ${
-                activeTab === 'friends'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <span className="text-lg">👥</span>
-                <span className="hidden sm:inline">{t('profile.friends.tabs.friends')}</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'friends'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {friends.length}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className={`${primarySurfaceClassName} p-1.5 lg:flex-1`}>
+          <div className="flex gap-1">
+            {([
+              { id: 'friends', icon: '👥', label: t('profile.friends.tabs.friends'), count: friends.length },
+              { id: 'requests', icon: '📬', label: t('profile.friends.tabs.requests'), count: receivedRequests.length },
+              { id: 'sent', icon: '📤', label: t('profile.friends.tabs.sent'), count: sentRequests.length },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-800 dark:text-blue-400 dark:ring-slate-700/70'
+                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
+                }`}
+              >
+                <span aria-hidden className="text-base">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span
+                  className={`inline-flex min-w-[1.75rem] items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                    activeTab === tab.id
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'
+                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {tab.count}
                 </span>
-              </span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('requests')}
-              className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-lg relative ${
-                activeTab === 'requests'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <span className="text-lg">📬</span>
-                <span className="hidden sm:inline">{t('profile.friends.tabs.requests')}</span>
-                {receivedRequests.length > 0 && (
-                  <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full animate-pulse shadow-lg">
-                    {receivedRequests.length}
-                  </span>
-                )}
-              </span>
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('sent')}
-              className={`flex-1 px-4 py-2.5 font-medium transition-all rounded-lg ${
-                activeTab === 'sent'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <span className="text-lg">📤</span>
-                <span className="hidden sm:inline">{t('profile.friends.tabs.sent')}</span>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                  activeTab === 'sent'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {sentRequests.length}
-                </span>
-              </span>
-            </button>
+              </button>
+            ))}
           </div>
-
-          {/* Add Friend Button */}
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md whitespace-nowrap"
-          >
-            <span className="flex items-center gap-2">
-              <span className="text-lg">➕</span>
-              <span className="hidden sm:inline">{t('profile.friends.addFriend')}</span>
-            </span>
-          </button>
         </div>
+
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 lg:min-w-[220px]"
+        >
+          <span aria-hidden>➕</span>
+          {t('profile.friends.addFriend')}
+        </button>
       </div>
 
       {/* Friends Tab */}
       {activeTab === 'friends' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {friends.length === 0 ? (
-            <div className="text-center py-16 px-4">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center">
-                <span className="text-5xl">👥</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                {t('profile.friends.noFriends')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {t('profile.friends.noFriendsDescription')}
-              </p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg"
-              >
-                <span className="flex items-center gap-2">
+            renderEmptyState({
+              icon: '👥',
+              title: t('profile.friends.noFriends'),
+              description: t('profile.friends.noFriendsDescription'),
+              action: (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600"
+                >
                   <span>➕</span>
                   {t('profile.friends.addFirstFriend')}
-                </span>
-              </button>
-            </div>
+                </button>
+              ),
+            })
           ) : (
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {[...friends]
                 .sort((a, b) => {
                   const aPresence = resolvePresence(a)
@@ -582,63 +624,59 @@ export default function Friends() {
                             }
                           : undefined
                       }
-                      className={`group relative overflow-hidden rounded-xl border border-gray-200 bg-white transition-all dark:border-gray-700 dark:bg-gray-800 ${
+                      className={`${primarySurfaceClassName} group relative overflow-hidden ${
                         friend.publicProfileId
-                          ? 'cursor-pointer hover:scale-[1.02] hover:border-blue-300 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-400/70 dark:hover:border-blue-600'
+                          ? 'cursor-pointer hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400/70 dark:hover:border-blue-500/40'
                           : ''
                       }`}
                     >
-                      {/* Online Status Bar */}
-                      {isOnline && (
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 animate-pulse"></div>
-                      )}
-                      
-                      <div className="flex items-center justify-between p-4">
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          {/* Avatar with online indicator */}
-                          <div className="relative flex-shrink-0">
-                            <div className={`w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shadow-lg ring-2 ${
-                              isOnline ? 'ring-green-400 ring-offset-2 ring-offset-white dark:ring-offset-gray-800' : 'ring-transparent'
-                            }`}>
-                              {friend.username?.[0]?.toUpperCase() || '?'}
+                      <div
+                        className={`absolute inset-y-0 left-0 w-1 ${
+                          isOnline ? 'bg-gradient-to-b from-emerald-400 to-cyan-500' : 'bg-slate-200 dark:bg-slate-700'
+                        }`}
+                      />
+
+                      <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
+                        <div className="flex min-w-0 flex-1 items-start gap-4">
+                          <div className="relative shrink-0">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg ring-4 ring-white dark:ring-slate-800">
+                              {renderAvatar(friend.username || friend.email, friend.avatar)}
                             </div>
                             {isOnline && (
-                              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-3 border-white dark:border-gray-800 rounded-full flex items-center justify-center shadow-lg">
-                                <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                              <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-emerald-500 shadow-sm dark:border-slate-900">
+                                <div className="h-2 w-2 rounded-full bg-white" />
                               </div>
                             )}
                           </div>
 
-                          {/* User Info */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate text-lg">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="truncate text-lg font-bold text-slate-900 dark:text-white">
                                 {friend.username || friend.email}
                               </h4>
                               {presenceBadge && (
-                                <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${presenceBadge.className}`}>
+                                <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${presenceBadge.className}`}>
                                   {presenceBadge.label}
                                 </span>
                               )}
                             </div>
-                            
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                              <span className="flex items-center gap-1">
+
+                            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                              <span className="inline-flex items-center gap-1.5">
                                 <span>🤝</span>
                                 {formatDate(friend.friendsSince)}
                               </span>
                             </div>
 
-                            {/* Statistics */}
                             {friend.statistics && friend.statistics.totalGames > 0 && (
-                              <div className="flex items-center gap-3 text-xs">
-                                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-medium">
+                              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                                <span className="rounded-full bg-blue-100 px-2.5 py-1 font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
                                   🎮 {friend.statistics.totalGames}
                                 </span>
-                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full font-medium">
+                                <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                                   🏆 {friend.statistics.totalWins}
                                 </span>
-                                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full font-medium">
+                                <span className="rounded-full bg-violet-100 px-2.5 py-1 font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
                                   📊 {Math.round(friend.statistics.winRate)}%
                                 </span>
                               </div>
@@ -646,13 +684,12 @@ export default function Friends() {
                           </div>
                         </div>
 
-                        {/* Remove Button */}
                         <button
                           onClick={(event) => {
                             event.stopPropagation()
                             void handleRemoveFriend(friend.friendshipId, friend.username)
                           }}
-                          className="flex-shrink-0 ml-4 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                          className="shrink-0 rounded-2xl p-2.5 text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                           title={t('profile.friends.remove')}
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -670,70 +707,59 @@ export default function Friends() {
 
       {/* Received Requests Tab */}
       {activeTab === 'requests' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {receivedRequests.length === 0 ? (
-            <div className="text-center py-16 px-4">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full flex items-center justify-center">
-                <span className="text-5xl">📬</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                {t('profile.friends.noRequests')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {t('profile.friends.noRequestsDescription')}
-              </p>
-            </div>
+            renderEmptyState({
+              icon: '📬',
+              title: t('profile.friends.noRequests'),
+              description: t('profile.friends.noRequestsDescription'),
+            })
           ) : (
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {receivedRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-2 border-green-200 dark:border-green-800 rounded-xl shadow-sm hover:shadow-md transition-all"
+                  className={`${primarySurfaceClassName} relative overflow-hidden`}
                 >
-                  {/* New Request Indicator */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 via-emerald-400 to-green-400"></div>
-                  
-                  <div className="p-5">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="relative flex-shrink-0">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                          {request.sender?.username?.[0]?.toUpperCase() || '?'}
+                  <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-emerald-400 to-green-500" />
+
+                  <div className="p-5 sm:p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="relative shrink-0">
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg ring-4 ring-white dark:ring-slate-800">
+                          {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
+                        <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 text-xs font-bold text-white shadow-sm dark:border-slate-900">
                           ✓
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 dark:text-gray-100 text-lg mb-1">
+                        <h4 className="text-lg font-bold text-slate-900 dark:text-white">
                           {request.sender?.username || 'Unknown'}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                           <span>📅</span>
                           {formatDate(request.createdAt)}
                         </p>
-                      </div>
-                    </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleAcceptRequest(request.id)}
-                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-medium rounded-lg transition-all hover:scale-105 active:scale-95 shadow-md"
-                      >
-                        <span className="flex items-center justify-center gap-2">
-                          <span>✓</span>
-                          {t('profile.friends.accept')}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => handleRejectRequest(request.id)}
-                        className="flex-1 px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all hover:scale-105 active:scale-95"
-                      >
-                        <span className="flex items-center justify-center gap-2">
-                          <span>✗</span>
-                          {t('profile.friends.reject')}
-                        </span>
-                      </button>
+                        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                          <button
+                            onClick={() => handleAcceptRequest(request.id)}
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600"
+                          >
+                            <span>✓</span>
+                            {t('profile.friends.accept')}
+                          </button>
+                          <button
+                            onClick={() => handleRejectRequest(request.id)}
+                            className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-900"
+                          >
+                            <span>✗</span>
+                            {t('profile.friends.reject')}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -745,52 +771,47 @@ export default function Friends() {
 
       {/* Sent Requests Tab */}
       {activeTab === 'sent' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {sentRequests.length === 0 ? (
-            <div className="text-center py-16 px-4">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 rounded-full flex items-center justify-center">
-                <span className="text-5xl">📤</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-                {t('profile.friends.noSentRequests')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {t('profile.friends.noSentRequestsDescription')}
-              </p>
-            </div>
+            renderEmptyState({
+              icon: '📤',
+              title: t('profile.friends.noSentRequests'),
+              description: t('profile.friends.noSentRequestsDescription'),
+            })
           ) : (
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               {sentRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-lg transition-all hover:border-orange-300 dark:hover:border-orange-600"
+                  className={`${primarySurfaceClassName} relative overflow-hidden`}
                 >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="relative flex-shrink-0">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                          {request.receiver?.username?.[0]?.toUpperCase() || '?'}
+                  <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-amber-400 to-orange-500" />
+
+                  <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
+                      <div className="relative shrink-0">
+                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg ring-4 ring-white dark:ring-slate-800">
+                          {renderAvatar(request.receiver?.username || 'Unknown', request.receiver?.avatar)}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-yellow-500 border-2 border-white dark:border-gray-800 rounded-full flex items-center justify-center">
+                        <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-amber-500 shadow-sm dark:border-slate-900">
                           <span className="text-xs">⏱️</span>
                         </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate text-lg mb-1">
+                        <h4 className="truncate text-lg font-bold text-slate-900 dark:text-white">
                           {request.receiver?.username || 'Unknown'}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                           <span>📅</span>
                           {formatDate(request.createdAt)}
                         </p>
                       </div>
 
-                      <span className="flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full flex items-center gap-1.5 shadow-sm">
-                        <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
-                        {t('profile.friends.pending')}
-                      </span>
                     </div>
+                    <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+                      {t('profile.friends.pending')}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -801,146 +822,216 @@ export default function Friends() {
 
       {/* Add Friend Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-in slide-in-from-bottom-4 duration-300">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-6 rounded-t-2xl">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <span>👋</span>
-                {t('profile.friends.addFriend')}
-              </h3>
-              <p className="text-blue-100 text-sm mt-2">
-                {t('profile.friends.addFriendDescription')}
-              </p>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-5xl overflow-hidden rounded-[30px] border border-white/60 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/95">
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500" />
 
-            <div className="p-6">
-              {/* Toggle between profile link and friend code */}
-              <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700/50 p-1.5 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setAddMethod('link')}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
-                    addMethod === 'link'
-                      ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md scale-105'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="text-lg">🔗</span>
-                    {t('profile.friends.byProfileLink')}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAddMethod('code')}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all ${
-                    addMethod === 'code'
-                      ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-md scale-105'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="text-lg">🔢</span>
-                    {t('profile.friends.byFriendCode')}
-                  </span>
-                </button>
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+              <div className="p-6 sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                      {t('profile.friends.title')}
+                    </p>
+                    <h3 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                      {t('profile.friends.addFriend')}
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                      {t('profile.friends.addFriendDescription')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAddModal}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-lg text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    aria-label={t('common.cancel')}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className={`${secondarySurfaceClassName} mt-6 p-1.5`}>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setAddMethod('link')}
+                      className={`flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
+                        addMethod === 'link'
+                          ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-blue-400 dark:ring-slate-700/70'
+                          : 'text-slate-500 hover:bg-white/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900/60 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <span>🔗</span>
+                      {t('profile.friends.byProfileLink')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddMethod('code')}
+                      className={`flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
+                        addMethod === 'code'
+                          ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-blue-400 dark:ring-slate-700/70'
+                          : 'text-slate-500 hover:bg-white/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900/60 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      <span>🔢</span>
+                      {t('profile.friends.byFriendCode')}
+                    </button>
+                  </div>
+                </div>
+
+                {addMethod === 'link' ? (
+                  <form onSubmit={handleSendRequest} className="mt-6 space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        {t('profile.friends.profileLink')}
+                      </label>
+                      <input
+                        type="text"
+                        value={profileLinkInput}
+                        onChange={(e) => setProfileLinkInput(e.target.value)}
+                        placeholder={t('profile.friends.profileLinkPlaceholder')}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-500/15"
+                        required
+                      />
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        {t('profile.friends.profileLinkHint')}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="submit"
+                        disabled={addLoading}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {addLoading ? (
+                          <>
+                            <LoadingSpinner />
+                            {t('common.loading')}
+                          </>
+                        ) : (
+                          <>
+                            <span>📨</span>
+                            {t('profile.friends.sendRequest')}
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeAddModal}
+                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-900"
+                      >
+                        {t('common.cancel')}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSendRequestByCode} className="mt-6 space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        {t('profile.friends.friendCode')}
+                      </label>
+                      <input
+                        type="text"
+                        value={friendCode}
+                        onChange={(e) => setFriendCode(e.target.value)}
+                        placeholder="12345"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center font-mono text-2xl font-bold tracking-[0.34em] text-slate-900 shadow-sm outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-500/15"
+                        required
+                        maxLength={8}
+                      />
+                      <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                        {t('profile.friends.friendCodeHint')}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="submit"
+                        disabled={addLoading}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {addLoading ? (
+                          <>
+                            <LoadingSpinner />
+                            {t('common.loading')}
+                          </>
+                        ) : (
+                          <>
+                            <span>📨</span>
+                            {t('profile.friends.sendRequest')}
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeAddModal}
+                        className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-900"
+                      >
+                        {t('common.cancel')}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
-              {addMethod === 'link' ? (
-                <form onSubmit={handleSendRequest} className="space-y-5">
-                  <div>
-                    <label className="flex text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 items-center gap-2">
-                      <span>🔗</span>
-                      {t('profile.friends.profileLink')}
-                    </label>
-                    <input
-                      type="text"
-                      value={profileLinkInput}
-                      onChange={(e) => setProfileLinkInput(e.target.value)}
-                      placeholder={t('profile.friends.profileLinkPlaceholder')}
-                      className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      required
-                    />
-                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      {t('profile.friends.profileLinkHint')}
+              <div className="border-t border-slate-200/70 bg-slate-50/80 p-6 dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-8 lg:border-l lg:border-t-0">
+                <div className={tertiarySurfaceClassName}>
+                  <div className="p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                      {addMethod === 'link'
+                        ? t('profile.friends.byProfileLink')
+                        : t('profile.friends.byFriendCode')}
+                    </p>
+                    <h4 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
+                      {t('profile.friends.sendRequest')}
+                    </h4>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                      {addMethod === 'link'
+                        ? t('profile.friends.profileLinkHint')
+                        : t('profile.friends.friendCodeHint')}
                     </p>
                   </div>
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={addLoading}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                      {addLoading ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <LoadingSpinner />
-                          {t('common.loading')}
+                </div>
+
+                {myFriendCode && session?.user?.emailVerified ? (
+                  <div className={`${tertiarySurfaceClassName} mt-4`}>
+                    <div className="p-5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        {t('profile.friends.myFriendCode')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={copyFriendCode}
+                        className={`${secondarySurfaceClassName} mt-3 block w-full border-dashed px-4 py-4 text-center transition-colors hover:border-blue-300/80 hover:bg-blue-50/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 focus-visible:ring-offset-2 dark:hover:border-blue-500/40 dark:hover:bg-slate-800/80`}
+                        title={t('profile.friends.copyCode')}
+                        aria-label={t('profile.friends.copyCode')}
+                      >
+                        <span className="font-mono text-3xl font-black tracking-[0.28em] text-slate-900 dark:text-white">
+                          {myFriendCode}
                         </span>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          <span>📨</span>
-                          {t('profile.friends.sendRequest')}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={closeAddModal}
-                      className="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all hover:scale-105 active:scale-95"
-                    >
-                      {t('common.cancel')}
-                    </button>
+                      </button>
+                      <div className="mt-4 grid gap-2">
+                        <button
+                          type="button"
+                          onClick={copyFriendCode}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600"
+                        >
+                          <span>📋</span>
+                          {t('profile.friends.copyCode')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={copyProfileLink}
+                          disabled={!myPublicProfileId}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700/70 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                          <span>🔗</span>
+                          {t('profile.friends.copyLink')}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </form>
-              ) : (
-                <form onSubmit={handleSendRequestByCode} className="space-y-5">
-                  <div>
-                    <label className="flex text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 items-center gap-2">
-                      <span>🔑</span>
-                      {t('profile.friends.friendCode')}
-                    </label>
-                    <input
-                      type="text"
-                      value={friendCode}
-                      onChange={(e) => setFriendCode(e.target.value)}
-                      placeholder="12345"
-                      className="w-full px-4 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono text-center text-2xl tracking-[0.5em] focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      required
-                      maxLength={8}
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                      {t('profile.friends.friendCodeHint')}
-                    </p>
-                  </div>
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={addLoading}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    >
-                      {addLoading ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <LoadingSpinner />
-                          {t('common.loading')}
-                        </span>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          <span>📨</span>
-                          {t('profile.friends.sendRequest')}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={closeAddModal}
-                      className="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all hover:scale-105 active:scale-95"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  </div>
-                </form>
-              )}
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
