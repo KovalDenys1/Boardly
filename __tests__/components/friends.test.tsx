@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Friends from '@/components/Friends'
+import { showToast } from '@/lib/i18n-toast'
 
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
@@ -44,8 +45,10 @@ jest.mock('@/components/LoadingSpinner', () => {
 
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
 const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>
+const mockShowToast = showToast as jest.Mocked<typeof showToast>
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
+const clipboardWriteText = jest.fn()
 
 function mockJsonResponse(payload: unknown, status = 200) {
   return {
@@ -66,6 +69,13 @@ describe('Friends', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: clipboardWriteText,
+      },
+    })
 
     mockUseRouter.mockReturnValue({
       push: jest.fn(),
@@ -150,5 +160,21 @@ describe('Friends', () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledTimes(4)
     })
+  })
+
+  it('copies the friend code when the code card is clicked', async () => {
+    clipboardWriteText.mockResolvedValue(undefined)
+
+    render(<Friends />)
+
+    await screen.findByText('12345')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'profile.friends.copyCode' })[0])
+
+    await waitFor(() => {
+      expect(clipboardWriteText).toHaveBeenCalledWith('12345')
+    })
+
+    expect(mockShowToast.success).toHaveBeenCalledWith('profile.friends.friendCodeCopied')
   })
 })
