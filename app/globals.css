@@ -523,6 +523,76 @@ input:focus, select:focus, textarea:focus {
   animation: scale-in 0.4s ease-out;
 }
 
+@keyframes profile-surface-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -20px, 0) scale(0.972);
+    filter: blur(18px);
+  }
+}
+
+@keyframes profile-surface-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.978);
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes profile-preview-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.948);
+    filter: blur(20px);
+  }
+  65% {
+    opacity: 1;
+    transform: translate3d(0, -4px, 0) scale(1.01);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-profile-surface-exit {
+  animation: profile-surface-exit 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  transform-origin: center top;
+  will-change: transform, opacity, filter;
+}
+
+.animate-profile-surface-enter {
+  animation: profile-surface-enter 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center top;
+  will-change: transform, opacity, filter;
+}
+
+.animate-profile-preview-enter {
+  animation: profile-preview-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center top;
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-profile-surface-exit,
+  .animate-profile-surface-enter,
+  .animate-profile-preview-enter {
+    animation: none !important;
+  }
+}
+
 /* Pulse animation for timer */
 @keyframes pulse-glow {
   0%, 100% {
