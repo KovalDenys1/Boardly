@@ -348,7 +348,7 @@ function formatDateTime(dateValue: string | undefined): string | null {
 
 function getCurrentStepDescription(actorLabel: string | null, actionDetail: string | null): string | null {
   if (actorLabel && actionDetail) {
-    return `${actorLabel} - ${actionDetail}`
+    return `${actorLabel} • ${actionDetail}`
   }
 
   if (actionDetail) {
@@ -405,6 +405,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
 
   const snapshots = data?.replay.snapshots ?? []
   const currentSnapshot = snapshots[currentIndex] ?? null
+  const finalSnapshot = snapshots[snapshots.length - 1] ?? null
 
   useEffect(() => {
     if (!isPlaying || snapshots.length <= 1) return
@@ -453,6 +454,11 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
     return resolveWinnerLabel(currentSnapshot.state, playerNameById, t)
   }, [currentSnapshot, playerNameById, t])
 
+  const finalWinnerLabel = useMemo(() => {
+    if (!finalSnapshot) return null
+    return resolveWinnerLabel(finalSnapshot.state, playerNameById, t)
+  }, [finalSnapshot, playerNameById, t])
+
   const phaseLabel = useMemo(() => {
     if (!currentSnapshot) return null
     return resolvePhaseLabel(currentSnapshot.state)
@@ -467,6 +473,54 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
     if (!data || !currentSnapshot) return []
     return resolveStandings(currentSnapshot.state, data.game.players, playerNameById)
   }, [currentSnapshot, data, playerNameById])
+
+  const finalStatus = data?.game.status || currentStatus || null
+  const replaySummary = useMemo(() => {
+    if (finalWinnerLabel) {
+      return t('profile.gameReplay.summaryWinner', { player: finalWinnerLabel })
+    }
+
+    if (finalStatus === 'finished') {
+      return t('profile.gameReplay.summaryFinished')
+    }
+
+    if (finalStatus === 'abandoned') {
+      return t('profile.gameReplay.summaryAbandoned')
+    }
+
+    if (finalStatus === 'cancelled') {
+      return t('profile.gameReplay.summaryCancelled')
+    }
+
+    return t('profile.gameReplay.summaryInProgress')
+  }, [finalStatus, finalWinnerLabel, t])
+
+  const replayOverviewFacts = useMemo<ReplayFact[]>(() => {
+    if (!data) return []
+
+    return [
+      {
+        label: t('profile.gameReplay.players'),
+        value: String(data.game.players.length),
+      },
+      {
+        label: t('profile.gameReplay.totalSteps'),
+        value: String(snapshots.length),
+      },
+      {
+        label: t('profile.gameReplay.started'),
+        value: formatDateTime(data.game.createdAt) || '-',
+      },
+      {
+        label: t('profile.gameReplay.winner'),
+        value:
+          finalWinnerLabel ||
+          (finalStatus === 'finished'
+            ? t('profile.gameReplay.draw')
+            : t('profile.gameResults.noWinner')),
+      },
+    ]
+  }, [data, finalStatus, finalWinnerLabel, snapshots.length, t])
 
   const currentStepTitle = useMemo(() => {
     if (!currentSnapshot) return t('profile.gameReplay.title')
@@ -573,183 +627,289 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
       isOpen={!!gameId}
       onClose={onClose}
       title={data?.game.lobbyName || t('profile.gameReplay.title')}
-      maxWidth="2xl"
+      maxWidth="4xl"
+      mobileFullscreen
     >
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-12 sm:py-16">
           <LoadingSpinner />
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200 sm:p-5">
           {error}
         </div>
       ) : !data || snapshots.length === 0 ? (
-        <div className="py-10 text-center text-gray-600 dark:text-gray-300">
+        <div className="py-10 text-center text-gray-600 dark:text-gray-300 sm:py-14">
           {t('profile.gameReplay.noData')}
         </div>
       ) : (
         <div className="space-y-5">
-          <section className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4 dark:border-slate-700 dark:bg-slate-900/50 sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0 space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  {currentStatus && (
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
-                        currentStatus
-                      )}`}
-                    >
-                      {formatGameStatusLabel(currentStatus, t)}
+          <section className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70">
+            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-4 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0 space-y-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                      {t('profile.gameReplay.overview')}
+                    </p>
+                    <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">
+                      {formatGameTypeLabel(data.game.gameType)}
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                      {replaySummary}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      {t('profile.gameReplay.replayGuide')}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {finalStatus && (
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
+                          finalStatus
+                        )}`}
+                      >
+                        {formatGameStatusLabel(finalStatus, t)}
+                      </span>
+                    )}
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      {formatGameTypeLabel(data.game.gameType)}
                     </span>
-                  )}
-                  {data.game.lobbyCode && (
-                    <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                      {t('profile.gameReplay.lobbyCode')}: {data.game.lobbyCode}
-                    </span>
-                  )}
+                    {data.game.lobbyCode && (
+                      <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                        {data.game.lobbyCode}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {data.game.players.map((player) => (
+                      <span
+                        key={player.userId}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        {playerNameById.get(player.userId) || player.userId}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    {t('profile.gameReplay.overview')}
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
-                    {formatGameTypeLabel(data.game.gameType)}
-                  </h3>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {data.game.players.map((player) => (
-                    <span
-                      key={player.userId}
-                      className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[24rem]">
+                  {replayOverviewFacts.map((fact) => (
+                    <div
+                      key={fact.label}
+                      className="rounded-2xl border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-800/70"
                     >
-                      {playerNameById.get(player.userId) || player.userId}
-                    </span>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                        {fact.label}
+                      </div>
+                      <div className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
+                        {fact.value}
+                      </div>
+                    </div>
                   ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:min-w-[21rem]">
-                <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    {t('profile.gameReplay.players')}
-                  </div>
-                  <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    {data.game.players.length}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    {t('profile.gameReplay.totalSteps')}
-                  </div>
-                  <div className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-50">
-                    {snapshots.length}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    {t('profile.gameReplay.started')}
-                  </div>
-                  <div className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {formatDateTime(data.game.createdAt) || '-'}
-                  </div>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    {t('profile.gameReplay.updated')}
-                  </div>
-                  <div className="mt-2 text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {formatDateTime(data.game.updatedAt) || formatDateTime(currentSnapshot?.createdAt) || '-'}
-                  </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:p-5">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={togglePlayPause}
-                  disabled={snapshots.length <= 1}
-                  className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
-                >
-                  {isPlaying ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
-                </button>
-                <button
-                  type="button"
-                  onClick={stepBack}
-                  disabled={currentIndex === 0}
-                  className="rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-                >
-                  {t('profile.gameReplay.stepBack')}
-                </button>
-                <button
-                  type="button"
-                  onClick={stepForward}
-                  disabled={currentIndex >= snapshots.length - 1}
-                  className="rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-                >
-                  {t('profile.gameReplay.stepForward')}
-                </button>
-                <label
-                  htmlFor="replay-speed"
-                  className="ml-auto text-sm font-medium text-slate-600 dark:text-slate-300"
-                >
-                  {t('profile.gameReplay.speed')}
-                </label>
-                <select
-                  id="replay-speed"
-                  value={speed}
-                  onChange={(event) => setSpeed(Number(event.target.value))}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  {REPLAY_SPEEDS.map((value) => (
-                    <option key={value} value={value}>
-                      {value}x
-                    </option>
-                  ))}
-                </select>
+          <section className="rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={togglePlayPause}
+                    disabled={snapshots.length <= 1}
+                    className="min-h-11 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
+                  >
+                    {isPlaying ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stepBack}
+                    disabled={currentIndex === 0}
+                    className="min-h-11 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                  >
+                    {t('profile.gameReplay.stepBack')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stepForward}
+                    disabled={currentIndex >= snapshots.length - 1}
+                    className="min-h-11 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                  >
+                    {t('profile.gameReplay.stepForward')}
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min={0}
+                    max={Math.max(0, snapshots.length - 1)}
+                    value={currentIndex}
+                    onChange={(event) => onSeek(Number(event.target.value))}
+                    className="w-full"
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span>
+                      {t('profile.gameReplay.stepOf', {
+                        current: currentIndex + 1,
+                        total: snapshots.length,
+                      })}
+                    </span>
+                    <span>{formatDateTime(currentSnapshot?.createdAt) || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] xl:min-w-[19rem]">
+                <div>
+                  <label
+                    htmlFor="replay-speed"
+                    className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300"
+                  >
+                    {t('profile.gameReplay.speed')}
+                  </label>
+                  <select
+                    id="replay-speed"
+                    value={speed}
+                    onChange={(event) => setSpeed(Number(event.target.value))}
+                    className="min-h-11 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    {REPLAY_SPEEDS.map((value) => (
+                      <option key={value} value={value}>
+                        {value}x
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <a
                   href={`/api/game/${gameId}/replay?download=1`}
-                  className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                  className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
                 >
                   {t('profile.gameReplay.download')}
                 </a>
               </div>
-
-              <div className="space-y-2">
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(0, snapshots.length - 1)}
-                  value={currentIndex}
-                  onChange={(event) => onSeek(Number(event.target.value))}
-                  className="w-full"
-                />
-                <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 dark:text-slate-300">
-                  <span>
-                    {t('profile.gameReplay.stepOf', {
-                      current: currentIndex + 1,
-                      total: snapshots.length,
-                    })}
-                  </span>
-                  <span>{formatDateTime(currentSnapshot?.createdAt) || '-'}</span>
-                </div>
-              </div>
             </div>
           </section>
 
-          <div className="grid gap-4 xl:grid-cols-[0.95fr_1.35fr]">
-            <aside className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:p-5">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.85fr)]">
+            <div className="space-y-4">
+              <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                      {t('profile.gameReplay.currentStep')}
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
+                      {currentStepTitle}
+                    </h3>
+                  </div>
+                  <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
+                    {t('profile.gameReplay.stepLabel', { value: currentIndex + 1 })}
+                  </span>
+                </div>
+
+                {currentStepDescription && (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    {currentStepDescription}
+                  </p>
+                )}
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {currentFacts.map((fact) => (
+                    <div
+                      key={`${fact.label}-${fact.value}`}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50"
+                    >
+                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                        {fact.label}
+                      </div>
+                      <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {fact.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {standings.some((entry) => entry.score !== null) && (
+                <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                      {t('profile.gameReplay.scoreboard')}
+                    </h4>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {standings.map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className={`rounded-2xl border p-4 ${
+                          entry.isWinner
+                            ? 'border-amber-300 bg-amber-50 dark:border-amber-500 dark:bg-amber-950/30'
+                            : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                              {t('profile.gameReplay.rankValue', { value: index + 1 })}
+                            </div>
+                            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              {entry.name}
+                            </div>
+                          </div>
+                          {entry.isWinner && (
+                            <span className="rounded-full bg-amber-200 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
+                              {t('profile.gameReplay.winner')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+                          {entry.score ?? '-'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <details className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {t('profile.gameReplay.advancedDetails')}
+                </summary>
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  <div>
+                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      {t('profile.gameReplay.actionPayload')}
+                    </h4>
+                    <pre className="max-h-72 overflow-auto rounded-2xl bg-slate-950 p-3 text-xs text-slate-100">
+                      {currentSnapshot ? toPrettyJson(currentSnapshot.actionPayload) : 'null'}
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      {t('profile.gameReplay.state')}
+                    </h4>
+                    <pre className="max-h-72 overflow-auto rounded-2xl bg-slate-950 p-3 text-xs text-slate-100">
+                      {currentSnapshot ? toPrettyJson(currentSnapshot.state) : 'null'}
+                    </pre>
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            <aside className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
               <div className="mb-4">
                 <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   {t('profile.gameReplay.timeline')}
                 </h4>
               </div>
-              <div className="max-h-[26rem] space-y-2 overflow-auto pr-1">
+              <div className="max-h-[20rem] space-y-2 overflow-auto pr-1 sm:max-h-[24rem] xl:max-h-[42rem]">
                 {snapshots.map((snapshot, index) => {
                   const snapshotActor =
                     snapshot.playerId ? playerNameById.get(snapshot.playerId) || snapshot.playerId : null
@@ -793,111 +953,6 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                 })}
               </div>
             </aside>
-
-            <div className="space-y-4">
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {t('profile.gameReplay.currentStep')}
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
-                      {currentStepTitle}
-                    </h3>
-                  </div>
-                  <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                    {t('profile.gameReplay.stepLabel', { value: currentIndex + 1 })}
-                  </span>
-                </div>
-
-                {currentStepDescription && (
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                    {currentStepDescription}
-                  </p>
-                )}
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {currentFacts.map((fact) => (
-                    <div
-                      key={`${fact.label}-${fact.value}`}
-                      className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50"
-                    >
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                        {fact.label}
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {fact.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {standings.some((entry) => entry.score !== null) && (
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:p-5">
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {t('profile.gameReplay.scoreboard')}
-                    </h4>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {standings.map((entry, index) => (
-                      <div
-                        key={entry.id}
-                        className={`rounded-xl border p-3 ${
-                          entry.isWinner
-                            ? 'border-amber-300 bg-amber-50 dark:border-amber-500 dark:bg-amber-950/30'
-                            : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                              {t('profile.gameReplay.rankValue', { value: index + 1 })}
-                            </div>
-                            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              {entry.name}
-                            </div>
-                          </div>
-                          {entry.isWinner && (
-                            <span className="rounded-full bg-amber-200 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
-                              {t('profile.gameReplay.winner')}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                          {entry.score ?? '-'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <details className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 sm:p-5">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {t('profile.gameReplay.advancedDetails')}
-                </summary>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  <div>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                      {t('profile.gameReplay.actionPayload')}
-                    </h4>
-                    <pre className="max-h-72 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-100">
-                      {currentSnapshot ? toPrettyJson(currentSnapshot.actionPayload) : 'null'}
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                      {t('profile.gameReplay.state')}
-                    </h4>
-                    <pre className="max-h-72 overflow-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-100">
-                      {currentSnapshot ? toPrettyJson(currentSnapshot.state) : 'null'}
-                    </pre>
-                  </div>
-                </div>
-              </details>
-            </div>
           </div>
         </div>
       )}

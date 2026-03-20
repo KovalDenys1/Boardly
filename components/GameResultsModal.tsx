@@ -61,6 +61,21 @@ function getScoreValue(player: Player): number {
   return player.finalScore ?? player.score
 }
 
+function formatOrdinalPlace(place: number, locale: string): string {
+  if (locale.startsWith('ru') || locale.startsWith('uk') || locale.startsWith('no')) {
+    return `#${place}`
+  }
+
+  const mod10 = place % 10
+  const mod100 = place % 100
+
+  if (mod10 === 1 && mod100 !== 11) return `${place}st`
+  if (mod10 === 2 && mod100 !== 12) return `${place}nd`
+  if (mod10 === 3 && mod100 !== 13) return `${place}rd`
+
+  return `${place}th`
+}
+
 export default function GameResultsModal({
   gameId,
   onClose,
@@ -124,6 +139,15 @@ export default function GameResultsModal({
       return t(key)
     }
     return status.replace(/_/g, ' ')
+  }
+
+  function formatShortDate(dateString: string): string {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
   }
 
   function getPlayerLabel(player: Player, index: number): string {
@@ -228,31 +252,51 @@ export default function GameResultsModal({
   const winner = rankedPlayers.find((player) => player.isWinner) ?? null
   const winnerLabel = winner
     ? getPlayerLabel(winner, rankedPlayers.indexOf(winner))
-    : game?.status === 'finished'
-      ? t('profile.gameReplay.draw')
-      : t('profile.gameResults.winnerPending')
+    : !game
+      ? ''
+      : game.status === 'finished'
+        ? t('profile.gameReplay.draw')
+        : game.status === 'cancelled' || game.status === 'abandoned'
+          ? t('profile.gameResults.noWinner')
+          : t('profile.gameResults.winnerPending')
+
+  const locale = typeof navigator === 'undefined' ? 'en' : navigator.language
+  const summaryText = game
+    ? winner
+      ? t('profile.gameResults.summaryWinner', { player: winnerLabel })
+      : game.status === 'finished'
+        ? t('profile.gameResults.summaryDraw')
+        : game.status === 'cancelled'
+          ? t('profile.gameResults.summaryCancelled')
+          : game.status === 'abandoned'
+          ? t('profile.gameResults.summaryAbandoned')
+          : t('profile.gameResults.summaryInProgress')
+    : ''
 
   const quickFacts = game
     ? [
-        { label: t('profile.gameReplay.lobbyCode'), value: game.lobbyCode },
-        { label: t('profile.gameReplay.players'), value: String(game.players.length) },
         {
-          label: t('profile.gameReplay.totalSteps'),
-          value: game.hasReplay
-            ? String(game.replayStepCount)
-            : t('profile.stats.dashboard.common.notAvailable'),
+          label: t('profile.gameResults.winnerLabel'),
+          value: winnerLabel,
         },
-        { label: t('profile.gameReplay.winner'), value: winnerLabel },
-      ]
-    : []
-
-  const timelineFacts = game
-    ? [
-        { label: t('profile.gameReplay.started'), value: formatDate(game.createdAt) },
-        { label: t('profile.gameReplay.updated'), value: formatDate(game.updatedAt) },
-        ...(game.abandonedAt
-          ? [{ label: t('profile.gameHistory.abandoned'), value: formatDate(game.abandonedAt) }]
-          : []),
+        {
+          label: t('profile.gameResults.playedOn'),
+          value: formatShortDate(game.createdAt),
+        },
+        {
+          label: t('profile.gameReplay.players'),
+          value: String(game.players.length),
+        },
+        {
+          label: t('profile.gameResults.replayStatus'),
+          value: game.hasReplay
+            ? t('profile.gameResults.replayAvailable')
+            : t('profile.gameResults.replayUnavailable'),
+        },
+        {
+          label: t('profile.gameResults.roomCode'),
+          value: game.lobbyCode,
+        },
       ]
     : []
 
@@ -261,7 +305,9 @@ export default function GameResultsModal({
       isOpen={!!gameId}
       onClose={onClose}
       title={game?.lobbyName || t('profile.gameResults.title')}
-      maxWidth="2xl"
+      maxWidth="4xl"
+      mobileFullscreen
+      bodyPadding="none"
     >
       {loading ? (
         <div className="flex items-center justify-center py-14">
@@ -286,8 +332,11 @@ export default function GameResultsModal({
                   >
                     {game.lobbyName}
                   </h3>
+                  <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {summaryText}
+                  </p>
                   <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                    {formatGameTypeLabel(game.gameType)} • {formatDate(game.createdAt)}
+                    {t('profile.gameResults.playedOn')} {formatDate(game.createdAt)}
                   </p>
                 </div>
 
@@ -300,24 +349,24 @@ export default function GameResultsModal({
                     {formatStatusLabel(game.status)}
                   </span>
                   <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                    {game.lobbyCode}
+                    {formatGameTypeLabel(game.gameType)}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="grid gap-5 p-5 lg:grid-cols-[1.05fr_0.95fr] sm:p-6">
+            <div className="grid gap-5 p-5 xl:grid-cols-[1.05fr_0.95fr] sm:p-6">
               <div className={`${secondarySurfaceClassName} flex h-full flex-col justify-between p-5`}>
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                     {t('profile.gameResults.replay')}
                   </p>
                   <h3 className="mt-3 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
+                    {t('profile.gameResults.replay')}
                   </h3>
                   <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400">
                     {game.hasReplay
-                      ? t('profile.gameResults.replayReady', { count: game.replayStepCount })
+                      ? t('profile.gameResults.replayReady')
                       : t('profile.gameResults.replayUnavailableHint')}
                   </p>
                 </div>
@@ -340,7 +389,7 @@ export default function GameResultsModal({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                   {t('profile.gameResults.quickFacts')}
                 </p>
-                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
                   {quickFacts.map((fact) => (
                     <div key={fact.label} className={`${tertiarySurfaceClassName} min-h-[5.5rem] p-4`}>
                       <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
@@ -359,38 +408,17 @@ export default function GameResultsModal({
           <div className={`${primarySurfaceClassName} overflow-hidden`}>
             <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-4 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                {t('profile.gameReplay.overview')}
-              </p>
-              <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                {t('profile.gameReplay.overview')}
-              </h3>
-            </div>
-
-            <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3 sm:p-6">
-              {timelineFacts.map((fact) => (
-                <div key={fact.label} className={`${secondarySurfaceClassName} min-h-[5.5rem] p-4`}>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    {fact.label}
-                  </p>
-                  <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-                    {fact.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className={`${primarySurfaceClassName} overflow-hidden`}>
-            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-4 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
                 {t('profile.gameResults.rankings')}
               </p>
               <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                 {t('profile.gameResults.rankings')}
               </h3>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                {t('profile.gameResults.standingsDescription')}
+              </p>
             </div>
 
-            <div className="space-y-3 p-5 sm:p-6">
+            <div className="grid gap-3 p-5 lg:grid-cols-2 sm:p-6">
               {rankedPlayers.map((player, index) => (
                 <div
                   key={player.id}
@@ -409,7 +437,13 @@ export default function GameResultsModal({
                         {getPlayerLabel(player, index)}
                       </div>
                       <p className="mt-1 text-xs opacity-70">
-                        {player.placement ? `Placement #${player.placement}` : formatStatusLabel(game.status)}
+                        {player.isWinner
+                          ? t('profile.gameResults.winnerBadge')
+                          : player.placement
+                            ? t('profile.gameResults.placeLabel', {
+                                place: formatOrdinalPlace(player.placement, locale),
+                              })
+                            : formatStatusLabel(game.status)}
                       </p>
                     </div>
                   </div>

@@ -3,13 +3,7 @@ import GameResultsModal from '@/components/GameResultsModal'
 
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown>) => {
-      if (key === 'profile.gameResults.replayReady' && options) {
-        return `${key}:${options.count}`
-      }
-
-      return key
-    },
+    t: (key: string) => key,
   }),
 }))
 
@@ -128,7 +122,8 @@ describe('GameResultsModal', () => {
 
     expect((await screen.findAllByText('Friday Match')).length).toBeGreaterThan(0)
     expect(screen.getByText('profile.gameResults.quickFacts')).toBeTruthy()
-    expect(screen.getByText('profile.gameResults.replayReady:18')).toBeTruthy()
+    expect(screen.getByText('profile.gameResults.replayReady')).toBeTruthy()
+    expect(screen.getByText('profile.gameResults.summaryWinner')).toBeTruthy()
     expect(screen.getAllByText('ABCD1').length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('button', { name: 'profile.gameReplay.watch' }))
@@ -175,5 +170,42 @@ describe('GameResultsModal', () => {
     await waitFor(() => {
       expect((replayButton as HTMLButtonElement).disabled).toBe(true)
     })
+  })
+
+  it('shows cancelled games as cancelled without implying the match is still in progress', async () => {
+    mockFetch.mockResolvedValue(
+      mockJsonResponse({
+        id: 'game-3',
+        lobbyCode: 'IJKL3',
+        lobbyName: 'Cancelled Match',
+        gameType: 'uno',
+        status: 'cancelled',
+        createdAt: '2026-03-03T10:00:00.000Z',
+        updatedAt: '2026-03-03T10:05:00.000Z',
+        finishedAt: null,
+        abandonedAt: null,
+        hasReplay: false,
+        replayStepCount: 0,
+        state: {},
+        players: [
+          {
+            id: 'player-1',
+            username: 'Player One',
+            avatar: null,
+            isBot: false,
+            score: 0,
+            finalScore: null,
+            placement: null,
+            isWinner: false,
+          },
+        ],
+      })
+    )
+
+    render(<GameResultsModal gameId="game-3" onClose={jest.fn()} />)
+
+    expect(await screen.findByText('profile.gameResults.summaryCancelled')).toBeTruthy()
+    expect(screen.getByText('profile.gameResults.noWinner')).toBeTruthy()
+    expect(screen.queryByText('profile.gameResults.winnerPending')).toBeNull()
   })
 })
