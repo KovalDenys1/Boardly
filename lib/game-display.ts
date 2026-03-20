@@ -28,7 +28,7 @@ export function getGameStatusBadgeColor(status: string): string {
     case 'abandoned':
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
     case 'cancelled':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      return 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/15 dark:text-rose-100 dark:ring-rose-500/30'
     default:
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
   }
