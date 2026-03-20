@@ -498,13 +498,16 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                       <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                         {t('profile.stats.dashboard.summary.wld')}
                       </h4>
-                      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+                      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
                         {overallInsightItems.map((item) => (
-                          <div key={item.id} className={`${tertiarySurfaceClassName} px-4 py-4 text-center`}>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                          <div
+                            key={item.id}
+                            className={`${tertiarySurfaceClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}
+                          >
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 sm:text-[11px]">
                               {item.label}
                             </p>
-                            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            <p className="mt-3 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
                               {item.value}
                             </p>
                           </div>
@@ -513,15 +516,15 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                     </div>
                   </div>
 
-                  <div className={`${secondarySurfaceClassName} p-5`}>
+                  <div className={`${secondarySurfaceClassName} flex h-full flex-col p-5`}>
                     <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                       {t('profile.stats.dashboard.summary.quickFacts')}
                     </h4>
-                    <div className="mt-4 grid gap-3">
+                    <div className="mt-4 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-fr xl:grid-cols-1 xl:grid-rows-4">
                       {quickFacts.map((fact) => (
                         <div
                           key={fact.id}
-                          className={`${tertiarySurfaceClassName} flex items-center justify-between gap-4 px-4 py-3`}
+                          className={`${tertiarySurfaceClassName} flex h-full min-h-[96px] items-center justify-between gap-4 px-4 py-3`}
                         >
                           <span className="text-sm text-slate-600 dark:text-slate-300">{fact.label}</span>
                           <span className="text-base font-semibold text-slate-900 dark:text-white">
