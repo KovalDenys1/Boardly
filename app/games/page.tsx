@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 
 interface Game {
   id: string
@@ -177,7 +178,7 @@ export default function GamesPage() {
   useEffect(() => {
     // Don't redirect guests - they can access games page
     if (status === 'unauthenticated' && !isGuest) {
-      router.push('/auth/login')
+      router.push(buildCurrentAuthUrl('login'))
     }
   }, [status, isGuest, router])
 

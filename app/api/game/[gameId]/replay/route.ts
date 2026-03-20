@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { decodeGameReplaySnapshots } from '@/lib/game-replay'
+import { getGameDurationMs, getGameEndedAt } from '@/lib/game-display'
 import { parsePersistedGameState } from '@/lib/persisted-game-state'
 
 function shouldDownloadReplay(value: string | null): boolean {
@@ -61,6 +62,13 @@ export async function GET(
       )
     }
 
+    if (game.status !== 'finished') {
+      return NextResponse.json(
+        { error: 'Replay is only available for finished games' },
+        { status: 409 }
+      )
+    }
+
     const rawSnapshots = await prisma.gameStateSnapshots.findMany({
       where: { gameId: game.id },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -93,6 +101,8 @@ export async function GET(
           ]
 
     const resolvedGameType = game.lobby.gameType || game.gameType
+    const endedAt = getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
+    const durationMs = getGameDurationMs(game.createdAt, endedAt)
 
     const replayPayload = {
       game: {
@@ -103,6 +113,8 @@ export async function GET(
         status: game.status,
         createdAt: game.createdAt.toISOString(),
         updatedAt: game.updatedAt.toISOString(),
+        endedAt: endedAt?.toISOString() || null,
+        durationMs,
         players: game.players.map((player) => ({
           userId: player.userId,
           username: player.user.username ?? null,

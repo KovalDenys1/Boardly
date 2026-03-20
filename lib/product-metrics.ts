@@ -1,4 +1,4 @@
-import { GameStatus, GameType } from '@prisma/client'
+import { GameStatus, GameType } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 
 const DEFAULT_ANALYTICS_GAME_TYPES: string[] = [

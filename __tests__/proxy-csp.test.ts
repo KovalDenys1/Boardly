@@ -4,7 +4,7 @@
 
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { middleware } from '@/middleware'
+import { proxy } from '@/proxy'
 
 jest.mock('next-auth/jwt', () => ({
   getToken: jest.fn(),
@@ -22,7 +22,7 @@ jest.mock('@/lib/socket-url', () => ({
 
 const mockGetToken = getToken as jest.MockedFunction<typeof getToken>
 
-describe('middleware CSP policy', () => {
+describe('proxy CSP policy', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetToken.mockResolvedValue(null as any)
@@ -33,7 +33,7 @@ describe('middleware CSP policy', () => {
       method: 'GET',
     })
 
-    const response = await middleware(request)
+    const response = await proxy(request)
     const csp = response.headers.get('Content-Security-Policy')
     const scriptSrcDirective = csp
       ?.split(';')

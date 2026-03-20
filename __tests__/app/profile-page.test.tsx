@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { act, render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import ProfilePage from '@/app/profile/page'
@@ -247,6 +247,40 @@ describe('ProfilePage', () => {
       expect(window.location.search).toContain('tab=history')
     })
     expect(screen.getByText('mock-game-history')).toBeTruthy()
+  })
+
+  it('opens the authenticated user public profile preview inline after the exit transition', async () => {
+    jest.useFakeTimers()
+
+    try {
+      render(<ProfilePage />)
+
+      const publicProfileButton = await screen.findByRole('button', {
+        name: 'profile.publicProfile.viewOwn',
+      })
+
+      fireEvent.click(publicProfileButton)
+
+      expect(screen.queryByText('profile.publicProfile.previewHint')).toBeNull()
+      expect(screen.queryByText('profile.publicProfile.eyebrow')).toBeNull()
+      expect(
+        (screen.getByRole('button', { name: 'profile.publicProfile.viewOwn' }) as HTMLButtonElement)
+          .disabled
+      ).toBe(true)
+
+      await act(async () => {
+        jest.advanceTimersByTime(220)
+      })
+
+      expect(await screen.findByText('profile.publicProfile.eyebrow')).toBeTruthy()
+      expect(screen.getByText('Player One')).toBeTruthy()
+
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'profile.publicProfile.viewOwn' })).toBeNull()
+      })
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('hides cancel and disables save when there are no profile changes', async () => {

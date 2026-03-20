@@ -4,7 +4,15 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
-import { trackLobbyJoined, trackGameStarted, trackStartAloneAutoBotResult, type AnalyticsGameType } from '@/lib/analytics'
+import {
+  trackAuth,
+  trackError,
+  trackFunnelStep,
+  trackLobbyJoined,
+  trackGameStarted,
+  trackStartAloneAutoBotResult,
+  type AnalyticsGameType,
+} from '@/lib/analytics'
 import { showToast } from '@/lib/i18n-toast'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -45,6 +53,14 @@ interface UseLobbyActionsProps {
   guestToken: string | null
   userId: string | null | undefined
   username: string | null
+  setGuestMode: (
+    name: string,
+    options?: {
+      guestId?: string
+      guestName?: string
+      guestToken?: string
+    }
+  ) => Promise<void>
   setError: (error: string) => void
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
@@ -66,6 +82,11 @@ interface LobbySettingsUpdatePayload {
   maxPlayers?: number
   turnTimer?: number
   allowSpectators?: boolean
+}
+
+interface LobbySnapshotResult {
+  lobby: Lobby | null
+  game: Game | null
 }
 
 const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
@@ -106,13 +127,15 @@ function coerceGame(value: unknown): Game | null {
     typeof candidate.id !== 'string' ||
     typeof candidate.status !== 'string' ||
     !('state' in candidate) ||
-    !Array.isArray(candidate.players) ||
-    typeof candidate.currentTurn !== 'number'
+    !Array.isArray(candidate.players)
   ) {
     return null
   }
 
-  return candidate as Game
+  return {
+    ...candidate,
+    currentTurn: typeof candidate.currentTurn === 'number' ? candidate.currentTurn : 0,
+  } as Game
 }
 
 export function useLobbyActions(props: UseLobbyActionsProps) {
@@ -134,6 +157,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     guestName,
     guestToken,
     username,
+    setGuestMode,
     setError,
     setLoading,
     setStartingGame,
@@ -141,72 +165,126 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   } = props
 
   const [password, setPassword] = useState('')
+  const [guestNameInput, setGuestNameInput] = useState(guestName || '')
+  const [isJoiningLobby, setIsJoiningLobby] = useState(false)
 
   // Use ref to avoid circular dependencies
   const loadLobbyRef = useRef<(() => Promise<void>) | null>(null)
   const startGameInFlightRef = useRef(false)
+  const lobbySnapshotRequestRef = useRef<Promise<LobbySnapshotResult> | null>(null)
 
-  const loadLobby = useCallback(async () => {
-    try {
+  useEffect(() => {
+    if (!guestName) {
+      return
+    }
+
+    setGuestNameInput(guestName)
+  }, [guestName])
+
+  const applyLobbySnapshot = useCallback(async (snapshot: LobbySnapshotResult) => {
+    const normalizedLobby = snapshot.lobby
+    const normalizedGame = snapshot.game
+
+    setLobby(normalizedLobby)
+    if (normalizedLobby?.code) {
+      finalizePendingLobbyCreateMetric({
+        lobbyCode: normalizedLobby.code,
+        fallbackGameType: normalizedLobby.gameType || DEFAULT_GAME_TYPE,
+      })
+    }
+
+    if (normalizedGame) {
+      setGame(normalizedGame)
+      if (normalizedGame.state) {
+        try {
+          const parsedState =
+            typeof normalizedGame.state === 'string'
+              ? JSON.parse(normalizedGame.state)
+              : normalizedGame.state
+
+          // Create the correct engine based on game type
+          const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
+          const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
+          setGameEngine(engine)
+        } catch (parseError) {
+          clientLogger.error('Failed to parse game state:', parseError)
+          setError('Game state is corrupted. Please start a new game.')
+        }
+      }
+    }
+  }, [setGame, setGameEngine, setError, setLobby])
+
+  const requestLobbySnapshot = useCallback(async (): Promise<LobbySnapshotResult> => {
+    if (lobbySnapshotRequestRef.current) {
+      return await lobbySnapshotRequestRef.current
+    }
+
+    const request = (async (): Promise<LobbySnapshotResult> => {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken, {
         includeContentType: false,
       })
 
-      const res = await fetch(`/api/lobby/${code}?includeFinished=true`, { headers })
-      const data = await res.json()
+      const res = await fetch(`/api/lobby/${code}?includeFinished=true`, {
+      headers,
+      cache: 'no-store',
+    })
+    const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to load lobby')
-      }
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to load lobby')
+    }
 
       const { lobby: lobbyPayload, activeGame } = normalizeLobbySnapshotResponse(data)
       const normalizedLobby = (lobbyPayload as Lobby | null) ?? null
       const normalizedGame = coerceGame(activeGame)
 
-      setLobby(normalizedLobby)
-      if (normalizedLobby?.code) {
-        finalizePendingLobbyCreateMetric({
-          lobbyCode: normalizedLobby.code,
-          fallbackGameType: normalizedLobby.gameType || DEFAULT_GAME_TYPE,
-        })
+      return {
+        lobby: normalizedLobby,
+        game: normalizedGame,
       }
+    })()
 
-      if (normalizedGame) {
-        setGame(normalizedGame)
-        if (normalizedGame.state) {
-          try {
-            const parsedState =
-              typeof normalizedGame.state === 'string'
-                ? JSON.parse(normalizedGame.state)
-                : normalizedGame.state
-
-            // Create the correct engine based on game type
-            const gt = normalizedLobby?.gameType || DEFAULT_GAME_TYPE
-            const engine = await restoreGameEngineClient(gt, normalizedGame.id, parsedState)
-            setGameEngine(engine)
-          } catch (parseError) {
-            clientLogger.error('Failed to parse game state:', parseError)
-            setError('Game state is corrupted. Please start a new game.')
-          }
-        }
+    lobbySnapshotRequestRef.current = request
+    try {
+      return await request
+    } finally {
+      if (lobbySnapshotRequestRef.current === request) {
+        lobbySnapshotRequestRef.current = null
       }
+    }
+  }, [
+    code,
+    guestId,
+    guestName,
+    guestToken,
+    isGuest,
+  ])
+
+  const fetchLobbySnapshot = useCallback(async (
+    options: { applyState?: boolean } = {}
+  ): Promise<LobbySnapshotResult> => {
+    const applyState = options.applyState !== false
+    const snapshot = await requestLobbySnapshot()
+
+    if (applyState) {
+      await applyLobbySnapshot(snapshot)
+    }
+
+    return snapshot
+  }, [
+    applyLobbySnapshot,
+    requestLobbySnapshot,
+  ])
+
+  const loadLobby = useCallback(async () => {
+    try {
+      await fetchLobbySnapshot({ applyState: true })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
-  }, [
-    code,
-    isGuest,
-    guestId,
-    guestName,
-    guestToken,
-    setLobby,
-    setGame,
-    setGameEngine,
-    setError,
-    setLoading,
-  ])
+  }, [fetchLobbySnapshot, setError, setLoading])
 
   // Update ref when loadLobby changes
   useEffect(() => {
@@ -292,6 +370,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   }, [setChatMessages])
 
   const handleJoinLobby = useCallback(async () => {
+    setIsJoiningLobby(true)
+    setError('')
+
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
 
@@ -339,11 +420,83 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       setChatMessages(prev => [...prev, joinMessage])
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsJoiningLobby(false)
     }
   }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
 
+  const handleGuestJoinLobby = useCallback(async () => {
+    const normalizedGuestName = guestNameInput.trim()
+
+    if (!normalizedGuestName) {
+      setError('Please enter your name')
+      return
+    }
+
+    if (normalizedGuestName.length < 2 || normalizedGuestName.length > 20) {
+      setError('Name must be 2-20 characters')
+      return
+    }
+
+    setIsJoiningLobby(true)
+    setError('')
+
+    try {
+      const response = await fetch(`/api/lobby/${code}/join-guest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          guestName: normalizedGuestName,
+          guestToken: guestToken || undefined,
+          password: password || undefined,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        trackError({
+          errorType: 'auth',
+          errorMessage: data.error || 'Guest join failed',
+          component: 'LobbyPageClient',
+          severity: 'medium',
+        })
+        throw new Error(data.error || 'Failed to join lobby')
+      }
+
+      await setGuestMode(data.guestName || normalizedGuestName, {
+        guestId: data.guestId,
+        guestName: data.guestName || normalizedGuestName,
+        guestToken: data.guestToken,
+      })
+
+      const joinedGame = coerceGame(data.game)
+      if (joinedGame) {
+        setGame(joinedGame)
+      }
+
+      if (loadLobbyRef.current) {
+        await loadLobbyRef.current()
+      }
+
+      trackAuth({
+        event: 'login',
+        method: 'guest',
+        success: true,
+        userId: data.guestId || undefined,
+      })
+      trackFunnelStep('guest-join')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setIsJoiningLobby(false)
+    }
+  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode])
+
   const handleStartGame = useCallback(async () => {
-    if (!game || !lobby?.id) return
+    if (!lobby?.id) return
     if (startGameInFlightRef.current) {
       clientLogger.warn('Start game already in progress, ignoring duplicate request', { code })
       return
@@ -357,14 +510,30 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     try {
       setStartingGame(true)
+      let authoritativeSnapshot: LobbySnapshotResult | null = null
+      try {
+        authoritativeSnapshot = await fetchLobbySnapshot({ applyState: true })
+      } catch (snapshotError) {
+        clientLogger.warn(
+          'Failed to refresh lobby snapshot before starting game:',
+          snapshotError instanceof Error ? snapshotError.message : String(snapshotError)
+        )
+      }
+
+      const effectiveLobby = authoritativeSnapshot?.lobby ?? lobby
+      let effectiveGame = authoritativeSnapshot?.game ?? game
+      if (!effectiveLobby?.id) {
+        throw new Error('Failed to resolve lobby state before starting game')
+      }
+
       const lobbyGameType =
-        typeof lobby.gameType === 'string' ? lobby.gameType : DEFAULT_GAME_TYPE
+        typeof effectiveLobby.gameType === 'string' ? effectiveLobby.gameType : DEFAULT_GAME_TYPE
       const requirements = getLobbyPlayerRequirements(lobbyGameType)
       const gameType = requirements.gameType || DEFAULT_GAME_TYPE
       const supportsBots = requirements.supportsBots
       const requiredMinPlayers = requirements.minPlayersRequired
       const desiredPlayerCount = requirements.desiredPlayerCount
-      let playerCount = game?.players?.length || 0
+      let playerCount = effectiveGame?.players?.length || 0
       const requiresAutoBotFlow = supportsBots && playerCount < desiredPlayerCount
       let autoBotMetricTracked = false
       reportAutoBotFlowResult = (
@@ -397,39 +566,49 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         showToast.dismiss('add-bot')
 
         if (!botResult.success) {
-          reportAutoBotFlowResult(false, 'bot_add_failed')
-          setStartingGame(false)
-          showToast.error('toast.botAddFailed')
-          return
+          try {
+            authoritativeSnapshot = await fetchLobbySnapshot({ applyState: true })
+            effectiveGame = authoritativeSnapshot.game ?? effectiveGame
+            playerCount = effectiveGame?.players?.length || playerCount
+          } catch (refreshError) {
+            clientLogger.warn(
+              'Failed to reconcile lobby after bot add failure:',
+              refreshError instanceof Error ? refreshError.message : String(refreshError)
+            )
+          }
+
+          if (playerCount < requiredMinPlayers) {
+            reportAutoBotFlowResult(false, 'bot_add_failed')
+            setStartingGame(false)
+            showToast.error('toast.botAddFailed')
+            return
+          }
+        } else {
+          announceBotJoined(botResult.botName, botResult.botDifficulty)
+
+          try {
+            authoritativeSnapshot = await fetchLobbySnapshot({ applyState: true })
+            effectiveGame = authoritativeSnapshot.game ?? effectiveGame
+            playerCount = effectiveGame?.players?.length || Math.max(playerCount + 1, game?.players?.length || 0)
+          } catch (refreshError) {
+            clientLogger.warn(
+              'Failed to refresh lobby after bot add:',
+              refreshError instanceof Error ? refreshError.message : String(refreshError)
+            )
+            playerCount = Math.max(playerCount + 1, game?.players?.length || 0)
+          }
         }
-
-        // Announce bot joined
-        announceBotJoined(botResult.botName, botResult.botDifficulty)
-
-        // Wait for lobby to reload and get updated player list
-        if (loadLobbyRef.current) {
-          await loadLobbyRef.current()
-        }
-
-        // Small delay to ensure state is updated
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // Refresh local count after reconciliation.
-        // `game` in this closure can be stale until React re-renders, so never
-        // trust it to be lower than the successful bot add we just performed.
-        const observedPlayerCount = game?.players?.length || 0
-        playerCount = Math.max(playerCount + 1, observedPlayerCount)
       }
 
       if (playerCount < requiredMinPlayers) {
-          reportAutoBotFlowResult(false, 'insufficient_players')
-          setStartingGame(false)
-          showToast.error(
-            'toast.gameStartFailed',
-            `Need at least ${requiredMinPlayers} players to start ${gameType.replace(/_/g, ' ')}.`
-          )
-          return
-        }
+        reportAutoBotFlowResult(false, 'insufficient_players')
+        setStartingGame(false)
+        showToast.error(
+          'toast.gameStartFailed',
+          `Need at least ${requiredMinPlayers} players to start ${gameType.replace(/_/g, ' ')}.`
+        )
+        return
+      }
 
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
       const res = await fetch('/api/game/create', {
@@ -437,9 +616,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         headers,
         body: JSON.stringify({
           gameType,
-          lobbyId: lobby.id,
+          lobbyId: effectiveLobby.id,
           config: {
-            maxPlayers: readFiniteNumber(lobby.maxPlayers, 4),
+            maxPlayers: readFiniteNumber(effectiveLobby.maxPlayers, 4),
             minPlayers: requiredMinPlayers,
           }
         }),
@@ -484,16 +663,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const botCount = players.filter((p: GamePlayer) => p.user?.bot).length
       trackGameStarted({
         lobbyCode: code,
-        gameType: normalizeAnalyticsGameType(lobby.gameType),
-        isPrivate: !!lobby?.isPrivate,
-        maxPlayers: readFiniteNumber(lobby.maxPlayers, 4),
+        gameType: normalizeAnalyticsGameType(effectiveLobby.gameType),
+        isPrivate: !!effectiveLobby?.isPrivate,
+        maxPlayers: readFiniteNumber(effectiveLobby.maxPlayers, 4),
         playerCount: players.length,
         hasBot: botCount > 0,
         botCount,
       })
       reportAutoBotFlowResult(true, 'started')
 
-      const turnTimerLimit = readFiniteNumber(lobby.turnTimer, 60)
+      const turnTimerLimit = readFiniteNumber(effectiveLobby.turnTimer, 60)
       setTimerActive(true)
       setTimeLeft(turnTimerLimit)
 
@@ -528,7 +707,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       startGameInFlightRef.current = false
       setStartingGame(false)
     }
-  }, [game, lobby, code, addBotToLobby, announceBotJoined, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
+  }, [game, lobby, code, addBotToLobby, announceBotJoined, fetchLobbySnapshot, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
 
   const updateLobbySettings = useCallback(async (updates: LobbySettingsUpdatePayload) => {
     const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -555,8 +734,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     addBotToLobby,
     announceBotJoined,
     handleJoinLobby,
+    handleGuestJoinLobby,
     handleStartGame,
     updateLobbySettings,
+    guestNameInput,
+    setGuestNameInput,
+    isJoiningLobby,
     password,
     setPassword,
   }

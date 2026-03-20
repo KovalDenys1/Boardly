@@ -1,11 +1,13 @@
 'use client'
 
 import type { KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
+import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 
 interface HeaderActionsProps {
@@ -20,7 +22,12 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   const pathname = usePathname()
   const { t } = useTranslation()
   const { isGuest, clearGuestMode } = useGuest()
-  const isGuestSession = isGuest && !isAuthenticated
+  const [isGuestUiReady, setIsGuestUiReady] = useState(false)
+  const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
+
+  useEffect(() => {
+    setIsGuestUiReady(true)
+  }, [])
 
   const handleSignOut = async () => {
     await signOut({ redirect: false })
@@ -47,7 +54,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
     return (
       <div className="hidden md:flex shrink-0 items-center gap-2">
         <button
-          onClick={() => router.push('/auth/login')}
+          onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
         >
           {t('header.login', 'Login')}
@@ -66,13 +73,13 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
     return (
       <div className="hidden md:flex shrink-0 items-center gap-2">
         <button
-          onClick={() => router.push('/auth/login')}
+          onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
         >
           {t('header.login', 'Login')}
         </button>
         <button
-          onClick={() => router.push('/auth/register')}
+          onClick={() => router.push(buildCurrentAuthUrl('register'))}
           className="px-4 py-2 rounded-lg font-medium bg-white text-purple-600 hover:bg-white/90 transition-colors shadow-sm"
         >
           {t('header.register', 'Register')}

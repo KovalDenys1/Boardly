@@ -45,6 +45,8 @@ Core flow:
 ## Branch and PR Policy
 
 - For each ticket/feature/fix, create a dedicated branch from `develop` (for example `feature/<ticket>-<short-name>`, `fix/<ticket>-<short-name>`, `chore/<short-name>`).
+- Every task commit must reference its ticket or issue number in the commit message so the ticket timeline can be traced back to the implementation commit later (for example `fix(#229): reassign lobby host on creator leave` or `chore(#226): tighten mobile header layout`).
+- Pull requests merged into `develop` should include `Closes #...`, `Fixes #...`, or `Resolves #...` in the PR body so the linked issue can be auto-closed by automation when the PR is merged.
 - Open PRs from task branches into `develop`. Do not push task commits directly to `develop`.
 - Promote to production only through PRs from `develop` into `main`.
 - Treat direct pushes to `main` and `develop` as emergency-only exceptions.

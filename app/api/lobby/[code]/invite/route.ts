@@ -147,7 +147,7 @@ export async function POST(
     }
 
     const origin = new URL(request.url).origin
-    const inviteUrl = `${origin}/lobby/join/${lobby.code}`
+    const inviteUrl = `${origin}/lobby/${lobby.code}`
 
     const invitePayload = {
       lobbyCode: lobby.code,
@@ -183,7 +183,7 @@ export async function POST(
             senderId: requestUser.id,
             senderName: requestUser.username || 'Player',
             inviteType: 'invite',
-            href: `/lobby/join/${lobby.code}`,
+            href: `/lobby/${lobby.code}`,
           },
         })
       )

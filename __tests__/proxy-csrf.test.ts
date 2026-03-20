@@ -4,7 +4,7 @@
 
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { middleware } from '@/middleware'
+import { proxy } from '@/proxy'
 
 jest.mock('next-auth/jwt', () => ({
   getToken: jest.fn(),
@@ -18,7 +18,7 @@ const mockGetToken = getToken as jest.MockedFunction<typeof getToken>
 const originalInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
 const originalCronSecret = process.env.CRON_SECRET
 
-describe('middleware CSRF enforcement', () => {
+describe('proxy CSRF enforcement', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetToken.mockResolvedValue(null as any)
@@ -40,7 +40,7 @@ describe('middleware CSRF enforcement', () => {
       },
     })
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).not.toBe(403)
   })
@@ -54,7 +54,7 @@ describe('middleware CSRF enforcement', () => {
       },
     })
 
-    const response = await middleware(request)
+    const response = await proxy(request)
     const payload = await response.json()
 
     expect(response.status).toBe(403)
@@ -69,7 +69,7 @@ describe('middleware CSRF enforcement', () => {
       },
     })
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).toBe(403)
   })
@@ -83,7 +83,7 @@ describe('middleware CSRF enforcement', () => {
       },
     })
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).not.toBe(403)
   })
@@ -96,7 +96,7 @@ describe('middleware CSRF enforcement', () => {
       },
     })
 
-    const response = await middleware(request)
+    const response = await proxy(request)
 
     expect(response.status).not.toBe(403)
   })

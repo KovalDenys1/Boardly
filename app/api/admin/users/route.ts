@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { Prisma, UserRole } from '@prisma/client'
+import type { Prisma, UserRole } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { withErrorHandler, ValidationError } from '@/lib/error-handler'
 import { requireAdminApiUser } from '@/lib/admin-auth'

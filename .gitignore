@@ -143,6 +143,7 @@ Desktop.ini
 *.sql
 # But allow Prisma migration files (required for version control)
 !prisma/migrations/**/migration.sql
+prisma/generated/
 render_*.sql
 supabase_*.sql
 backup_*.sql

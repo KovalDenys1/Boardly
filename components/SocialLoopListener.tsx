@@ -90,7 +90,7 @@ export default function SocialLoopListener() {
               className="rounded-md bg-blue-600 px-2 py-1 text-xs font-semibold text-white hover:bg-blue-700"
               onClick={() => {
                 toast.dismiss(toastRef.id)
-                router.push(`/lobby/join/${payload.lobbyCode}`)
+                router.push(`/lobby/${payload.lobbyCode}`)
               }}
             >
               {t('toast.socialJoinAction')}

@@ -25,6 +25,10 @@ function parseFilter(raw: string | null): 'all' | 'unread' {
   return raw === 'unread' ? 'unread' : 'all'
 }
 
+function parseSummary(raw: string | null): boolean {
+  return raw === '1' || raw === 'true'
+}
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -35,36 +39,44 @@ export async function GET(request: NextRequest) {
   const limit = parseLimit(searchParams.get('limit'))
   const offset = parseOffset(searchParams.get('offset'))
   const filter = parseFilter(searchParams.get('filter'))
+  const summary = parseSummary(searchParams.get('summary'))
   const where = {
     userId: session.user.id,
     channel: 'in_app' as const,
     ...(filter === 'unread' ? { readAt: null } : {}),
   }
 
-  const [notifications, unreadCount] = await Promise.all([
-    prisma.notifications.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip: offset,
-      take: limit + 1,
-      select: {
-        id: true,
-        type: true,
-        createdAt: true,
-        readAt: true,
-        payload: true,
-      },
-    }),
-    prisma.notifications.count({
-      where: {
-        userId: session.user.id,
-        channel: 'in_app',
-        readAt: null,
-      },
-    }),
-  ])
+  const unreadCount = await prisma.notifications.count({
+    where: {
+      userId: session.user.id,
+      channel: 'in_app',
+      readAt: null,
+    },
+  })
+
+  if (summary) {
+    return NextResponse.json({
+      notifications: [],
+      unreadCount,
+      hasMore: false,
+    })
+  }
+
+  const notifications = await prisma.notifications.findMany({
+    where,
+    orderBy: {
+      createdAt: 'desc',
+    },
+    skip: offset,
+    take: limit + 1,
+    select: {
+      id: true,
+      type: true,
+      createdAt: true,
+      readAt: true,
+      payload: true,
+    },
+  })
 
   const hasMore = notifications.length > limit
 

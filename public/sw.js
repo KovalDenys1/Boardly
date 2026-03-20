@@ -1,4 +1,4 @@
-/* eslint-env serviceworker */
+/* global self, caches, Response, URL, fetch */
 
 const CACHE_VERSION = 'boardly-pwa-v1'
 const STATIC_CACHE = `${CACHE_VERSION}-static`

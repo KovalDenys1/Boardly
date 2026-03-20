@@ -67,7 +67,7 @@ export default function LobbyInfo({
   const handleCopyInvite = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard
-        .writeText(`${window.location.origin}/lobby/join/${lobby.code}`)
+        .writeText(`${window.location.origin}/lobby/${lobby.code}`)
         .then(() => showToast.success('toast.linkCopied'))
         .catch(() => showToast.error('toast.error'))
     }

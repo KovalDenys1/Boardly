@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { ALL_CATEGORIES, YahtzeeCategory } from '@/lib/yahtzee'
-import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
+import {
+  formatCompactDuration,
+  formatGameTypeLabel,
+  getGameStatusBadgeColor,
+} from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
@@ -17,17 +21,18 @@ const GAME_HISTORY_STATUS_KEYS = {
   cancelled: 'profile.gameHistory.cancelled',
 } as const satisfies Record<string, TranslationKeys>
 
+const primarySurfaceClassName =
+  'rounded-3xl border border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/70'
+const secondarySurfaceClassName =
+  'rounded-2xl border border-slate-200/70 bg-slate-50/85 dark:border-slate-700/60 dark:bg-slate-800/60'
+const tertiarySurfaceClassName =
+  'rounded-2xl border border-slate-200/70 bg-white/85 dark:border-slate-700/60 dark:bg-slate-900/70'
+
 interface Player {
   id: string
   username: string | null
   avatar: string | null
   isBot: boolean
-  bot?: {
-    id: string
-    userId: string
-    botType: string
-    difficulty: string
-  } | null
   score: number
   finalScore: number | null
   placement: number | null
@@ -43,17 +48,45 @@ interface GameResult {
   createdAt: string
   updatedAt: string
   finishedAt: string | null
+  endedAt: string | null
+  durationMs: number | null
   abandonedAt: string | null
+  hasReplay: boolean
+  replayStepCount: number
   players: Player[]
-  state: Record<string, unknown> // Game-specific state (Yahtzee scorecard, etc.)
+  state: Record<string, unknown>
 }
 
 interface GameResultsModalProps {
   gameId: string | null
   onClose: () => void
+  onWatchReplay?: (gameId: string) => void
 }
 
-export default function GameResultsModal({ gameId, onClose }: GameResultsModalProps) {
+function getScoreValue(player: Player): number {
+  return player.finalScore ?? player.score
+}
+
+function formatOrdinalPlace(place: number, locale: string): string {
+  if (locale.startsWith('ru') || locale.startsWith('uk') || locale.startsWith('no')) {
+    return `#${place}`
+  }
+
+  const mod10 = place % 10
+  const mod100 = place % 100
+
+  if (mod10 === 1 && mod100 !== 11) return `${place}st`
+  if (mod10 === 2 && mod100 !== 12) return `${place}nd`
+  if (mod10 === 3 && mod100 !== 13) return `${place}rd`
+
+  return `${place}th`
+}
+
+export default function GameResultsModal({
+  gameId,
+  onClose,
+  onWatchReplay,
+}: GameResultsModalProps) {
   const { t } = useTranslation()
   const [game, setGame] = useState<GameResult | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,6 +94,8 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
 
   useEffect(() => {
     if (!gameId) {
+      setGame(null)
+      setError(null)
       setLoading(false)
       return
     }
@@ -71,14 +106,14 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
         setError(null)
 
         const response = await fetch(`/api/game/${gameId}/results`)
-        
+
         if (!response.ok) {
           throw new Error('Failed to load game details')
         }
 
         const data = await response.json()
         setGame(data)
-        
+
         clientLogger.log('Game details loaded', { gameId })
       } catch (err) {
         clientLogger.error('Error loading game details:', err)
@@ -88,7 +123,7 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
       }
     }
 
-    loadGameDetails()
+    void loadGameDetails()
   }, [gameId, t])
 
   if (!gameId) return null
@@ -112,6 +147,20 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
     return status.replace(/_/g, ' ')
   }
 
+  function formatShortDate(dateString: string): string {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
+  function getPlayerLabel(player: Player, index: number): string {
+    const fallback = t('profile.gameReplay.playerFallback')
+    return `${player.username || `${fallback} ${index + 1}`}${player.isBot ? ' \u{1F916}' : ''}`
+  }
+
   function renderYahtzeeScorecard() {
     if (!game || game.gameType !== 'yahtzee' || !game.state?.gameData) return null
 
@@ -119,142 +168,323 @@ export default function GameResultsModal({ gameId, onClose }: GameResultsModalPr
     const categories: YahtzeeCategory[] = [...ALL_CATEGORIES]
 
     return (
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-4">{t('profile.gameResults.scorecard')}</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                  {t('profile.gameResults.category')}
-                </th>
-                {game.players.map((player) => (
-                  <th
-                    key={player.id}
-                    className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center"
-                  >
-                    {player.username || 'Player'}
-                    {(player.isBot || player.bot) && ' 🤖'}
+      <div className={`${primarySurfaceClassName} overflow-hidden`}>
+        <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-4 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+            {t('profile.gameResults.scorecard')}
+          </p>
+          <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+            {t('profile.gameResults.scorecard')}
+          </h3>
+        </div>
+
+        <div className="p-5 sm:p-6">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[40rem] border-collapse text-sm">
+              <thead>
+                <tr className="bg-slate-100/90 dark:bg-slate-800/80">
+                  <th className="border border-slate-200 px-3 py-2 text-left font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                    {t('profile.gameResults.category')}
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((category) => (
-                <tr key={category} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 font-medium capitalize">
-                    {t(`yahtzee.categories.${category}`)}
-                  </td>
-                  {game.players.map((player) => {
-                    const allPlayersData = gameData.players as Record<string, Record<string, unknown>> | undefined
-                    const playerData = allPlayersData?.[player.id]
-                    const scoresData = playerData?.scores as Record<string, unknown> | undefined
-                    const score = scoresData?.[category] as number | null | undefined
-                    return (
-                      <td
-                        key={player.id}
-                        className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center"
-                      >
-                        {score !== null && score !== undefined ? score : '-'}
-                      </td>
-                    )
-                  })}
+                  {game.players.map((player, index) => (
+                    <th
+                      key={player.id}
+                      className="border border-slate-200 px-3 py-2 text-center font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                    >
+                      {getPlayerLabel(player, index)}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-              <tr className="bg-yellow-50 dark:bg-yellow-900/20 font-bold">
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                  {t('profile.gameResults.total')}
-                </td>
-                {game.players.map((player) => (
-                  <td
-                    key={player.id}
-                    className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center"
+              </thead>
+              <tbody>
+                {categories.map((category) => (
+                  <tr
+                    key={category}
+                    className="bg-white/80 transition-colors hover:bg-slate-50 dark:bg-slate-900/40 dark:hover:bg-slate-900/70"
                   >
-                    {player.finalScore ?? player.score}
-                  </td>
+                    <td className="border border-slate-200 px-3 py-2 font-medium capitalize text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                      {t(`yahtzee.categories.${category}`)}
+                    </td>
+                    {game.players.map((player) => {
+                      const allPlayersData =
+                        (gameData.players as Record<string, Record<string, unknown>> | undefined) ?? {}
+                      const playerData = allPlayersData[player.id]
+                      const scoresData = playerData?.scores as Record<string, unknown> | undefined
+                      const score = scoresData?.[category] as number | null | undefined
+
+                      return (
+                        <td
+                          key={player.id}
+                          className="border border-slate-200 px-3 py-2 text-center text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                        >
+                          {score !== null && score !== undefined ? score : '-'}
+                        </td>
+                      )
+                    })}
+                  </tr>
                 ))}
-              </tr>
-            </tbody>
-          </table>
+                <tr className="bg-amber-50/90 font-bold dark:bg-amber-500/10">
+                  <td className="border border-slate-200 px-3 py-2 text-slate-900 dark:border-slate-700 dark:text-white">
+                    {t('profile.gameResults.total')}
+                  </td>
+                  {game.players.map((player) => (
+                    <td
+                      key={player.id}
+                      className="border border-slate-200 px-3 py-2 text-center text-slate-900 dark:border-slate-700 dark:text-white"
+                    >
+                      {getScoreValue(player)}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     )
   }
 
+  const rankedPlayers = game
+    ? [...game.players].sort((a, b) => {
+        const scoreDifference = getScoreValue(b) - getScoreValue(a)
+        if (scoreDifference !== 0) return scoreDifference
+
+        const placementA = a.placement ?? Number.MAX_SAFE_INTEGER
+        const placementB = b.placement ?? Number.MAX_SAFE_INTEGER
+        return placementA - placementB
+      })
+    : []
+
+  const winner = rankedPlayers.find((player) => player.isWinner) ?? null
+  const winnerLabel = winner
+    ? getPlayerLabel(winner, rankedPlayers.indexOf(winner))
+    : !game
+      ? ''
+      : game.status === 'finished'
+        ? t('profile.gameReplay.draw')
+        : game.status === 'cancelled' || game.status === 'abandoned'
+          ? t('profile.gameResults.noWinner')
+          : t('profile.gameResults.winnerPending')
+
+  const locale = typeof navigator === 'undefined' ? 'en' : navigator.language
+  const usesEndedAtLabel =
+    game?.status === 'finished' || game?.status === 'cancelled' || game?.status === 'abandoned'
+  const secondaryTimestampLabel = usesEndedAtLabel
+    ? t('profile.gameResults.endedOn')
+    : t('profile.gameResults.lastUpdated')
+  const secondaryTimestampValue = game
+    ? formatShortDate((usesEndedAtLabel ? game.endedAt : game.updatedAt) || game.updatedAt)
+    : '-'
+  const summaryText = game
+    ? winner
+      ? t('profile.gameResults.summaryWinner', { player: winnerLabel })
+      : game.status === 'finished'
+        ? t('profile.gameResults.summaryDraw')
+        : game.status === 'cancelled'
+          ? t('profile.gameResults.summaryCancelled')
+          : game.status === 'abandoned'
+          ? t('profile.gameResults.summaryAbandoned')
+          : t('profile.gameResults.summaryInProgress')
+    : ''
+
+  const quickFacts = game
+    ? [
+        {
+          label: t('profile.gameResults.winnerLabel'),
+          value: winnerLabel,
+        },
+        {
+          label: t('profile.gameResults.playedOn'),
+          value: formatShortDate(game.createdAt),
+        },
+        {
+          label: t('profile.gameResults.duration'),
+          value: formatCompactDuration(game.durationMs, locale),
+        },
+        {
+          label: secondaryTimestampLabel,
+          value: secondaryTimestampValue,
+        },
+        {
+          label: t('profile.gameReplay.players'),
+          value: String(game.players.length),
+        },
+        {
+          label: t('profile.gameResults.replayStatus'),
+          value: game.hasReplay
+            ? t('profile.gameResults.replayAvailable')
+            : t('profile.gameResults.replayUnavailable'),
+        },
+        {
+          label: t('profile.gameResults.roomCode'),
+          value: game.lobbyCode,
+        },
+      ]
+    : []
+
   return (
-    <Modal isOpen={!!gameId} onClose={onClose} title={game?.lobbyName || t('profile.gameResults.title')}>
+    <Modal
+      isOpen={!!gameId}
+      onClose={onClose}
+      title={game?.lobbyName || t('profile.gameResults.title')}
+      maxWidth="4xl"
+      mobileFullscreen
+      bodyPadding="none"
+    >
       {loading ? (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex items-center justify-center py-14">
           <LoadingSpinner />
         </div>
       ) : error ? (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200">
+        <div className="rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 p-5 text-rose-800 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5 dark:text-rose-200">
           {error}
         </div>
       ) : game ? (
-        <div className="space-y-6">
-          {/* Game Info */}
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {formatGameTypeLabel(game.gameType)}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {formatDate(game.createdAt)}
-                {game.finishedAt && ` - ${formatDate(game.finishedAt)}`}
-              </p>
+        <div className="space-y-5">
+          <div className={`${primarySurfaceClassName} overflow-hidden`}>
+            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    {t('profile.gameResults.overview')}
+                  </p>
+                  <h3
+                    className="mt-3 truncate text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+                    title={game.lobbyName}
+                  >
+                    {game.lobbyName}
+                  </h3>
+                  <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {summaryText}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                    {t('profile.gameResults.playedOn')} {formatDate(game.createdAt)}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
+                      game.status
+                    )}`}
+                  >
+                    {formatStatusLabel(game.status)}
+                  </span>
+                  <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    {formatGameTypeLabel(game.gameType)}
+                  </span>
+                </div>
+              </div>
             </div>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${getGameStatusBadgeColor(
-                game.status
-              )}`}
-            >
-              {formatStatusLabel(game.status)}
-            </span>
+
+            <div className="grid gap-5 p-5 xl:grid-cols-[1.05fr_0.95fr] sm:p-6">
+              <div className={`${secondarySurfaceClassName} flex h-full flex-col justify-between p-5`}>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    {t('profile.gameResults.replay')}
+                  </p>
+                  <h3 className="mt-3 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {t('profile.gameResults.replay')}
+                  </h3>
+                  <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400">
+                    {game.hasReplay
+                      ? t('profile.gameResults.replayReady')
+                      : t('profile.gameResults.replayUnavailableHint')}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (game.hasReplay) {
+                      onWatchReplay?.(game.id)
+                    }
+                  }}
+                  disabled={!game.hasReplay}
+                  className="mt-5 inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                >
+                  {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
+                </button>
+              </div>
+
+              <div className={`${secondarySurfaceClassName} p-5`}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                  {t('profile.gameResults.quickFacts')}
+                </p>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                  {quickFacts.map((fact) => (
+                    <div key={fact.label} className={`${tertiarySurfaceClassName} min-h-[5.5rem] p-4`}>
+                      <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                        {fact.label}
+                      </dt>
+                      <dd className="mt-3 text-base font-semibold text-slate-900 dark:text-white">
+                        {fact.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
           </div>
 
-          {/* Players Rankings */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">{t('profile.gameResults.rankings')}</h3>
-            <div className="space-y-2">
-              {[...game.players]
-                .sort((a, b) => (b.finalScore ?? b.score) - (a.finalScore ?? a.score))
-                .map((player, index) => (
-                  <div
-                    key={player.id}
-                    className={`flex items-center justify-between p-3 rounded-lg ${
-                      player.isWinner
-                        ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-400 dark:border-yellow-600'
-                        : 'bg-gray-100 dark:bg-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl font-bold text-gray-500 dark:text-gray-400 w-8">
-                        #{index + 1}
-                      </span>
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
-                          {player.username || `Player ${index + 1}`}
-                          {(player.isBot || player.bot) && ' 🤖'}
-                        </div>
+          <div className={`${primarySurfaceClassName} overflow-hidden`}>
+            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-4 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                {t('profile.gameResults.rankings')}
+              </p>
+              <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                {t('profile.gameResults.rankings')}
+              </h3>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                {t('profile.gameResults.standingsDescription')}
+              </p>
+            </div>
+
+            <div className="grid gap-3 p-5 lg:grid-cols-2 sm:p-6">
+              {rankedPlayers.map((player, index) => (
+                <div
+                  key={player.id}
+                  className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+                    player.isWinner
+                      ? 'border-yellow-300 bg-yellow-50/90 text-yellow-900 dark:border-yellow-500/40 dark:bg-yellow-500/10 dark:text-yellow-100'
+                      : 'border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-sm font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      #{index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-base font-semibold" title={getPlayerLabel(player, index)}>
+                        {getPlayerLabel(player, index)}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {player.finalScore ?? player.score} {t('profile.gameResults.points')}
-                      </span>
-                      {player.isWinner && <span className="text-2xl">👑</span>}
+                      <p className="mt-1 text-xs opacity-70">
+                        {player.isWinner
+                          ? t('profile.gameResults.winnerBadge')
+                          : player.placement
+                            ? t('profile.gameResults.placeLabel', {
+                                place: formatOrdinalPlace(player.placement, locale),
+                              })
+                            : formatStatusLabel(game.status)}
+                      </p>
                     </div>
                   </div>
-                ))}
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold">
+                      {getScoreValue(player)} {t('profile.gameResults.points')}
+                    </span>
+                    {player.isWinner ? <span aria-hidden>{'\u{1F451}'}</span> : null}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Game-specific details */}
           {renderYahtzeeScorecard()}
         </div>
       ) : (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="py-14 text-center text-slate-500 dark:text-slate-400">
           {t('errors.gameNotFound')}
         </div>
       )}

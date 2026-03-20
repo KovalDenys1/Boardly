@@ -1,6 +1,6 @@
 # Dependency Upgrade Plan
 
-Last verified: 2026-03-09
+Last verified: 2026-03-13
 
 This document is the canonical dependency maintenance plan for Boardly. It separates low-risk patch waves from major framework and ORM migrations that need dedicated branches and manual smoke coverage.
 
@@ -16,8 +16,8 @@ Version checks in this document were verified against:
 | Package group | Current | Latest verified | Track | Notes |
 | --- | --- | --- | --- | --- |
 | `@prisma/client` + `prisma` | `5.22.0` | `7.4.2` | major | Blocked by Prisma 7 migration work in [`lib/db.ts`](../lib/db.ts) and CLI config changes |
-| `next` | `15.5.12` | `16.1.6` | major | Deferred; must be upgraded together with React |
-| `react` + `react-dom` | `18.3.1` | `19.2.4` | major | Deferred with Next 16 |
+| `next` | `16.1.6` | `16.1.6` | aligned | Version bump landed; remaining work is migration cleanup and verification |
+| `react` + `react-dom` | `19.2.4` | `19.2.4` | aligned | Version bump landed with the Next 16 migration wave |
 | `socket.io` + `socket.io-client` | `4.8.3` | `4.8.3` | patch | Completed on 2026-03-09 |
 | `@sentry/nextjs` | `10.42.0` | `10.42.0` | minor | Completed on 2026-03-09 |
 | `react-i18next` | `16.5.6` | `16.5.6` | minor | Completed on 2026-03-09 |
@@ -26,7 +26,7 @@ Version checks in this document were verified against:
 | `dotenv` | `17.3.1` | `17.3.1` | patch | Completed on 2026-03-09 |
 | `tailwindcss` | `3.4.14` | `4.2.1` | major | Separate migration; config and CSS pipeline change |
 | `zod` | `3.23.8` | `4.3.6` | major | Wide validation surface across auth, env, and lobby APIs |
-| `eslint` | `8.57.1` | `10.0.3` | major | Repo still uses legacy `.eslintrc.json` |
+| `eslint` | `9.39.4` | `10.0.3` | major | Flat config is in place; ESLint 10 remains a separate toolchain wave |
 | `lefthook` | `1.13.6` | `2.1.3` | major | Separate hook config migration |
 
 ## Audit status
@@ -52,7 +52,7 @@ Remaining work is now limited to the major/framework waves below.
 ### Next 16 + React 19
 
 - [`next.config.js`](../next.config.js) contains a custom `webpack` hook. Next 16 uses Turbopack by default for `next build`, and the official upgrade guide says builds fail when a custom webpack config is still present unless the project explicitly stays on `--webpack` or migrates the config.
-- The repo still uses [`middleware.ts`](../middleware.ts). Next 16 deprecates the `middleware` convention in favor of `proxy`, and the codemod will try to rename it.
+- The repo now uses [`proxy.ts`](../proxy.ts), but the remaining Next 16 cleanup still needs deliberate verification under the Node.js proxy runtime.
 - The async request API migration is mostly in good shape already:
   - `params` and `searchParams` are already typed as `Promise<...>` in many App Router files
   - `cookies()` usage in [`lib/next-auth.ts`](../lib/next-auth.ts) is already awaited
@@ -71,8 +71,8 @@ Remaining work is now limited to the major/framework waves below.
 
 ### ESLint 10 and Lefthook 2
 
-- The repo still uses legacy ESLint config in [`.eslintrc.json`](../.eslintrc.json).
-- Next 16 docs now point projects toward flat config, and ESLint 10 drops more legacy assumptions.
+- The repo now uses flat ESLint config in [`eslint.config.mjs`](../eslint.config.mjs) on ESLint 9 to stay compatible with `eslint-config-next@16`.
+- ESLint 10 is still a separate follow-up because it should be validated independently from the Next 16 migration wave.
 - Lefthook 2 should be treated as a separate hook-config migration, not bundled into app-runtime changes.
 
 ## Recommended execution order
@@ -128,7 +128,7 @@ Scope:
 
 - run the official Next 16 codemod
 - decide whether to keep `next build --webpack` temporarily or migrate the custom webpack logic in [`next.config.js`](../next.config.js)
-- evaluate `middleware.ts -> proxy.ts` migration carefully instead of blindly renaming it
+- keep [`proxy.ts`](../proxy.ts) aligned with Next 16 Node.js proxy runtime behavior during verification
 - upgrade `next`, `react`, `react-dom`, `@types/react`, and `@types/react-dom`
 
 Reason:

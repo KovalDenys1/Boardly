@@ -14,7 +14,7 @@
 
 ### CSRF layer
 
-- Mutating `/api/*` requests with authenticated session cookies are origin-validated in middleware.
+- Mutating `/api/*` requests with authenticated session cookies are origin-validated in proxy.
 - Same-origin requests are allowed; cross-origin attempts are rejected with `403`.
 - Allowed origins are derived from deployment origin plus configured allowed origins.
 

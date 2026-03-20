@@ -13,6 +13,10 @@ import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError, trackFunnelStep } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  buildAuthUrl,
+  resolveReturnUrlFromSearchParams,
+} from '@/lib/auth-redirect'
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -30,7 +34,9 @@ export default function RegisterForm() {
   const [usernameAvailable, setUsernameAvailable] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const returnUrl = searchParams.get('returnUrl') || '/'
+  const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
+  const isLobbyInviteFlow =
+    returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -126,7 +132,7 @@ export default function RegisterForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="card max-w-md w-full">
         {/* Invite Banner */}
-        {returnUrl.includes('/lobby/join/') && (
+        {isLobbyInviteFlow && (
           <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-300 dark:border-green-600 rounded-lg">
             <div className="flex items-center gap-3">
               <span className="text-3xl">🎮</span>
@@ -305,7 +311,7 @@ export default function RegisterForm() {
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           {t('auth.register.haveAccount')}{' '}
           <Link 
-            href={`/auth/login${returnUrl !== '/' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+            href={buildAuthUrl('login', returnUrl)}
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >
             Login

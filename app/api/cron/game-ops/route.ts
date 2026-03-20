@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { apiLogger } from '@/lib/logger'
 import { processNotificationEmailQueue } from '@/lib/notification-queue'

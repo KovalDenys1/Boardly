@@ -10,7 +10,7 @@ import {
 } from '@/lib/guest-auth'
 import { getOrCreateGuestUser } from '@/lib/guest-helpers'
 import { handleApiError } from '@/lib/error-handler'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '@/prisma/client'
 
 const limiter = rateLimit(rateLimitPresets.auth)
 

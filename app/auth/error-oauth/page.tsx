@@ -6,6 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
 import { signIn } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import {
+  buildAuthUrl,
+  resolveReturnUrlFromSearchParams,
+} from '@/lib/auth-redirect'
 
 function OAuthErrorContent() {
   const { data: session, status } = useSession()
@@ -15,6 +19,7 @@ function OAuthErrorContent() {
 
   const error = searchParams?.get('error')
   const provider = searchParams?.get('provider') || 'unknown'
+  const returnUrl = resolveReturnUrlFromSearchParams(searchParams, '/profile')
 
   useEffect(() => {
     // Only handle OAuthAccountNotLinked error
@@ -46,8 +51,7 @@ function OAuthErrorContent() {
   }
 
   const handleTryAgain = () => {
-    // Just redirect back to profile
-    router.push('/profile')
+    router.push(returnUrl)
   }
 
   const handleSignInWithProvider = async () => {
@@ -56,7 +60,7 @@ function OAuthErrorContent() {
       // Sign in with the OAuth provider
       // If successful and email matches, user will be prompted to merge accounts
       await signIn(provider, {
-        callbackUrl: '/profile'
+        callbackUrl: returnUrl
       })
     } catch (error) {
       console.error('Sign in error:', error)
@@ -66,7 +70,7 @@ function OAuthErrorContent() {
   }
 
   const handleSignInDifferent = () => {
-    router.push('/auth/login')
+    router.push(buildAuthUrl('login', returnUrl))
   }
 
   if (status === 'loading') {

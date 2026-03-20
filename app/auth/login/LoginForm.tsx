@@ -12,6 +12,10 @@ import { showToast } from '@/lib/i18n-toast'
 import { trackAuth, trackError } from '@/lib/analytics'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  buildAuthUrl,
+  resolveReturnUrlFromSearchParams,
+} from '@/lib/auth-redirect'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -25,7 +29,9 @@ export default function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const returnUrl = searchParams.get('returnUrl') || '/'
+  const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
+  const isLobbyInviteFlow =
+    returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,7 +128,7 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="card max-w-md w-full">
         {/* Invite Banner */}
-        {returnUrl.includes('/lobby/join/') && (
+        {isLobbyInviteFlow && (
           <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-2 border-green-300 dark:border-green-600 rounded-lg">
             <div className="flex items-center gap-3">
               <span className="text-3xl">🎮</span>
@@ -185,7 +191,7 @@ export default function LoginForm() {
               </span>
             </Label>
             <Link 
-              href="/auth/forgot-password" 
+              href={returnUrl === '/' ? '/auth/forgot-password' : `/auth/forgot-password?returnUrl=${encodeURIComponent(returnUrl)}`}
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
               {t('auth.login.forgotPassword')}
@@ -257,7 +263,7 @@ export default function LoginForm() {
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           {t('auth.login.noAccount')}{' '}
           <Link 
-            href={`/auth/register${returnUrl !== '/' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+            href={buildAuthUrl('register', returnUrl)}
             className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
           >
             {t('auth.login.register')}
