@@ -61,6 +61,13 @@ export async function GET(
       )
     }
 
+    if (game.status !== 'finished') {
+      return NextResponse.json(
+        { error: 'Replay is only available for finished games' },
+        { status: 409 }
+      )
+    }
+
     const rawSnapshots = await prisma.gameStateSnapshots.findMany({
       where: { gameId: game.id },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

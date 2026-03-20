@@ -110,6 +110,23 @@ describe('GET /api/game/[gameId]/replay', () => {
     })
   })
 
+  it('returns 409 when replay is requested for a game that is not finished', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1' } as any)
+    mockPrisma.games.findUnique.mockResolvedValue({
+      ...mockGame,
+      status: 'abandoned',
+    } as any)
+
+    const response = await GET(buildRequest(), {
+      params: Promise.resolve({ gameId: 'game-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({
+      error: 'Replay is only available for finished games',
+    })
+  })
+
   it('returns decoded replay payload for players', async () => {
     mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1' } as any)
 

@@ -118,4 +118,25 @@ describe('GET /api/game/[gameId]/results', () => {
       })
     )
   })
+
+  it('hides replay in match details when the game is not finished even if snapshots exist', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({ id: 'user-1' } as any)
+    mockPrisma.games.findUnique.mockResolvedValue({
+      ...mockGame,
+      status: 'abandoned',
+      abandonedAt: new Date('2026-02-27T18:06:00.000Z'),
+      _count: {
+        snapshots: 12,
+      },
+    } as any)
+
+    const response = await GET(buildRequest(), {
+      params: Promise.resolve({ gameId: 'game-1' }),
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.hasReplay).toBe(false)
+    expect(payload.replayStepCount).toBe(12)
+  })
 })

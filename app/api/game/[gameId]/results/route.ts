@@ -86,7 +86,7 @@ export async function GET(
       updatedAt: game.updatedAt.toISOString(),
       finishedAt: null, // Game model doesn't have finishedAt field
       abandonedAt: game.abandonedAt?.toISOString() || null,
-      hasReplay: game._count.snapshots > 0,
+      hasReplay: game.status === 'finished',
       replayStepCount: game._count.snapshots,
       state: game.state, // Include full game state for detailed view
       players: game.players.map(player => ({

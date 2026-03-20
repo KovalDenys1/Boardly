@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
         createdAt: game.createdAt,
         updatedAt: game.updatedAt,
         abandonedAt: game.abandonedAt,
-        hasReplay: game._count.snapshots > 0,
+        hasReplay: game.status === 'finished',
         players: game.players.map((player) => ({
           id: player.id,
           username: player.user.username,
