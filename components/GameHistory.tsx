@@ -267,7 +267,7 @@ export default function GameHistory() {
           </div>
         </div>
 
-        <div className="p-5 sm:p-6">
+        <div className="space-y-5 p-5 sm:p-6">
           <div className={`${secondarySurfaceClassName} p-4 sm:p-5`}>
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_1fr] lg:items-stretch">
               <fieldset className="min-w-0 lg:flex lg:flex-col lg:justify-center">
@@ -329,163 +329,163 @@ export default function GameHistory() {
               </fieldset>
             </div>
           </div>
-        </div>
-      </div>
 
-      {error ? (
-        <div className="overflow-hidden rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5">
-          <div className="border-l-4 border-rose-400 px-5 py-5 sm:px-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-2xl shadow-sm dark:bg-rose-500/15">
-                !
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{error}</p>
+          {error ? (
+            <div className="overflow-hidden rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5">
+              <div className="border-l-4 border-rose-400 px-5 py-5 sm:px-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-2xl shadow-sm dark:bg-rose-500/15">
+                    !
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{error}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      ) : null}
+          ) : null}
 
-      {games.length === 0 && !loading ? (
-        <div className={`${primarySurfaceClassName} overflow-hidden`}>
-          <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-[22px] border border-slate-200/70 bg-white text-4xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
-              🎮
+          {games.length === 0 && !loading ? (
+            <div className={`${secondarySurfaceClassName} overflow-hidden`}>
+              <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-[22px] border border-slate-200/70 bg-white text-4xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
+                  🎮
+                </div>
+                <h3 className="mt-5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {t('profile.gameHistory.noGames')}
+                </h3>
+                <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400 sm:text-base">
+                  {getVisibleRangeLabel()}
+                </p>
+              </div>
             </div>
-            <h3 className="mt-5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {t('profile.gameHistory.noGames')}
-            </h3>
-            <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400 sm:text-base">
-              {getVisibleRangeLabel()}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {games.map((game) => (
-            <div key={game.id} className={`${primarySurfaceClassName} group relative overflow-hidden`}>
-              <div className={`absolute inset-x-0 top-0 h-1 ${getStatusAccentClassName(game.status)}`} />
-              <div className="p-5 sm:p-6">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-2xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
-                        🎮
-                      </div>
+          ) : (
+            <div className="grid gap-4">
+              {games.map((game) => (
+                <div key={game.id} className={`${tertiarySurfaceClassName} group relative overflow-hidden`}>
+                  <div className={`absolute inset-x-0 top-0 h-1 ${getStatusAccentClassName(game.status)}`} />
+                  <div className="p-5 sm:p-6">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
-                        <h3
-                          className="truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white"
-                          title={game.lobbyName}
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-2xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
+                            🎮
+                          </div>
+                          <div className="min-w-0">
+                            <h3
+                              className="truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+                              title={game.lobbyName}
+                            >
+                              {game.lobbyName}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                              {formatGameTypeLabel(game.gameType)} • {formatDate(game.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
+                            game.status
+                          )}`}
                         >
-                          {game.lobbyName}
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                          {formatGameTypeLabel(game.gameType)} • {formatDate(game.createdAt)}
-                        </p>
+                          {formatStatusLabel(game.status)}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {game.lobbyCode}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={`${secondarySurfaceClassName} mt-5 p-4`}>
+                      <div className="flex flex-wrap gap-2.5">
+                        {game.players.map((player, index) => (
+                          <div
+                            key={player.id}
+                            className={`inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl border px-3 py-2 ${
+                              player.isWinner
+                                ? 'border-yellow-300 bg-yellow-50 text-yellow-900 dark:border-yellow-500/40 dark:bg-yellow-500/10 dark:text-yellow-200'
+                                : 'border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
+                            }`}
+                          >
+                            <span
+                              className="max-w-[10rem] truncate text-sm font-semibold sm:max-w-[14rem]"
+                              title={player.username || `Player ${index + 1}`}
+                            >
+                              {player.username || `Player ${index + 1}`}
+                              {(player.isBot || player.bot) && ' 🤖'}
+                            </span>
+                            {player.finalScore !== null ? (
+                              <span className="shrink-0 text-xs opacity-80">
+                                {player.finalScore} {t('profile.gameResults.points')}
+                              </span>
+                            ) : null}
+                            {player.isWinner ? <span aria-hidden>👑</span> : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {formatDate(game.updatedAt)}
+                      </p>
+
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedGameId(game.id)}
+                          className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
+                        >
+                          {t('profile.gameHistory.clickToView')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReplayGameId(game.id)}
+                          disabled={!game.hasReplay}
+                          className="inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                        >
+                          {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
+                        </button>
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
-                        game.status
-                      )}`}
-                    >
-                      {formatStatusLabel(game.status)}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {game.lobbyCode}
-                    </span>
-                  </div>
                 </div>
+              ))}
+            </div>
+          )}
 
-                <div className={`${secondarySurfaceClassName} mt-5 p-4`}>
-                  <div className="flex flex-wrap gap-2.5">
-                    {game.players.map((player, index) => (
-                      <div
-                        key={player.id}
-                        className={`inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl border px-3 py-2 ${
-                          player.isWinner
-                            ? 'border-yellow-300 bg-yellow-50 text-yellow-900 dark:border-yellow-500/40 dark:bg-yellow-500/10 dark:text-yellow-200'
-                            : 'border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
-                        }`}
-                      >
-                        <span
-                          className="max-w-[10rem] truncate text-sm font-semibold sm:max-w-[14rem]"
-                          title={player.username || `Player ${index + 1}`}
-                        >
-                          {player.username || `Player ${index + 1}`}
-                          {(player.isBot || player.bot) && ' 🤖'}
-                        </span>
-                        {player.finalScore !== null ? (
-                          <span className="shrink-0 text-xs opacity-80">
-                            {player.finalScore} {t('profile.gameResults.points')}
-                          </span>
-                        ) : null}
-                        {player.isWinner ? <span aria-hidden>👑</span> : null}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          {(offset > 0 || hasMore) && (
+            <div className={`${secondarySurfaceClassName} p-4 sm:p-5`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={handlePreviousPage}
+                  disabled={offset === 0}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
+                >
+                  {t('common.previous')}
+                </button>
 
-                <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    {formatDate(game.updatedAt)}
-                  </p>
+                <span className="text-center text-sm text-slate-600 dark:text-slate-400">
+                  {getVisibleRangeLabel()}
+                </span>
 
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedGameId(game.id)}
-                      className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
-                    >
-                      {t('profile.gameHistory.clickToView')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedReplayGameId(game.id)}
-                      disabled={!game.hasReplay}
-                      className="inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
-                    >
-                      {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleNextPage}
+                  disabled={!hasMore}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
+                >
+                  {t('common.next')}
+                </button>
               </div>
             </div>
-          ))}
+          )}
         </div>
-      )}
-
-      {(offset > 0 || hasMore) && (
-        <div className={`${primarySurfaceClassName} p-4 sm:p-5`}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={handlePreviousPage}
-              disabled={offset === 0}
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
-            >
-              {t('common.previous')}
-            </button>
-
-            <span className="text-center text-sm text-slate-600 dark:text-slate-400">
-              {getVisibleRangeLabel()}
-            </span>
-
-            <button
-              type="button"
-              onClick={handleNextPage}
-              disabled={!hasMore}
-              className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
-            >
-              {t('common.next')}
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
