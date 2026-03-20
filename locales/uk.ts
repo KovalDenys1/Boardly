@@ -1201,7 +1201,13 @@ const uk: Translation = {
     },
     gameResults: {
       title: 'Результати гри',
+      overview: 'Огляд матчу',
+      quickFacts: 'Коротко',
       rankings: 'Рейтинг',
+      replay: 'Повтор',
+      replayReady: 'Записано {{count}} кроків, повтор готовий до перегляду.',
+      replayUnavailableHint: 'Для цього матчу поки немає збережених снапшотів повтору.',
+      winnerPending: 'Ще не визначено',
       points: 'очок',
       scorecard: 'Таблиця очок',
       category: 'Категорія',

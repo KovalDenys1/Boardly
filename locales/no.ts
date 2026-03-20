@@ -1188,7 +1188,13 @@ const no = {
     },
     gameResults: {
       title: 'Spillresultater',
+      overview: 'Kampoversikt',
+      quickFacts: 'Kort fortalt',
       rankings: 'Rangeringer',
+      replay: 'Replay',
+      replayReady: '{{count}} registrerte steg er klare for gjennomgang.',
+      replayUnavailableHint: 'Replay-snapshots er ikke tilgjengelige for denne kampen ennå.',
+      winnerPending: 'Ikke avgjort ennå',
       points: 'poeng',
       scorecard: 'Poengkort',
       category: 'Kategori',

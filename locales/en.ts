@@ -1199,7 +1199,13 @@ const en = {
     },
     gameResults: {
       title: 'Game Results',
+      overview: 'Match Overview',
+      quickFacts: 'Quick Facts',
       rankings: 'Rankings',
+      replay: 'Replay',
+      replayReady: '{{count}} recorded steps are ready to review.',
+      replayUnavailableHint: 'Replay snapshots are not available for this match yet.',
+      winnerPending: 'Not decided yet',
       points: 'points',
       scorecard: 'Scorecard',
       category: 'Category',

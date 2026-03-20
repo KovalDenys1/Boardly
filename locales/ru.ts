@@ -1188,7 +1188,13 @@ const ru = {
     },
     gameResults: {
       title: 'Результаты игры',
+      overview: 'Обзор матча',
+      quickFacts: 'Главное',
       rankings: 'Рейтинги',
+      replay: 'Повтор',
+      replayReady: 'Записано {{count}} шагов, можно открыть повтор.',
+      replayUnavailableHint: 'Для этого матча пока нет сохранённых снапшотов повтора.',
+      winnerPending: 'Пока не определён',
       points: 'очков',
       scorecard: 'Карточка очков',
       category: 'Категория',
