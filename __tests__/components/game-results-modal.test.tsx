@@ -81,6 +81,8 @@ describe('GameResultsModal', () => {
         createdAt: '2026-03-01T10:00:00.000Z',
         updatedAt: '2026-03-01T10:30:00.000Z',
         finishedAt: null,
+        endedAt: '2026-03-01T10:30:00.000Z',
+        durationMs: 30 * 60 * 1000,
         abandonedAt: null,
         hasReplay: true,
         replayStepCount: 18,
@@ -124,6 +126,8 @@ describe('GameResultsModal', () => {
     expect(screen.getByText('profile.gameResults.quickFacts')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.replayReady')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.summaryWinner')).toBeTruthy()
+    expect(screen.getByText('profile.gameResults.duration')).toBeTruthy()
+    expect(screen.getByText('profile.gameResults.endedOn')).toBeTruthy()
     expect(screen.getAllByText('ABCD1').length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('button', { name: 'profile.gameReplay.watch' }))
@@ -142,6 +146,8 @@ describe('GameResultsModal', () => {
         createdAt: '2026-03-02T10:00:00.000Z',
         updatedAt: '2026-03-02T10:15:00.000Z',
         finishedAt: null,
+        endedAt: '2026-03-02T10:15:00.000Z',
+        durationMs: 15 * 60 * 1000,
         abandonedAt: null,
         hasReplay: false,
         replayStepCount: 0,
@@ -183,6 +189,8 @@ describe('GameResultsModal', () => {
         createdAt: '2026-03-03T10:00:00.000Z',
         updatedAt: '2026-03-03T10:05:00.000Z',
         finishedAt: null,
+        endedAt: '2026-03-03T10:05:00.000Z',
+        durationMs: 5 * 60 * 1000,
         abandonedAt: null,
         hasReplay: false,
         replayStepCount: 0,

@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
-import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
+import {
+  formatCompactDuration,
+  formatGameTypeLabel,
+  getGameStatusBadgeColor,
+} from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 
@@ -33,6 +37,8 @@ interface ReplayData {
     status?: string
     createdAt?: string
     updatedAt?: string
+    endedAt?: string | null
+    durationMs?: number | null
     players: ReplayGamePlayer[]
   }
   replay: {
@@ -498,6 +504,8 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
   const replayOverviewFacts = useMemo<ReplayFact[]>(() => {
     if (!data) return []
 
+    const locale = typeof navigator === 'undefined' ? 'en' : navigator.language
+
     return [
       {
         label: t('profile.gameReplay.players'),
@@ -510,6 +518,14 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
       {
         label: t('profile.gameReplay.started'),
         value: formatDateTime(data.game.createdAt) || '-',
+      },
+      {
+        label: t('profile.gameReplay.duration'),
+        value: formatCompactDuration(data.game.durationMs, locale),
+      },
+      {
+        label: t('profile.gameReplay.endedOn'),
+        value: formatDateTime(data.game.endedAt || data.game.updatedAt) || '-',
       },
       {
         label: t('profile.gameReplay.winner'),

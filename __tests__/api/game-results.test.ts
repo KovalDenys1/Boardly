@@ -109,6 +109,8 @@ describe('GET /api/game/[gameId]/results', () => {
     expect(payload.id).toBe('game-1')
     expect(payload.hasReplay).toBe(true)
     expect(payload.replayStepCount).toBe(12)
+    expect(payload.endedAt).toBe('2026-02-27T18:10:00.000Z')
+    expect(payload.durationMs).toBe(10 * 60 * 1000)
     expect(payload.players[0]).toEqual(
       expect.objectContaining({
         id: 'user-1',
@@ -138,5 +140,7 @@ describe('GET /api/game/[gameId]/results', () => {
     expect(response.status).toBe(200)
     expect(payload.hasReplay).toBe(false)
     expect(payload.replayStepCount).toBe(12)
+    expect(payload.endedAt).toBe('2026-02-27T18:06:00.000Z')
+    expect(payload.durationMs).toBe(6 * 60 * 1000)
   })
 })

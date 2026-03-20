@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { ALL_CATEGORIES, YahtzeeCategory } from '@/lib/yahtzee'
-import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
+import {
+  formatCompactDuration,
+  formatGameTypeLabel,
+  getGameStatusBadgeColor,
+} from '@/lib/game-display'
 import Modal from './Modal'
 import LoadingSpinner from './LoadingSpinner'
 import { clientLogger } from '@/lib/client-logger'
@@ -44,6 +48,8 @@ interface GameResult {
   createdAt: string
   updatedAt: string
   finishedAt: string | null
+  endedAt: string | null
+  durationMs: number | null
   abandonedAt: string | null
   hasReplay: boolean
   replayStepCount: number
@@ -261,6 +267,14 @@ export default function GameResultsModal({
           : t('profile.gameResults.winnerPending')
 
   const locale = typeof navigator === 'undefined' ? 'en' : navigator.language
+  const usesEndedAtLabel =
+    game?.status === 'finished' || game?.status === 'cancelled' || game?.status === 'abandoned'
+  const secondaryTimestampLabel = usesEndedAtLabel
+    ? t('profile.gameResults.endedOn')
+    : t('profile.gameResults.lastUpdated')
+  const secondaryTimestampValue = game
+    ? formatShortDate((usesEndedAtLabel ? game.endedAt : game.updatedAt) || game.updatedAt)
+    : '-'
   const summaryText = game
     ? winner
       ? t('profile.gameResults.summaryWinner', { player: winnerLabel })
@@ -282,6 +296,14 @@ export default function GameResultsModal({
         {
           label: t('profile.gameResults.playedOn'),
           value: formatShortDate(game.createdAt),
+        },
+        {
+          label: t('profile.gameResults.duration'),
+          value: formatCompactDuration(game.durationMs, locale),
+        },
+        {
+          label: secondaryTimestampLabel,
+          value: secondaryTimestampValue,
         },
         {
           label: t('profile.gameReplay.players'),

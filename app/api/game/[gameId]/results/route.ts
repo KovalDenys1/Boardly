@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { getGameDurationMs, getGameEndedAt } from '@/lib/game-display'
 
 export async function GET(
   request: NextRequest,
@@ -74,6 +75,8 @@ export async function GET(
     }
 
     const resolvedGameType = game.lobby.gameType || game.gameType
+    const endedAt = getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
+    const durationMs = getGameDurationMs(game.createdAt, endedAt)
 
     // Format response
     const formattedGame = {
@@ -84,7 +87,9 @@ export async function GET(
       status: game.status,
       createdAt: game.createdAt.toISOString(),
       updatedAt: game.updatedAt.toISOString(),
-      finishedAt: null, // Game model doesn't have finishedAt field
+      finishedAt: game.status === 'finished' ? endedAt?.toISOString() || null : null,
+      endedAt: endedAt?.toISOString() || null,
+      durationMs,
       abandonedAt: game.abandonedAt?.toISOString() || null,
       hasReplay: game.status === 'finished',
       replayStepCount: game._count.snapshots,

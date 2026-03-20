@@ -99,6 +99,8 @@ describe('ReplayViewerModal', () => {
           status: 'finished',
           createdAt: '2026-03-01T10:00:00.000Z',
           updatedAt: '2026-03-01T10:15:00.000Z',
+          endedAt: '2026-03-01T10:15:00.000Z',
+          durationMs: 15 * 60 * 1000,
           players: [
             {
               userId: 'user-1',
@@ -156,6 +158,8 @@ describe('ReplayViewerModal', () => {
     expect(await screen.findByText('Friday Finals')).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.replayGuide')).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.summaryWinner:Player One')).toBeTruthy()
+    expect(screen.getByText('profile.gameReplay.duration')).toBeTruthy()
+    expect(screen.getByText('profile.gameReplay.endedOn')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'profile.gameReplay.play' })).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.timeline')).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.currentStep')).toBeTruthy()

@@ -137,6 +137,8 @@ describe('GET /api/game/[gameId]/replay', () => {
 
     expect(response.status).toBe(200)
     expect(payload.game.id).toBe('game-1')
+    expect(payload.game.endedAt).toBe('2026-02-27T18:10:00.000Z')
+    expect(payload.game.durationMs).toBe(10 * 60 * 1000)
     expect(payload.replay.count).toBe(1)
     expect(payload.replay.snapshots[0].actionType).toBe('game:start')
     expect(mockDecodeGameReplaySnapshots).toHaveBeenCalledTimes(1)
