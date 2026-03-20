@@ -238,7 +238,14 @@ export default function GameHistory() {
 
   return (
     <div className="space-y-6">
-      <GameResultsModal gameId={selectedGameId} onClose={() => setSelectedGameId(null)} />
+      <GameResultsModal
+        gameId={selectedGameId}
+        onClose={() => setSelectedGameId(null)}
+        onWatchReplay={(gameId) => {
+          setSelectedGameId(null)
+          setSelectedReplayGameId(gameId)
+        }}
+      />
       <ReplayViewerModal gameId={selectedReplayGameId} onClose={() => setSelectedReplayGameId(null)} />
 
       <div className={`${primarySurfaceClassName} overflow-hidden`}>
