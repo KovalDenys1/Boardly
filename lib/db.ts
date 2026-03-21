@@ -3,6 +3,7 @@ import dotenv from 'dotenv'
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { Prisma, PrismaClient } from '@/prisma/client'
+import { normalizeRuntimeDatabaseUrl } from '@/lib/db-connection-string'
 import { logger } from './logger'
 import { DatabaseTimeoutError } from './database-errors'
 import { dbMonitor } from './db-monitoring'
@@ -75,19 +76,7 @@ function getRuntimeDatabaseUrl(): string {
   }
 
   const caCertPath = resolveTlsCaCertPath(process.env.MCP_POSTGRES_CA_CERT_PATH)
-  if (!caCertPath) {
-    return rawDatabaseUrl
-  }
-
-  const databaseUrl = new URL(rawDatabaseUrl)
-
-  if (!databaseUrl.searchParams.has('sslrootcert')) {
-    databaseUrl.searchParams.set('sslrootcert', caCertPath)
-  }
-
-  databaseUrl.searchParams.set('sslmode', 'verify-full')
-
-  return databaseUrl.toString()
+  return normalizeRuntimeDatabaseUrl(rawDatabaseUrl, { caCertPath })
 }
 
 function createPrismaAdapter() {
