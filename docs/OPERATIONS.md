@@ -75,6 +75,7 @@ Recommended:
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
 - `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
 - `MCP_POSTGRES_CA_CERT_PATH` (optional CA bundle path for hosted/TLS PostgreSQL used by Prisma 7 adapter and MCP scripts; not needed for local localhost PostgreSQL)
+- hosted `DATABASE_URL` note: if your provider ships `sslmode=require` without a CA bundle, Boardly now enables libpq-compatible TLS semantics at runtime unless `MCP_POSTGRES_CA_CERT_PATH` is configured for strict `verify-full`
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
 - `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
@@ -176,6 +177,12 @@ Then rerun:
 ```bash
 bash scripts/codex-mcp-health-check.sh
 ```
+
+Runtime note:
+
+- Prisma 7 / `pg-connection-string` may treat `sslmode=require` more strictly than older libpq-style clients.
+- Boardly normalizes hosted runtime URLs with `sslmode=require|prefer|verify-ca` to libpq-compatible behavior when no CA bundle is configured.
+- If you want strict certificate verification, configure `MCP_POSTGRES_CA_CERT_PATH` so runtime uses `sslmode=verify-full`.
 
 ### Render build hangs after Prisma datasource log
 
