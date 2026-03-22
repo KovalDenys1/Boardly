@@ -213,6 +213,40 @@ describe('Social loop APIs', () => {
       expect(mockNotifySocket).not.toHaveBeenCalled()
     })
 
+    it('returns no notifications when requester is the only remaining latest-game participant', async () => {
+      mockGetRequestAuthUser.mockResolvedValue({
+        id: 'host-1',
+        username: 'Host',
+        isGuest: false,
+      })
+      mockPrisma.lobbies.findUnique.mockResolvedValue({
+        id: 'lobby-1',
+        code: 'ABCD',
+        name: 'Lobby',
+        gameType: 'yahtzee',
+        creatorId: 'host-1',
+        games: [
+          {
+            id: 'game-1',
+            players: [{ userId: 'host-1', user: { username: 'Host', email: 'host@example.com' } }],
+          },
+        ],
+      } as any)
+
+      const request = new NextRequest('http://localhost:3000/api/lobby/ABCD/rematch', {
+        method: 'POST',
+      })
+      const response = await REQUEST_REMATCH(request, {
+        params: Promise.resolve({ code: 'ABCD' }),
+      })
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.notifiedCount).toBe(0)
+      expect(data.notifiedUserIds).toEqual([])
+      expect(mockNotifySocket).not.toHaveBeenCalled()
+    })
+
     it('returns localized error when lobby has no games yet', async () => {
       mockGetRequestAuthUser.mockResolvedValue({
         id: 'host-1',
