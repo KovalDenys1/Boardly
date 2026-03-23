@@ -30,6 +30,11 @@ jest.mock('@/lib/profile-navigation', () => ({
   navigateToProfile: (...args: unknown[]) => mockNavigateToProfile(...args),
 }))
 
+jest.mock('@/components/LanguageSwitcher', () => ({
+  __esModule: true,
+  default: () => <div data-testid="mobile-language-switcher" />,
+}))
+
 describe('MobileMenu', () => {
   beforeEach(() => {
     jest.useFakeTimers()
@@ -152,5 +157,29 @@ describe('MobileMenu', () => {
       '/',
       { tab: 'settings' }
     )
+  })
+
+  it('keeps the compact menu split active through the tablet breakpoint', () => {
+    render(
+      <MobileMenu
+        isAuthenticated={false}
+        isAdmin={false}
+      />
+    )
+
+    expect(screen.getByLabelText('Open menu').className).toContain('lg:hidden')
+  })
+
+  it('renders the language switcher inside the menu panel', () => {
+    render(
+      <MobileMenu
+        isAuthenticated={false}
+        isAdmin={false}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText('Open menu'))
+
+    expect(screen.getByTestId('mobile-language-switcher')).toBeTruthy()
   })
 })

@@ -78,4 +78,18 @@ describe('HeaderActions responsive user block', () => {
     fireEvent.click(profileButton!)
     expect(mockNavigateToProfile).toHaveBeenCalled()
   })
+
+  it('keeps desktop action groups hidden until the large breakpoint', () => {
+    render(
+      <HeaderActions
+        isAuthenticated
+        userName="Denys"
+        userEmail="denys@example.com"
+      />
+    )
+
+    const logoutButton = screen.getByRole('button', { name: /logout/i })
+    expect(logoutButton.parentElement?.className).toContain('hidden')
+    expect(logoutButton.parentElement?.className).toContain('lg:flex')
+  })
 })
