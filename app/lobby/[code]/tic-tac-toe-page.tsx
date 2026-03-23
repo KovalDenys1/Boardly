@@ -21,6 +21,7 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 
 interface Lobby {
     id: string
@@ -83,6 +84,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const leaveStartedAtRef = React.useRef<number | null>(null)
     const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
     const leaveApiStatusCodeRef = React.useRef<number | null>(null)
+    const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'tic_tac_toe').minPlayersRequired
 
     const trackLeaveRedirectEvent = useCallback(
         (navigation: 'router_replace' | 'window_assign_fallback') => {
@@ -286,13 +288,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
         }
 
-        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers <= 1) {
+        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
             triggerLifecycleRedirect('player-left:insufficient-players')
             return
         }
 
         void loadLobby()
-    }, [loadLobby, triggerLifecycleRedirect])
+    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect])
 
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {

@@ -1,11 +1,11 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
-import { getGameMetadata } from '../game-catalog'
 import {
   advanceTurnPastDisconnectedPlayers,
   setPlayerConnectionInState,
   TurnState,
 } from '../disconnected-turn'
+import { getLobbyPlayerRequirements } from '../lobby-player-requirements'
 import { parsePersistedGameState, toPersistedGameStateInput, type PersistedGameStateValue } from '../persisted-game-state'
 
 type LogContext = Record<string, unknown>
@@ -98,7 +98,7 @@ function getUserDisplayName(user: DisconnectSyncUser | undefined): string {
   return user?.username || user?.email || 'Player'
 }
 
-function shouldAbandonDisconnectedTwoPlayerMatch(
+function shouldAbandonDisconnectedMatch(
   activeGame: Pick<ActiveLobbyGameRecord, 'gameType'>,
   parsedState: TurnState,
   isActive: boolean
@@ -107,17 +107,13 @@ function shouldAbandonDisconnectedTwoPlayerMatch(
     return false
   }
 
-  const metadata = getGameMetadata(activeGame.gameType)
-  if (!metadata || metadata.maxPlayers !== 2) {
-    return false
-  }
-
   if (!Array.isArray(parsedState.players) || parsedState.players.length === 0) {
     return false
   }
 
+  const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
   const activeParticipants = parsedState.players.filter((player) => player?.isActive !== false).length
-  return activeParticipants < 2
+  return activeParticipants < minPlayersRequired
 }
 
 export function createDisconnectSyncManager({
@@ -195,7 +191,7 @@ export function createDisconnectSyncManager({
 
       const now = Date.now()
       const connectionChanged = setPlayerConnectionInState(parsedState, userId, isActive, now)
-      const shouldAbandon = shouldAbandonDisconnectedTwoPlayerMatch(activeGame, parsedState, isActive)
+      const shouldAbandon = shouldAbandonDisconnectedMatch(activeGame, parsedState, isActive)
 
       let turnAdvanced = false
       let skippedPlayerIds: string[] = []

@@ -5,6 +5,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const SOCKET_NOTIFY_DEBOUNCE_MS = 0
@@ -177,11 +178,12 @@ export async function POST(
         }
       }),
     ])
+    const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
 
     const creatorLeft = lobby.creatorId === userId
     const lobbyCanStayActive =
       activeGame.status === 'playing'
-        ? remainingPlayers > 1 && remainingHumanPlayers > 0
+        ? remainingPlayers >= minPlayersRequired && remainingHumanPlayers > 0
         : remainingPlayers > 0 && remainingHumanPlayers > 0
     const reassignedCreator =
       creatorLeft && lobbyCanStayActive
@@ -308,9 +310,8 @@ export async function POST(
       })
     }
 
-    // If only 1 or fewer players remain in total, end the game
-    // A game needs at least 2 players to continue
-    if (remainingPlayers <= 1) {
+    // End the game when the remaining roster can no longer satisfy this game's minimum player count.
+    if (remainingPlayers < minPlayersRequired) {
       await prisma.games.update({
         where: { id: activeGame.id },
         data: {
