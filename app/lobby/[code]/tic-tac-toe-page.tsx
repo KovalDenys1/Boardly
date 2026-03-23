@@ -21,6 +21,7 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 
 interface Lobby {
     id: string
@@ -83,6 +84,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const leaveStartedAtRef = React.useRef<number | null>(null)
     const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
     const leaveApiStatusCodeRef = React.useRef<number | null>(null)
+    const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'tic_tac_toe').minPlayersRequired
 
     const trackLeaveRedirectEvent = useCallback(
         (navigation: 'router_replace' | 'window_assign_fallback') => {
@@ -257,6 +259,42 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             triggerLifecycleRedirect(redirectReason)
         }
     }, [game?.status, lobby?.isActive, triggerLifecycleRedirect])
+
+    const handleGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
+        clientLogger.log('📡 Tic-Tac-Toe game abandoned:', data)
+
+        if (isLeavingLobbyRef.current) {
+            return
+        }
+
+        void loadLobby()
+        triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`)
+    }, [loadLobby, triggerLifecycleRedirect])
+
+    const handlePlayerLeft = useCallback((data: {
+        userId: string
+        username?: string
+        playerName?: string
+        remainingPlayers?: number
+    }) => {
+        clientLogger.log('📡 Tic-Tac-Toe player left:', data)
+
+        if (isLeavingLobbyRef.current) {
+            return
+        }
+
+        const departedPlayerName = data.username || data.playerName
+        if (departedPlayerName) {
+            showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+        }
+
+        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+            triggerLifecycleRedirect('player-left:insufficient-players')
+            return
+        }
+
+        void loadLobby()
+    }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect])
 
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {
@@ -439,6 +477,19 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 void loadLobby()
             })
 
+            newSocket.on('game-abandoned', (payload: { gameId: string; reason?: string }) => {
+                handleGameAbandoned(payload)
+            })
+
+            newSocket.on('player-left', (payload: {
+                userId: string
+                username?: string
+                playerName?: string
+                remainingPlayers?: number
+            }) => {
+                handlePlayerLeft(payload)
+            })
+
             newSocket.on('disconnect', () => {
                 clientLogger.log('❌ Socket disconnected from Tic-Tac-Toe')
             })
@@ -457,7 +508,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 activeSocket?.close()
             }
         }
-    }, [applyAuthoritativeState, status, isGuest, guestToken, code, loadLobby])
+    }, [applyAuthoritativeState, status, isGuest, guestToken, code, loadLobby, handleGameAbandoned, handlePlayerLeft])
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false
