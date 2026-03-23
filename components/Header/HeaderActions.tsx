@@ -52,7 +52,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   if (isGuestSession) {
     return (
-      <div className="hidden md:flex shrink-0 items-center gap-2">
+      <div className="hidden lg:flex shrink-0 items-center gap-2">
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
@@ -71,7 +71,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   if (!isAuthenticated) {
     return (
-      <div className="hidden md:flex shrink-0 items-center gap-2">
+      <div className="hidden lg:flex shrink-0 items-center gap-2">
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
@@ -89,7 +89,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   }
 
   return (
-    <div className="hidden md:flex items-center gap-2 lg:gap-4 min-w-0">
+    <div className="hidden lg:flex items-center gap-2 lg:gap-4 min-w-0">
       <div className="min-w-0 max-w-[220px] self-center text-right lg:max-w-[280px]">
         <div className="flex flex-col items-end justify-center leading-tight">
         <span

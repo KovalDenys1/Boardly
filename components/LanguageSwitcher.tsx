@@ -4,8 +4,13 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { availableLocales } from '@/locales'
 import { setStoredAppearanceLocale } from '@/lib/appearance-preferences'
 
-export default function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  variant?: 'header' | 'panel'
+}
+
+export default function LanguageSwitcher({ variant = 'header' }: LanguageSwitcherProps) {
   const { i18n } = useTranslation()
+  const isPanelVariant = variant === 'panel'
 
   const handleLocaleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const nextLanguage = e.target.value
@@ -43,11 +48,15 @@ export default function LanguageSwitcher() {
   }
 
   return (
-    <div className="relative min-w-[138px] max-w-[156px]">
+    <div className={isPanelVariant ? 'relative w-full' : 'relative min-w-[138px] max-w-[156px]'}>
       <select
         value={i18n.language}
         onChange={handleLocaleChange}
-        className="w-full appearance-none rounded-xl border border-white/30 bg-white/24 px-3 py-2 pr-9 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(37,99,235,0.18),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-md outline-none transition hover:bg-white/28 focus:border-white/40 focus:bg-white/32 focus:ring-2 focus:ring-white/25"
+        className={
+          isPanelVariant
+            ? 'w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm font-semibold text-slate-700 shadow-sm outline-none transition hover:border-slate-300 hover:bg-slate-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:focus:border-blue-400 dark:focus:ring-blue-500/20'
+            : 'w-full appearance-none rounded-xl border border-white/30 bg-white/24 px-3 py-2 pr-9 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(37,99,235,0.18),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-md outline-none transition hover:bg-white/28 focus:border-white/40 focus:bg-white/32 focus:ring-2 focus:ring-white/25'
+        }
         aria-label="Select language"
       >
         {availableLocales.map((loc) => (
@@ -58,7 +67,11 @@ export default function LanguageSwitcher() {
       </select>
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-white/70"
+        className={
+          isPanelVariant
+            ? 'pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500 dark:text-slate-400'
+            : 'pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-white/70'
+        }
       >
         ▾
       </span>

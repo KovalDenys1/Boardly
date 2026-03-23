@@ -17,7 +17,7 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
   const isActive = (path: string) => pathname === path
 
   return (
-    <div className="hidden md:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(10px, 1vw, 20px)' }}>
+    <div className="hidden lg:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(10px, 1vw, 20px)' }}>
       <button
         onClick={() => router.push('/')}
         className={`rounded-lg font-medium transition-colors ${isActive('/')

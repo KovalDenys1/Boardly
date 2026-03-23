@@ -7,6 +7,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
@@ -120,7 +121,7 @@ export function MobileMenu({
             setMobileMenuOpen(true)
           }
         }}
-        className="md:hidden rounded-lg transition-all duration-200 relative z-50"
+        className="lg:hidden rounded-lg transition-all duration-200 relative z-50"
         style={{
           padding: 'clamp(8px, 0.8vh, 12px)',
           backgroundColor: mobileMenuOpen ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
@@ -152,14 +153,14 @@ export function MobileMenu({
         <>
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'
+            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'
               }`}
             onClick={closeMenu}
           />
 
           {/* Menu panel */}
           <div
-            className={`fixed top-0 right-0 bottom-0 flex h-full w-[85vw] max-w-sm flex-col bg-white dark:bg-gray-900 shadow-2xl z-50 md:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
+            className={`fixed top-0 right-0 bottom-0 flex h-full w-[85vw] max-w-sm flex-col bg-white dark:bg-gray-900 shadow-2xl z-50 lg:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
               }`}
             style={{
               borderLeft: '1px solid',
@@ -340,6 +341,13 @@ export function MobileMenu({
                     <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
                   </>
                 )}
+
+                <div className="rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    Language
+                  </p>
+                  <LanguageSwitcher variant="panel" />
+                </div>
               </div>
             </nav>
 
