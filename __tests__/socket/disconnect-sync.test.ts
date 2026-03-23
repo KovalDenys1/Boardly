@@ -55,6 +55,7 @@ describe('createDisconnectSyncManager', () => {
 
     expect(result).toEqual({
       updated: false,
+      abandoned: false,
       turnAdvanced: false,
       skippedPlayerIds: [],
     })
@@ -68,6 +69,7 @@ describe('createDisconnectSyncManager', () => {
       games: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'game-active-1',
+          gameType: 'yahtzee',
           state: {
             players: [
               { id: user.id, isActive: true },
@@ -146,6 +148,112 @@ describe('createDisconnectSyncManager', () => {
         }),
       }),
     })
+  })
+
+  it('abandons an active two-player match when a disconnect leaves fewer than two active participants', async () => {
+    jest.useFakeTimers()
+    const updatedAt = new Date('2026-03-23T08:00:00.000Z')
+    const emitWithMetadata = jest.fn()
+    const io = {
+      to: jest.fn().mockReturnValue({
+        emit: jest.fn(),
+      }),
+    }
+
+    const prisma = {
+      games: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'game-active-2',
+          gameType: 'tic_tac_toe',
+          state: {
+            players: [
+              { id: user.id, isActive: true },
+              { id: 'user-2', isActive: true },
+            ],
+            currentPlayerIndex: 0,
+            data: {
+              board: [
+                [null, null, null],
+                [null, null, null],
+                [null, null, null],
+              ],
+              currentSymbol: 'X',
+              moveCount: 0,
+              winner: null,
+            },
+          },
+          currentTurn: 0,
+          updatedAt,
+          players: [
+            {
+              userId: user.id,
+              position: 0,
+              user: { username: 'Alice', email: 'alice@example.com', bot: null },
+            },
+            {
+              userId: 'user-2',
+              position: 1,
+              user: { username: 'Bob', email: 'bob@example.com', bot: null },
+            },
+          ],
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      players: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      lobbies: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+    }
+
+    const deps = createDeps({
+      io: io as DisconnectSyncOptions['io'],
+      prisma: prisma as unknown as DisconnectSyncOptions['prisma'],
+      emitWithMetadata,
+      disconnectGraceMs: 10,
+    })
+    const manager = createDisconnectSyncManager(deps)
+
+    manager.scheduleAbruptDisconnectForLobby('ABCD', user)
+
+    await jest.advanceTimersByTimeAsync(20)
+
+    expect(prisma.games.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'game-active-2',
+        currentTurn: 0,
+        updatedAt,
+      },
+      data: expect.objectContaining({
+        status: 'abandoned',
+        abandonedAt: expect.any(Date),
+        state: expect.objectContaining({
+          players: expect.arrayContaining([
+            expect.objectContaining({
+              id: user.id,
+              isActive: false,
+            }),
+          ]),
+        }),
+      }),
+    })
+    expect(emitWithMetadata).toHaveBeenCalledWith(
+      'lobby:ABCD',
+      'game-abandoned',
+      expect.objectContaining({
+        lobbyCode: 'ABCD',
+        gameId: 'game-active-2',
+        reason: 'insufficient_players',
+        abandonedBy: user.id,
+      })
+    )
+    expect(emitWithMetadata).not.toHaveBeenCalledWith(
+      'lobby:ABCD',
+      'game-update',
+      expect.anything()
+    )
+    expect(io.to).toHaveBeenCalledWith('lobby-list')
   })
 
   it('cancels scheduled abrupt disconnect cleanup when cleared manually', async () => {

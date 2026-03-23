@@ -258,6 +258,42 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         }
     }, [game?.status, lobby?.isActive, triggerLifecycleRedirect])
 
+    const handleGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
+        clientLogger.log('📡 Tic-Tac-Toe game abandoned:', data)
+
+        if (isLeavingLobbyRef.current) {
+            return
+        }
+
+        void loadLobby()
+        triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`)
+    }, [loadLobby, triggerLifecycleRedirect])
+
+    const handlePlayerLeft = useCallback((data: {
+        userId: string
+        username?: string
+        playerName?: string
+        remainingPlayers?: number
+    }) => {
+        clientLogger.log('📡 Tic-Tac-Toe player left:', data)
+
+        if (isLeavingLobbyRef.current) {
+            return
+        }
+
+        const departedPlayerName = data.username || data.playerName
+        if (departedPlayerName) {
+            showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+        }
+
+        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers <= 1) {
+            triggerLifecycleRedirect('player-left:insufficient-players')
+            return
+        }
+
+        void loadLobby()
+    }, [loadLobby, triggerLifecycleRedirect])
+
     // Handle move submission
     const handleMove = useCallback(async (move: Move) => {
         if (!gameEngine || !game || isMoveSubmitting) return
@@ -439,6 +475,19 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 void loadLobby()
             })
 
+            newSocket.on('game-abandoned', (payload: { gameId: string; reason?: string }) => {
+                handleGameAbandoned(payload)
+            })
+
+            newSocket.on('player-left', (payload: {
+                userId: string
+                username?: string
+                playerName?: string
+                remainingPlayers?: number
+            }) => {
+                handlePlayerLeft(payload)
+            })
+
             newSocket.on('disconnect', () => {
                 clientLogger.log('❌ Socket disconnected from Tic-Tac-Toe')
             })
@@ -457,7 +506,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 activeSocket?.close()
             }
         }
-    }, [applyAuthoritativeState, status, isGuest, guestToken, code, loadLobby])
+    }, [applyAuthoritativeState, status, isGuest, guestToken, code, loadLobby, handleGameAbandoned, handlePlayerLeft])
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false

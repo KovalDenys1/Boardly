@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { SocketEvents, SocketRooms } from '../../types/socket-events'
+import { getGameMetadata } from '../game-catalog'
 import {
   advanceTurnPastDisconnectedPlayers,
   setPlayerConnectionInState,
@@ -34,6 +35,7 @@ interface ActiveGamePlayerRecord {
 
 interface ActiveLobbyGameRecord {
   id: string
+  gameType: string
   state: PersistedGameStateValue
   currentTurn: number
   updatedAt: Date
@@ -65,6 +67,7 @@ interface WaitingLobbyDisconnectCleanupResult {
 
 interface ConnectionSyncResult {
   updated: boolean
+  abandoned: boolean
   turnAdvanced: boolean
   skippedPlayerIds: string[]
   gameId?: string
@@ -95,6 +98,28 @@ function getUserDisplayName(user: DisconnectSyncUser | undefined): string {
   return user?.username || user?.email || 'Player'
 }
 
+function shouldAbandonDisconnectedTwoPlayerMatch(
+  activeGame: Pick<ActiveLobbyGameRecord, 'gameType'>,
+  parsedState: TurnState,
+  isActive: boolean
+): boolean {
+  if (isActive) {
+    return false
+  }
+
+  const metadata = getGameMetadata(activeGame.gameType)
+  if (!metadata || metadata.maxPlayers !== 2) {
+    return false
+  }
+
+  if (!Array.isArray(parsedState.players) || parsedState.players.length === 0) {
+    return false
+  }
+
+  const activeParticipants = parsedState.players.filter((player) => player?.isActive !== false).length
+  return activeParticipants < 2
+}
+
 export function createDisconnectSyncManager({
   io,
   prisma,
@@ -116,6 +141,7 @@ export function createDisconnectSyncManager({
       },
       select: {
         id: true,
+        gameType: true,
         state: true,
         currentTurn: true,
         updatedAt: true,
@@ -148,7 +174,7 @@ export function createDisconnectSyncManager({
     for (let attempt = 1; attempt <= connectionStateSyncMaxRetries; attempt += 1) {
       const activeGame = await loadActiveGameForLobby(lobbyCode)
       if (!activeGame) {
-        return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+        return { updated: false, abandoned: false, turnAdvanced: false, skippedPlayerIds: [] }
       }
 
       let parsedState: TurnState
@@ -160,20 +186,21 @@ export function createDisconnectSyncManager({
           gameId: activeGame.id,
           userId,
         })
-        return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+        return { updated: false, abandoned: false, turnAdvanced: false, skippedPlayerIds: [] }
       }
 
       if (!Array.isArray(parsedState.players) || parsedState.players.length === 0) {
-        return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+        return { updated: false, abandoned: false, turnAdvanced: false, skippedPlayerIds: [] }
       }
 
       const now = Date.now()
       const connectionChanged = setPlayerConnectionInState(parsedState, userId, isActive, now)
+      const shouldAbandon = shouldAbandonDisconnectedTwoPlayerMatch(activeGame, parsedState, isActive)
 
       let turnAdvanced = false
       let skippedPlayerIds: string[] = []
 
-      if (options.advanceTurnIfCurrent) {
+      if (!shouldAbandon && options.advanceTurnIfCurrent) {
         const botUserIds = new Set(
           activeGame.players
             .filter((player) => !!player.user.bot)
@@ -184,9 +211,10 @@ export function createDisconnectSyncManager({
         skippedPlayerIds = turnResult.skippedPlayerIds
       }
 
-      if (!connectionChanged && !turnAdvanced) {
+      if (!connectionChanged && !turnAdvanced && !shouldAbandon) {
         return {
           updated: false,
+          abandoned: false,
           turnAdvanced: false,
           skippedPlayerIds: [],
           gameId: activeGame.id,
@@ -202,6 +230,8 @@ export function createDisconnectSyncManager({
         state: ReturnType<typeof toPersistedGameStateInput>
         currentTurn: number
         updatedAt: Date
+        status?: 'abandoned'
+        abandonedAt?: Date
         lastMoveAt?: Date
       } = {
         state: toPersistedGameStateInput(parsedState),
@@ -211,6 +241,11 @@ export function createDisconnectSyncManager({
 
       if (turnAdvanced) {
         updateData.lastMoveAt = new Date(now)
+      }
+
+      if (shouldAbandon) {
+        updateData.status = 'abandoned'
+        updateData.abandonedAt = new Date(now)
       }
 
       const updateResult = await prisma.games.updateMany({
@@ -225,6 +260,7 @@ export function createDisconnectSyncManager({
       if (updateResult.count > 0) {
         return {
           updated: true,
+          abandoned: shouldAbandon,
           turnAdvanced,
           skippedPlayerIds,
           gameId: activeGame.id,
@@ -248,7 +284,7 @@ export function createDisconnectSyncManager({
       maxRetries: connectionStateSyncMaxRetries,
     })
 
-    return { updated: false, turnAdvanced: false, skippedPlayerIds: [] }
+    return { updated: false, abandoned: false, turnAdvanced: false, skippedPlayerIds: [] }
   }
 
   async function cleanupWaitingLobbyAfterDisconnect(
@@ -400,11 +436,20 @@ export function createDisconnectSyncManager({
       },
     })
 
-    emitWithMetadata(SocketRooms.lobby(lobbyCode), SocketEvents.GAME_UPDATE, {
-      action: 'state-change',
-      payload: syncResult.updatedState,
-      lobbyCode,
-    })
+    if (syncResult.abandoned && syncResult.gameId) {
+      emitWithMetadata(SocketRooms.lobby(lobbyCode), SocketEvents.GAME_ABANDONED, {
+        lobbyCode,
+        gameId: syncResult.gameId,
+        reason: 'insufficient_players',
+        abandonedBy: user.id,
+      })
+    } else {
+      emitWithMetadata(SocketRooms.lobby(lobbyCode), SocketEvents.GAME_UPDATE, {
+        action: 'state-change',
+        payload: syncResult.updatedState,
+        lobbyCode,
+      })
+    }
 
     io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
 
@@ -412,6 +457,7 @@ export function createDisconnectSyncManager({
       lobbyCode,
       gameId: syncResult.gameId,
       userId: user.id,
+      abandoned: syncResult.abandoned,
       turnAdvanced: syncResult.turnAdvanced,
       skippedPlayerIds: syncResult.skippedPlayerIds,
     })
