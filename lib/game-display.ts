@@ -2,8 +2,6 @@ export function formatGameTypeLabel(gameType: string): string {
   switch (gameType) {
     case 'yahtzee':
       return 'Yahtzee'
-    case 'chess':
-      return 'Chess'
     case 'guess_the_spy':
       return 'Guess the Spy'
     case 'tic_tac_toe':
@@ -12,8 +10,6 @@ export function formatGameTypeLabel(gameType: string): string {
       return 'Rock Paper Scissors'
     case 'memory':
       return 'Memory'
-    case 'uno':
-      return 'Uno'
     default:
       return gameType
   }

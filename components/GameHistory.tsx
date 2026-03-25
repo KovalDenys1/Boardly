@@ -20,12 +20,10 @@ const GAME_HISTORY_STATUS_KEYS = {
 const GAME_TYPE_FILTER_OPTIONS = [
   'all',
   'yahtzee',
-  'chess',
   'guess_the_spy',
   'tic_tac_toe',
   'rock_paper_scissors',
   'memory',
-  'uno',
 ] as const
 
 const STATUS_FILTER_OPTIONS = [
