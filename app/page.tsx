@@ -4,6 +4,7 @@ import AnimatedSection from '@/components/ui/AnimatedSection'
 import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
 import HowItWorks from '@/components/HomePage/HowItWorks'
 import FaqSection from '@/components/HomePage/FaqSection'
+import GamesShowcase from '@/components/HomePage/GamesShowcase'
 
 // Keep home page fully static for fast global TTFB.
 export const dynamic = 'force-static'
@@ -36,6 +37,10 @@ export default function HomePage() {
           <AnimatedSection className="mb-8" threshold={0.4}>
             <HowItWorks />
           </AnimatedSection>
+        </div>
+        {/* Games Showcase - Static server component with links to game pages */}
+        <div className="mb-8">
+          <GamesShowcase />
         </div>
         {/* FAQ - Static server component for SEO */}
         <div className="mb-8">

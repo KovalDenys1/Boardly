@@ -32,6 +32,16 @@ export const metadata: Metadata = {
   },
 }
 
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://www.boardly.online/games' },
+    { '@type': 'ListItem', position: 3, name: 'Yahtzee', item: 'https://www.boardly.online/games/yahtzee' },
+  ],
+}
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'VideoGame',
@@ -68,8 +78,21 @@ export default function YahtzeePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+
+          {/* Breadcrumb */}
+          <nav className="mb-8 text-white/60 text-sm flex items-center gap-2" aria-label="Breadcrumb">
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            <span>/</span>
+            <Link href="/games" className="hover:text-white transition-colors">Games</Link>
+            <span>/</span>
+            <span className="text-white">Yahtzee</span>
+          </nav>
 
           {/* Hero */}
           <div className="text-center mb-16">
