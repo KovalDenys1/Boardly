@@ -394,6 +394,7 @@ export async function POST(request: NextRequest) {
         state: toPersistedGameStateInput(gameEngine.getState()),
         status: 'playing',
         gameType: persistedGameType,
+        startedAt: new Date(),
         updatedAt: new Date(),
       },
       include: {
