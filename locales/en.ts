@@ -800,6 +800,12 @@ const en = {
       invited: 'You\'ve been invited to a game!',
       loginToJoin: 'Login to join the lobby',
     },
+    guestConversion: {
+      headline: 'Save your progress — it\'s free',
+      body: 'Create an account to keep your game history, stats, and streak.',
+      cta: 'Create account',
+      dismiss: 'Maybe later',
+    },
     register: {
       title: 'Create Account',
       username: 'Username',

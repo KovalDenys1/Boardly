@@ -800,6 +800,12 @@ const no = {
       invited: 'Du er invitert til et spill!',
       loginToJoin: 'Logg inn for å bli med i lobbyen'
     },
+    guestConversion: {
+      headline: 'Lagre fremgangen din — det er gratis',
+      body: 'Opprett en konto for å beholde spillhistorikk, statistikk og rekker.',
+      cta: 'Opprett konto',
+      dismiss: 'Kanskje senere',
+    },
     register: {
       title: 'Opprett konto',
       username: 'Brukernavn',

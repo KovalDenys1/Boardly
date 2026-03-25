@@ -3,6 +3,7 @@
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { ALL_CATEGORIES } from '@/lib/yahtzee'
+import GuestConversionNudge from './GuestConversionNudge'
 
 interface YahtzeeResultsProps {
   results: PlayerResults[]
@@ -13,6 +14,8 @@ interface YahtzeeResultsProps {
   onPlayAgain: () => void
   onRequestRematch?: () => void
   onBackToLobby: () => void
+  isGuest?: boolean
+  registerUrl?: string
 }
 
 function getRankIcon(rank: number) {
@@ -44,6 +47,8 @@ export default function YahtzeeResults({
   onPlayAgain,
   onRequestRematch,
   onBackToLobby,
+  isGuest = false,
+  registerUrl = '/auth/register',
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
   const totalRounds = ALL_CATEGORIES.length
@@ -251,6 +256,10 @@ export default function YahtzeeResults({
             <span>{t('yahtzee.results.backToLobbies')}</span>
           </button>
         </div>
+
+        {isGuest && (
+          <GuestConversionNudge registerUrl={registerUrl} />
+        )}
       </div>
     </div>
   )

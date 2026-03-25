@@ -1652,6 +1652,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+              isGuest={isGuest}
+              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <>
