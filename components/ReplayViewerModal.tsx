@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ComponentType, Suspense } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { hasReplayRenderer, loadReplayRenderer } from './replay/registry'
+import type { ReplayRendererProps } from './replay/types'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
 import {
@@ -372,6 +374,7 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [GameRenderer, setGameRenderer] = useState<ComponentType<ReplayRendererProps> | null>(null)
 
   useEffect(() => {
     if (!gameId) {
@@ -398,6 +401,10 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
 
         const replayData: ReplayData = await response.json()
         setData(replayData)
+        if (hasReplayRenderer(replayData.game.gameType)) {
+          const renderer = await loadReplayRenderer(replayData.game.gameType)
+          setGameRenderer(() => renderer)
+        }
       } catch (err) {
         clientLogger.error('Failed to load replay', err)
         setError(t('errors.failedToLoad'))
@@ -815,6 +822,16 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.85fr)]">
             <div className="space-y-4">
+              {GameRenderer && currentSnapshot && (
+                <Suspense fallback={null}>
+                  <GameRenderer
+                    snapshotState={currentSnapshot.state}
+                    players={data?.game.players ?? []}
+                    playerNameById={playerNameById}
+                  />
+                </Suspense>
+              )}
+
               <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
