@@ -622,6 +622,8 @@ const en = {
       spectatorsLabel: 'Spectators',
       spectatorsDisabled: 'Disabled',
       availableSlots: 'Open slots',
+      waitingForPlayer: 'Waiting for player...',
+      openSlot: 'Open slot',
       howToPlayTitle: 'How to Play',
       howToPlayDescription: 'Quick instructions before the game starts',
       howToPlayReady: 'Wait for enough players to join the lobby.',

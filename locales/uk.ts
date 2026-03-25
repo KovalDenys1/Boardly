@@ -624,6 +624,8 @@ const uk: Translation = {
       spectatorsLabel: 'Глядачі',
       spectatorsDisabled: 'Вимкнено',
       availableSlots: 'Вільні місця',
+      waitingForPlayer: 'Очікування гравця...',
+      openSlot: 'Вільне місце',
       howToPlayTitle: 'Як грати',
       howToPlayDescription: 'Короткі інструкції перед початком гри',
       howToPlayReady: 'Дочекайтесь, поки до лобі приєднається достатньо гравців.',
