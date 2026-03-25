@@ -655,8 +655,36 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
           {error}
         </div>
       ) : !data || snapshots.length === 0 ? (
-        <div className="py-10 text-center text-gray-600 dark:text-gray-300 sm:py-14">
-          {t('profile.gameReplay.noData')}
+        <div className="overflow-hidden rounded-3xl border border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/70">
+          <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-3xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
+              🎞️
+            </div>
+            <h3 className="mt-4 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {t('profile.gameReplay.unavailable')}
+            </h3>
+            <p className="mt-2 max-w-lg text-sm text-slate-600 dark:text-slate-400">
+              {data?.game.status === 'abandoned'
+                ? t('profile.gameResults.replayUnavailableAbandoned')
+                : data?.game.status === 'cancelled'
+                  ? t('profile.gameResults.replayUnavailableCancelled')
+                  : data?.game.status === 'playing' || data?.game.status === 'waiting'
+                    ? t('profile.gameResults.replayUnavailableInProgress')
+                    : t('profile.gameResults.replayUnavailableFinished')}
+            </p>
+            {data?.game.status && (
+              <div className="mt-3">
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  data.game.status === 'finished' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' :
+                  data.game.status === 'abandoned' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' :
+                  data.game.status === 'cancelled' ? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' :
+                  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                }`}>
+                  {data.game.status}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-5">
