@@ -622,6 +622,8 @@ const no = {
       spectatorsLabel: 'Tilskuere',
       spectatorsDisabled: 'Deaktivert',
       availableSlots: 'Ledige plasser',
+      waitingForPlayer: 'Venter på spiller...',
+      openSlot: 'Ledig plass',
       howToPlayTitle: 'Slik spiller du',
       howToPlayDescription: 'Raske instruksjoner før spillet starter',
       howToPlayReady: 'Vent til nok spillere har blitt med i lobbyen.',

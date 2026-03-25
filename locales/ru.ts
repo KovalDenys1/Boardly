@@ -622,6 +622,8 @@ const ru = {
       spectatorsLabel: 'Зрители',
       spectatorsDisabled: 'Отключено',
       availableSlots: 'Свободные места',
+      waitingForPlayer: 'Ожидание игрока...',
+      openSlot: 'Свободное место',
       howToPlayTitle: 'Как играть',
       howToPlayDescription: 'Краткие инструкции перед началом игры',
       howToPlayReady: 'Дождитесь, пока в лобби присоединится достаточно игроков.',
