@@ -76,7 +76,7 @@ model Bots {
   id         String   @id @default(cuid())
   userId     String   @unique
   user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botType    String   @default("yahtzee") // Game type: "yahtzee", "chess", "spy"
+  botType    String   @default("yahtzee") // Game type: "yahtzee", "spy", etc.
   difficulty String   @default("medium") // Difficulty level: "easy", "medium", "hard"
   createdAt  DateTime @default(now()) @db.Timestamptz(3)
 
@@ -245,13 +245,11 @@ enum GameType {
   tic_tac_toe
   rock_paper_scissors
   memory
-  chess
   guess_the_spy
   telephone_doodle
   sketch_and_guess
   liars_party
   fake_artist
-  uno
   other
 }
 
