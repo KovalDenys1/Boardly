@@ -1615,13 +1615,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               lobby={lobby}
               gameEngine={gameEngine}
               minPlayers={minPlayersRequired}
-              canEditSettings={isCreator && !startingGame}
               botDifficulty={selectedBotDifficulty}
               canStartGame={canStartGame}
               startingGame={startingGame}
               onStartGame={handleStartGame}
               onAddBot={handleAddBot}
-              onUpdateSettings={updateLobbySettings}
               onBotDifficultyChange={setSelectedBotDifficulty}
               onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
               getCurrentUserId={getCurrentUserId}
