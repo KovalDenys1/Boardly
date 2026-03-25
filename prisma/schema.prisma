@@ -195,7 +195,11 @@ model Games {
   state       Json                 @db.JsonB
   status      GameStatus           @default(waiting)
   gameType    GameType             @default(yahtzee)
-  abandonedAt DateTime?            @db.Timestamptz(3)
+  abandonedAt      DateTime?            @db.Timestamptz(3)
+  startedAt        DateTime?            @db.Timestamptz(3) // Set when game transitions waiting → playing
+  endedAt          DateTime?            @db.Timestamptz(3) // Set on any terminal transition (finished/abandoned/cancelled)
+  durationSeconds  Int?                                    // floor((endedAt - startedAt) / 1000); null if no startedAt
+  terminalMetadata Json?                @db.JsonB           // { outcome, winnerUserId?, isDraw, reason?, playerResults[] }
   currentTurn Int                  @default(0)
   lastMoveAt  DateTime             @default(now()) @db.Timestamptz(3) // Track when last move was made for timer
   createdAt   DateTime             @default(now()) @db.Timestamptz(3)
@@ -207,6 +211,8 @@ model Games {
   @@index([status])
   @@index([gameType, status])
   @@index([createdAt])
+  @@index([startedAt])
+  @@index([endedAt])
 }
 
 model GameStateSnapshots {

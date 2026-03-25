@@ -76,11 +76,18 @@ export async function POST(
     const humanPlayersCount = game.players.filter(p => !p.user.bot).length
 
     // Mark game as abandoned
+    const now = new Date()
+    const startedAt = (game as unknown as { startedAt?: Date | null }).startedAt
+    const durationSeconds =
+      startedAt instanceof Date ? Math.floor((now.getTime() - startedAt.getTime()) / 1000) : null
     await prisma.games.update({
       where: { id: gameId },
       data: {
         status: 'abandoned',
-        abandonedAt: new Date() // TypeScript cache issue - field exists in schema
+        abandonedAt: now,
+        endedAt: now,
+        ...(durationSeconds !== null ? { durationSeconds } : {}),
+        terminalMetadata: { outcome: 'abandoned', reason: 'manual' },
       }
     })
 

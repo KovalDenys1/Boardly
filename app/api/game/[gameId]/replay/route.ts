@@ -101,8 +101,12 @@ export async function GET(
           ]
 
     const resolvedGameType = game.lobby.gameType || game.gameType
-    const endedAt = getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
-    const durationMs = getGameDurationMs(game.createdAt, endedAt)
+    const g = game as unknown as { endedAt?: Date | null; durationSeconds?: number | null }
+    const inferredEndedAt = getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
+    const endedAt = g.endedAt ?? inferredEndedAt
+    const durationMs = g.durationSeconds != null
+      ? g.durationSeconds * 1000
+      : getGameDurationMs(game.createdAt, endedAt)
 
     const replayPayload = {
       game: {
@@ -113,7 +117,7 @@ export async function GET(
         status: game.status,
         createdAt: game.createdAt.toISOString(),
         updatedAt: game.updatedAt.toISOString(),
-        endedAt: endedAt?.toISOString() || null,
+        endedAt: endedAt?.toISOString() ?? null,
         durationMs,
         players: game.players.map((player) => ({
           userId: player.userId,
