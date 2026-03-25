@@ -5,6 +5,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const SOCKET_NOTIFY_DEBOUNCE_MS = 0
@@ -114,12 +115,6 @@ export async function POST(
       where: { code },
       include: {
         games: {
-          where: {
-            OR: [
-              { status: 'waiting' },
-              { status: 'playing' }
-            ]
-          },
           orderBy: {
             updatedAt: 'desc',
           },
@@ -145,7 +140,7 @@ export async function POST(
       lobby.games.find((game) =>
         game.players.some((p) => p.userId === userId)
       ) || null
-    const activeGame = playerOwnedGame || pickRelevantLobbyGame(lobby.games)
+    const activeGame = playerOwnedGame || pickRelevantLobbyGame(lobby.games, { includeFinished: true })
 
     if (!activeGame) {
       return NextResponse.json(
@@ -183,13 +178,13 @@ export async function POST(
         }
       }),
     ])
+    const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
 
     const creatorLeft = lobby.creatorId === userId
     const lobbyCanStayActive =
-      activeGame.status === 'waiting'
-        ? remainingPlayers > 0 && remainingHumanPlayers > 0
-        : remainingPlayers > 1 && remainingHumanPlayers > 0
-
+      activeGame.status === 'playing'
+        ? remainingPlayers >= minPlayersRequired && remainingHumanPlayers > 0
+        : remainingPlayers > 0 && remainingHumanPlayers > 0
     const reassignedCreator =
       creatorLeft && lobbyCanStayActive
         ? await reassignLobbyCreatorIfNeeded(log, lobby.id, activeGame.id, code)
@@ -214,6 +209,46 @@ export async function POST(
     if (activeGame.status === 'waiting') {
       // In waiting state, just remove player
       // If no players or no human players left, deactivate the lobby
+      if (remainingPlayers === 0 || remainingHumanPlayers === 0) {
+        await prisma.lobbies.update({
+          where: { id: lobby.id },
+          data: { isActive: false }
+        })
+
+        return NextResponse.json({
+          message: 'You left the lobby',
+          gameEnded: false,
+          lobbyDeactivated: true
+        })
+      }
+
+      emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
+      emitLobbyEvent(log, code, 'lobby-update', {
+        lobbyCode: code,
+        type: 'player-left',
+        ...(reassignedCreator
+          ? {
+              data: {
+                creatorId: reassignedCreator.userId,
+                creatorName: reassignedCreator.username,
+              },
+            }
+          : {}),
+      })
+
+      return NextResponse.json({
+        message: 'You left the lobby',
+        gameEnded: false,
+        lobbyDeactivated: false
+      })
+    }
+
+    // For terminal games, update lobby membership without mutating the settled result.
+    if (
+      activeGame.status === 'finished' ||
+      activeGame.status === 'abandoned' ||
+      activeGame.status === 'cancelled'
+    ) {
       if (remainingPlayers === 0 || remainingHumanPlayers === 0) {
         await prisma.lobbies.update({
           where: { id: lobby.id },
@@ -275,9 +310,8 @@ export async function POST(
       })
     }
 
-    // If only 1 or fewer players remain in total, end the game
-    // A game needs at least 2 players to continue
-    if (remainingPlayers <= 1) {
+    // End the game when the remaining roster can no longer satisfy this game's minimum player count.
+    if (remainingPlayers < minPlayersRequired) {
       await prisma.games.update({
         where: { id: activeGame.id },
         data: {

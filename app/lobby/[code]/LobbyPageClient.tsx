@@ -709,6 +709,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     })
   }, [triggerLifecycleRedirect])
 
+  const minPlayersRequired = React.useMemo(() => {
+    return getLobbyPlayerRequirements(lobby?.gameType as string | undefined).minPlayersRequired
+  }, [lobby?.gameType])
+
   const onPlayerLeft = useCallback((data: {
     userId: string
     username?: string
@@ -726,7 +730,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
     }
 
-    if (typeof data.remainingPlayers === 'number' && data.remainingPlayers <= 1) {
+    if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('player-left:insufficient-players', {
         toastKey: 'lobby.gameAbandoned',
       })
@@ -737,7 +741,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (loadLobbyRef.current) {
       void loadLobbyRef.current()
     }
-  }, [triggerLifecycleRedirect])
+  }, [minPlayersRequired, triggerLifecycleRedirect])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
   const canJoinSocketLobbyRoom = React.useMemo(() => {
@@ -1350,9 +1354,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
   const playerCount = game?.players?.length || 0
-  const minPlayersRequired = React.useMemo(() => {
-    return getLobbyPlayerRequirements(lobby?.gameType as string | undefined).minPlayersRequired
-  }, [lobby?.gameType])
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
   const isInGame = game?.players?.some(p =>

@@ -18,6 +18,7 @@ import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lo
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 
 type RpsLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -62,6 +63,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
     const socketRef = useRef<Socket | null>(null)
     const lifecycleRedirectInFlightRef = useRef(false)
+    const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'rock_paper_scissors').minPlayersRequired
     const getCurrentUserId = useCallback(() => {
         return isGuest ? guestId : session?.user?.id
     }, [isGuest, guestId, session?.user?.id])
@@ -227,6 +229,34 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         }
     }, [lobby?.status, lobby?.isActive, triggerLifecycleRedirect])
 
+    const handleGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
+        clientLogger.log('📡 RPS game abandoned:', data)
+
+        void loadLobbyData()
+        triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`)
+    }, [loadLobbyData, triggerLifecycleRedirect])
+
+    const handlePlayerLeft = useCallback((data: {
+        userId: string
+        username?: string
+        playerName?: string
+        remainingPlayers?: number
+    }) => {
+        clientLogger.log('📡 RPS player left:', data)
+
+        const departedPlayerName = data.username || data.playerName
+        if (departedPlayerName) {
+            showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+        }
+
+        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+            triggerLifecycleRedirect('player-left:insufficient-players')
+            return
+        }
+
+        void loadLobbyData()
+    }, [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect])
+
     // Initialize Socket.IO connection
     useEffect(() => {
         if (status === 'loading') return
@@ -293,6 +323,19 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                     clientLogger.log('📡 RPS: Received lobby update')
                 })
 
+                newSocket.on('game-abandoned', (payload: { gameId: string; reason?: string }) => {
+                    handleGameAbandoned(payload)
+                })
+
+                newSocket.on('player-left', (payload: {
+                    userId: string
+                    username?: string
+                    playerName?: string
+                    remainingPlayers?: number
+                }) => {
+                    handlePlayerLeft(payload)
+                })
+
                 newSocket.on('disconnect', () => {
                     setSocketConnected(false)
                     clientLogger.log('🔌 RPS: Socket disconnected')
@@ -313,7 +356,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             }
             setSocketConnected(false)
         }
-    }, [code, status, isGuest, guestToken, loadLobbyData, router, session?.user?.id])
+    }, [code, status, isGuest, guestToken, loadLobbyData, router, session?.user?.id, handleGameAbandoned, handlePlayerLeft])
 
     const handleSubmitChoice = async (choice: RPSChoice) => {
         if (!lobby?.game) return

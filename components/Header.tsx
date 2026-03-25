@@ -57,12 +57,12 @@ export default function Header() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Guest indicator */}
             {isGuestSession && guestName && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
                 <span className="max-w-[140px] truncate text-yellow-100 text-sm">👤 {guestName}</span>
               </div>
             )}
 
-            <div className="hidden sm:block">
+            <div className="hidden lg:block">
               <LanguageSwitcher />
             </div>
 

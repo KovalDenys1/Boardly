@@ -460,6 +460,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     games: [
       {
         id: 'game-123',
+        gameType: 'yahtzee',
         status: 'waiting',
         players: [
           {
@@ -796,6 +797,121 @@ describe('POST /api/lobby/[code]/leave', () => {
     })
   })
 
+  it('removes player from a finished game and reassigns the lobby creator after post-game leave', async () => {
+    const finishedLobby = {
+      ...mockLobby,
+      creatorId: 'user-123',
+      games: [
+        {
+          id: 'game-finished',
+          status: 'finished',
+          updatedAt: new Date('2026-03-18T12:00:00.000Z'),
+          players: [
+            {
+              id: 'player-123',
+              userId: 'user-123',
+              gameId: 'game-finished',
+              position: 0,
+              createdAt: new Date('2026-03-18T12:00:00.000Z'),
+              user: {
+                id: 'user-123',
+                username: 'testuser',
+                email: 'test@example.com',
+                bot: null,
+              },
+            },
+            {
+              id: 'player-456',
+              userId: 'user-456',
+              gameId: 'game-finished',
+              position: 1,
+              createdAt: new Date('2026-03-18T12:00:10.000Z'),
+              user: {
+                id: 'user-456',
+                username: 'another-user',
+                email: 'another@example.com',
+                bot: null,
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: 'user-123',
+      username: 'testuser',
+      suspended: false,
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(finishedLobby as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.count
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+    mockPrisma.players.findFirst.mockResolvedValue({
+      userId: 'user-456',
+      user: {
+        username: 'another-user',
+      },
+    } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({
+      id: 'lobby-123',
+      creatorId: 'user-456',
+      isActive: true,
+    } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
+      method: 'POST',
+    })
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual(
+      expect.objectContaining({
+        message: 'You left the lobby',
+        gameEnded: false,
+        lobbyDeactivated: false,
+      })
+    )
+    expect(mockPrisma.players.delete).toHaveBeenCalledWith({
+      where: { id: 'player-123' },
+    })
+    expect(mockPrisma.games.update).not.toHaveBeenCalled()
+    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith({
+      where: { id: 'lobby-123' },
+      data: { creatorId: 'user-456' },
+    })
+    expect(mockNotifySocket).toHaveBeenNthCalledWith(
+      1,
+      'lobby:ABC123',
+      'player-left',
+      expect.objectContaining({
+        userId: 'user-123',
+        playerId: 'user-123',
+        nextCreatorId: 'user-456',
+        nextCreatorName: 'another-user',
+        remainingPlayers: 1,
+      }),
+      0
+    )
+    expect(mockNotifySocket).toHaveBeenNthCalledWith(
+      2,
+      'lobby:ABC123',
+      'lobby-update',
+      {
+        lobbyCode: 'ABC123',
+        type: 'player-left',
+        data: {
+          creatorId: 'user-456',
+          creatorName: 'another-user',
+        },
+      },
+      0
+    )
+  })
+
   it('responds without waiting for socket notify when other players remain', async () => {
     const playingLobby = {
       ...mockLobby,
@@ -940,6 +1056,92 @@ describe('POST /api/lobby/[code]/leave', () => {
       'lobby:ABC123',
       'game-abandoned',
       expect.objectContaining({ reason: 'no_human_players' }),
+      0
+    )
+  })
+
+  it('abandons a playing match when leave drops it below the game minimum player count', async () => {
+    const multiplayerLobby = {
+      ...mockLobby,
+      games: [
+        {
+          id: 'game-123',
+          gameType: 'guess_the_spy',
+          status: 'playing',
+          players: [
+            {
+              id: 'player-123',
+              userId: 'user-123',
+              gameId: 'game-123',
+              user: {
+                id: 'user-123',
+                username: 'testuser',
+                bot: null,
+              },
+            },
+            {
+              id: 'player-456',
+              userId: 'user-456',
+              gameId: 'game-123',
+              user: {
+                id: 'user-456',
+                username: 'another-user',
+                bot: null,
+              },
+            },
+            {
+              id: 'player-789',
+              userId: 'user-789',
+              gameId: 'game-123',
+              user: {
+                id: 'user-789',
+                username: 'third-user',
+                bot: null,
+              },
+            },
+          ],
+        },
+      ],
+    }
+
+    mockGetServerSession.mockResolvedValue(mockSession as any)
+    mockPrisma.users.findUnique.mockResolvedValue({
+      id: 'user-123',
+      username: 'testuser',
+      suspended: false,
+    } as any)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(multiplayerLobby as any)
+    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.count
+      .mockResolvedValueOnce(2)
+      .mockResolvedValueOnce(2)
+    mockPrisma.games.update.mockResolvedValue({ id: 'game-123', status: 'abandoned' } as any)
+    mockPrisma.lobbies.update.mockResolvedValue({ id: 'lobby-123', isActive: false } as any)
+
+    const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
+      method: 'POST',
+    })
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data).toEqual(
+      expect.objectContaining({
+        gameEnded: true,
+        gameAbandoned: true,
+        lobbyDeactivated: true,
+      })
+    )
+    expect(mockPrisma.games.update).toHaveBeenCalledWith({
+      where: { id: 'game-123' },
+      data: expect.objectContaining({
+        status: 'abandoned',
+      }),
+    })
+    expect(mockNotifySocket).toHaveBeenCalledWith(
+      'lobby:ABC123',
+      'game-abandoned',
+      expect.objectContaining({ reason: 'insufficient_players' }),
       0
     )
   })
