@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { showToast } from '@/lib/i18n-toast'
+import QuickPlayButton from './QuickPlayButton'
 
 export default function HeroSection() {
   const router = useRouter()
@@ -61,7 +62,9 @@ export default function HeroSection() {
           <p className="text-white/90 text-lg mb-1">{t('guest.playingAs')}</p>
           <p className="text-white/70 text-sm">{t('guest.limitedFeatures')}</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+        <div className="flex flex-col gap-3 w-full max-w-md">
+          <QuickPlayButton className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3" />
+          <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => router.push('/games')}
             className="flex-1 px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 transition-all duration-300"
@@ -74,6 +77,7 @@ export default function HeroSection() {
           >
             {t('guest.exit')}
           </button>
+          </div>
         </div>
       </div>
     )
@@ -160,13 +164,16 @@ export default function HeroSection() {
         {/* CTA Buttons - always visible, no mb-20, no minHeight */}
         <div className="w-full max-w-md mx-auto space-y-4 mt-8">
           {isLoggedIn ? (
-            <button
-              onClick={() => router.push('/games')}
-              className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
-            >
-              <span className="text-2xl">🎮</span>
-              <span>{t('home.browseGames')}</span>
-            </button>
+            <>
+              <QuickPlayButton />
+              <button
+                onClick={() => router.push('/games')}
+                className="w-full px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3"
+              >
+                <span className="text-2xl">🎮</span>
+                <span>{t('home.browseGames')}</span>
+              </button>
+            </>
           ) : (
             <>
               <button

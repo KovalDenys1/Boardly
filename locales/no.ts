@@ -313,6 +313,7 @@ const no = {
     createLobby: 'Opprett lobby',
     joinLobby: 'Bli med i lobby',
     browseGames: 'Bla gjennom spill',
+    quickPlay: 'Rask spill',
     features: {
       title: 'Hvorfor velge Boardly?',
       realTime: {
@@ -1334,6 +1335,13 @@ const no = {
     createLobby: 'Opprett lobby',
     viewGames: 'Se spill',
     funFact: 'Visste du? Sjansene for å kaste en Yahtzee på første kast er 1 av 1296!'
+  },
+  quickPlay: {
+    finding: 'Finner spill…',
+    searching: 'Søker etter åpne lobbyer eller oppretter en med boter',
+    pickGame: 'Velg et spill — vi finner eller oppretter en kamp umiddelbart.',
+    createdLobby: 'Ny lobby med boter opprettet — klar til å spille!',
+    joinedLobby: 'Fant en åpen lobby — kobler til!',
   },
   errors: {
     generic: 'Noe gikk galt',
