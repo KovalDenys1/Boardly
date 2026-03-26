@@ -73,6 +73,9 @@ const no = {
     spectators: 'Tilskuere {{count}}',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
+    copyInviteLink: 'Kopier invitasjonslenke',
+    copyInviteLinkPrivate: 'Kopier invitasjonslenke (inkl. passord)',
+    inviteLinkCopied: 'Lenke kopiert!',
     gameAbandoned: 'Spill avsluttet - ikke nok spillere igjen',
     invite: {
       title: 'Inviter venner',

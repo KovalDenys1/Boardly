@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { sounds } from '@/lib/sounds'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
@@ -19,6 +20,8 @@ interface WaitingRoomProps {
   onBotDifficultyChange: (difficulty: BotDifficulty) => void
   onInviteFriends?: () => void
   getCurrentUserId: () => string | null | undefined
+  lobbyCode?: string
+  isPrivate?: boolean
 }
 
 export default function WaitingRoom({
@@ -34,8 +37,27 @@ export default function WaitingRoom({
   onBotDifficultyChange,
   onInviteFriends,
   getCurrentUserId,
+  lobbyCode,
+  isPrivate,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyInviteLink = async () => {
+    if (!lobbyCode) return
+    const url = `${window.location.origin}/lobby/${lobbyCode}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Join my game on Boardly', url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+    } catch {
+      // clipboard write may be denied silently
+    }
+  }
   const playerCount = game?.players?.length || 0
   const maxPlayers = lobby?.maxPlayers || 4
   const openSlots = Math.max(maxPlayers - playerCount, 0)
@@ -225,6 +247,17 @@ export default function WaitingRoom({
               )}
             </div>
 
+            {lobbyCode && (
+              <button
+                onClick={handleCopyInviteLink}
+                className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-all duration-200 border border-white/20"
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <span>{copied ? '✅' : '🔗'}</span>
+                  <span>{copied ? t('lobby.inviteLinkCopied') : (isPrivate ? t('lobby.copyInviteLinkPrivate') : t('lobby.copyInviteLink'))}</span>
+                </span>
+              </button>
+            )}
             {canConfigureBots && (
               <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3">
                 <p className="text-white/70 text-xs font-semibold uppercase tracking-wide mb-2">{t('game.ui.botDifficulty')}</p>
@@ -252,14 +285,27 @@ export default function WaitingRoom({
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-4">
-            <span className="text-2xl shrink-0">⌛</span>
-            <div className="min-w-0">
-              <p className="text-white font-bold text-sm">{t('game.ui.waitingForHost')}</p>
-              <p className="text-white/55 text-xs mt-0.5">
-                {t('game.ui.host')}: <span className="font-semibold text-white/75">{creatorName}</span>
-              </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-4">
+              <span className="text-2xl shrink-0">⌛</span>
+              <div className="min-w-0">
+                <p className="text-white font-bold text-sm">{t('game.ui.waitingForHost')}</p>
+                <p className="text-white/55 text-xs mt-0.5">
+                  {t('game.ui.host')}: <span className="font-semibold text-white/75">{creatorName}</span>
+                </p>
+              </div>
             </div>
+            {lobbyCode && (
+              <button
+                onClick={handleCopyInviteLink}
+                className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition-all duration-200 border border-white/20"
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <span>{copied ? '✅' : '🔗'}</span>
+                  <span>{copied ? t('lobby.inviteLinkCopied') : (isPrivate ? t('lobby.copyInviteLinkPrivate') : t('lobby.copyInviteLink'))}</span>
+                </span>
+              </button>
+            )}
           </div>
         )}
       </section>

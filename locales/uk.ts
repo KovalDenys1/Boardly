@@ -82,6 +82,9 @@ const uk: Translation = {
     spectators: 'Глядачі {{count}}',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',
+    copyInviteLink: 'Скопіювати посилання',
+    copyInviteLinkPrivate: 'Скопіювати посилання (з паролем)',
+    inviteLinkCopied: 'Посилання скопійовано!',
     gameAbandoned: 'Гру завершено - недостатньо гравців',
     invite: {
       title: 'Запросити друзів',
