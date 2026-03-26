@@ -96,6 +96,8 @@ export default function MemoryGameBoard({
     return result
   }, [players, parsedState.players])
 
+  const submitMoveRef = useRef<typeof submitMove | null>(null)
+
   const submitMove = useCallback(
     async (move: Pick<Move, 'type' | 'data'>) => {
       if (isSubmitting) return false
@@ -143,6 +145,12 @@ export default function MemoryGameBoard({
     [gameId, isSubmitting]
   )
 
+  // Keep a stable ref so the mismatch timer always calls the latest submitMove
+  // without re-triggering the effect when isSubmitting toggles mid-flip.
+  useEffect(() => {
+    submitMoveRef.current = submitMove
+  }, [submitMove])
+
   useEffect(() => {
     if (!isMyTurn || pendingMismatchCardIds.length !== 2) {
       resolveKeyRef.current = null
@@ -157,13 +165,13 @@ export default function MemoryGameBoard({
     resolveKeyRef.current = resolveKey
 
     const timer = window.setTimeout(() => {
-      void submitMove({ type: 'resolve-mismatch', data: {} })
+      void submitMoveRef.current?.({ type: 'resolve-mismatch', data: {} })
     }, MISMATCH_RESOLVE_DELAY_MS)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [currentPlayerId, isMyTurn, pendingMismatchCardIds, submitMove])
+  }, [currentPlayerId, isMyTurn, pendingMismatchCardIds])
 
   const handleCardClick = useCallback(
     (cardId: string) => {
