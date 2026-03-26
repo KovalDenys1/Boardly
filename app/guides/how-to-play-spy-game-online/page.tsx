@@ -56,10 +56,10 @@ export default function HowToPlaySpyGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
       <div className="min-h-screen bg-gradient-to-br from-red-500 via-pink-600 to-purple-700">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
 
           {/* Breadcrumb */}
-          <nav className="mb-8 text-white/60 text-sm flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
+          <nav className="mb-6 text-white/60 text-sm flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-white transition-colors">Home</Link>
             <span>/</span>
             <Link href="/guides" className="hover:text-white transition-colors">Guides</Link>
@@ -68,9 +68,9 @@ export default function HowToPlaySpyGuide() {
           </nav>
 
           {/* Header */}
-          <header className="mb-12">
-            <div className="text-6xl mb-4">🕵️</div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg leading-tight">
+          <header className="mb-8 sm:mb-12">
+            <div className="text-5xl sm:text-6xl mb-4">🕵️</div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 drop-shadow-lg leading-tight break-words">
               How to Play Guess the Spy Online
             </h1>
             <p className="text-white/70 text-sm">4 min read · Free to play on Boardly · 3–10 players</p>
