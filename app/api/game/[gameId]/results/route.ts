@@ -75,8 +75,13 @@ export async function GET(
     }
 
     const resolvedGameType = game.lobby.gameType || game.gameType
-    const endedAt = getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
-    const durationMs = getGameDurationMs(game.createdAt, endedAt)
+    const g = game as unknown as { endedAt?: Date | null; durationSeconds?: number | null; startedAt?: Date | null }
+    // Prefer explicit fields; fall back to inferred values for pre-migration records
+    const inferredEndedAt = getGameEndedAt(game.status, game.updatedAt, game.abandonedAt)
+    const endedAt = g.endedAt ?? inferredEndedAt
+    const durationMs = g.durationSeconds != null
+      ? g.durationSeconds * 1000
+      : getGameDurationMs(game.createdAt, endedAt)
 
     // Format response
     const formattedGame = {
@@ -87,8 +92,8 @@ export async function GET(
       status: game.status,
       createdAt: game.createdAt.toISOString(),
       updatedAt: game.updatedAt.toISOString(),
-      finishedAt: game.status === 'finished' ? endedAt?.toISOString() || null : null,
-      endedAt: endedAt?.toISOString() || null,
+      finishedAt: game.status === 'finished' ? endedAt?.toISOString() ?? null : null,
+      endedAt: endedAt?.toISOString() ?? null,
       durationMs,
       abandonedAt: game.abandonedAt?.toISOString() || null,
       hasReplay: game.status === 'finished',

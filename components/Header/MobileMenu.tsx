@@ -320,6 +320,21 @@ export function MobileMenu({
                       <span>Lobbies</span>
                     </button>
 
+                    <button
+                      onClick={() => router.push('/leaderboard')}
+                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/leaderboard')
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      style={{
+                        padding: 'clamp(12px, 1.2vh, 16px)',
+                        fontSize: 'clamp(15px, 1.5vw, 17px)'
+                      }}
+                    >
+                      <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🏆</span>
+                      <span>Leaderboard</span>
+                    </button>
+
                     {isAuthenticated && isAdmin && (
                       <button
                         onClick={() => router.push('/analytics')}

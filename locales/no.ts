@@ -73,6 +73,9 @@ const no = {
     spectators: 'Tilskuere {{count}}',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
+    copyInviteLink: 'Kopier invitasjonslenke',
+    copyInviteLinkPrivate: 'Kopier invitasjonslenke (inkl. passord)',
+    inviteLinkCopied: 'Lenke kopiert!',
     gameAbandoned: 'Spill avsluttet - ikke nok spillere igjen',
     invite: {
       title: 'Inviter venner',
@@ -283,6 +286,7 @@ const no = {
     home: 'Hjem',
     games: 'Spill',
     lobbies: 'Lobbyer',
+    leaderboard: 'Toppliste',
     profile: 'Profil',
     login: 'Logg inn',
     register: 'Registrer',
@@ -313,6 +317,7 @@ const no = {
     createLobby: 'Opprett lobby',
     joinLobby: 'Bli med i lobby',
     browseGames: 'Bla gjennom spill',
+    quickPlay: 'Rask spill',
     features: {
       title: 'Hvorfor velge Boardly?',
       realTime: {
@@ -622,6 +627,8 @@ const no = {
       spectatorsLabel: 'Tilskuere',
       spectatorsDisabled: 'Deaktivert',
       availableSlots: 'Ledige plasser',
+      waitingForPlayer: 'Venter på spiller...',
+      openSlot: 'Ledig plass',
       howToPlayTitle: 'Slik spiller du',
       howToPlayDescription: 'Raske instruksjoner før spillet starter',
       howToPlayReady: 'Vent til nok spillere har blitt med i lobbyen.',
@@ -797,6 +804,12 @@ const no = {
       rememberMe: 'Husk meg',
       invited: 'Du er invitert til et spill!',
       loginToJoin: 'Logg inn for å bli med i lobbyen'
+    },
+    guestConversion: {
+      headline: 'Lagre fremgangen din — det er gratis',
+      body: 'Opprett en konto for å beholde spillhistorikk, statistikk og rekker.',
+      cta: 'Opprett konto',
+      dismiss: 'Kanskje senere',
     },
     register: {
       title: 'Opprett konto',
@@ -1202,6 +1215,10 @@ const no = {
       replay: 'Se kampen igjen',
       replayReady: 'Replay er klar for denne kampen.',
       replayUnavailableHint: 'Replay er ikke tilgjengelig for denne kampen ennå.',
+      replayUnavailableFinished: 'Denne kampen ble avsluttet før replay-data kunne lagres.',
+      replayUnavailableAbandoned: 'Kampen endte tidlig — ingen fullstendig replay ble tatt opp.',
+      replayUnavailableCancelled: 'Kampen ble avbrutt før nok data ble lagret.',
+      replayUnavailableInProgress: 'Replay vil være tilgjengelig når kampen er ferdig.',
       winnerPending: 'Kampen pågår fortsatt',
       winnerLabel: 'Vinner',
       playedOn: 'Spilt',
@@ -1322,6 +1339,27 @@ const no = {
     createLobby: 'Opprett lobby',
     viewGames: 'Se spill',
     funFact: 'Visste du? Sjansene for å kaste en Yahtzee på første kast er 1 av 1296!'
+  },
+  quickPlay: {
+    finding: 'Finner spill…',
+    searching: 'Søker etter åpne lobbyer eller oppretter en med boter',
+    pickGame: 'Velg et spill — vi finner eller oppretter en kamp umiddelbart.',
+    createdLobby: 'Ny lobby med boter opprettet — klar til å spille!',
+    joinedLobby: 'Fant en åpen lobby — kobler til!',
+  },
+  leaderboard: {
+    title: 'Toppliste',
+    subtitle: 'Toppspillere rangert etter seierrate (min. 10 spill)',
+    allTime: 'Alle tider',
+    last30days: 'Siste 30 dager',
+    player: 'Spiller',
+    gamesPlayed: 'Spilt',
+    wins: 'Seire',
+    winRate: 'Seier %',
+    loading: 'Laster toppliste…',
+    empty: 'Ingen kvalifiserte spillere ennå',
+    emptyHint: 'Spill minst 10 spill for å vises her',
+    loadMore: 'Last mer',
   },
   errors: {
     generic: 'Noe gikk galt',

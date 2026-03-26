@@ -62,6 +62,16 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
       >
         🎯 {t('header.lobbies', 'Lobbies')}
       </button>
+      <button
+        onClick={() => router.push('/leaderboard')}
+        className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/leaderboard')
+          ? 'bg-white/20 text-white'
+          : 'text-white/80 hover:bg-white/10 hover:text-white'
+          }`}
+        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+      >
+        🏆 {t('header.leaderboard', 'Leaderboard')}
+      </button>
     </div>
   )
 }

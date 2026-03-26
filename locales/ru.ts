@@ -73,6 +73,9 @@ const ru = {
     spectators: 'Зрители {{count}}',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
+    copyInviteLink: 'Скопировать ссылку',
+    copyInviteLinkPrivate: 'Скопировать ссылку (включая пароль)',
+    inviteLinkCopied: 'Ссылка скопирована!',
     gameAbandoned: 'Игра завершена - недостаточно игроков',
     invite: {
       title: 'Пригласить друзей',
@@ -283,6 +286,7 @@ const ru = {
     home: 'Главная',
     games: 'Игры',
     lobbies: 'Лобби',
+    leaderboard: 'Таблица лидеров',
     profile: 'Профиль',
     login: 'Войти',
     register: 'Регистрация',
@@ -313,6 +317,7 @@ const ru = {
     createLobby: 'Создать лобби',
     joinLobby: 'Присоединиться к лобби',
     browseGames: 'Обзор игр',
+    quickPlay: 'Быстрая игра',
     features: {
       title: 'Почему стоит выбрать Boardly?',
       realTime: {
@@ -622,6 +627,8 @@ const ru = {
       spectatorsLabel: 'Зрители',
       spectatorsDisabled: 'Отключено',
       availableSlots: 'Свободные места',
+      waitingForPlayer: 'Ожидание игрока...',
+      openSlot: 'Свободное место',
       howToPlayTitle: 'Как играть',
       howToPlayDescription: 'Краткие инструкции перед началом игры',
       howToPlayReady: 'Дождитесь, пока в лобби присоединится достаточно игроков.',
@@ -797,6 +804,12 @@ const ru = {
       rememberMe: 'Запомнить меня',
       invited: 'Вас пригласили в игру!',
       loginToJoin: 'Войдите, чтобы присоединиться к лобби'
+    },
+    guestConversion: {
+      headline: 'Сохраните прогресс — это бесплатно',
+      body: 'Создайте аккаунт, чтобы сохранить историю игр, статистику и серии побед.',
+      cta: 'Создать аккаунт',
+      dismiss: 'Может позже',
     },
     register: {
       title: 'Создать аккаунт',
@@ -1202,6 +1215,10 @@ const ru = {
       replay: 'Посмотреть повтор',
       replayReady: 'Повтор для этого матча уже готов.',
       replayUnavailableHint: 'Повтор для этого матча пока недоступен.',
+      replayUnavailableFinished: 'Этот матч завершился до того, как были записаны данные повтора.',
+      replayUnavailableAbandoned: 'Матч завершился досрочно — полный повтор не был записан.',
+      replayUnavailableCancelled: 'Матч был отменён до того, как было записано достаточно данных.',
+      replayUnavailableInProgress: 'Повтор будет доступен после завершения матча.',
       winnerPending: 'Матч ещё продолжается',
       winnerLabel: 'Победитель',
       playedOn: 'Сыграно',
@@ -1322,6 +1339,27 @@ const ru = {
     createLobby: 'Создать лобби',
     viewGames: 'Посмотреть игры',
     funFact: 'Знаете ли вы? Шансы выбросить Ятзи с первого броска составляют 1 к 1296!'
+  },
+  quickPlay: {
+    finding: 'Ищем игру…',
+    searching: 'Ищем открытые лобби или создаём новое с ботами',
+    pickGame: 'Выберите игру — мы мгновенно найдём или создадим матч.',
+    createdLobby: 'Создано новое лобби с ботами — можно играть!',
+    joinedLobby: 'Найдено открытое лобби — присоединяемся!',
+  },
+  leaderboard: {
+    title: 'Таблица лидеров',
+    subtitle: 'Лучшие игроки по проценту побед (мин. 10 игр)',
+    allTime: 'За всё время',
+    last30days: 'За 30 дней',
+    player: 'Игрок',
+    gamesPlayed: 'Игры',
+    wins: 'Победы',
+    winRate: 'Победы %',
+    loading: 'Загрузка…',
+    empty: 'Нет подходящих игроков',
+    emptyHint: 'Сыграйте минимум 10 игр, чтобы появиться здесь',
+    loadMore: 'Загрузить ещё',
   },
   errors: {
     generic: 'Что-то пошло не так',

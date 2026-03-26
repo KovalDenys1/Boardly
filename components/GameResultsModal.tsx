@@ -389,7 +389,13 @@ export default function GameResultsModal({
                   <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400">
                     {game.hasReplay
                       ? t('profile.gameResults.replayReady')
-                      : t('profile.gameResults.replayUnavailableHint')}
+                      : game.status === 'abandoned'
+                        ? t('profile.gameResults.replayUnavailableAbandoned')
+                        : game.status === 'cancelled'
+                          ? t('profile.gameResults.replayUnavailableCancelled')
+                          : game.status === 'playing' || game.status === 'waiting'
+                            ? t('profile.gameResults.replayUnavailableInProgress')
+                            : t('profile.gameResults.replayUnavailableFinished')}
                   </p>
                 </div>
 

@@ -20,12 +20,10 @@ const GAME_HISTORY_STATUS_KEYS = {
 const GAME_TYPE_FILTER_OPTIONS = [
   'all',
   'yahtzee',
-  'chess',
   'guess_the_spy',
   'tic_tac_toe',
   'rock_paper_scissors',
   'memory',
-  'uno',
 ] as const
 
 const STATUS_FILTER_OPTIONS = [
@@ -440,7 +438,7 @@ export default function GameHistory() {
                         {formatDate(game.updatedAt)}
                       </p>
 
-                      <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                         <button
                           type="button"
                           onClick={() => setSelectedGameId(game.id)}
@@ -448,14 +446,27 @@ export default function GameHistory() {
                         >
                           {t('profile.gameHistory.clickToView')}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReplayGameId(game.id)}
-                          disabled={!game.hasReplay}
-                          className="inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
-                        >
-                          {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
-                        </button>
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReplayGameId(game.id)}
+                            disabled={!game.hasReplay}
+                            className="inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                          >
+                            {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
+                          </button>
+                          {!game.hasReplay && (
+                            <p className="text-xs text-slate-400 dark:text-slate-500 px-1">
+                              {game.status === 'abandoned'
+                                ? t('profile.gameResults.replayUnavailableAbandoned')
+                                : game.status === 'cancelled'
+                                  ? t('profile.gameResults.replayUnavailableCancelled')
+                                  : game.status === 'playing' || game.status === 'waiting'
+                                    ? t('profile.gameResults.replayUnavailableInProgress')
+                                    : t('profile.gameResults.replayUnavailableFinished')}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

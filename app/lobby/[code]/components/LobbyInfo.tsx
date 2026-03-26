@@ -196,7 +196,7 @@ export default function LobbyInfo({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           <div
             className={`rounded-xl border border-white/15 bg-white/5 px-3 py-2 ${
               canEditLobbySettings
@@ -215,10 +215,6 @@ export default function LobbyInfo({
             <p className="mt-1 text-sm font-semibold text-white break-words">
               {t('lobby.playerOccupancy', { current: currentPlayers, max: maxPlayers })}
             </p>
-          </div>
-          <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
-            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.gameTypeLabel')}</p>
-            <p className="mt-1 text-sm font-semibold text-white break-words">{gameMeta?.name ?? t('lobby.gameUnknown')}</p>
           </div>
           <div
             className={`rounded-xl border border-white/15 bg-white/5 px-3 py-2 ${

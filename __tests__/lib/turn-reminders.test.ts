@@ -2,7 +2,6 @@
 
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
 import { prisma } from '@/lib/db'
-import { sendTurnReminderEmail } from '@/lib/email'
 import {
   createNotificationUnsubscribeToken,
   getNotificationPreferences,
@@ -18,10 +17,6 @@ jest.mock('@/lib/db', () => ({
       findMany: jest.fn(),
     },
   },
-}))
-
-jest.mock('@/lib/email', () => ({
-  sendTurnReminderEmail: jest.fn(),
 }))
 
 jest.mock('@/lib/notification-preferences', () => ({
@@ -47,7 +42,6 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockSendTurnReminderEmail = sendTurnReminderEmail as jest.MockedFunction<typeof sendTurnReminderEmail>
 const mockCreateUnsubscribeToken =
   createNotificationUnsubscribeToken as jest.MockedFunction<typeof createNotificationUnsubscribeToken>
 const mockGetNotificationPreferences =
@@ -104,7 +98,6 @@ describe('runTurnReminderCycle', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockPrisma.games.findMany.mockResolvedValue([])
-    mockSendTurnReminderEmail.mockResolvedValue({ success: true })
     mockCreateUnsubscribeToken.mockReturnValue('token-123')
     mockGetNotificationPreferences.mockResolvedValue({
       inAppNotifications: true,
@@ -133,8 +126,8 @@ describe('runTurnReminderCycle', () => {
     expect(result.success).toBe(true)
     expect(result.scannedGames).toBe(1)
     expect(result.attempted).toBe(1)
-    expect(result.sent).toBe(1)
-    expect(result.skipped).toBe(0)
+    expect(result.sent).toBe(0)
+    expect(result.skipped).toBe(1)
     expect(result.failed).toBe(0)
 
     expect(mockHasRecentSentNotification).toHaveBeenCalledWith(
@@ -145,20 +138,12 @@ describe('runTurnReminderCycle', () => {
       })
     )
 
-    expect(mockSendTurnReminderEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'friend@example.com',
-        lobbyName: 'Ranked Lobby',
-        gameType: 'chess',
-        lobbyUrl: 'http://localhost:3000/lobby/ABCD',
-      })
-    )
-
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',
         type: 'turn_reminder',
-        status: 'sent',
+        status: 'skipped',
+        reason: 'email_notifications_disabled',
         dedupeKey: 'turn_reminder:game:game-1:recipient:user-2',
       })
     )
@@ -179,7 +164,6 @@ describe('runTurnReminderCycle', () => {
     expect(result.attempted).toBe(0)
     expect(result.sent).toBe(0)
     expect(result.skipped).toBe(1)
-    expect(mockSendTurnReminderEmail).not.toHaveBeenCalled()
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',
@@ -212,7 +196,6 @@ describe('runTurnReminderCycle', () => {
     expect(result.attempted).toBe(0)
     expect(result.sent).toBe(0)
     expect(result.skipped).toBe(1)
-    expect(mockSendTurnReminderEmail).not.toHaveBeenCalled()
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',
@@ -257,19 +240,26 @@ describe('runTurnReminderCycle', () => {
     })
 
     expect(result.scannedGames).toBe(2)
-    expect(result.attempted).toBe(1)
-    expect(result.sent).toBe(1)
-    expect(result.skipped).toBe(1)
+    expect(result.attempted).toBe(2)
+    expect(result.sent).toBe(0)
+    expect(result.skipped).toBe(2)
     expect(result.failed).toBe(0)
-
-    expect(mockSendTurnReminderEmail).toHaveBeenCalledTimes(1)
 
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',
         type: 'turn_reminder',
         status: 'skipped',
-        reason: 'user_already_notified_in_cycle',
+        reason: 'email_notifications_disabled',
+        dedupeKey: 'turn_reminder:game:game-1:recipient:user-2',
+      })
+    )
+    expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-2',
+        type: 'turn_reminder',
+        status: 'skipped',
+        reason: 'email_notifications_disabled',
         dedupeKey: 'turn_reminder:game:game-2:recipient:user-2',
       })
     )
@@ -319,7 +309,6 @@ describe('runTurnReminderCycle', () => {
     expect(result.attempted).toBe(0)
     expect(result.sent).toBe(0)
     expect(result.skipped).toBe(1)
-    expect(mockSendTurnReminderEmail).not.toHaveBeenCalled()
     expect(mockRecordNotificationDelivery).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-2',

@@ -222,26 +222,29 @@ export function createDisconnectSyncManager({
           ? parsedState.currentPlayerIndex
           : activeGame.currentTurn
 
-      const updateData: {
-        state: ReturnType<typeof toPersistedGameStateInput>
-        currentTurn: number
-        updatedAt: Date
-        status?: 'abandoned'
-        abandonedAt?: Date
-        lastMoveAt?: Date
-      } = {
+      const abandonNow = new Date(now)
+      const startedAt = shouldAbandon
+        ? (activeGame as unknown as { startedAt?: Date | null }).startedAt
+        : null
+      const abandonDurationSeconds =
+        shouldAbandon && startedAt instanceof Date
+          ? Math.floor((abandonNow.getTime() - startedAt.getTime()) / 1000)
+          : null
+
+      const baseUpdateData = {
         state: toPersistedGameStateInput(parsedState),
         currentTurn: nextCurrentTurn,
         updatedAt: new Date(),
-      }
-
-      if (turnAdvanced) {
-        updateData.lastMoveAt = new Date(now)
-      }
-
-      if (shouldAbandon) {
-        updateData.status = 'abandoned'
-        updateData.abandonedAt = new Date(now)
+        ...(turnAdvanced ? { lastMoveAt: new Date(now) } : {}),
+        ...(shouldAbandon
+          ? {
+              status: 'abandoned' as const,
+              abandonedAt: abandonNow,
+              endedAt: abandonNow,
+              ...(abandonDurationSeconds !== null ? { durationSeconds: abandonDurationSeconds } : {}),
+              terminalMetadata: JSON.parse(JSON.stringify({ outcome: 'abandoned', reason: 'disconnect' })),
+            }
+          : {}),
       }
 
       const updateResult = await prisma.games.updateMany({
@@ -250,7 +253,7 @@ export function createDisconnectSyncManager({
           currentTurn: activeGame.currentTurn,
           updatedAt: activeGame.updatedAt,
         },
-        data: updateData,
+        data: baseUpdateData,
       })
 
       if (updateResult.count > 0) {

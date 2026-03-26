@@ -5,13 +5,11 @@ const PERSISTED_GAME_TYPES = new Set<PrismaGameType>([
   'tic_tac_toe',
   'rock_paper_scissors',
   'memory',
-  'chess',
   'guess_the_spy',
   'telephone_doodle',
   'sketch_and_guess',
   'liars_party',
   'fake_artist',
-  'uno',
   'other',
 ])
 

@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
  * Returns user's game history with filters
  * Query params: 
  *   - status: waiting | playing | finished | abandoned | cancelled (optional)
- *   - gameType: yahtzee | tic_tac_toe | rock_paper_scissors | memory | chess | guess_the_spy | uno | other (optional)
+ *   - gameType: yahtzee | tic_tac_toe | rock_paper_scissors | memory | guess_the_spy | other (optional)
  *   - limit: number of games to return (default 50)
  *   - offset: pagination offset (default 0)
  */

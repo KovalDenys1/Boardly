@@ -489,6 +489,37 @@ export async function POST(
       })
     }
 
+    const TERMINAL_STATUSES = new Set(['finished', 'abandoned', 'cancelled'])
+    const isTerminal = TERMINAL_STATUSES.has(newState.status)
+    const terminalFields = statusChanged && isTerminal
+      ? (() => {
+          const now = new Date()
+          const startedAt = (game as unknown as { startedAt?: Date | null }).startedAt
+          const durationSeconds =
+            startedAt instanceof Date
+              ? Math.floor((now.getTime() - startedAt.getTime()) / 1000)
+              : null
+          const winnerPlayer = newState.winner
+            ? (gamePlayers.find((p) => {
+                const ep = (enginePlayers as Player[]).find((e) => e.id === p.userId)
+                return ep?.id === newState.winner
+              }) ?? null)
+            : null
+          const terminalMetadata = {
+            outcome: newState.winner ? 'winner' : newState.status === 'finished' ? 'draw' : newState.status,
+            winnerUserId: winnerPlayer?.userId ?? null,
+            isDraw: newState.status === 'finished' && !newState.winner,
+            playerResults: (enginePlayers as Player[]).map((ep, i) => ({
+              userId: gamePlayers[i]?.userId ?? ep.id,
+              placement: typeof (ep as { placement?: number }).placement === 'number' ? (ep as { placement?: number }).placement : i + 1,
+              finalScore: typeof ep.score === 'number' ? ep.score : null,
+              isWinner: ep.id === newState.winner,
+            })),
+          }
+          return { endedAt: now, durationSeconds, terminalMetadata }
+        })()
+      : {}
+
     const gameUpdateResult = await prisma.$transaction(async (tx) => {
       // Optimistic concurrency control:
       // apply update only if game row is still at the same revision we loaded.
@@ -503,6 +534,7 @@ export async function POST(
           status: newState.status,
           currentTurn: newState.currentPlayerIndex,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+          ...terminalFields,
           updatedAt: new Date(),
         },
       })

@@ -27,6 +27,14 @@ interface SendChatMessageDependencies {
   isUserActivePlayerInLobby: (lobbyCode: string, userId: string) => Promise<boolean>
   getUserDisplayName: (user: { username?: string | null; email?: string | null } | undefined) => string
   emitWithMetadata: (room: string, event: string, data: Record<string, unknown>) => void
+  persistChatMessage?: (msg: {
+    id: string
+    userId: string
+    username: string
+    message: string
+    lobbyCode: string
+    timestamp: number
+  }) => Promise<void>
 }
 
 export function createSendChatMessageHandler({
@@ -38,6 +46,7 @@ export function createSendChatMessageHandler({
   isUserActivePlayerInLobby,
   getUserDisplayName,
   emitWithMetadata,
+  persistChatMessage,
 }: SendChatMessageDependencies) {
   return async (socket: SendChatMessageSocket, data: SendChatMessagePayload) => {
     socketMonitor.trackEvent('send-chat-message')
@@ -79,14 +88,30 @@ export function createSendChatMessageHandler({
 
       const senderUserId = socket.data.user.id
       const senderUsername = getUserDisplayName(socket.data.user)
+      const messageId = randomUUID()
+      const timestamp = Date.now()
 
       emitWithMetadata(SocketRooms.lobby(normalizedLobbyCode), SocketEvents.CHAT_MESSAGE, {
-        id: randomUUID(),
+        id: messageId,
         userId: senderUserId,
         username: senderUsername,
         message: normalizedMessage,
         lobbyCode: normalizedLobbyCode,
+        timestamp,
       })
+
+      if (persistChatMessage) {
+        persistChatMessage({
+          id: messageId,
+          userId: senderUserId,
+          username: senderUsername,
+          message: normalizedMessage,
+          lobbyCode: normalizedLobbyCode,
+          timestamp,
+        }).catch(() => {
+          // fire-and-forget; don't fail the event if Redis is down
+        })
+      }
     } catch (error) {
       logger.error('Error handling chat message', error as Error, {
         socketId: socket.id,
