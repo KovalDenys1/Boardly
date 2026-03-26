@@ -101,6 +101,7 @@ function ResetPasswordForm() {
               onChange={setPassword}
               placeholder="Enter new password"
               autoComplete="new-password"
+              showStrength={true}
             />
           </div>
 

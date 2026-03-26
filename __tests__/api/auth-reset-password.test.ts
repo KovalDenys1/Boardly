@@ -59,7 +59,7 @@ describe('POST /api/auth/reset-password', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(400)
-    expect(Array.isArray(payload.error)).toBe(true)
+    expect(typeof payload.error).toBe('string')
   })
 
   it('rejects invalid or missing reset tokens', async () => {

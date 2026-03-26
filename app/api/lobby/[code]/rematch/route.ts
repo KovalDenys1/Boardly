@@ -3,11 +3,7 @@ import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
-import { sendSocialInviteEmail } from '@/lib/email'
-import {
-  createNotificationUnsubscribeToken,
-  getNotificationPreferences,
-} from '@/lib/notification-preferences'
+import { getNotificationPreferences } from '@/lib/notification-preferences'
 import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
@@ -206,37 +202,16 @@ export async function POST(
           return { success: false, error: 'Recipient disabled game invite emails' }
         }
 
-        const token = createNotificationUnsubscribeToken({
-          userId,
-          type: 'gameInvites',
-        })
-        const unsubscribeUrl = `${origin}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
-
-        const emailResult = await sendSocialInviteEmail({
-          email: recipient.email!,
-          recipientName: recipient.username,
-          senderName: requestUser.username,
-          lobbyName: lobby.name,
-          gameType: lobby.gameType,
-          inviteUrl,
-          unsubscribeUrl,
-          type: 'rematch',
-        })
-
         await recordNotificationDelivery({
           userId,
           type: 'game_invite',
-          status: emailResult.success ? 'sent' : 'failed',
-          reason: emailResult.success ? undefined : 'email_send_failed',
+          status: 'skipped',
+          reason: 'email_notifications_disabled',
           dedupeKey,
-          payload: {
-            ...payload,
-            recipientEmail: recipient.email,
-            providerError: emailResult.success ? undefined : emailResult.error,
-          },
+          payload: { ...payload, recipientEmail: recipient.email },
         })
 
-        return emailResult
+        return { success: true }
       })
     )
 

@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { queueFriendAcceptedNotificationEmail } from '@/lib/friend-notification-emails'
 import { createInAppNotification, markInAppNotificationReadByDedupeKey } from '@/lib/in-app-notifications'
 
 const limiter = rateLimit(rateLimitPresets.api)
@@ -123,22 +122,6 @@ export async function POST(
       user1Id,
       user2Id,
       friendshipId: friendship.id
-    })
-
-    await queueFriendAcceptedNotificationEmail({
-      accepter: {
-        id: friendRequest.receiver.id,
-        username: friendRequest.receiver.username,
-        email: friendRequest.receiver.email,
-      },
-      requester: {
-        id: friendRequest.sender.id,
-        username: friendRequest.sender.username,
-        email: friendRequest.sender.email,
-      },
-      requestId,
-      friendshipId: friendship.id,
-      baseUrl: new URL(req.url).origin,
     })
 
     await Promise.all([
