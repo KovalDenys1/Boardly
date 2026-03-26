@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { Prisma, GameType } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { GameType } from '@/prisma/client'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,14 +42,16 @@ export async function GET(req: NextRequest) {
   const { gameType, period, page } = parsed.data
   const since = period === '30d' ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : null
 
-  try {
-    // Build raw SQL for aggregated leaderboard query — Prisma doesn't support
-    // groupBy + filter on related tables well enough for this use case.
-    const gameTypeFilter =
-      gameType != null ? `AND g."gameType" = '${gameType}'::\"GameType\"` : ''
-    const sinceFilter =
-      since != null ? `AND g."endedAt" >= '${since.toISOString()}'::timestamptz` : ''
+  // Build optional SQL clauses with proper parameterization
+  const gameTypeClause = gameType != null
+    ? Prisma.sql`AND g."gameType" = ${gameType}::"GameType"`
+    : Prisma.empty
+  const sinceClause = since != null
+    ? Prisma.sql`AND g."endedAt" >= ${since}::timestamptz`
+    : Prisma.empty
+  const offset = page * PAGE_SIZE
 
+  try {
     type LeaderboardRow = {
       userId: string
       username: string | null
@@ -58,7 +60,9 @@ export async function GET(req: NextRequest) {
       winRate: number
     }
 
-    const rows = await prisma.$queryRawUnsafe<LeaderboardRow[]>(`
+    // Raw SQL needed for FILTER aggregates and conditional clauses —
+    // Prisma groupBy cannot express this query.
+    const rows = await prisma.$queryRaw<LeaderboardRow[]>(Prisma.sql`
       SELECT
         u.id                              AS "userId",
         u.username,
@@ -77,8 +81,8 @@ export async function GET(req: NextRequest) {
       WHERE g.status = 'finished'
         AND b.id IS NULL
         AND (ap."profileVisibility" IS NULL OR ap."profileVisibility" != 'private')
-        ${gameTypeFilter}
-        ${sinceFilter}
+        ${gameTypeClause}
+        ${sinceClause}
       GROUP BY u.id, u.username
       HAVING COUNT(p.id) >= ${MIN_GAMES}
       ORDER BY
@@ -86,7 +90,7 @@ export async function GET(req: NextRequest) {
         / NULLIF(COUNT(p.id), 0) DESC NULLS LAST,
         COUNT(p.id) FILTER (WHERE p."isWinner" = true) DESC
       LIMIT ${PAGE_SIZE}
-      OFFSET ${page * PAGE_SIZE}
+      OFFSET ${offset}
     `)
 
     const entries = rows.map((r, i) => ({
