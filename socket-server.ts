@@ -23,6 +23,7 @@ import { createDisconnectSyncManager } from './lib/socket/disconnect-sync'
 import { createJoinLobbyHandler } from './lib/socket/handlers/join-lobby'
 import { createGameActionHandler } from './lib/socket/handlers/game-action'
 import { createSendChatMessageHandler } from './lib/socket/handlers/send-chat-message'
+import { persistChatMessage } from './lib/chat-history'
 import { createPlayerTypingHandler } from './lib/socket/handlers/player-typing'
 import { createConnectionLifecycleHandlers } from './lib/socket/handlers/connection-lifecycle'
 import { createLeaveLobbyHandler } from './lib/socket/handlers/leave-lobby'
@@ -707,6 +708,7 @@ const handleSendChatMessage = createSendChatMessageHandler({
   emitWithMetadata: (room, event, data) => {
     emitWithMetadata(io, room, event, data)
   },
+  persistChatMessage,
 })
 
 const handlePlayerTyping = createPlayerTypingHandler({

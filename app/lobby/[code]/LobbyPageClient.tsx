@@ -1132,6 +1132,40 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [status, isGuest, guestToken, code])
 
+  // Load chat history on initial connect (and re-load on reconnect)
+  const chatHistoryLoadedRef = React.useRef(false)
+  useEffect(() => {
+    if (!isConnected) return
+    if (status === 'loading') return
+    if (isGuest && !guestToken) return
+
+    // On reconnect, always reload; on first connect, only once
+    if (chatHistoryLoadedRef.current && !isReconnecting) return
+    chatHistoryLoadedRef.current = true
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (isGuest && guestId && guestToken) {
+      headers['X-Guest-Id'] = guestId
+      headers['X-Guest-Token'] = guestToken
+      if (username) headers['X-Guest-Name'] = username
+    }
+
+    fetch(`/api/lobby/${code}/chat`, { headers })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+          setChatMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id))
+            const fresh = (data.messages as ChatMessagePayload[]).filter((m) => !existingIds.has(m.id))
+            return fresh.length > 0 ? [...fresh, ...prev] : prev
+          })
+        }
+      })
+      .catch(() => {
+        // non-critical; ignore
+      })
+  }, [isConnected, isReconnecting, status, isGuest, guestToken, guestId, username, code])
+
   // Handle bot overlay progression
   useEffect(() => {
     if (!showingBotOverlay || botMoveSteps.length === 0) return
