@@ -36,10 +36,6 @@ jest.mock('@/lib/socket-url', () => ({
   notifySocket: jest.fn().mockResolvedValue(true),
 }))
 
-jest.mock('@/lib/email', () => ({
-  sendSocialInviteEmail: jest.fn().mockResolvedValue({ success: true }),
-}))
-
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
     info: jest.fn(),

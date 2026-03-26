@@ -1,15 +1,7 @@
 import { Prisma } from '@/prisma/client'
 import { prisma } from './db'
 import { logger } from './logger'
-import {
-  createNotificationUnsubscribeToken,
-  getNotificationPreferences,
-} from './notification-preferences'
-import {
-  sendFriendAcceptedEmail,
-  sendFriendRequestDigestEmail,
-  sendFriendRequestEmail,
-} from './email'
+import { getNotificationPreferences } from './notification-preferences'
 import type { NotificationEmailType } from './notifications-log'
 
 type QueueStatus = 'queued' | 'processing' | 'sent' | 'skipped' | 'failed'
@@ -236,29 +228,9 @@ async function processFriendAcceptedNotification(
     return
   }
 
-  const token = createNotificationUnsubscribeToken({
-    userId: row.userId,
-    type: 'friendAccepted',
-  })
-  const unsubscribeUrl = `${baseUrl}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
-  const profileUrl = `${baseUrl}/profile`
-
-  const emailResult = await sendFriendAcceptedEmail({
-    email: payload.recipientEmail,
-    recipientName: payload.requesterName ?? null,
-    accepterName: payload.accepterName,
-    profileUrl,
-    unsubscribeUrl,
-  })
-
+  result.skipped += 1
   result.processed += 1
-  if (emailResult.success) {
-    result.sent += 1
-    await updateQueueRow(row.id, 'sent')
-  } else {
-    result.failed += 1
-    await updateQueueRow(row.id, 'failed', { reason: 'email_send_failed' })
-  }
+  await updateQueueRow(row.id, 'skipped', { reason: 'email_notifications_disabled' })
 }
 
 async function processFriendRequestGroup(
@@ -307,46 +279,9 @@ async function processFriendRequestGroup(
     return
   }
 
-  const token = createNotificationUnsubscribeToken({
-    userId,
-    type: 'friendRequests',
-  })
-  const unsubscribeUrl = `${baseUrl}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
-  const profileUrl = `${baseUrl}/profile`
-
-  const uniqueSenderNames = Array.from(
-    new Set(parsed.map((entry) => entry.payload.senderName).filter(Boolean))
-  )
-
-  const emailResult =
-    parsed.length > 1
-      ? await sendFriendRequestDigestEmail({
-          email: recipientEmail,
-          recipientName,
-          profileUrl,
-          unsubscribeUrl,
-          requestCount: parsed.length,
-          senderNames: uniqueSenderNames,
-        })
-      : await sendFriendRequestEmail({
-          email: recipientEmail,
-          recipientName,
-          senderName: parsed[0].payload.senderName,
-          profileUrl,
-          unsubscribeUrl,
-        })
-
+  result.skipped += parsed.length
   result.processed += parsed.length
-  if (emailResult.success) {
-    result.sent += parsed.length
-    if (parsed.length > 1) {
-      result.batchedDigestsSent += 1
-    }
-    await updateQueueRows(rowIds, 'sent')
-  } else {
-    result.failed += parsed.length
-    await updateQueueRows(rowIds, 'failed', 'email_send_failed')
-  }
+  await updateQueueRows(rowIds, 'skipped', 'email_notifications_disabled')
 }
 
 export async function processNotificationEmailQueue(

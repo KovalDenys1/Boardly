@@ -5,7 +5,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
-import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
 import { extractPublicProfileId } from '@/lib/public-profile'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 
@@ -152,22 +151,6 @@ export async function POST(req: NextRequest) {
           }
         }
       }
-    })
-
-    await queueFriendRequestNotificationEmail({
-      sender: {
-        id: friendRequest.sender.id,
-        username: friendRequest.sender.username,
-        email: friendRequest.sender.email,
-      },
-      receiver: {
-        id: friendRequest.receiver.id,
-        username: friendRequest.receiver.username,
-        email: friendRequest.receiver.email,
-      },
-      requestId: friendRequest.id,
-      source: 'username',
-      baseUrl: new URL(req.url).origin,
     })
 
     await createInAppNotification({

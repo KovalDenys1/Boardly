@@ -6,11 +6,6 @@ import {
 } from '@/lib/notification-queue'
 import { prisma } from '@/lib/db'
 import {
-  sendFriendAcceptedEmail,
-  sendFriendRequestDigestEmail,
-  sendFriendRequestEmail,
-} from '@/lib/email'
-import {
   createNotificationUnsubscribeToken,
   getNotificationPreferences,
 } from '@/lib/notification-preferences'
@@ -27,12 +22,6 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
-jest.mock('@/lib/email', () => ({
-  sendFriendAcceptedEmail: jest.fn(),
-  sendFriendRequestDigestEmail: jest.fn(),
-  sendFriendRequestEmail: jest.fn(),
-}))
-
 jest.mock('@/lib/notification-preferences', () => ({
   createNotificationUnsubscribeToken: jest.fn(),
   getNotificationPreferences: jest.fn(),
@@ -47,12 +36,6 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockSendFriendAcceptedEmail =
-  sendFriendAcceptedEmail as jest.MockedFunction<typeof sendFriendAcceptedEmail>
-const mockSendFriendRequestDigestEmail =
-  sendFriendRequestDigestEmail as jest.MockedFunction<typeof sendFriendRequestDigestEmail>
-const mockSendFriendRequestEmail =
-  sendFriendRequestEmail as jest.MockedFunction<typeof sendFriendRequestEmail>
 const mockCreateNotificationUnsubscribeToken =
   createNotificationUnsubscribeToken as jest.MockedFunction<typeof createNotificationUnsubscribeToken>
 const mockGetNotificationPreferences =
@@ -77,9 +60,6 @@ describe('notification queue', () => {
     mockPrisma.notifications.findMany.mockResolvedValue([] as any)
     mockPrisma.notifications.updateMany.mockResolvedValue({ count: 0 } as any)
     mockPrisma.notifications.update.mockResolvedValue({ id: 'n1' } as any)
-    mockSendFriendAcceptedEmail.mockResolvedValue({ success: true })
-    mockSendFriendRequestDigestEmail.mockResolvedValue({ success: true })
-    mockSendFriendRequestEmail.mockResolvedValue({ success: true })
     mockCreateNotificationUnsubscribeToken.mockReturnValue('token-123')
     mockGetNotificationPreferences.mockResolvedValue(basePrefs() as any)
   })
@@ -152,17 +132,8 @@ describe('notification queue', () => {
     expect(result.success).toBe(true)
     expect(result.claimed).toBe(2)
     expect(result.processed).toBe(2)
-    expect(result.sent).toBe(2)
-    expect(result.batchedDigestsSent).toBe(1)
-    expect(mockSendFriendRequestDigestEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'bob@example.com',
-        requestCount: 2,
-        senderNames: ['Alice', 'Charlie'],
-        profileUrl: 'http://localhost:3000/profile',
-      })
-    )
-    expect(mockSendFriendRequestEmail).not.toHaveBeenCalled()
+    expect(result.sent).toBe(0)
+    expect(result.skipped).toBe(2)
     expect(mockPrisma.notifications.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -173,7 +144,8 @@ describe('notification queue', () => {
     expect(mockPrisma.notifications.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          status: 'sent',
+          status: 'skipped',
+          reason: 'email_notifications_disabled',
         }),
       })
     )
@@ -213,7 +185,6 @@ describe('notification queue', () => {
     expect(result.processed).toBe(1)
     expect(result.skipped).toBe(1)
     expect(result.sent).toBe(0)
-    expect(mockSendFriendAcceptedEmail).not.toHaveBeenCalled()
     expect(mockPrisma.notifications.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'n3' },

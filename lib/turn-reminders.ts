@@ -1,10 +1,6 @@
 import { prisma } from './db'
 import { logger } from './logger'
-import { sendTurnReminderEmail } from './email'
-import {
-  createNotificationUnsubscribeToken,
-  getNotificationPreferences,
-} from './notification-preferences'
+import { getNotificationPreferences } from './notification-preferences'
 import {
   hasRecentSentNotification,
   recordNotificationDelivery,
@@ -331,42 +327,15 @@ export async function runTurnReminderCycle(
       }
 
       result.attempted += 1
-
-      const token = createNotificationUnsubscribeToken({
-        userId: recipient.id,
-        type: 'turnReminders',
-      })
-      const unsubscribeUrl = `${baseUrl}/api/notifications/unsubscribe?token=${encodeURIComponent(token)}`
-      const lobbyUrl = `${baseUrl}/lobby/${game.lobby.code}`
-
-      const emailResult = await sendTurnReminderEmail({
-        email: recipient.email,
-        recipientName: recipient.username,
-        lobbyName: game.lobby.name,
-        gameType: getDisplayGameType(String(game.lobby.gameType)),
-        lobbyUrl,
-        unsubscribeUrl,
-      })
-
-      if (emailResult.success) {
-        result.sent += 1
-        notifiedUsersInCycle.add(recipient.id)
-      } else {
-        result.failed += 1
-        result.success = false
-      }
+      result.skipped += 1
 
       await recordNotificationDelivery({
         userId: recipient.id,
         type: 'turn_reminder',
-        status: emailResult.success ? 'sent' : 'failed',
-        reason: emailResult.success ? undefined : 'email_send_failed',
+        status: 'skipped',
+        reason: 'email_notifications_disabled',
         dedupeKey,
-        payload: {
-          ...payload,
-          recipientEmail: recipient.email,
-          providerError: emailResult.success ? undefined : emailResult.error,
-        },
+        payload,
       })
     } catch (error) {
       result.failed += 1

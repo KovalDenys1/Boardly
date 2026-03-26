@@ -7,7 +7,6 @@ import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
 import { POST } from '@/app/api/friends/request/route'
-import { queueFriendRequestNotificationEmail } from '@/lib/friend-notification-emails'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 
 jest.mock('@/lib/db', () => ({
@@ -48,18 +47,12 @@ jest.mock('@/lib/logger', () => ({
   })),
 }))
 
-jest.mock('@/lib/friend-notification-emails', () => ({
-  queueFriendRequestNotificationEmail: jest.fn(() => Promise.resolve({ queued: true })),
-}))
-
 jest.mock('@/lib/in-app-notifications', () => ({
   createInAppNotification: jest.fn(() => Promise.resolve()),
 }))
 
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockQueueFriendRequestNotificationEmail =
-  queueFriendRequestNotificationEmail as jest.MockedFunction<typeof queueFriendRequestNotificationEmail>
 const mockCreateInAppNotification =
   createInAppNotification as jest.MockedFunction<typeof createInAppNotification>
 
@@ -84,7 +77,6 @@ describe('POST /api/friends/request', () => {
     } as any)
     mockPrisma.friendships.findFirst.mockResolvedValue(null as any)
     mockPrisma.friendRequests.findFirst.mockResolvedValue(null as any)
-    mockQueueFriendRequestNotificationEmail.mockResolvedValue({ queued: true } as any)
     mockCreateInAppNotification.mockResolvedValue(undefined)
   })
 
@@ -134,11 +126,6 @@ describe('POST /api/friends/request', () => {
           receiverId: 'receiver-1',
           status: 'pending',
         },
-      })
-    )
-    expect(mockQueueFriendRequestNotificationEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        requestId: 'request-1',
       })
     )
     expect(mockCreateInAppNotification).toHaveBeenCalledWith(
