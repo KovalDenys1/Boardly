@@ -315,6 +315,7 @@ const uk: Translation = {
     createLobby: 'Створити лобі',
     joinLobby: 'Приєднатися до лобі',
     browseGames: 'Огляд ігор',
+    quickPlay: 'Швидка гра',
     features: {
       title: 'Чому варто обрати Boardly?',
       realTime: {
@@ -1347,6 +1348,13 @@ const uk: Translation = {
     createLobby: 'Створити лобі',
     viewGames: 'Переглянути ігри',
     funFact: 'Чи знаєте ви? Шанс викинути Ятці з першого разу становить 1 до 1,296!',
+  },
+  quickPlay: {
+    finding: 'Шукаємо гру…',
+    searching: 'Шукаємо відкриті лобі або створюємо нове з ботами',
+    pickGame: 'Оберіть гру — ми миттєво знайдемо або створимо матч.',
+    createdLobby: 'Створено нове лобі з ботами — можна грати!',
+    joinedLobby: 'Знайдено відкрите лобі — приєднуємось!',
   },
   errors: {
     generic: 'Щось пішло не так',

@@ -313,6 +313,7 @@ const en = {
     createLobby: 'Create Lobby',
     joinLobby: 'Join Lobby',
     browseGames: 'Browse Games',
+    quickPlay: 'Quick Play',
     features: {
       title: 'Why Choose Boardly?',
       realTime: {
@@ -1345,6 +1346,13 @@ const en = {
     createLobby: 'Create Lobby',
     viewGames: 'View Games',
     funFact: 'Did you know? The chances of rolling a Yahtzee on the first roll are 1 in 1,296!',
+  },
+  quickPlay: {
+    finding: 'Finding a game…',
+    searching: 'Searching for open lobbies or creating one with bots',
+    pickGame: "Pick a game — we'll find or create a match instantly.",
+    createdLobby: 'Created a new lobby with bots — ready to play!',
+    joinedLobby: 'Found an open lobby — joining now!',
   },
   errors: {
     generic: 'Something went wrong',
