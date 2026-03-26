@@ -73,6 +73,9 @@ const en = {
     spectators: 'Spectators {{count}}',
     backToGames: 'Back to Games',
     leftLobby: 'You left the lobby',
+    copyInviteLink: 'Copy Invite Link',
+    copyInviteLinkPrivate: 'Copy Invite Link (includes password)',
+    inviteLinkCopied: 'Link Copied!',
     gameAbandoned: 'Game ended - not enough players remaining',
     invite: {
       title: 'Invite Friends',

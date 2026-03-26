@@ -1657,6 +1657,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onBotDifficultyChange={setSelectedBotDifficulty}
               onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
               getCurrentUserId={getCurrentUserId}
+              lobbyCode={code}
+              isPrivate={!!lobby?.isPrivate}
             />
           </div>
         </>

@@ -73,6 +73,9 @@ const ru = {
     spectators: 'Зрители {{count}}',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
+    copyInviteLink: 'Скопировать ссылку',
+    copyInviteLinkPrivate: 'Скопировать ссылку (включая пароль)',
+    inviteLinkCopied: 'Ссылка скопирована!',
     gameAbandoned: 'Игра завершена - недостаточно игроков',
     invite: {
       title: 'Пригласить друзей',
