@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
     type LeaderboardRow = {
       userId: string
       username: string | null
+      publicProfileId: string | null
       gamesPlayed: bigint
       wins: bigint
       winRate: number
@@ -66,6 +67,7 @@ export async function GET(req: NextRequest) {
       SELECT
         u.id                              AS "userId",
         u.username,
+        u."publicProfileId",
         COUNT(p.id)                       AS "gamesPlayed",
         COUNT(p.id) FILTER (WHERE p."isWinner" = true) AS wins,
         ROUND(
@@ -97,6 +99,7 @@ export async function GET(req: NextRequest) {
       rank: page * PAGE_SIZE + i + 1,
       userId: r.userId,
       username: r.username ?? 'Player',
+      publicProfileId: r.publicProfileId ?? null,
       gamesPlayed: Number(r.gamesPlayed),
       wins: Number(r.wins),
       winRate: r.winRate ?? 0,
