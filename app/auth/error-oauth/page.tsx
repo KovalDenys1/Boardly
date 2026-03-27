@@ -75,7 +75,7 @@ function OAuthErrorContent() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+      <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-y-auto">
         <div className="text-white text-xl">Loading...</div>
       </div>
     )
@@ -83,7 +83,7 @@ function OAuthErrorContent() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
+      <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-y-auto p-4">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">{getProviderIcon()}</div>
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -136,7 +136,7 @@ function OAuthErrorContent() {
 
   // User is authenticated - different account trying to link
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
+    <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-y-auto p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
           <div className="text-6xl mb-4">⚠️</div>
@@ -193,7 +193,7 @@ function OAuthErrorContent() {
 
 export default function OAuthErrorPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="page-shell-full bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
       <OAuthErrorContent />
     </Suspense>
   )

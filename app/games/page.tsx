@@ -186,7 +186,7 @@ export default function GamesPage() {
   // Show loading state or redirect without flickering
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <div className="text-white text-2xl">Loading...</div>
       </div>
     )
@@ -195,7 +195,7 @@ export default function GamesPage() {
   // Allow access if authenticated OR guest
   if (status === 'unauthenticated' && !isGuest) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <div className="text-white text-2xl">Redirecting...</div>
       </div>
     )
@@ -224,8 +224,9 @@ export default function GamesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
+      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-12 animate-scale-in">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6 animate-bounce-in">
@@ -372,6 +373,7 @@ export default function GamesPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

@@ -90,7 +90,7 @@ import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 
 function CenteredLoadingFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   )
@@ -108,6 +108,7 @@ const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const MobileTabPanel = dynamic(() => import('./components/MobileTabPanel'))
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
+const WaitingRoomActions = dynamic(() => import('./components/WaitingRoomActions'))
 const JoinPrompt = dynamic(() => import('./components/JoinPrompt'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
@@ -801,6 +802,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const {
     loadLobby,
     addBotToLobby,
+    kickBot,
+    changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
     handleStartGame,
@@ -1543,7 +1546,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner size="lg" />
           <p className="text-white/70">Loading session...</p>
@@ -1554,7 +1557,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -1562,7 +1565,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (!lobby) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl max-w-md w-full p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-5">
             <span className="text-3xl">🔍</span>
@@ -1625,10 +1628,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           )}
         </div>
       ) : !isGameStarted ? (
-        /* Waiting Room - natural layout without outer card */
-        <>
-          {/* Sticky header bar */}
+        /* Waiting Room - unified card with pinned actions */
+        <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl overflow-hidden">
           <LobbyInfo
+            variant="header"
             lobby={lobby}
             game={game}
             soundEnabled={soundEnabled}
@@ -1642,26 +1645,32 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onLeave={handleLeaveLobby}
           />
 
-          {/* Scrollable content area */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-1">
+          {/* Scrollable player list */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <WaitingRoom
               game={game}
               lobby={lobby}
               gameEngine={gameEngine}
               minPlayers={minPlayersRequired}
-              botDifficulty={selectedBotDifficulty}
-              canStartGame={canStartGame}
-              startingGame={startingGame}
-              onStartGame={handleStartGame}
-              onAddBot={handleAddBot}
-              onBotDifficultyChange={setSelectedBotDifficulty}
-              onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
               getCurrentUserId={getCurrentUserId}
-              lobbyCode={code}
-              isPrivate={!!lobby?.isPrivate}
+              canManageBots={canStartGame}
+              onKickBot={kickBot}
             />
           </div>
-        </>
+
+          <WaitingRoomActions
+            game={game}
+            lobby={lobby}
+            minPlayers={minPlayersRequired}
+            botDifficulty={selectedBotDifficulty}
+            canStartGame={canStartGame}
+            startingGame={startingGame}
+            onStartGame={handleStartGame}
+            onAddBot={handleAddBot}
+            onBotDifficultyChange={setSelectedBotDifficulty}
+            onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
+          />
+        </div>
       ) : (
         // Game Started - Mobile-optimized viewport
         <div

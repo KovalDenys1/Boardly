@@ -146,15 +146,16 @@ export default function RockPaperScissorsLobbiesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="page-shell flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
-      <div className="mx-auto max-w-6xl px-3 pb-10 pt-16 sm:px-4 sm:pt-20">
+    <div className="page-shell bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
+      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 sm:py-6">
         {/* Breadcrumbs */}
         <nav className="mb-5 flex items-center gap-2 text-sm text-white/75 overflow-x-auto">
           <button onClick={() => router.push('/')} className="hover:text-white transition-colors whitespace-nowrap">
@@ -316,6 +317,7 @@ export default function RockPaperScissorsLobbiesPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

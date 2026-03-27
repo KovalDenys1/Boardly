@@ -1476,6 +1476,7 @@ const ru = {
     playerJoined: '{{player}} присоединился к лобби',
     addingBot: 'Добавление бота...',
     botAddFailed: 'Не удалось добавить бота. Попробуйте снова.',
+    botKicked: 'Бот удалён из лобби.',
     botAddedToStart: '🤖 Добавлен {{botName}} ({{difficulty}}), чтобы можно было начать игру!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) присоединился к лобби!',
     gameStarted: '🎲 Игра началась! {{player}} ходит первым!',

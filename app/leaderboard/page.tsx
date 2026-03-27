@@ -75,8 +75,9 @@ export default function LeaderboardPage() {
   const selectedFilter = GAME_FILTERS.find((f) => f.value === gameType) ?? GAME_FILTERS[0]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 px-4 py-8 sm:py-12">
-      <div className="max-w-2xl mx-auto">
+    <div className="page-shell bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 py-6">
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">
@@ -246,6 +247,7 @@ export default function LeaderboardPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )
