@@ -90,7 +90,7 @@ import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 
 function CenteredLoadingFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   )
@@ -1543,7 +1543,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner size="lg" />
           <p className="text-white/70">Loading session...</p>
@@ -1554,7 +1554,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -1562,7 +1562,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (!lobby) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
+      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl max-w-md w-full p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-5">
             <span className="text-3xl">🔍</span>

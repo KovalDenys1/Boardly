@@ -355,7 +355,7 @@ function CreateLobbyPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="page-shell flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
         <div className="text-white text-xl">{t('common.loading')}</div>
       </div>
     )
@@ -366,9 +366,9 @@ function CreateLobbyPage() {
   }
 
   return (
-    <div className={`min-h-[calc(100dvh-64px)] bg-gradient-to-br ${gameInfo.gradient} flex flex-col`}>
+    <div className={`page-shell bg-gradient-to-br ${gameInfo.gradient}`}>
       <section
-        className="flex flex-col w-full px-4 py-4 md:py-0 md:h-[calc(100vh-64px)] md:items-center md:justify-center flex-shrink-0"
+        className="flex-1 flex flex-col w-full px-4 py-4 md:py-0 md:items-center md:justify-center overflow-y-auto md:overflow-hidden"
       >
         <div className="w-full max-w-4xl flex flex-col items-center justify-center">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-visible md:overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">

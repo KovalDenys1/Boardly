@@ -71,7 +71,8 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 px-4 py-8">
+    <div className="page-shell bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 py-6">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -203,6 +204,7 @@ export default function LeaderboardPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

@@ -1383,7 +1383,7 @@ export default function ProfilePage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+      <div className="page-shell flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" />
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t('profile.loading')}</p>
@@ -1397,7 +1397,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/60 to-indigo-100/80 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 pb-8">
+    <div className="page-shell bg-gradient-to-br from-slate-50 via-blue-50/60 to-indigo-100/80 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
       {/* Decorative gradient blobs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-blue-400/20 blur-3xl dark:bg-blue-600/10" />
@@ -1405,7 +1405,8 @@ export default function ProfilePage() {
         <div className="absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-indigo-400/15 blur-3xl dark:bg-indigo-600/10" />
       </div>
 
-      <div className="relative max-w-5xl mx-auto px-3 pt-16 sm:px-6 sm:pt-20 lg:px-8">
+      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="relative max-w-5xl mx-auto px-3 pt-4 sm:px-6 sm:pt-6 lg:px-8 pb-8">
         <div className="relative">
           {showPublicProfilePreview && profileSummary?.publicProfileId ? (
             <div
@@ -2250,6 +2251,7 @@ export default function ProfilePage() {
 
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
