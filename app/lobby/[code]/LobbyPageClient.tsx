@@ -1643,7 +1643,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           />
 
           {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto px-1">
+          <div className="flex-1 min-h-0 overflow-y-auto px-1">
             <WaitingRoom
               game={game}
               lobby={lobby}

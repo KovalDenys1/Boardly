@@ -99,22 +99,17 @@ export default function WaitingRoom({
     <div className="max-w-5xl mx-auto w-full px-1 py-4 space-y-4">
       {/* Players section — merged status + player list */}
       <section className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-5 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-base font-bold text-white">{t('game.ui.playersInLobbyTitle')}</h2>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                canStartImmediately
-                  ? 'border-emerald-300/40 bg-emerald-500/20 text-emerald-200'
-                  : 'border-amber-300/40 bg-amber-500/20 text-amber-200'
-              }`}
-            >
-              <span>{canStartImmediately ? '🟢' : '🟡'}</span>
-              <span>{canStartImmediately ? t('game.ui.readyToStart') : t('game.ui.waiting')}</span>
-            </span>
-          </div>
-          <span className="text-sm font-semibold text-white/60">
-            {playerCount}/{maxPlayers}
+        <div className="flex items-center gap-2.5 mb-4">
+          <h2 className="text-base font-bold text-white">{t('game.ui.playersInLobbyTitle')}</h2>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+              canStartImmediately
+                ? 'border-emerald-300/40 bg-emerald-500/20 text-emerald-200'
+                : 'border-amber-300/40 bg-amber-500/20 text-amber-200'
+            }`}
+          >
+            <span>{canStartImmediately ? '🟢' : '🟡'}</span>
+            <span>{canStartImmediately ? t('game.ui.readyToStart') : t('game.ui.waiting')}</span>
           </span>
         </div>
 
