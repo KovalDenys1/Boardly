@@ -1488,6 +1488,7 @@ const en = {
     playerJoined: '{{player}} joined the lobby',
     addingBot: 'Adding bot player...',
     botAddFailed: 'Failed to add bot player. Please try again.',
+    botKicked: 'Bot removed from lobby.',
     botAddedToStart: '🤖 Added {{botName}} ({{difficulty}}) so you can start playing!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) joined the lobby!',
     gameStarted: '🎲 Game started! {{player}} goes first!',

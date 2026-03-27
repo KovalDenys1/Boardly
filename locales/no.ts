@@ -1476,6 +1476,7 @@ const no = {
     playerJoined: '{{player}} ble med i lobbyen',
     addingBot: 'Legger til bot-spiller...',
     botAddFailed: 'Kunne ikke legge til bot-spiller. Prøv igjen.',
+    botKicked: 'Bot fjernet fra lobbyen.',
     botAddedToStart: '🤖 La til {{botName}} ({{difficulty}}) så du kan starte med en gang!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) ble med i lobbyen!',
     gameStarted: '🎲 Spillet startet! {{player}} begynner!',

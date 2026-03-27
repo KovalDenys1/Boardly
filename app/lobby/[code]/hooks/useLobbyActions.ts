@@ -729,9 +729,44 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     return data
   }, [code, isGuest, guestId, guestName, guestToken])
 
+  const kickBot = useCallback(async (botPlayerId: string) => {
+    try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+      const res = await fetch(`/api/lobby/${code}/kick-bot`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ botPlayerId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to kick bot')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+      showToast.success('toast.botKicked')
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.error')
+    }
+  }, [code, isGuest, guestId, guestName, guestToken])
+
+  const changeBotDifficulty = useCallback(async (botPlayerId: string, difficulty: BotDifficulty) => {
+    try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+      const res = await fetch(`/api/lobby/${code}/bot-difficulty`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ botPlayerId, difficulty }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to change difficulty')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.error')
+    }
+  }, [code, isGuest, guestId, guestName, guestToken])
+
   return {
     loadLobby,
     addBotToLobby,
+    kickBot,
+    changeBotDifficulty,
     announceBotJoined,
     handleJoinLobby,
     handleGuestJoinLobby,
