@@ -16,7 +16,7 @@ export async function sendVerificationEmail(email: string, token: string, userna
   const displayName = username || 'there'
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Verify your email - Boardly',
@@ -50,6 +50,9 @@ export async function sendVerificationEmail(email: string, token: string, userna
         </html>
       `,
     })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
     return { success: true }
   } catch (error) {
     logger.error('Failed to send verification email:', error as Error)
@@ -72,7 +75,7 @@ export async function sendUnverifiedAccountWarningEmail(
   const pluralizedDays = daysUntilDeletion === 1 ? 'day' : 'days'
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `Action required: verify your Boardly account in ${daysUntilDeletion} ${pluralizedDays}`,
@@ -111,6 +114,9 @@ export async function sendUnverifiedAccountWarningEmail(
         </html>
       `,
     })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
     return { success: true }
   } catch (error) {
     logger.error('Failed to send unverified warning email:', error as Error, {
@@ -129,7 +135,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Reset your password - Boardly',
@@ -162,6 +168,9 @@ export async function sendPasswordResetEmail(email: string, token: string) {
         </html>
       `,
     })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
     return { success: true }
   } catch (error) {
     logger.error('Failed to send password reset email:', error as Error)
@@ -176,7 +185,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
   }
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Welcome to Boardly! 🎲',
@@ -215,6 +224,9 @@ export async function sendWelcomeEmail(email: string, name: string) {
         </html>
       `,
     })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
     return { success: true }
   } catch (error) {
     logger.error('Failed to send welcome email:', error as Error)
@@ -231,7 +243,7 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
   const deleteUrl = `${process.env.NEXTAUTH_URL}/auth/delete-account?token=${token}`
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Confirm Account Deletion - Boardly',
@@ -283,6 +295,9 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
         </html>
       `,
     })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
     return { success: true }
   } catch (error) {
     logger.error('Failed to send account deletion email:', error as Error)
