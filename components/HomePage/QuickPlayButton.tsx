@@ -67,7 +67,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
         onClick={() => setShowPicker(true)}
         className={
           className ??
-          'w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl hover:scale-105 hover:shadow-3xl transition-all duration-300 flex items-center justify-center gap-3'
+          'w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl shadow-purple-900/30 hover:scale-105 hover:from-purple-500 hover:to-purple-400 transition-all duration-300 flex items-center justify-center gap-3'
         }
       >
         <span className="text-2xl">⚡</span>
@@ -113,7 +113,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                     <button
                       key={game.type}
                       onClick={() => handleGameSelect(game.type)}
-                      className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:hover:border-blue-600 dark:hover:bg-blue-900/20"
+                      className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-purple-300 hover:bg-purple-50 dark:border-slate-700 dark:hover:border-purple-600 dark:hover:bg-purple-900/20"
                     >
                       <span className="text-3xl">{game.emoji}</span>
                       <div>
