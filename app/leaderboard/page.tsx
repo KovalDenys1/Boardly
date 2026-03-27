@@ -9,6 +9,7 @@ interface LeaderboardEntry {
   rank: number
   userId: string
   username: string
+  publicProfileId: string | null
   gamesPlayed: number
   wins: number
   winRate: number
@@ -18,12 +19,14 @@ const GAME_FILTERS = [
   { value: '', label: 'All Games', icon: '🎮' },
   { value: 'yahtzee', label: 'Yahtzee', icon: '🎲' },
   { value: 'tic_tac_toe', label: 'Tic Tac Toe', icon: '❌' },
-  { value: 'rock_paper_scissors', label: 'Rock Paper Scissors', icon: '🍂' },
+  { value: 'rock_paper_scissors', label: 'Rock Paper Scissors', icon: '✊' },
   { value: 'guess_the_spy', label: 'Guess the Spy', icon: '🕵️' },
   { value: 'memory', label: 'Memory', icon: '🧠' },
 ]
 
 const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
+// Show as pills up to this many filters; above → dropdown
+const PILL_THRESHOLD = 5
 
 export default function LeaderboardPage() {
   const { t } = useTranslation()
@@ -40,10 +43,7 @@ export default function LeaderboardPage() {
       setLoading(true)
       setError(null)
       try {
-        const params = new URLSearchParams({
-          period,
-          page: String(nextPage),
-        })
+        const params = new URLSearchParams({ period, page: String(nextPage) })
         if (gameType) params.set('gameType', gameType)
         const res = await fetch(`/api/leaderboard?${params}`)
         if (!res.ok) throw new Error('Failed to fetch leaderboard')
@@ -70,31 +70,35 @@ export default function LeaderboardPage() {
     fetchLeaderboard(next, false)
   }
 
+  const usePills = GAME_FILTERS.length <= PILL_THRESHOLD
+
+  const selectedFilter = GAME_FILTERS.find((f) => f.value === gameType) ?? GAME_FILTERS[0]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 px-4 py-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 px-4 py-8 sm:py-12">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-extrabold text-white drop-shadow-lg mb-2">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">
             🏆 {t('leaderboard.title', 'Leaderboard')}
           </h1>
-          <p className="text-white/60 text-sm">
+          <p className="text-white/50 text-sm">
             {t('leaderboard.subtitle', 'Top players ranked by win rate (min 10 games)')}
           </p>
         </div>
 
         {/* Filters */}
         <div className="mb-6 space-y-3">
-          {/* Period toggle */}
-          <div className="flex gap-2">
+          {/* Period toggle — centered */}
+          <div className="flex justify-center gap-2">
             {(['all', '30d'] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border ${
+                className={`px-5 py-2 rounded-full font-semibold text-sm transition-all border ${
                   period === p
                     ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/40'
-                    : 'bg-white/5 border-white/15 text-white/70 hover:bg-white/10'
+                    : 'bg-white/5 border-white/15 text-white/60 hover:bg-white/10 hover:text-white/80'
                 }`}
               >
                 {p === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}
@@ -103,33 +107,63 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Game type filter */}
-          <div className="flex flex-wrap gap-2">
-            {GAME_FILTERS.map((f) => {
-              const meta = f.value ? getGameMetadata(f.value) : null
-              const icon = meta?.icon ?? f.icon
-              const label = meta?.name ?? f.label
-              return (
-                <button
-                  key={f.value}
-                  onClick={() => setGameType(f.value)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-xs transition-all border ${
-                    gameType === f.value
-                      ? 'bg-purple-600 border-purple-400 text-white'
-                      : 'bg-white/5 border-white/15 text-white/70 hover:bg-white/10'
-                  }`}
+          {usePills ? (
+            /* Pills layout — centered, wrapping */
+            <div className="flex flex-wrap justify-center gap-2">
+              {GAME_FILTERS.map((f) => {
+                const meta = f.value ? getGameMetadata(f.value) : null
+                const icon = meta?.icon ?? f.icon
+                const label = meta?.name ?? f.label
+                return (
+                  <button
+                    key={f.value}
+                    onClick={() => setGameType(f.value)}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-semibold text-xs transition-all border whitespace-nowrap ${
+                      gameType === f.value
+                        ? 'bg-purple-600 border-purple-400 text-white shadow shadow-purple-900/30'
+                        : 'bg-white/5 border-white/15 text-white/60 hover:bg-white/10 hover:text-white/80'
+                    }`}
+                  >
+                    <span>{icon}</span>
+                    <span>{label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            /* Dropdown when many games */
+            <div className="flex justify-center">
+              <div className="relative">
+                <select
+                  value={gameType}
+                  onChange={(e) => setGameType(e.target.value)}
+                  className="appearance-none bg-white/5 border border-white/15 text-white/80 text-sm font-semibold rounded-full pl-10 pr-8 py-2 cursor-pointer hover:bg-white/10 transition-all focus:outline-none focus:border-purple-400"
                 >
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </button>
-              )
-            })}
-          </div>
+                  {GAME_FILTERS.map((f) => {
+                    const meta = f.value ? getGameMetadata(f.value) : null
+                    const label = meta?.name ?? f.label
+                    return (
+                      <option key={f.value} value={f.value} className="bg-slate-800">
+                        {label}
+                      </option>
+                    )
+                  })}
+                </select>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">
+                  {selectedFilter.icon}
+                </span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/40 text-xs">
+                  ▾
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Table */}
-        <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-md overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md overflow-hidden">
           {/* Header row */}
-          <div className="grid grid-cols-[3rem_1fr_5rem_5rem_5rem] gap-2 px-4 py-2.5 border-b border-white/10 text-xs font-semibold uppercase tracking-wide text-white/40">
+          <div className="grid grid-cols-[2.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-2 px-4 py-2.5 border-b border-white/10 text-xs font-semibold uppercase tracking-wider text-white/35">
             <span>#</span>
             <span>{t('leaderboard.player', 'Player')}</span>
             <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>
@@ -140,7 +174,7 @@ export default function LeaderboardPage() {
           {loading && entries.length === 0 ? (
             <div className="py-16 text-center">
               <div className="text-4xl mb-3 animate-bounce">🏆</div>
-              <p className="text-white/50 text-sm">{t('leaderboard.loading', 'Loading leaderboard…')}</p>
+              <p className="text-white/40 text-sm">{t('leaderboard.loading', 'Loading leaderboard…')}</p>
             </div>
           ) : error ? (
             <div className="py-16 text-center">
@@ -155,38 +189,47 @@ export default function LeaderboardPage() {
             entries.map((entry, idx) => {
               const medal = MEDAL[entry.rank]
               const isTop3 = entry.rank <= 3
-              return (
-                <Link
-                  key={entry.userId}
-                  href={`/profile/${entry.userId}`}
-                  className={`grid grid-cols-[3rem_1fr_5rem_5rem_5rem] gap-2 px-4 py-3 items-center transition-colors hover:bg-white/8 ${
-                    idx < entries.length - 1 ? 'border-b border-white/8' : ''
-                  } ${isTop3 ? 'bg-white/3' : ''}`}
-                >
-                  <span
-                    className={`text-center font-bold text-sm ${
-                      medal ? 'text-xl' : 'text-white/50'
-                    }`}
-                  >
+              const rowClass = `grid grid-cols-[2.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-2 px-4 py-3 items-center transition-colors ${
+                entry.publicProfileId ? 'hover:bg-white/8' : ''
+              } ${idx < entries.length - 1 ? 'border-b border-white/8' : ''} ${
+                isTop3 ? 'bg-white/[0.03]' : ''
+              }`
+
+              const rowContent = (
+                <>
+                  <span className={`text-center font-bold ${medal ? 'text-xl leading-none' : 'text-sm text-white/45'}`}>
                     {medal ?? entry.rank}
                   </span>
-                  <span className="font-semibold text-white text-sm truncate">
+                  <span className="font-semibold text-sm truncate text-white">
                     {entry.username}
+                    {entry.publicProfileId && (
+                      <span className="ml-1.5 text-white/25 text-xs">↗</span>
+                    )}
                   </span>
-                  <span className="text-right text-white/60 text-sm">{entry.gamesPlayed}</span>
-                  <span className="text-right text-white/60 text-sm">{entry.wins}</span>
+                  <span className="text-right text-white/55 text-sm">{entry.gamesPlayed}</span>
+                  <span className="text-right text-white/55 text-sm">{entry.wins}</span>
                   <span
                     className={`text-right font-bold text-sm ${
                       entry.winRate >= 60
-                        ? 'text-emerald-300'
+                        ? 'text-emerald-400'
                         : entry.winRate >= 40
                           ? 'text-amber-300'
-                          : 'text-white/60'
+                          : 'text-white/55'
                     }`}
                   >
                     {entry.winRate}%
                   </span>
+                </>
+              )
+
+              return entry.publicProfileId ? (
+                <Link key={entry.userId} href={`/u/${entry.publicProfileId}`} className={rowClass}>
+                  {rowContent}
                 </Link>
+              ) : (
+                <div key={entry.userId} className={rowClass}>
+                  {rowContent}
+                </div>
               )
             })
           )}
@@ -196,7 +239,7 @@ export default function LeaderboardPage() {
               <button
                 onClick={handleLoadMore}
                 disabled={loading}
-                className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-sm font-semibold transition-all disabled:opacity-40"
+                className="w-full py-2.5 rounded-xl bg-white/8 hover:bg-white/12 text-white/70 text-sm font-semibold transition-all disabled:opacity-40"
               >
                 {loading ? t('leaderboard.loading', 'Loading…') : t('leaderboard.loadMore', 'Load more')}
               </button>
