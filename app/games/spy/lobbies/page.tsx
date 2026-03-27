@@ -163,15 +163,16 @@ export default function SpyLobbiesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="page-shell flex items-center justify-center">
         <p className="text-xl">{t('common.loading')}</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pt-16 sm:pt-20">
+    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
+      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Breadcrumbs */}
         <div className="mb-4 sm:mb-6 flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm overflow-x-auto">
           <button
@@ -389,6 +390,7 @@ export default function SpyLobbiesPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

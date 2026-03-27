@@ -129,7 +129,7 @@ export default function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+    <div className="page-shell-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4 overflow-y-auto">
       <div className="card max-w-md w-full">
         {/* Invite Banner */}
         {isLobbyInviteFlow && (

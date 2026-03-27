@@ -42,11 +42,13 @@ export default function FriendsListModal({
   const [inviting, setInviting] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
-      loadFriends()
-      setSelectedFriends(new Set(initialSelectedFriendIds))
-    }
-  }, [isOpen, initialSelectedFriendIds])
+    if (!isOpen) return
+    loadFriends()
+    setSelectedFriends(new Set(initialSelectedFriendIds))
+    // initialSelectedFriendIds intentionally omitted: default [] creates a new reference
+    // on every render and would cause an infinite loop. We only need this on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   const loadFriends = async () => {
     try {

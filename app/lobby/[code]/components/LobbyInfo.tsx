@@ -17,6 +17,8 @@ interface LobbyInfoProps {
   }) => Promise<unknown>
   onSoundToggle: () => void
   onLeave: () => void
+  /** 'standalone' = sticky card (default). 'header' = flat, rendered inside a parent card. */
+  variant?: 'standalone' | 'header'
 }
 
 type EditableSettingKey = 'maxPlayers' | 'turnTimer' | 'allowSpectators'
@@ -29,6 +31,7 @@ export default function LobbyInfo({
   onUpdateSettings,
   onSoundToggle,
   onLeave,
+  variant = 'standalone',
 }: LobbyInfoProps) {
   const router = useRouter()
   const { t } = useTranslation()
@@ -109,9 +112,8 @@ export default function LobbyInfo({
     }
   }
 
-  return (
-    <div className="flex-shrink-0 sticky top-0 z-10 pt-2 pb-3">
-      <div className="rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl px-3 sm:px-5 py-3 sm:py-4">
+  const inner = (
+      <div className={variant === 'header' ? 'px-3 sm:px-5 py-3 sm:py-4' : 'rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl px-3 sm:px-5 py-3 sm:py-4'}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
             <nav className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-white/65 mb-3">
@@ -338,6 +340,19 @@ export default function LobbyInfo({
           </div>
         )}
       </div>
+  )
+
+  if (variant === 'header') {
+    return (
+      <div className="flex-shrink-0 border-b border-white/10">
+        {inner}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-shrink-0 sticky top-0 z-10 pt-2 pb-3">
+      {inner}
     </div>
   )
 }

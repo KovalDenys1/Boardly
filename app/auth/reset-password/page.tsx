@@ -66,7 +66,7 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+      <div className="page-shell-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 overflow-y-auto p-4">
         <div className="card max-w-md w-full text-center">
           <div className="text-6xl mb-4">❌</div>
           <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -84,7 +84,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+    <div className="page-shell-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 overflow-y-auto p-4">
       <div className="card max-w-md w-full">
         <h1 className="text-3xl font-bold mb-2 text-center text-gray-900 dark:text-white">
           Reset Password
@@ -156,7 +156,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="page-shell-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 overflow-y-auto">
         <LoadingSpinner />
       </div>
     }>

@@ -15,6 +15,30 @@
   }
 }
 
+/* Viewport-fit shells — prevents page-level scroll on app pages */
+.page-shell {
+  height: calc(100dvh - 64px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.page-shell-full {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@supports not (height: 100dvh) {
+  .page-shell {
+    height: calc(100vh - 64px);
+  }
+  .page-shell-full {
+    height: 100vh;
+  }
+}
+
 /* Safe area insets for mobile devices with notches */
 @supports (padding-top: env(safe-area-inset-top)) {
   .safe-top {

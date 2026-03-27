@@ -1490,6 +1490,7 @@ const uk: Translation = {
     playerJoined: '{{player}} приєднався до лобі',
     addingBot: 'Додавання бота...',
     botAddFailed: 'Не вдалося додати бота. Спробуйте ще раз.',
+    botKicked: 'Бота видалено з лобі.',
     botAddedToStart: '🤖 Додано {{botName}} ({{difficulty}}), щоб можна було одразу почати гру!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) приєднався до лобі!',
     gameStarted: '🎲 Гру розпочато! {{player}} ходить першим!',
