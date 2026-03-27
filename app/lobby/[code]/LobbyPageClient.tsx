@@ -108,6 +108,7 @@ const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const MobileTabPanel = dynamic(() => import('./components/MobileTabPanel'))
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
+const WaitingRoomActions = dynamic(() => import('./components/WaitingRoomActions'))
 const JoinPrompt = dynamic(() => import('./components/JoinPrompt'))
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
@@ -801,6 +802,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const {
     loadLobby,
     addBotToLobby,
+    kickBot,
+    changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
     handleStartGame,
@@ -1625,10 +1628,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           )}
         </div>
       ) : !isGameStarted ? (
-        /* Waiting Room - natural layout without outer card */
-        <>
-          {/* Sticky header bar */}
+        /* Waiting Room - unified card with pinned actions */
+        <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl overflow-hidden">
           <LobbyInfo
+            variant="header"
             lobby={lobby}
             game={game}
             soundEnabled={soundEnabled}
@@ -1642,26 +1645,32 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onLeave={handleLeaveLobby}
           />
 
-          {/* Scrollable content area */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-1">
+          {/* Scrollable player list */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <WaitingRoom
               game={game}
               lobby={lobby}
               gameEngine={gameEngine}
               minPlayers={minPlayersRequired}
-              botDifficulty={selectedBotDifficulty}
-              canStartGame={canStartGame}
-              startingGame={startingGame}
-              onStartGame={handleStartGame}
-              onAddBot={handleAddBot}
-              onBotDifficultyChange={setSelectedBotDifficulty}
-              onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
               getCurrentUserId={getCurrentUserId}
-              lobbyCode={code}
-              isPrivate={!!lobby?.isPrivate}
+              canManageBots={canStartGame}
+              onKickBot={kickBot}
             />
           </div>
-        </>
+
+          <WaitingRoomActions
+            game={game}
+            lobby={lobby}
+            minPlayers={minPlayersRequired}
+            botDifficulty={selectedBotDifficulty}
+            canStartGame={canStartGame}
+            startingGame={startingGame}
+            onStartGame={handleStartGame}
+            onAddBot={handleAddBot}
+            onBotDifficultyChange={setSelectedBotDifficulty}
+            onInviteFriends={!isGuest ? () => setShowFriendsModal(true) : undefined}
+          />
+        </div>
       ) : (
         // Game Started - Mobile-optimized viewport
         <div
