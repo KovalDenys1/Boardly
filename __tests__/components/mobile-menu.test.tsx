@@ -35,6 +35,33 @@ jest.mock('@/components/LanguageSwitcher', () => ({
   default: () => <div data-testid="mobile-language-switcher" />,
 }))
 
+jest.mock('@/lib/i18n-helpers', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'header.menu': 'Open menu',
+        'common.close': 'Close menu',
+        'header.home': 'Home',
+        'header.games': 'Games',
+        'header.lobbies': 'Lobbies',
+        'header.leaderboard': 'Leaderboard',
+        'header.analytics': 'Analytics',
+        'header.profile': 'Open profile',
+        'header.settings': 'Settings',
+        'header.logout': 'Logout',
+        'header.login': 'Login',
+        'header.signUp': 'Sign Up',
+        'header.exitGuest': 'Exit Guest',
+        'header.guestSession': 'Guest session',
+        'header.language': 'Language',
+        'guest.playAsGuest': 'Play as Guest',
+        'common.error': 'User',
+      }
+      return map[key] ?? key
+    },
+  }),
+}))
+
 describe('MobileMenu', () => {
   beforeEach(() => {
     jest.useFakeTimers()

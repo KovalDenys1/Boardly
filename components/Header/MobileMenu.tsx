@@ -8,6 +8,7 @@ import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
@@ -24,6 +25,7 @@ export function MobileMenu({
   userEmail,
   userImage,
 }: MobileMenuProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -126,7 +128,7 @@ export function MobileMenu({
           padding: 'clamp(8px, 0.8vh, 12px)',
           backgroundColor: mobileMenuOpen ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
         }}
-        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        aria-label={mobileMenuOpen ? t('common.close') : t('header.menu')}
       >
         <div className="relative" style={{ width: 'clamp(24px, 2.5vw, 28px)', height: 'clamp(24px, 2.5vw, 28px)' }}>
           {/* Animated hamburger icon */}
@@ -173,12 +175,12 @@ export function MobileMenu({
               style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
             >
               <h2 className="font-bold text-gray-900 dark:text-white" style={{ fontSize: 'clamp(18px, 1.8vw, 22px)' }}>
-                Menu
+                {t('header.menu')}
               </h2>
               <button
                 onClick={closeMenu}
                 className="rounded-lg p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Close menu"
+                aria-label={t('common.close')}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -197,7 +199,7 @@ export function MobileMenu({
                     type="button"
                     onClick={handleProfileNavigation}
                     className="group flex w-full items-center gap-4 rounded-2xl p-1 text-left transition-colors hover:bg-white/70 dark:hover:bg-gray-800/60"
-                    aria-label="Open profile"
+                    aria-label={t('header.profile')}
                   >
                     <UserAvatar
                       image={userImage}
@@ -216,7 +218,7 @@ export function MobileMenu({
                         className="truncate font-semibold text-gray-900 dark:text-white"
                         style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
                       >
-                        {userName || 'User'}
+                        {userName || t('common.error')}
                       </p>
                       <p
                         className="truncate text-gray-600 dark:text-gray-400"
@@ -253,13 +255,13 @@ export function MobileMenu({
                         className="truncate font-semibold text-gray-900 dark:text-white"
                         style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
                       >
-                        {guestName || 'Guest'}
+                        {guestName || t('guest.playAsGuest')}
                       </p>
                       <p
                         className="truncate text-gray-600 dark:text-gray-400"
                         style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
                       >
-                        Guest session
+                        {t('header.guestSession')}
                       </p>
                     </div>
                   </div>
@@ -285,7 +287,7 @@ export function MobileMenu({
                   }}
                 >
                   <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🏠</span>
-                  <span>Home</span>
+                  <span>{t('header.home')}</span>
                 </button>
 
                 {canAccessGames && (
@@ -302,7 +304,7 @@ export function MobileMenu({
                       }}
                     >
                       <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🎮</span>
-                      <span>Games</span>
+                      <span>{t('header.games')}</span>
                     </button>
 
                     <button
@@ -317,7 +319,7 @@ export function MobileMenu({
                       }}
                     >
                       <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🎲</span>
-                      <span>Lobbies</span>
+                      <span>{t('header.lobbies')}</span>
                     </button>
 
                     <button
@@ -332,7 +334,7 @@ export function MobileMenu({
                       }}
                     >
                       <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🏆</span>
-                      <span>Leaderboard</span>
+                      <span>{t('header.leaderboard')}</span>
                     </button>
 
                     {isAuthenticated && isAdmin && (
@@ -348,7 +350,7 @@ export function MobileMenu({
                         }}
                       >
                         <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>📊</span>
-                        <span>Analytics</span>
+                        <span>{t('header.analytics')}</span>
                       </button>
                     )}
 
@@ -359,7 +361,7 @@ export function MobileMenu({
 
                 <div className="rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    Language
+                    {t('header.language')}
                   </p>
                   <LanguageSwitcher variant="panel" />
                 </div>
@@ -383,7 +385,7 @@ export function MobileMenu({
                         fontSize: 'clamp(14px, 1.4vw, 16px)'
                       }}
                     >
-                      Profile
+                      {t('header.profile')}
                     </button>
                     <button
                       type="button"
@@ -394,7 +396,7 @@ export function MobileMenu({
                         fontSize: 'clamp(14px, 1.4vw, 16px)'
                       }}
                     >
-                      Settings
+                      {t('header.settings')}
                     </button>
                   </div>
                   <button
@@ -406,7 +408,7 @@ export function MobileMenu({
                     }}
                   >
                     <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
-                    <span>Logout</span>
+                    <span>{t('header.logout')}</span>
                   </button>
                 </div>
               ) : isGuestSession ? (
@@ -420,7 +422,7 @@ export function MobileMenu({
                     }}
                   >
                     <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🔐</span>
-                    <span>Login</span>
+                    <span>{t('header.login')}</span>
                   </button>
                   <button
                     onClick={handleGuestExit}
@@ -431,7 +433,7 @@ export function MobileMenu({
                     }}
                   >
                     <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
-                    <span>Exit Guest</span>
+                    <span>{t('header.exitGuest')}</span>
                   </button>
                 </div>
               ) : (
@@ -445,7 +447,7 @@ export function MobileMenu({
                     }}
                   >
                     <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🔐</span>
-                    <span>Login</span>
+                    <span>{t('header.login')}</span>
                   </button>
                   <button
                     onClick={() => router.push(buildCurrentAuthUrl('register'))}
@@ -456,7 +458,7 @@ export function MobileMenu({
                     }}
                   >
                     <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>✨</span>
-                    <span>Sign Up</span>
+                    <span>{t('header.signUp')}</span>
                   </button>
                 </div>
               )}

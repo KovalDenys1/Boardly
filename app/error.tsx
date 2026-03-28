@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function Error({
   error,
@@ -12,6 +13,7 @@ export default function Error({
   reset: () => void
 }) {
   const router = useRouter()
+  const { t } = useTranslation()
 
   useEffect(() => {
     // Log the error to an error reporting service
@@ -40,13 +42,13 @@ export default function Error({
           </div>
 
           <h2 className="text-2xl font-bold text-white mb-2">
-            Oops! Something went wrong
+            {t('errorPage.title')}
           </h2>
-          
+
           <p className="text-gray-300 mb-6">
             {process.env.NODE_ENV === 'development'
               ? error.message
-              : "We're sorry, but something unexpected happened. Please try again."}
+              : t('errorPage.message')}
           </p>
 
           {/* Action Buttons */}
@@ -55,13 +57,13 @@ export default function Error({
               onClick={() => reset()}
               className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
             >
-              Try Again
+              {t('errorPage.tryAgain')}
             </button>
             <button
               onClick={() => router.push('/')}
               className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors duration-200 border border-white/20"
             >
-              Go Home
+              {t('errorPage.goHome')}
             </button>
           </div>
 
@@ -69,7 +71,7 @@ export default function Error({
           {process.env.NODE_ENV === 'development' && (
             <details className="mt-6 text-left">
               <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 mb-2">
-                Error Details (Dev Only)
+                {t('errorPage.devDetails')}
               </summary>
               <pre className="text-xs text-red-300 bg-black/30 rounded p-3 overflow-auto max-h-40">
                 {error.stack}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { CelebrationEvent, getCategoryDisplayName } from '@/lib/celebrations'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 interface CelebrationBannerProps {
   event: CelebrationEvent | null
@@ -9,6 +10,7 @@ interface CelebrationBannerProps {
 }
 
 export default function CelebrationBanner({ event, onComplete }: CelebrationBannerProps) {
+  const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -90,7 +92,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
             {event.category && (
               <span className="font-semibold">{getCategoryDisplayName(event.category)} • </span>
             )}
-            <span className="text-yellow-100 font-bold">+{event.score} points</span>
+            <span className="text-yellow-100 font-bold">{t('celebration.scorePoints', { count: event.score })}</span>
           </p>
         </div>
       </div>
