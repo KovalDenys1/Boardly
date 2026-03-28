@@ -1,6 +1,11 @@
+'use client'
+
 import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 export default function Footer() {
+  const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
 
   return (
@@ -14,13 +19,13 @@ export default function Footer() {
               🎲 Boardly
             </div>
             <p className="text-white/50 text-sm leading-relaxed max-w-xs">
-              Play board games online with friends in real-time. Free, no download required.
+              {t('footer.tagline')}
             </p>
           </div>
 
           {/* Games */}
           <div>
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">Games</h3>
+            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">{t('footer.games')}</h3>
             <ul className="space-y-2.5">
               {[
                 { label: 'Yahtzee', href: '/games/yahtzee' },
@@ -43,20 +48,20 @@ export default function Footer() {
 
           {/* Play */}
           <div>
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">Play</h3>
+            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">{t('footer.play')}</h3>
             <ul className="space-y-2.5">
-              {[
-                { label: 'Quick Play', href: '/#quick-play' },
-                { label: 'Create Room', href: '/lobby/create' },
-                { label: 'Leaderboard', href: '/leaderboard' },
-                { label: 'Guides', href: '/guides' },
-              ].map((link) => (
+              {([
+                { labelKey: 'footer.quickPlay', href: '/#quick-play' },
+                { labelKey: 'footer.createRoom', href: '/lobby/create' },
+                { labelKey: 'footer.leaderboard', href: '/leaderboard' },
+                { labelKey: 'footer.guides', href: '/guides' },
+              ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
                     className="text-white/50 hover:text-white text-sm transition-colors"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 </li>
               ))}
@@ -65,24 +70,24 @@ export default function Footer() {
 
           {/* Legal & Community */}
           <div>
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">Legal</h3>
+            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">{t('footer.legal')}</h3>
             <ul className="space-y-2.5">
-              {[
-                { label: 'Privacy Policy', href: '/privacy' },
-                { label: 'Terms of Service', href: '/terms' },
-              ].map((link) => (
+              {([
+                { labelKey: 'footer.privacy', href: '/privacy' },
+                { labelKey: 'footer.terms', href: '/terms' },
+              ] as { labelKey: TranslationKeys; href: string }[]).map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
                     className="text-white/50 hover:text-white text-sm transition-colors"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 </li>
               ))}
             </ul>
 
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4 mt-6">Community</h3>
+            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4 mt-6">{t('footer.community')}</h3>
             <ul className="space-y-2.5">
               <li>
                 <a
@@ -99,7 +104,7 @@ export default function Footer() {
                   id="footer-feedback-trigger"
                   className="text-white/50 hover:text-white text-sm transition-colors cursor-pointer bg-transparent border-0 p-0"
                 >
-                  Send Feedback ↗
+                  {t('footer.sendFeedback')}
                 </button>
               </li>
             </ul>
@@ -108,8 +113,8 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/35 text-xs">
-          <span>© {currentYear} Boardly · All rights reserved</span>
-          <span>Built with Next.js, Socket.IO &amp; Prisma</span>
+          <span>{t('footer.allRightsReserved', { year: currentYear })}</span>
+          <span>{t('footer.builtWith')}</span>
         </div>
       </div>
     </footer>

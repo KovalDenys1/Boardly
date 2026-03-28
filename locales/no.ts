@@ -1594,6 +1594,83 @@ const no = {
   celebration: {
     scorePoints: '+{{count}} poeng',
   },
+  showcase: {
+    title: 'Spill nå — Gratis',
+    subtitle: 'Ingen nedlasting. Ingen konto nødvendig.',
+    browseAll: 'Se alle spill →',
+    games: {
+      yahtzee: {
+        description: 'Kast terninger, samle kombinasjoner, slå vennene dine.',
+        players: '1–4 spillere',
+      },
+      ticTacToe: {
+        description: 'Klassisk 3×3-strategi. Kampusmodus tilgjengelig.',
+        players: '2 spillere',
+      },
+      memory: {
+        description: 'Snu kort, finn par. Tre vanskelighetsgrader.',
+        players: '2–4 spillere',
+      },
+      spy: {
+        description: 'Én spion, ett hemmelig sted. Kan du finne dem?',
+        players: '3–10 spillere',
+      },
+    },
+  },
+  faq: {
+    title: 'Ofte stilte spørsmål',
+    q1: {
+      question: 'Er Boardly gratis å spille?',
+      answer: 'Ja, Boardly er helt gratis. Det er ingen abonnementer, ingen reklame og ingen betalingsmurer. Alle spill er tilgjengelige uten kostnad.',
+    },
+    q2: {
+      question: 'Trenger jeg en konto for å spille?',
+      answer: 'Ingen konto er nødvendig. Du kan hoppe inn som gjest umiddelbart. Å opprette en konto lar deg lagre statistikk og historikk på tvers av økter.',
+    },
+    q3: {
+      question: 'Hvilke spill er tilgjengelige på Boardly?',
+      answer: 'Boardly tilbyr for øyeblikket Yahtzee, Tic Tac Toe, Memory-kortspill og Gjett spionen. Flere spill er under utvikling, inkludert Alias, Sketch & Guess og andre.',
+    },
+    q4: {
+      question: 'Kan jeg spille mot AI-boter?',
+      answer: 'Ja. Yahtzee og Tic Tac Toe støtter AI-motstandere, slik at du kan spille solo eller fylle tomme plasser når venner er offline.',
+    },
+    q5: {
+      question: 'Hvordan spiller jeg med venner online?',
+      answer: 'Opprett en lobby, og del romkoden eller lenken med vennene dine. De blir med umiddelbart — ingen konto eller nedlasting kreves.',
+    },
+    q6: {
+      question: 'Fungerer Boardly på mobil?',
+      answer: 'Ja. Boardly kjører i enhver moderne nettleser på desktop, nettbrett og mobil. Det finnes også en Progressive Web App (PWA) du kan installere fra nettleseren.',
+    },
+    q7: {
+      question: 'Hvor mange spillere kan spille samtidig?',
+      answer: 'Det avhenger av spillet. Tic Tac Toe støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i én lobby.',
+    },
+    q8: {
+      question: 'Er det noe å laste ned eller installere?',
+      answer: 'Ingenting å laste ned. Boardly kjører helt i nettleseren din. Bare åpne siden og begynn å spille.',
+    },
+  },
+  homeFooter: {
+    copyright: '© {{year}} Boardly. Bygget med Next.js, Socket.IO og Prisma.',
+  },
+  footer: {
+    tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
+    games: 'Spill',
+    play: 'Spill',
+    quickPlay: 'Rask spilling',
+    createRoom: 'Opprett rom',
+    leaderboard: 'Resultattavle',
+    guides: 'Guider',
+    legal: 'Juridisk',
+    privacy: 'Personvernregler',
+    terms: 'Tjenestevilkår',
+    community: 'Fellesskap',
+    sendFeedback: 'Send tilbakemelding ↗',
+    allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
+    builtWith: 'Bygget med Next.js, Socket.IO og Prisma',
+  },
 } as const
 
 export default no
