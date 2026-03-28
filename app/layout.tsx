@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 import { getThemeInitScript } from '@/lib/theme'
+import FeedbackWidget from '@/components/FeedbackWidget'
 
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
@@ -230,6 +231,7 @@ export default function RootLayout({
             <Header />
           </Suspense>
           <main>{children}</main>
+          <FeedbackWidget />
         </Providers>
         {isProduction && (
           <>
