@@ -1,4 +1,5 @@
 import HeroSection from '@/components/HomePage/HeroSection'
+import Footer from '@/components/Footer'
 
 import AnimatedSection from '@/components/ui/AnimatedSection'
 import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
@@ -48,12 +49,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-black/20 backdrop-blur-sm py-8 mt-auto" style={{ minHeight: '80px' }}>
-        <div className="max-w-7xl mx-auto px-4 text-center text-white/60 text-sm">
-          <p>© 2026 Boardly. Built with Next.js, Socket.IO, and Prisma.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

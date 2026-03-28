@@ -310,6 +310,12 @@ const uk: Translation = {
       rematchInvite: '{{name}} запросив(ла) вас на реванш у {{game}}',
       turnReminder: 'Зараз ваш хід у {{game}}',
     },
+    settings: 'Налаштування',
+    analytics: 'Аналітика',
+    signUp: 'Реєстрація',
+    exitGuest: 'Вийти з гостьового режиму',
+    guestSession: 'Гостьовий режим',
+    language: 'Мова',
   },
   home: {
     title: 'Грайте в настільні ігри онлайн з друзями',
@@ -1576,6 +1582,31 @@ const uk: Translation = {
     contact: 'Є питання чи занепокоєння?',
     github: 'Написати на пошту',
     apology: 'Вибачте за незручності.',
+  },
+  errorPage: {
+    title: 'Ой! Щось пішло не так',
+    message: 'Вибачте, сталося щось несподіване. Будь ласка, спробуйте ще раз.',
+    tryAgain: 'Спробувати знову',
+    goHome: 'На головну',
+    devDetails: 'Деталі помилки (лише для розробників)',
+  },
+  notFoundPage: {
+    lostRoute: 'Загублений маршрут',
+    description: 'Сторінку не знайдено. Цей хід завершився за межами дошки.',
+    description2: 'Повернутися до списку лобі або перейти на головну, щоб почати нову гру.',
+    browseLobby: 'Переглянути лобі',
+    goHome: 'На головну',
+    goBack: 'Назад',
+  },
+  installPrompt: {
+    title: 'Встановити Boardly',
+    description: 'Додайте Boardly на головний екран для швидкого запуску та зручної навігації.',
+    installing: 'Відкривається...',
+    install: 'Встановити',
+    notNow: 'Не зараз',
+  },
+  celebration: {
+    scorePoints: '+{{count}} балів',
   },
 }
 

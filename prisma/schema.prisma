@@ -41,6 +41,7 @@ model Users {
   accountPreferences      AccountPreferences?
   notificationPreferences NotificationPreferences?
   notifications           Notifications[]
+  feedback                Feedback[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
   @@index([role])
@@ -437,4 +438,18 @@ model AdminAuditLogs {
   @@index([adminId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, createdAt])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  type      String   // 'bug' | 'feature' | 'other'
+  message   String
+  email     String?
+  pageUrl   String?
+  userId    String?
+  user      Users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([type, createdAt])
+  @@index([userId])
 }

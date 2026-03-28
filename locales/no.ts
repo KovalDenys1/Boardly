@@ -307,7 +307,13 @@ const no = {
       gameInvite: '{{name}} inviterte deg til å spille {{game}}',
       rematchInvite: '{{name}} inviterte deg til en {{game}}-revansj',
       turnReminder: 'Det er din tur i {{game}}',
-    }
+    },
+    settings: 'Innstillinger',
+    analytics: 'Analyse',
+    signUp: 'Registrer deg',
+    exitGuest: 'Avslutt gjest',
+    guestSession: 'Gjesteøkt',
+    language: 'Språk',
   },
   home: {
     title: 'Spill brettspill på nett med venner',
@@ -1561,8 +1567,33 @@ const no = {
     estimate: 'Estimert ferdig: innen 24 timer',
     contact: 'Spørsmål eller tilbakemeldinger?',
     github: 'Send e-post',
-    apology: 'Beklager ulempen.'
-  }
+    apology: 'Beklager ulempen.',
+  },
+  errorPage: {
+    title: 'Oops! Noe gikk galt',
+    message: 'Vi beklager, men noe uventet skjedde. Vær så snill, prøv igjen.',
+    tryAgain: 'Prøv igjen',
+    goHome: 'Gå hjem',
+    devDetails: 'Feildetaljer (kun for utvikling)',
+  },
+  notFoundPage: {
+    lostRoute: 'Tapt rute',
+    description: 'Side ikke funnet. Dette trekket endte utenfor brettet.',
+    description2: 'Gå tilbake til lobbylisten eller hjem for å starte et nytt spill.',
+    browseLobby: 'Bla gjennom lobbyer',
+    goHome: 'Gå hjem',
+    goBack: 'Gå tilbake',
+  },
+  installPrompt: {
+    title: 'Installer Boardly',
+    description: 'Legg Boardly til på startskjermen for raskere oppstart og app-lignende navigasjon.',
+    installing: 'Åpner...',
+    install: 'Installer',
+    notNow: 'Ikke nå',
+  },
+  celebration: {
+    scorePoints: '+{{count}} poeng',
+  },
 } as const
 
 export default no

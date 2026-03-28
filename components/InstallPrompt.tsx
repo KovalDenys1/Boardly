@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 const DISMISS_KEY = 'boardly:pwa-install-dismissed:v1'
 
@@ -21,6 +22,7 @@ function isStandaloneDisplayMode(): boolean {
 }
 
 export default function InstallPrompt() {
+  const { t } = useTranslation()
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
@@ -90,9 +92,9 @@ export default function InstallPrompt() {
             <span aria-hidden="true">▣</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">Install Boardly</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('installPrompt.title')}</p>
             <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
-              Add Boardly to your home screen for faster launch and app-like navigation.
+              {t('installPrompt.description')}
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -101,14 +103,14 @@ export default function InstallPrompt() {
                 disabled={isPrompting}
                 className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
               >
-                {isPrompting ? 'Opening...' : 'Install'}
+                {isPrompting ? t('installPrompt.installing') : t('installPrompt.install')}
               </button>
               <button
                 type="button"
                 onClick={handleDismiss}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
               >
-                Not now
+                {t('installPrompt.notNow')}
               </button>
             </div>
           </div>
