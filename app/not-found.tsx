@@ -2,9 +2,11 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function NotFound() {
   const router = useRouter()
+  const { t } = useTranslation()
 
   return (
     <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-slate-950 text-slate-100">
@@ -16,7 +18,7 @@ export default function NotFound() {
       <div className="relative mx-auto grid h-full w-full max-w-4xl place-items-center p-3 sm:p-5">
         <div className="w-full max-w-2xl rounded-3xl border border-white/15 bg-white/10 px-4 py-5 text-center shadow-2xl backdrop-blur-xl sm:px-7 sm:py-7">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-            Boardly • Lost Route
+            Boardly • {t('notFoundPage.lostRoute')}
           </p>
 
           <h1 className="text-[clamp(4.5rem,22vw,9rem)] font-black leading-none tracking-tight text-transparent [text-shadow:0_0_32px_rgba(56,189,248,0.4)] bg-gradient-to-b from-cyan-200 via-sky-300 to-emerald-300 bg-clip-text">
@@ -24,10 +26,10 @@ export default function NotFound() {
           </h1>
 
           <p className="mx-auto mt-3 max-w-lg text-[clamp(1rem,2.8vw,1.3rem)] font-semibold text-white">
-            Page not found. This turn ended outside the board.
+            {t('notFoundPage.description')}
           </p>
           <p className="mx-auto mt-1 max-w-md text-sm text-slate-200/85 sm:text-base">
-            Return to lobby list or jump home to start a new game.
+            {t('notFoundPage.description2')}
           </p>
 
           <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
@@ -35,19 +37,19 @@ export default function NotFound() {
               href="/lobby"
               className="btn bg-cyan-500 text-slate-950 hover:bg-cyan-400 focus-visible:ring-cyan-300"
             >
-              Browse Lobbies
+              {t('notFoundPage.browseLobby')}
             </Link>
             <Link
               href="/"
               className="btn bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/40"
             >
-              Go Home
+              {t('notFoundPage.goHome')}
             </Link>
             <button
               onClick={() => router.back()}
               className="btn bg-emerald-500 text-slate-950 hover:bg-emerald-400 focus-visible:ring-emerald-300 sm:col-span-2"
             >
-              Go Back
+              {t('notFoundPage.goBack')}
             </button>
           </div>
 
@@ -56,13 +58,13 @@ export default function NotFound() {
               href="/lobby/create"
               className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100 transition-colors hover:bg-white/20"
             >
-              Create Lobby
+              {t('notFound.createLobby')}
             </Link>
             <Link
               href="/games"
               className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100 transition-colors hover:bg-white/20"
             >
-              Games
+              {t('header.games')}
             </Link>
           </div>
         </div>

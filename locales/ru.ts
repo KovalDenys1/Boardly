@@ -307,7 +307,13 @@ const ru = {
       gameInvite: '{{name}} приглашает вас сыграть в {{game}}',
       rematchInvite: '{{name}} приглашает вас на реванш в {{game}}',
       turnReminder: 'Сейчас ваш ход в {{game}}',
-    }
+    },
+    settings: 'Настройки',
+    analytics: 'Аналитика',
+    signUp: 'Регистрация',
+    exitGuest: 'Выйти из гостевого режима',
+    guestSession: 'Гостевой режим',
+    language: 'Язык',
   },
   home: {
     title: 'Играйте в настольные игры онлайн с друзьями',
@@ -1562,7 +1568,32 @@ const ru = {
     contact: 'Вопросы или предложения?',
     github: 'Написать на почту',
     apology: 'Извините за неудобства.'
-  }
+  },
+  errorPage: {
+    title: 'Упс! Что-то пошло не так',
+    message: 'Извините, произошла непредвиденная ошибка. Пожалуйста, попробуйте ещё раз.',
+    tryAgain: 'Попробовать снова',
+    goHome: 'На главную',
+    devDetails: 'Детали ошибки (только для разработки)',
+  },
+  notFoundPage: {
+    lostRoute: 'Потерянный маршрут',
+    description: 'Страница не найдена. Этот ход вышел за пределы доски.',
+    description2: 'Вернитесь к списку лобби или перейдите на главную, чтобы начать новую игру.',
+    browseLobby: 'Обзор лобби',
+    goHome: 'На главную',
+    goBack: 'Назад',
+  },
+  installPrompt: {
+    title: 'Установить Boardly',
+    description: 'Добавьте Boardly на главный экран для быстрого запуска и удобной навигации.',
+    installing: 'Открываем...',
+    install: 'Установить',
+    notNow: 'Не сейчас',
+  },
+  celebration: {
+    scorePoints: '+{{count}} очков',
+  },
 } as const
 
 export default ru

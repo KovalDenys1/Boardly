@@ -308,6 +308,12 @@ const en = {
       rematchInvite: '{{name}} invited you to a {{game}} rematch',
       turnReminder: 'It is your turn in {{game}}',
     },
+    settings: 'Settings',
+    analytics: 'Analytics',
+    signUp: 'Sign Up',
+    exitGuest: 'Exit Guest',
+    guestSession: 'Guest session',
+    language: 'Language',
   },
   home: {
     title: 'Play Board Games Online with Friends',
@@ -1574,6 +1580,31 @@ const en = {
     contact: 'Questions or concerns?',
     github: 'Email support',
     apology: 'We apologize for any inconvenience.',
+  },
+  errorPage: {
+    title: 'Oops! Something went wrong',
+    message: 'We\'re sorry, but something unexpected happened. Please try again.',
+    tryAgain: 'Try Again',
+    goHome: 'Go Home',
+    devDetails: 'Error Details (Dev Only)',
+  },
+  notFoundPage: {
+    lostRoute: 'Lost Route',
+    description: 'Page not found. This turn ended outside the board.',
+    description2: 'Return to lobby list or jump home to start a new game.',
+    browseLobby: 'Browse Lobbies',
+    goHome: 'Go Home',
+    goBack: 'Go Back',
+  },
+  installPrompt: {
+    title: 'Install Boardly',
+    description: 'Add Boardly to your home screen for faster launch and app-like navigation.',
+    installing: 'Opening...',
+    install: 'Install',
+    notNow: 'Not now',
+  },
+  celebration: {
+    scorePoints: '+{{count}} points',
   },
 } as const
 
