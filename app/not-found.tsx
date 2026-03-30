@@ -9,7 +9,7 @@ export default function NotFound() {
   const { t } = useTranslation()
 
   return (
-    <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-slate-950 text-slate-100">
+    <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 text-slate-100">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.25),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.2),transparent_40%)]"
