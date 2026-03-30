@@ -90,7 +90,7 @@ export default function FeedbackWidget() {
         <button
           onClick={() => setIsOpen(true)}
           aria-label="Send feedback"
-          className="fixed bottom-5 right-5 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold shadow-lg hover:shadow-purple-500/30 hover:scale-105 transition-all duration-200"
+          className="fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold shadow-lg hover:shadow-purple-500/30 hover:scale-105 transition-all duration-200"
         >
           <span>💬</span>
           <span className="hidden sm:inline">Feedback</span>

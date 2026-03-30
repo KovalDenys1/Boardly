@@ -49,7 +49,7 @@ export default function WaitingRoomActions({
 
   if (startingGame) {
     return (
-      <div className="flex-shrink-0 border-t border-white/10 px-3 sm:px-5 py-4">
+      <div className="flex-shrink-0 border-t border-white/10 px-3 sm:px-5 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))]">
         <div className="flex items-center justify-center gap-3 text-white">
           <LoadingSpinner size="sm" />
           <div>
@@ -66,7 +66,7 @@ export default function WaitingRoomActions({
   if (!canStartGame) {
     // Non-host view
     return (
-      <div className="flex-shrink-0 border-t border-white/10 px-3 sm:px-5 py-4">
+      <div className="flex-shrink-0 border-t border-white/10 px-3 sm:px-5 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))]">
         <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
           <span className="text-xl shrink-0">⌛</span>
           <div className="min-w-0">
@@ -82,7 +82,7 @@ export default function WaitingRoomActions({
 
   // Host view — secondary actions on top, Start Game pinned at bottom
   return (
-    <div className="flex-shrink-0 border-t border-white/10 px-3 sm:px-5 py-4 space-y-3">
+    <div className="flex-shrink-0 border-t border-white/10 px-3 sm:px-5 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] space-y-3">
       {/* Bot tip */}
       {supportsBots && playerCount === 1 && !hasBot && (
         <div className="rounded-xl border border-blue-300/30 bg-blue-500/10 px-3 py-2">
