@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
@@ -16,6 +16,8 @@ import {
   buildAuthUrl,
   resolveReturnUrlFromSearchParams,
 } from '@/lib/auth-redirect'
+import { getLastAccount, saveLastAccount, type LastAccount } from '@/lib/last-account'
+import { UserAvatar } from '@/components/Header/UserAvatar'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -29,6 +31,18 @@ export default function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [lastAccount, setLastAccount] = useState<LastAccount | null>(null)
+  const [showChip, setShowChip] = useState(false)
+  const passwordRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const saved = getLastAccount()
+    if (saved) {
+      setLastAccount(saved)
+      setShowChip(true)
+    }
+  }, [])
+
   const returnUrl = resolveReturnUrlFromSearchParams(searchParams)
   const isLobbyInviteFlow =
     returnUrl.startsWith('/lobby/') && !returnUrl.startsWith('/lobby/create')
@@ -87,6 +101,12 @@ export default function LoginForm() {
           userId: normalizedEmail, // Will be replaced with actual userId by session
         })
         
+        saveLastAccount({
+          email: normalizedEmail,
+          name: null,
+          image: null,
+        })
+
         router.push(returnUrl)
         router.refresh()
       }
@@ -144,6 +164,46 @@ export default function LoginForm() {
           </div>
         )}
         
+        {/* Last account chip */}
+        {showChip && lastAccount && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setFormData((prev) => ({ ...prev, email: lastAccount.email }))
+                setShowChip(false)
+                setTimeout(() => passwordRef.current?.focus(), 0)
+              }}
+              className="w-full flex items-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-left backdrop-blur-sm transition-colors hover:bg-white/20"
+            >
+              <UserAvatar
+                image={lastAccount.image}
+                userName={lastAccount.name}
+                userEmail={lastAccount.email}
+                className="h-10 w-10 shrink-0 bg-blue-600 text-white"
+                textClassName="text-sm font-bold"
+              />
+              <div className="min-w-0 flex-1">
+                {lastAccount.name && (
+                  <p className="truncate text-sm font-semibold text-white">{lastAccount.name}</p>
+                )}
+                <p className="truncate text-sm text-white/80">{lastAccount.email}</p>
+              </div>
+              <span className="shrink-0 text-white/60">→</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowChip(false)
+                setFormData((prev) => ({ ...prev, email: '' }))
+              }}
+              className="mt-2 w-full text-center text-xs text-white/60 hover:text-white/90 transition-colors"
+            >
+              Sign in with a different account
+            </button>
+          </div>
+        )}
+
         <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
           {t('auth.login.title')}
         </h1>
@@ -167,13 +227,20 @@ export default function LoginForm() {
           </div>
 
           <div>
-            <PasswordInput
-              value={formData.password}
-              onChange={(value) => setFormData({ ...formData, password: value })}
-              placeholder={t('auth.login.passwordPlaceholder')}
-              autoComplete="current-password"
-              showStrength={false}
-            />
+            <div ref={(el) => {
+              if (el) {
+                const input = el.querySelector('input')
+                if (input) (passwordRef as React.MutableRefObject<HTMLInputElement>).current = input
+              }
+            }}>
+              <PasswordInput
+                value={formData.password}
+                onChange={(value) => setFormData({ ...formData, password: value })}
+                placeholder={t('auth.login.passwordPlaceholder')}
+                autoComplete="current-password"
+                showStrength={false}
+              />
+            </div>
             {fieldErrors.password && (
               <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
             )}
