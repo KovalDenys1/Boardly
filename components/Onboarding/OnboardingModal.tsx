@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/OnboardingContext'
 import { showToast } from '@/lib/i18n-toast'
+import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
 const BOT_GAMES = [
   { type: 'yahtzee', label: 'Yahtzee', icon: '🎲' },
@@ -26,7 +27,7 @@ export function OnboardingModal() {
     if (!selectedGame || loading) return
     setLoading(true)
     try {
-      const lobbyRes = await fetch('/api/lobby', {
+      const lobbyRes = await fetchWithGuest('/api/lobby', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameType: selectedGame, maxPlayers: 2 }),
@@ -34,7 +35,7 @@ export function OnboardingModal() {
       if (!lobbyRes.ok) throw new Error('Failed to create lobby')
       const { lobby } = await lobbyRes.json() as { lobby: { code: string } }
 
-      const botRes = await fetch(`/api/lobby/${lobby.code}/add-bot`, { method: 'POST' })
+      const botRes = await fetchWithGuest(`/api/lobby/${lobby.code}/add-bot`, { method: 'POST' })
       if (!botRes.ok) throw new Error('Failed to add bot')
 
       await completeOnboarding()
