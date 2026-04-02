@@ -76,7 +76,7 @@ export default function GameBoard({
       </div>
 
       {/* Controls Section - Compact */}
-      <div className="flex-shrink-0 space-y-1.5 sm:space-y-2">
+      <div className="flex-shrink-0 space-y-1.5 sm:space-y-2 pb-[env(safe-area-inset-bottom)]">
         {isStateReverting && (
           <div className="text-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl shadow-md bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-200 animate-pulse">
             <div className="flex items-center justify-center gap-1.5 sm:gap-2">
