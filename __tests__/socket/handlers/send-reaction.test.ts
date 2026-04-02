@@ -42,7 +42,7 @@ describe('createSendReactionHandler', () => {
         timestamp: 1000,
       })
     )
-    expect(deps.emitWithMetadata.mock.calls[0][2]).toHaveProperty('id')
+    expect((deps.emitWithMetadata as jest.Mock).mock.calls[0][2]).toHaveProperty('id')
   })
 
   it('trims lobby code before auth check', () => {
