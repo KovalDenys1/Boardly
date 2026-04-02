@@ -38,6 +38,8 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
   useEffect(() => {
     if (!socket) return
 
+    const timeouts: ReturnType<typeof setTimeout>[] = []
+
     const handler = (data: ReactionPayload) => {
       if (!data?.id || !data?.emoji || !data?.username) return
       setReactions((prev) => [
@@ -49,13 +51,17 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
           x: 25 + Math.random() * 50,
         },
       ])
-      setTimeout(() => {
+      const t = setTimeout(() => {
         setReactions((prev) => prev.filter((r) => r.id !== data.id))
       }, REACTION_DURATION_MS)
+      timeouts.push(t)
     }
 
     socket.on(SocketEvents.REACTION, handler)
-    return () => { socket.off(SocketEvents.REACTION, handler) }
+    return () => {
+      socket.off(SocketEvents.REACTION, handler)
+      timeouts.forEach(clearTimeout)
+    }
   }, [socket])
 
   const sendReaction = (emoji: AllowedEmoji) => {
