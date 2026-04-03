@@ -2,7 +2,7 @@
 
 **Goal:** Add Alias as a fully playable team word-guessing game on Boardly, covering the game engine, game board UI, and games hub pages.
 
-**Architecture:** `AliasGame extends GameEngine` manages all game phases via `processMove`. All player actions (switch team, start rounds, word actions, end turn, next turn) go through the existing `GAME_ACTION` socket → `POST /api/game/[gameId]/state` flow. Teams are initialized in an `overrideStartGame()` hook and stored in `AliasGameData`. The turn timer is server-authoritative via `applyTimeoutFallback`, consistent with Liar's Party and Telephone Doodle. A dedicated `AliasPage` renders all game phases.
+**Architecture:** `AliasGame extends GameEngine` manages all game phases via `processMove`. All player actions (switch team, word actions, end turn, next turn) go through the existing `GAME_ACTION` socket → `POST /api/game/[gameId]/state` flow. Team assignment happens in the lobby (status `waiting`): players are auto-distributed into teams via `addPlayer()` override and can switch teams via `switch_team` move (allowed while `waiting` via `canProcessMoveWhenNotPlaying`). The standard "Start Game" lobby button triggers `startGame()` which validates team balance. `AliasPage` is shown for all statuses (`waiting`, `playing`, `finished`) and replaces the standard waiting room for Alias lobbies. The turn timer is server-authoritative via `applyTimeoutFallback`, consistent with Liar's Party and Telephone Doodle.
 
 **Tech Stack:** Next.js, Socket.IO (existing `GAME_ACTION` flow), Prisma, TypeScript
 
@@ -10,7 +10,7 @@
 
 ## 1. Game Rules (as implemented)
 
-- 2 teams, auto-distributed when game starts, players can switch before rounds begin
+- 2 teams, auto-distributed as players join the lobby, players can switch teams before host starts the game
 - Each turn: one player from the current team describes 10 words (one at a time) to teammates
 - Guessed word: +1 point to team; Skipped word: −1 point to team
 - Turn ends when timer runs out (default 60s, lobby-configurable) or all 10 words are exhausted
@@ -119,34 +119,53 @@ constructor(gameId: string) {
 
 ### `getInitialGameData(): AliasGameData`
 
-Returns empty state with `phase: 'team_assignment'`, empty teams, no active card.
+Returns state with `phase: 'team_assignment'`, two empty teams (`team-1`, `team-2`), no active card.
 
-### `overrideStartGame()` (or call from `startGame()` override)
+### `addPlayer(player: Player): void` (override)
 
-Called after `super.startGame()`. Distributes `this.state.players` into 2 teams in round-robin order:
+Overrides the base class method. After calling `super.addPlayer(player)`, auto-assigns the new player to the team with fewer members (round-robin):
+
+```typescript
+addPlayer(player: Player): void {
+  super.addPlayer(player)
+  const data = this.state.data as AliasGameData
+  const smaller = data.teams.reduce((a, b) =>
+    a.playerIds.length <= b.playerIds.length ? a : b
+  )
+  smaller.playerIds.push(player.id)
+}
+```
+
+### `startGame(): boolean` (override)
+
+Validates team balance, then delegates to `super.startGame()`. After super succeeds, deals the first card and transitions to `turn_active` so the game begins immediately when the host clicks "Start Game":
 
 ```typescript
 startGame(): boolean {
-  const ok = super.startGame()
-  if (!ok) return false
   const data = this.state.data as AliasGameData
-  data.teams = [
-    { id: 'team-1', name: 'Team 1', playerIds: [], score: 0, describerIndex: 0 },
-    { id: 'team-2', name: 'Team 2', playerIds: [], score: 0, describerIndex: 0 },
-  ]
-  data.teamTurnCounts = { 'team-1': 0, 'team-2': 0 }
-  this.state.players.forEach((p, i) => {
-    data.teams[i % 2].playerIds.push(p.id)
-  })
+  const allTeamsValid = data.teams.every(t => t.playerIds.length >= 2)
+  if (!allTeamsValid) return false
+  if (!super.startGame()) return false
+  const card = this._dealCard()
+  data.currentCard = card
+  data.currentCardIndex = 0
+  data.currentCardResults = []
+  data.turnStartedAt = Date.now()
+  data.phase = 'turn_active'
   return true
 }
 ```
+
+`_dealCard()` samples 10 unused words from `ALIAS_WORDS`, updating `usedWordIndices`.
+
+### `canProcessMoveWhenNotPlaying(move: Move): boolean` (override)
+
+Returns `true` for `move.type === 'switch_team'`, allowing team switches while game status is `'waiting'`.
 
 ### `validateMove(move: Move): boolean`
 
 Checks:
 - `switch_team`: phase is `team_assignment`; payload has `targetTeamId`; player exists; target team exists
-- `start_rounds`: phase is `team_assignment`; each team has ≥ 2 players (any player can trigger — host enforcement is in the UI only)
 - `word_action`: phase is `turn_active`; caller is current describer; `action` is `'guess'` or `'skip'`; `currentCardIndex < 10`
 - `end_turn`: phase is `turn_active`; caller is current describer
 - `next_turn`: phase is `turn_results` (any player can trigger — host enforcement is in the UI only)
@@ -154,8 +173,6 @@ Checks:
 ### `processMove(move: Move): void`
 
 **`switch_team`**: Remove player from current team, add to `targetTeamId`.
-
-**`start_rounds`**: Deal first card (10 random words from `ALIAS_WORDS`), set `phase = 'turn_active'`, `turnStartedAt = Date.now()`, `currentCardIndex = 0`, `currentCardResults = []`.
 
 **`word_action`**:
 - Record result for `currentCardResults`
@@ -267,10 +284,10 @@ const [socket, setSocket] = useState<Socket | null>(null)
 
 ### Screens (switched by `data.phase`)
 
-**`TeamAssignmentScreen`** — `phase === 'team_assignment'`
+**`TeamAssignmentScreen`** — shown when `lobby.status === 'waiting'` (replaces the standard waiting room for Alias)
 - Two columns showing team names and player names
 - Each player has a "Switch to Team X" button (emits `switch_team` move)
-- All players see "Begin Rounds" button; only the host's button is enabled (active when each team ≥ 2 players); emits `start_rounds` move
+- Standard "Start Game" button (host only, same mechanic as other games — uses the existing lobby start flow, not a custom move); disabled when any team has fewer than 2 players
 - Leave lobby button
 
 **`DescriberScreen`** — `phase === 'turn_active'` and current user is current describer
@@ -311,10 +328,10 @@ Add `<ReactionOverlay socket={socket} lobbyCode={code} />` when `game.status ===
 
 **`app/lobby/[code]/LobbyPageClient.tsx`**
 
-Add after the existing RPS route:
+Add after the existing RPS route. `AliasPage` handles all statuses (replaces the standard waiting room during `waiting`, and handles `playing`/`finished` as well):
 
 ```typescript
-if (gameType === 'alias' && (gameStatus === 'playing' || gameStatus === 'finished')) {
+if (gameType === 'alias') {
   return <AliasPage code={code} />
 }
 ```
@@ -344,7 +361,6 @@ Add keys to `lib/i18n/en.json` and `ru.json`:
 "alias.team1": "Team 1",
 "alias.team2": "Team 2",
 "alias.switchTeam": "Switch to {{team}}",
-"alias.beginRounds": "Begin Rounds",
 "alias.yourTurn": "Your turn to describe!",
 "alias.guessed": "Guessed!",
 "alias.skip": "Skip",
