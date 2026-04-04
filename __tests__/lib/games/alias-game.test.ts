@@ -179,6 +179,17 @@ describe('AliasGame', () => {
       game.makeMove(createMove('end_turn', describerId))
       expect(getData(game).teams[0].score).toBe(2)
     })
+
+    it('advances describerIndex after turn ends', () => {
+      const game = new AliasGame('g1')
+      addFourPlayers(game)
+      game.startGame()
+      const firstDescriberId = getData(game).teams[0].playerIds[0] // 'p1'
+      game.makeMove(createMove('end_turn', firstDescriberId))
+      // After turn ends, still team 0 (they haven't advanced yet), but describerIndex should advance
+      // NOTE: describerIndex advances at end of turn, so next describer is playerIds[1] = 'p3'
+      expect(getData(game).teams[0].describerIndex).toBe(1)
+    })
   })
 
   describe('processMove: next_turn', () => {
@@ -272,6 +283,29 @@ describe('AliasGame', () => {
       expect(getData(game).phase).toBe('turn_results')
       expect(getData(game).lastTurnResult!.wordResults).toHaveLength(10)
       expect(getData(game).lastTurnResult!.wordResults.every(r => r.result === 'skipped')).toBe(true)
+    })
+
+    it('correctly scores a partial card (5 guessed, then timeout)', () => {
+      const game = new AliasGame('g1')
+      addFourPlayers(game)
+      game.startGame()
+      const describerId = getData(game).teams[0].playerIds[0]
+      // Process 5 guesses manually
+      for (let i = 0; i < 5; i++) {
+        game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
+      }
+      // Now trigger timeout
+      const pastTime = Date.now() + 61_000
+      const result = game.applyTimeoutFallback(60, pastTime)
+      expect(result.changed).toBe(true)
+      const data = getData(game)
+      expect(data.phase).toBe('turn_results')
+      expect(data.lastTurnResult!.wordResults).toHaveLength(10)
+      const guessed = data.lastTurnResult!.wordResults.filter(r => r.result === 'guessed').length
+      const skipped = data.lastTurnResult!.wordResults.filter(r => r.result === 'skipped').length
+      expect(guessed).toBe(5)
+      expect(skipped).toBe(5)
+      expect(data.teams[0].score).toBe(0) // 5 guessed - 5 skipped = 0
     })
   })
 })

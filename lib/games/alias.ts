@@ -145,7 +145,8 @@ export class AliasGame extends GameEngine {
     switch (move.type) {
       case 'word_action': {
         const { action } = move.data as { action: 'guess' | 'skip' }
-        const word = data.currentCard![data.currentCardIndex]
+        if (!data.currentCard) return
+        const word = data.currentCard[data.currentCardIndex]
         data.currentCardResults.push({ word, result: action === 'guess' ? 'guessed' : 'skipped' })
         data.currentCardIndex++
         this.state.lastMoveAt = Date.now()
@@ -201,8 +202,12 @@ export class AliasGame extends GameEngine {
       data.usedWordIndices = []
       available = ALIAS_WORDS.map((_, i) => i)
     }
-    const shuffled = [...available].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, 10)
+    const arr = [...available]
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    const selected = arr.slice(0, 10)
     data.usedWordIndices.push(...selected)
     return selected.map(i => ALIAS_WORDS[i])
   }
