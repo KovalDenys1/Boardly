@@ -220,11 +220,11 @@ export default function AliasPage({ code }: AliasPageProps) {
 
     return () => {
       isMounted = false
-      if (activeSocket?.connected) {
-        activeSocket.emit('leave-lobby', code)
+      if (activeSocket) {
+        if (activeSocket.connected) {
+          activeSocket.emit('leave-lobby', code)
+        }
         activeSocket.disconnect()
-      } else {
-        activeSocket?.close()
       }
     }
   }, [status, isGuest, guestToken, code, loadLobby, applyAuthoritativeState, triggerLifecycleRedirect, minPlayersRequired])
