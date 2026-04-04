@@ -87,6 +87,7 @@ import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
+import { ReactionOverlay } from '@/components/ReactionOverlay'
 
 function CenteredLoadingFallback() {
   return (
@@ -2181,6 +2182,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         variant="danger"
         icon="🚪"
       />
+
+      {isGameStarted && socket && (
+        <ReactionOverlay socket={socket} lobbyCode={code} />
+      )}
      </div>
     </div>
   )

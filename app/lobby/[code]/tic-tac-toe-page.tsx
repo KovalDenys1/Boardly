@@ -22,6 +22,7 @@ import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { ReactionOverlay } from '@/components/ReactionOverlay'
 
 interface Lobby {
     id: string
@@ -944,6 +945,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 variant="danger"
                 icon="🚪"
             />
+
+            {resolvedStatus === 'playing' && socket && (
+                <ReactionOverlay socket={socket} lobbyCode={code} />
+            )}
         </div>
     )
 }
