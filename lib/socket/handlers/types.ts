@@ -58,6 +58,7 @@ export interface SocketWithOptionalUser {
 export type JoinLobbySocket = SocketWithUser & JoinsRooms & EmitsToSelf
 export type GameActionSocket = SocketWithUser & EmitsToSelf & EmitsToRoom & HasRoomSet
 export type SendChatMessageSocket = SocketWithUser & EmitsToSelf & HasRoomSet
+export type SendReactionSocket = SocketWithUser & HasRoomSet
 export type PlayerTypingSocket = SocketWithUser & EmitsToRoom & HasRoomSet
 export type LeaveLobbySocket = SocketWithUser & LeavesRooms
 export type LobbyListMembershipSocket = { id: string } & JoinsRooms & LeavesRooms

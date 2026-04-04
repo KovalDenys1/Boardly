@@ -19,6 +19,7 @@ import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { ReactionOverlay } from '@/components/ReactionOverlay'
 
 type RpsLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -623,6 +624,10 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                     </aside>
                 </div>
             </div>
+
+            {lobby.status === 'playing' && socket && (
+                <ReactionOverlay socket={socket} lobbyCode={code} />
+            )}
         </div>
     )
 }
