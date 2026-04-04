@@ -1470,6 +1470,24 @@ const ru = {
       turnSkipped: '{{player}} пропустил свой ход'
     }
   },
+  alias: {
+    team1: 'Команда 1',
+    team2: 'Команда 2',
+    teamPreviewNote: 'Команды распределяются при старте игры',
+    yourTurn: 'Ваша очередь объяснять!',
+    guessed: 'Угадали!',
+    skip: 'Пропустить',
+    endTurn: 'Завершить ход',
+    nextTurn: 'Следующий ход',
+    playAgain: 'Играть ещё',
+    wins: '{{team}} побеждает!',
+    tie: 'Ничья!',
+    isDescribing: '{{name}} объясняет...',
+    wordsProgress: '{{current}}/{{total}} слов',
+    turnResults: 'Итоги хода',
+    scores: 'Счёт',
+    timeLeft: '{{seconds}}с',
+  },
   toast: {
     copied: 'Скопировано в буфер обмена!',
     info: 'Информация',

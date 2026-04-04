@@ -1470,6 +1470,24 @@ const no = {
       turnSkipped: '{{player}} hoppet over turen sin'
     }
   },
+  alias: {
+    team1: 'Lag 1',
+    team2: 'Lag 2',
+    teamPreviewNote: 'Lagene blir tildelt når spillet starter',
+    yourTurn: 'Din tur til å beskrive!',
+    guessed: 'Gjett riktig!',
+    skip: 'Hopp over',
+    endTurn: 'Avslutning av tur',
+    nextTurn: 'Neste tur',
+    playAgain: 'Spill igjen',
+    wins: '{{team}} vinner!',
+    tie: 'Det er uavgjort!',
+    isDescribing: '{{name}} beskriver...',
+    wordsProgress: '{{current}}/{{total}} ord',
+    turnResults: 'Turresultater',
+    scores: 'Poengsum',
+    timeLeft: '{{seconds}}s',
+  },
   toast: {
     copied: 'Kopiert til utklippstavle!',
     info: 'Info',
