@@ -25,6 +25,7 @@ import { createGameActionHandler } from './lib/socket/handlers/game-action'
 import { createSendChatMessageHandler } from './lib/socket/handlers/send-chat-message'
 import { persistChatMessage } from './lib/chat-history'
 import { createPlayerTypingHandler } from './lib/socket/handlers/player-typing'
+import { createSendReactionHandler } from './lib/socket/handlers/send-reaction'
 import { createConnectionLifecycleHandlers } from './lib/socket/handlers/connection-lifecycle'
 import { createLeaveLobbyHandler } from './lib/socket/handlers/leave-lobby'
 import { createLobbyListMembershipHandlers } from './lib/socket/handlers/lobby-list-membership'
@@ -721,6 +722,16 @@ const handlePlayerTyping = createPlayerTypingHandler({
   },
 })
 
+const handleSendReaction = createSendReactionHandler({
+  socketMonitor,
+  checkRateLimit,
+  isSocketAuthorizedForLobby,
+  getUserDisplayName,
+  emitWithMetadata: (room, event, data) => {
+    emitWithMetadata(io, room, event, data)
+  },
+})
+
 const { handleDisconnecting, handleDisconnect } = createConnectionLifecycleHandlers({
   logger,
   socketMonitor,
@@ -844,6 +855,10 @@ io.on('connection', (socket) => {
 
   socket.on(SocketEvents.PLAYER_TYPING, (data: { lobbyCode: string; userId: string; username: string }) => {
     handlePlayerTyping(socket, data)
+  })
+
+  socket.on(SocketEvents.SEND_REACTION, (data: { lobbyCode: string; emoji: string }) => {
+    handleSendReaction(socket, data)
   })
 
   socket.on('disconnecting', () => {

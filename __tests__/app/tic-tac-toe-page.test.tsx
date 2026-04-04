@@ -15,6 +15,7 @@ const mockSocket: any = {
     socketHandlers[event] = handler
     return mockSocket
   }),
+  off: jest.fn(),
   emit: jest.fn(),
   disconnect: jest.fn(),
   close: jest.fn(),
