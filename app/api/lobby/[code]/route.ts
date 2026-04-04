@@ -14,6 +14,7 @@ import { type RestorableGameState } from '@/lib/game-engine'
 import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
+import { AliasGame } from '@/lib/games/alias'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import {
   hashLobbyPassword,
@@ -519,6 +520,103 @@ export async function GET(
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
           log.warn('Fake Artist timeout fallback on lobby GET failed', {
+            code,
+            gameId: activeGame.id,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+    }
+
+    if (
+      activeGame &&
+      activeGame.status === 'playing' &&
+      (safeLobby.gameType || activeGame.gameType) === 'alias'
+    ) {
+      const turnTimerSeconds = resolveTurnTimerSeconds(safeLobby.turnTimer)
+      if (turnTimerSeconds > 0) {
+        try {
+          const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
+          const aliasGame = new AliasGame(activeGame.id)
+          aliasGame.restoreState(parsedState)
+
+          const timeoutResult = aliasGame.applyTimeoutFallback(turnTimerSeconds)
+          if (timeoutResult.changed) {
+            const nextState = aliasGame.getState()
+            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+
+            const updateResult = await prisma.games.updateMany({
+              where: {
+                id: activeGame.id,
+                updatedAt: activeGame.updatedAt,
+              },
+              data: {
+                state: toPersistedGameStateInput(nextState),
+                status: nextState.status,
+                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+                updatedAt: new Date(),
+              },
+            })
+
+            if (updateResult.count > 0) {
+              const scoreUpdates: Array<Promise<unknown>> = []
+              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+              type ActiveScorePlayer = { id: string; userId: string; score: number }
+
+              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
+                .map((entry: Record<string, unknown>) => ({
+                  id: typeof entry?.id === 'string' ? entry.id : '',
+                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
+                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
+                }))
+                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
+              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
+                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
+              )
+
+              for (const statePlayer of statePlayers) {
+                if (!statePlayer || typeof statePlayer !== 'object') continue
+                const statePlayerId = (statePlayer as { id?: unknown }).id
+                if (typeof statePlayerId !== 'string') continue
+                const dbPlayer = activePlayersByUserId.get(statePlayerId)
+                if (!dbPlayer) continue
+                const rawScore = (statePlayer as { score?: unknown }).score
+                const nextScore =
+                  typeof rawScore === 'number' && Number.isFinite(rawScore) ? Math.floor(rawScore) : 0
+                if (dbPlayer.score === nextScore) continue
+                scoreUpdates.push(
+                  prisma.players.update({ where: { id: dbPlayer.id }, data: { score: nextScore } })
+                )
+                dbPlayer.score = nextScore
+              }
+
+              if (scoreUpdates.length > 0) {
+                await Promise.all(scoreUpdates)
+              }
+
+              activeGame.state = JSON.stringify(nextState)
+              activeGame.status = nextState.status
+              if (lastMoveAtDate) {
+                activeGame.lastMoveAt = lastMoveAtDate
+              }
+
+              await appendGameReplaySnapshot({
+                gameId: activeGame.id,
+                playerId: null,
+                actionType: 'alias:timeout-fallback',
+                actionPayload: { source: 'lobby-get' },
+                state: nextState,
+              })
+
+              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
+                action: 'state-change',
+                payload: { state: nextState },
+              })
+            }
+          }
+        } catch (error) {
+          const log = apiLogger('GET /api/lobby/[code]')
+          log.warn('Alias timeout fallback on lobby GET failed', {
             code,
             gameId: activeGame.id,
             error: error instanceof Error ? error.message : String(error),
