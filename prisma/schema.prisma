@@ -253,6 +253,7 @@ enum GameType {
   sketch_and_guess
   liars_party
   fake_artist
+  alias
   other
 }
 
