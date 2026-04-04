@@ -90,7 +90,8 @@ export default function GamesPage() {
       descriptionKey: 'games.alias.description',
       players: '4-16',
       difficultyKey: 'games.alias.difficulty',
-      status: 'coming-soon',
+      status: 'available',
+      route: '/games/alias/lobbies',
       color: 'from-orange-400 to-red-500'
     },
     {

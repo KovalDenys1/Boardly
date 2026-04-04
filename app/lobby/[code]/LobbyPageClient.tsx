@@ -128,6 +128,10 @@ const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
 const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-page'), {
   loading: () => <CenteredLoadingFallback />,
 })
+const AliasLobbyPage = dynamic(
+  () => import('./alias-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
@@ -2214,6 +2218,10 @@ export default function LobbyPage() {
 
   if (gameType === 'rock_paper_scissors' && (gameStatus === 'playing' || gameStatus === 'finished')) {
     return <RockPaperScissorsLobbyPage code={code} />
+  }
+
+  if (gameType === 'alias') {
+    return <AliasLobbyPage code={code} />
   }
 
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
