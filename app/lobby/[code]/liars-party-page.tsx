@@ -692,15 +692,14 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       })
 
       trackMoveSubmitApplied({
-        // TODO(#259): add 'liars_party' to AnalyticsGameType and 'liars_party_page' to source union in lib/analytics.ts
-        gameType: 'alias',
+        gameType: 'liars_party',
         moveType: type,
         durationMs: 0,
         isGuest,
         success: res.ok,
         applied: res.ok,
         statusCode: res.status,
-        source: 'alias_page',
+        source: 'liars_party_page',
       })
 
       if (res.ok) {
