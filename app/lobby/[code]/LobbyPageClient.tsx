@@ -132,6 +132,10 @@ const AliasLobbyPage = dynamic(
   () => import('./alias-page'),
   { loading: () => <CenteredLoadingFallback /> }
 )
+const LiarsPartyLobbyPage = dynamic(
+  () => import('./liars-party-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
@@ -2222,6 +2226,10 @@ export default function LobbyPage() {
 
   if (gameType === 'alias') {
     return <AliasLobbyPage code={code} />
+  }
+
+  if (gameType === 'liars_party') {
+    return <LiarsPartyLobbyPage code={code} />
   }
 
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
