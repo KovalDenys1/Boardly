@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
-import RockPaperScissorsLobbyPage from '@/app/lobby/[code]/rock-paper-scissors-page'
+import LiarsPartyLobbyPage from '@/app/lobby/[code]/liars-party-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { io } from 'socket.io-client'
@@ -31,11 +31,7 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('next-auth/react', () => ({
   useSession: () => ({
-    data: {
-      user: {
-        id: 'user-1',
-      },
-    },
+    data: { user: { id: 'user-1' } },
     status: 'authenticated',
   }),
 }))
@@ -51,7 +47,10 @@ jest.mock('@/contexts/GuestContext', () => ({
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, opts?: Record<string, unknown>) => {
+      if (opts) return `${key}:${JSON.stringify(opts)}`
+      return key
+    },
   }),
 }))
 
@@ -77,11 +76,7 @@ jest.mock('@/lib/socket-url', () => ({
 }))
 
 jest.mock('@/lib/client-logger', () => ({
-  clientLogger: {
-    log: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
+  clientLogger: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }))
 
 jest.mock('@/lib/lobby-create-metrics', () => ({
@@ -92,14 +87,14 @@ jest.mock('@/lib/analytics', () => ({
   trackMoveSubmitApplied: jest.fn(),
 }))
 
-jest.mock('@/components/RockPaperScissorsGameBoard', () => ({
-  __esModule: true,
-  default: () => <div data-testid="rps-board" />,
-}))
-
 jest.mock('@/components/LoadingSpinner', () => ({
   __esModule: true,
   default: () => <div data-testid="loading-spinner" />,
+}))
+
+jest.mock('@/components/ReactionOverlay', () => ({
+  __esModule: true,
+  ReactionOverlay: () => null,
 }))
 
 jest.mock('socket.io-client', () => ({
@@ -111,53 +106,58 @@ function buildLobbyResponse() {
     lobby: {
       id: 'lobby-1',
       code: 'ABCD',
-      gameType: 'rock_paper_scissors',
+      gameType: 'liars_party',
       creatorId: 'user-1',
-      name: 'Lobby',
+      name: 'Test Lobby',
       isActive: true,
+      turnTimer: 60,
     },
     activeGame: {
       id: 'game-1',
-      gameType: 'rock_paper_scissors',
-      status: 'playing',
-      currentPlayerIndex: 0,
+      status: 'waiting',
       state: {
+        status: 'waiting',
+        currentPlayerIndex: 0,
+        players: [],
+        lastMoveAt: null,
         data: {
-          mode: 'best-of-3',
-          rounds: [],
-          playerChoices: {},
+          phase: 'claim',
+          currentRound: 1,
+          maxRounds: 10,
+          eliminationThreshold: 2,
+          claimantOrder: [],
+          currentClaimantId: '',
+          currentClaimantIndex: 0,
+          activePlayerIds: [],
+          eliminatedPlayerIds: [],
+          eliminatedAtRound: {},
+          claim: null,
+          challengeVotes: [],
+          submittedPlayerIds: [],
+          currentRoundResolved: false,
+          roundResults: [],
           scores: {},
-          playersReady: [],
-          gameWinner: null,
+          strikes: {},
+          winnerId: null,
+          ranking: [],
+          completionReason: null,
+          finishedAt: null,
+          isMvpScaffold: true,
         },
       },
       players: [
-        {
-          id: 'player-1',
-          userId: 'user-1',
-          name: 'Alice',
-          user: {
-            username: 'Alice',
-          },
-        },
-        {
-          id: 'player-2',
-          userId: 'user-2',
-          name: 'Bob',
-          user: {
-            username: 'Bob',
-          },
-        },
+        { id: 'player-1', userId: 'user-1', name: 'Alice', user: { username: 'Alice' } },
+        { id: 'player-2', userId: 'user-2', name: 'Bob', user: { username: 'Bob' } },
+        { id: 'player-3', userId: 'user-3', name: 'Carol', user: { username: 'Carol' } },
+        { id: 'player-4', userId: 'user-4', name: 'Dave', user: { username: 'Dave' } },
       ],
     },
   }
 }
 
-describe('RockPaperScissorsLobbyPage', () => {
+describe('LiarsPartyLobbyPage', () => {
   const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
-  const mockResolveSocketClientAuth = resolveSocketClientAuth as jest.MockedFunction<
-    typeof resolveSocketClientAuth
-  >
+  const mockResolveSocketClientAuth = resolveSocketClientAuth as jest.MockedFunction<typeof resolveSocketClientAuth>
   const mockIo = io as jest.MockedFunction<typeof io>
   const toast = showToast as jest.Mocked<typeof showToast>
 
@@ -174,17 +174,19 @@ describe('RockPaperScissorsLobbyPage', () => {
     } as Response)
   })
 
-  it('redirects away when the socket reports an abandoned game', async () => {
-    render(<RockPaperScissorsLobbyPage code="ABCD" />)
-
+  it('renders the waiting room', async () => {
+    render(<LiarsPartyLobbyPage code="ABCD" />)
     await waitFor(() => expect(mockIo).toHaveBeenCalled())
-    await waitFor(() => expect(screen.getByTestId('rps-board')).toBeTruthy())
+    await waitFor(() => expect(screen.getByTestId('liars-party-waiting-room')).toBeTruthy())
+  })
+
+  it('redirects away when the socket reports an abandoned game', async () => {
+    render(<LiarsPartyLobbyPage code="ABCD" />)
+    await waitFor(() => expect(mockIo).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByTestId('liars-party-waiting-room')).toBeTruthy())
 
     act(() => {
-      socketHandlers['game-abandoned']?.({
-        gameId: 'game-1',
-        reason: 'insufficient_players',
-      })
+      socketHandlers['game-abandoned']?.({ gameId: 'game-1', reason: 'insufficient_players' })
     })
 
     await waitFor(() => {
@@ -192,32 +194,23 @@ describe('RockPaperScissorsLobbyPage', () => {
         'lobby.gameAbandoned',
         undefined,
         undefined,
-        { id: 'rps-lifecycle-redirect' }
+        { id: 'liars-party-lifecycle-redirect' }
       )
       expect(mockReplace).toHaveBeenCalledWith('/games')
     })
   })
 
-  it('redirects away when a player leaves and the match falls below the minimum player count', async () => {
-    render(<RockPaperScissorsLobbyPage code="ABCD" />)
-
+  it('redirects when a player leaves and remaining players drop below minimum', async () => {
+    render(<LiarsPartyLobbyPage code="ABCD" />)
     await waitFor(() => expect(mockIo).toHaveBeenCalled())
-    await waitFor(() => expect(screen.getByTestId('rps-board')).toBeTruthy())
+    await waitFor(() => expect(screen.getByTestId('liars-party-waiting-room')).toBeTruthy())
 
     act(() => {
-      socketHandlers['player-left']?.({
-        userId: 'user-2',
-        username: 'Bob',
-        remainingPlayers: 1,
-      })
+      socketHandlers['player-left']?.({ userId: 'user-4', username: 'Dave', remainingPlayers: 3 })
     })
 
     await waitFor(() => {
-      expect(toast.info).toHaveBeenCalledWith(
-        'toast.playerLeft',
-        undefined,
-        { player: 'Bob' }
-      )
+      expect(toast.info).toHaveBeenCalledWith('toast.playerLeft', undefined, { player: 'Dave' })
       expect(mockReplace).toHaveBeenCalledWith('/games')
     })
   })

@@ -1,4 +1,5 @@
 import {
+  isAliasEnabled,
   isFakeArtistEnabled,
   isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
@@ -16,6 +17,7 @@ export type ExperimentalGameType =
   | 'sketch_and_guess'
   | 'liars_party'
   | 'fake_artist'
+  | 'alias'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -118,6 +120,16 @@ const FAKE_ARTIST_METADATA: GameMetadata = {
   translationKey: 'fake_artist',
 }
 
+const ALIAS_METADATA: GameMetadata = {
+  type: 'alias',
+  name: 'Alias',
+  icon: '🗣️',
+  minPlayers: 4,
+  maxPlayers: 16,
+  supportsBots: false,
+  translationKey: 'alias',
+}
+
 export function isRegisteredGameType(value: string): value is RegisteredGameType {
   return value in GAME_METADATA
 }
@@ -128,7 +140,8 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'liars_party' && isLiarsPartyEnabled()) ||
-    (value === 'fake_artist' && isFakeArtistEnabled())
+    (value === 'fake_artist' && isFakeArtistEnabled()) ||
+    (value === 'alias' && isAliasEnabled())
   )
 }
 
@@ -147,6 +160,9 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
+  }
+  if (gameType === 'alias' && isAliasEnabled()) {
+    return ALIAS_METADATA
   }
   return null
 }

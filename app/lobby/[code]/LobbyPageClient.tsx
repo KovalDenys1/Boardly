@@ -87,6 +87,7 @@ import { useLobbyRouteState } from './hooks/useLobbyRouteState'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
+import { ReactionOverlay } from '@/components/ReactionOverlay'
 
 function CenteredLoadingFallback() {
   return (
@@ -127,6 +128,14 @@ const TicTacToeLobbyPage = dynamic(() => import('./tic-tac-toe-page'), {
 const RockPaperScissorsLobbyPage = dynamic(() => import('./rock-paper-scissors-page'), {
   loading: () => <CenteredLoadingFallback />,
 })
+const AliasLobbyPage = dynamic(
+  () => import('./alias-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
+const LiarsPartyLobbyPage = dynamic(
+  () => import('./liars-party-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
@@ -2181,6 +2190,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         variant="danger"
         icon="🚪"
       />
+
+      {isGameStarted && socket && (
+        <ReactionOverlay socket={socket} lobbyCode={code} />
+      )}
      </div>
     </div>
   )
@@ -2209,6 +2222,14 @@ export default function LobbyPage() {
 
   if (gameType === 'rock_paper_scissors' && (gameStatus === 'playing' || gameStatus === 'finished')) {
     return <RockPaperScissorsLobbyPage code={code} />
+  }
+
+  if (gameType === 'alias') {
+    return <AliasLobbyPage code={code} />
+  }
+
+  if (gameType === 'liars_party') {
+    return <LiarsPartyLobbyPage code={code} />
   }
 
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom

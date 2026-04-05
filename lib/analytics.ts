@@ -14,6 +14,8 @@ export type AnalyticsGameType =
   | 'rock_paper_scissors'
   | 'guess_the_spy'
   | 'memory'
+  | 'alias'
+  | 'liars_party'
 type GameType = AnalyticsGameType
 type ReconnectFailureReason = 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
 type ReliabilityAlertEvent = 'rejoin_timeout' | 'auth_refresh_failed' | 'move_apply_timeout'
@@ -77,7 +79,7 @@ interface MoveSubmitAppliedEvent {
   applied: boolean
   statusCode?: number
   isAutoAction?: boolean
-  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'memory_board'
+  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'memory_board' | 'alias_page' | 'liars_party_page'
 }
 
 interface LobbyCreateLatencyEvent {

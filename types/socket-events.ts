@@ -84,6 +84,12 @@ export const SocketEvents = {
   SPECTATOR_CHAT_MESSAGE: 'spectator-chat-message',
 
   // ========================================
+  // Emoji Reaction Events
+  // ========================================
+  SEND_REACTION: 'send-reaction',    // Client → Server
+  REACTION: 'reaction',              // Server → All in room
+
+  // ========================================
   // Bot Events
   // ========================================
   BOT_ACTION: 'bot-action', // Bot performed action (Server → Client)

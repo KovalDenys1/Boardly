@@ -102,6 +102,7 @@ export default function Footer() {
               <li>
                 <button
                   id="footer-feedback-trigger"
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-feedback'))}
                   className="text-white/50 hover:text-white text-sm transition-colors cursor-pointer bg-transparent border-0 p-0"
                 >
                   {t('footer.sendFeedback')}

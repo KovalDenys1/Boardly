@@ -90,7 +90,8 @@ export default function GamesPage() {
       descriptionKey: 'games.alias.description',
       players: '4-16',
       difficultyKey: 'games.alias.difficulty',
-      status: 'coming-soon',
+      status: 'available',
+      route: '/games/alias/lobbies',
       color: 'from-orange-400 to-red-500'
     },
     {
@@ -140,7 +141,8 @@ export default function GamesPage() {
       descriptionKey: 'games.liars_party.description',
       players: '4-12',
       difficultyKey: 'games.liars_party.difficulty',
-      status: 'coming-soon',
+      status: 'available',
+      route: '/games/liars-party/lobbies',
       color: 'from-rose-500 to-orange-500'
     },
     {
