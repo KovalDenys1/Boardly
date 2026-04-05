@@ -195,14 +195,15 @@ function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRema
 interface EliminatedClaimScreenProps {
   data: LiarsPartyGameData
   players: GamePlayer[]
+  currentUserId: string
   timerRemaining: number
   t: (key: string, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedClaimScreen({ data, players, timerRemaining, t }: EliminatedClaimScreenProps) {
+function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t }: EliminatedClaimScreenProps) {
   const claimantPlayer = players.find(p => p.userId === data.currentClaimantId || p.id === data.currentClaimantId)
   const claimantName = claimantPlayer?.name ?? data.currentClaimantId
-  const eliminatedRound = data.eliminatedAtRound[data.currentClaimantId]
+  const eliminatedRound = data.eliminatedAtRound[currentUserId]
 
   return (
     <div
@@ -291,14 +292,15 @@ function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timer
 
 interface EliminatedChallengeScreenProps {
   data: LiarsPartyGameData
+  currentUserId: string
   timerRemaining: number
   t: (key: string, opts?: Record<string, unknown>) => string
 }
 
-function EliminatedChallengeScreen({ data, timerRemaining, t }: EliminatedChallengeScreenProps) {
+function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: EliminatedChallengeScreenProps) {
   const totalVoters = data.activePlayerIds.filter(id => id !== data.currentClaimantId).length
   const votedCount = data.challengeVotes.length
-  const eliminatedRound = data.eliminatedAtRound[data.currentClaimantId]
+  const eliminatedRound = data.eliminatedAtRound[currentUserId]
 
   return (
     <div
@@ -793,6 +795,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
           <EliminatedClaimScreen
             data={data}
             players={players}
+            currentUserId={currentUserId}
             timerRemaining={timerRemaining}
             t={t}
           />
@@ -819,6 +822,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
         return (
           <EliminatedChallengeScreen
             data={data}
+            currentUserId={currentUserId}
             timerRemaining={timerRemaining}
             t={t}
           />
