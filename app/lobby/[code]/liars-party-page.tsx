@@ -14,6 +14,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } from '@/lib/games/liars-party-game'
 
 interface LiarsPartyPageProps {
@@ -49,6 +50,7 @@ interface Game {
 interface WaitingScreenProps {
   players: GamePlayer[]
   data: LiarsPartyGameData | undefined
+  rules: string[]
   isHost: boolean
   isStarting: boolean
   onStart: () => void
@@ -56,16 +58,9 @@ interface WaitingScreenProps {
   t: (key: string, opts?: Record<string, unknown>) => string
 }
 
-function WaitingScreen({ players, data, isHost, isStarting, onStart, onLeave, t }: WaitingScreenProps) {
+function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLeave, t }: WaitingScreenProps) {
   const maxRounds = data?.maxRounds ?? 10
   const eliminationThreshold = data?.eliminationThreshold ?? 2
-  const rules = [
-    'Each round, one active player becomes the claimant and submits one claim.',
-    'Other active players submit one vote: challenge or believe.',
-    'A bluff is considered caught only when challengers are a strict majority.',
-    'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
-    'A player is eliminated after reaching strike limit.',
-  ]
 
   return (
     <div
@@ -212,7 +207,7 @@ function EliminatedClaimScreen({ data, players, timerRemaining, t }: EliminatedC
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-claim-screen"
+      data-testid="liars-party-eliminated-claim-screen"
     >
       <div
         className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
@@ -308,7 +303,7 @@ function EliminatedChallengeScreen({ data, timerRemaining, t }: EliminatedChalle
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
-      data-testid="liars-party-challenge-screen"
+      data-testid="liars-party-eliminated-challenge-screen"
     >
       <div
         className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
@@ -744,9 +739,6 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
     }
   }, [lobby?.id, isStarting])
 
-  // socket is used only for side effects (event listeners); suppress unused-var lint
-  void socket
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -764,16 +756,27 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
   const isEliminated = data?.eliminatedPlayerIds.includes(currentUserId) ?? false
 
   const turnTimerSeconds = typeof lobby?.turnTimer === 'number' ? lobby.turnTimer : 60
-  const lastMoveAt = (engineState as Record<string, unknown> | undefined)?.lastMoveAt as number | null
+  const lastMoveAt = engineState?.lastMoveAt ?? null
   const timerRemaining = lastMoveAt
     ? Math.max(0, turnTimerSeconds - Math.floor((Date.now() - lastMoveAt) / 1000))
     : turnTimerSeconds
+
+  const rules = gameEngine
+    ? (gameEngine as LiarsPartyGame).getGameRules()
+    : [
+        'Each round, one active player becomes the claimant and submits one claim.',
+        'Other active players submit one vote: challenge or believe.',
+        'A bluff is considered caught only when challengers are a strict majority.',
+        'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
+        'A player is eliminated after reaching strike limit.',
+      ]
 
   if (resolvedStatus === 'waiting') {
     return (
       <WaitingScreen
         players={players}
         data={data}
+        rules={rules}
         isHost={isHost}
         isStarting={isStarting}
         onStart={handleStartGame}
@@ -796,15 +799,18 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
         )
       }
       return (
-        <ClaimScreen
-          data={data}
-          players={players}
-          currentUserId={currentUserId}
-          isMoveSubmitting={isMoveSubmitting}
-          timerRemaining={timerRemaining}
-          onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
-          t={t}
-        />
+        <>
+          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          <ClaimScreen
+            data={data}
+            players={players}
+            currentUserId={currentUserId}
+            isMoveSubmitting={isMoveSubmitting}
+            timerRemaining={timerRemaining}
+            onSubmitClaim={(claim, isBluff) => handleMove('submit-claim', { claim, isBluff })}
+            t={t}
+          />
+        </>
       )
     }
 
@@ -819,28 +825,34 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
         )
       }
       return (
-        <ChallengeScreen
-          data={data}
-          players={players}
-          currentUserId={currentUserId}
-          isMoveSubmitting={isMoveSubmitting}
-          timerRemaining={timerRemaining}
-          onVote={(decision) => handleMove('submit-challenge', { decision })}
-          t={t}
-        />
+        <>
+          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          <ChallengeScreen
+            data={data}
+            players={players}
+            currentUserId={currentUserId}
+            isMoveSubmitting={isMoveSubmitting}
+            timerRemaining={timerRemaining}
+            onVote={(decision) => handleMove('submit-challenge', { decision })}
+            t={t}
+          />
+        </>
       )
     }
 
     if (data.phase === 'reveal') {
       return (
-        <RevealScreen
-          data={data}
-          players={players}
-          isHost={isHost}
-          isMoveSubmitting={isMoveSubmitting}
-          onAdvanceRound={() => handleMove('advance-round', {})}
-          t={t}
-        />
+        <>
+          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          <RevealScreen
+            data={data}
+            players={players}
+            isHost={isHost}
+            isMoveSubmitting={isMoveSubmitting}
+            onAdvanceRound={() => handleMove('advance-round', {})}
+            t={t}
+          />
+        </>
       )
     }
   }
