@@ -8,7 +8,8 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
-import type { RegisteredGameType } from '@/lib/game-catalog'
+import type { SupportedCatalogGameType } from '@/lib/game-catalog'
+import { isSupportedGameType } from '@/lib/game-catalog'
 import { showToast } from '@/lib/i18n-toast'
 import {
   trackLobbyCreateRequest,
@@ -17,7 +18,7 @@ import {
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 
-type GameType = RegisteredGameType
+type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
 
 type GameSettings = {
@@ -45,7 +46,8 @@ type GameInfo = {
 }
 
 // Game info with settings configuration for each game
-const GAME_INFO: Record<GameType, GameInfo> = {
+// Keyed by SupportedCatalogGameType; experimental entries only shown when feature flag is on
+const GAME_INFO: Record<string, GameInfo> = {
   yahtzee: {
     name: 'Yahtzee',
     emoji: '🎲',
@@ -119,16 +121,44 @@ const GAME_INFO: Record<GameType, GameInfo> = {
       defaultDifficulty: 'easy',
     },
   },
+  alias: {
+    name: 'Alias',
+    emoji: '🗣️',
+    description: '', // Set via i18n
+    gradient: 'from-violet-600 via-fuchsia-500 to-pink-400',
+    translationKey: 'alias',
+    allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
+    defaultMaxPlayers: 8,
+    settings: {
+      hasTurnTimer: false,
+      hasGameModes: false,
+    },
+  },
+  liars_party: {
+    name: "Liar's Party",
+    emoji: '🎭',
+    description: '', // Set via i18n
+    gradient: 'from-rose-600 via-pink-500 to-orange-400',
+    translationKey: 'liars_party',
+    allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
+    defaultMaxPlayers: 8,
+    settings: {
+      hasTurnTimer: false,
+      hasGameModes: false,
+    },
+  },
 }
 
-const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<GameType>(['rock_paper_scissors'])
+const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<string>(['rock_paper_scissors'])
 
 function isSelectableGameType(value: string | null | undefined): value is GameType {
   if (typeof value !== 'string' || !(value in GAME_INFO)) {
     return false
   }
-
-  return !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(value as GameType)
+  if (!isSupportedGameType(value)) {
+    return false
+  }
+  return !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(value)
 }
 
 
