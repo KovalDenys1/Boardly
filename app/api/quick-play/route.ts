@@ -5,7 +5,8 @@ import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { apiLogger } from '@/lib/logger'
-import { createGameEngine, hasBotSupport } from '@/lib/game-registry'
+import { createGameEngine } from '@/lib/game-registry'
+import { hasBotSupport, getBotSupportedGameTypes, isSupportedGameType } from '@/lib/game-catalog'
 import { generateLobbyCode } from '@/lib/lobby'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
@@ -15,8 +16,13 @@ import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-hel
 
 const log = apiLogger('/api/quick-play')
 
+const QUICK_PLAY_GAME_TYPES = getBotSupportedGameTypes()
+
 const quickPlaySchema = z.object({
-  gameType: z.enum(['yahtzee', 'tic_tac_toe', 'rock_paper_scissors']),
+  gameType: z.string().refine(
+    (v) => isSupportedGameType(v) && hasBotSupport(v),
+    { message: `gameType must be one of: ${QUICK_PLAY_GAME_TYPES.join(', ')}` }
+  ),
 })
 
 const apiLimiter = rateLimit(rateLimitPresets.api)

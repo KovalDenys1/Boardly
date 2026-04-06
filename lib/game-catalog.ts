@@ -171,3 +171,32 @@ export function hasBotSupport(gameType: string): boolean {
   const metadata = getGameMetadata(gameType)
   return metadata?.supportsBots ?? false
 }
+
+/**
+ * Returns all registered (always-on) game types.
+ * Use this instead of hardcoding game type lists.
+ */
+export function getAllRegisteredGameTypes(): RegisteredGameType[] {
+  return Object.keys(GAME_METADATA) as RegisteredGameType[]
+}
+
+/**
+ * Returns all currently enabled game types (registered + feature-flagged).
+ * Use this for UI lists, filters, and validation.
+ */
+export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
+  const types: SupportedCatalogGameType[] = getAllRegisteredGameTypes()
+  if (isTelephoneDoodleEnabled()) types.push('telephone_doodle')
+  if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
+  if (isLiarsPartyEnabled()) types.push('liars_party')
+  if (isFakeArtistEnabled()) types.push('fake_artist')
+  if (isAliasEnabled()) types.push('alias')
+  return types
+}
+
+/**
+ * Returns all enabled game types that support bots (usable for quick play).
+ */
+export function getBotSupportedGameTypes(): SupportedCatalogGameType[] {
+  return getAllEnabledGameTypes().filter(hasBotSupport)
+}
