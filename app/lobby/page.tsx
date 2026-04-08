@@ -55,7 +55,7 @@ function LobbyListPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialGameTypeFilter = normalizeGameTypeFilter(searchParams.get('gameType'))
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const authenticatedUserId = session?.user?.id || null
   const hasAuthenticatedSession = Boolean(authenticatedUserId)
@@ -263,7 +263,16 @@ function LobbyListPageContent() {
 
   // Socket connection effect
   useEffect(() => {
+    if (status === 'loading') {
+      return
+    }
+
     if (isGuest && !guestToken) {
+      return
+    }
+
+    if (status === 'unauthenticated' && !isGuest) {
+      clientLogger.log('Skipping lobby list socket connection for anonymous visitor')
       return
     }
 
@@ -345,7 +354,7 @@ function LobbyListPageContent() {
         socket = null
       }
     }
-  }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken])
+  }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken, status])
 
   const hasActiveFilters = hasActiveLobbyFilters(filters)
   const isManualRefreshing = refreshIndicatorMode === 'manual'
