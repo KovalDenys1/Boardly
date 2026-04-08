@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useId } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
+import HelpTooltip from '@/components/ui/help-tooltip'
 
 interface UsernameInputProps {
   value: string
@@ -37,6 +38,7 @@ export default function UsernameInput({
   currentUsername,
 }: UsernameInputProps) {
   const { t } = useTranslation()
+  const inputId = useId()
   const [status, setStatus] = useState<CheckStatus>('idle')
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [validationError, setValidationError] = useState<string>('')
@@ -124,20 +126,27 @@ export default function UsernameInput({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">
-        {t('auth.register.username')}
-      </label>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <label htmlFor={inputId} className="label !mb-0">
+          {t('auth.register.username')}
+        </label>
+        <HelpTooltip
+          label={t('auth.register.username')}
+          content={<p>{t('auth.register.usernameHint')}</p>}
+        />
+      </div>
       <div className="relative">
         <input
+          id={inputId}
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-xl border-2 bg-white px-4 py-3 pr-10 text-sm text-slate-900 shadow-sm outline-none transition-all focus:ring-4 dark:bg-slate-800 dark:text-white ${
+          className={`input pr-10 text-base sm:text-sm ${
             status === 'available'
-              ? 'border-emerald-400 focus:ring-emerald-100 dark:border-emerald-500 dark:focus:ring-emerald-500/20'
+              ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-500'
               : status === 'taken' || status === 'invalid'
-                ? 'border-red-400 focus:ring-red-100 dark:border-red-500 dark:focus:ring-red-500/20'
-                : 'border-slate-200 focus:border-blue-400 focus:ring-blue-100 dark:border-slate-600 dark:focus:ring-blue-500/20'
+                ? 'border-red-400 focus:ring-2 focus:ring-red-500 dark:border-red-500'
+                : ''
           }`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -166,17 +175,7 @@ export default function UsernameInput({
       </div>
 
       {/* Status Messages */}
-      <div className="mt-1 min-h-[20px]">
-        {status === 'checking' && (
-          <p className="text-xs text-blue-600 dark:text-blue-400">
-            {t('auth.username.checking', 'Checking availability...')}
-          </p>
-        )}
-        {status === 'available' && (
-          <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-            ✓ {t('auth.username.available', 'Username is available!')}
-          </p>
-        )}
+      <div className="mt-1">
         {status === 'taken' && (
           <p className="text-xs text-red-600 dark:text-red-400">
             ✗ {t('auth.username.taken', 'Username is already taken')}
@@ -187,11 +186,6 @@ export default function UsernameInput({
             ✗ {validationError}
           </p>
         )}
-        {!status || status === 'idle' ? (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {t('auth.register.usernameHint')}
-          </p>
-        ) : null}
       </div>
 
       {/* Suggestions */}
