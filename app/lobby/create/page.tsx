@@ -8,8 +8,6 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
-import type { SupportedCatalogGameType } from '@/lib/game-catalog'
-import { isSupportedGameType } from '@/lib/game-catalog'
 import { showToast } from '@/lib/i18n-toast'
 import {
   trackLobbyCreateRequest,
@@ -17,8 +15,13 @@ import {
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
+import {
+  getPublicAvailableGameTypes,
+  isPublicAvailableGameType,
+  type PublicGameType,
+} from '@/lib/public-game-access'
 
-type GameType = SupportedCatalogGameType
+type GameType = PublicGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
 
 type GameSettings = {
@@ -45,9 +48,8 @@ type GameInfo = {
   settings: GameSettings // Game-specific settings configuration
 }
 
-// Game info with settings configuration for each game
-// Keyed by SupportedCatalogGameType; experimental entries only shown when feature flag is on
-const GAME_INFO: Record<string, GameInfo> = {
+// Game info for games that are publicly selectable in the create-lobby flow.
+const GAME_INFO: Record<GameType, GameInfo> = {
   yahtzee: {
     name: 'Yahtzee',
     emoji: '🎲',
@@ -134,31 +136,14 @@ const GAME_INFO: Record<string, GameInfo> = {
       hasGameModes: false,
     },
   },
-  liars_party: {
-    name: "Liar's Party",
-    emoji: '🎭',
-    description: '', // Set via i18n
-    gradient: 'from-rose-600 via-pink-500 to-orange-400',
-    translationKey: 'liars_party',
-    allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
-    defaultMaxPlayers: 8,
-    settings: {
-      hasTurnTimer: false,
-      hasGameModes: false,
-    },
-  },
 }
-
-const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<string>(['rock_paper_scissors'])
 
 function isSelectableGameType(value: string | null | undefined): value is GameType {
   if (typeof value !== 'string' || !(value in GAME_INFO)) {
     return false
   }
-  if (!isSupportedGameType(value)) {
-    return false
-  }
-  return !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(value)
+
+  return isPublicAvailableGameType(value)
 }
 
 
@@ -174,6 +159,9 @@ function CreateLobbyPage() {
   const { isGuest } = useGuest()
 
   const requestedGameType = searchParams.get('gameType')
+  const availableGameTypes = getPublicAvailableGameTypes().filter(
+    (gameType): gameType is GameType => gameType in GAME_INFO
+  )
   const [selectedGameType, setSelectedGameType] = useState<GameType>(
     isSelectableGameType(requestedGameType) ? requestedGameType : 'yahtzee'
   )
@@ -404,24 +392,27 @@ function CreateLobbyPage() {
           <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-visible md:overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
             {/* 1. Game Type Selector - clean scrollable list */}
             <div className="md:w-1/4 w-full flex flex-col overflow-visible md:overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
-              {Object.entries(GAME_INFO)
-                .filter(([key]) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(key as GameType))
-                .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-                .map(([key, info]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedGameType(key as GameType)}
-                  className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${selectedGameType === key
-                    ? 'bg-white text-blue-600 shadow-lg'
-                    : 'text-white hover:bg-white/10'
-                    }`}
-                  aria-label={t('lobby.create.selectGame', { name: info.name })}
-                >
-                  <span className="text-3xl flex-shrink-0">{info.emoji}</span>
-                  <span className="text-left text-base md:text-lg font-bold">{info.name}</span>
-                </button>
-              ))}
+              {[...availableGameTypes]
+                .sort((a, b) => GAME_INFO[a].name.localeCompare(GAME_INFO[b].name, undefined, { sensitivity: 'base' }))
+                .map((gameType) => {
+                  const info = GAME_INFO[gameType]
+
+                  return (
+                    <button
+                      key={gameType}
+                      type="button"
+                      onClick={() => setSelectedGameType(gameType)}
+                      className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${selectedGameType === gameType
+                        ? 'bg-white text-blue-600 shadow-lg'
+                        : 'text-white hover:bg-white/10'
+                        }`}
+                      aria-label={t('lobby.create.selectGame', { name: info.name })}
+                    >
+                      <span className="text-3xl flex-shrink-0">{info.emoji}</span>
+                      <span className="text-left text-base md:text-lg font-bold">{info.name}</span>
+                    </button>
+                  )
+                })}
             </div>
             {/* 2. Form */}
             <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-visible md:overflow-y-auto max-h-none">

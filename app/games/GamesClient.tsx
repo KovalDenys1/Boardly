@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
+import type { PublicGameType } from '@/lib/public-game-access'
 
 interface Game {
   id: string
@@ -21,18 +22,17 @@ interface Game {
 }
 
 interface GamesClientProps {
-  // IDs of experimental games that are currently enabled via feature flags
-  enabledExperimental: string[]
+  availableGameTypes: PublicGameType[]
 }
 
-export default function GamesClient({ enabledExperimental }: GamesClientProps) {
+export default function GamesClient({ availableGameTypes }: GamesClientProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest } = useGuest()
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
-  const enabled = new Set(enabledExperimental)
+  const available = new Set(availableGameTypes)
 
   const games: Game[] = [
     {
@@ -42,7 +42,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.yahtzee.description',
       players: '2-8',
       difficultyKey: 'games.yahtzee.difficulty',
-      status: 'available',
+      status: available.has('yahtzee') ? 'available' : 'coming-soon',
       route: '/lobby/create?gameType=yahtzee',
       color: 'from-blue-500 to-purple-600'
     },
@@ -53,7 +53,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.spy.description',
       players: '3-10',
       difficultyKey: 'games.spy.difficulty',
-      status: 'available',
+      status: available.has('guess_the_spy') ? 'available' : 'coming-soon',
       route: '/lobby/create?gameType=guess_the_spy',
       color: 'from-red-500 to-pink-600'
     },
@@ -64,7 +64,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.tictactoe.description',
       players: '2',
       difficultyKey: 'games.tictactoe.difficulty',
-      status: 'available',
+      status: available.has('tic_tac_toe') ? 'available' : 'coming-soon',
       route: '/lobby/create?gameType=tic_tac_toe',
       color: 'from-yellow-400 to-orange-500'
     },
@@ -75,7 +75,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.memory.description',
       players: '2-4',
       difficultyKey: 'games.memory.difficulty',
-      status: 'available',
+      status: available.has('memory') ? 'available' : 'coming-soon',
       route: '/games/memory/lobbies',
       color: 'from-green-400 to-teal-500'
     },
@@ -86,7 +86,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.rock_paper_scissors.description',
       players: '2',
       difficultyKey: 'games.rock_paper_scissors.difficulty',
-      status: 'available',
+      status: available.has('rock_paper_scissors') ? 'available' : 'coming-soon',
       route: '/games/rock-paper-scissors/lobbies',
       color: 'from-indigo-400 to-purple-500'
     },
@@ -97,7 +97,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.alias.description',
       players: '4-16',
       difficultyKey: 'games.alias.difficulty',
-      status: enabled.has('alias') ? 'available' : 'coming-soon',
+      status: available.has('alias') ? 'available' : 'coming-soon',
       route: '/games/alias/lobbies',
       color: 'from-orange-400 to-red-500'
     },
@@ -108,7 +108,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.liars_party.description',
       players: '4-12',
       difficultyKey: 'games.liars_party.difficulty',
-      status: enabled.has('liars-party') ? 'available' : 'coming-soon',
+      status: 'coming-soon',
       route: '/games/liars-party/lobbies',
       color: 'from-rose-500 to-orange-500'
     },
@@ -149,7 +149,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.guess_my_drawing.description',
       players: '3-10',
       difficultyKey: 'games.guess_my_drawing.difficulty',
-      status: enabled.has('guess-my-drawing') ? 'available' : 'coming-soon',
+      status: 'coming-soon',
       route: '/games/sketch-and-guess/lobbies',
       color: 'from-cyan-500 to-blue-600'
     },
@@ -160,7 +160,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.fake_artist.description',
       players: '4-10',
       difficultyKey: 'games.fake_artist.difficulty',
-      status: enabled.has('fake-artist') ? 'available' : 'coming-soon',
+      status: 'coming-soon',
       route: '/games/fake-artist/lobbies',
       color: 'from-fuchsia-500 to-violet-600'
     },
@@ -171,7 +171,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.telephone_doodle.description',
       players: '3-12',
       difficultyKey: 'games.telephone_doodle.difficulty',
-      status: enabled.has('telephone-doodle') ? 'available' : 'coming-soon',
+      status: 'coming-soon',
       route: '/games/telephone-doodle/lobbies',
       color: 'from-sky-500 to-indigo-600'
     },
