@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { type ReactNode, useState, useMemo } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import HelpTooltip from '@/components/ui/help-tooltip'
 
 interface PasswordInputProps {
   value: string
@@ -10,8 +11,13 @@ interface PasswordInputProps {
   placeholder?: string
   error?: string
   showStrength?: boolean
+  showRequirements?: boolean
   required?: boolean
   autoComplete?: string
+  statusText?: string
+  statusClassName?: string
+  hint?: ReactNode
+  hintLabel?: string
 }
 
 interface PasswordStrength {
@@ -28,8 +34,13 @@ export default function PasswordInput({
   placeholder = '••••••••',
   error,
   showStrength = false,
+  showRequirements = true,
   required = false,
   autoComplete = 'current-password',
+  statusText,
+  statusClassName,
+  hint,
+  hintLabel,
 }: PasswordInputProps) {
   const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
@@ -70,7 +81,17 @@ export default function PasswordInput({
 
   return (
     <div>
-      <label className="label">{label}</label>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <label className="label !mb-0">{label}</label>
+        <div className="flex items-center gap-2">
+          {statusText ? (
+            <span className={`text-xs font-semibold ${statusClassName ?? 'text-slate-500 dark:text-slate-400'}`}>
+              {statusText}
+            </span>
+          ) : null}
+          {hint ? <HelpTooltip content={hint} label={hintLabel ?? String(label)} /> : null}
+        </div>
+      </div>
       <div className="relative">
         <input
           type={showPassword ? 'text' : 'password'}
@@ -125,24 +146,25 @@ export default function PasswordInput({
             />
           </div>
           
-          {/* Password Requirements */}
-          <div className="mt-3 space-y-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              {t('auth.password.requirements', 'Password requirements')}:
-            </p>
-            <PasswordRequirement
-              met={value.length >= 8}
-              text={t('auth.password.requirement.length', 'At least 8 characters')}
-            />
-            <PasswordRequirement
-              met={/[a-z]/.test(value) && /[A-Z]/.test(value)}
-              text={t('auth.password.requirement.case', 'Upper & lowercase letters')}
-            />
-            <PasswordRequirement
-              met={/\d/.test(value)}
-              text={t('auth.password.requirement.number', 'At least one number')}
-            />
-          </div>
+          {showRequirements && (
+            <div className="mt-3 space-y-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                {t('auth.password.requirements', 'Password requirements')}:
+              </p>
+              <PasswordRequirement
+                met={value.length >= 8}
+                text={t('auth.password.requirement.length', 'At least 8 characters')}
+              />
+              <PasswordRequirement
+                met={/[a-z]/.test(value) && /[A-Z]/.test(value)}
+                text={t('auth.password.requirement.case', 'Upper & lowercase letters')}
+              />
+              <PasswordRequirement
+                met={/\d/.test(value)}
+                text={t('auth.password.requirement.number', 'At least one number')}
+              />
+            </div>
+          )}
         </div>
       )}
 

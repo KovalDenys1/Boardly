@@ -1,18 +1,7 @@
+import { getGameMetadata } from '@/lib/game-catalog'
+
 export function formatGameTypeLabel(gameType: string): string {
-  switch (gameType) {
-    case 'yahtzee':
-      return 'Yahtzee'
-    case 'guess_the_spy':
-      return 'Guess the Spy'
-    case 'tic_tac_toe':
-      return 'Tic Tac Toe'
-    case 'rock_paper_scissors':
-      return 'Rock Paper Scissors'
-    case 'memory':
-      return 'Memory'
-    default:
-      return gameType
-  }
+  return getGameMetadata(gameType)?.name ?? gameType
 }
 
 export function getGameStatusBadgeColor(status: string): string {

@@ -917,14 +917,21 @@ const no = {
     },
     resetPassword: {
       title: 'Opprett nytt passord',
+      subtitle: 'Velg et sterkt nytt passord for kontoen din',
       password: 'Nytt passord',
       passwordPlaceholder: 'Skriv inn nytt passord',
       confirmPassword: 'Bekreft passord',
       confirmPasswordPlaceholder: 'Bekreft nytt passord',
       submit: 'Tilbakestill passord',
+      resetting: 'Tilbakestiller...',
       success: 'Passord tilbakestilt vellykket!',
       error: 'Kunne ikke tilbakestille passord',
-      invalidToken: 'Ugyldig eller utløpt tilbakestillingslenke'
+      invalidToken: 'Ugyldig eller utløpt tilbakestillingslenke',
+      invalidTitle: 'Ugyldig tilbakestillingslenke',
+      invalidHelp: 'Denne tilbakestillingslenken er ugyldig eller har utløpt.',
+      requestNewLink: 'Be om ny lenke',
+      remember: 'Husker du passordet ditt?',
+      loginLink: 'Logg inn'
     },
     verifyEmail: {
       title: 'Bekreft e-posten din',

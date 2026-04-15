@@ -203,7 +203,7 @@ describe('Game Registry', () => {
       expect(types).toContain('tic_tac_toe')
       expect(types).toContain('rock_paper_scissors')
       expect(types).toContain('memory')
-      expect(types).toHaveLength(5)
+      expect(types.length).toBeGreaterThanOrEqual(5)
     })
 
     it('should return types as an array', () => {

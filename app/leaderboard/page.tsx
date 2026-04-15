@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getGameMetadata } from '@/lib/game-catalog'
+import { getAllEnabledGameTypes, getGameMetadata } from '@/lib/game-catalog'
 
 interface LeaderboardEntry {
   rank: number
@@ -17,11 +17,10 @@ interface LeaderboardEntry {
 
 const GAME_FILTERS = [
   { value: '', label: 'All Games', icon: '🎮' },
-  { value: 'yahtzee', label: 'Yahtzee', icon: '🎲' },
-  { value: 'tic_tac_toe', label: 'Tic Tac Toe', icon: '❌' },
-  { value: 'rock_paper_scissors', label: 'Rock Paper Scissors', icon: '✊' },
-  { value: 'guess_the_spy', label: 'Guess the Spy', icon: '🕵️' },
-  { value: 'memory', label: 'Memory', icon: '🧠' },
+  ...getAllEnabledGameTypes().map((type) => {
+    const meta = getGameMetadata(type)
+    return { value: type, label: meta?.name ?? type, icon: meta?.icon ?? '🎮' }
+  }),
 ]
 
 const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }

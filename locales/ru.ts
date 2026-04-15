@@ -917,14 +917,21 @@ const ru = {
     },
     resetPassword: {
       title: 'Создать новый пароль',
+      subtitle: 'Выберите новый надёжный пароль для вашего аккаунта',
       password: 'Новый пароль',
       passwordPlaceholder: 'Введите новый пароль',
       confirmPassword: 'Подтвердите пароль',
       confirmPasswordPlaceholder: 'Подтвердите новый пароль',
       submit: 'Сбросить пароль',
+      resetting: 'Сброс...',
       success: 'Пароль успешно сброшен!',
       error: 'Не удалось сбросить пароль',
-      invalidToken: 'Неверная или истёкшая ссылка для сброса'
+      invalidToken: 'Неверная или истёкшая ссылка для сброса',
+      invalidTitle: 'Недействительная ссылка для сброса',
+      invalidHelp: 'Эта ссылка для сброса пароля недействительна или уже истекла.',
+      requestNewLink: 'Запросить новую ссылку',
+      remember: 'Вспомнили пароль?',
+      loginLink: 'Войти'
     },
     verifyEmail: {
       title: 'Подтвердите ваш email',

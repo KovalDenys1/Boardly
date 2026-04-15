@@ -2231,7 +2231,6 @@ export default function LobbyPage() {
   if (gameType === 'liars_party') {
     return <LiarsPartyLobbyPage code={code} />
   }
-
   // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
   return (
     <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
