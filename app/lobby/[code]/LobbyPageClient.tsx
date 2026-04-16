@@ -18,6 +18,7 @@ import type { BaseBotActionEvent, YahtzeeBotActionEvent } from '@/lib/bots'
 import { selectBestAvailableCategory, calculateScore, YahtzeeCategory, ALL_CATEGORIES } from '@/lib/yahtzee'
 import { GameEngine } from '@/lib/game-engine'
 import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
+import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -290,7 +291,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   )
 
   const lifecycleRedirectTarget = React.useMemo(
-    () => `/games/${(lobby?.gameType as string) || DEFAULT_GAME_TYPE}/lobbies`,
+    () => getGameLobbiesRoute((lobby?.gameType as string) || DEFAULT_GAME_TYPE) ?? '/games',
     [lobby?.gameType]
   )
 
@@ -1705,7 +1706,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               isRequestRematchPending={isRequestingRematch}
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
-              onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+              onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
               isGuest={isGuest}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
@@ -2126,7 +2127,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               isRequestingRematch={isRequestingRematch}
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
-              onBackToLobby={() => router.push(`/games/${lobby.gameType}/lobbies`)}
+              onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
             />
           ) : gameEngine && (lobby?.gameType as string) === 'memory' && game?.id ? (
             <MemoryGameBoard

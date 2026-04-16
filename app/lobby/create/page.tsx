@@ -10,6 +10,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { SupportedCatalogGameType } from '@/lib/game-catalog'
 import { isSupportedGameType } from '@/lib/game-catalog'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
 import {
   trackLobbyCreateRequest,
@@ -149,8 +150,6 @@ const GAME_INFO: Record<string, GameInfo> = {
   },
 }
 
-const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<string>(['rock_paper_scissors'])
-
 function isSelectableGameType(value: string | null | undefined): value is GameType {
   if (typeof value !== 'string' || !(value in GAME_INFO)) {
     return false
@@ -158,7 +157,7 @@ function isSelectableGameType(value: string | null | undefined): value is GameTy
   if (!isSupportedGameType(value)) {
     return false
   }
-  return !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(value)
+  return !isTemporarilyUnavailableGameType(value)
 }
 
 
@@ -405,7 +404,7 @@ function CreateLobbyPage() {
             {/* 1. Game Type Selector - clean scrollable list */}
             <div className="md:w-1/4 w-full flex flex-col overflow-visible md:overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
               {Object.entries(GAME_INFO)
-                .filter(([key]) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(key as GameType))
+                .filter(([key]) => !isTemporarilyUnavailableGameType(key))
                 .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
                 .map(([key, info]) => (
                 <button

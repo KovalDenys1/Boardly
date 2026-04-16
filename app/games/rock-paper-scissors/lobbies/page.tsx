@@ -10,6 +10,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
 let socket: Socket | null = null
 
@@ -40,6 +41,7 @@ export default function RockPaperScissorsLobbiesPage() {
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
   const isAuthenticated = status === 'authenticated' || isGuest
+  const canCreateLobby = !isTemporarilyUnavailableGameType('rock_paper_scissors')
 
   const loadLobbies = useCallback(async () => {
     try {
@@ -214,8 +216,15 @@ export default function RockPaperScissorsLobbiesPage() {
         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Create lobby */}
           <div
-            className="cursor-pointer rounded-2xl border-2 border-white/20 bg-gradient-to-br from-emerald-500 to-teal-600 p-6 shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl sm:p-8"
+            className={`rounded-2xl border-2 border-white/20 p-6 shadow-xl transition-all sm:p-8 ${
+              canCreateLobby
+                ? 'cursor-pointer bg-gradient-to-br from-emerald-500 to-teal-600 hover:scale-[1.02] hover:shadow-2xl'
+                : 'bg-white/10 backdrop-blur-md opacity-80'
+            }`}
             onClick={() => {
+              if (!canCreateLobby) {
+                return
+              }
               if (!isAuthenticated) {
                 router.push(`/auth/login?returnUrl=${encodeURIComponent('/lobby/create')}`)
                 return
@@ -226,19 +235,27 @@ export default function RockPaperScissorsLobbiesPage() {
             <div className="mb-4 flex items-center justify-between">
               <span className="text-5xl sm:text-6xl">✨</span>
               <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white">
-                NEW GAME
+                {canCreateLobby ? 'NEW GAME' : 'UNAVAILABLE'}
               </span>
             </div>
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">Create New Lobby</h2>
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">
+              {canCreateLobby ? 'Create New Lobby' : 'Lobby Creation Unavailable'}
+            </h2>
             <p className="mt-2 text-white/90 sm:text-base">
-              Start a Best-of-3 or Best-of-5 match and invite a friend!
+              {canCreateLobby
+                ? 'Start a Best-of-3 or Best-of-5 match and invite a friend!'
+                : 'Joining existing lobbies still works, but creating new Rock Paper Scissors lobbies is temporarily disabled.'}
             </p>
-            <div className="mt-4 flex items-center gap-2 font-bold text-white">
-              <span>Create Now</span>
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </div>
+            {canCreateLobby ? (
+              <div className="mt-4 flex items-center gap-2 font-bold text-white">
+                <span>Create Now</span>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm font-semibold text-white/80">Check the open lobbies below instead.</p>
+            )}
           </div>
 
           {/* Quick join */}
@@ -289,7 +306,11 @@ export default function RockPaperScissorsLobbiesPage() {
             <div className="rounded-2xl border border-white/20 bg-white/10 py-12 text-center text-white/80 backdrop-blur-sm">
               <p className="text-5xl mb-3">🍂</p>
               <p className="text-lg font-semibold">No open lobbies right now</p>
-              <p className="mt-1 text-sm text-white/60">Be the first — create a lobby above!</p>
+              <p className="mt-1 text-sm text-white/60">
+                {canCreateLobby
+                  ? 'Be the first — create a lobby above!'
+                  : 'Lobby creation is temporarily unavailable for this game.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
