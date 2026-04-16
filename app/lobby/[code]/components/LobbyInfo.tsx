@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
 import { getGameMetadata } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import type { Game, Lobby } from '@/types/game'
 
 interface LobbyInfoProps {
@@ -138,7 +139,7 @@ export default function LobbyInfo({
                 ›
               </span>
               <button
-                onClick={() => router.push(lobby?.gameType ? `/games/${lobby.gameType}/lobbies` : '/games')}
+                onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
                 aria-label={t('lobby.activeLobbies')}
                 className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               >
