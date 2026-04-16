@@ -1,6 +1,7 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { getGameLobbiesRoute } from '@/lib/public-game-access'
 
 type JoinViewerMode = 'anonymous' | 'authenticated' | 'guest'
 
@@ -139,7 +140,7 @@ export default function JoinPrompt({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <button
             type="button"
-            onClick={() => router.push(lobby?.gameType ? `/games/${lobby.gameType}/lobbies` : '/games')}
+            onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
             className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold border border-white/20 transition-all disabled:opacity-60"
             disabled={isJoining}
           >

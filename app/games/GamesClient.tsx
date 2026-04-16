@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
+import { getGameLobbiesRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
 interface Game {
   id: string
@@ -43,7 +44,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       players: '2-8',
       difficultyKey: 'games.yahtzee.difficulty',
       status: 'available',
-      route: '/lobby/create?gameType=yahtzee',
+      route: getGameLobbiesRoute('yahtzee') || undefined,
       color: 'from-blue-500 to-purple-600'
     },
     {
@@ -54,7 +55,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       players: '3-10',
       difficultyKey: 'games.spy.difficulty',
       status: 'available',
-      route: '/lobby/create?gameType=guess_the_spy',
+      route: getGameLobbiesRoute('guess_the_spy') || undefined,
       color: 'from-red-500 to-pink-600'
     },
     {
@@ -65,7 +66,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       players: '2',
       difficultyKey: 'games.tictactoe.difficulty',
       status: 'available',
-      route: '/lobby/create?gameType=tic_tac_toe',
+      route: getGameLobbiesRoute('tic_tac_toe') || undefined,
       color: 'from-yellow-400 to-orange-500'
     },
     {
@@ -76,7 +77,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       players: '2-4',
       difficultyKey: 'games.memory.difficulty',
       status: 'available',
-      route: '/games/memory/lobbies',
+      route: getGameLobbiesRoute('memory') || undefined,
       color: 'from-green-400 to-teal-500'
     },
     {
@@ -86,8 +87,8 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.rock_paper_scissors.description',
       players: '2',
       difficultyKey: 'games.rock_paper_scissors.difficulty',
-      status: 'available',
-      route: '/games/rock-paper-scissors/lobbies',
+      status: isTemporarilyUnavailableGameType('rock_paper_scissors') ? 'coming-soon' : 'available',
+      route: getGameLobbiesRoute('rock_paper_scissors') || undefined,
       color: 'from-indigo-400 to-purple-500'
     },
     {
@@ -347,7 +348,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
               {/* Play Button */}
               {game.status === 'available' && (
                 <button className="w-full mt-auto px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl">
-                  {t('games.playNow')} →
+                  {t('games.viewLobbies')} →
                 </button>
               )}
             </div>

@@ -9,6 +9,7 @@ import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { getLobbyCreateRoute } from '@/lib/public-game-access'
 
 let socket: Socket | null = null
 
@@ -39,6 +40,7 @@ export default function YahtzeeLobbiesPage() {
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
   const isAuthenticated = status === 'authenticated' || isGuest
+  const createLobbyPath = getLobbyCreateRoute('yahtzee') || '/lobby/create'
 
   const loadLobbies = useCallback(async () => {
     try {
@@ -234,10 +236,10 @@ export default function YahtzeeLobbiesPage() {
             className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-2xl p-5 sm:p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-2 sm:border-4 border-white/20"
             onClick={() => {
               if (!isAuthenticated) {
-                router.push(`/auth/login?returnUrl=${encodeURIComponent('/lobby/create')}`)
+                router.push(`/auth/login?returnUrl=${encodeURIComponent(createLobbyPath)}`)
                 return
               }
-              router.push('/lobby/create')
+              router.push(createLobbyPath)
             }}
           >
             <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -322,7 +324,7 @@ export default function YahtzeeLobbiesPage() {
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">No Active Lobbies</h3>
               <p className="text-sm sm:text-base text-white/80 mb-4 sm:mb-6 px-4">Be the first to create one and start playing!</p>
               <button
-                onClick={() => router.push('/lobby/create')}
+                onClick={() => router.push(createLobbyPath)}
                 className="px-5 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all hover:scale-105 text-sm sm:text-base"
               >
                 Create First Lobby
