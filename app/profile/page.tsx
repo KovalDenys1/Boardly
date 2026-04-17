@@ -1524,7 +1524,7 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Summary Cards */}
-                  <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div data-tour-step="profile-stats" className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {summaryCards.map((card) => (
                       <div
                         key={card.id}

@@ -1825,11 +1825,46 @@ const en = {
   },
   onboarding: {
     title: 'Welcome to Boardly!',
-    subtitle: 'Pick a game and start playing against a bot',
+    subtitle: 'Play against a bot to get started',
     chooseGame: 'Choose a game',
     startPlaying: 'Start playing →',
     starting: 'Starting...',
     skip: 'Skip for now',
+    takeTour: 'Show me around',
+    takeTourSubtitle: 'Quick guided tour of the platform',
+    quickStart: 'Jump right in',
+    quickStartSubtitle: 'Play a game vs a bot right now',
+  },
+  tour: {
+    steps: {
+      welcome: {
+        title: 'Welcome to Boardly!',
+        description: 'Boardly is a real-time multiplayer board game platform. Let\'s take a quick look at what you can do here.',
+      },
+      games_grid: {
+        title: 'Browse Games',
+        description: 'This is your game library. Choose from available titles — each one is a real-time multiplayer experience.',
+      },
+      create_lobby: {
+        title: 'Create a Lobby',
+        description: 'Click here to start a new game room. You pick the game, set the rules, then share the code with friends.',
+      },
+      lobby_filters: {
+        title: 'Find Games',
+        description: 'Use filters to find open lobbies by game type, status, or player count. You can join any waiting lobby.',
+      },
+      profile_stats: {
+        title: 'Your Stats',
+        description: 'Your profile tracks wins, games played, and more across all the games you\'ve joined.',
+      },
+    },
+    navigation: {
+      next: 'Next →',
+      prev: '← Back',
+      skip: 'Skip tour',
+      finish: 'Done',
+      stepOf: '{{current}} of {{total}}',
+    },
   },
 } as const
 

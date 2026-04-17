@@ -1813,11 +1813,46 @@ const no = {
   },
   onboarding: {
     title: 'Velkommen til Boardly!',
-    subtitle: 'Velg et spill og spill mot en bot',
+    subtitle: 'Spill mot en bot akkurat nå',
     chooseGame: 'Velg et spill',
     startPlaying: 'Begynn å spille →',
     starting: 'Starter...',
     skip: 'Hopp over',
+    takeTour: 'Vis meg rundt',
+    takeTourSubtitle: 'En rask omvisning på plattformen',
+    quickStart: 'Hopp rett inn',
+    quickStartSubtitle: 'Spill mot en bot akkurat nå',
+  },
+  tour: {
+    steps: {
+      welcome: {
+        title: 'Velkommen til Boardly!',
+        description: 'Boardly er en sanntids flerspiller brettspillplattform. La meg vise deg hva du kan gjøre her.',
+      },
+      games_grid: {
+        title: 'Bla gjennom spill',
+        description: 'Dette er spillbiblioteket ditt. Velg fra tilgjengelige titler — hvert spill er en sanntids flerspilleropplevelse.',
+      },
+      create_lobby: {
+        title: 'Opprett en lobby',
+        description: 'Klikk her for å starte et nytt spillrom. Velg spill, sett regler, og del koden med venner.',
+      },
+      lobby_filters: {
+        title: 'Finn spill',
+        description: 'Bruk filtre for å finne åpne lobbyer etter spilltype, status eller antall spillere.',
+      },
+      profile_stats: {
+        title: 'Din statistikk',
+        description: 'Profilen din sporer seire, spilte partier og mer på tvers av alle spillene du har deltatt i.',
+      },
+    },
+    navigation: {
+      next: 'Neste →',
+      prev: '← Tilbake',
+      skip: 'Hopp over omvisningen',
+      finish: 'Ferdig',
+      stepOf: '{{current}} av {{total}}',
+    },
   },
 } as const
 
