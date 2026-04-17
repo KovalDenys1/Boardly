@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
-import { getGameLobbiesRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { getGameLobbiesRoute, isTemporarilyUnavailableGameType, getPublicRegisteredGameTypes } from '@/lib/public-game-access'
 
 interface Game {
   id: string
@@ -34,6 +34,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
   const enabled = new Set(enabledExperimental)
+  const publicRegistered = new Set(getPublicRegisteredGameTypes())
 
   const games: Game[] = [
     {
@@ -43,7 +44,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.yahtzee.description',
       players: '2-8',
       difficultyKey: 'games.yahtzee.difficulty',
-      status: 'available',
+      status: publicRegistered.has('yahtzee') ? 'available' : 'coming-soon',
       route: getGameLobbiesRoute('yahtzee') || undefined,
       color: 'from-blue-500 to-purple-600'
     },
@@ -54,7 +55,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.spy.description',
       players: '3-10',
       difficultyKey: 'games.spy.difficulty',
-      status: 'available',
+      status: publicRegistered.has('guess_the_spy') ? 'available' : 'coming-soon',
       route: getGameLobbiesRoute('guess_the_spy') || undefined,
       color: 'from-red-500 to-pink-600'
     },
@@ -65,7 +66,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.tictactoe.description',
       players: '2',
       difficultyKey: 'games.tictactoe.difficulty',
-      status: 'available',
+      status: publicRegistered.has('tic_tac_toe') ? 'available' : 'coming-soon',
       route: getGameLobbiesRoute('tic_tac_toe') || undefined,
       color: 'from-yellow-400 to-orange-500'
     },
@@ -76,7 +77,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.memory.description',
       players: '2-4',
       difficultyKey: 'games.memory.difficulty',
-      status: 'available',
+      status: publicRegistered.has('memory') ? 'available' : 'coming-soon',
       route: getGameLobbiesRoute('memory') || undefined,
       color: 'from-green-400 to-teal-500'
     },
@@ -87,7 +88,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.rock_paper_scissors.description',
       players: '2',
       difficultyKey: 'games.rock_paper_scissors.difficulty',
-      status: isTemporarilyUnavailableGameType('rock_paper_scissors') ? 'coming-soon' : 'available',
+      status: publicRegistered.has('rock_paper_scissors') ? 'available' : 'coming-soon',
       route: getGameLobbiesRoute('rock_paper_scissors') || undefined,
       color: 'from-indigo-400 to-purple-500'
     },
