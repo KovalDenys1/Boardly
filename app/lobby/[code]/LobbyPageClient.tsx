@@ -2136,6 +2136,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               players={Array.isArray(game.players) ? game.players : []}
               state={gameEngine.getState()}
               currentUserId={getCurrentUserId()}
+              canStartGame={!!canStartGame}
+              onPlayAgain={handleStartGame}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
