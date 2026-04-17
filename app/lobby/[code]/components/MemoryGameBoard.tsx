@@ -34,6 +34,8 @@ interface MemoryGameBoardProps {
   state: unknown
   players: LobbyPlayer[]
   currentUserId: string | null | undefined
+  canStartGame?: boolean
+  onPlayAgain?: () => void
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
@@ -57,6 +59,8 @@ export default function MemoryGameBoard({
   state,
   players,
   currentUserId,
+  canStartGame,
+  onPlayAgain,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -241,6 +245,21 @@ export default function MemoryGameBoard({
           {winnerMessage && (
             <div className="mt-3 rounded-xl border border-emerald-300/30 bg-emerald-500/15 px-3 py-2 text-sm font-semibold text-emerald-100">
               {t('games.memory.game.finishedPrefix')} {winnerMessage}
+            </div>
+          )}
+
+          {parsedState.status === 'finished' && onPlayAgain && (
+            <div className="mt-3">
+              {canStartGame ? (
+                <button
+                  onClick={onPlayAgain}
+                  className="w-full rounded-xl bg-white/20 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
+                >
+                  {t('yahtzee.results.playAgain')}
+                </button>
+              ) : (
+                <p className="text-center text-sm text-white/50">{t('game.ui.waitingForHost')}</p>
+              )}
             </div>
           )}
         </section>
