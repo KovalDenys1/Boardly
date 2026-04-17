@@ -40,6 +40,28 @@ export function buildLobbyQueryParams(filters: LobbyFilterOptions): URLSearchPar
   return params
 }
 
+export function parseFiltersFromSearchParams(
+  searchParams: URLSearchParams | { get: (key: string) => string | null }
+): LobbyFilterOptions {
+  const status = searchParams.get('status')
+  const sortBy = searchParams.get('sortBy')
+  const sortOrder = searchParams.get('sortOrder')
+  const minPlayers = searchParams.get('minPlayers')
+  const maxPlayers = searchParams.get('maxPlayers')
+
+  return {
+    gameType: normalizeGameTypeFilter(searchParams.get('gameType')),
+    status:
+      status === 'waiting' || status === 'playing' ? status : 'all',
+    search: searchParams.get('search') ?? '',
+    sortBy:
+      sortBy === 'playerCount' || sortBy === 'name' ? sortBy : 'createdAt',
+    sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+    minPlayers: minPlayers ? parseInt(minPlayers, 10) : undefined,
+    maxPlayers: maxPlayers ? parseInt(maxPlayers, 10) : undefined,
+  }
+}
+
 export function hasActiveLobbyFilters(filters: LobbyFilterOptions): boolean {
   return Boolean(
     filters.gameType ||
