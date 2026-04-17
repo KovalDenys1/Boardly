@@ -3,6 +3,7 @@ import {
   hasActiveLobbyFilters,
   LOBBY_CODE_LENGTH,
   normalizeGameTypeFilter,
+  parseFiltersFromSearchParams,
   sanitizeLobbyCode,
 } from '@/lib/lobby-filters'
 
@@ -45,6 +46,31 @@ describe('lobby-filters helpers', () => {
     })
 
     expect(params.toString()).toBe('sortBy=createdAt&sortOrder=desc')
+  })
+
+  it('parses all filter params from URLSearchParams', () => {
+    const params = new URLSearchParams(
+      'gameType=yahtzee&status=waiting&search=fun&sortBy=playerCount&sortOrder=asc&minPlayers=2&maxPlayers=5'
+    )
+    const filters = parseFiltersFromSearchParams(params)
+    expect(filters).toEqual({
+      gameType: 'yahtzee',
+      status: 'waiting',
+      search: 'fun',
+      sortBy: 'playerCount',
+      sortOrder: 'asc',
+      minPlayers: 2,
+      maxPlayers: 5,
+    })
+  })
+
+  it('parseFiltersFromSearchParams falls back to defaults for invalid values', () => {
+    const params = new URLSearchParams('gameType=unknown&status=invalid&sortBy=bogus&sortOrder=weird')
+    const filters = parseFiltersFromSearchParams(params)
+    expect(filters.gameType).toBeUndefined()
+    expect(filters.status).toBe('all')
+    expect(filters.sortBy).toBe('createdAt')
+    expect(filters.sortOrder).toBe('desc')
   })
 
   it('detects active filters', () => {

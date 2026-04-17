@@ -16,7 +16,7 @@ import {
   buildLobbyQueryParams,
   hasActiveLobbyFilters,
   LobbyFilterOptions,
-  normalizeGameTypeFilter,
+  parseFiltersFromSearchParams,
 } from '@/lib/lobby-filters'
 import i18n from '@/i18n'
 import { useGuest } from '@/contexts/GuestContext'
@@ -54,7 +54,6 @@ function LobbyListPageContent() {
   const { t, ready } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const initialGameTypeFilter = normalizeGameTypeFilter(searchParams.get('gameType'))
   const { data: session, status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const authenticatedUserId = session?.user?.id || null
@@ -65,12 +64,10 @@ function LobbyListPageContent() {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshIndicatorMode, setRefreshIndicatorMode] = useState<'idle' | 'manual' | 'auto' | 'updated'>('idle')
   const [hasLoadError, setHasLoadError] = useState(false)
-  const [filters, setFilters] = useState<LobbyFilterOptions>({
-    gameType: initialGameTypeFilter,
-    status: 'all',
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  })
+  const [filters, setFilters] = useState<LobbyFilterOptions>(() =>
+    parseFiltersFromSearchParams(searchParams)
+  )
+  const isFirstRender = useRef(true)
   const loadRequestIdRef = useRef(0)
   const loadAbortControllerRef = useRef<AbortController | null>(null)
   const loadLobbiesRef = useRef<(options?: LoadLobbiesOptions) => Promise<boolean>>(async () => false)
@@ -208,22 +205,14 @@ function LobbyListPageContent() {
   }, [clearRefreshIndicatorTimeout, loadLobbies, loading, refreshIndicatorMode])
 
   useEffect(() => {
-    const gameTypeFromQuery = normalizeGameTypeFilter(searchParams.get('gameType'))
-    if (!gameTypeFromQuery) {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
       return
     }
-
-    setFilters((prev) => {
-      if (prev.gameType === gameTypeFromQuery) {
-        return prev
-      }
-
-      return {
-        ...prev,
-        gameType: gameTypeFromQuery,
-      }
-    })
-  }, [searchParams])
+    const params = buildLobbyQueryParams(filters)
+    const newPath = params.toString() ? `/lobby?${params.toString()}` : '/lobby'
+    router.replace(newPath, { scroll: false })
+  }, [filters, router])
 
   useEffect(() => {
     loadLobbiesRef.current = loadLobbies
