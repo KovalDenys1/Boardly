@@ -2,6 +2,7 @@ import {
   getGameLobbiesRoute,
   getLobbyCreateRoute,
   isTemporarilyUnavailableGameType,
+  getPublicRegisteredGameTypes,
 } from '@/lib/public-game-access'
 
 describe('public game access helpers', () => {
@@ -23,5 +24,14 @@ describe('public game access helpers', () => {
     expect(isTemporarilyUnavailableGameType('rock_paper_scissors')).toBe(true)
     expect(isTemporarilyUnavailableGameType('yahtzee')).toBe(false)
     expect(isTemporarilyUnavailableGameType(undefined)).toBe(false)
+  })
+
+  it('getPublicRegisteredGameTypes excludes temporarily unavailable games', () => {
+    const publicTypes = getPublicRegisteredGameTypes()
+    expect(publicTypes).not.toContain('rock_paper_scissors')
+    expect(publicTypes).toContain('yahtzee')
+    expect(publicTypes).toContain('guess_the_spy')
+    expect(publicTypes).toContain('tic_tac_toe')
+    expect(publicTypes).toContain('memory')
   })
 })

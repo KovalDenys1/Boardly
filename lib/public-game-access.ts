@@ -1,3 +1,4 @@
+import { getAllRegisteredGameTypes } from './game-catalog'
 import type { RegisteredGameType } from './game-catalog'
 
 type LobbyRouteGameType = RegisteredGameType | 'alias' | 'liars_party'
@@ -26,6 +27,12 @@ export function getGameLobbiesRoute(gameType: string | null | undefined): string
   }
 
   return GAME_LOBBIES_ROUTES[gameType as LobbyRouteGameType] ?? null
+}
+
+export function getPublicRegisteredGameTypes(): RegisteredGameType[] {
+  return getAllRegisteredGameTypes().filter(
+    (type) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(type)
+  )
 }
 
 export function getLobbyCreateRoute(gameType: string | null | undefined): string | null {
