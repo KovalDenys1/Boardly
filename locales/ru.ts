@@ -1811,6 +1811,14 @@ const ru = {
     allRightsReserved: '© {{year}} Boardly · Все права защищены',
     builtWith: 'Создано с Next.js, Socket.IO и Prisma',
   },
+  onboarding: {
+    title: 'Добро пожаловать в Boardly!',
+    subtitle: 'Выбери игру и сыграй против бота',
+    chooseGame: 'Выбери игру',
+    startPlaying: 'Начать играть →',
+    starting: 'Запускаем...',
+    skip: 'Пропустить',
+  },
 } as const
 
 export default ru

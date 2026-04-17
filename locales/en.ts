@@ -1823,6 +1823,14 @@ const en = {
     allRightsReserved: '© {{year}} Boardly · All rights reserved',
     builtWith: 'Built with Next.js, Socket.IO & Prisma',
   },
+  onboarding: {
+    title: 'Welcome to Boardly!',
+    subtitle: 'Pick a game and start playing against a bot',
+    chooseGame: 'Choose a game',
+    startPlaying: 'Start playing →',
+    starting: 'Starting...',
+    skip: 'Skip for now',
+  },
 } as const
 
 export default en
