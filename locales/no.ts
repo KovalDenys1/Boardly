@@ -1811,6 +1811,14 @@ const no = {
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
     builtWith: 'Bygget med Next.js, Socket.IO og Prisma',
   },
+  onboarding: {
+    title: 'Velkommen til Boardly!',
+    subtitle: 'Velg et spill og spill mot en bot',
+    chooseGame: 'Velg et spill',
+    startPlaying: 'Begynn å spille →',
+    starting: 'Starter...',
+    skip: 'Hopp over',
+  },
 } as const
 
 export default no

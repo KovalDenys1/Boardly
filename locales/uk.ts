@@ -1825,6 +1825,14 @@ const uk: Translation = {
     allRightsReserved: '© {{year}} Boardly · Усі права захищені',
     builtWith: 'Створено з Next.js, Socket.IO та Prisma',
   },
+  onboarding: {
+    title: 'Ласкаво просимо до Boardly!',
+    subtitle: 'Обери гру та зіграй проти бота',
+    chooseGame: 'Обери гру',
+    startPlaying: 'Почати грати →',
+    starting: 'Запускаємо...',
+    skip: 'Пропустити',
+  },
 }
 
 export default uk
