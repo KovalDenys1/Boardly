@@ -779,6 +779,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const draws = match?.draws ?? 0
 
     return (
+        <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
             {/* Header */}
             <div className="mb-8">
@@ -949,6 +950,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             {resolvedStatus === 'playing' && socket && (
                 <ReactionOverlay socket={socket} lobbyCode={code} />
             )}
+        </div>
         </div>
     )
 }
