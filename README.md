@@ -1,100 +1,29 @@
 # Boardly
 
-Boardly is a real-time multiplayer board games platform built with Next.js, TypeScript, Prisma, PostgreSQL, and a standalone Socket.IO server.
+Real-time multiplayer board games platform.
 
-Production: <https://boardly.online>
+**Production:** https://boardly.online
 
-## What this repository contains
+## Stack
 
-- Next.js app (HTTP API, auth, pages)
-- Socket.IO server (`socket-server.ts`) for real-time lobby/game events
-- Shared game engine abstractions (`lib/game-engine.ts`)
-- Game implementations (Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors)
+Next.js · TypeScript · Prisma · PostgreSQL · Socket.IO
 
-## Architecture at a glance
+## Architecture
 
-- App server: `:3000` (Next.js)
-- Socket server: `:3001` (Socket.IO)
-- Database: PostgreSQL (Supabase + Prisma)
+- App server `:3000` — Next.js (API routes, auth, pages)
+- Socket server `:3001` — Socket.IO (real-time lobby/game events)
+- Database — PostgreSQL via Supabase + Prisma
 
-Flow:
-`Client action -> API route -> DB update -> notify socket server -> room broadcast -> client reconcile`
+## Games
+
+Yahtzee · Guess the Spy · Tic-Tac-Toe · Rock Paper Scissors
 
 ## Quick start
 
-### 1) Install
-
 ```bash
 npm install
-```
-
-### 2) Configure environment
-
-```bash
 cp .env.example .env.local
-```
-
-Fill required values in `.env.local`.
-
-Important:
-
-- Use `NEXTAUTH_SECRET` as the single signing secret for auth/session tokens.
-- Guest authentication uses signed guest JWTs (`X-Guest-Token`).
-
-### 3) Prepare database
-
-```bash
 npm run db:generate
 npm run db:push
-```
-
-### 4) Start development
-
-```bash
 npm run dev:all
 ```
-
-Or run separately:
-
-```bash
-npm run dev
-npm run socket:dev
-```
-
-## Common scripts
-
-```bash
-npm run dev            # Next.js
-npm run socket:dev     # Socket.IO server
-npm run dev:all        # both
-npm run build          # prisma generate + next build
-npm run test
-npm run lint
-npm run check:locales
-npm run db:generate
-npm run db:push
-npm run db:migrate
-npm run db:rls:smoke
-```
-
-## Documentation map
-
-- Project docs index: `docs/README.md`
-- Full local-only setup: `docs/LOCAL_SETUP.md`
-- Product direction: `docs/PROJECT_VISION.md`
-- System design and data flows: `docs/ARCHITECTURE.md`
-- Local/prod operations and deployment: `docs/OPERATIONS.md`
-- Current roadmap: `docs/ROADMAP.md`
-- Contribution workflow: `docs/CONTRIBUTING.md`
-- Security model details: `docs/SECURITY_MODEL.md`
-- Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
-- Dependency maintenance plan: `docs/DEPENDENCY_UPGRADE_PLAN.md`
-- Bot developer guide: `lib/bots/README.md`
-- Migrations and RLS notes: `prisma/migrations/README.md`
-- AI agent instructions: `.github/copilot-instructions.md`
-
-## Community and policy
-
-- Security policy: `SECURITY.md`
-- Code of conduct: `CODE_OF_CONDUCT.md`
-- License: `LICENSE`
