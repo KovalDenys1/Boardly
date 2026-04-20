@@ -338,7 +338,7 @@ export default function SpyGameBoard({
         <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold">Guess the Spy</h2>
+              <h2 className="text-xl font-bold">{t('spy.gameTitle')}</h2>
               <p className="text-sm text-indigo-100">
                 Lobby {lobbyCode.toUpperCase()} · {t('spy.round', { current: data.currentRound || 1, total: data.totalRounds || 3 })}
               </p>
@@ -352,7 +352,7 @@ export default function SpyGameBoard({
                 onClick={() => void refreshAfterAction()}
                 className="rounded-lg bg-white/20 px-3 py-1 text-sm font-medium hover:bg-white/30"
               >
-                Refresh
+                {t('spy.refresh')}
               </button>
             </div>
           </div>
@@ -363,8 +363,8 @@ export default function SpyGameBoard({
             <h3 className="text-2xl font-bold">{t('spy.phases.waiting')}</h3>
             <p className="mt-2 text-indigo-100">
               {isCreator
-                ? 'Initializing first round...'
-                : 'Waiting for lobby creator to initialize the round.'}
+                ? t('spy.initializingRound')
+                : t('spy.waitingForCreator')}
             </p>
             {isCreator && (
               <button
@@ -373,7 +373,7 @@ export default function SpyGameBoard({
                 onClick={() => void initializeRound()}
                 className="mt-4 rounded-xl bg-indigo-500 px-4 py-2 font-semibold hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Initialize Round
+                {t('spy.initializeRound')}
               </button>
             )}
           </div>
@@ -394,7 +394,7 @@ export default function SpyGameBoard({
 
         {phase === SpyGamePhase.ROLE_REVEAL && !roleInfo && (
           <div className="rounded-2xl border border-white/20 bg-white/10 p-6 text-center">
-            <p className="text-indigo-100">{isRoleLoading ? 'Loading role information...' : 'Role information is not available yet.'}</p>
+            <p className="text-indigo-100">{isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}</p>
           </div>
         )}
 
@@ -408,7 +408,7 @@ export default function SpyGameBoard({
 
               {isMyQuestionTurn && !data.currentTargetId && (
                 <div className="mt-4 space-y-3">
-                  <label className="block text-sm font-medium">Target player</label>
+                  <label className="block text-sm font-medium">{t('spy.targetPlayer')}</label>
                   <select
                     value={questionTargetId}
                     onChange={(event) => setQuestionTargetId(event.target.value)}
@@ -421,7 +421,7 @@ export default function SpyGameBoard({
                     ))}
                   </select>
 
-                  <label className="block text-sm font-medium">Question</label>
+                  <label className="block text-sm font-medium">{t('spy.questionLabel')}</label>
                   <textarea
                     value={questionText}
                     onChange={(event) => setQuestionText(event.target.value)}
@@ -441,7 +441,7 @@ export default function SpyGameBoard({
                       }}
                       className="flex-1 rounded-lg bg-indigo-500 px-4 py-2 font-semibold hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Ask
+                      {t('spy.askButton')}
                     </button>
                     <button
                       type="button"
@@ -458,7 +458,7 @@ export default function SpyGameBoard({
               {shouldAnswerNow && (
                 <div className="mt-4 space-y-3">
                   <div className="rounded-lg bg-slate-900/60 p-3 text-sm text-indigo-100">
-                    <strong>Question:</strong> {data.pendingQuestion}
+                    <strong>{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
                   </div>
                   <textarea
                     value={answerText}
@@ -477,7 +477,7 @@ export default function SpyGameBoard({
                     }}
                     className="w-full rounded-lg bg-emerald-500 px-4 py-2 font-semibold hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Submit Answer
+                    {t('spy.submitAnswer')}
                   </button>
                 </div>
               )}
@@ -485,32 +485,32 @@ export default function SpyGameBoard({
               {!isMyQuestionTurn && !shouldAnswerNow && (
                 <div className="mt-4 rounded-lg bg-slate-900/60 p-3 text-sm text-indigo-100">
                   {currentQuestioner
-                    ? `${currentQuestioner.name} is deciding on a question.`
-                    : 'Waiting for the current questioner...'}
-                  {currentTarget ? ` Target: ${currentTarget.name}.` : ''}
+                    ? t('spy.decidingQuestion', { player: currentQuestioner.name })
+                    : t('spy.waitingForQuestioner')}
+                  {currentTarget ? ` ${t('spy.targetLabel', { player: currentTarget.name })}` : ''}
                 </div>
               )}
 
               {isMyQuestionTurn && data.currentTargetId && (
                 <div className="mt-4 rounded-lg bg-slate-900/60 p-3 text-sm text-indigo-100">
-                  Waiting for {currentTarget?.name || 'player'} to answer.
+                  {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
                 </div>
               )}
             </div>
 
             <div className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <h3 className="text-lg font-semibold">Conversation</h3>
+              <h3 className="text-lg font-semibold">{t('spy.conversation')}</h3>
               <div className="mt-3 max-h-96 space-y-2 overflow-y-auto pr-1">
                 {questionHistory.length === 0 && (
-                  <p className="text-sm text-indigo-100">No questions asked yet.</p>
+                  <p className="text-sm text-indigo-100">{t('spy.noQuestionsYet')}</p>
                 )}
                 {questionHistory.map((entry) => (
                   <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-lg bg-slate-900/60 p-3 text-sm">
                     <p className="font-semibold text-indigo-200">
                       {entry.askerName} → {entry.targetName}
                     </p>
-                    <p className="mt-1 text-indigo-100">Q: {entry.question}</p>
-                    <p className="mt-1 text-indigo-100">A: {entry.answer}</p>
+                    <p className="mt-1 text-indigo-100">{t('spy.questionPrefix')} {entry.question}</p>
+                    <p className="mt-1 text-indigo-100">{t('spy.answerPrefix')} {entry.answer}</p>
                   </div>
                 ))}
               </div>

@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
 let socket: Socket | null = null
 
@@ -42,6 +43,7 @@ export default function AliasLobbiesPage() {
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
   const isAuthenticated = status === 'authenticated' || isGuest
+  const canCreateLobby = !isTemporarilyUnavailableGameType('alias')
 
   const loadLobbies = useCallback(async () => {
     try {
@@ -237,8 +239,15 @@ export default function AliasLobbiesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Create Lobby Card */}
           <div
-            className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-2xl p-5 sm:p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-2 sm:border-4 border-white/20"
+            className={`rounded-2xl shadow-2xl p-5 sm:p-8 text-white transition-all border-2 sm:border-4 border-white/20 ${
+              canCreateLobby
+                ? 'bg-gradient-to-br from-orange-500 to-red-600 hover:shadow-3xl hover:scale-105 cursor-pointer'
+                : 'bg-white/10 backdrop-blur-md opacity-80'
+            }`}
             onClick={() => {
+              if (!canCreateLobby) {
+                return
+              }
               if (!isAuthenticated) {
                 router.push(`/auth/login?returnUrl=${encodeURIComponent('/lobby/create?gameType=alias')}`)
                 return
@@ -249,17 +258,23 @@ export default function AliasLobbiesPage() {
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="text-4xl sm:text-6xl">🗣️</div>
               <div className="px-2 sm:px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
-                {t('games.alias.lobbies.newGame')}
+                {canCreateLobby ? t('games.alias.lobbies.newGame') : t('games.comingSoon')}
               </div>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">{t('games.alias.lobbies.createNewLobby')}</h2>
-            <p className="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base lg:text-lg">{t('games.alias.lobbies.createDescription')}</p>
-            <div className="flex items-center text-white font-bold text-base sm:text-lg">
-              <span>{t('games.alias.lobbies.createNow')}</span>
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">
+              {canCreateLobby ? t('games.alias.lobbies.createNewLobby') : t('games.comingSoon')}
+            </h2>
+            <p className="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base lg:text-lg">
+              {canCreateLobby ? t('games.alias.lobbies.createDescription') : t('games.alias.description')}
+            </p>
+            {canCreateLobby && (
+              <div className="flex items-center text-white font-bold text-base sm:text-lg">
+                <span>{t('games.alias.lobbies.createNow')}</span>
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </div>
+            )}
           </div>
 
           {/* Quick Join Card */}
@@ -317,7 +332,7 @@ export default function AliasLobbiesPage() {
               <p className="text-white/70 text-lg mb-6">
                 {t('games.alias.lobbies.noLobbiesTitle')}
               </p>
-              {isAuthenticated && (
+              {isAuthenticated && canCreateLobby && (
                 <button
                   onClick={() => router.push('/lobby/create?gameType=alias')}
                   className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-105"

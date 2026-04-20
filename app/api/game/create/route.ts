@@ -14,6 +14,7 @@ import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-hel
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -108,6 +109,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    if (isTemporarilyUnavailableGameType(gameType)) {
+      return NextResponse.json({ error: 'Game type is coming soon' }, { status: 400 })
+    }
     if (!isSupportedGameType(gameType)) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }

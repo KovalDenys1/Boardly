@@ -95,6 +95,8 @@ const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
   'rock_paper_scissors',
   'guess_the_spy',
   'memory',
+  'alias',
+  'liars_party',
 ])
 
 function normalizeAnalyticsGameType(

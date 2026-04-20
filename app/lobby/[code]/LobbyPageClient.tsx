@@ -89,6 +89,7 @@ import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
+import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 
 function CenteredLoadingFallback() {
   return (
@@ -1509,12 +1510,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }))
   }, [game?.players, gameEngine])
 
-  // When TTT/RPS game starts, notify parent to switch to dedicated page
+  // When a game with a dedicated active-game page starts, notify parent to switch.
   useEffect(() => {
     if (isGameStarted && lobby?.gameType && onSwitchToDedicatedPage) {
-      const gt = lobby.gameType as string
-      if (gt === 'tic_tac_toe' || gt === 'rock_paper_scissors') {
-        onSwitchToDedicatedPage(gt)
+      const dedicatedGameType = resolveDedicatedLobbyPageGameType(lobby.gameType as string, 'playing')
+      if (dedicatedGameType) {
+        onSwitchToDedicatedPage(dedicatedGameType)
       }
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
@@ -1689,9 +1690,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             position: 'fixed' as const,
             top: '5rem', // 80px / 16 = 5rem (header height)
             left: 0,
-            right: 0,
             bottom: 0,
+            width: '100vw',
+            maxWidth: '100vw',
             height: 'calc(100dvh - 5rem)', // Dynamic viewport height for mobile with fallback
+            overscrollBehavior: 'none',
           }}
         >
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
@@ -1948,7 +1951,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="min-h-full p-4 space-y-4">
+                    <div className="h-full min-h-0 p-4">
                       <GameBoard
                         gameEngine={gameEngine}
                         game={game}
@@ -1972,7 +1975,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
-                    <div className="min-h-full p-4">
+                    <div className="h-full min-h-0 p-4">
                       {(() => {
                         const currentUserId = getCurrentUserId()
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
@@ -2010,7 +2013,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Players Tab */}
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
-                    <div className="min-h-full p-4 space-y-4">
+                    <div className="h-full min-h-0 p-4 space-y-4">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
@@ -2136,6 +2139,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               players={Array.isArray(game.players) ? game.players : []}
               state={gameEngine.getState()}
               currentUserId={getCurrentUserId()}
+              canStartGame={!!canStartGame}
+              onPlayAgain={handleStartGame}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
@@ -2216,23 +2221,26 @@ export default function LobbyPage() {
     return <LobbyPageLoadingFallback />
   }
 
-  // Route to dedicated pages when game is active or just finished
-  if (gameType === 'tic_tac_toe' && (gameStatus === 'playing' || gameStatus === 'finished')) {
+  // Route to dedicated pages only when the game is active or just finished.
+  const dedicatedGameType = resolveDedicatedLobbyPageGameType(gameType, gameStatus)
+
+  if (dedicatedGameType === 'tic_tac_toe') {
     return <TicTacToeLobbyPage code={code} />
   }
 
-  if (gameType === 'rock_paper_scissors' && (gameStatus === 'playing' || gameStatus === 'finished')) {
+  if (dedicatedGameType === 'rock_paper_scissors') {
     return <RockPaperScissorsLobbyPage code={code} />
   }
 
-  if (gameType === 'alias') {
+  if (dedicatedGameType === 'alias') {
     return <AliasLobbyPage code={code} />
   }
 
-  if (gameType === 'liars_party') {
+  if (dedicatedGameType === 'liars_party') {
     return <LiarsPartyLobbyPage code={code} />
   }
-  // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
+
+  // For all other cases, including all waiting rooms, use the shared lobby shell.
   return (
     <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LoadingSpinner size="lg" />}>

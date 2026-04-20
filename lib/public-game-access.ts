@@ -1,8 +1,15 @@
+import { getAllRegisteredGameTypes } from './game-catalog'
 import type { RegisteredGameType } from './game-catalog'
 
-type LobbyRouteGameType = RegisteredGameType | 'alias' | 'liars_party'
+type UpcomingPublicGameType = 'alias' | 'liars_party'
+type LobbyRouteGameType = RegisteredGameType | UpcomingPublicGameType
+type PublicGameType = RegisteredGameType | UpcomingPublicGameType
 
-const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<RegisteredGameType>(['rock_paper_scissors'])
+const TEMPORARILY_UNAVAILABLE_GAME_TYPES = new Set<PublicGameType>([
+  'rock_paper_scissors',
+  'alias',
+  'liars_party',
+])
 
 const GAME_LOBBIES_ROUTES: Record<LobbyRouteGameType, string> = {
   yahtzee: '/games/yahtzee/lobbies',
@@ -16,8 +23,8 @@ const GAME_LOBBIES_ROUTES: Record<LobbyRouteGameType, string> = {
 
 export function isTemporarilyUnavailableGameType(
   gameType: string | null | undefined
-): gameType is RegisteredGameType {
-  return typeof gameType === 'string' && TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(gameType as RegisteredGameType)
+): gameType is PublicGameType {
+  return typeof gameType === 'string' && TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(gameType as PublicGameType)
 }
 
 export function getGameLobbiesRoute(gameType: string | null | undefined): string | null {
@@ -26,6 +33,12 @@ export function getGameLobbiesRoute(gameType: string | null | undefined): string
   }
 
   return GAME_LOBBIES_ROUTES[gameType as LobbyRouteGameType] ?? null
+}
+
+export function getPublicRegisteredGameTypes(): RegisteredGameType[] {
+  return getAllRegisteredGameTypes().filter(
+    (type) => !TEMPORARILY_UNAVAILABLE_GAME_TYPES.has(type)
+  )
 }
 
 export function getLobbyCreateRoute(gameType: string | null | undefined): string | null {
