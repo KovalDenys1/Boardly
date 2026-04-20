@@ -1,98 +1,38 @@
 # Boardly
 
-Boardly is a real-time multiplayer board games platform built with Next.js, TypeScript, Prisma, PostgreSQL, and a standalone Socket.IO server.
+Real-time multiplayer board games platform.
 
-Production: <https://boardly.online>
+**Live:** https://boardly.online
 
-## What this repository contains
+## Stack
 
-- Next.js app (HTTP API, auth, pages)
-- Socket.IO server (`socket-server.ts`) for real-time lobby/game events
-- Shared game engine abstractions (`lib/game-engine.ts`)
-- Game implementations (Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors)
+Next.js · TypeScript · PostgreSQL · Prisma · Socket.IO · Supabase
 
-## Architecture at a glance
+## Architecture
 
-- App server: `:3000` (Next.js)
-- Socket server: `:3001` (Socket.IO)
-- Database: PostgreSQL (Supabase + Prisma)
+- App server `:3000` — Next.js (API, auth, pages)
+- Socket server `:3001` — Socket.IO (lobby, game events)
+- Database — PostgreSQL via Supabase + Prisma
 
-Flow:
-`Client action -> API route -> DB update -> notify socket server -> room broadcast -> client reconcile`
-
-## Quick start
-
-### 1) Install
+## Getting started
 
 ```bash
 npm install
-```
-
-### 2) Configure environment
-
-```bash
 cp .env.example .env.local
-```
-
-Fill required values in `.env.local`.
-
-Important:
-
-- Use `NEXTAUTH_SECRET` as the single signing secret for auth/session tokens.
-- Guest authentication uses signed guest JWTs (`X-Guest-Token`).
-
-### 3) Prepare database
-
-```bash
-npm run db:generate
-npm run db:push
-```
-
-### 4) Start development
-
-```bash
+npm run db:generate && npm run db:push
 npm run dev:all
 ```
 
-Or run separately:
+## Scripts
 
 ```bash
-npm run dev
-npm run socket:dev
+npm run dev:all     # start both servers
+npm run build       # production build
+npm run test        # run tests
+npm run db:migrate  # run migrations
+npm run db:studio   # open Prisma Studio
 ```
 
-## Common scripts
+## Games
 
-```bash
-npm run dev            # Next.js
-npm run socket:dev     # Socket.IO server
-npm run dev:all        # both
-npm run build          # prisma generate + next build
-npm run test
-npm run lint
-npm run check:locales
-npm run db:generate
-npm run db:push
-npm run db:migrate
-npm run db:rls:smoke
-```
-
-## Documentation map
-
-- Project docs index: `docs/README.md`
-- Product direction: `docs/PROJECT_VISION.md`
-- System design and data flows: `docs/ARCHITECTURE.md`
-- Local/prod operations and deployment: `docs/OPERATIONS.md`
-- Current roadmap: `docs/ROADMAP.md`
-- Contribution workflow: `docs/CONTRIBUTING.md`
-- Security model details: `docs/SECURITY_MODEL.md`
-- Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
-- Bot developer guide: `lib/bots/README.md`
-- Migrations and RLS notes: `prisma/migrations/README.md`
-- AI agent instructions: `.github/copilot-instructions.md`
-
-## Community and policy
-
-- Security policy: `SECURITY.md`
-- Code of conduct: `CODE_OF_CONDUCT.md`
-- License: `LICENSE`
+Yahtzee · Guess the Spy · Tic-Tac-Toe · Rock Paper Scissors
