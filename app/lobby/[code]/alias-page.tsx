@@ -317,14 +317,14 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-8 p-4" data-testid="alias-waiting-room">
         <h1 className="text-3xl font-bold">{t('games.alias.name')}</h1>
-        <div className="flex gap-8">
-          <div className="flex min-w-[120px] flex-col gap-2 rounded-xl border p-4">
+        <div className="flex gap-4 sm:gap-8">
+          <div className="flex min-w-[80px] sm:min-w-[120px] flex-col gap-2 rounded-xl border p-3 sm:p-4">
             <h2 className="text-center font-semibold">{t('alias.team1')}</h2>
-            {team1.map(p => <div key={p.id} className="text-center text-sm">{p.name}</div>)}
+            {team1.map(p => <div key={p.id} className="text-center text-sm truncate max-w-[100px] sm:max-w-[140px]">{p.name}</div>)}
           </div>
-          <div className="flex min-w-[120px] flex-col gap-2 rounded-xl border p-4">
+          <div className="flex min-w-[80px] sm:min-w-[120px] flex-col gap-2 rounded-xl border p-3 sm:p-4">
             <h2 className="text-center font-semibold">{t('alias.team2')}</h2>
-            {team2.map(p => <div key={p.id} className="text-center text-sm">{p.name}</div>)}
+            {team2.map(p => <div key={p.id} className="text-center text-sm truncate max-w-[100px] sm:max-w-[140px]">{p.name}</div>)}
           </div>
         </div>
         <p className="text-sm text-muted-foreground">{t('alias.teamPreviewNote')}</p>

@@ -1688,12 +1688,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           className="flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900"
           style={{
             position: 'fixed' as const,
-            top: '5rem', // 80px / 16 = 5rem (header height)
+            top: '4rem',
             left: 0,
+            right: 0,
             bottom: 0,
-            width: '100vw',
-            maxWidth: '100vw',
-            height: 'calc(100dvh - 5rem)', // Dynamic viewport height for mobile with fallback
+            width: '100%',
+            height: 'calc(100dvh - 4rem)',
             overscrollBehavior: 'none',
           }}
         >
