@@ -26,7 +26,6 @@ export default function MobileTabPanel({ id, activeTab, children }: MobileTabPan
         overflowX: 'hidden',
         WebkitOverflowScrolling: 'touch',
         overscrollBehavior: 'contain',
-        paddingBottom: 'var(--mobile-tabs-offset)',
       }}
     >
       <div className="h-full min-h-0">
