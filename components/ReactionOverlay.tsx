@@ -33,6 +33,7 @@ interface ReactionOverlayProps {
 export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
   const [reactions, setReactions] = useState<FloatingReaction[]>([])
   const [disabledEmoji, setDisabledEmoji] = useState<AllowedEmoji | null>(null)
+  const [collapsed, setCollapsed] = useState(false)
   const lastSentAtRef = useRef<number>(0)
 
   useEffect(() => {
@@ -92,8 +93,8 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
 
       {/* Reaction bar */}
       <div className="fixed bottom-[4.5rem] md:bottom-6 left-1/2 z-30 -translate-x-1/2">
-        <div className="flex gap-1 rounded-full bg-black/50 px-3 py-2 backdrop-blur-sm">
-          {ALLOWED_EMOJIS.map((emoji) => (
+        <div className="flex items-center gap-1 rounded-full bg-black/50 px-2 py-1.5 backdrop-blur-sm">
+          {!collapsed && ALLOWED_EMOJIS.map((emoji) => (
             <button
               key={emoji}
               onClick={() => sendReaction(emoji)}
@@ -106,6 +107,13 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
               {emoji}
             </button>
           ))}
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            aria-label={collapsed ? 'Show reactions' : 'Hide reactions'}
+            className="rounded-full w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 text-sm ml-0.5"
+          >
+            {collapsed ? '😊' : '✕'}
+          </button>
         </div>
       </div>
     </>
