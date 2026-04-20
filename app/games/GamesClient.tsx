@@ -99,7 +99,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.alias.description',
       players: '4-16',
       difficultyKey: 'games.alias.difficulty',
-      status: enabled.has('alias') ? 'available' : 'coming-soon',
+      status: enabled.has('alias') && !isTemporarilyUnavailableGameType('alias') ? 'available' : 'coming-soon',
       route: '/games/alias/lobbies',
       color: 'from-orange-400 to-red-500'
     },
@@ -110,7 +110,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
       descriptionKey: 'games.liars_party.description',
       players: '4-12',
       difficultyKey: 'games.liars_party.difficulty',
-      status: enabled.has('liars-party') ? 'available' : 'coming-soon',
+      status: enabled.has('liars-party') && !isTemporarilyUnavailableGameType('liars_party') ? 'available' : 'coming-soon',
       route: '/games/liars-party/lobbies',
       color: 'from-rose-500 to-orange-500'
     },

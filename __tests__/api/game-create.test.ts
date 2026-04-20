@@ -180,6 +180,24 @@ describe('POST /api/game/create', () => {
     expect(data.error).toBe('Missing required fields')
   })
 
+  it('should reject game creation for coming-soon games', async () => {
+    mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
+
+    const request = new NextRequest('http://localhost:3000/api/game/create', {
+      method: 'POST',
+      body: JSON.stringify({
+        gameType: 'rock_paper_scissors',
+        lobbyId: 'lobby-123',
+      }),
+    })
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(data.error).toBe('Game type is coming soon')
+    expect(mockPrisma.lobbies.findUnique).not.toHaveBeenCalled()
+  })
+
   it('should return 404 when lobby not found', async () => {
     mockGetRequestAuthUser.mockResolvedValue(mockSession as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(null)

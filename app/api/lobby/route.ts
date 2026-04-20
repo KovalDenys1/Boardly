@@ -12,6 +12,7 @@ import { sanitizeLobbyCreatorIdentity } from '@/lib/lobby-response'
 import { hashLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
 const log = apiLogger('/api/lobby')
 
@@ -81,6 +82,10 @@ export async function POST(request: NextRequest) {
       ticTacToeRounds,
       memoryDifficulty,
     } = createLobbySchema.parse(body)
+
+    if (isTemporarilyUnavailableGameType(gameType)) {
+      return NextResponse.json({ error: 'Game type is coming soon' }, { status: 400 })
+    }
 
     if (!isSupportedGameType(gameType)) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })

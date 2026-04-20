@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Play Liar\'s Party Online Free - Social Bluffing Party Game',
+  title: 'Liar\'s Party Coming Soon - Social Bluffing Party Game',
   description:
     'Play Liar\'s Party online with friends for free! 4–12 players, real-time bluffing and voting. Make claims, challenge liars, and survive elimination. No download needed. Start on Boardly now!',
   keywords: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     'social party game no download',
   ],
   openGraph: {
-    title: "Play Liar's Party Online Free | Boardly",
+    title: "Liar's Party Coming Soon | Boardly",
     description:
       "Make claims, vote on who's bluffing, and avoid elimination. Free social bluffing game for 4–12 players.",
     url: 'https://www.boardly.online/games/liars-party',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Play Liar's Party Online Free | Boardly",
+    title: "Liar's Party Coming Soon | Boardly",
     description: 'Real-time bluffing party game in your browser. Claim, challenge, survive. Free, no download.',
   },
   alternates: {
@@ -79,18 +79,18 @@ export default function LiarsPartyGamePage() {
               <span className="text-6xl" role="img" aria-label="Liar's Party">🎭</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
-              Play Liar&apos;s Party Online
+              Liar&apos;s Party Is Coming Soon
             </h1>
             <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
               Make claims — true or total bluffs. Everyone votes to challenge or believe.
               Get caught bluffing too many times and you&apos;re out. Free for 4–12 players.
             </p>
-            <Link
-              href="/lobby/create?gameType=liars_party"
-              className="inline-block px-10 py-4 bg-white text-rose-600 rounded-2xl font-bold text-lg hover:bg-rose-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
+            <span
+              aria-disabled="true"
+              className="inline-block cursor-not-allowed px-10 py-4 bg-white/80 text-rose-700 rounded-2xl font-bold text-lg shadow-xl"
             >
-              Play Liar&apos;s Party Now →
-            </Link>
+              Coming Soon
+            </span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
@@ -142,17 +142,17 @@ export default function LiarsPartyGamePage() {
 
           <div className="text-center">
             <Link
-              href="/games/liars-party/lobbies"
+              href="/games"
               className="inline-block px-8 py-3 bg-white/10 border border-white/30 text-white rounded-xl hover:bg-white/20 transition-colors mr-4"
             >
-              Browse Open Lobbies
+              Back to Games
             </Link>
-            <Link
-              href="/lobby/create?gameType=liars_party"
-              className="inline-block px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 transition-colors"
+            <span
+              aria-disabled="true"
+              className="inline-block cursor-not-allowed px-8 py-3 bg-white/80 text-rose-700 rounded-xl font-bold"
             >
-              Create Lobby
-            </Link>
+              Coming Soon
+            </span>
           </div>
         </div>
       </div>

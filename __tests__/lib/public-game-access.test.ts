@@ -20,8 +20,10 @@ describe('public game access helpers', () => {
     expect(getLobbyCreateRoute(null)).toBeNull()
   })
 
-  it('marks rock paper scissors as temporarily unavailable', () => {
+  it('marks coming-soon games as temporarily unavailable', () => {
     expect(isTemporarilyUnavailableGameType('rock_paper_scissors')).toBe(true)
+    expect(isTemporarilyUnavailableGameType('alias')).toBe(true)
+    expect(isTemporarilyUnavailableGameType('liars_party')).toBe(true)
     expect(isTemporarilyUnavailableGameType('yahtzee')).toBe(false)
     expect(isTemporarilyUnavailableGameType(undefined)).toBe(false)
   })

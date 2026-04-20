@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Play Alias Online Free - Word Description Team Game',
+  title: 'Alias Coming Soon - Word Description Team Game',
   description:
     'Play Alias online with friends for free! 4–16 players, real-time word guessing. Describe words to your team against the clock — no download needed. Start on Boardly now!',
   keywords: [
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     'alias browser game',
   ],
   openGraph: {
-    title: 'Play Alias Online Free - Team Word Game | Boardly',
+    title: 'Alias Coming Soon - Team Word Game | Boardly',
     description:
       'Describe words to your team without saying the word itself. Race against the clock, earn points, and outlast the other team. Free, 4–16 players.',
     url: 'https://www.boardly.online/games/alias',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Play Alias Online Free | Boardly',
+    title: 'Alias Coming Soon | Boardly',
     description: 'Real-time team word game in your browser. Describe, guess, and score. Free, no download.',
   },
   alternates: {
@@ -80,18 +80,18 @@ export default function AliasGamePage() {
               <span className="text-6xl" role="img" aria-label="Alias">🗣️</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
-              Play Alias Online
+              Alias Is Coming Soon
             </h1>
             <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
               Two teams, one goal: describe as many words as possible before the timer runs out.
               Guessing earns points — skipping costs them. Best team wins. Free for 4–16 players.
             </p>
-            <Link
-              href="/lobby/create?gameType=alias"
-              className="inline-block px-10 py-4 bg-white text-orange-600 rounded-2xl font-bold text-lg hover:bg-orange-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
+            <span
+              aria-disabled="true"
+              className="inline-block cursor-not-allowed px-10 py-4 bg-white/80 text-orange-700 rounded-2xl font-bold text-lg shadow-xl"
             >
-              Play Alias Now →
-            </Link>
+              Coming Soon
+            </span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
@@ -143,17 +143,17 @@ export default function AliasGamePage() {
 
           <div className="text-center">
             <Link
-              href="/games/alias/lobbies"
+              href="/games"
               className="inline-block px-8 py-3 bg-white/10 border border-white/30 text-white rounded-xl hover:bg-white/20 transition-colors mr-4"
             >
-              Browse Open Lobbies
+              Back to Games
             </Link>
-            <Link
-              href="/lobby/create?gameType=alias"
-              className="inline-block px-8 py-3 bg-white text-orange-600 rounded-xl font-bold hover:bg-orange-50 transition-colors"
+            <span
+              aria-disabled="true"
+              className="inline-block cursor-not-allowed px-8 py-3 bg-white/80 text-orange-700 rounded-xl font-bold"
             >
-              Create Lobby
-            </Link>
+              Coming Soon
+            </span>
           </div>
         </div>
       </div>
