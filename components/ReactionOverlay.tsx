@@ -92,7 +92,7 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
       ))}
 
       {/* Reaction bar */}
-      <div className="fixed bottom-[4.5rem] md:bottom-6 left-1/2 z-30 -translate-x-1/2">
+      <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2">
         <div className="flex items-center gap-1 rounded-full bg-black/50 px-2 py-1.5 backdrop-blur-sm">
           {!collapsed && ALLOWED_EMOJIS.map((emoji) => (
             <button
