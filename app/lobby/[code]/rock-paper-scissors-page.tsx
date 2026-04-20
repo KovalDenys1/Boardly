@@ -548,7 +548,8 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-indigo-50 px-4 py-5 sm:px-6 sm:py-8">
+        <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
+        <div className="bg-gradient-to-b from-sky-50 via-white to-indigo-50 px-4 py-5 sm:px-6 sm:py-8 min-h-full">
             <div className="mx-auto max-w-5xl space-y-5">
                 <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -628,6 +629,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
             {lobby.status === 'playing' && socket && (
                 <ReactionOverlay socket={socket} lobbyCode={code} />
             )}
+        </div>
         </div>
     )
 }
