@@ -227,7 +227,7 @@ export default function MemoryGameBoard({
   const symbolSizeClass = gridColumns >= 6 ? 'text-lg sm:text-xl' : gridColumns === 5 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
 
   return (
-    <div className="h-full overflow-y-auto px-3 py-4 sm:px-6">
+    <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4 sm:px-6">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
         <section className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
