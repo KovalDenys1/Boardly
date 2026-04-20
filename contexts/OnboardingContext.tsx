@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 import { useGuest } from '@/contexts/GuestContext'
 
 const GUEST_ONBOARDING_KEY = 'boardly_onboarding'
@@ -17,10 +18,12 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const { status } = useSession()
   const { isGuest } = useGuest()
+  const pathname = usePathname()
   const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
+    if (pathname.startsWith('/lobby/')) return
 
     if (status === 'authenticated') {
       fetch('/api/onboarding/status', { cache: 'no-store' })
@@ -36,7 +39,14 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem(GUEST_ONBOARDING_KEY)
       if (!stored) setShowModal(true)
     }
-  }, [status, isGuest])
+  }, [status, isGuest, pathname])
+
+  // Hide modal if user navigates into a lobby (e.g. via invite link)
+  useEffect(() => {
+    if (pathname.startsWith('/lobby/')) {
+      setShowModal(false)
+    }
+  }, [pathname])
 
   const completeOnboarding = useCallback(async () => {
     if (status === 'authenticated') {
