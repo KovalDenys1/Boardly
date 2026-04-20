@@ -1813,11 +1813,46 @@ const no = {
   },
   onboarding: {
     title: 'Velkommen til Boardly!',
-    subtitle: 'Velg et spill og spill mot en bot',
+    subtitle: 'Hvordan vil du komme i gang?',
     chooseGame: 'Velg et spill',
     startPlaying: 'Begynn å spille →',
     starting: 'Starter...',
     skip: 'Hopp over',
+    showMeAround: 'Vis meg rundt',
+    showMeAroundDesc: 'Ta en rask tur rundt plattformen',
+    quickStart: 'Rask start',
+    quickStartDesc: 'Hopp rett inn i et spill mot en bot',
+  },
+  tour: {
+    stepOf: 'Steg {{current}} av {{total}}',
+    skip: 'Hopp over tur',
+    play: 'Spill nå →',
+    steps: {
+      welcome: {
+        title: 'Velkommen til Boardly!',
+        description: 'La oss ta en rask tur rundt plattformen og vise deg alt du kan gjøre.',
+      },
+      games: {
+        title: 'Bla gjennom spill',
+        description: 'Utforsk alle tilgjengelige brettspill. Klikk på et kort for å opprette et lobby.',
+      },
+      createLobby: {
+        title: 'Opprett et lobby',
+        description: 'Start ditt eget spillrom, velg spilltype, sett passord og inviter venner.',
+      },
+      findLobbies: {
+        title: 'Finn åpne lobbyer',
+        description: 'Søk og filtrer eksisterende lobbyer etter spilltype, status eller kode.',
+      },
+      profile: {
+        title: 'Din profil',
+        description: 'Se statistikk, spillhistorikk og administrer venner på ett sted.',
+      },
+      quickStart: {
+        title: 'Du er klar til å spille!',
+        description: 'Velg et spill nedenfor, så oppretter vi et bot-lobby for deg umiddelbart.',
+      },
+    },
   },
 } as const
 

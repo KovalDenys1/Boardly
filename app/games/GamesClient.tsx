@@ -286,7 +286,7 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
         </div>
 
         {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12" data-tour-step="games-grid">
           {filteredGames.map((game, index) => (
             <div
               key={game.id}

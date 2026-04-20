@@ -389,7 +389,7 @@ function LobbyListPageContent() {
                   </div>
                 </div>
 
-                <div className="shrink-0 xl:w-[360px] 2xl:w-[400px]">
+                <div className="shrink-0 xl:w-[360px] 2xl:w-[400px]" data-tour-step="create-lobby">
                   <button
                     type="button"
                     onClick={() => router.push('/lobby/create')}
@@ -431,7 +431,7 @@ function LobbyListPageContent() {
           </section>
 
           <section className="rounded-3xl border border-white/85 bg-white/90 p-5 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
-            <div className="border-b border-slate-200/70 pb-6 dark:border-slate-700/70">
+            <div className="border-b border-slate-200/70 pb-6 dark:border-slate-700/70" data-tour-step="lobby-filters">
               <LobbyFilters embedded filters={filters} onFiltersChange={setFilters} />
             </div>
 

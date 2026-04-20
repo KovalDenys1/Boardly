@@ -1881,7 +1881,7 @@ export default function ProfilePage() {
 
           {/* Statistics Tab */}
           {activeTab === 'stats' && (
-            <div role="tabpanel" id="profile-tab-panel-stats" aria-labelledby="profile-tab-stats">
+            <div role="tabpanel" id="profile-tab-panel-stats" aria-labelledby="profile-tab-stats" data-tour-step="profile-stats">
               {session?.user?.id ? (
                 <PlayerStatsDashboard userId={session.user.id} />
               ) : (

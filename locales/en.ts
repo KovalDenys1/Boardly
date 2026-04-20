@@ -1825,11 +1825,46 @@ const en = {
   },
   onboarding: {
     title: 'Welcome to Boardly!',
-    subtitle: 'Pick a game and start playing against a bot',
+    subtitle: 'How would you like to get started?',
     chooseGame: 'Choose a game',
     startPlaying: 'Start playing →',
     starting: 'Starting...',
     skip: 'Skip for now',
+    showMeAround: 'Show me around',
+    showMeAroundDesc: 'Take a quick tour of the platform',
+    quickStart: 'Quick start',
+    quickStartDesc: 'Jump straight into a game vs a bot',
+  },
+  tour: {
+    stepOf: 'Step {{current}} of {{total}}',
+    skip: 'Skip tour',
+    play: 'Play now →',
+    steps: {
+      welcome: {
+        title: 'Welcome to Boardly!',
+        description: "Let's take a quick tour of the platform and show you everything you can do.",
+      },
+      games: {
+        title: 'Browse Games',
+        description: 'Explore all available board games. Click any card to create a lobby and start playing.',
+      },
+      createLobby: {
+        title: 'Create a Lobby',
+        description: 'Host your own game room, choose the game type, set a password, and invite friends.',
+      },
+      findLobbies: {
+        title: 'Find Open Lobbies',
+        description: 'Search and filter existing lobbies by game type, status, or code to join others.',
+      },
+      profile: {
+        title: 'Your Profile',
+        description: 'View your stats, game history, and manage friends all in one place.',
+      },
+      quickStart: {
+        title: "You're ready to play!",
+        description: 'Pick a game below and we will launch a bot lobby for you instantly.',
+      },
+    },
   },
 } as const
 

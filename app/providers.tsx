@@ -7,6 +7,8 @@ import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import { OnboardingModal } from '@/components/Onboarding/OnboardingModal'
+import { TourProvider } from '@/contexts/TourContext'
+import { TourOverlay } from '@/components/Tour/TourOverlay'
 import { Toaster } from 'react-hot-toast'
 import i18n from '@/i18n'
 import { applyThemeMode, DARK_MEDIA_QUERY, getStoredThemeMode } from '@/lib/theme'
@@ -59,12 +61,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider basePath="/api/auth">
       <GuestProvider>
         <OnboardingProvider>
-          <ToastProvider>
-            <Toaster position="top-right" />
-            <DeferredGlobalEffects />
-            <OnboardingModal />
-            {children}
-          </ToastProvider>
+          <TourProvider>
+            <ToastProvider>
+              <Toaster position="top-right" />
+              <DeferredGlobalEffects />
+              <OnboardingModal />
+              <TourOverlay />
+              {children}
+            </ToastProvider>
+          </TourProvider>
         </OnboardingProvider>
       </GuestProvider>
     </SessionProvider>
