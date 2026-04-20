@@ -1690,9 +1690,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             position: 'fixed' as const,
             top: '5rem', // 80px / 16 = 5rem (header height)
             left: 0,
-            right: 0,
             bottom: 0,
+            width: '100vw',
+            maxWidth: '100vw',
             height: 'calc(100dvh - 5rem)', // Dynamic viewport height for mobile with fallback
+            overscrollBehavior: 'none',
           }}
         >
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
@@ -1949,7 +1951,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="min-h-full p-4 space-y-4">
+                    <div className="h-full min-h-0 p-4">
                       <GameBoard
                         gameEngine={gameEngine}
                         game={game}
@@ -1973,7 +1975,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
-                    <div className="min-h-full p-4">
+                    <div className="h-full min-h-0 p-4">
                       {(() => {
                         const currentUserId = getCurrentUserId()
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
@@ -2011,7 +2013,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Players Tab */}
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
-                    <div className="min-h-full p-4 space-y-4">
+                    <div className="h-full min-h-0 p-4 space-y-4">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}

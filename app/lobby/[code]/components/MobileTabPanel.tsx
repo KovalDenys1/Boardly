@@ -19,15 +19,17 @@ export default function MobileTabPanel({ id, activeTab, children }: MobileTabPan
           : 'opacity-0 pointer-events-none z-0'
       }`}
       style={{
-        transform: isActive ? 'translate3d(0, 0, 0)' : 'translate3d(100%, 0, 0)',
+        transform: 'translate3d(0, 0, 0)',
+        visibility: isActive ? 'visible' : 'hidden',
         height: '100%',
         overflowY: 'auto',
         overflowX: 'hidden',
         WebkitOverflowScrolling: 'touch',
+        overscrollBehavior: 'contain',
         paddingBottom: 'var(--mobile-tabs-offset)',
       }}
     >
-      <div className="min-h-full">
+      <div className="h-full min-h-0">
         {children}
       </div>
     </div>
