@@ -30,7 +30,6 @@ export default function Footer() {
               {[
                 { label: 'Yahtzee', href: '/games/yahtzee' },
                 { label: 'Tic-Tac-Toe', href: '/games/tic-tac-toe' },
-                { label: 'Rock Paper Scissors', href: '/games/rock-paper-scissors' },
                 { label: 'Guess the Spy', href: '/games/spy' },
                 { label: 'Memory', href: '/games/memory' },
               ].map((link) => (

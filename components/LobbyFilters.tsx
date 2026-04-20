@@ -131,7 +131,6 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
               <option value="yahtzee">{t('games.yahtzee.title', 'Yahtzee')}</option>
               <option value="guess_the_spy">{t('games.spy.name', 'Guess the Spy')}</option>
               <option value="tic_tac_toe">{t('games.tictactoe.name', 'Tic-Tac-Toe')}</option>
-              <option value="rock_paper_scissors">{t('games.rock_paper_scissors.name', 'Rock Paper Scissors')}</option>
               <option value="memory">{t('games.memory.name', 'Memory')}</option>
             </select>
           </div>

@@ -10,7 +10,6 @@ import { showToast } from '@/lib/i18n-toast'
 const BOT_SUPPORTED_GAMES = [
   { type: 'yahtzee', emoji: '🎲', label: 'Yahtzee', players: '1–4' },
   { type: 'tic_tac_toe', emoji: '❌', label: 'Tic Tac Toe', players: '2' },
-  { type: 'rock_paper_scissors', emoji: '🍂', label: 'Rock Paper Scissors', players: '2' },
 ] as const
 
 type GameType = (typeof BOT_SUPPORTED_GAMES)[number]['type']

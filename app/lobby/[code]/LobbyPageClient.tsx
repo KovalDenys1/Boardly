@@ -1951,7 +1951,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="h-full min-h-0 p-4 pb-[var(--mobile-tabs-offset)]">
+                    <div className="h-full min-h-0 p-4">
                       <GameBoard
                         gameEngine={gameEngine}
                         game={game}
@@ -2040,7 +2040,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     <div
                       className="min-h-full"
                       style={{
-                        height: 'calc(100% - var(--mobile-tabs-offset))',
+                        height: '100%',
                       }}
                     >
                       <Chat

@@ -7,6 +7,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { apiLogger } from '@/lib/logger'
 import { createGameEngine } from '@/lib/game-registry'
 import { hasBotSupport, getBotSupportedGameTypes, isSupportedGameType } from '@/lib/game-catalog'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { generateLobbyCode } from '@/lib/lobby'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
@@ -101,6 +102,10 @@ export async function POST(req: NextRequest) {
 
   if (!hasBotSupport(gameType)) {
     return NextResponse.json({ error: 'Bot support required for Quick Play' }, { status: 400 })
+  }
+
+  if (isTemporarilyUnavailableGameType(gameType)) {
+    return NextResponse.json({ error: 'This game is temporarily unavailable' }, { status: 400 })
   }
 
   log.info('Quick play request', { userId: user.id, gameType })
