@@ -4,7 +4,8 @@ import { spawnSync, type SpawnSyncOptions } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 
-export const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+export const npmCommand = 'npm'
+const useShell = process.platform === 'win32'
 
 type RunResult = ReturnType<typeof spawnSync>
 
@@ -21,6 +22,7 @@ function extractOutput(result: RunResult) {
 export function runChecked(command: string, args: string[], options: SpawnSyncOptions = {}) {
   const result = spawnSync(command, args, {
     stdio: 'inherit',
+    shell: useShell,
     ...options,
   })
 
@@ -40,6 +42,7 @@ export function runChecked(command: string, args: string[], options: SpawnSyncOp
 export function runCapture(command: string, args: string[], options: SpawnSyncOptions = {}) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
+    shell: useShell,
     ...options,
   })
 

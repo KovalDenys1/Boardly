@@ -34,6 +34,29 @@ describe('lobby-create-metrics', () => {
     })
   })
 
+  it('preserves experimental game type metrics', () => {
+    markPendingLobbyCreateMetric({
+      lobbyCode: 'ALAS',
+      gameType: 'alias',
+      startedAt: 2000,
+      isGuest: true,
+    })
+
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(2600)
+    const result = finalizePendingLobbyCreateMetric({
+      lobbyCode: 'ALAS',
+      fallbackGameType: 'alias',
+    })
+    nowSpy.mockRestore()
+
+    expect(result).toBe(true)
+    expect(trackLobbyCreateReady).toHaveBeenCalledWith({
+      gameType: 'alias',
+      durationMs: 600,
+      isGuest: true,
+    })
+  })
+
   it('does not track metric when pending lobby code does not match', () => {
     markPendingLobbyCreateMetric({
       lobbyCode: 'ABCD',

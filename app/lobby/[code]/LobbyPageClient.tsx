@@ -89,6 +89,7 @@ import type { BotDifficulty } from '@/lib/bot-profiles'
 import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
+import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 
 function CenteredLoadingFallback() {
   return (
@@ -1509,12 +1510,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }))
   }, [game?.players, gameEngine])
 
-  // When TTT/RPS game starts, notify parent to switch to dedicated page
+  // When a game with a dedicated active-game page starts, notify parent to switch.
   useEffect(() => {
     if (isGameStarted && lobby?.gameType && onSwitchToDedicatedPage) {
-      const gt = lobby.gameType as string
-      if (gt === 'tic_tac_toe' || gt === 'rock_paper_scissors') {
-        onSwitchToDedicatedPage(gt)
+      const dedicatedGameType = resolveDedicatedLobbyPageGameType(lobby.gameType as string, 'playing')
+      if (dedicatedGameType) {
+        onSwitchToDedicatedPage(dedicatedGameType)
       }
     }
   }, [isGameStarted, lobby?.gameType, onSwitchToDedicatedPage])
@@ -2218,23 +2219,26 @@ export default function LobbyPage() {
     return <LobbyPageLoadingFallback />
   }
 
-  // Route to dedicated pages when game is active or just finished
-  if (gameType === 'tic_tac_toe' && (gameStatus === 'playing' || gameStatus === 'finished')) {
+  // Route to dedicated pages only when the game is active or just finished.
+  const dedicatedGameType = resolveDedicatedLobbyPageGameType(gameType, gameStatus)
+
+  if (dedicatedGameType === 'tic_tac_toe') {
     return <TicTacToeLobbyPage code={code} />
   }
 
-  if (gameType === 'rock_paper_scissors' && (gameStatus === 'playing' || gameStatus === 'finished')) {
+  if (dedicatedGameType === 'rock_paper_scissors') {
     return <RockPaperScissorsLobbyPage code={code} />
   }
 
-  if (gameType === 'alias') {
+  if (dedicatedGameType === 'alias') {
     return <AliasLobbyPage code={code} />
   }
 
-  if (gameType === 'liars_party') {
+  if (dedicatedGameType === 'liars_party') {
     return <LiarsPartyLobbyPage code={code} />
   }
-  // For all other cases (waiting, joining, or Yahtzee/Spy), use main lobby with WaitingRoom
+
+  // For all other cases, including all waiting rooms, use the shared lobby shell.
   return (
     <ErrorBoundary fallback={<LobbyPageErrorFallback />}>
       <Suspense fallback={<LoadingSpinner size="lg" />}>
