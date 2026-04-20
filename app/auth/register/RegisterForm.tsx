@@ -246,9 +246,12 @@ export default function RegisterForm() {
           <div className="overflow-hidden rounded-[32px] border border-white/30 bg-white/[0.94] text-gray-900 shadow-[0_32px_120px_rgba(2,6,23,0.65)] backdrop-blur-2xl md:min-h-[28rem] dark:border-white/10 dark:bg-slate-900/[0.94] dark:text-gray-100">
             <div className="px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
               <div className="mx-auto max-w-3xl text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 dark:text-blue-300/80">
+                <Link
+                  href="/"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 hover:text-blue-600 dark:text-blue-300/80 dark:hover:text-blue-300 transition-colors"
+                >
                   Boardly
-                </p>
+                </Link>
                 <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
                   {t('auth.register.title')}
                 </h1>

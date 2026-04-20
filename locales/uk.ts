@@ -1832,10 +1832,10 @@ const uk: Translation = {
     startPlaying: 'Почати грати →',
     starting: 'Запускаємо...',
     skip: 'Пропустити',
-    showMeAround: 'Покажи мені все',
-    showMeAroundDesc: 'Короткий тур платформою',
+    takeTour: 'Покажи мені все',
+    takeTourSubtitle: 'Короткий тур платформою',
     quickStart: 'Швидкий старт',
-    quickStartDesc: 'Одразу в гру проти бота',
+    quickStartSubtitle: 'Одразу в гру проти бота',
   },
   tour: {
     stepOf: 'Крок {{current}} з {{total}}',

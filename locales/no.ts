@@ -1818,10 +1818,10 @@ const no = {
     startPlaying: 'Begynn å spille →',
     starting: 'Starter...',
     skip: 'Hopp over',
-    showMeAround: 'Vis meg rundt',
-    showMeAroundDesc: 'Ta en rask tur rundt plattformen',
+    takeTour: 'Vis meg rundt',
+    takeTourSubtitle: 'Ta en rask tur rundt plattformen',
     quickStart: 'Rask start',
-    quickStartDesc: 'Hopp rett inn i et spill mot en bot',
+    quickStartSubtitle: 'Hopp rett inn i et spill mot en bot',
   },
   tour: {
     stepOf: 'Steg {{current}} av {{total}}',

@@ -1818,10 +1818,10 @@ const ru = {
     startPlaying: 'Начать играть →',
     starting: 'Запускаем...',
     skip: 'Пропустить',
-    showMeAround: 'Покажи мне всё',
-    showMeAroundDesc: 'Краткий тур по платформе',
+    takeTour: 'Покажи мне всё',
+    takeTourSubtitle: 'Краткий тур по платформе',
     quickStart: 'Быстрый старт',
-    quickStartDesc: 'Сразу в игру против бота',
+    quickStartSubtitle: 'Сразу в игру против бота',
   },
   tour: {
     stepOf: 'Шаг {{current}} из {{total}}',

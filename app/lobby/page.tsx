@@ -391,6 +391,7 @@ function LobbyListPageContent() {
 
                 <div className="shrink-0 xl:w-[360px] 2xl:w-[400px]" data-tour-step="create-lobby">
                   <button
+                    data-tour-step="create-lobby"
                     type="button"
                     onClick={() => router.push('/lobby/create')}
                     className="group w-full overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-6 text-left text-white shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"

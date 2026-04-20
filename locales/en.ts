@@ -1830,10 +1830,10 @@ const en = {
     startPlaying: 'Start playing →',
     starting: 'Starting...',
     skip: 'Skip for now',
-    showMeAround: 'Show me around',
-    showMeAroundDesc: 'Take a quick tour of the platform',
+    takeTour: 'Show me around',
+    takeTourSubtitle: 'Quick guided tour of the platform',
     quickStart: 'Quick start',
-    quickStartDesc: 'Jump straight into a game vs a bot',
+    quickStartSubtitle: 'Jump straight into a game vs a bot',
   },
   tour: {
     stepOf: 'Step {{current}} of {{total}}',

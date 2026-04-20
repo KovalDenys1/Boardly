@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { TOUR_STEPS, type TourStep } from '@/lib/tour/tour-steps'
@@ -14,6 +14,7 @@ interface TourContextType {
   nextStep: () => void
   prevStep: () => void
   skipTour: () => void
+  completeTour: () => void
 }
 
 const TourContext = createContext<TourContextType | undefined>(undefined)
@@ -22,11 +23,16 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { status } = useSession()
   const isAuthenticated = status === 'authenticated'
+
+  const visibleSteps = useMemo(
+    () => TOUR_STEPS.filter((s) => !s.authOnly || isAuthenticated),
+    [isAuthenticated]
+  )
+
   const [isActive, setIsActive] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const pendingNavigationStep = useRef<number | null>(null)
 
-  const visibleSteps = TOUR_STEPS.filter((s) => !s.authOnly || isAuthenticated)
   const step = isActive ? (visibleSteps[currentStep] ?? null) : null
   const totalSteps = visibleSteps.length
 
@@ -70,6 +76,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setIsActive(false)
   }, [])
 
+  const completeTour = useCallback(() => {
+    setIsActive(false)
+    setCurrentStep(0)
+  }, [])
+
   // Scroll target into view after navigation settles
   useEffect(() => {
     if (!isActive || !step?.selector) return
@@ -81,7 +92,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   }, [isActive, step])
 
   return (
-    <TourContext.Provider value={{ isActive, currentStep, step, totalSteps, startTour, nextStep, prevStep, skipTour }}>
+    <TourContext.Provider value={{ isActive, currentStep, step, totalSteps, startTour, nextStep, prevStep, skipTour, completeTour }}>
       {children}
     </TourContext.Provider>
   )
