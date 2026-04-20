@@ -429,7 +429,7 @@ export class SpyGame extends GameEngine {
       // Spy sees list of possible categories
       return {
         role: 'Spy',
-        possibleCategories: ['Travel', 'Entertainment', 'Public', 'Workplace', 'Recreation'],
+        possibleCategories: ['Travel', 'Entertainment', 'Public', 'Workplace', 'Recreation', 'Shopping', 'Culture'],
       }
     } else {
       // Regular player sees location and their specific role
