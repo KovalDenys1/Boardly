@@ -5,9 +5,9 @@ export default function TicTacToeLobbiesPage() {
     <GameLobbiesPage
       gameType="tic_tac_toe"
       pagePath="/games/tic-tac-toe/lobbies"
-      pageGradientClassName="from-yellow-500 via-orange-500 to-red-400"
-      createCardGradientClassName="from-yellow-500 to-orange-600"
-      accentTextClassName="text-orange-600"
+      pageGradientClassName="from-indigo-600 via-blue-500 to-sky-400"
+      createCardGradientClassName="from-indigo-500 to-blue-600"
+      accentTextClassName="text-indigo-600"
       titleEmoji="❌⭕"
       gameNameKey="games.tictactoe.name"
       lobbiesNamespace="games.tictactoe.lobbies"

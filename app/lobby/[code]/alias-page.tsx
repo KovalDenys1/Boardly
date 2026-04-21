@@ -300,7 +300,7 @@ export default function AliasPage({ code }: AliasPageProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
+      <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10">
         <LoadingSpinner />
       </div>
     )
@@ -315,7 +315,7 @@ export default function AliasPage({ code }: AliasPageProps) {
   if (resolvedStatus === 'waiting' || !data || data.phase === 'team_assignment') {
     const { team1, team2 } = computePreviewTeams(players)
     return (
-      <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-8 p-4" data-testid="alias-waiting-room">
+      <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-8 p-4 bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10" data-testid="alias-waiting-room">
         <h1 className="text-3xl font-bold">{t('games.alias.name')}</h1>
         <div className="flex gap-4 sm:gap-8">
           <div className="flex min-w-[80px] sm:min-w-[120px] flex-col gap-2 rounded-xl border p-3 sm:p-4">
@@ -359,7 +359,7 @@ export default function AliasPage({ code }: AliasPageProps) {
       return (
         <>
           {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-          <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4" data-testid="alias-describer-screen">
+          <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10" data-testid="alias-describer-screen">
             <div className="text-sm text-muted-foreground">{t('alias.wordsProgress', { current: data.currentCardIndex, total: 10 })}</div>
             <div className="text-5xl font-bold">{data.currentCard?.[data.currentCardIndex] ?? ''}</div>
             <div className="text-sm">+{guessed} / -{skipped}</div>
@@ -392,7 +392,7 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-        <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4" data-testid="alias-guesser-screen">
+        <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10" data-testid="alias-guesser-screen">
           <div className="text-xl font-semibold">{currentTeam.name}</div>
           <div className="text-muted-foreground">{t('alias.isDescribing', { name: describerPlayer?.name ?? describerId })}</div>
           <div className="text-2xl font-mono font-bold">{t('alias.timeLeft', { seconds: remaining })}</div>
@@ -408,7 +408,7 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-        <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4" data-testid="alias-turn-results-screen">
+        <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10" data-testid="alias-turn-results-screen">
           <h2 className="text-2xl font-bold">{t('alias.turnResults')}</h2>
           <div className="flex flex-col gap-1 max-h-64 overflow-y-auto">
             {result.wordResults.map((r, i) => (
@@ -451,7 +451,7 @@ export default function AliasPage({ code }: AliasPageProps) {
       ? t('alias.tie')
       : t('alias.wins', { team: winner?.name ?? '' })
     return (
-      <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4" data-testid="alias-game-over-screen">
+      <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10" data-testid="alias-game-over-screen">
         <h2 className="text-4xl font-bold">{winMessage}</h2>
         <div className="flex gap-8">
           {data.teams.map(team => (
@@ -476,7 +476,7 @@ export default function AliasPage({ code }: AliasPageProps) {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
+    <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-gradient-to-br from-orange-50 via-rose-50/50 to-pink-50/30 dark:from-slate-900 dark:via-orange-950/10 dark:to-pink-950/10">
       <LoadingSpinner />
     </div>
   )
