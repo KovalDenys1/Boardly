@@ -846,7 +846,10 @@ const no = {
       waitingForHost: 'Venter på at verten skal starte...',
       host: 'Vert',
       perTurn: 'per tur',
-      timeLimit: 'Tidsgrense'
+      timeLimit: 'Tidsgrense',
+      scored: 'Scoret',
+      notAvailable: 'Ikke tilgjengelig',
+      bonusProgress: '{{current}}/63 for bonus',
     }
   },
   chat: {
