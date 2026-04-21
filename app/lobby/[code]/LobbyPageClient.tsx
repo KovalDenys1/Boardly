@@ -1794,7 +1794,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         <span className="text-xl">👤</span>
                         <div>
                           <div className="text-[10px] text-white/50 leading-tight">{t('game.ui.turn')}</div>
-                          <div className="text-base font-bold leading-tight truncate max-w-[150px]">
+                          <div className="text-base font-bold leading-tight truncate max-w-[100px] sm:max-w-[150px]">
                             {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </div>
                         </div>

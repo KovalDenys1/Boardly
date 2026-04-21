@@ -356,7 +356,7 @@ function LobbyListPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 pb-8">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 pb-8">
       <div className="relative mx-auto max-w-6xl px-3 pt-16 sm:px-6 sm:pt-20 lg:px-8">
         <div className="space-y-6 animate-scale-in">
           <section className="relative overflow-hidden rounded-3xl border border-t-0 border-white/85 bg-white/90 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">

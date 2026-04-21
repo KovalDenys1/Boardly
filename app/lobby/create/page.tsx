@@ -226,7 +226,7 @@ function CreateLobbyPage() {
 
   if (!gameInfo) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center p-4">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-white mb-4">{t('lobby.create.gameNotFound')}</h1>
@@ -892,7 +892,7 @@ function CreateLobbyPage() {
 // Wrap component with Suspense for useSearchParams
 export default function CreateLobbyPageWrapper() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600"><div className="text-white text-xl">Loading...</div></div>}>
+    <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600"><div className="text-white text-xl">Loading...</div></div>}>
       <CreateLobbyPage />
     </Suspense>
   )

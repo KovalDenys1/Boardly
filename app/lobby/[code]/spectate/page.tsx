@@ -387,12 +387,12 @@ export default function SpectatorLobbyPage() {
   }, [code, data?.canJoinAsPlayer, joiningAsPlayer, router])
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading spectator view...</div>
+    return <div className="min-h-[100dvh] flex items-center justify-center">Loading spectator view...</div>
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] flex items-center justify-center p-6">
         <div className="max-w-xl w-full rounded-xl border p-6 bg-white dark:bg-gray-900">
           <h1 className="text-xl font-bold mb-2">Spectator mode unavailable</h1>
           <p className="text-sm text-gray-600 dark:text-gray-300">{error || 'No data'}</p>
@@ -411,7 +411,7 @@ export default function SpectatorLobbyPage() {
   const players = Array.isArray(data.activeGame?.players) ? data.activeGame.players : []
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-900 dark:bg-indigo-950/40">
           <div className="flex flex-wrap items-center justify-between gap-3">

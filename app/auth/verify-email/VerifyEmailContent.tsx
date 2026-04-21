@@ -109,7 +109,7 @@ export default function VerifyEmailContent() {
 
   if (token && loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
         <div className="card max-w-md w-full text-center">
           <LoadingSpinner />
           <p className="mt-4 text-gray-600 dark:text-gray-400">{t('auth.verifyEmail.verifying')}</p>
@@ -119,7 +119,7 @@ export default function VerifyEmailContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="card max-w-md w-full text-center">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/20 mb-6">
           <span className="text-5xl">📧</span>

@@ -55,7 +55,7 @@ export default function HowToPlaySpyGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      <div className="min-h-screen bg-gradient-to-br from-red-500 via-pink-600 to-purple-700">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-red-500 via-pink-600 to-purple-700">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
 
           {/* Breadcrumb */}

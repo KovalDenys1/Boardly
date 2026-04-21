@@ -64,7 +64,7 @@ export default function AliasGamePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-red-500 to-pink-600">
+      <div className="min-h-[100dvh] bg-gradient-to-br from-orange-400 via-red-500 to-pink-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
 
           <nav className="mb-8 text-white/60 text-sm flex items-center gap-2" aria-label="Breadcrumb">

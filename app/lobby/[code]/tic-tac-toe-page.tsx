@@ -704,7 +704,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
+            <div className="flex justify-center items-center min-h-[100dvh]">
                 <LoadingSpinner size="lg" />
             </div>
         )

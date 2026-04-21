@@ -5,7 +5,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 
 export function LobbyPageLoadingFallback() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   )
@@ -15,7 +15,7 @@ export function LobbyPageErrorFallback() {
   const { t } = useTranslation()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4">
       <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/20 mb-5">
           <span className="text-3xl">!</span>
