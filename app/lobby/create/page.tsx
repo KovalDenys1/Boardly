@@ -81,7 +81,7 @@ const GAME_INFO: Record<string, GameInfo> = {
     name: 'Tic-Tac-Toe',
     emoji: '❌',
     description: '', // Set via i18n
-    gradient: 'from-yellow-500 via-orange-500 to-red-400',
+    gradient: 'from-indigo-600 via-blue-500 to-sky-400',
     translationKey: 'tictactoe',
     allowedPlayers: [2],
     defaultMaxPlayers: 2,
