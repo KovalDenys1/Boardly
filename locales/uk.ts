@@ -849,6 +849,9 @@ const uk: Translation = {
       host: 'Хост',
       perTurn: 'на хід',
       timeLimit: 'Ліміт часу',
+      scored: 'Зараховано',
+      notAvailable: 'Недоступно',
+      bonusProgress: '{{current}}/63 до бонусу',
     },
   },
   chat: {

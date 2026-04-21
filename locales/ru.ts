@@ -846,7 +846,10 @@ const ru = {
       waitingForHost: 'Ожидание запуска хостом...',
       host: 'Хост',
       perTurn: 'на ход',
-      timeLimit: 'Лимит времени'
+      timeLimit: 'Лимит времени',
+      scored: 'Набрано',
+      notAvailable: 'Недоступно',
+      bonusProgress: '{{current}}/63 для бонуса',
     }
   },
   chat: {
