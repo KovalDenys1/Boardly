@@ -847,6 +847,9 @@ const en = {
       host: 'Host',
       perTurn: 'per turn',
       timeLimit: 'Time limit',
+      scored: 'Scored',
+      notAvailable: 'Not available',
+      bonusProgress: '{{current}}/63 for bonus',
     },
   },
   chat: {

@@ -779,7 +779,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const draws = match?.draws ?? 0
 
     return (
-        <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
+        <div className="h-[calc(100dvh-4rem)] overflow-y-auto bg-gradient-to-br from-indigo-50 via-slate-50 to-blue-100/60 dark:from-indigo-950/30 dark:via-slate-900 dark:to-blue-950/30">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
             {/* Header */}
             <div className="mb-8">
