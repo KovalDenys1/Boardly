@@ -1491,7 +1491,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Right: Avatar */}
-                    <div className="shrink-0 lg:w-[250px]">
+                    <div className="shrink-0 md:w-[200px] lg:w-[250px]">
                       <div className="flex h-full flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-slate-50 to-blue-50/50 p-6 text-center ring-1 ring-slate-200/60 dark:from-slate-800/60 dark:to-slate-800/30 dark:ring-slate-700/50">
                         <div className="relative">
                           <div className="absolute -inset-1.5 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 opacity-20 blur-md" />

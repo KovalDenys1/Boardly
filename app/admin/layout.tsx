@@ -6,7 +6,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const admin = await requireAdminSession('/admin')
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-4">
         <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-800 p-6 shadow-xl">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

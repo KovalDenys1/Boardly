@@ -139,7 +139,7 @@ export default async function AnalyticsPage({
   const reconnectRecoveryBaseline = operationalKpis.reconnect.recoveryP95Ms.baseline
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 text-slate-100 px-4 py-8 sm:px-8">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 text-slate-100 px-4 py-8 sm:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
           <h1 className="text-2xl font-bold sm:text-3xl">Product Dashboard</h1>

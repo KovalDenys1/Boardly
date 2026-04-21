@@ -505,7 +505,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center">
+            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center">
                 <LoadingSpinner size="lg" />
             </div>
         )
@@ -513,7 +513,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
     if (error || !lobby || !lobby.game) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
+            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
                 <div className="rounded-2xl border border-rose-200 bg-white p-6 shadow-sm max-w-md text-center">
                     <p className="text-rose-700">{error || t('errors.gameNotFound')}</p>
                     <button
@@ -533,7 +533,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
     if (!currentPlayer) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
+            <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm max-w-md text-center">
                     <p className="text-slate-700 mb-4">You are not part of this match.</p>
                     <button
@@ -585,7 +585,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                     </div>
                 </header>
 
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_240px] lg:grid-cols-[minmax(0,1fr)_280px]">
                     <section>
                         <RockPaperScissorsGameBoard
                             gameData={gameData}

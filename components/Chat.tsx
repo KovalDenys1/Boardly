@@ -145,7 +145,7 @@ export default function Chat({
           <span className="text-xl">💬</span>
           <span className="font-semibold">{t('chat.open')}</span>
           {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center animate-pulse" aria-label={t('chat.unread', { count: unreadCount })}>
+            <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[24px] text-center animate-pulse" aria-label={t('chat.unread', { count: unreadCount })}>
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
