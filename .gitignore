@@ -127,6 +127,8 @@ reports/*.json
 !.vscode/tasks.json
 !.vscode/README.md
 .idea
+.obsidian/
+.trash/
 .DS_Store
 *.suo
 *.ntvs*
@@ -155,6 +157,7 @@ backup_*.sql
 
 # Local development files
 .codex-local/
+notes-local/
 .lefthook-local.yml
 *.bat
 *.sh
