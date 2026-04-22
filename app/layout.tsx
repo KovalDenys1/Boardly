@@ -34,13 +34,13 @@ const Header = dynamic(() => import('@/components/Header'), {
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.boardly.online'),
+  metadataBase: new URL('https://boardly.online'),
   title: {
-    default: 'Boardly - Play Board Games Online with Friends',
+    default: 'Boardly - Free Online Board Games with Friends',
     template: '%s | Boardly'
   },
-  description: 'Play popular board games online with friends in real-time. Join Yahtzee and more multiplayer games. Free, no download required. Create lobbies, invite friends, and start playing instantly!',
-  keywords: ['board games', 'online games', 'multiplayer games', 'yahtzee online', 'play with friends', 'browser games', 'free online games', 'real-time games', 'boardly'],
+  description: 'Play free online board games and tabletop-style games with friends in real time. Join Yahtzee, Tic Tac Toe, Memory, Guess the Spy and more. No download required.',
+  keywords: ['free online board games', 'online board games with friends', 'multiplayer board games', 'tabletop games online', 'browser games', 'yahtzee online', 'tic tac toe online', 'memory game online', 'boardly'],
   authors: [{ name: 'Boardly' }],
   creator: 'Boardly',
   publisher: 'Boardly',
@@ -52,18 +52,21 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://www.boardly.online',
-    title: 'Boardly - Play Board Games Online with Friends',
-    description: 'Play popular board games online with friends in real-time. Join Yahtzee and more multiplayer games. Free, no download required.',
+    url: 'https://boardly.online',
+    title: 'Boardly - Free Online Board Games with Friends',
+    description: 'Play free online board games and tabletop-style games with friends in real time. No download required.',
     siteName: 'Boardly',
     // Images are auto-generated from opengraph-image.tsx
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Boardly - Play Board Games Online with Friends',
-    description: 'Play popular board games online with friends in real-time. Free, no download required.',
+    title: 'Boardly - Free Online Board Games with Friends',
+    description: 'Play free online board games with friends in real time. No download required.',
     // Images are auto-generated from twitter-image.tsx
     creator: '@boardly',
+  },
+  alternates: {
+    canonical: '/',
   },
   robots: {
     index: true,
@@ -90,23 +93,15 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Boardly',
-    description: 'Play popular board games online with friends in real-time',
-    url: 'https://www.boardly.online',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: 'https://www.boardly.online/lobby?search={search_term_string}'
-      },
-      'query-input': 'required name=search_term_string'
-    },
+    description: 'Play free online board games and tabletop-style games with friends in real time.',
+    url: 'https://boardly.online',
     publisher: {
       '@type': 'Organization',
       name: 'Boardly',
-      url: 'https://www.boardly.online',
+      url: 'https://boardly.online',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://www.boardly.online/logo.png'
+        url: 'https://boardly.online/icons/icon-512.png'
       }
     }
   }

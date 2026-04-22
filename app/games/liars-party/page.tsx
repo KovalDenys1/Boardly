@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "Liar's Party Coming Soon | Boardly",
     description:
       "Make claims, vote on who's bluffing, and avoid elimination. Free social bluffing game for 4–12 players.",
-    url: 'https://www.boardly.online/games/liars-party',
+    url: 'https://boardly.online/games/liars-party',
     type: 'website',
   },
   twitter: {
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     description: 'Real-time bluffing party game in your browser. Claim, challenge, survive. Free, no download.',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/games/liars-party',
+    canonical: 'https://boardly.online/games/liars-party',
   },
 }
 
@@ -35,9 +35,9 @@ const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://www.boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: "Liar's Party", item: 'https://www.boardly.online/games/liars-party' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
+    { '@type': 'ListItem', position: 3, name: "Liar's Party", item: 'https://boardly.online/games/liars-party' },
   ],
 }
 
@@ -47,15 +47,15 @@ const jsonLd = {
   name: "Liar's Party",
   description:
     'Social bluffing party game where players make claims (true or bluff), others vote to challenge or believe, and players are eliminated after too many caught bluffs.',
-  url: 'https://www.boardly.online/games/liars-party',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/games/liars-party',
+  image: 'https://boardly.online/opengraph-image',
   genre: ['Party Game', 'Social Deduction', 'Multiplayer', 'Bluffing'],
   numberOfPlayers: { '@type': 'QuantitativeValue', minValue: 4, maxValue: 12 },
   playMode: 'MultiPlayer',
   applicationCategory: 'Game',
   operatingSystem: 'Any (Browser)',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://www.boardly.online' },
+  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
 
 export default function LiarsPartyGamePage() {

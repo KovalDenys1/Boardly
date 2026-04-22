@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Free Online Board Games - Play with Friends | Boardly',
+  title: 'Free Online Board Games - Play with Friends',
   description:
     'Browse and play free online multiplayer board games on Boardly. Yahtzee, Tic Tac Toe, Memory, Spy games and more. Real-time gameplay, no download, no account required.',
   keywords: [
@@ -17,11 +17,11 @@ export const metadata: Metadata = {
     title: 'Free Online Board Games - Play with Friends | Boardly',
     description:
       'Yahtzee, Tic Tac Toe, Memory, Spy and more. Free real-time multiplayer games in your browser.',
-    url: 'https://www.boardly.online/games',
+    url: 'https://boardly.online/games',
     type: 'website',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/games',
+    canonical: 'https://boardly.online/games',
   },
 }
 
