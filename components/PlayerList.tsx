@@ -31,10 +31,11 @@ interface PlayerListProps {
   currentTurn: number
   currentUserId?: string | null
   onPlayerClick?: (userId: string) => void
+  onProfileClick?: (userId: string) => void
   selectedPlayerId?: string
 }
 
-const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, selectedPlayerId }: PlayerListProps) {
+const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, onProfileClick, selectedPlayerId }: PlayerListProps) {
   const { t } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const difficultyLabelMap: Record<BotDifficulty, string> = {
@@ -224,6 +225,25 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                       ✓
                     </div>
                   )}
+
+                  {/* Profile icon */}
+                  {onProfileClick && !isBot && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        sounds.play('click', { force: true })
+                        onProfileClick(player.userId)
+                      }}
+                      className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
+                      title="View profile"
+                      aria-label="View player profile"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </button>
             )
@@ -327,6 +347,19 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         {player.score}
                       </div>
                     </div>
+
+                    {/* View Profile Button */}
+                    {onProfileClick && !player.user.bot && (
+                      <button
+                        onClick={() => {
+                          onProfileClick(player.userId)
+                          setIsModalOpen(false)
+                        }}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                      >
+                        👤 Profile
+                      </button>
+                    )}
 
                     {/* View Cards Button */}
                     {onPlayerClick && (

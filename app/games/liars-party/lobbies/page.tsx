@@ -70,6 +70,13 @@ export default function LiarsPartyLobbiesPage() {
   }, [])
 
   useEffect(() => {
+    if (isTemporarilyUnavailableGameType('liars_party')) {
+      router.replace('/games/liars-party')
+      return
+    }
+  }, [router])
+
+  useEffect(() => {
     if (status === 'unauthenticated' && !isGuest) {
       setLoading(false)
       return

@@ -18,11 +18,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Best Free Multiplayer Browser Games 2025 | Boardly',
     description: 'Top free browser games you can play with friends right now — no download, no account required.',
-    url: 'https://www.boardly.online/guides/best-free-multiplayer-browser-games',
+    url: 'https://boardly.online/guides/best-free-multiplayer-browser-games',
     type: 'article',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/guides/best-free-multiplayer-browser-games',
+    canonical: 'https://boardly.online/guides/best-free-multiplayer-browser-games',
   },
 }
 
@@ -31,21 +31,21 @@ const articleJsonLd = {
   '@type': 'Article',
   headline: 'Best Free Multiplayer Browser Games in 2025 — No Download Required',
   description: 'A curated list of the best free multiplayer games you can play in any browser with friends instantly.',
-  url: 'https://www.boardly.online/guides/best-free-multiplayer-browser-games',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/guides/best-free-multiplayer-browser-games',
+  image: 'https://boardly.online/opengraph-image',
   datePublished: '2025-01-01',
-  dateModified: new Date().toISOString().split('T')[0],
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://www.boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://www.boardly.online' },
+  dateModified: '2026-04-22',
+  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
+  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
 
 const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://www.boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Best Free Multiplayer Browser Games 2025', item: 'https://www.boardly.online/guides/best-free-multiplayer-browser-games' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
+    { '@type': 'ListItem', position: 3, name: 'Best Free Multiplayer Browser Games 2025', item: 'https://boardly.online/guides/best-free-multiplayer-browser-games' },
   ],
 }
 

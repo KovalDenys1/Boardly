@@ -72,6 +72,13 @@ export default function AliasLobbiesPage() {
   }, [])
 
   useEffect(() => {
+    if (isTemporarilyUnavailableGameType('alias')) {
+      router.replace('/games/alias')
+      return
+    }
+  }, [router])
+
+  useEffect(() => {
     // Allow both authenticated users and guests
     if (status === 'unauthenticated' && !isGuest) {
       setLoading(false)

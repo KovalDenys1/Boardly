@@ -17,11 +17,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'How to Play Yahtzee Online with Friends | Boardly',
     description: 'Complete Yahtzee guide — rules, scoring categories, strategy tips. Free multiplayer in your browser.',
-    url: 'https://www.boardly.online/guides/how-to-play-yahtzee-online',
+    url: 'https://boardly.online/guides/how-to-play-yahtzee-online',
     type: 'article',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/guides/how-to-play-yahtzee-online',
+    canonical: 'https://boardly.online/guides/how-to-play-yahtzee-online',
   },
 }
 
@@ -30,21 +30,21 @@ const articleJsonLd = {
   '@type': 'Article',
   headline: 'How to Play Yahtzee Online with Friends — Complete Guide',
   description: 'Step-by-step guide to playing Yahtzee online — rules, scoring, and strategy tips.',
-  url: 'https://www.boardly.online/guides/how-to-play-yahtzee-online',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/guides/how-to-play-yahtzee-online',
+  image: 'https://boardly.online/opengraph-image',
   datePublished: '2025-01-01',
-  dateModified: new Date().toISOString().split('T')[0],
-  author: { '@type': 'Organization', name: 'Boardly', url: 'https://www.boardly.online' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://www.boardly.online' },
+  dateModified: '2026-04-22',
+  author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
+  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
 
 const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://www.boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'How to Play Yahtzee Online', item: 'https://www.boardly.online/guides/how-to-play-yahtzee-online' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
+    { '@type': 'ListItem', position: 3, name: 'How to Play Yahtzee Online', item: 'https://boardly.online/guides/how-to-play-yahtzee-online' },
   ],
 }
 

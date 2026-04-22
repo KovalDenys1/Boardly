@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'Play Tic Tac Toe Online Free - Multiplayer | Boardly',
     description:
       'Challenge friends or AI in real-time Tic Tac Toe. Free, no download, 2 players. Start a match instantly!',
-    url: 'https://www.boardly.online/games/tic-tac-toe',
+    url: 'https://boardly.online/games/tic-tac-toe',
     type: 'website',
   },
   twitter: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: 'Real-time multiplayer Tic Tac Toe in your browser. Free, no account needed.',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/games/tic-tac-toe',
+    canonical: 'https://boardly.online/games/tic-tac-toe',
   },
 }
 
@@ -36,9 +36,9 @@ const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://www.boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: 'Tic Tac Toe', item: 'https://www.boardly.online/games/tic-tac-toe' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
+    { '@type': 'ListItem', position: 3, name: 'Tic Tac Toe', item: 'https://boardly.online/games/tic-tac-toe' },
   ],
 }
 
@@ -48,8 +48,8 @@ const jsonLd = {
   name: 'Tic Tac Toe',
   description:
     'Classic 3×3 grid strategy game where two players alternate placing X and O marks, aiming to get three in a row.',
-  url: 'https://www.boardly.online/games/tic-tac-toe',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/games/tic-tac-toe',
+  image: 'https://boardly.online/opengraph-image',
   genre: ['Strategy', 'Puzzle', 'Multiplayer'],
   numberOfPlayers: {
     '@type': 'QuantitativeValue',
@@ -67,7 +67,7 @@ const jsonLd = {
   publisher: {
     '@type': 'Organization',
     name: 'Boardly',
-    url: 'https://www.boardly.online',
+    url: 'https://boardly.online',
   },
 }
 

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/auth/verify-email', '/auth/reset-password'],
       },
     ],
-    sitemap: 'https://www.boardly.online/sitemap.xml',
+    sitemap: 'https://boardly.online/sitemap.xml',
   }
 }

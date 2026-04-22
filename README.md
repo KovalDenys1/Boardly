@@ -74,6 +74,7 @@ npm run check:locales
 npm run db:generate
 npm run db:push
 npm run db:migrate
+npm run db:audit
 npm run db:rls:smoke
 ```
 

@@ -11,6 +11,7 @@ interface WaitingRoomProps {
   getCurrentUserId: () => string | null | undefined
   canManageBots?: boolean
   onKickBot?: (botPlayerId: string) => void
+  onProfileClick?: (userId: string) => void
 }
 
 export default function WaitingRoom({
@@ -20,6 +21,7 @@ export default function WaitingRoom({
   getCurrentUserId,
   canManageBots,
   onKickBot,
+  onProfileClick,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
 
@@ -38,16 +40,20 @@ export default function WaitingRoom({
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined
         const difficultyLabel = botDifficulty ? t(`game.ui.botDifficulty${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)}` as Parameters<typeof t>[0]) : null
 
+        const canClickProfile = onProfileClick && !isBot
+
         return (
           <div
             key={p.id}
+            onClick={canClickProfile ? () => onProfileClick(p.userId) : undefined}
+            role={canClickProfile ? 'button' : undefined}
             className={`flex items-center gap-3 rounded-xl px-3 sm:px-4 py-2.5 border ${
               isCurrentUser
                 ? 'bg-emerald-500/15 border-emerald-300/40'
                 : isBot
                   ? 'bg-violet-500/12 border-violet-300/25'
                   : 'bg-white/5 border-white/12'
-            }`}
+            } ${canClickProfile ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}
           >
             <div className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white/80 text-xs font-bold shrink-0">
               {index + 1}

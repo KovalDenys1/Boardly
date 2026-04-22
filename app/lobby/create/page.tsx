@@ -9,7 +9,6 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { SupportedCatalogGameType } from '@/lib/game-catalog'
-import { isSupportedGameType } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
 import {
@@ -152,9 +151,6 @@ const GAME_INFO: Record<string, GameInfo> = {
 
 function isSelectableGameType(value: string | null | undefined): value is GameType {
   if (typeof value !== 'string' || !(value in GAME_INFO)) {
-    return false
-  }
-  if (!isSupportedGameType(value)) {
     return false
   }
   return !isTemporarilyUnavailableGameType(value)

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'Play Memory Card Game Online Free - Multiplayer | Boardly',
     description:
       'Flip cards, find matching pairs, beat your friends in real-time Memory. Free, 2–4 players, multiple difficulty levels.',
-    url: 'https://www.boardly.online/games/memory',
+    url: 'https://boardly.online/games/memory',
     type: 'website',
   },
   twitter: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: 'Real-time multiplayer Memory card game in your browser. Free, no download.',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/games/memory',
+    canonical: 'https://boardly.online/games/memory',
   },
 }
 
@@ -36,9 +36,9 @@ const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://www.boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: 'Memory', item: 'https://www.boardly.online/games/memory' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
+    { '@type': 'ListItem', position: 3, name: 'Memory', item: 'https://boardly.online/games/memory' },
   ],
 }
 
@@ -48,8 +48,8 @@ const jsonLd = {
   name: 'Memory Card Game',
   description:
     'Multiplayer card-matching game where players flip pairs of cards trying to find matches. The player with the most matched pairs wins.',
-  url: 'https://www.boardly.online/games/memory',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/games/memory',
+  image: 'https://boardly.online/opengraph-image',
   genre: ['Puzzle', 'Memory', 'Multiplayer'],
   numberOfPlayers: {
     '@type': 'QuantitativeValue',
@@ -67,7 +67,7 @@ const jsonLd = {
   publisher: {
     '@type': 'Organization',
     name: 'Boardly',
-    url: 'https://www.boardly.online',
+    url: 'https://boardly.online',
   },
 }
 

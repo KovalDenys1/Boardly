@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'Alias Coming Soon - Team Word Game | Boardly',
     description:
       'Describe words to your team without saying the word itself. Race against the clock, earn points, and outlast the other team. Free, 4–16 players.',
-    url: 'https://www.boardly.online/games/alias',
+    url: 'https://boardly.online/games/alias',
     type: 'website',
   },
   twitter: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: 'Real-time team word game in your browser. Describe, guess, and score. Free, no download.',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/games/alias',
+    canonical: 'https://boardly.online/games/alias',
   },
 }
 
@@ -36,9 +36,9 @@ const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://www.boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: 'Alias', item: 'https://www.boardly.online/games/alias' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
+    { '@type': 'ListItem', position: 3, name: 'Alias', item: 'https://boardly.online/games/alias' },
   ],
 }
 
@@ -48,15 +48,15 @@ const jsonLd = {
   name: 'Alias',
   description:
     'Team word description game where players describe words to their teammates without saying the word itself, racing against a timer to score points.',
-  url: 'https://www.boardly.online/games/alias',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/games/alias',
+  image: 'https://boardly.online/opengraph-image',
   genre: ['Party Game', 'Word Game', 'Multiplayer', 'Team Game'],
   numberOfPlayers: { '@type': 'QuantitativeValue', minValue: 4, maxValue: 16 },
   playMode: 'MultiPlayer',
   applicationCategory: 'Game',
   operatingSystem: 'Any (Browser)',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://www.boardly.online' },
+  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
 
 export default function AliasGamePage() {

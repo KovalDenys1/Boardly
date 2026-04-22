@@ -100,6 +100,7 @@ function CenteredLoadingFallback() {
 }
 
 const PlayerList = dynamic(() => import('@/components/PlayerList'))
+const PlayerProfileCard = dynamic(() => import('@/components/PlayerProfileCard'))
 const Scorecard = dynamic(() => import('@/components/Scorecard'))
 const Chat = dynamic(() => import('@/components/Chat'))
 const BotMoveOverlay = dynamic(() => import('@/components/BotMoveOverlay'))
@@ -212,6 +213,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Selected player for viewing their scorecard
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [profileUserId, setProfileUserId] = useState<string | null>(null)
 
   // Friends invite modal state
   const [showFriendsModal, setShowFriendsModal] = useState(false)
@@ -1528,10 +1530,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const { documentElement, body } = document
     const prevHtmlOverflowX = documentElement.style.overflowX
     const prevBodyOverflowX = body.style.overflowX
+    const prevHtmlOverflowY = documentElement.style.overflowY
+    const prevBodyOverflowY = body.style.overflowY
 
-    // Prevent horizontal page scroll while the fixed full-screen game viewport is active.
+    // Prevent page scroll while the fixed full-screen game viewport is active.
+    // Locking overflowY stops mobile Safari from toggling the address bar,
+    // which causes dvh to change and shifts the fixed game panel off-screen.
     documentElement.style.overflowX = 'hidden'
     body.style.overflowX = 'hidden'
+    documentElement.style.overflowY = 'hidden'
+    body.style.overflowY = 'hidden'
 
     let raf1 = 0
     let raf2 = 0
@@ -1551,6 +1559,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       window.cancelAnimationFrame(raf2)
       documentElement.style.overflowX = prevHtmlOverflowX
       body.style.overflowX = prevBodyOverflowX
+      documentElement.style.overflowY = prevHtmlOverflowY
+      body.style.overflowY = prevBodyOverflowY
     }
   }, [isGameStarted])
 
@@ -1666,6 +1676,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               getCurrentUserId={getCurrentUserId}
               canManageBots={canStartGame}
               onKickBot={kickBot}
+              onProfileClick={setProfileUserId}
             />
           </div>
 
@@ -1926,6 +1937,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           // Toggle selection: if clicking same player, deselect; otherwise select
                           setSelectedPlayerId(prev => prev === userId ? null : userId)
                         }}
+                        onProfileClick={setProfileUserId}
                         selectedPlayerId={selectedPlayerId || undefined}
                       />
                     </div>
@@ -2023,6 +2035,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           // Switch to scorecard tab when clicking player
                           setMobileActiveTab('scorecard')
                         }}
+                        onProfileClick={setProfileUserId}
                         selectedPlayerId={selectedPlayerId || undefined}
                       />
 
@@ -2200,6 +2213,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       {isGameStarted && socket && (
         <ReactionOverlay socket={socket} lobbyCode={code} />
       )}
+
+      <PlayerProfileCard
+        userId={profileUserId}
+        onClose={() => setProfileUserId(null)}
+      />
      </div>
     </div>
   )
