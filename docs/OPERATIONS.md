@@ -153,6 +153,8 @@ When migrating existing timestamp columns from `TIMESTAMP` to `TIMESTAMPTZ`:
 Recommended verification after each phase:
 
 - `npm run check:db`
+- `npm run db:audit`
+- `npm run db:rls:smoke`
 - critical cron/manual endpoint smoke (`/api/cron/*` used in that phase)
 - one realtime gameplay flow (create/join/play/reconnect) if gameplay timestamps changed
 
