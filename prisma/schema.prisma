@@ -355,15 +355,16 @@ model OperationalEvents {
 }
 
 model OperationalAlertStates {
-  id              String    @id @default(cuid())
-  alertKey        String    @unique
-  isOpen          Boolean   @default(false)
-  lastValue       Float?
-  lastTriggeredAt DateTime? @db.Timestamptz(3)
-  lastNotifiedAt  DateTime? @db.Timestamptz(3)
-  lastResolvedAt  DateTime? @db.Timestamptz(3)
-  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  id                String    @id @default(cuid())
+  alertKey          String    @unique
+  isOpen            Boolean   @default(false)
+  lastValue         Float?
+  lastTriggeredAt   DateTime? @db.Timestamptz(3)
+  lastNotifiedAt    DateTime? @db.Timestamptz(3)
+  lastResolvedAt    DateTime? @db.Timestamptz(3)
+  githubIssueNumber Int?
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
 }
 
 enum NotificationType {
