@@ -34,7 +34,7 @@ export default function Header() {
   const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+    <header className="site-header bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex items-center justify-between gap-3 sm:gap-4 min-w-0" style={{ height: '100%' }}>
           {/* Logo and main navigation */}
