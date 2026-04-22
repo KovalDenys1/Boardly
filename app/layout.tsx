@@ -11,7 +11,7 @@ import FeedbackWidget from '@/components/FeedbackWidget'
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+    <header className="site-header bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex justify-between items-center" style={{ height: '100%' }}>
           <div className="flex items-center gap-2 text-2xl font-bold text-white" style={{ minWidth: '120px' }}>
@@ -201,7 +201,7 @@ export default function RootLayout({
         <style 
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: 'body{margin:0}header{min-height:64px;height:64px}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+            __html: 'body{margin:0}.site-header{min-height:64px;height:64px}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
         />
         <script

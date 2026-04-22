@@ -9,7 +9,9 @@ Production: <https://boardly.online>
 - Next.js app (HTTP API, auth, pages)
 - Socket.IO server (`socket-server.ts`) for real-time lobby/game events
 - Shared game engine abstractions (`lib/game-engine.ts`)
-- Game implementations (Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors)
+- Game implementations:
+  - Stable registered games: Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors, Memory
+  - Feature-flagged/experimental games: Telephone Doodle, Sketch and Guess, Liars Party, Fake Artist, Alias
 
 ## Architecture at a glance
 
@@ -90,6 +92,7 @@ npm run db:rls:smoke
 - Security model details: `docs/SECURITY_MODEL.md`
 - Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
 - Dependency maintenance plan: `docs/DEPENDENCY_UPGRADE_PLAN.md`
+- Obsidian vault workflow: `docs/OBSIDIAN_VAULT.md`
 - Bot developer guide: `lib/bots/README.md`
 - Migrations and RLS notes: `prisma/migrations/README.md`
 - AI agent instructions: `.github/copilot-instructions.md`

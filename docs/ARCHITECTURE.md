@@ -34,10 +34,22 @@ All games implement `GameEngine` (`lib/game-engine.ts`) and expose:
 `prisma/schema.prisma` enum `GameType`:
 
 - `yahtzee`
-- `guess_the_spy`
 - `tic_tac_toe`
 - `rock_paper_scissors`
-- plus reserved values for future (`chess`, `uno`, `other`)
+- `memory`
+- `guess_the_spy`
+- `telephone_doodle`
+- `sketch_and_guess`
+- `liars_party`
+- `fake_artist`
+- `alias`
+- `other`
+
+The default registered runtime set is managed in `lib/game-registry.ts`:
+
+- Stable games: `yahtzee`, `guess_the_spy`, `tic_tac_toe`, `rock_paper_scissors`, `memory`
+- Experimental/feature-flagged games: `telephone_doodle`, `sketch_and_guess`, `liars_party`, `fake_artist`, `alias`
+- Bot-supported games: `yahtzee`, `tic_tac_toe`, `rock_paper_scissors`
 
 ## Realtime patterns
 
@@ -86,10 +98,12 @@ This logic is centralized in `lib/lobby-lifecycle.ts` and reused across main and
 
 Core tables (pluralized schema):
 
-- `Users`, `Bots`
-- `Lobbies`, `Games`, `Players`
-- `FriendRequests`, `Friendships`
-- NextAuth auth/session/token tables
+- Identity and preferences: `Users`, `AccountPreferences`, `Bots`
+- Auth/session: `Accounts`, `Sessions`, `VerificationTokens`, `PasswordResetTokens`, `EmailVerificationTokens`
+- Lobby/gameplay: `Lobbies`, `LobbyInvites`, `Games`, `Players`, `GameStateSnapshots`
+- Social: `FriendRequests`, `Friendships`
+- Notifications: `NotificationPreferences`, `Notifications`
+- Operations/admin: `OperationalEvents`, `OperationalAlertStates`, `AdminAuditLogs`, `Feedback`
 
 Game state is persisted as JSON in `Games.state` and treated as source of truth for replay/recovery.
 
