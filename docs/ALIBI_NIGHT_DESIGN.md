@@ -9,11 +9,13 @@ This spec defines a server-authoritative MVP aligned with Boardly realtime and g
 ## Round model
 
 1. Prompt/context setup
+
 - Server chooses a deterministic `roundPrompt` (location + time + incident theme) from a seeded prompt pool.
 - Server assigns one `suspectPlayerId` for the round.
 - Prompt is visible to all players.
 
-2. Alibi submission (hidden)
+1. Alibi submission (hidden)
+
 - Every active player submits one text alibi.
 - Submissions are hidden until phase end.
 - Server stores immutable per-round snapshot:
@@ -22,17 +24,20 @@ This spec defines a server-authoritative MVP aligned with Boardly realtime and g
   - `submittedAt`
   - `revision` (always `1` in MVP, no edits)
 
-3. Challenge phase
+1. Challenge phase
+
 - All revealed alibis become visible in stable order (join order).
 - Each player can issue up to `N` challenges (default `2`) targeting another player.
 - A challenge is a short contradiction question linked to target alibi ID.
 
-4. Final vote
+1. Final vote
+
 - Each player casts one vote for the most suspicious alibi/author.
 - Self-vote disabled.
 - Hidden votes until phase end, then full reveal.
 
-5. Resolution
+1. Resolution
+
 - Round points granted based on vote outcome.
 - Game advances to next round until `targetRounds` reached.
 
@@ -91,6 +96,7 @@ This spec defines a server-authoritative MVP aligned with Boardly realtime and g
 ## Scoring and tie-breaker
 
 Round scoring:
+
 - If suspect gets most votes:
   - every non-suspect who voted suspect: `+2`
   - suspect: `0`
@@ -101,6 +107,7 @@ Round scoring:
   - `+1` to challenger if target later receives at least `2` votes.
 
 Tie-breaker order:
+
 1. Higher total score
 2. More correct suspicious votes
 3. Fewer abstains/timeouts
@@ -109,26 +116,31 @@ Tie-breaker order:
 ## MVP implementation checklist
 
 Engine and state:
+
 - [ ] Add `lib/games/alibi-night-game.ts` implementing `GameEngine`.
 - [ ] Define `AlibiNightGameState` with explicit phase union + deadlines.
 - [ ] Add deterministic prompt selection helper with seeded RNG.
 
 Validation and actions:
+
 - [ ] Add `lib/validation/alibi-night.ts` for payload schema and text constraints.
 - [ ] Add `/api/game/[gameId]/alibi-night-action/route.ts` with strict phase checks.
 - [ ] Add anti-spam rate limiting integration for action endpoint.
 
 Realtime:
+
 - [ ] Broadcast state snapshots through existing socket room channel.
 - [ ] Add reconnect-safe state hydration path in lobby page hook.
 - [ ] Ensure timeout auto-actions are idempotent under reconnect races.
 
 Client UX:
+
 - [ ] Add lobby/game renderer for phase UI (submit, challenge, vote, resolution).
 - [ ] Add per-phase timer blocks and completion indicators.
 - [ ] Add localized fallback labels for auto-filled actions.
 
 Tests:
+
 - [ ] Unit tests for phase transitions and scoring matrix.
 - [ ] Validation tests for payload limits and rejection paths.
 - [ ] API tests for auth/guest action acceptance and duplicate no-op handling.
