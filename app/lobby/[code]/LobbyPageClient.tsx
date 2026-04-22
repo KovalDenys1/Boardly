@@ -1528,10 +1528,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const { documentElement, body } = document
     const prevHtmlOverflowX = documentElement.style.overflowX
     const prevBodyOverflowX = body.style.overflowX
+    const prevHtmlOverflowY = documentElement.style.overflowY
+    const prevBodyOverflowY = body.style.overflowY
 
-    // Prevent horizontal page scroll while the fixed full-screen game viewport is active.
+    // Prevent page scroll while the fixed full-screen game viewport is active.
+    // Locking overflowY stops mobile Safari from toggling the address bar,
+    // which causes dvh to change and shifts the fixed game panel off-screen.
     documentElement.style.overflowX = 'hidden'
     body.style.overflowX = 'hidden'
+    documentElement.style.overflowY = 'hidden'
+    body.style.overflowY = 'hidden'
 
     let raf1 = 0
     let raf2 = 0
@@ -1551,6 +1557,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       window.cancelAnimationFrame(raf2)
       documentElement.style.overflowX = prevHtmlOverflowX
       body.style.overflowX = prevBodyOverflowX
+      documentElement.style.overflowY = prevHtmlOverflowY
+      body.style.overflowY = prevBodyOverflowY
     }
   }, [isGameStarted])
 
