@@ -4,6 +4,32 @@
 DO $$
 DECLARE
   required_tables TEXT[] := ARRAY[
+    '_prisma_migrations',
+    'Users',
+    'Bots',
+    'Accounts',
+    'Sessions',
+    'VerificationTokens',
+    'PasswordResetTokens',
+    'EmailVerificationTokens',
+    'AccountPreferences',
+    'Lobbies',
+    'LobbyInvites',
+    'Games',
+    'Players',
+    'FriendRequests',
+    'Friendships',
+    'SpyLocations',
+    'OperationalEvents',
+    'OperationalAlertStates',
+    'NotificationPreferences',
+    'Notifications',
+    'Feedback',
+    'GameStateSnapshots',
+    'AdminAuditLogs'
+  ];
+  tables_requiring_policy TEXT[] := ARRAY[
+    '_prisma_migrations',
     'Users',
     'Bots',
     'Accounts',
@@ -12,11 +38,16 @@ DECLARE
     'PasswordResetTokens',
     'EmailVerificationTokens',
     'Lobbies',
+    'LobbyInvites',
     'Games',
     'Players',
     'FriendRequests',
     'Friendships',
     'SpyLocations',
+    'OperationalEvents',
+    'OperationalAlertStates',
+    'NotificationPreferences',
+    'Notifications',
     'GameStateSnapshots',
     'AdminAuditLogs'
   ];
@@ -66,7 +97,7 @@ BEGIN
 
   SELECT ARRAY_AGG(t)
   INTO tables_without_policy
-  FROM UNNEST(required_tables) AS t
+  FROM UNNEST(tables_requiring_policy) AS t
   WHERE NOT EXISTS (
     SELECT 1
     FROM pg_policies p
@@ -95,6 +126,7 @@ BEGIN
 
   WITH required_policy_pairs(table_name, policy_name) AS (
     VALUES
+      ('_prisma_migrations', 'Service role can manage prisma migrations'),
       ('Users', 'Authenticated users can view public user info'),
       ('Users', 'Anon users can view public user info'),
       ('Users', 'Service role can manage users'),
@@ -103,9 +135,16 @@ BEGIN
       ('Games', 'Service role can manage games'),
       ('Players', 'Users can view players in their games'),
       ('Lobbies', 'Anyone can view lobbies'),
+      ('LobbyInvites', 'Users can view own lobby invites'),
+      ('LobbyInvites', 'Users can create own lobby invites'),
+      ('LobbyInvites', 'Service role can manage lobby invites'),
       ('FriendRequests', 'Users can view own friend requests'),
       ('Friendships', 'Users can view own friendships'),
       ('SpyLocations', 'Anyone can view active spy locations'),
+      ('OperationalEvents', 'Service role can manage operational events'),
+      ('OperationalAlertStates', 'Service role can manage operational alert states'),
+      ('NotificationPreferences', 'Service role can manage notification preferences'),
+      ('Notifications', 'Service role can manage notifications'),
       ('GameStateSnapshots', 'Players can view snapshots in their games'),
       ('GameStateSnapshots', 'Service role can manage game state snapshots'),
       ('AdminAuditLogs', 'Admins can view audit logs'),
