@@ -33,6 +33,32 @@ function isMissingOperationalAlertStatesTableError(error: unknown): boolean {
   return typeof meta?.table === 'string' && meta.table.includes('OperationalAlertStates')
 }
 
+function isMissingOperationalAlertStatesGithubIssueColumnError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if (!('code' in error) || (error as { code?: unknown }).code !== 'P2022') return false
+
+  const meta = (error as { meta?: { modelName?: unknown; column?: unknown } }).meta
+  const maybeMessage = 'message' in error ? error.message : undefined
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof maybeMessage === 'string'
+        ? maybeMessage
+        : ''
+
+  const targetsOperationalAlertStates =
+    meta?.modelName === 'OperationalAlertStates' ||
+    message.includes('OperationalAlertStates') ||
+    message.includes('operationalAlertStates')
+
+  const targetsGithubIssueNumber =
+    meta?.column === 'githubIssueNumber' ||
+    message.includes('githubIssueNumber') ||
+    message.includes('The column `(not available)` does not exist')
+
+  return targetsOperationalAlertStates && targetsGithubIssueNumber
+}
+
 function shouldNotifyAgain(lastNotifiedAt: Date | null, repeatMinutes: number): boolean {
   if (!lastNotifiedAt) return true
   return Date.now() - lastNotifiedAt.getTime() >= repeatMinutes * 60 * 1000
@@ -243,10 +269,12 @@ export async function runReliabilityAlertCycle(
     githubIssueNumber: number | null
   }> = []
   let alertStatePersistenceAvailable = true
+  let githubIssuePersistenceAvailable = true
+  const alertKeys = evaluation.rules.map((r) => r.alertKey)
 
   try {
     states = await prisma.operationalAlertStates.findMany({
-      where: { alertKey: { in: evaluation.rules.map((r) => r.alertKey) } },
+      where: { alertKey: { in: alertKeys } },
       select: {
         alertKey: true,
         isOpen: true,
@@ -255,8 +283,37 @@ export async function runReliabilityAlertCycle(
       },
     })
   } catch (error) {
-    if (!isMissingOperationalAlertStatesTableError(error)) throw error
-    alertStatePersistenceAvailable = false
+    if (isMissingOperationalAlertStatesGithubIssueColumnError(error)) {
+      githubIssuePersistenceAvailable = false
+
+      try {
+        const fallbackStates = await prisma.operationalAlertStates.findMany({
+          where: { alertKey: { in: alertKeys } },
+          select: {
+            alertKey: true,
+            isOpen: true,
+            lastNotifiedAt: true,
+          },
+        })
+
+        states = fallbackStates.map((state) => ({
+          ...state,
+          githubIssueNumber: null,
+        }))
+      } catch (fallbackError) {
+        if (!isMissingOperationalAlertStatesTableError(fallbackError)) throw fallbackError
+        alertStatePersistenceAvailable = false
+      }
+    } else {
+      if (!isMissingOperationalAlertStatesTableError(error)) throw error
+      alertStatePersistenceAvailable = false
+    }
+  }
+
+  if (githubToken && githubRepo && !githubIssuePersistenceAvailable) {
+    logger.warn(
+      'OperationalAlertStates.githubIssueNumber column is missing; GitHub issue automation is disabled until the migration is applied'
+    )
   }
 
   const stateMap = new Map(states.map((s) => [s.alertKey, s]))
@@ -283,7 +340,7 @@ export async function runReliabilityAlertCycle(
         let issueNumber = existing?.githubIssueNumber ?? null
 
         // Create a GitHub issue on first trigger
-        if (isFirstTrigger && githubToken && githubRepo) {
+        if (isFirstTrigger && githubToken && githubRepo && githubIssuePersistenceAvailable) {
           const created = await createGitHubIssue({
             token: githubToken,
             repo: githubRepo,
@@ -307,14 +364,16 @@ export async function runReliabilityAlertCycle(
             lastValue: numericValue,
             lastTriggeredAt: new Date(),
             lastNotifiedAt: shouldNotify ? new Date() : null,
-            githubIssueNumber: issueNumber,
+            ...(githubIssuePersistenceAvailable ? { githubIssueNumber: issueNumber } : {}),
           },
           update: {
             isOpen: true,
             lastValue: numericValue,
             lastTriggeredAt: new Date(),
             ...(shouldNotify ? { lastNotifiedAt: new Date() } : {}),
-            ...(issueNumber !== null ? { githubIssueNumber: issueNumber } : {}),
+            ...(githubIssuePersistenceAvailable && issueNumber !== null
+              ? { githubIssueNumber: issueNumber }
+              : {}),
           },
         })
 
@@ -326,7 +385,7 @@ export async function runReliabilityAlertCycle(
         issueNumbers.set(rule.alertKey, existing.githubIssueNumber ?? null)
 
         // Close the GitHub issue on resolution
-        if (existing.githubIssueNumber && githubToken && githubRepo) {
+        if (existing.githubIssueNumber && githubToken && githubRepo && githubIssuePersistenceAvailable) {
           await closeGitHubIssue({
             token: githubToken,
             repo: githubRepo,
@@ -348,7 +407,7 @@ export async function runReliabilityAlertCycle(
             isOpen: false,
             lastValue: numericValue,
             lastResolvedAt: new Date(),
-            githubIssueNumber: null,
+            ...(githubIssuePersistenceAvailable ? { githubIssueNumber: null } : {}),
           },
         })
       }
