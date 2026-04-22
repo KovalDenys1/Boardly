@@ -9,7 +9,9 @@ Production: <https://boardly.online>
 - Next.js app (HTTP API, auth, pages)
 - Socket.IO server (`socket-server.ts`) for real-time lobby/game events
 - Shared game engine abstractions (`lib/game-engine.ts`)
-- Game implementations (Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors)
+- Game implementations:
+  - Stable registered games: Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors, Memory
+  - Feature-flagged/experimental games: Telephone Doodle, Sketch and Guess, Liars Party, Fake Artist, Alias
 
 ## Architecture at a glance
 

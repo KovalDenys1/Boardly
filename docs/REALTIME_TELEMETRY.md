@@ -32,17 +32,19 @@ This document defines the production reliability telemetry path, alert rules, KP
 
 ## Alert Delivery
 
-Set webhook channel and alert windows in env:
+Set alert delivery and alert windows in env:
 
-- `OPS_ALERT_WEBHOOK_URL`
+- `OPS_ALERT_WEBHOOK_URL` (Discord webhook)
 - `OPS_ALERT_WINDOW_MINUTES` (default: `10`)
 - `OPS_ALERT_BASELINE_DAYS` (default: `7`)
 - `OPS_ALERT_REPEAT_MINUTES` (default: `60`)
 - `OPS_RUNBOOK_BASE_URL` (optional; used to build absolute runbook links)
+- `GITHUB_ALERT_TOKEN` / `GITHUB_ALERT_REPO` (optional; create and close GitHub issues for alert state transitions)
 
-Supported channels: Slack/Discord/Teams webhook endpoints.
+Webhook payloads are sent as Discord embeds. If GitHub alert env vars are configured, the first trigger for an alert state opens a GitHub issue and alert resolution closes that issue.
 
 Scheduler note:
+
 - Vercel Hobby only supports cron jobs that run once per day.
 - Use the GitHub Actions scheduler (`.github/workflows/reliability-alerts-cron.yml`) for 10-minute reliability alert checks on Hobby.
 - Vercel cron for `/api/cron/reliability-alerts` is only suitable on plans that support sub-daily cron intervals.
@@ -51,17 +53,20 @@ Scheduler note:
 
 Rules are evaluated in `evaluateReliabilityAlerts()` (`lib/operational-metrics.ts`) and dispatched by `runReliabilityAlertCycle()` (`lib/reliability-alerts.ts`).
 
-1. `rejoin_timeout` spike
+### `rejoin_timeout` spike
+
 - Severity: `critical`
 - Condition: current window count >= `max(2, baseline_per_window * 3)`
 - Window: `OPS_ALERT_WINDOW_MINUTES`
 
-1. `auth_refresh_failed` ratio
+### `auth_refresh_failed` ratio
+
 - Severity: `warning`
 - Condition: `auth_refresh_failed / reconnect_cycles >= 2%` for windows with >= 5 reconnect cycles
 - Window: `OPS_ALERT_WINDOW_MINUTES`
 
-1. `move_apply_timeout` spike or latency breach
+### `move_apply_timeout` spike or latency breach
+
 - Severity: `warning` (count spike), `critical` (latency breach)
 - Condition A: current timeout count >= `max(3, baseline_per_window * 3)`
 - Condition B: `move_submit_applied` p95 > `MOVE_APPLY_TARGET_MS` (`800ms`)
@@ -97,21 +102,18 @@ Baseline is computed from the previous `baselineDays` window (default 7 days), s
 
 ## Runbook
 
-<a id="runbook-rejoin-timeout"></a>
 ### If `rejoin_timeout` breaches
 
 - Check Socket.IO service health and deploy/cold-start windows
 - Check lobby join ACK behavior in `useSocketConnection` and socket room authorization
 - Check DB latency on lobby/member queries
 
-<a id="runbook-auth-refresh-failed"></a>
 ### If `auth_refresh_failed` breaches
 
 - Check `/api/socket/token` status trend (`401`/`403`/`5xx`)
 - Check auth secret/session validity (`NEXTAUTH_SECRET`, provider state)
 - Check token refresh path in `useSocketConnection` (`token_fetch`, `socket_auth_payload`)
 
-<a id="runbook-move-apply-timeout"></a>
 ### If `move_apply_timeout` breaches
 
 - Check `/api/game/[gameId]/state` p95 and DB lock/contention

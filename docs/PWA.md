@@ -1,6 +1,8 @@
 # PWA Support (Issue #44)
 
-Updated: 2026-02-25
+Updated: 2026-04-22
+
+Issue #44 shipped and was closed on 2026-02-25. This page now tracks the current PWA implementation and regression checks.
 
 ## Implemented
 
@@ -36,7 +38,7 @@ This regenerates:
 - `public/icons/icon-maskable-512.png`
 - `public/splash/apple-splash-*.png`
 
-## Manual QA Checklist (Required Before Closing #44)
+## Manual QA Checklist
 
 - Android Chrome: install prompt appears and app installs
 - iOS Safari: "Add to Home Screen" works and splash screen is shown on launch

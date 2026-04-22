@@ -13,6 +13,7 @@ This directory should contain the following sound files for the game:
 ## Sound Sources
 
 You can find free sound effects at:
+
 - [Freesound.org](https://freesound.org/)
 - [Mixkit](https://mixkit.co/free-sound-effects/)
 - [Zapsplat](https://www.zapsplat.com/)
@@ -20,6 +21,7 @@ You can find free sound effects at:
 ## Notes
 
 - All files should be in MP3 format for broad browser compatibility
-- Keep file sizes small (< 100KB each) for fast loading
+- Keep file sizes small, around 100 KiB or less where practical, for fast loading
 - Volume levels should be normalized across all files
 - Sound effects should be short (< 2 seconds)
+- Keep attribution details in `CREDITS.txt` when a source requires credit

@@ -6,20 +6,20 @@ The bot system is designed to be **modular and game-agnostic**. Each game can ha
 
 ```text
 lib/bots/
-├── core/                         # Universal bot infrastructure
-│   ├── base-bot.ts              # Abstract base class
-│   ├── bot-types.ts             # Shared types and interfaces
-│   ├── bot-executor.ts          # Universal bot turn executor
-│   ├── bot-factory.ts           # Factory for creating bot instances
-│   └── bot-helpers.ts           # Utility functions (isBot, getBotDifficulty)
-├── yahtzee/                     # Yahtzee-specific bots
-│   ├── yahtzee-bot.ts          # YahtzeeBot (extends BaseBot)
-│   ├── yahtzee-bot-ai.ts       # Pure AI decision logic
-│   └── yahtzee-bot-executor.ts # Turn execution with visual feedback
-├── spy/                         # Future: Guess the Spy bots
-├── uno/                         # Future: Uno bots
-└── index.ts                     # Barrel exports
+|-- core/                         # Universal bot infrastructure
+|   |-- base-bot.ts               # Abstract base class
+|   |-- bot-types.ts              # Shared types and interfaces
+|   |-- bot-executor.ts           # Universal bot turn executor
+|   |-- bot-factory.ts            # Factory for creating bot instances
+|   |-- bot-helpers.ts            # Utility functions (isBot, getBotDifficulty)
+|   `-- bot-ux-timing.ts          # Configurable bot delay helpers
+|-- rock-paper-scissors/          # Rock Paper Scissors bot
+|-- tic-tac-toe/                  # Tic-Tac-Toe bot
+|-- yahtzee/                      # Yahtzee bot
+`-- index.ts                      # Barrel exports
 ```
+
+Current bot-supported games are `yahtzee`, `tic_tac_toe`, and `rock_paper_scissors`. Other registered game types can still run without bots until a game-specific bot/executor is added.
 
 ## Key Concepts
 
@@ -227,15 +227,14 @@ export class SpyBotExecutor {
 
 ### Step 4: Register in Bot Factory
 
-Add your bot to `lib/bots/core/bot-factory.ts`:
+Add your bot to `lib/bots/core/bot-factory.ts`. The factory receives `RegisteredGameType` from `lib/game-registry.ts`; only add cases for games that have a real bot implementation:
 
 ```typescript
 import { SpyBot } from '../spy/spy-bot'
-
-export type GameType = 'yahtzee' | 'guess_the_spy' | 'uno' | 'chess' | 'other'
+import type { RegisteredGameType } from '@/lib/game-registry'
 
 export function createBot<T extends GameEngine>(
-    gameType: GameType,
+    gameType: RegisteredGameType,
     gameEngine: T,
     difficulty: BotDifficulty = 'medium'
 ): BaseBot<T, any> {
@@ -374,9 +373,12 @@ model Bots {
   id         String   @id @default(cuid())
   userId     String   @unique
   user       Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botType    String   // 'yahtzee', 'spy', 'uno', 'chess'
+  botType    String   @default("yahtzee") // "yahtzee", "tic_tac_toe", "rock_paper_scissors", etc.
   difficulty String   @default("medium") // 'easy', 'medium', 'hard'
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@index([botType])
 }
 ```
 
@@ -576,5 +578,5 @@ File issues or discuss in team chat. This system is designed to make adding game
 
 ---
 
-**Last Updated**: February 2026  
-**Version**: 2.0 (Modular Architecture)
+**Last Updated**: April 2026
+**Version**: 2.1 (Modular Architecture)

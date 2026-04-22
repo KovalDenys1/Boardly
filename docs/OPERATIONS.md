@@ -78,9 +78,10 @@ Recommended:
 - hosted `DATABASE_URL` note: if your provider ships `sslmode=require` without a CA bundle, Boardly now enables libpq-compatible TLS semantics at runtime unless `MCP_POSTGRES_CA_CERT_PATH` is configured for strict `verify-full`
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
 - `ANALYTICS_ALLOWED_USER_IDS` / `ANALYTICS_ALLOWED_EMAILS` (restrict analytics endpoints)
-- `OPS_ALERT_WEBHOOK_URL` (alerts channel webhook)
+- `OPS_ALERT_WEBHOOK_URL` (Discord webhook for reliability alerts)
 - `OPS_ALERT_WINDOW_MINUTES`, `OPS_ALERT_BASELINE_DAYS`, `OPS_ALERT_REPEAT_MINUTES`
 - `OPS_RUNBOOK_BASE_URL` (optional absolute runbook links in alert payloads)
+- `GITHUB_ALERT_TOKEN` / `GITHUB_ALERT_REPO` (optional GitHub issue creation/closure for reliability alerts; repo format is `owner/repo`)
 - `CLEANUP_GUEST_DAYS` (optional guest retention window, defaults to `3`)
 - `REPLAY_RETENTION_DAYS` (optional replay retention window for finished/abandoned/cancelled games, defaults to `90`)
 - `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (optional shared rate-limit backend for production; when absent, app falls back to in-memory limiter)
@@ -237,7 +238,8 @@ Check:
 
 Check:
 
-- `OPS_ALERT_WEBHOOK_URL` is configured and valid
+- `OPS_ALERT_WEBHOOK_URL` is configured as a Discord webhook and valid
+- if GitHub issue automation is enabled, `GITHUB_ALERT_TOKEN` and `GITHUB_ALERT_REPO` are configured
 - cron auth header includes `Bearer ${CRON_SECRET}` for `/api/cron/reliability-alerts` (no `NEXTAUTH_SECRET` fallback)
 - if using GitHub Actions scheduling, `RELIABILITY_ALERTS_CRON_URL` and `CRON_SECRET` repo secrets are configured
 - `OperationalEvents` contains recent `rejoin_timeout` / `auth_refresh_failed` / `move_apply_timeout`
@@ -248,7 +250,7 @@ Check:
 Check response headers for representative routes (for example `/games`, `/lobby`, `/auth/login`):
 
 - `Content-Security-Policy` `script-src` includes `'self'` and trusted script origins
-- `Content-Security-Policy` `script-src` includes `'unsafe-inline'` (required by current Next.js 15 bootstrap output)
+- `Content-Security-Policy` `script-src` includes `'unsafe-inline'` (required by current Next.js App Router bootstrap output)
 - `Content-Security-Policy` does not include `'unsafe-eval'` in `script-src`
 
 Example:
