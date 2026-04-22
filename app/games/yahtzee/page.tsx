@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'Play Yahtzee Online Free - Multiplayer Dice Game | Boardly',
     description:
       'Roll dice, score combinations, and beat your friends in real-time Yahtzee. Free, no download, 1–4 players.',
-    url: 'https://www.boardly.online/games/yahtzee',
+    url: 'https://boardly.online/games/yahtzee',
     type: 'website',
   },
   twitter: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: 'Real-time multiplayer Yahtzee in your browser. Free, no download required.',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/games/yahtzee',
+    canonical: 'https://boardly.online/games/yahtzee',
   },
 }
 
@@ -36,9 +36,9 @@ const breadcrumbJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.boardly.online' },
-    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://www.boardly.online/games' },
-    { '@type': 'ListItem', position: 3, name: 'Yahtzee', item: 'https://www.boardly.online/games/yahtzee' },
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Games', item: 'https://boardly.online/games' },
+    { '@type': 'ListItem', position: 3, name: 'Yahtzee', item: 'https://boardly.online/games/yahtzee' },
   ],
 }
 
@@ -48,8 +48,8 @@ const jsonLd = {
   name: 'Yahtzee',
   description:
     'Classic dice-rolling game where players compete to score the highest by filling 13 scoring categories across five dice rolls.',
-  url: 'https://www.boardly.online/games/yahtzee',
-  image: 'https://www.boardly.online/opengraph-image',
+  url: 'https://boardly.online/games/yahtzee',
+  image: 'https://boardly.online/opengraph-image',
   genre: ['Dice Game', 'Strategy', 'Multiplayer'],
   numberOfPlayers: {
     '@type': 'QuantitativeValue',
@@ -67,7 +67,7 @@ const jsonLd = {
   publisher: {
     '@type': 'Organization',
     name: 'Boardly',
-    url: 'https://www.boardly.online',
+    url: 'https://boardly.online',
   },
 }
 

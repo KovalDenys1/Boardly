@@ -8,11 +8,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Board Game Guides & Tips | Boardly',
     description: 'Step-by-step guides for playing board games online with friends.',
-    url: 'https://www.boardly.online/guides',
+    url: 'https://boardly.online/guides',
     type: 'website',
   },
   alternates: {
-    canonical: 'https://www.boardly.online/guides',
+    canonical: 'https://boardly.online/guides',
   },
 }
 

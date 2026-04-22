@@ -133,7 +133,7 @@ export default async function Image() {
               fontWeight: '500',
             }}
           >
-            www.boardly.online
+            boardly.online
           </div>
         </div>
       </div>
