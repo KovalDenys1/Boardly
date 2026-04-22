@@ -92,6 +92,7 @@ npm run db:rls:smoke
 - Security model details: `docs/SECURITY_MODEL.md`
 - Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
 - Dependency maintenance plan: `docs/DEPENDENCY_UPGRADE_PLAN.md`
+- Obsidian vault workflow: `docs/OBSIDIAN_VAULT.md`
 - Bot developer guide: `lib/bots/README.md`
 - Migrations and RLS notes: `prisma/migrations/README.md`
 - AI agent instructions: `.github/copilot-instructions.md`

@@ -15,6 +15,7 @@ This folder contains the canonical project documentation.
 - `docs/DEPENDENCY_UPGRADE_PLAN.md` - staged dependency maintenance plan and migration sequencing
 - `docs/PWA.md` - current PWA implementation and install/offline regression checks
 - `docs/PERFORMANCE_BUNDLE_BUDGET.md` - bundle budget policy and measurement baselines
+- `docs/OBSIDIAN_VAULT.md` - local Obsidian vault workflow and note-safety rules
 
 ## Specialized docs
 
