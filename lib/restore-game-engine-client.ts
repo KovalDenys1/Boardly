@@ -1,12 +1,28 @@
 import type { GameEngine, RestorableGameState } from './game-engine'
 import {
   DEFAULT_GAME_TYPE,
-  isSupportedGameType,
   type SupportedCatalogGameType,
 } from './game-catalog'
 
+const CLIENT_RESTORABLE_GAME_TYPES = new Set<SupportedCatalogGameType>([
+  'yahtzee',
+  'guess_the_spy',
+  'tic_tac_toe',
+  'rock_paper_scissors',
+  'memory',
+  'telephone_doodle',
+  'sketch_and_guess',
+  'liars_party',
+  'fake_artist',
+  'alias',
+])
+
+function isClientRestorableGameType(gameType: string): gameType is SupportedCatalogGameType {
+  return CLIENT_RESTORABLE_GAME_TYPES.has(gameType as SupportedCatalogGameType)
+}
+
 function normalizeGameType(gameType: string): SupportedCatalogGameType {
-  return isSupportedGameType(gameType) ? gameType : DEFAULT_GAME_TYPE
+  return isClientRestorableGameType(gameType) ? gameType : DEFAULT_GAME_TYPE
 }
 
 async function createGameEngineClient(
