@@ -25,6 +25,15 @@
       }
     ],
     "paths": {
+      "@/client/*": [
+        "./lib/client/*"
+      ],
+      "@/server/*": [
+        "./lib/server/*"
+      ],
+      "@/shared/*": [
+        "./lib/shared/*"
+      ],
       "@/*": [
         "./*"
       ]

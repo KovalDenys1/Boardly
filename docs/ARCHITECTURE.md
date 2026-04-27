@@ -19,6 +19,23 @@ Boardly uses a dual-server model:
 
 Client optimism is allowed for responsiveness, but server state is final.
 
+## Frontend/backend module boundaries
+
+Boardly stays in one repository, but frontend and backend code should be separated by import boundaries:
+
+- `lib/client/**`: browser-only helpers used by Client Components and hooks.
+- `lib/server/**`: server-only infrastructure and service entrypoints used by API routes, server components, scripts, and the socket server.
+- `lib/shared/**`: runtime-agnostic contracts and pure helpers that are safe on both sides.
+- existing `lib/**` root modules remain compatibility entrypoints while code is migrated incrementally.
+
+Use the dedicated aliases for new code where practical:
+
+- `@/client/*`
+- `@/server/*`
+- `@/shared/*`
+
+`npm run arch:audit` checks that Client Components do not import server-only infrastructure and server modules do not import browser-only helpers. `npm run ci:quick` runs this audit after lint and typecheck.
+
 ## Game architecture
 
 ### Base contract
