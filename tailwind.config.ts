@@ -10,6 +10,24 @@ module.exports = {
       colors: {
         primary: '#3b82f6',
         secondary: '#8b5cf6',
+        // Boardly Design System
+        'bd-coral':     '#FF6B5B',
+        'bd-coral-deep':'#E04B3B',
+        'bd-mint':      '#4FC9A6',
+        'bd-mint-deep': '#2FA787',
+        'bd-sun':       '#FFC44D',
+        'bd-lav':       '#9B8CFF',
+        'bd-sky':       '#6BC1F0',
+        'bd-ink':       '#1F1B16',
+        'bd-ink-soft':  '#4A3F33',
+        'bd-ink-muted': '#8A7A66',
+        'bd-line':      '#E8DDC8',
+        'bd-bg':        '#FBF6EE',
+        'bd-bg2':       '#F2E9D8',
+        'bd-card-warm': '#FFF8EC',
+      },
+      fontFamily: {
+        display: ["'Bricolage Grotesque'", 'Georgia', 'serif'],
       },
       keyframes: {
         'shake-roll': {

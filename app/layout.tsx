@@ -190,6 +190,10 @@ export default function RootLayout({
         {/* Preconnect to external domains - moved before font loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap"
+        />
         {isProduction && (
           <>
             <link rel="dns-prefetch" href="https://vitals.vercel-insights.com" />
