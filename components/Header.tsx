@@ -34,16 +34,44 @@ export default function Header() {
   const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
 
   return (
-    <header className="site-header bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+    <header
+      className="site-header sticky top-0 z-50"
+      style={{
+        height: '64px',
+        minHeight: '64px',
+        background: '#FBF6EE',
+        borderBottom: '1.5px solid #E8DDC8',
+      }}
+    >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex items-center justify-between gap-3 sm:gap-4 min-w-0" style={{ height: '100%' }}>
           {/* Logo and main navigation */}
           <div className="flex items-center min-w-0 flex-1">
             <button
               onClick={() => router.push('/')}
-              className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xl sm:text-2xl font-bold text-white hover:scale-105 transition-transform"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap hover:opacity-80 transition-opacity"
+              style={{ fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', color: '#1F1B16' }}
             >
-              🎲 Boardly
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 9,
+                  background: '#1F1B16',
+                  color: '#FFC44D',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontFamily: "'Bricolage Grotesque', Georgia, serif",
+                  fontWeight: 800,
+                  fontSize: 20,
+                  transform: 'rotate(-6deg)',
+                  boxShadow: '3px 3px 0 #FF6B5B',
+                  flexShrink: 0,
+                }}
+              >
+                B
+              </span>
+              boardly
             </button>
 
             <HeaderNavigation
@@ -57,8 +85,11 @@ export default function Header() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Guest indicator */}
             {isGuestSession && guestName && (
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
-                <span className="max-w-[140px] truncate text-yellow-100 text-sm">👤 {guestName}</span>
+              <div
+                className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full"
+                style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: '#4A3F33', fontSize: 13, fontWeight: 600 }}
+              >
+                👤 {guestName}
               </div>
             )}
 

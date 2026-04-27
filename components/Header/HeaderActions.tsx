@@ -55,15 +55,17 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <div className="hidden lg:flex shrink-0 items-center gap-2">
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
+          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
+          style={{ color: '#4A3F33', fontSize: 15 }}
         >
           {t('header.login', 'Login')}
         </button>
         <button
           onClick={handleGuestExit}
-          className="px-4 py-2 rounded-lg font-medium bg-white text-purple-600 hover:bg-white/90 transition-colors shadow-sm"
+          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
+          style={{ color: '#4A3F33', fontSize: 15, border: '1.5px solid #E8DDC8' }}
         >
-          🚪 {t('guest.exit', 'Exit Guest')}
+          {t('guest.exit', 'Exit Guest')}
         </button>
       </div>
     )
@@ -74,66 +76,77 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <div className="hidden lg:flex shrink-0 items-center gap-2">
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
+          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
+          style={{ color: '#4A3F33', fontSize: 15 }}
         >
           {t('header.login', 'Login')}
         </button>
         <button
           onClick={() => router.push(buildCurrentAuthUrl('register'))}
-          className="px-4 py-2 rounded-lg font-medium bg-white text-purple-600 hover:bg-white/90 transition-colors shadow-sm"
+          className="px-4 py-2 rounded-xl font-semibold transition-all duration-150 hover:-translate-y-px"
+          style={{
+            background: '#1F1B16',
+            color: '#FBF6EE',
+            fontSize: 15,
+            boxShadow: '0 4px 0 #FF6B5B',
+          }}
         >
-          {t('header.register', 'Register')}
+          {t('header.register', 'Play free')}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="hidden lg:flex items-center gap-2 lg:gap-4 min-w-0">
-      <div className="min-w-0 max-w-[220px] self-center text-right lg:max-w-[280px]">
+    <div className="hidden lg:flex items-center gap-2 lg:gap-3 min-w-0">
+      <div className="min-w-0 max-w-[180px] self-center text-right">
         <div className="flex flex-col items-end justify-center leading-tight">
-        <span
-          role="link"
-          tabIndex={0}
-          onClick={handleProfileNavigation}
-          onKeyDown={handleProfileTextKeyDown}
-          className="inline-block max-w-full cursor-pointer truncate text-sm font-medium text-white"
-          title={t('header.profile', 'Profile')}
-        >
-          {userName || userEmail}
-        </span>
-        {userName && userEmail && (
+          <span
+            role="link"
+            tabIndex={0}
+            onClick={handleProfileNavigation}
+            onKeyDown={handleProfileTextKeyDown}
+            className="inline-block max-w-full cursor-pointer truncate text-sm font-medium"
+            style={{ color: '#1F1B16' }}
+            title={t('header.profile', 'Profile')}
+          >
+            {userName || userEmail}
+          </span>
+          {userName && userEmail && (
             <span
               role="link"
               tabIndex={0}
               onClick={handleProfileNavigation}
               onKeyDown={handleProfileTextKeyDown}
-              className="mt-0.5 inline-block max-w-full cursor-pointer truncate text-xs text-white/70"
+              className="mt-0.5 inline-block max-w-full cursor-pointer truncate text-xs"
+              style={{ color: '#8A7A66' }}
               title={t('header.profile', 'Profile')}
             >
               {userEmail}
             </span>
-        )}
+          )}
         </div>
       </div>
       <button
         onClick={handleProfileNavigation}
-        className="overflow-hidden rounded-full bg-white/15 p-0.5 hover:scale-110 transition-transform shadow-sm"
+        className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
+        style={{ background: '#F2E9D8', boxShadow: '0 0 0 2px #1F1B16' }}
         title={t('header.profile', 'Profile')}
       >
         <UserAvatar
           image={userImage}
           userName={userName}
           userEmail={userEmail}
-          className="h-9 w-9 bg-white text-purple-600"
+          className="h-9 w-9 bg-[#9B8CFF] text-white"
           textClassName="text-sm font-bold"
         />
       </button>
       <button
         onClick={handleSignOut}
-        className="px-4 py-2 rounded-lg font-medium text-white/90 hover:bg-white/10 transition-colors"
+        className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
+        style={{ color: '#4A3F33', fontSize: 14 }}
       >
-        🚪 {t('header.logout', 'Logout')}
+        {t('header.logout', 'Logout')}
       </button>
     </div>
   )
