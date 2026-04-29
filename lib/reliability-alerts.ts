@@ -356,26 +356,50 @@ export async function runReliabilityAlertCycle(
 
         issueNumbers.set(rule.alertKey, issueNumber)
 
-        await prisma.operationalAlertStates.upsert({
-          where: { alertKey: rule.alertKey },
-          create: {
-            alertKey: rule.alertKey,
-            isOpen: true,
-            lastValue: numericValue,
-            lastTriggeredAt: new Date(),
-            lastNotifiedAt: shouldNotify ? new Date() : null,
-            ...(githubIssuePersistenceAvailable ? { githubIssueNumber: issueNumber } : {}),
-          },
-          update: {
-            isOpen: true,
-            lastValue: numericValue,
-            lastTriggeredAt: new Date(),
-            ...(shouldNotify ? { lastNotifiedAt: new Date() } : {}),
-            ...(githubIssuePersistenceAvailable && issueNumber !== null
-              ? { githubIssueNumber: issueNumber }
-              : {}),
-          },
-        })
+        try {
+          await prisma.operationalAlertStates.upsert({
+            where: { alertKey: rule.alertKey },
+            create: {
+              alertKey: rule.alertKey,
+              isOpen: true,
+              lastValue: numericValue,
+              lastTriggeredAt: new Date(),
+              lastNotifiedAt: shouldNotify ? new Date() : null,
+              ...(githubIssuePersistenceAvailable ? { githubIssueNumber: issueNumber } : {}),
+            },
+            update: {
+              isOpen: true,
+              lastValue: numericValue,
+              lastTriggeredAt: new Date(),
+              ...(shouldNotify ? { lastNotifiedAt: new Date() } : {}),
+              ...(githubIssuePersistenceAvailable && issueNumber !== null
+                ? { githubIssueNumber: issueNumber }
+                : {}),
+            },
+          })
+        } catch (upsertError) {
+          if (isMissingOperationalAlertStatesGithubIssueColumnError(upsertError)) {
+            githubIssuePersistenceAvailable = false
+            await prisma.operationalAlertStates.upsert({
+              where: { alertKey: rule.alertKey },
+              create: {
+                alertKey: rule.alertKey,
+                isOpen: true,
+                lastValue: numericValue,
+                lastTriggeredAt: new Date(),
+                lastNotifiedAt: shouldNotify ? new Date() : null,
+              },
+              update: {
+                isOpen: true,
+                lastValue: numericValue,
+                lastTriggeredAt: new Date(),
+                ...(shouldNotify ? { lastNotifiedAt: new Date() } : {}),
+              },
+            })
+          } else {
+            throw upsertError
+          }
+        }
 
         continue
       }
@@ -401,15 +425,31 @@ export async function runReliabilityAlertCycle(
           })
         }
 
-        await prisma.operationalAlertStates.update({
-          where: { alertKey: rule.alertKey },
-          data: {
-            isOpen: false,
-            lastValue: numericValue,
-            lastResolvedAt: new Date(),
-            ...(githubIssuePersistenceAvailable ? { githubIssueNumber: null } : {}),
-          },
-        })
+        try {
+          await prisma.operationalAlertStates.update({
+            where: { alertKey: rule.alertKey },
+            data: {
+              isOpen: false,
+              lastValue: numericValue,
+              lastResolvedAt: new Date(),
+              ...(githubIssuePersistenceAvailable ? { githubIssueNumber: null } : {}),
+            },
+          })
+        } catch (updateError) {
+          if (isMissingOperationalAlertStatesGithubIssueColumnError(updateError)) {
+            githubIssuePersistenceAvailable = false
+            await prisma.operationalAlertStates.update({
+              where: { alertKey: rule.alertKey },
+              data: {
+                isOpen: false,
+                lastValue: numericValue,
+                lastResolvedAt: new Date(),
+              },
+            })
+          } else {
+            throw updateError
+          }
+        }
       }
     }
   } else {
