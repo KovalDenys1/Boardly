@@ -1707,6 +1707,8 @@ const uk: Translation = {
     socialRematchMessage: '{{player}} запросив реванш у {{lobby}}',
     socialJoinAction: 'Увійти',
     socialOpenAction: 'Відкрити',
+    hostReassigned: '👑 {{player}} тепер хост',
+    youAreNowHost: '👑 Ви тепер хост',
   },
   deleteAccount: {
     title: 'Видалення Акаунту',

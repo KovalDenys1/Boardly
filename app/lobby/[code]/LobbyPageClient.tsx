@@ -732,6 +732,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     username?: string
     playerName?: string
     remainingPlayers?: number
+    nextCreatorId?: string
+    nextCreatorName?: string
   }) => {
     clientLogger.log('📡 Player left:', data)
 
@@ -742,6 +744,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const departedPlayerName = data.username || data.playerName
     if (departedPlayerName) {
       showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+    }
+
+    if (data.nextCreatorId) {
+      const currentUserId = isGuest ? guestId : session?.user?.id
+      if (data.nextCreatorId === currentUserId) {
+        showToast.success('toast.youAreNowHost')
+      } else if (data.nextCreatorName) {
+        showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
+      }
     }
 
     if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
@@ -755,7 +766,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (loadLobbyRef.current) {
       void loadLobbyRef.current()
     }
-  }, [minPlayersRequired, triggerLifecycleRedirect])
+  }, [isGuest, guestId, session?.user?.id, minPlayersRequired, triggerLifecycleRedirect])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
   const canJoinSocketLobbyRoom = React.useMemo(() => {
