@@ -1692,7 +1692,9 @@ const no = {
     socialInviteMessage: '{{player}} inviterte deg til {{lobby}}',
     socialRematchMessage: '{{player}} ba om revansj i {{lobby}}',
     socialJoinAction: 'Bli med',
-    socialOpenAction: 'Åpne'
+    socialOpenAction: 'Åpne',
+    hostReassigned: '👑 {{player}} er nå vert',
+    youAreNowHost: '👑 Du er nå vert',
   },
   deleteAccount: {
     title: 'Slett konto',

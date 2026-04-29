@@ -1705,6 +1705,8 @@ const en = {
     socialRematchMessage: '{{player}} asked for a rematch in {{lobby}}',
     socialJoinAction: 'Join',
     socialOpenAction: 'Open',
+    hostReassigned: '👑 {{player}} is now the host',
+    youAreNowHost: '👑 You are now the host',
   },
   deleteAccount: {
     title: 'Delete Account',

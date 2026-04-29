@@ -1692,7 +1692,9 @@ const ru = {
     socialInviteMessage: '{{player}} пригласил вас в {{lobby}}',
     socialRematchMessage: '{{player}} запросил реванш в {{lobby}}',
     socialJoinAction: 'Войти',
-    socialOpenAction: 'Открыть'
+    socialOpenAction: 'Открыть',
+    hostReassigned: '👑 {{player}} теперь хост',
+    youAreNowHost: '👑 Вы теперь хост',
   },
   deleteAccount: {
     title: 'Удалить аккаунт',
