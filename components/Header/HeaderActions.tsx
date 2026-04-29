@@ -55,15 +55,15 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <div className="hidden lg:flex shrink-0 items-center gap-2">
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
-          style={{ color: '#4A3F33', fontSize: 15 }}
+          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
+          style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
         >
           {t('header.login', 'Login')}
         </button>
         <button
           onClick={handleGuestExit}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
-          style={{ color: '#4A3F33', fontSize: 15, border: '1.5px solid #E8DDC8' }}
+          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
+          style={{ color: 'var(--bd-ink-soft)', fontSize: 15, border: '1.5px solid var(--bd-line)' }}
         >
           {t('guest.exit', 'Exit Guest')}
         </button>
@@ -76,8 +76,8 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <div className="hidden lg:flex shrink-0 items-center gap-2">
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
-          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
-          style={{ color: '#4A3F33', fontSize: 15 }}
+          className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
+          style={{ color: 'var(--bd-ink-soft)', fontSize: 15 }}
         >
           {t('header.login', 'Login')}
         </button>
@@ -85,10 +85,10 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
           onClick={() => router.push(buildCurrentAuthUrl('register'))}
           className="px-4 py-2 rounded-xl font-semibold transition-all duration-150 hover:-translate-y-px"
           style={{
-            background: '#1F1B16',
-            color: '#FBF6EE',
+            background: 'var(--bd-ink)',
+            color: 'var(--bd-bg)',
             fontSize: 15,
-            boxShadow: '0 4px 0 #FF6B5B',
+            boxShadow: '0 4px 0 var(--bd-coral)',
           }}
         >
           {t('header.register', 'Play free')}
@@ -107,7 +107,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
             onClick={handleProfileNavigation}
             onKeyDown={handleProfileTextKeyDown}
             className="inline-block max-w-full cursor-pointer truncate text-sm font-medium"
-            style={{ color: '#1F1B16' }}
+            style={{ color: 'var(--bd-ink)' }}
             title={t('header.profile', 'Profile')}
           >
             {userName || userEmail}
@@ -119,7 +119,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
               onClick={handleProfileNavigation}
               onKeyDown={handleProfileTextKeyDown}
               className="mt-0.5 inline-block max-w-full cursor-pointer truncate text-xs"
-              style={{ color: '#8A7A66' }}
+              style={{ color: 'var(--bd-ink-muted)' }}
               title={t('header.profile', 'Profile')}
             >
               {userEmail}
@@ -130,21 +130,21 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
       <button
         onClick={handleProfileNavigation}
         className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
-        style={{ background: '#F2E9D8', boxShadow: '0 0 0 2px #1F1B16' }}
+        style={{ background: 'var(--bd-bg2)', boxShadow: '0 0 0 2px var(--bd-ink)' }}
         title={t('header.profile', 'Profile')}
       >
         <UserAvatar
           image={userImage}
           userName={userName}
           userEmail={userEmail}
-          className="h-9 w-9 bg-[#9B8CFF] text-white"
+          className="h-9 w-9 bg-bd-lav text-white"
           textClassName="text-sm font-bold"
         />
       </button>
       <button
         onClick={handleSignOut}
-        className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-[#F2E9D8]"
-        style={{ color: '#4A3F33', fontSize: 14 }}
+        className="px-3 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
+        style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}
       >
         {t('header.logout', 'Logout')}
       </button>

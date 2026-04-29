@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import PlayerStatsDashboard from '@/components/PlayerStatsDashboard'
 
+const mockTranslate = (key: string) => key
+
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: mockTranslate,
   }),
 }))
 
@@ -98,11 +100,18 @@ describe('PlayerStatsDashboard', () => {
     expect(screen.getByText('75%')).toBeTruthy()
     expect(screen.getByText('18profile.stats.dashboard.summary.minutesSuffix')).toBeTruthy()
 
-    const gameSelect = screen.getByRole('combobox')
-    fireEvent.change(gameSelect, { target: { value: 'memory' } })
+    const gameSelect = screen.getByRole('button', {
+      name: 'profile.stats.dashboard.filters.gameLabel',
+    })
+    fireEvent.click(gameSelect)
+    fireEvent.click(screen.getByText('Memory'))
 
     await waitFor(() => {
-      expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('memory')
+      expect(
+        screen.getByRole('button', {
+          name: 'profile.stats.dashboard.filters.gameLabel',
+        }).textContent
+      ).toContain('Memory')
     })
 
     expect(screen.getByText('160')).toBeTruthy()

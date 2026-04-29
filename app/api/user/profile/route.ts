@@ -34,7 +34,18 @@ type SelectedProfileUser = {
   }
 }
 
-function buildProfilePayload(user: SelectedProfileUser) {
+type ProfileAchievementStats = {
+  completedGamesCount: number
+  winsCount: number
+}
+
+function buildProfilePayload(
+  user: SelectedProfileUser,
+  achievementStats: ProfileAchievementStats = {
+    completedGamesCount: user._count.players,
+    winsCount: 0,
+  }
+) {
   return {
     id: user.id,
     username: user.username,
@@ -47,6 +58,34 @@ function buildProfilePayload(user: SelectedProfileUser) {
     friendsCount: user._count.friendshipsInitiated + user._count.friendshipsReceived,
     gamesPlayed: user._count.players,
     linkedAccountsCount: user._count.accounts,
+    achievementStats,
+  }
+}
+
+async function getProfileAchievementStats(userId: string): Promise<ProfileAchievementStats> {
+  const [completedGamesCount, winsCount] = await Promise.all([
+    prisma.players.count({
+      where: {
+        userId,
+        game: {
+          status: 'finished',
+        },
+      },
+    }),
+    prisma.players.count({
+      where: {
+        userId,
+        isWinner: true,
+        game: {
+          status: 'finished',
+        },
+      },
+    }),
+  ])
+
+  return {
+    completedGamesCount,
+    winsCount,
   }
 }
 
@@ -87,14 +126,18 @@ async function getProfileHandler() {
     throw new AuthenticationError('User not found')
   }
 
+  const [publicProfileId, achievementStats] = await Promise.all([
+    user.publicProfileId ?? ensureUserHasPublicProfileId(session.user.id),
+    getProfileAchievementStats(session.user.id),
+  ])
+
   return NextResponse.json({
     user: buildProfilePayload(
-      user.publicProfileId
-        ? user
-        : {
-            ...user,
-            publicProfileId: await ensureUserHasPublicProfileId(session.user.id),
-          }
+      {
+        ...user,
+        publicProfileId,
+      },
+      achievementStats
     ),
   })
 }
@@ -201,15 +244,19 @@ async function patchProfileHandler(req: NextRequest) {
   }
 
   if (Object.keys(updateData).length === 0) {
+    const [publicProfileId, achievementStats] = await Promise.all([
+      currentUser.publicProfileId ?? ensureUserHasPublicProfileId(session.user.id),
+      getProfileAchievementStats(session.user.id),
+    ])
+
     return NextResponse.json({
       message: 'No changes applied',
       user: buildProfilePayload(
-        currentUser.publicProfileId
-          ? currentUser
-          : {
-              ...currentUser,
-              publicProfileId: await ensureUserHasPublicProfileId(session.user.id),
-            }
+        {
+          ...currentUser,
+          publicProfileId,
+        },
+        achievementStats
       ),
     })
   }
@@ -273,17 +320,21 @@ async function patchProfileHandler(req: NextRequest) {
     emailChangePending: Boolean(updateResult.verificationToken),
   })
 
+  const [publicProfileId, achievementStats] = await Promise.all([
+    updateResult.user.publicProfileId ?? ensureUserHasPublicProfileId(session.user.id),
+    getProfileAchievementStats(session.user.id),
+  ])
+
   return NextResponse.json({
     message: updateResult.verificationToken
       ? 'Profile updated. Please verify your new email address.'
       : 'Profile updated successfully',
     user: buildProfilePayload(
-      updateResult.user.publicProfileId
-        ? updateResult.user
-        : {
-            ...updateResult.user,
-            publicProfileId: await ensureUserHasPublicProfileId(session.user.id),
-          }
+      {
+        ...updateResult.user,
+        publicProfileId,
+      },
+      achievementStats
     ),
     emailChangePending: Boolean(updateResult.verificationToken),
   })

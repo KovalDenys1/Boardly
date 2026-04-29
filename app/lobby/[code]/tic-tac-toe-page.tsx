@@ -261,7 +261,7 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                 <button onClick={onLeave} style={{
                     padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
-                    background: '#FFF8EC', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
+                    background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
                 }}>Leave</button>
                 <button onClick={onPlayAgain} disabled={isLoading} style={{
                     padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
@@ -277,10 +277,10 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
 function TttBgGrid() {
     return (
         <svg width="180" height="180" viewBox="0 0 100 100" fill="none">
-            <path d="M33 10 V90 M67 10 V90 M10 33 H90 M10 67 H90" stroke="#1F1B16" strokeWidth="3" strokeLinecap="round" opacity="0.15" />
-            <path d="M22 22 L30 30 M30 22 L22 30" stroke="#FF6B5B" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="50" cy="50" r="6" stroke="#9B8CFF" strokeWidth="3" fill="none" />
-            <path d="M74 70 L82 78 M82 70 L74 78" stroke="#FF6B5B" strokeWidth="3" strokeLinecap="round" />
+            <path d="M33 10 V90 M67 10 V90 M10 33 H90 M10 67 H90" style={{ stroke: 'var(--bd-ink)' }} strokeWidth="3" strokeLinecap="round" opacity="0.15" />
+            <path d="M22 22 L30 30 M30 22 L22 30" style={{ stroke: 'var(--bd-coral)' }} strokeWidth="3" strokeLinecap="round" />
+            <circle cx="50" cy="50" r="6" style={{ stroke: 'var(--bd-lav)' }} strokeWidth="3" fill="none" />
+            <path d="M74 70 L82 78 M82 70 L74 78" style={{ stroke: 'var(--bd-coral)' }} strokeWidth="3" strokeLinecap="round" />
         </svg>
     )
 }
@@ -878,13 +878,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     const actionsSection = (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button disabled style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: '#FFF8EC', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)', cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5 }}>
+            <button disabled style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)', cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5 }}>
                 ↶ Undo
             </button>
-            <button disabled style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: '#FFF8EC', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)', cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5 }}>
+            <button disabled style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)', cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5 }}>
                 🤝 Draw
             </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: '#FFF8EC', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
                 🏳 Resign
             </button>
         </div>
@@ -902,7 +902,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 {localMoveHistory.length === 0
                     ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — X starts.</div>
                     : localMoveHistory.slice().reverse().map(m => (
-                        <div key={m.n} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: '#FFF8EC' }}>
+                        <div key={m.n} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                                 #{String(m.n).padStart(2, '0')}
                             </span>
@@ -946,7 +946,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                                     <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)' }}>{msg.time}</span>
                                 </div>
                                 <div style={{
-                                    background: '#FFF8EC', padding: '5px 9px', borderRadius: 8,
+                                    background: 'var(--bd-card-warm)', padding: '5px 9px', borderRadius: 8,
                                     fontSize: 12, lineHeight: 1.35, display: 'inline-block',
                                     maxWidth: '100%', wordBreak: 'break-word', marginTop: 2, color: 'var(--bd-ink)',
                                 }}>{msg.text}</div>
@@ -959,7 +959,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
                     {['gg', 'nice', '😂', '🔥', '🤝'].map(e => (
                         <button key={e} onClick={() => quickReact(e)} style={{
-                            padding: '3px 8px', borderRadius: 999, background: '#FFF8EC', border: '1px solid var(--bd-line)',
+                            padding: '3px 8px', borderRadius: 999, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)',
                             fontSize: 11, cursor: 'pointer', fontWeight: 600, color: 'var(--bd-ink-soft)', fontFamily: 'inherit',
                         }}>{e}</button>
                     ))}

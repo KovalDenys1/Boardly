@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { clientLogger } from '@/lib/client-logger'
-import { formatGameTypeLabel, getGameStatusBadgeColor } from '@/lib/game-display'
+import { formatGameTypeLabel } from '@/lib/game-display'
 import LoadingSpinner from './LoadingSpinner'
 import GameResultsModal from './GameResultsModal'
 import ReplayViewerModal from './ReplayViewerModal'
+import BoardlySelect from './ui/BoardlySelect'
 
 const GAME_HISTORY_STATUS_KEYS = {
   waiting: 'profile.gameHistory.waiting',
@@ -26,20 +27,20 @@ const GAME_TYPE_FILTER_OPTIONS = [
   'memory',
 ] as const
 
-const STATUS_FILTER_OPTIONS = [
-  'all',
-  'finished',
-  'playing',
-  'abandoned',
-  'cancelled',
-] as const
+const STATUS_FILTER_OPTIONS = ['all', 'finished', 'playing', 'abandoned', 'cancelled'] as const
 
-const primarySurfaceClassName =
-  'rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/60'
-const secondarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-slate-50/80 dark:border-slate-700/60 dark:bg-slate-800/60'
-const tertiarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-white/80 dark:border-slate-700/60 dark:bg-slate-900/65'
+const panelClassName =
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
+const warmSurfaceClassName =
+  'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 dark:border-slate-700/60 dark:bg-slate-800/70'
+const tileClassName =
+  'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
+const primaryButtonClassName =
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-65'
+const secondaryButtonClassName =
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_#E8DDC8] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+const eyebrowClassName =
+  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
 
 interface Player {
   id: string
@@ -81,26 +82,70 @@ interface GameHistoryResponse {
   }
 }
 
-function getFilterSelectClassName(isActive: boolean): string {
-  return `w-full appearance-none rounded-2xl border bg-white px-4 py-3 pr-10 text-sm font-medium shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:bg-slate-900 ${
-    isActive
-      ? 'border-blue-400 text-blue-700 dark:border-blue-400 dark:text-blue-300'
-      : 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-200'
-  }`
+function BoardIcon() {
+  return (
+    <svg aria-hidden className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M9 3v18" />
+    </svg>
+  )
+}
+
+function ClockIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  )
+}
+
+function ReplayIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 3v6h6" />
+    </svg>
+  )
+}
+
+function ViewIcon() {
+  return (
+    <svg aria-hidden className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
 }
 
 function getStatusAccentClassName(status: string): string {
   switch (status) {
     case 'finished':
-      return 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500'
+      return 'bg-bd-mint'
     case 'playing':
-      return 'bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500'
+      return 'bg-bd-sun'
     case 'abandoned':
-      return 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500'
+      return 'bg-bd-coral'
     case 'cancelled':
-      return 'bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600'
+      return 'bg-bd-bg2 dark:bg-slate-700'
     default:
-      return 'bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500'
+      return 'bg-bd-lav'
+  }
+}
+
+function getStatusBadgeClassName(status: string): string {
+  switch (status) {
+    case 'finished':
+      return 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint'
+    case 'playing':
+      return 'bg-bd-sun/25 text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun'
+    case 'abandoned':
+      return 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300'
+    case 'cancelled':
+      return 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300'
+    default:
+      return 'bg-bd-lav/20 text-[#6758d8] dark:bg-bd-lav/15 dark:text-bd-lav'
   }
 }
 
@@ -228,7 +273,7 @@ export default function GameHistory() {
 
   if (loading && games.length === 0) {
     return (
-      <div className={`${primarySurfaceClassName} flex items-center justify-center py-14`}>
+      <div className={`${panelClassName} flex min-h-[220px] items-center justify-center`}>
         <LoadingSpinner />
       </div>
     )
@@ -246,26 +291,23 @@ export default function GameHistory() {
       />
       <ReplayViewerModal gameId={selectedReplayGameId} onClose={() => setSelectedReplayGameId(null)} />
 
-      <div className={`${primarySurfaceClassName} overflow-hidden`}>
-        <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className={`${panelClassName} overflow-hidden`}>
+        <div className="relative p-6 sm:p-7">
+          <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                {t('profile.gameHistory.title')}
-              </p>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <p className={eyebrowClassName}>{t('profile.gameHistory.title')}</p>
+              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink dark:text-white">
                 {t('profile.gameHistory.title')}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm text-bd-ink-muted dark:text-slate-400">
                 {getVisibleRangeLabel()}
               </p>
             </div>
 
-            <div className={`${tertiarySurfaceClassName} px-4 py-3`}>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                {t('profile.gameHistory.status')}
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">
+            <div className={`${warmSurfaceClassName} px-4 py-3`}>
+              <p className={eyebrowClassName}>{t('profile.gameHistory.status')}</p>
+              <p className="mt-2 text-sm font-semibold text-bd-ink dark:text-white">
                 {formatStatusLabel(statusFilter)}
               </p>
             </div>
@@ -273,93 +315,69 @@ export default function GameHistory() {
         </div>
 
         <div className="space-y-5 p-5 sm:p-6">
-          <div className={`${secondarySurfaceClassName} p-4 sm:p-5`}>
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_1fr] lg:items-stretch">
-              <fieldset className="min-w-0 lg:flex lg:flex-col lg:justify-center">
-                <legend className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  {t('profile.gameHistory.gameType')}
-                </legend>
-                <div className="mt-3 lg:flex lg:flex-1 lg:items-center">
-                  <div className="relative w-full max-w-sm lg:max-w-md">
-                    <select
-                      id="game-history-game-type"
-                      name="gameType"
-                      value={gameTypeFilter}
-                      onChange={(event) => handleGameTypeFilterChange(event.target.value)}
-                      className={getFilterSelectClassName(gameTypeFilter !== 'all')}
-                    >
-                      {GAME_TYPE_FILTER_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {formatGameTypeFilterLabel(option)}
-                        </option>
-                      ))}
-                    </select>
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400"
-                    >
-                      ▾
-                    </span>
-                  </div>
+          <div className={`${warmSurfaceClassName} p-4 sm:p-5`}>
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.35fr_1fr]">
+              <fieldset className="min-w-0">
+                <legend className={eyebrowClassName}>{t('profile.gameHistory.gameType')}</legend>
+                <div className="mt-3 max-w-sm lg:max-w-md">
+                  <BoardlySelect
+                    value={gameTypeFilter}
+                    onChange={handleGameTypeFilterChange}
+                    ariaLabel={t('profile.gameHistory.gameType')}
+                    options={GAME_TYPE_FILTER_OPTIONS.map((option) => ({
+                      value: option,
+                      label: formatGameTypeFilterLabel(option),
+                    }))}
+                    renderValue={(option) => (
+                      <span className={gameTypeFilter !== 'all' ? 'block truncate text-bd-lav-deep dark:text-bd-lav' : 'block truncate'}>
+                        {option?.label ?? ''}
+                      </span>
+                    )}
+                  />
                 </div>
               </fieldset>
 
-              <fieldset className="min-w-0 lg:flex lg:flex-col lg:justify-center">
-                <legend className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  {t('profile.gameHistory.status')}
-                </legend>
-                <div className="mt-3 lg:flex lg:flex-1 lg:items-center">
-                  <div className="relative w-full max-w-sm">
-                    <select
-                      id="game-history-status"
-                      name="status"
-                      value={statusFilter}
-                      onChange={(event) => handleStatusFilterChange(event.target.value)}
-                      className={getFilterSelectClassName(statusFilter !== 'all')}
-                    >
-                      {STATUS_FILTER_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {formatStatusLabel(option)}
-                        </option>
-                      ))}
-                    </select>
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400"
-                    >
-                      ▾
-                    </span>
-                  </div>
+              <fieldset className="min-w-0">
+                <legend className={eyebrowClassName}>{t('profile.gameHistory.status')}</legend>
+                <div className="mt-3 max-w-sm">
+                  <BoardlySelect
+                    value={statusFilter}
+                    onChange={handleStatusFilterChange}
+                    ariaLabel={t('profile.gameHistory.status')}
+                    options={STATUS_FILTER_OPTIONS.map((option) => ({
+                      value: option,
+                      label: formatStatusLabel(option),
+                    }))}
+                    renderValue={(option) => (
+                      <span className={statusFilter !== 'all' ? 'block truncate text-bd-lav-deep dark:text-bd-lav' : 'block truncate'}>
+                        {option?.label ?? ''}
+                      </span>
+                    )}
+                  />
                 </div>
               </fieldset>
             </div>
           </div>
 
           {error ? (
-            <div className="overflow-hidden rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5">
-              <div className="border-l-4 border-rose-400 px-5 py-5 sm:px-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-2xl shadow-sm dark:bg-rose-500/15">
-                    !
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{error}</p>
-                  </div>
-                </div>
+            <div className="overflow-hidden rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] dark:border-red-500/30 dark:bg-red-500/10">
+              <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
+                <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">{error}</p>
               </div>
             </div>
           ) : null}
 
           {games.length === 0 && !loading ? (
-            <div className={`${secondarySurfaceClassName} overflow-hidden`}>
-              <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-[22px] border border-slate-200/70 bg-white text-4xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
-                  🎮
+            <div className={`${panelClassName} relative overflow-hidden`}>
+              <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
+              <div className="relative p-6 sm:p-7">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                  <BoardIcon />
                 </div>
-                <h3 className="mt-5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink dark:text-white">
                   {t('profile.gameHistory.noGames')}
                 </h3>
-                <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400 sm:text-base">
+                <p className="mt-2 max-w-xl text-sm text-bd-ink-muted dark:text-slate-400 sm:text-base">
                   {getVisibleRangeLabel()}
                 </p>
               </div>
@@ -367,52 +385,49 @@ export default function GameHistory() {
           ) : (
             <div className="grid gap-4">
               {games.map((game) => (
-                <div key={game.id} className={`${tertiarySurfaceClassName} group relative overflow-hidden`}>
-                  <div className={`absolute inset-x-0 top-0 h-1 ${getStatusAccentClassName(game.status)}`} />
+                <div key={game.id} className={`${tileClassName} group relative overflow-hidden`}>
+                  <div className={`absolute inset-x-0 top-0 h-1.5 ${getStatusAccentClassName(game.status)}`} />
+
                   <div className="p-5 sm:p-6">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200/70 bg-white text-2xl shadow-sm dark:border-slate-700/60 dark:bg-slate-800">
-                            🎮
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                            <BoardIcon />
                           </div>
                           <div className="min-w-0">
                             <h3
-                              className="truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+                              className="truncate text-xl font-bold text-bd-ink dark:text-white"
                               title={game.lobbyName}
                             >
                               {game.lobbyName}
                             </h3>
-                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                              {formatGameTypeLabel(game.gameType)} • {formatDate(game.createdAt)}
+                            <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                              {formatGameTypeLabel(game.gameType)} · {formatDate(game.createdAt)}
                             </p>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
-                            game.status
-                          )}`}
-                        >
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${getStatusBadgeClassName(game.status)}`}>
                           {formatStatusLabel(game.status)}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="inline-flex items-center rounded-full bg-bd-bg2 px-3 py-1 font-mono text-xs font-bold text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300">
                           {game.lobbyCode}
                         </span>
                       </div>
                     </div>
 
-                    <div className={`${secondarySurfaceClassName} mt-5 p-4`}>
+                    <div className={`${warmSurfaceClassName} mt-5 p-4`}>
                       <div className="flex flex-wrap gap-2.5">
                         {game.players.map((player, index) => (
                           <div
                             key={player.id}
                             className={`inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl border px-3 py-2 ${
                               player.isWinner
-                                ? 'border-yellow-300 bg-yellow-50 text-yellow-900 dark:border-yellow-500/40 dark:bg-yellow-500/10 dark:text-yellow-200'
-                                : 'border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
+                                ? 'border-[#E8C46C] bg-bd-sun/20 text-bd-ink'
+                                : 'border-bd-line bg-white text-bd-ink-soft dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
                             }`}
                           >
                             <span
@@ -420,30 +435,36 @@ export default function GameHistory() {
                               title={player.username || `Player ${index + 1}`}
                             >
                               {player.username || `Player ${index + 1}`}
-                              {(player.isBot || player.bot) && ' 🤖'}
                             </span>
+                            {(player.isBot || player.bot) && (
+                              <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400">
+                                Bot
+                              </span>
+                            )}
                             {player.finalScore !== null ? (
                               <span className="shrink-0 text-xs opacity-80">
                                 {player.finalScore} {t('profile.gameResults.points')}
                               </span>
                             ) : null}
-                            {player.isWinner ? <span aria-hidden>👑</span> : null}
+                            {player.isWinner ? (
+                              <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]">
+                                Win
+                              </span>
+                            ) : null}
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                      <p className="inline-flex items-center gap-1.5 text-sm text-bd-ink-muted dark:text-slate-400">
+                        <ClockIcon />
                         {formatDate(game.updatedAt)}
                       </p>
 
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedGameId(game.id)}
-                          className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
-                        >
+                        <button type="button" onClick={() => setSelectedGameId(game.id)} className={secondaryButtonClassName}>
+                          <ViewIcon />
                           {t('profile.gameHistory.clickToView')}
                         </button>
                         <div className="flex flex-col gap-1">
@@ -451,12 +472,13 @@ export default function GameHistory() {
                             type="button"
                             onClick={() => setSelectedReplayGameId(game.id)}
                             disabled={!game.hasReplay}
-                            className="inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                            className={game.hasReplay ? primaryButtonClassName : secondaryButtonClassName}
                           >
+                            <ReplayIcon />
                             {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
                           </button>
                           {!game.hasReplay && (
-                            <p className="text-xs text-slate-400 dark:text-slate-500 px-1">
+                            <p className="px-1 text-xs text-bd-ink-muted dark:text-slate-500">
                               {game.status === 'abandoned'
                                 ? t('profile.gameResults.replayUnavailableAbandoned')
                                 : game.status === 'cancelled'
@@ -476,27 +498,17 @@ export default function GameHistory() {
           )}
 
           {(offset > 0 || hasMore) && (
-            <div className={`${secondarySurfaceClassName} p-4 sm:p-5`}>
+            <div className={`${warmSurfaceClassName} p-4 sm:p-5`}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={handlePreviousPage}
-                  disabled={offset === 0}
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
-                >
+                <button type="button" onClick={handlePreviousPage} disabled={offset === 0} className={secondaryButtonClassName}>
                   {t('common.previous')}
                 </button>
 
-                <span className="text-center text-sm text-slate-600 dark:text-slate-400">
+                <span className="text-center text-sm text-bd-ink-muted dark:text-slate-400">
                   {getVisibleRangeLabel()}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={handleNextPage}
-                  disabled={!hasMore}
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-900"
-                >
+                <button type="button" onClick={handleNextPage} disabled={!hasMore} className={secondaryButtonClassName}>
                   {t('common.next')}
                 </button>
               </div>

@@ -27,12 +27,12 @@ export default function Die({ value = 5, size = 56, held = false, animationDelay
       style={{
         display: 'inline-grid',
         placeItems: 'center',
-        background: held ? '#FFC44D' : 'white',
-        border: '2px solid #1F1B16',
+        background: held ? 'var(--bd-sun)' : 'white',
+        border: '2px solid var(--bd-ink)',
         borderRadius: radius,
         width: size,
         height: size,
-        boxShadow: '0 4px 0 #1F1B16',
+        boxShadow: '0 4px 0 var(--bd-ink)',
         flexShrink: 0,
         transform: held ? `translateY(-4px) rotate(-3deg)` : rotate ? `rotate(${rotate})` : undefined,
         animationDelay,
@@ -52,7 +52,7 @@ export default function Die({ value = 5, size = 56, held = false, animationDelay
           <div
             key={i}
             style={{
-              background: '#1F1B16',
+              background: 'var(--bd-ink)',
               borderRadius: '50%',
               width: pipSize,
               height: pipSize,

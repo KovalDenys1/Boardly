@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import BoardlySelect from '@/components/ui/BoardlySelect'
 import { clientLogger } from '@/lib/client-logger'
 import { formatGameTypeLabel } from '@/lib/game-display'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -51,12 +52,14 @@ interface DateRange {
 
 type RangePreset = 30 | 90 | 'all'
 
-const primarySurfaceClassName =
-  'rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/60'
-const secondarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-slate-50/80 dark:border-slate-700/60 dark:bg-slate-800/60'
-const tertiarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-white/80 dark:border-slate-700/60 dark:bg-slate-900/65'
+const panelClassName =
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
+const warmSurfaceClassName =
+  'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 dark:border-slate-700/60 dark:bg-slate-800/70'
+const tileClassName =
+  'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
+const eyebrowClassName =
+  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
 
 function formatPercent(value: number): string {
   return `${value}%`
@@ -64,14 +67,6 @@ function formatPercent(value: number): string {
 
 function supportsScoreMetrics(stats: ByGameStats): boolean {
   return stats.avgScore !== null || stats.bestScore !== null
-}
-
-function getGameSelectClassName(isActive: boolean): string {
-  return `w-full appearance-none rounded-2xl border bg-white px-4 py-3 pr-10 text-sm font-medium shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:bg-slate-900 ${
-    isActive
-      ? 'border-blue-400 text-blue-700 dark:border-blue-400 dark:text-blue-300'
-      : 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-200'
-  }`
 }
 
 function toDateInputValue(date: Date): string {
@@ -174,6 +169,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         id: 'games',
         label: t('profile.stats.dashboard.summary.totalGames'),
         value: String(stats.overall.totalGames),
+        accentClassName: 'bg-bd-coral text-bd-coral-deep',
       },
       {
         id: 'favoriteGame',
@@ -181,11 +177,13 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         value: stats.overall.favoriteGame
           ? formatGameTypeLabel(stats.overall.favoriteGame)
           : t('profile.stats.dashboard.common.notAvailable'),
+        accentClassName: 'bg-bd-mint text-bd-mint-deep',
       },
       {
         id: 'winRate',
         label: t('profile.stats.dashboard.summary.winRate'),
         value: formatPercent(stats.overall.winRate),
+        accentClassName: 'bg-bd-lav text-[#6758d8]',
       },
       {
         id: 'avgDuration',
@@ -193,6 +191,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         value: `${Math.round(stats.overall.avgGameDurationMinutes)}${t(
           'profile.stats.dashboard.summary.minutesSuffix'
         )}`,
+        accentClassName: 'bg-bd-sun text-[#9b6b00]',
       },
     ]
   }, [stats, t])
@@ -215,16 +214,19 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         id: 'wins',
         label: t('profile.stats.dashboard.summary.wins'),
         value: selectedGameStats.wins,
+        accentClassName: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
       },
       {
         id: 'losses',
         label: t('profile.stats.dashboard.summary.losses'),
         value: selectedGameStats.losses,
+        accentClassName: 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300',
       },
       {
         id: 'draws',
         label: t('profile.stats.dashboard.summary.draws'),
         value: selectedGameStats.draws,
+        accentClassName: 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300',
       },
     ]
   }, [selectedGameStats, t])
@@ -330,7 +332,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
   if (loading && !stats) {
     return (
-      <div className={`${primarySurfaceClassName} flex items-center justify-center py-14`}>
+      <div className={`${panelClassName} flex min-h-[220px] items-center justify-center`}>
         <LoadingSpinner />
       </div>
     )
@@ -338,22 +340,21 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
   return (
     <div className="space-y-6">
-      <div className={`${primarySurfaceClassName} overflow-hidden`}>
-        <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className={`${panelClassName} overflow-hidden`}>
+        <div className="relative p-6 sm:p-7">
+          <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                {t('profile.stats.title')}
-              </p>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <p className={eyebrowClassName}>{t('profile.stats.title')}</p>
+              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink dark:text-white">
                 {t('profile.stats.dashboard.title')}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm text-bd-ink-muted dark:text-slate-400">
                 {t('profile.stats.dashboard.subtitle')}
               </p>
             </div>
 
-            <div className={`${secondarySurfaceClassName} p-1.5`}>
+            <div className={`${warmSurfaceClassName} p-1.5`}>
               <div className="flex gap-1">
                 {([
                   { id: 30, label: t('profile.stats.dashboard.filters.last30Days') },
@@ -366,8 +367,8 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                     onClick={() => selectPreset(preset.id)}
                     className={`min-h-[44px] rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all ${
                       rangePreset === preset.id
-                        ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-800 dark:text-blue-400 dark:ring-slate-700/70'
-                        : 'text-slate-500 hover:bg-white/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
+                        ? 'bg-bd-lav text-white shadow-[0_4px_0_#7867E8]'
+                        : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                     }`}
                   >
                     {preset.label}
@@ -380,16 +381,9 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       </div>
 
       {error ? (
-        <div className="overflow-hidden rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5">
-          <div className="border-l-4 border-rose-400 px-5 py-5 sm:px-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-2xl shadow-sm dark:bg-rose-500/15">
-                !
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{error}</p>
-              </div>
-            </div>
+        <div className="overflow-hidden rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] dark:border-red-500/30 dark:bg-red-500/10">
+          <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
+            <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">{error}</p>
           </div>
         </div>
       ) : null}
@@ -398,53 +392,49 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {summaryCards.map((card) => (
-              <div key={card.id} className={`${primarySurfaceClassName} min-w-0 p-5`}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  {card.label}
-                </p>
-                <p className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  {card.value}
-                </p>
+              <div key={card.id} className={`${panelClassName} min-w-0 overflow-hidden`}>
+                <div className="p-5">
+                  <p className={eyebrowClassName}>{card.label}</p>
+                  <p className="mt-4 text-2xl font-bold text-bd-ink dark:text-white">{card.value}</p>
+                </div>
+                <div className={`h-2 w-full ${card.accentClassName.split(' ')[0]}`} />
               </div>
             ))}
           </div>
 
-          <div className={`${primarySurfaceClassName} overflow-hidden`}>
-            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className={`${panelClassName} overflow-hidden`}>
+            <div className="relative border-b border-bd-line p-6 sm:p-7 dark:border-slate-700/60">
+              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="min-w-0">
-                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  <h3 className="text-2xl font-bold text-bd-ink dark:text-white">
                     {t('profile.stats.dashboard.sections.byGame.title')}
                   </h3>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
                     {t('profile.stats.dashboard.sections.byGame.subtitle')}
                   </p>
                 </div>
 
                 {stats.byGame.length > 0 ? (
                   <fieldset className="w-full lg:max-w-sm">
-                    <legend className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    <legend className={eyebrowClassName}>
                       {t('profile.stats.dashboard.filters.gameLabel')}
                     </legend>
-                    <div className="relative mt-3">
-                      <select
-                        id="profile-stats-game-select"
+                    <div className="mt-3">
+                      <BoardlySelect
                         value={selectedGameType}
-                        onChange={(event) => setSelectedGameType(event.target.value)}
-                        className={getGameSelectClassName(selectedGameType !== '')}
-                      >
-                        {stats.byGame.map((item) => (
-                          <option key={item.gameType} value={item.gameType}>
-                            {formatGameTypeLabel(item.gameType)}
-                          </option>
-                        ))}
-                      </select>
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400"
-                      >
-                        ▾
-                      </span>
+                        onChange={setSelectedGameType}
+                        ariaLabel={t('profile.stats.dashboard.filters.gameLabel')}
+                        options={stats.byGame.map((item) => ({
+                          value: item.gameType,
+                          label: formatGameTypeLabel(item.gameType),
+                          badge: String(item.gamesPlayed),
+                        }))}
+                        renderValue={(option) => (
+                          <span className="block truncate text-bd-lav-deep dark:text-bd-lav">
+                            {option?.label ?? ''}
+                          </span>
+                        )}
+                      />
                     </div>
                   </fieldset>
                 ) : null}
@@ -453,61 +443,57 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
             <div className="p-5 sm:p-6">
               {stats.byGame.length === 0 ? (
-                <div className={`${secondarySurfaceClassName} p-6 sm:p-8`}>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                <div className={`${warmSurfaceClassName} p-6 sm:p-8`}>
+                  <p className="text-sm text-bd-ink-muted dark:text-slate-400">
                     {t('profile.stats.dashboard.sections.byGame.empty')}
                   </p>
                 </div>
               ) : (
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)]">
                   <div className="space-y-5">
-                    <div className={`${secondarySurfaceClassName} p-5`}>
+                    <div className={`${warmSurfaceClassName} p-5`}>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                            {t('profile.stats.dashboard.filters.gameLabel')}
-                          </p>
-                          <p className="mt-3 truncate text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                          <p className={eyebrowClassName}>{t('profile.stats.dashboard.filters.gameLabel')}</p>
+                          <p className="mt-3 truncate text-2xl font-bold text-bd-ink dark:text-white">
                             {selectedGameLabel}
                           </p>
-                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                          <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
                             {t('profile.stats.dashboard.sections.byGame.selectedDescription')}
                           </p>
                         </div>
 
-                        <div className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-blue-300 dark:ring-slate-700/70">
+                        <div className="inline-flex items-center rounded-full bg-bd-lav/15 px-4 py-2 text-sm font-bold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
                           {selectedGameStats ? formatPercent(selectedGameStats.winRate) : formatPercent(0)}
                         </div>
                       </div>
 
                       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                         {recordItems.map((item) => (
-                          <div key={item.id} className={`${tertiarySurfaceClassName} px-4 py-4 text-center`}>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                          <div key={item.id} className={`${tileClassName} px-4 py-4 text-center`}>
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${item.accentClassName}`}>
                               {item.label}
-                            </p>
-                            <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                              {item.value}
-                            </p>
+                            </span>
+                            <p className="mt-3 text-3xl font-bold text-bd-ink dark:text-white">{item.value}</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div className={`${secondarySurfaceClassName} p-5`}>
-                      <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                    <div className={`${warmSurfaceClassName} p-5`}>
+                      <h4 className="text-lg font-bold text-bd-ink dark:text-white">
                         {t('profile.stats.dashboard.summary.wld')}
                       </h4>
                       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
                         {overallInsightItems.map((item) => (
                           <div
                             key={item.id}
-                            className={`${tertiarySurfaceClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}
+                            className={`${tileClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 sm:text-[11px]">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400 sm:text-[11px]">
                               {item.label}
                             </p>
-                            <p className="mt-3 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                            <p className="mt-3 text-xl font-bold text-bd-ink dark:text-white sm:text-2xl">
                               {item.value}
                             </p>
                           </div>
@@ -516,20 +502,18 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                     </div>
                   </div>
 
-                  <div className={`${secondarySurfaceClassName} flex h-full flex-col p-5`}>
-                    <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                  <div className={`${warmSurfaceClassName} flex h-full flex-col p-5`}>
+                    <h4 className="text-lg font-bold text-bd-ink dark:text-white">
                       {t('profile.stats.dashboard.summary.quickFacts')}
                     </h4>
                     <div className="mt-4 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-fr xl:grid-cols-1 xl:grid-rows-4">
                       {quickFacts.map((fact) => (
                         <div
                           key={fact.id}
-                          className={`${tertiarySurfaceClassName} flex h-full min-h-[96px] items-center justify-between gap-4 px-4 py-3`}
+                          className={`${tileClassName} flex h-full min-h-[96px] items-center justify-between gap-4 px-4 py-3`}
                         >
-                          <span className="text-sm text-slate-600 dark:text-slate-300">{fact.label}</span>
-                          <span className="text-base font-semibold text-slate-900 dark:text-white">
-                            {fact.value}
-                          </span>
+                          <span className="text-sm text-bd-ink-muted dark:text-slate-300">{fact.label}</span>
+                          <span className="text-base font-semibold text-bd-ink dark:text-white">{fact.value}</span>
                         </div>
                       ))}
                     </div>

@@ -1,16 +1,16 @@
 'use client'
 
 const ITEMS = [
-  { txt: 'Roll the dice',        icon: '🎲', color: '#FF6B5B' },
-  { txt: 'Catch the spy',        icon: '🕵️', color: '#9B8CFF' },
-  { txt: 'Checkmate',            icon: '♟',  color: '#4FC9A6' },
-  { txt: 'Yahtzee!',             icon: '⭐', color: '#FFC44D' },
-  { txt: 'Play with friends',    icon: '👯', color: '#6BC1F0' },
-  { txt: 'No download needed',   icon: '⚡', color: '#FF6B5B' },
-  { txt: 'Free forever',         icon: '🆓', color: '#4FC9A6' },
-  { txt: 'Bring on game night',  icon: '🎉', color: '#FFC44D' },
-  { txt: 'Open source',          icon: '⚙️', color: '#9B8CFF' },
-  { txt: '180K players online',  icon: '🌍', color: '#6BC1F0' },
+  { txt: 'Roll the dice',        icon: '🎲', color: 'var(--bd-coral)' },
+  { txt: 'Catch the spy',        icon: '🕵️', color: 'var(--bd-lav)'   },
+  { txt: 'Checkmate',            icon: '♟',  color: 'var(--bd-mint)'  },
+  { txt: 'Yahtzee!',             icon: '⭐', color: 'var(--bd-sun)'   },
+  { txt: 'Play with friends',    icon: '👯', color: 'var(--bd-sky)'   },
+  { txt: 'No download needed',   icon: '⚡', color: 'var(--bd-coral)' },
+  { txt: 'Free forever',         icon: '🆓', color: 'var(--bd-mint)'  },
+  { txt: 'Bring on game night',  icon: '🎉', color: 'var(--bd-sun)'   },
+  { txt: 'Open source',          icon: '⚙️', color: 'var(--bd-lav)'   },
+  { txt: '180K players online',  icon: '🌍', color: 'var(--bd-sky)'   },
 ]
 
 const LOOP = [...ITEMS, ...ITEMS]
@@ -22,10 +22,10 @@ export default function MarqueeStrip() {
       style={{
         margin: '24px 0',
         padding: '20px 0',
-        background: '#1F1B16',
-        color: '#FBF6EE',
-        borderTop: '3px solid #1F1B16',
-        borderBottom: '3px solid #1F1B16',
+        background: 'var(--bd-ink)',
+        color: 'var(--bd-bg)',
+        borderTop: '3px solid var(--bd-ink)',
+        borderBottom: '3px solid var(--bd-ink)',
         overflow: 'hidden',
         transform: 'rotate(-1.2deg)',
         position: 'relative',
@@ -56,7 +56,7 @@ export default function MarqueeStrip() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 14,
-              fontFamily: "'Bricolage Grotesque', Georgia, serif",
+              fontFamily: 'var(--bd-font-display)',
               fontSize: 28,
               fontWeight: 700,
               letterSpacing: '-0.02em',
@@ -64,7 +64,7 @@ export default function MarqueeStrip() {
             }}
           >
             <span style={{ fontSize: 26 }}>{item.icon}</span>
-            <span style={{ color: i % 3 === 0 ? item.color : '#FBF6EE' }}>{item.txt}</span>
+            <span style={{ color: i % 3 === 0 ? item.color : 'var(--bd-bg)' }}>{item.txt}</span>
             <span
               style={{
                 width: 10,

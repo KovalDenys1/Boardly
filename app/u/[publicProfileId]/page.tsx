@@ -52,7 +52,17 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
     notFound()
   }
 
-  const session = await getServerSession(authOptions)
+  const [session, completedGamesCount] = await Promise.all([
+    getServerSession(authOptions),
+    prisma.players.count({
+      where: {
+        userId: profile.id,
+        game: {
+          status: 'finished',
+        },
+      },
+    }),
+  ])
   let relation: PublicProfileRelation = 'login_required'
 
   if (session?.user?.id) {
@@ -116,6 +126,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         createdAt: profile.createdAt.toISOString(),
         friendsCount: profile._count.friendshipsInitiated + profile._count.friendshipsReceived,
         gamesPlayed: profile._count.players,
+        completedGamesCount,
       }}
       initialRelation={relation}
       accessState={accessState}

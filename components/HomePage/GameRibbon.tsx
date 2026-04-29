@@ -17,9 +17,9 @@ interface GameCardProps {
 
 function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg, illustration }: GameCardProps) {
   const badge = {
-    live: { txt: 'Live',  bg: 'rgba(79,201,166,0.18)',  color: '#2FA787' },
-    beta: { txt: 'Beta',  bg: 'rgba(255,196,77,0.22)',  color: '#E5A82E' },
-    soon: { txt: 'Soon',  bg: 'rgba(155,140,255,0.18)', color: '#7867E8' },
+    live: { txt: 'Live',  bg: 'rgba(79,201,166,0.18)',  color: 'var(--bd-mint-deep)' },
+    beta: { txt: 'Beta',  bg: 'rgba(255,196,77,0.22)',  color: 'var(--bd-sun-deep)'  },
+    soon: { txt: 'Soon',  bg: 'rgba(155,140,255,0.18)', color: 'var(--bd-lav-deep)'  },
   }[status]
 
   return (
@@ -27,7 +27,7 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
       style={{
         background: 'white',
         borderRadius: 24,
-        border: '1.5px solid #E8DDC8',
+        border: '1.5px solid var(--bd-line)',
         boxShadow: '0 6px 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)',
         overflow: 'hidden',
         display: 'flex',
@@ -44,10 +44,10 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3
             style={{
-              fontFamily: "'Bricolage Grotesque', Georgia, serif",
+              fontFamily: 'var(--bd-font-display)',
               fontSize: 22,
               fontWeight: 700,
-              color: '#1F1B16',
+              color: 'var(--bd-ink)',
             }}
           >
             {name}
@@ -66,7 +66,7 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
           </span>
         </div>
 
-        <p style={{ fontSize: 14, color: '#4A3F33', lineHeight: 1.5, flex: 1 }}>{desc}</p>
+        <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5, flex: 1 }}>{desc}</p>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[`👥 ${players}`, `⏱ ${time}`, diff, tag].map((chip) => (
@@ -77,8 +77,8 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
                 borderRadius: 999,
                 fontSize: 12,
                 fontWeight: 600,
-                background: '#F2E9D8',
-                color: '#4A3F33',
+                background: 'var(--bd-bg2)',
+                color: 'var(--bd-ink-soft)',
               }}
             >
               {chip}
@@ -97,9 +97,9 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
               borderRadius: 14,
               fontWeight: 600,
               fontSize: 15,
-              background: '#1F1B16',
-              color: '#FBF6EE',
-              boxShadow: '0 4px 0 #FF6B5B',
+              background: 'var(--bd-ink)',
+              color: 'var(--bd-bg)',
+              boxShadow: '0 4px 0 var(--bd-coral)',
               textDecoration: 'none',
               marginTop: 4,
             }}
@@ -117,9 +117,9 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
               borderRadius: 14,
               fontWeight: 600,
               fontSize: 15,
-              background: '#FFF8EC',
-              color: '#1F1B16',
-              border: '1px solid #E8DDC8',
+              background: 'var(--bd-card-warm)',
+              color: 'var(--bd-ink)',
+              border: '1px solid var(--bd-line)',
               textDecoration: 'none',
               marginTop: 4,
             }}
@@ -136,8 +136,8 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
               borderRadius: 14,
               fontWeight: 600,
               fontSize: 15,
-              background: '#F2E9D8',
-              color: '#8A7A66',
+              background: 'var(--bd-bg2)',
+              color: 'var(--bd-ink-muted)',
               marginTop: 4,
             }}
           >
@@ -159,7 +159,7 @@ const GAMES: GameCardProps[] = [
     desc: 'A classic of luck and strategy. Roll the dice, fill combinations, score points.',
     href: '/games/yahtzee',
     status: 'live',
-    accent: '#FF6B5B',
+    accent: 'var(--bd-coral)',
     accentBg: 'rgba(255,107,91,0.10)',
     illustration: (
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
@@ -178,7 +178,7 @@ const GAMES: GameCardProps[] = [
     desc: 'One spy hides among friends. Ask questions and figure out the impostor.',
     href: '/games/spy',
     status: 'live',
-    accent: '#9B8CFF',
+    accent: 'var(--bd-lav)',
     accentBg: 'rgba(155,140,255,0.12)',
     illustration: (
       <div className="bd-float" style={{ animationDelay: '0s', position: 'relative' }}>
@@ -187,9 +187,9 @@ const GAMES: GameCardProps[] = [
             width: 78,
             height: 78,
             borderRadius: '50%',
-            background: '#9B8CFF',
-            border: '3px solid #1F1B16',
-            boxShadow: '4px 4px 0 #1F1B16',
+            background: 'var(--bd-lav)',
+            border: '3px solid var(--bd-ink)',
+            boxShadow: '4px 4px 0 var(--bd-ink)',
             display: 'grid',
             placeItems: 'center',
             fontSize: 38,
@@ -209,7 +209,7 @@ const GAMES: GameCardProps[] = [
     desc: 'The timeless classic. Three in a row wins. Play solo vs AI or with a friend.',
     href: '/games/tic-tac-toe',
     status: 'live',
-    accent: '#4FC9A6',
+    accent: 'var(--bd-mint)',
     accentBg: 'rgba(79,201,166,0.12)',
     illustration: (
       <div
@@ -219,9 +219,9 @@ const GAMES: GameCardProps[] = [
           gap: 6,
           width: 108,
           height: 108,
-          border: '3px solid #1F1B16',
+          border: '3px solid var(--bd-ink)',
           borderRadius: 12,
-          boxShadow: '3px 3px 0 #1F1B16',
+          boxShadow: '3px 3px 0 var(--bd-ink)',
           background: 'white',
           padding: 8,
         }}
@@ -255,17 +255,17 @@ export default function GameRibbon() {
               fontSize: 12,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: '#8A7A66',
+              color: 'var(--bd-ink-muted)',
             }}
           >
             Catalog
           </span>
           <h2
             style={{
-              fontFamily: "'Bricolage Grotesque', Georgia, serif",
+              fontFamily: 'var(--bd-font-display)',
               fontSize: 'clamp(28px, 4vw, 44px)',
               fontWeight: 700,
-              color: '#1F1B16',
+              color: 'var(--bd-ink)',
               marginTop: 8,
               letterSpacing: '-0.02em',
             }}
@@ -280,9 +280,9 @@ export default function GameRibbon() {
             borderRadius: 14,
             fontWeight: 600,
             fontSize: 15,
-            background: '#FFF8EC',
-            color: '#1F1B16',
-            border: '1px solid #E8DDC8',
+            background: 'var(--bd-card-warm)',
+            color: 'var(--bd-ink)',
+            border: '1px solid var(--bd-line)',
             textDecoration: 'none',
             flexShrink: 0,
           }}

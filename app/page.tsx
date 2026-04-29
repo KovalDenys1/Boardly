@@ -20,9 +20,9 @@ export default function HomePage() {
           radial-gradient(circle at 12% 8%,  rgba(255,196,77,0.18),  transparent 35%),
           radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%),
           radial-gradient(circle at 50% 100%,rgba(79,201,166,0.14),  transparent 50%),
-          #FBF6EE
+          var(--bd-bg)
         `,
-        color: '#1F1B16',
+        color: 'var(--bd-ink)',
         overflowX: 'hidden',
       }}
     >
@@ -44,7 +44,7 @@ export default function HomePage() {
       {/* FAQ — kept for SEO value */}
       <div
         className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mb-8"
-        style={{ color: '#1F1B16' }}
+        style={{ color: 'var(--bd-ink)' }}
       >
         <FaqSection />
       </div>

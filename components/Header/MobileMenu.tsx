@@ -134,17 +134,17 @@ export function MobileMenu({
         <div className="relative" style={{ width: 'clamp(24px, 2.5vw, 28px)', height: 'clamp(24px, 2.5vw, 28px)' }}>
           {/* Animated hamburger icon */}
           <span
-            className={`absolute left-0 bg-[#1F1B16] rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
+            className={`absolute left-0 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
               }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none' }}
           />
           <span
-            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-[#1F1B16] rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'
               }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)' }}
           />
           <span
-            className={`absolute left-0 bg-[#1F1B16] rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
+            className={`absolute left-0 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
               }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none' }}
           />
@@ -172,8 +172,8 @@ export function MobileMenu({
           >
             {/* Header with close button */}
             <div
-              className="flex items-center justify-between border-b border-[#E8DDC8]"
-              style={{ background: '#F2E9D8', padding: 'clamp(16px, 1.6vh, 24px)' }}
+              className="flex items-center justify-between border-b border-bd-line"
+              style={{ background: 'var(--bd-bg2)', padding: 'clamp(16px, 1.6vh, 24px)' }}
             >
               <h2 className="font-bold text-gray-900 dark:text-white" style={{ fontSize: 'clamp(18px, 1.8vw, 22px)' }}>
                 {t('header.menu')}

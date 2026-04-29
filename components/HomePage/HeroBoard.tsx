@@ -16,10 +16,10 @@ export default function HeroBoard() {
         style={{
           position: 'absolute',
           inset: '8%',
-          background: '#4FC9A6',
-          border: '4px solid #1F1B16',
+          background: 'var(--bd-mint)',
+          border: '4px solid var(--bd-ink)',
           borderRadius: 32,
-          boxShadow: '10px 10px 0 #1F1B16',
+          boxShadow: '10px 10px 0 var(--bd-ink)',
           transform: 'rotate(-3deg)',
           overflow: 'hidden',
           backgroundImage: 'radial-gradient(rgba(31,27,22,0.12) 1px, transparent 1px)',
@@ -66,15 +66,15 @@ export default function HeroBoard() {
           right: '14%',
           width: 90,
           height: 130,
-          background: '#FF6B5B',
-          border: '3px solid #1F1B16',
+          background: 'var(--bd-coral)',
+          border: '3px solid var(--bd-ink)',
           borderRadius: 14,
-          boxShadow: '4px 4px 0 #1F1B16',
+          boxShadow: '4px 4px 0 var(--bd-ink)',
           transform: 'rotate(8deg)',
           display: 'grid',
           placeItems: 'center',
           color: 'white',
-          fontFamily: "'Bricolage Grotesque', Georgia, serif",
+          fontFamily: 'var(--bd-font-display)',
           fontSize: 40,
           animationDelay: '0.8s',
         }}
@@ -91,7 +91,7 @@ export default function HeroBoard() {
           left: '18%',
           width: 50,
           height: 90,
-          background: '#1F1B16',
+          background: 'var(--bd-ink)',
           borderRadius: '24px 24px 4px 4px',
           animationDelay: '1.4s',
         }}
@@ -105,13 +105,13 @@ export default function HeroBoard() {
           top: '4%',
           right: '4%',
           transform: 'rotate(12deg)',
-          background: '#FFC44D',
-          color: '#1F1B16',
-          border: '2px solid #1F1B16',
-          boxShadow: '2px 2px 0 #1F1B16',
+          background: 'var(--bd-sun)',
+          color: 'var(--bd-ink)',
+          border: '2px solid var(--bd-ink)',
+          boxShadow: '2px 2px 0 var(--bd-ink)',
           borderRadius: 999,
           padding: '6px 14px',
-          fontFamily: "'Bricolage Grotesque', Georgia, serif",
+          fontFamily: 'var(--bd-font-display)',
           fontWeight: 700,
           fontSize: 14,
           animationDelay: '0.3s',
@@ -127,7 +127,7 @@ export default function HeroBoard() {
       >
         <path
           d="M2 20 Q 12 5, 22 20 T 42 20 T 62 20 T 78 20"
-          stroke="#7867E8"
+          style={{ stroke: 'var(--bd-lav-deep)' }}
           strokeWidth="4"
           fill="none"
           strokeLinecap="round"

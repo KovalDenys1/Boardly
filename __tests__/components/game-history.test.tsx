@@ -1,15 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import GameHistory from '@/components/GameHistory'
 
+const mockTranslate = (key: string, options?: Record<string, unknown>) => {
+  if (key === 'profile.gameHistory.showing' && options) {
+    return `${key}:${options.start}-${options.end}-${options.total}`
+  }
+
+  return key
+}
+
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown>) => {
-      if (key === 'profile.gameHistory.showing' && options) {
-        return `${key}:${options.start}-${options.end}-${options.total}`
-      }
-
-      return key
-    },
+    t: mockTranslate,
   }),
 }))
 

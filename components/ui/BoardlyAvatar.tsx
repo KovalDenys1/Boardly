@@ -1,9 +1,9 @@
 const COLOR_MAP = {
-  coral: { bg: '#FF6B5B', text: 'white' },
-  mint:  { bg: '#4FC9A6', text: 'white' },
-  sun:   { bg: '#FFC44D', text: '#1F1B16' },
-  lav:   { bg: '#9B8CFF', text: 'white' },
-  sky:   { bg: '#6BC1F0', text: 'white' },
+  coral: { bg: 'var(--bd-coral)', text: 'white' },
+  mint:  { bg: 'var(--bd-mint)',  text: 'white' },
+  sun:   { bg: 'var(--bd-sun)',   text: 'var(--bd-ink)' },
+  lav:   { bg: 'var(--bd-lav)',   text: 'white' },
+  sky:   { bg: 'var(--bd-sky)',   text: 'white' },
 } as const
 
 export type AvatarColor = keyof typeof COLOR_MAP
@@ -34,8 +34,8 @@ export default function BoardlyAvatar({ name, color = 'coral', size = 36, online
           fontWeight: 700,
           fontSize: Math.round(size * 0.42),
           border: '2px solid white',
-          boxShadow: '0 0 0 2px #1F1B16',
-          fontFamily: "'Bricolage Grotesque', Georgia, serif",
+          boxShadow: '0 0 0 2px var(--bd-ink)',
+          fontFamily: 'var(--bd-font-display)',
           flexShrink: 0,
           userSelect: 'none',
         }}
@@ -51,7 +51,7 @@ export default function BoardlyAvatar({ name, color = 'coral', size = 36, online
             width: Math.round(size * 0.32),
             height: Math.round(size * 0.32),
             borderRadius: '50%',
-            background: '#2FA787',
+            background: 'var(--bd-mint-deep)',
             border: '2px solid white',
           }}
         />

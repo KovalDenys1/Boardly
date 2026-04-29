@@ -19,8 +19,8 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
   const navBtn = (active: boolean) =>
     `rounded-xl font-medium transition-all duration-150 ${
       active
-        ? 'bg-[#1F1B16] text-[#FBF6EE]'
-        : 'text-[#4A3F33] hover:bg-[#F2E9D8] hover:text-[#1F1B16]'
+        ? 'bg-bd-ink text-bd-bg'
+        : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
     }`
 
   return (

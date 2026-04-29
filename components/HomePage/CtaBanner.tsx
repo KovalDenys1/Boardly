@@ -6,8 +6,8 @@ export default function CtaBanner() {
     <section style={{ padding: '40px clamp(16px, 4vw, 48px) 80px', maxWidth: 1280, margin: '0 auto' }}>
       <div
         style={{
-          background: '#1F1B16',
-          color: '#FBF6EE',
+          background: 'var(--bd-ink)',
+          color: 'var(--bd-bg)',
           borderRadius: 36,
           padding: 'clamp(36px, 6vw, 56px) clamp(28px, 5vw, 64px)',
           display: 'grid',
@@ -27,7 +27,7 @@ export default function CtaBanner() {
             width: 220,
             height: 220,
             borderRadius: '50%',
-            background: '#FF6B5B',
+            background: 'var(--bd-coral)',
             opacity: 0.4,
             pointerEvents: 'none',
           }}
@@ -40,7 +40,7 @@ export default function CtaBanner() {
             width: 160,
             height: 160,
             borderRadius: '50%',
-            background: '#FFC44D',
+            background: 'var(--bd-sun)',
             opacity: 0.3,
             pointerEvents: 'none',
           }}
@@ -50,7 +50,7 @@ export default function CtaBanner() {
         <div style={{ position: 'relative' }}>
           <h2
             style={{
-              fontFamily: "'Bricolage Grotesque', Georgia, serif",
+              fontFamily: 'var(--bd-font-display)',
               fontSize: 'clamp(32px, 5vw, 52px)',
               fontWeight: 800,
               lineHeight: 1,
@@ -81,10 +81,10 @@ export default function CtaBanner() {
               borderRadius: 16,
               fontWeight: 700,
               fontSize: 17,
-              background: '#FF6B5B',
+              background: 'var(--bd-coral)',
               color: 'white',
               textDecoration: 'none',
-              boxShadow: '0 4px 0 #E04B3B',
+              boxShadow: '0 4px 0 var(--bd-coral-deep)',
             }}
           >
             Create account

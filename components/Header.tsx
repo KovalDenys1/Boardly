@@ -39,8 +39,8 @@ export default function Header() {
       style={{
         height: '64px',
         minHeight: '64px',
-        background: '#FBF6EE',
-        borderBottom: '1.5px solid #E8DDC8',
+        background: 'var(--bd-bg)',
+        borderBottom: '1.5px solid var(--bd-line)',
       }}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
@@ -50,22 +50,22 @@ export default function Header() {
             <button
               onClick={() => router.push('/')}
               className="flex shrink-0 items-center gap-2 whitespace-nowrap hover:opacity-80 transition-opacity"
-              style={{ fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', color: '#1F1B16' }}
+              style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', color: 'var(--bd-ink)' }}
             >
               <span
                 style={{
                   width: 34,
                   height: 34,
                   borderRadius: 9,
-                  background: '#1F1B16',
-                  color: '#FFC44D',
+                  background: 'var(--bd-ink)',
+                  color: 'var(--bd-sun)',
                   display: 'grid',
                   placeItems: 'center',
-                  fontFamily: "'Bricolage Grotesque', Georgia, serif",
+                  fontFamily: 'var(--bd-font-display)',
                   fontWeight: 800,
                   fontSize: 20,
                   transform: 'rotate(-6deg)',
-                  boxShadow: '3px 3px 0 #FF6B5B',
+                  boxShadow: '3px 3px 0 var(--bd-coral)',
                   flexShrink: 0,
                 }}
               >
@@ -87,7 +87,7 @@ export default function Header() {
             {isGuestSession && guestName && (
               <div
                 className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full"
-                style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: '#4A3F33', fontSize: 13, fontWeight: 600 }}
+                style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: 'var(--bd-ink-soft)', fontSize: 13, fontWeight: 600 }}
               >
                 👤 {guestName}
               </div>
