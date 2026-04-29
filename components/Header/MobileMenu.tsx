@@ -8,6 +8,7 @@ import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import { AudioSettingsMobilePanel } from './AudioSettingsButton'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface MobileMenuProps {
@@ -365,6 +366,8 @@ export function MobileMenu({
                   </p>
                   <LanguageSwitcher variant="panel" />
                 </div>
+
+                <AudioSettingsMobilePanel />
               </div>
             </nav>
 

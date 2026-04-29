@@ -314,6 +314,11 @@ const no = {
     exitGuest: 'Avslutt gjest',
     guestSession: 'Gjesteøkt',
     language: 'Språk',
+    audioSettings: 'Lydinnstillinger',
+    openAudioSettings: 'Åpne lydinnstillinger',
+    mute: 'Demp',
+    unmute: 'Aktiver lyd',
+    volume: 'Volum',
   },
   home: {
     title: 'Spill brettspill på nett med venner',
