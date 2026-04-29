@@ -316,6 +316,11 @@ const uk: Translation = {
     exitGuest: 'Вийти з гостьового режиму',
     guestSession: 'Гостьовий режим',
     language: 'Мова',
+    audioSettings: 'Налаштування звуку',
+    openAudioSettings: 'Відкрити налаштування звуку',
+    mute: 'Вимкнути звук',
+    unmute: 'Увімкнути звук',
+    volume: 'Гучність',
   },
   home: {
     title: 'Грайте в настільні ігри онлайн з друзями',

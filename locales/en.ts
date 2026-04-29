@@ -314,6 +314,11 @@ const en = {
     exitGuest: 'Exit Guest',
     guestSession: 'Guest session',
     language: 'Language',
+    audioSettings: 'Audio Settings',
+    openAudioSettings: 'Open audio settings',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    volume: 'Volume',
   },
   home: {
     title: 'Play Board Games Online with Friends',
