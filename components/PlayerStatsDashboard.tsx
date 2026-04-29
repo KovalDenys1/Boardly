@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import BoardlySelect from '@/components/ui/BoardlySelect'
 import { clientLogger } from '@/lib/client-logger'
+import { getAvailableGameTypes, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import { formatGameTypeLabel } from '@/lib/game-display'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -45,13 +46,6 @@ interface StatsResponse {
   generatedAt: string
 }
 
-interface DateRange {
-  from: string
-  to: string
-}
-
-type RangePreset = 30 | 90 | 'all'
-
 const panelClassName =
   'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
 const warmSurfaceClassName =
@@ -69,44 +63,17 @@ function supportsScoreMetrics(stats: ByGameStats): boolean {
   return stats.avgScore !== null || stats.bestScore !== null
 }
 
-function toDateInputValue(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
-
-function buildDefaultRange(): DateRange {
-  return buildRangeForPreset(30)
-}
-
-function buildRangeForPreset(preset: RangePreset): DateRange {
-  if (preset === 'all') {
-    return {
-      from: '',
-      to: '',
-    }
-  }
-
-  const now = new Date()
-  const from = new Date(now)
-  from.setDate(now.getDate() - preset)
-
-  return {
-    from: toDateInputValue(from),
-    to: toDateInputValue(now),
-  }
-}
-
 interface PlayerStatsDashboardProps {
   userId: string
 }
 
 export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardProps) {
   const { t } = useTranslation()
-  const [rangePreset, setRangePreset] = useState<RangePreset>(30)
-  const [appliedRange, setAppliedRange] = useState<DateRange>(() => buildDefaultRange())
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [selectedGameType, setSelectedGameType] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const availableGameTypes = useMemo(() => new Set(getAvailableGameTypes()), [])
 
   const loadStats = useCallback(async () => {
     if (!userId) return
@@ -115,11 +82,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
     setError(null)
 
     try {
-      const params = new URLSearchParams()
-      if (appliedRange.from) params.set('from', appliedRange.from)
-      if (appliedRange.to) params.set('to', appliedRange.to)
-
-      const response = await fetch(`/api/user/${userId}/stats?${params.toString()}`, {
+      const response = await fetch(`/api/user/${userId}/stats`, {
         cache: 'no-store',
       })
       const data = await response.json()
@@ -135,31 +98,34 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
     } finally {
       setLoading(false)
     }
-  }, [appliedRange.from, appliedRange.to, t, userId])
+  }, [t, userId])
 
   useEffect(() => {
     void loadStats()
   }, [loadStats])
 
+  const availableByGameStats = useMemo(() => {
+    return (
+      stats?.byGame.filter((item) =>
+        availableGameTypes.has(item.gameType as SupportedCatalogGameType)
+      ) ?? []
+    )
+  }, [availableGameTypes, stats])
+
   useEffect(() => {
-    if (!stats?.byGame.length) {
+    if (availableByGameStats.length === 0) {
       setSelectedGameType('')
       return
     }
 
     setSelectedGameType((previousValue) => {
-      if (stats.byGame.some((item) => item.gameType === previousValue)) {
+      if (availableByGameStats.some((item) => item.gameType === previousValue)) {
         return previousValue
       }
 
-      return stats.byGame[0].gameType
+      return availableByGameStats[0].gameType
     })
-  }, [stats])
-
-  function selectPreset(preset: RangePreset) {
-    setRangePreset(preset)
-    setAppliedRange(buildRangeForPreset(preset))
-  }
+  }, [availableByGameStats])
 
   const summaryCards = useMemo(() => {
     if (!stats) return []
@@ -197,12 +163,15 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
   }, [stats, t])
 
   const selectedGameStats = useMemo(() => {
-    if (!stats?.byGame.length) {
+    if (!availableByGameStats.length) {
       return null
     }
 
-    return stats.byGame.find((item) => item.gameType === selectedGameType) ?? stats.byGame[0]
-  }, [selectedGameType, stats])
+    return (
+      availableByGameStats.find((item) => item.gameType === selectedGameType) ??
+      availableByGameStats[0]
+    )
+  }, [availableByGameStats, selectedGameType])
 
   const selectedGameLabel = selectedGameStats ? formatGameTypeLabel(selectedGameStats.gameType) : ''
 
@@ -354,27 +323,8 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
               </p>
             </div>
 
-            <div className={`${warmSurfaceClassName} p-1.5`}>
-              <div className="flex gap-1">
-                {([
-                  { id: 30, label: t('profile.stats.dashboard.filters.last30Days') },
-                  { id: 90, label: t('profile.stats.dashboard.filters.last90Days') },
-                  { id: 'all', label: t('profile.stats.dashboard.filters.allTime') },
-                ] as const).map((preset) => (
-                  <button
-                    key={String(preset.id)}
-                    type="button"
-                    onClick={() => selectPreset(preset.id)}
-                    className={`min-h-[44px] rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all ${
-                      rangePreset === preset.id
-                        ? 'bg-bd-lav text-white shadow-[0_4px_0_#7867E8]'
-                        : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
+            <div className={`${warmSurfaceClassName} px-4 py-3`}>
+              <p className={eyebrowClassName}>{t('profile.stats.dashboard.filters.allTime')}</p>
             </div>
           </div>
         </div>
@@ -414,7 +364,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                   </p>
                 </div>
 
-                {stats.byGame.length > 0 ? (
+                {availableByGameStats.length > 0 ? (
                   <fieldset className="w-full lg:max-w-sm">
                     <legend className={eyebrowClassName}>
                       {t('profile.stats.dashboard.filters.gameLabel')}
@@ -424,7 +374,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                         value={selectedGameType}
                         onChange={setSelectedGameType}
                         ariaLabel={t('profile.stats.dashboard.filters.gameLabel')}
-                        options={stats.byGame.map((item) => ({
+                        options={availableByGameStats.map((item) => ({
                           value: item.gameType,
                           label: formatGameTypeLabel(item.gameType),
                           badge: String(item.gamesPlayed),
@@ -442,7 +392,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
             </div>
 
             <div className="p-5 sm:p-6">
-              {stats.byGame.length === 0 ? (
+              {availableByGameStats.length === 0 ? (
                 <div className={`${warmSurfaceClassName} p-6 sm:p-8`}>
                   <p className="text-sm text-bd-ink-muted dark:text-slate-400">
                     {t('profile.stats.dashboard.sections.byGame.empty')}

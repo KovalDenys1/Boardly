@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import PlayerStatsDashboard from '@/components/PlayerStatsDashboard'
 
 const mockTranslate = (key: string) => key
@@ -100,11 +100,7 @@ describe('PlayerStatsDashboard', () => {
     expect(screen.getByText('75%')).toBeTruthy()
     expect(screen.getByText('18profile.stats.dashboard.summary.minutesSuffix')).toBeTruthy()
 
-    const gameSelect = screen.getByRole('button', {
-      name: 'profile.stats.dashboard.filters.gameLabel',
-    })
-    fireEvent.click(gameSelect)
-    fireEvent.click(screen.getByText('Memory'))
+    expect(mockFetch).toHaveBeenCalledWith('/api/user/user-1/stats', { cache: 'no-store' })
 
     await waitFor(() => {
       expect(
