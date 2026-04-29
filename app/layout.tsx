@@ -1,12 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import Providers from './providers'
-import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 import { getThemeInitScript } from '@/lib/theme'
 import FeedbackWidget from '@/components/FeedbackWidget'
+import Header from '@/components/Header'
 
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
@@ -27,12 +27,6 @@ function HeaderSkeleton() {
     </header>
   )
 }
-
-// Import Header with SSR for better FCP, but handle i18n client-side
-const Header = dynamic(() => import('@/components/Header'), {
-  ssr: true, // Enable SSR for better FCP
-  loading: () => <HeaderSkeleton />
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://boardly.online'),

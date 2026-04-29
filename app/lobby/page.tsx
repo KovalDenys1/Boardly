@@ -356,199 +356,150 @@ function LobbyListPageContent() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 pb-8">
-      <div className="relative mx-auto max-w-6xl px-3 pt-16 sm:px-6 sm:pt-20 lg:px-8">
-        <div className="space-y-6 animate-scale-in">
-          <section className="relative overflow-hidden rounded-3xl border border-t-0 border-white/85 bg-white/90 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/50">
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-            <div className="p-5 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
-                <div className="min-w-0 flex-1 xl:max-w-3xl">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/games')}
-                    className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-                  >
-                    <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">←</span>
-                    <span>{t('lobby.backToGames')}</span>
-                  </button>
+    <div className="bd-page bd-screen flex-1 overflow-y-auto">
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 32px 80px' }}>
 
-                  <div className="mt-5 xl:max-w-2xl">
-                    <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                      {t('lobby.title')}
-                    </h1>
-                    <p className="mt-3 max-w-2xl text-sm text-slate-600 dark:text-slate-400 sm:text-base">
-                      {t('lobby.subtitle')}
-                    </p>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex rounded-full bg-white/92 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-white/90 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700/70">
-                      {t('lobby.lobbiesCount', { count: lobbies.length })}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="shrink-0 xl:w-[360px] 2xl:w-[400px]">
-                  <button
-                    type="button"
-                    onClick={() => router.push('/lobby/create')}
-                    className="group w-full overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-6 text-left text-white shadow-xl transition-all hover:-translate-y-0.5 hover:shadow-2xl"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-100/80">
-                          {t('lobby.createLobby')}
-                        </p>
-                        <h2 className="mt-3 text-2xl font-bold leading-tight">
-                          {t('lobby.createNew')}
-                        </h2>
-                        <p className="mt-3 text-sm text-white/75">
-                          {t('lobby.createDescription')}
-                        </p>
-                      </div>
-                      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-2xl shadow-lg backdrop-blur-sm">
-                        ✨
-                      </span>
-                    </div>
-                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white/90">
-                      <span>{t('lobby.getStarted')}</span>
-                      <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <LobbyStats
-                  totalLobbies={stats.totalLobbies}
-                  waitingLobbies={stats.waitingLobbies}
-                  playingLobbies={stats.playingLobbies}
-                  totalPlayers={stats.totalPlayers}
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-white/85 bg-white/90 p-5 shadow-xl shadow-indigo-900/5 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/70 dark:shadow-slate-950/40 sm:p-6">
-            <div className="border-b border-slate-200/70 pb-6 dark:border-slate-700/70">
-              <LobbyFilters embedded filters={filters} onFiltersChange={setFilters} />
-            </div>
-
-            <div className="mb-6 flex flex-col gap-3 pt-6 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl dark:text-white">
-                  {t('lobby.activeLobbies')}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {t('lobby.lobbiesCount', { count: lobbies.length })}
-                </p>
-              </div>
+        {/* Page header */}
+        <div className="bd-card" style={{ padding: '28px 32px', marginBottom: 24, position: 'relative', overflow: 'hidden', background: 'linear-gradient(120deg, white 0%, rgba(155,140,255,0.08) 100%)' }}>
+          <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.35 }} />
+          <div style={{ position: 'relative', display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
               <button
-                onClick={handleRefresh}
-                disabled={loading || isManualRefreshing}
-                aria-disabled={isRefreshLocked}
-                className={`inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-sm font-medium transition-[opacity,box-shadow,background-color,border-color,color] duration-300 ease-out ${
-                  isRefreshUpdated
-                    ? 'cursor-default border-emerald-200/90 bg-emerald-50/95 text-emerald-700 shadow-sm shadow-emerald-100/80'
-                    : isManualRefreshing
-                      ? 'cursor-wait border-blue-200/90 bg-white text-slate-700 shadow-md shadow-blue-100/80'
-                      : isAutoRefreshing
-                        ? 'border-blue-100/90 bg-white/95 text-slate-700 shadow-sm shadow-blue-100/70'
-                        : 'border-white/90 bg-white text-slate-700 shadow-sm hover:bg-white hover:shadow-md'
-                } ${loading ? 'cursor-not-allowed opacity-50' : ''} dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:shadow-none ${
-                  isRefreshUpdated ? 'dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200' : ''
-                }`}
-                title={t('lobby.refresh')}
+                type="button"
+                onClick={() => router.push('/games')}
+                className="bd-btn bd-btn-soft"
+                style={{ padding: '8px 14px', fontSize: 14, marginBottom: 16 }}
               >
-                <span className="relative inline-flex h-4 w-4 items-center justify-center">
-                  <svg
-                    className={`absolute h-4 w-4 transition-opacity duration-200 ${
-                      isRefreshUpdated ? 'opacity-0' : 'opacity-100'
-                    } ${(isManualRefreshing || isAutoRefreshing) ? 'animate-spin [animation-duration:900ms]' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <svg
-                    className={`absolute h-4 w-4 text-emerald-600 transition-opacity duration-200 dark:text-emerald-300 ${
-                      isRefreshUpdated ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 12.5l4.2 4.2L19 7.2" />
-                  </svg>
+                ← {t('lobby.backToGames')}
+              </button>
+              <span className="bd-kicker" style={{ display: 'block', marginBottom: 8 }}>Lobbies</span>
+              <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 'clamp(32px,4vw,52px)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--bd-ink)', marginBottom: 8 }}>
+                {t('lobby.title')}
+              </h1>
+              <p style={{ color: 'var(--bd-ink-soft)', fontSize: 15, maxWidth: 480 }}>
+                {t('lobby.subtitle')}
+              </p>
+              <div style={{ marginTop: 12 }}>
+                <span className="bd-chip">
+                  <span className="bd-live-dot" style={{ width: 6, height: 6 }} />
+                  {t('lobby.lobbiesCount', { count: lobbies.length })}
                 </span>
-                <span className="min-w-[4.75rem] text-center">
-                  {isManualRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : t('lobby.refresh')}
-                </span>
-                <span className="sr-only" aria-live="polite">
-                  {isAutoRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : ''}
-                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => router.push('/lobby/create')}
+              style={{
+                background: 'var(--bd-coral)', color: 'white', border: '3px solid var(--bd-ink)',
+                borderRadius: 24, padding: '24px 28px', textAlign: 'left', cursor: 'pointer',
+                boxShadow: '6px 6px 0 var(--bd-ink)', transition: 'transform 0.15s, box-shadow 0.15s',
+                minWidth: 280, fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 8,
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '6px 8px 0 var(--bd-ink)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '6px 6px 0 var(--bd-ink)'; }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <span className="bd-kicker" style={{ color: 'rgba(255,255,255,0.75)' }}>{t('lobby.createLobby')}</span>
+                  <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, marginTop: 6 }}>{t('lobby.createNew')}</div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t('lobby.createDescription')}</div>
+                </div>
+                <span style={{ fontSize: 28 }}>✨</span>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginTop: 8 }}>{t('lobby.getStarted')} →</div>
+            </button>
+          </div>
+
+          <div style={{ marginTop: 24 }}>
+            <LobbyStats
+              totalLobbies={stats.totalLobbies}
+              waitingLobbies={stats.waitingLobbies}
+              playingLobbies={stats.playingLobbies}
+              totalPlayers={stats.totalPlayers}
+            />
+          </div>
+        </div>
+
+        {/* Lobbies list */}
+        <div className="bd-card" style={{ padding: 24 }}>
+          <div style={{ borderBottom: '1px solid var(--bd-line)', paddingBottom: 20, marginBottom: 20 }}>
+            <LobbyFilters embedded filters={filters} onFiltersChange={setFilters} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
+            <div>
+              <h2 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, color: 'var(--bd-ink)' }}>
+                {t('lobby.activeLobbies')}
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--bd-ink-muted)', marginTop: 2 }}>
+                {t('lobby.lobbiesCount', { count: lobbies.length })}
+              </p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={loading || isManualRefreshing}
+              className="bd-btn bd-btn-soft"
+              style={{
+                padding: '10px 16px', fontSize: 13,
+                background: isRefreshUpdated ? 'rgba(79,201,166,0.15)' : undefined,
+                borderColor: isRefreshUpdated ? 'rgba(79,201,166,0.4)' : undefined,
+                color: isRefreshUpdated ? 'var(--bd-mint-deep)' : undefined,
+              }}
+              title={t('lobby.refresh')}
+            >
+              <span style={{ display: 'inline-block', transition: 'transform 0.3s', transform: (isManualRefreshing || isAutoRefreshing) ? 'rotate(360deg)' : 'none' }}>
+                {isRefreshUpdated ? '✓' : '↻'}
+              </span>
+              {isManualRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : t('lobby.refresh')}
+              <span className="sr-only" aria-live="polite">{isAutoRefreshing ? t('lobby.refreshing') : isRefreshUpdated ? t('lobby.updated') : ''}</span>
+            </button>
+          </div>
+
+          {hasLoadError && (
+            <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(255,196,77,0.12)', border: '1.5px solid rgba(255,196,77,0.3)', borderRadius: 12, fontSize: 14, color: 'var(--bd-sun-deep)' }}>
+              {t('lobby.loadFailed')}
+            </div>
+          )}
+
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} style={{ height: 120, borderRadius: 18, background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)', animation: 'pulse 1.5s infinite' }} />
+              ))}
+            </div>
+          ) : lobbies.length === 0 ? (
+            <div style={{ padding: '60px 32px', textAlign: 'center' }}>
+              <div style={{ fontSize: 56, marginBottom: 16 }}>🎲</div>
+              <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 8 }}>
+                {hasActiveFilters ? t('lobby.noFilterMatches') : t('lobby.noLobbies')}
+              </h3>
+              <p style={{ fontSize: 15, color: 'var(--bd-ink-muted)', maxWidth: 400, margin: '0 auto 24px' }}>
+                {hasActiveFilters ? t('lobby.noFilterMatchesDescription') : t('lobby.noLobbiesDescription')}
+              </p>
+              <button
+                onClick={hasActiveFilters
+                  ? () => setFilters({ gameType: undefined, status: 'all', search: '', minPlayers: undefined, maxPlayers: undefined, sortBy: 'createdAt', sortOrder: 'desc' })
+                  : () => router.push('/lobby/create')
+                }
+                className="bd-btn bd-btn-coral bd-btn-lg"
+              >
+                {hasActiveFilters ? t('lobby.filters.clearAll') : t('lobby.createFirst')}
               </button>
             </div>
-
-            {hasLoadError && (
-              <div className="mb-4 rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/20 dark:from-amber-500/10 dark:to-orange-500/5 dark:text-amber-200">
-                {t('lobby.loadFailed')}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-slate-100/80 dark:border-slate-700/60 dark:bg-slate-800/70" />
-                ))}
-              </div>
-            ) : lobbies.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="mx-auto inline-flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-5xl dark:bg-slate-800">
-                  🎲
-                </div>
-                <h3 className="mt-5 text-xl font-bold text-slate-900 dark:text-white">
-                  {hasActiveFilters ? t('lobby.noFilterMatches') : t('lobby.noLobbies')}
-                </h3>
-                <p className="mx-auto mt-2 max-w-xl text-slate-500 dark:text-slate-400">
-                  {hasActiveFilters ? t('lobby.noFilterMatchesDescription') : t('lobby.noLobbiesDescription')}
-                </p>
-                <button
-                  onClick={
-                    hasActiveFilters
-                      ? () =>
-                          setFilters({
-                            gameType: undefined,
-                            status: 'all',
-                            search: '',
-                            minPlayers: undefined,
-                            maxPlayers: undefined,
-                            sortBy: 'createdAt',
-                            sortOrder: 'desc',
-                          })
-                      : () => router.push('/lobby/create')
-                  }
-                  className="mt-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow"
-                >
-                  {hasActiveFilters ? t('lobby.filters.clearAll') : t('lobby.createFirst')}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {lobbies.map((lobby, index) => (
-                  <LobbyCard
-                    key={lobby.id}
-                    lobby={lobby}
-                    index={index}
-                    onOpenLobby={(code) => router.push(`/lobby/${code}`)}
-                    onWatchLobby={(code) => router.push(`/lobby/${code}/spectate`)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {lobbies.map((lobby, index) => (
+                <LobbyCard
+                  key={lobby.id}
+                  lobby={lobby}
+                  index={index}
+                  onOpenLobby={(code) => router.push(`/lobby/${code}`)}
+                  onWatchLobby={(code) => router.push(`/lobby/${code}/spectate`)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

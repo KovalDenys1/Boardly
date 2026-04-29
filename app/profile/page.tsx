@@ -16,12 +16,10 @@ import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import PublicProfileView from '@/components/PublicProfileView'
-import { applyThemeMode, type ThemeMode } from '@/lib/theme'
 import {
   getStoredAppearancePreferences,
   normalizeAppearanceLocale,
   setStoredAppearanceLocale,
-  setStoredThemePreference,
 } from '@/lib/appearance-preferences'
 
 interface LinkedAccount {
@@ -46,7 +44,6 @@ function isTabType(value: string | null): value is TabType {
 
 type SettingsState = {
   language: string
-  theme: ThemeMode
 }
 
 type AccountPreferences = {
@@ -135,7 +132,6 @@ function getInlineEditorErrorStatus(
 
 const DEFAULT_SETTINGS: SettingsState = {
   language: 'en',
-  theme: 'system',
 }
 
 const SETTINGS_LANGUAGE_OPTIONS = [
@@ -943,13 +939,6 @@ export default function ProfilePage() {
         void i18n.changeLanguage(normalizedLanguage)
       }
 
-      return
-    }
-
-    if (key === 'theme') {
-      const normalizedTheme = setStoredThemePreference(localStorage, String(value))
-      setSettings((prev) => ({ ...prev, theme: normalizedTheme }))
-      applyThemeMode(normalizedTheme)
       return
     }
   }
@@ -2071,39 +2060,6 @@ export default function ProfilePage() {
                       />
                     </div>
 
-                    <div className={settingsSurfaceClassName}>
-                      <div className="mb-3">
-                        <p className="text-sm font-semibold text-bd-ink dark:text-white">
-                          {t('profile.settings.theme.title')}
-                        </p>
-                        <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
-                          {t('profile.settings.theme.subtitle')}
-                        </p>
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        {([
-                          { value: 'light' as const, icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>, label: t('profile.settings.theme.light') },
-                          { value: 'dark' as const, icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>, label: t('profile.settings.theme.dark') },
-                          { value: 'system' as const, icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" /></svg>, label: t('profile.settings.theme.system') },
-                        ] as const).map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => updateSetting('theme', opt.value)}
-                            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
-                              settings.theme === opt.value
-                                ? 'border-[#7867E8] bg-bd-lav/15 text-bd-lav-deep shadow-sm dark:border-bd-lav dark:bg-bd-lav/15 dark:text-bd-lav'
-                                : 'border-bd-line bg-white text-bd-ink-soft hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-slate-800'
-                            }`}
-                          >
-                            <span className={settings.theme === opt.value ? 'text-bd-lav-deep dark:text-bd-lav' : 'text-bd-ink-muted dark:text-slate-500'}>
-                              {opt.icon}
-                            </span>
-                            <span className="text-sm font-semibold">{opt.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </section>
 

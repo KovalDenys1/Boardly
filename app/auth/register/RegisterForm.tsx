@@ -238,168 +238,160 @@ export default function RegisterForm() {
   )
 
   return (
-    <div className="relative min-h-[100svh] overflow-x-hidden overflow-y-auto bg-[#070b18]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.26),transparent_32%),radial-gradient(circle_at_top_right,rgba(217,70,239,0.24),transparent_34%),radial-gradient(circle_at_bottom,rgba(59,130,246,0.18),transparent_28%)]" />
-      <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:72px_72px]" />
-      <div className="relative mx-auto flex min-h-[100svh] w-full box-border items-center justify-center px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <div className="w-full max-w-5xl">
-          <div className="overflow-hidden rounded-[32px] border border-white/30 bg-white/[0.94] text-gray-900 shadow-[0_32px_120px_rgba(2,6,23,0.65)] backdrop-blur-2xl md:min-h-[28rem] dark:border-white/10 dark:bg-slate-900/[0.94] dark:text-gray-100">
-            <div className="px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
-              <div className="mx-auto max-w-3xl text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600/80 dark:text-blue-300/80">
-                  Boardly
-                </p>
-                <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                  {t('auth.register.title')}
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                  {t('auth.register.haveAccount')}{' '}
-                  <Link
-                    href={buildAuthUrl('login', returnUrl)}
-                    className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    Login
-                  </Link>
-                </p>
+    <div className="bd-screen" style={{
+      minHeight: '100svh', overflowX: 'hidden', overflowY: 'auto',
+      background: 'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
+    }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center', padding: '40px 32px', minHeight: '100svh', boxSizing: 'border-box' }}>
+
+        {/* LEFT: form */}
+        <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
+          <span className="bd-kicker">Create account</span>
+          <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 52, lineHeight: 1, marginTop: 8, marginBottom: 12, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
+            {t('auth.register.title')} 👋
+          </h1>
+          <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
+            20 seconds — and you&apos;re in the game.{' '}
+            {t('auth.register.haveAccount')}{' '}
+            <Link href={buildAuthUrl('login', returnUrl)} style={{ color: 'var(--bd-coral)', fontWeight: 600, textDecoration: 'underline' }}>
+              {t('auth.login.submit')}
+            </Link>
+          </p>
+
+          {isLobbyInviteFlow && (
+            <div style={{ marginBottom: 20, padding: 16, background: 'rgba(79,201,166,0.12)', border: '1.5px solid rgba(79,201,166,0.3)', borderRadius: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <span style={{ fontSize: 24 }}>🎮</span>
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--bd-mint-deep)', fontSize: 14 }}>{t('auth.login.invited', "You've been invited to a game!")}</div>
+                <div style={{ fontSize: 13, color: 'var(--bd-ink-soft)', marginTop: 2 }}>{t('auth.login.loginToJoin', 'Login to join the lobby')}</div>
+              </div>
+            </div>
+          )}
+
+          <div className="bd-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {renderProviderButtons()}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--bd-ink-muted)', fontSize: 13 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+              {t('common.or')}
+              <div style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-soft)' }}>{t('auth.register.email')}</label>
+                  <input
+                    type="email"
+                    required
+                    disabled={loading}
+                    className="bd-input"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder={t('auth.register.emailPlaceholder')}
+                    autoComplete="email"
+                  />
+                  {fieldErrors.email && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.email}</p>}
+                </div>
+
+                <div>
+                  <UsernameInput
+                    value={formData.username}
+                    onChange={(username) => setFormData({ ...formData, username })}
+                    error={fieldErrors.username}
+                    disabled={loading}
+                    required={true}
+                    onAvailabilityChange={setUsernameAvailable}
+                  />
+                </div>
+
+                <div>
+                  <PasswordInput
+                    value={formData.password}
+                    onChange={(value) => setFormData({ ...formData, password: value })}
+                    placeholder={t('auth.register.passwordPlaceholder')}
+                    autoComplete="new-password"
+                    showStrength={false}
+                    statusText={formData.password ? passwordStrength.label : undefined}
+                    statusClassName={passwordStrength.textColor}
+                    hint={passwordTooltip}
+                    hintLabel={t('auth.password.requirements', 'Password requirements')}
+                    required={true}
+                  />
+                  {fieldErrors.password && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.password}</p>}
+                </div>
+
+                <div>
+                  <PasswordInput
+                    value={formData.confirmPassword}
+                    onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
+                    placeholder={t('auth.register.confirmPasswordPlaceholder')}
+                    autoComplete="new-password"
+                    label={t('auth.register.confirmPassword')}
+                  />
+                  {fieldErrors.confirmPassword && <p style={{ fontSize: 13, color: 'var(--bd-coral-deep)', marginTop: 2 }}>{fieldErrors.confirmPassword}</p>}
+                </div>
               </div>
 
-              {isLobbyInviteFlow && (
-                <div className="mx-auto mt-5 max-w-2xl">
-                  {renderInviteBanner()}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
+                  <Checkbox checked={agreedToTerms} onCheckedChange={setAgreedToTerms} disabled={loading} style={{ marginTop: 2, flexShrink: 0 }} />
+                  <span>
+                    {t('auth.register.agreeToTerms')}{' '}
+                    <Link href="/terms" target="_blank" style={{ color: 'var(--bd-coral)', fontWeight: 600 }}>{t('auth.register.termsOfService')}</Link>
+                    {' '}{t('common.and')}{' '}
+                    <Link href="/privacy" target="_blank" style={{ color: 'var(--bd-coral)', fontWeight: 600 }}>{t('auth.register.privacyPolicy')}</Link>
+                  </span>
+                </Label>
+                <Label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: 'var(--bd-ink-soft)' }}>
+                  <Checkbox checked={rememberMe} onCheckedChange={setRememberMe} disabled={loading} />
+                  {t('auth.login.rememberMe')}
+                </Label>
+              </div>
+
+              {error && (
+                <div style={{ padding: '12px 16px', background: 'rgba(255,107,91,0.1)', border: '1.5px solid rgba(255,107,91,0.3)', borderRadius: 12, fontSize: 14, color: 'var(--bd-coral-deep)' }}>
+                  {error}
                 </div>
               )}
 
-              <div className="mx-auto mt-4 max-w-3xl space-y-3">
-                <div className="rounded-[28px] border border-slate-200/80 bg-slate-50/82 p-2 shadow-sm dark:border-white/10 dark:bg-slate-800/72 sm:p-2.5">
-                  {renderProviderButtons()}
-                </div>
+              <button type="submit" disabled={loading} className="bd-btn bd-btn-coral bd-btn-lg" style={{ justifyContent: 'center', marginTop: 4 }}>
+                {loading ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <LoadingSpinner size="sm" />
+                    {t('auth.register.creating')}
+                  </span>
+                ) : t('auth.register.submit')}
+              </button>
+            </form>
+          </div>
+        </div>
 
-                <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400 dark:text-slate-500">
-                  <div className="h-px flex-1 bg-slate-200 dark:bg-white/10"></div>
-                  <span>{t('common.or')}</span>
-                  <div className="h-px flex-1 bg-slate-200 dark:bg-white/10"></div>
-                </div>
-
-                <form
-                  onSubmit={handleSubmit}
-                  className="space-y-3 rounded-[30px] border border-slate-200/80 bg-white/85 p-3.5 shadow-sm dark:border-white/10 dark:bg-slate-950/35"
-                >
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="label">{t('auth.register.email')}</label>
-                      <input
-                        type="email"
-                        required
-                        disabled={loading}
-                        className="input text-base sm:text-sm"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder={t('auth.register.emailPlaceholder')}
-                        autoComplete="email"
-                      />
-                      {fieldErrors.email && (
-                        <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
-                      )}
-                    </div>
-
-                    <div className="[&_input]:text-base sm:[&_input]:text-sm">
-                      <UsernameInput
-                        value={formData.username}
-                        onChange={(username) => setFormData({ ...formData, username })}
-                        error={fieldErrors.username}
-                        disabled={loading}
-                        required={true}
-                        onAvailabilityChange={setUsernameAvailable}
-                      />
-                    </div>
-
-                    <div className="[&_input]:text-base sm:[&_input]:text-sm">
-                      <PasswordInput
-                        value={formData.password}
-                        onChange={(value) => setFormData({ ...formData, password: value })}
-                        placeholder={t('auth.register.passwordPlaceholder')}
-                        autoComplete="new-password"
-                        showStrength={false}
-                        statusText={formData.password ? passwordStrength.label : undefined}
-                        statusClassName={passwordStrength.textColor}
-                        hint={passwordTooltip}
-                        hintLabel={t('auth.password.requirements', 'Password requirements')}
-                        required={true}
-                      />
-                      {fieldErrors.password && (
-                        <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
-                      )}
-                    </div>
-
-                    <div className="[&_input]:text-base sm:[&_input]:text-sm">
-                      <PasswordInput
-                        value={formData.confirmPassword}
-                        onChange={(value) => setFormData({ ...formData, confirmPassword: value })}
-                        placeholder={t('auth.register.confirmPasswordPlaceholder')}
-                        autoComplete="new-password"
-                        label={t('auth.register.confirmPassword')}
-                      />
-                      {fieldErrors.confirmPassword && (
-                        <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-800/70 md:grid md:grid-cols-[minmax(0,1fr)_170px] md:items-center md:gap-4">
-                    <Label className="flex cursor-pointer items-start gap-3">
-                      <Checkbox
-                        checked={agreedToTerms}
-                        onCheckedChange={setAgreedToTerms}
-                        disabled={loading}
-                        className="mt-0.5 shrink-0"
-                      />
-                      <span className="min-w-0 text-sm leading-5 text-gray-700 dark:text-gray-300">
-                        {t('auth.register.agreeToTerms')}{' '}
-                        <Link href="/terms" target="_blank" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
-                          {t('auth.register.termsOfService')}
-                        </Link>
-                        {' '}{t('common.and')}{' '}
-                        <Link href="/privacy" target="_blank" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
-                          {t('auth.register.privacyPolicy')}
-                        </Link>
-                      </span>
-                    </Label>
-
-                    <Label className="mt-3 flex cursor-pointer items-center gap-3 border-t border-slate-200/80 pt-3 dark:border-slate-700/80 md:mt-0 md:justify-self-end md:border-t-0 md:pt-0">
-                      <Checkbox
-                        checked={rememberMe}
-                        onCheckedChange={setRememberMe}
-                        disabled={loading}
-                        className="shrink-0"
-                      />
-                      <span className="min-w-0 text-sm leading-5 text-gray-700 dark:text-gray-300">
-                        {t('auth.login.rememberMe')}
-                      </span>
-                    </Label>
-                  </div>
-
-                  {error && (
-                    <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-400">
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn btn-primary w-full text-sm sm:text-base"
-                  >
-                    {loading ? (
-                      <span className="flex flex-row items-center justify-center gap-2">
-                        <LoadingSpinner size="sm" />
-                        <span>{t('auth.register.creating')}</span>
-                      </span>
-                    ) : (
-                      t('auth.register.submit')
-                    )}
-                  </button>
-                </form>
+        {/* RIGHT: illustrated panel */}
+        <div style={{
+          position: 'relative',
+          background: 'linear-gradient(135deg, var(--bd-lav) 0%, var(--bd-coral) 100%)',
+          borderRadius: 36, padding: 48, aspectRatio: '4 / 5', overflow: 'hidden',
+          border: '3px solid var(--bd-ink)',
+          boxShadow: '10px 10px 0 var(--bd-ink)',
+        }} className="hidden lg:block">
+          <div className="bd-dot-grid" style={{ position: 'absolute', inset: 0, opacity: 0.3 }} />
+          <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'white', lineHeight: 0.95, marginBottom: 12 }}>
+                Play.<br />Connect.<br />Win.
               </div>
+              <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', maxWidth: 200, lineHeight: 1.5 }}>
+                Join thousands of players for epic board game nights.
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex' }}>
+                {[['A','bd-avatar-mint'],['L','bd-avatar-sun'],['M','bd-avatar-sky']].map(([l, cls], i) => (
+                  <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
+                ))}
+              </div>
+              <div style={{ fontSize: 13, color: 'white', fontWeight: 500 }}>180,000+ players already here</div>
             </div>
           </div>
         </div>

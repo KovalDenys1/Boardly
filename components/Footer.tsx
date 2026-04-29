@@ -9,23 +9,56 @@ export default function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-black/30 backdrop-blur-sm border-t border-white/10 mt-auto">
+    <footer
+      className="mt-auto"
+      style={{
+        background: 'var(--bd-bg2)',
+        borderTop: '1.5px solid var(--bd-line)',
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Top section: brand + columns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 text-2xl font-bold text-white mb-3">
-              🎲 Boardly
+            <div
+              className="flex items-center gap-2 mb-3"
+              style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', color: 'var(--bd-ink)' }}
+            >
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 9,
+                  background: 'var(--bd-ink)',
+                  color: 'var(--bd-sun)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontFamily: 'var(--bd-font-display)',
+                  fontWeight: 800,
+                  fontSize: 20,
+                  transform: 'rotate(-6deg)',
+                  boxShadow: '3px 3px 0 var(--bd-coral)',
+                  flexShrink: 0,
+                }}
+              >
+                B
+              </span>
+              boardly
             </div>
-            <p className="text-white/50 text-sm leading-relaxed max-w-xs">
+            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--bd-ink-muted)' }}>
               {t('footer.tagline')}
             </p>
           </div>
 
           {/* Games */}
           <div>
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">{t('footer.games')}</h3>
+            <h3
+              className="font-semibold text-xs uppercase tracking-wider mb-4"
+              style={{ color: 'var(--bd-ink-muted)' }}
+            >
+              {t('footer.games')}
+            </h3>
             <ul className="space-y-2.5">
               {[
                 { label: 'Yahtzee', href: '/games/yahtzee' },
@@ -36,7 +69,10 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-white/50 hover:text-white text-sm transition-colors"
+                    className="text-sm transition-colors hover:opacity-100"
+                    style={{ color: 'var(--bd-ink-soft)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
                   >
                     {link.label}
                   </Link>
@@ -47,7 +83,12 @@ export default function Footer() {
 
           {/* Play */}
           <div>
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">{t('footer.play')}</h3>
+            <h3
+              className="font-semibold text-xs uppercase tracking-wider mb-4"
+              style={{ color: 'var(--bd-ink-muted)' }}
+            >
+              {t('footer.play')}
+            </h3>
             <ul className="space-y-2.5">
               {([
                 { labelKey: 'footer.quickPlay', href: '/#quick-play' },
@@ -58,7 +99,10 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-white/50 hover:text-white text-sm transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: 'var(--bd-ink-soft)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
                   >
                     {t(link.labelKey)}
                   </Link>
@@ -69,7 +113,12 @@ export default function Footer() {
 
           {/* Legal & Community */}
           <div>
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4">{t('footer.legal')}</h3>
+            <h3
+              className="font-semibold text-xs uppercase tracking-wider mb-4"
+              style={{ color: 'var(--bd-ink-muted)' }}
+            >
+              {t('footer.legal')}
+            </h3>
             <ul className="space-y-2.5">
               {([
                 { labelKey: 'footer.privacy', href: '/privacy' },
@@ -78,7 +127,10 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-white/50 hover:text-white text-sm transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: 'var(--bd-ink-soft)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
                   >
                     {t(link.labelKey)}
                   </Link>
@@ -86,14 +138,22 @@ export default function Footer() {
               ))}
             </ul>
 
-            <h3 className="text-white/80 font-semibold text-sm uppercase tracking-wider mb-4 mt-6">{t('footer.community')}</h3>
+            <h3
+              className="font-semibold text-xs uppercase tracking-wider mb-4 mt-6"
+              style={{ color: 'var(--bd-ink-muted)' }}
+            >
+              {t('footer.community')}
+            </h3>
             <ul className="space-y-2.5">
               <li>
                 <a
                   href="https://github.com/KovalDenys1/Boardly"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white/50 hover:text-white text-sm transition-colors"
+                  className="text-sm transition-colors"
+                  style={{ color: 'var(--bd-ink-soft)' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--bd-ink)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--bd-ink-soft)')}
                 >
                   GitHub
                 </a>
@@ -102,7 +162,24 @@ export default function Footer() {
                 <button
                   id="footer-feedback-trigger"
                   onClick={() => window.dispatchEvent(new CustomEvent('open-feedback'))}
-                  className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-semibold text-bd-lav transition-colors hover:border-bd-lav/40 hover:bg-bd-lav/10 hover:text-white"
+                  className="cursor-pointer rounded-xl text-sm font-semibold transition-all"
+                  style={{
+                    padding: '6px 14px',
+                    border: '1.5px solid var(--bd-coral)',
+                    background: 'transparent',
+                    color: 'var(--bd-coral-deep)',
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget
+                    el.style.background = 'var(--bd-coral)'
+                    el.style.color = '#fff'
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget
+                    el.style.background = 'transparent'
+                    el.style.color = 'var(--bd-coral-deep)'
+                  }}
                 >
                   {t('footer.sendFeedback')}
                 </button>
@@ -112,7 +189,10 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-white/35 text-xs">
+        <div
+          className="mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
+          style={{ borderTop: '1.5px solid var(--bd-line)', color: 'var(--bd-ink-muted)' }}
+        >
           <span>{t('footer.allRightsReserved', { year: currentYear })}</span>
           <span>{t('footer.builtWith')}</span>
         </div>

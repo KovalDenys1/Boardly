@@ -200,7 +200,7 @@ function CalendarIcon() {
 
 export default function Friends() {
   const { t } = useTranslation()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('friends')
   const [friends, setFriends] = useState<Friend[]>([])
@@ -214,10 +214,22 @@ export default function Friends() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addMethod, setAddMethod] = useState<AddMethod>('link')
   const [addLoading, setAddLoading] = useState(false)
+  const canLoadFriendData = status === 'authenticated' && Boolean(session?.user?.emailVerified)
 
   const loadFriends = useCallback(async () => {
+    if (!canLoadFriendData) {
+      setFriends([])
+      return
+    }
+
     try {
       const res = await fetch('/api/friends')
+
+      if (res.status === 401 || res.status === 403) {
+        setFriends([])
+        return
+      }
+
       if (!res.ok) throw new Error('Failed to load friends')
 
       const data = await res.json()
@@ -227,14 +239,31 @@ export default function Friends() {
       clientLogger.error('Error loading friends:', error)
       showToast.error('profile.friends.errors.loadFailed')
     }
-  }, [])
+  }, [canLoadFriendData])
 
   const loadRequests = useCallback(async () => {
+    if (!canLoadFriendData) {
+      setReceivedRequests([])
+      setSentRequests([])
+      return
+    }
+
     try {
       const [receivedRes, sentRes] = await Promise.all([
         fetch('/api/friends/request?type=received'),
         fetch('/api/friends/request?type=sent'),
       ])
+
+      if (
+        receivedRes.status === 401 ||
+        receivedRes.status === 403 ||
+        sentRes.status === 401 ||
+        sentRes.status === 403
+      ) {
+        setReceivedRequests([])
+        setSentRequests([])
+        return
+      }
 
       if (!receivedRes.ok || !sentRes.ok) {
         throw new Error('Failed to load requests')
@@ -254,11 +283,10 @@ export default function Friends() {
       clientLogger.error('Error loading requests:', error)
       showToast.error('profile.friends.errors.loadFailed')
     }
-  }, [])
+  }, [canLoadFriendData])
 
   const loadMyFriendCode = useCallback(async () => {
-    if (!session?.user?.emailVerified) {
-      clientLogger.warn('Email not verified, skipping friend code load')
+    if (!canLoadFriendData) {
       setMyFriendCode('')
       setMyPublicProfileId('')
       return
@@ -278,7 +306,7 @@ export default function Friends() {
     } catch (error) {
       clientLogger.error('Error loading friend code:', error)
     }
-  }, [session?.user?.emailVerified])
+  }, [canLoadFriendData])
 
   const closeAddModal = useCallback(() => {
     setShowAddModal(false)
@@ -288,6 +316,21 @@ export default function Friends() {
   }, [])
 
   useEffect(() => {
+    if (status === 'loading') {
+      setLoading(true)
+      return
+    }
+
+    if (!canLoadFriendData) {
+      setFriends([])
+      setReceivedRequests([])
+      setSentRequests([])
+      setMyFriendCode('')
+      setMyPublicProfileId('')
+      setLoading(false)
+      return
+    }
+
     const loadData = async () => {
       setLoading(true)
       try {
@@ -298,9 +341,13 @@ export default function Friends() {
     }
 
     void loadData()
-  }, [loadFriends, loadRequests, loadMyFriendCode])
+  }, [canLoadFriendData, loadFriends, loadRequests, loadMyFriendCode, status])
 
   useEffect(() => {
+    if (!canLoadFriendData) {
+      return
+    }
+
     const refreshInterval = setInterval(() => {
       if (activeTab === 'friends') {
         void loadFriends()
@@ -311,7 +358,7 @@ export default function Friends() {
     }, 60000)
 
     return () => clearInterval(refreshInterval)
-  }, [activeTab, loadFriends, loadRequests])
+  }, [activeTab, canLoadFriendData, loadFriends, loadRequests])
 
   const handleSendRequest = useCallback(
     async (e: FormEvent) => {

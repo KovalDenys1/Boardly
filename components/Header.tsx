@@ -31,7 +31,10 @@ export default function Header() {
   const isAuthenticated = status === 'authenticated'
   const isLoading = status === 'loading'
   const isAdmin = session?.user?.role === 'admin'
-  const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
+  const isAuthUiReady = isGuestUiReady && !isLoading
+  const effectiveIsAuthenticated = isAuthUiReady && isAuthenticated
+  const effectiveIsAdmin = isAuthUiReady && isAdmin
+  const isGuestSession = isAuthUiReady && isGuest && !isAuthenticated
 
   return (
     <header
@@ -75,8 +78,8 @@ export default function Header() {
             </button>
 
             <HeaderNavigation
-              isAuthenticated={isAuthenticated}
-              isAdmin={isAdmin}
+              isAuthenticated={effectiveIsAuthenticated}
+              isAdmin={effectiveIsAdmin}
               isGuest={isGuestSession}
             />
           </div>
@@ -97,13 +100,13 @@ export default function Header() {
               <LanguageSwitcher />
             </div>
 
-            {isAuthenticated && !isLoading && <NotificationsMenu />}
+            {effectiveIsAuthenticated && <NotificationsMenu />}
 
-            {isLoading ? (
+            {!isAuthUiReady ? (
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <HeaderActions
-                isAuthenticated={isAuthenticated}
+                isAuthenticated={effectiveIsAuthenticated}
                 userName={session?.user?.name}
                 userEmail={session?.user?.email}
                 userImage={session?.user?.image}
@@ -111,8 +114,8 @@ export default function Header() {
             )}
 
             <MobileMenu
-              isAuthenticated={isAuthenticated}
-              isAdmin={isAdmin}
+              isAuthenticated={effectiveIsAuthenticated}
+              isAdmin={effectiveIsAdmin}
               userName={session?.user?.name}
               userEmail={session?.user?.email}
               userImage={session?.user?.image}
