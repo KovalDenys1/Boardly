@@ -1068,9 +1068,33 @@ const uk: Translation = {
           losses: 'Поразки',
           draws: 'Нічиї',
           drawRate: 'Відсоток нічиїх',
+          lossRate: 'Відсоток поразок',
+          unbeatenRate: 'Без поразок',
           quickFacts: 'Коротко',
           currentStreak: 'Поточна серія',
           bestStreak: 'Найкраща серія',
+        },
+        gameProfiles: {
+          default: {
+            title: 'Результати матчів',
+            description: 'Короткий огляд результатів для вибраної гри.',
+          },
+          yahtzee: {
+            title: 'Картка рахунку',
+            description: 'Статистика Yahtzee з акцентом на середній і найкращий рахунок.',
+          },
+          ticTacToe: {
+            title: 'Результати на полі',
+            description: 'Для хрестиків-нуликів важливіші нічиї та ігри без поразки, а не рахунок.',
+          },
+          memory: {
+            title: 'Пам’ять і результат',
+            description: 'Показує перемоги, середній рахунок і найкращий результат у Memory.',
+          },
+          guessTheSpy: {
+            title: 'Результати за столом',
+            description: 'Огляд соціальних раундів із фокусом на завершені ігри та результати.',
+          },
         },
         sections: {
           byGame: {

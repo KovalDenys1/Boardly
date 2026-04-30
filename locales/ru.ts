@@ -1066,9 +1066,33 @@ const ru = {
           losses: 'Поражения',
           draws: 'Ничьи',
           drawRate: 'Процент ничьих',
+          lossRate: 'Процент поражений',
+          unbeatenRate: 'Без поражений',
           quickFacts: 'Коротко',
           currentStreak: 'Текущая серия',
           bestStreak: 'Лучшая серия'
+        },
+        gameProfiles: {
+          default: {
+            title: 'Исходы матчей',
+            description: 'Короткий обзор результатов для выбранной игры.'
+          },
+          yahtzee: {
+            title: 'Счётная карточка',
+            description: 'Статистика Yahtzee с акцентом на средний и лучший счёт.'
+          },
+          ticTacToe: {
+            title: 'Исходы на поле',
+            description: 'Для крестиков-ноликов важнее ничьи и игры без поражения, а не счёт.'
+          },
+          memory: {
+            title: 'Память и результат',
+            description: 'Показывает победы, средний счёт и лучший результат в Memory.'
+          },
+          guessTheSpy: {
+            title: 'Результаты за столом',
+            description: 'Обзор социальных раундов с фокусом на завершённые игры и исходы.'
+          }
         },
         sections: {
           byGame: {

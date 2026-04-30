@@ -1066,9 +1066,33 @@ const no = {
           losses: 'Tap',
           draws: 'Uavgjort',
           drawRate: 'Uavgjort-rate',
+          lossRate: 'Tapsrate',
+          unbeatenRate: 'Uten tap',
           quickFacts: 'Kort fortalt',
           currentStreak: 'Nåværende streak',
           bestStreak: 'Beste streak'
+        },
+        gameProfiles: {
+          default: {
+            title: 'Kampresultater',
+            description: 'En kort resultatoversikt for valgt spillmodus.'
+          },
+          yahtzee: {
+            title: 'Poengkort',
+            description: 'Yahtzee-statistikk med vekt på snittscore og beste score.'
+          },
+          ticTacToe: {
+            title: 'Brettresultater',
+            description: 'For Tic-Tac-Toe betyr uavgjort og spill uten tap mer enn score.'
+          },
+          memory: {
+            title: 'Memory-prestasjon',
+            description: 'Viser seire sammen med snittscore og beste resultat i Memory.'
+          },
+          guessTheSpy: {
+            title: 'Bordresultater',
+            description: 'En sosialdeduksjonsvisning med fokus på fullførte runder og utfall.'
+          }
         },
         sections: {
           byGame: {

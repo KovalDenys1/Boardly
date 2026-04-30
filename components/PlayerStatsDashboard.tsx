@@ -7,6 +7,7 @@ import { clientLogger } from '@/lib/client-logger'
 import { getAvailableGameTypes, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import { formatGameTypeLabel } from '@/lib/game-display'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 interface OverallStats {
   totalGames: number
@@ -59,8 +60,243 @@ function formatPercent(value: number): string {
   return `${value}%`
 }
 
-function supportsScoreMetrics(stats: ByGameStats): boolean {
-  return stats.avgScore !== null || stats.bestScore !== null
+function formatNumber(value: number | null): string {
+  return value === null ? '' : String(value)
+}
+
+function formatOptionalScore(value: number | null, fallback: string): string {
+  return value === null ? fallback : formatNumber(value)
+}
+
+function formatRate(numerator: number, denominator: number): string {
+  return formatPercent(denominator > 0 ? Math.round((numerator / denominator) * 100) : 0)
+}
+
+function getLastPlayedValue(stats: ByGameStats, fallback: string): string {
+  return stats.lastPlayed ? new Date(stats.lastPlayed).toLocaleDateString() : fallback
+}
+
+type AnalyticsMetric = {
+  id: string
+  label: string
+  value: string | number
+  accentClassName?: string
+}
+
+type AccentMetric = {
+  id: string
+  labelKey: TranslationKeys
+  value: string | number
+}
+
+type GameAnalyticsProfile = {
+  titleKey: TranslationKeys
+  descriptionKey: TranslationKeys
+  accentMetric: (stats: ByGameStats, notAvailable: string) => AccentMetric
+  highlights: (stats: ByGameStats, labels: GameAnalyticsLabels) => AnalyticsMetric[]
+  quickFacts: (stats: ByGameStats, labels: GameAnalyticsLabels) => AnalyticsMetric[]
+}
+
+type GameAnalyticsLabels = {
+  played: string
+  wins: string
+  losses: string
+  draws: string
+  winRate: string
+  drawRate: string
+  lossRate: string
+  unbeatenRate: string
+  avgScore: string
+  bestScore: string
+  lastPlayed: string
+  notAvailable: string
+}
+
+const metricAccents = {
+  wins: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
+  losses: 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300',
+  draws: 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300',
+  score: 'bg-bd-sun/25 text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun',
+  rate: 'bg-bd-lav/15 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav',
+}
+
+const defaultAnalyticsProfile: GameAnalyticsProfile = {
+  titleKey: 'profile.stats.dashboard.gameProfiles.default.title',
+  descriptionKey: 'profile.stats.dashboard.gameProfiles.default.description',
+  accentMetric: (stats) => ({
+    id: 'winRate',
+    labelKey: 'profile.stats.dashboard.summary.winRate',
+    value: formatPercent(stats.winRate),
+  }),
+  highlights: (stats, labels) => [
+    {
+      id: 'wins',
+      label: labels.wins,
+      value: stats.wins,
+      accentClassName: metricAccents.wins,
+    },
+    {
+      id: 'losses',
+      label: labels.losses,
+      value: stats.losses,
+      accentClassName: metricAccents.losses,
+    },
+    {
+      id: 'draws',
+      label: labels.draws,
+      value: stats.draws,
+      accentClassName: metricAccents.draws,
+    },
+  ],
+  quickFacts: (stats, labels) => [
+    { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+    { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+    { id: 'drawRate', label: labels.drawRate, value: formatRate(stats.draws, stats.gamesPlayed) },
+    { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+  ],
+}
+
+const gameAnalyticsProfiles: Record<string, GameAnalyticsProfile> = {
+  yahtzee: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.yahtzee.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.yahtzee.description',
+    accentMetric: (stats, notAvailable) => ({
+      id: 'bestScore',
+      labelKey: 'profile.stats.dashboard.sections.byGame.columns.bestScore',
+      value: formatOptionalScore(stats.bestScore, notAvailable),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'avgScore',
+        label: labels.avgScore,
+        value: formatOptionalScore(stats.avgScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+      {
+        id: 'bestScore',
+        label: labels.bestScore,
+        value: formatOptionalScore(stats.bestScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'lossRate', label: labels.lossRate, value: formatRate(stats.losses, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
+  tic_tac_toe: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.ticTacToe.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.ticTacToe.description',
+    accentMetric: (stats) => ({
+      id: 'unbeatenRate',
+      labelKey: 'profile.stats.dashboard.summary.unbeatenRate',
+      value: formatRate(stats.wins + stats.draws, stats.gamesPlayed),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+      {
+        id: 'draws',
+        label: labels.draws,
+        value: stats.draws,
+        accentClassName: metricAccents.draws,
+      },
+      {
+        id: 'unbeatenRate',
+        label: labels.unbeatenRate,
+        value: formatRate(stats.wins + stats.draws, stats.gamesPlayed),
+        accentClassName: metricAccents.rate,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'drawRate', label: labels.drawRate, value: formatRate(stats.draws, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
+  memory: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.memory.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.memory.description',
+    accentMetric: (stats, notAvailable) => ({
+      id: 'bestScore',
+      labelKey: 'profile.stats.dashboard.sections.byGame.columns.bestScore',
+      value: formatOptionalScore(stats.bestScore, notAvailable),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+      {
+        id: 'avgScore',
+        label: labels.avgScore,
+        value: formatOptionalScore(stats.avgScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+      {
+        id: 'bestScore',
+        label: labels.bestScore,
+        value: formatOptionalScore(stats.bestScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'lossRate', label: labels.lossRate, value: formatRate(stats.losses, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
+  guess_the_spy: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.guessTheSpy.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.guessTheSpy.description',
+    accentMetric: (stats) => ({
+      id: 'winRate',
+      labelKey: 'profile.stats.dashboard.summary.winRate',
+      value: formatPercent(stats.winRate),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'played',
+        label: labels.played,
+        value: stats.gamesPlayed,
+        accentClassName: metricAccents.rate,
+      },
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+      {
+        id: 'losses',
+        label: labels.losses,
+        value: stats.losses,
+        accentClassName: metricAccents.losses,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'lossRate', label: labels.lossRate, value: formatRate(stats.losses, stats.gamesPlayed) },
+      { id: 'drawRate', label: labels.drawRate, value: formatRate(stats.draws, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
 }
 
 interface PlayerStatsDashboardProps {
@@ -174,98 +410,46 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
   }, [availableByGameStats, selectedGameType])
 
   const selectedGameLabel = selectedGameStats ? formatGameTypeLabel(selectedGameStats.gameType) : ''
+  const selectedAnalyticsProfile = selectedGameStats
+    ? gameAnalyticsProfiles[selectedGameStats.gameType] ?? defaultAnalyticsProfile
+    : defaultAnalyticsProfile
 
-  const recordItems = useMemo(() => {
+  const gameAnalyticsLabels = useMemo<GameAnalyticsLabels>(
+    () => ({
+      played: t('profile.stats.dashboard.sections.byGame.columns.played'),
+      wins: t('profile.stats.dashboard.summary.wins'),
+      losses: t('profile.stats.dashboard.summary.losses'),
+      draws: t('profile.stats.dashboard.summary.draws'),
+      winRate: t('profile.stats.dashboard.summary.winRate'),
+      drawRate: t('profile.stats.dashboard.summary.drawRate'),
+      lossRate: t('profile.stats.dashboard.summary.lossRate'),
+      unbeatenRate: t('profile.stats.dashboard.summary.unbeatenRate'),
+      avgScore: t('profile.stats.dashboard.sections.byGame.columns.avgScore'),
+      bestScore: t('profile.stats.dashboard.sections.byGame.columns.bestScore'),
+      lastPlayed: t('profile.stats.dashboard.sections.byGame.columns.lastPlayed'),
+      notAvailable: t('profile.stats.dashboard.common.notAvailable'),
+    }),
+    [t]
+  )
+
+  const highlightItems = useMemo(() => {
     if (!selectedGameStats) return []
 
-    return [
-      {
-        id: 'wins',
-        label: t('profile.stats.dashboard.summary.wins'),
-        value: selectedGameStats.wins,
-        accentClassName: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
-      },
-      {
-        id: 'losses',
-        label: t('profile.stats.dashboard.summary.losses'),
-        value: selectedGameStats.losses,
-        accentClassName: 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300',
-      },
-      {
-        id: 'draws',
-        label: t('profile.stats.dashboard.summary.draws'),
-        value: selectedGameStats.draws,
-        accentClassName: 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300',
-      },
-    ]
-  }, [selectedGameStats, t])
+    return selectedAnalyticsProfile.highlights(selectedGameStats, gameAnalyticsLabels)
+  }, [gameAnalyticsLabels, selectedAnalyticsProfile, selectedGameStats])
 
   const quickFacts = useMemo(() => {
     if (!selectedGameStats) return []
 
-    const lastPlayedValue = selectedGameStats.lastPlayed
-      ? new Date(selectedGameStats.lastPlayed).toLocaleDateString()
-      : t('profile.stats.dashboard.common.notAvailable')
+    return selectedAnalyticsProfile.quickFacts(selectedGameStats, gameAnalyticsLabels)
+  }, [gameAnalyticsLabels, selectedAnalyticsProfile, selectedGameStats])
 
-    if (supportsScoreMetrics(selectedGameStats)) {
-      return [
-        {
-          id: 'played',
-          label: t('profile.stats.dashboard.sections.byGame.columns.played'),
-          value: String(selectedGameStats.gamesPlayed),
-        },
-        {
-          id: 'avgScore',
-          label: t('profile.stats.dashboard.sections.byGame.columns.avgScore'),
-          value:
-            selectedGameStats.avgScore === null
-              ? t('profile.stats.dashboard.common.notAvailable')
-              : String(selectedGameStats.avgScore),
-        },
-        {
-          id: 'bestScore',
-          label: t('profile.stats.dashboard.sections.byGame.columns.bestScore'),
-          value:
-            selectedGameStats.bestScore === null
-              ? t('profile.stats.dashboard.common.notAvailable')
-              : String(selectedGameStats.bestScore),
-        },
-        {
-          id: 'lastPlayed',
-          label: t('profile.stats.dashboard.sections.byGame.columns.lastPlayed'),
-          value: lastPlayedValue,
-        },
-      ]
-    }
-
-    const drawRate =
-      selectedGameStats.gamesPlayed > 0
-        ? Math.round((selectedGameStats.draws / selectedGameStats.gamesPlayed) * 100)
-        : 0
-
-    return [
-      {
-        id: 'played',
-        label: t('profile.stats.dashboard.sections.byGame.columns.played'),
-        value: String(selectedGameStats.gamesPlayed),
-      },
-      {
-        id: 'winRate',
-        label: t('profile.stats.dashboard.summary.winRate'),
-        value: formatPercent(selectedGameStats.winRate),
-      },
-      {
-        id: 'drawRate',
-        label: t('profile.stats.dashboard.summary.drawRate'),
-        value: formatPercent(drawRate),
-      },
-      {
-        id: 'lastPlayed',
-        label: t('profile.stats.dashboard.sections.byGame.columns.lastPlayed'),
-        value: lastPlayedValue,
-      },
-    ]
-  }, [selectedGameStats, t])
+  const accentMetric = selectedGameStats
+    ? selectedAnalyticsProfile.accentMetric(
+        selectedGameStats,
+        t('profile.stats.dashboard.common.notAvailable')
+      )
+    : null
 
   const overallInsightItems = useMemo(() => {
     if (!stats) return []
@@ -409,19 +593,24 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                             {selectedGameLabel}
                           </p>
                           <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
-                            {t('profile.stats.dashboard.sections.byGame.selectedDescription')}
+                            {t(selectedAnalyticsProfile.descriptionKey)}
                           </p>
                         </div>
 
-                        <div className="inline-flex items-center rounded-full bg-bd-lav/15 px-4 py-2 text-sm font-bold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
-                          {selectedGameStats ? formatPercent(selectedGameStats.winRate) : formatPercent(0)}
-                        </div>
+                        {accentMetric ? (
+                          <div className="inline-flex flex-col items-end rounded-2xl bg-bd-lav/15 px-4 py-2 text-right text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
+                              {t(accentMetric.labelKey)}
+                            </span>
+                            <span className="mt-1 text-lg font-bold">{accentMetric.value}</span>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        {recordItems.map((item) => (
+                        {highlightItems.map((item) => (
                           <div key={item.id} className={`${tileClassName} px-4 py-4 text-center`}>
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${item.accentClassName}`}>
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${item.accentClassName ?? metricAccents.rate}`}>
                               {item.label}
                             </span>
                             <p className="mt-3 text-3xl font-bold text-bd-ink dark:text-white">{item.value}</p>
@@ -432,7 +621,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
                     <div className={`${warmSurfaceClassName} p-5`}>
                       <h4 className="text-lg font-bold text-bd-ink dark:text-white">
-                        {t('profile.stats.dashboard.summary.wld')}
+                        {t(selectedAnalyticsProfile.titleKey)}
                       </h4>
                       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
                         {overallInsightItems.map((item) => (

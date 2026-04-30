@@ -1066,9 +1066,33 @@ const en = {
           losses: 'Losses',
           draws: 'Draws',
           drawRate: 'Draw rate',
+          lossRate: 'Loss rate',
+          unbeatenRate: 'Unbeaten rate',
           quickFacts: 'Quick facts',
           currentStreak: 'Current streak',
           bestStreak: 'Best streak',
+        },
+        gameProfiles: {
+          default: {
+            title: 'Match outcomes',
+            description: 'A compact outcome view for this game mode.',
+          },
+          yahtzee: {
+            title: 'Score sheet',
+            description: 'Score-focused stats for completed Yahtzee games.',
+          },
+          ticTacToe: {
+            title: 'Board outcomes',
+            description: 'Draws and unbeaten games matter more than score for Tic-Tac-Toe.',
+          },
+          memory: {
+            title: 'Memory performance',
+            description: 'Tracks wins together with average and best score for Memory games.',
+          },
+          guessTheSpy: {
+            title: 'Table results',
+            description: 'A social-deduction view focused on finished rounds and outcomes.',
+          },
         },
         sections: {
           byGame: {

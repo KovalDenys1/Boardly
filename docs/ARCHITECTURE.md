@@ -62,11 +62,19 @@ All games implement `GameEngine` (`lib/game-engine.ts`) and expose:
 - `alias`
 - `other`
 
+Game lifecycle and public availability are managed in `lib/game-catalog.ts`:
+
+- `available` games are visible and playable in public UI.
+- `in-development` games exist behind implementation or feature-flag boundaries.
+- `planned` games are product direction only.
+
 The default registered runtime set is managed in `lib/game-registry.ts`:
 
 - Stable games: `yahtzee`, `guess_the_spy`, `tic_tac_toe`, `rock_paper_scissors`, `memory`
 - Experimental/feature-flagged games: `telephone_doodle`, `sketch_and_guess`, `liars_party`, `fake_artist`, `alias`
 - Bot-supported games: `yahtzee`, `tic_tac_toe`, `rock_paper_scissors`
+
+For game launch and promotion requirements, see `docs/GAME_DEVELOPMENT.md`.
 
 ## Realtime patterns
 
