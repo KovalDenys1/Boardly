@@ -467,28 +467,6 @@ export async function POST(
     const enginePlayers = gameEngine.getPlayers()
     const gamePlayers = game.players as GamePlayer[]
     const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
-    const changedPlayerUpdates: Array<{ id: string; score: number; scorecard: string }> = []
-
-    for (const player of enginePlayers as Player[]) {
-      const dbPlayer = dbPlayersByUserId.get(player.id)
-      if (!dbPlayer) continue
-
-      const nextScore = typeof player.score === 'number' ? player.score : 0
-      const nextScorecard = JSON.stringify(
-        getScorecard ? getScorecard(player.id) : {}
-      )
-
-      if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
-        continue
-      }
-
-      changedPlayerUpdates.push({
-        id: dbPlayer.id,
-        score: nextScore,
-        scorecard: nextScorecard,
-      })
-    }
-
     const TERMINAL_STATUSES = new Set(['finished', 'abandoned', 'cancelled'])
     const isTerminal = TERMINAL_STATUSES.has(newState.status)
     const terminalFields = statusChanged && isTerminal
@@ -510,7 +488,7 @@ export async function POST(
             winnerUserId: winnerPlayer?.userId ?? null,
             isDraw: newState.status === 'finished' && !newState.winner,
             playerResults: (enginePlayers as Player[]).map((ep, i) => ({
-              userId: gamePlayers[i]?.userId ?? ep.id,
+              userId: dbPlayersByUserId.get(ep.id)?.userId ?? gamePlayers[i]?.userId ?? ep.id,
               placement: typeof (ep as { placement?: number }).placement === 'number' ? (ep as { placement?: number }).placement : i + 1,
               finalScore: typeof ep.score === 'number' ? ep.score : null,
               isWinner: ep.id === newState.winner,
@@ -519,6 +497,64 @@ export async function POST(
           return { endedAt: now, durationSeconds, terminalMetadata }
         })()
       : {}
+    const terminalPlayerResultsByUserId = new Map(
+      (terminalFields as {
+        terminalMetadata?: {
+          playerResults?: Array<{
+            userId: string
+            placement: number
+            finalScore: number | null
+            isWinner: boolean
+          }>
+        }
+      }).terminalMetadata?.playerResults?.map((result) => [result.userId, result]) ?? []
+    )
+    const changedPlayerUpdates: Array<{
+      id: string
+      score: number
+      scorecard: string
+      finalScore?: number | null
+      placement?: number | null
+      isWinner?: boolean
+    }> = []
+
+    for (const player of enginePlayers as Player[]) {
+      const dbPlayer = dbPlayersByUserId.get(player.id)
+      if (!dbPlayer) continue
+
+      const nextScore = typeof player.score === 'number' ? player.score : 0
+      const nextScorecard = JSON.stringify(
+        getScorecard ? getScorecard(player.id) : {}
+      )
+      const terminalResult = terminalPlayerResultsByUserId.get(player.id)
+      const nextFinalScore = terminalResult?.finalScore
+      const nextPlacement = terminalResult?.placement
+      const nextIsWinner = terminalResult?.isWinner
+
+      if (
+        dbPlayer.score === nextScore &&
+        dbPlayer.scorecard === nextScorecard &&
+        (terminalResult == null ||
+          (dbPlayer.finalScore === nextFinalScore &&
+            dbPlayer.placement === nextPlacement &&
+            dbPlayer.isWinner === nextIsWinner))
+      ) {
+        continue
+      }
+
+      changedPlayerUpdates.push({
+        id: dbPlayer.id,
+        score: nextScore,
+        scorecard: nextScorecard,
+        ...(terminalResult != null
+          ? {
+              finalScore: nextFinalScore,
+              placement: nextPlacement,
+              isWinner: nextIsWinner,
+            }
+          : {}),
+      })
+    }
 
     const gameUpdateResult = await prisma.$transaction(async (tx) => {
       // Optimistic concurrency control:
@@ -549,6 +585,9 @@ export async function POST(
           data: {
             score: scoreUpdate.score,
             scorecard: scoreUpdate.scorecard,
+            ...(scoreUpdate.finalScore !== undefined ? { finalScore: scoreUpdate.finalScore } : {}),
+            ...(scoreUpdate.placement !== undefined ? { placement: scoreUpdate.placement } : {}),
+            ...(scoreUpdate.isWinner !== undefined ? { isWinner: scoreUpdate.isWinner } : {}),
           },
         })
       }
