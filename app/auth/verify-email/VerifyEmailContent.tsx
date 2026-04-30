@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -107,63 +107,74 @@ export default function VerifyEmailContent() {
     }
   }
 
+  const authShell = (children: ReactNode) => (
+    <div
+      className="page-shell-full flex items-center justify-center p-4"
+      style={{
+        background:
+          'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
+      }}
+    >
+      {children}
+    </div>
+  )
+
   if (token && loading) {
-    return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-        <div className="card max-w-md w-full text-center">
-          <LoadingSpinner />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">{t('auth.verifyEmail.verifying')}</p>
-        </div>
+    return authShell(
+      <div className="bd-card w-full max-w-sm p-8 text-center">
+        <LoadingSpinner />
+        <p className="mt-4 text-sm font-semibold text-bd-ink-soft">{t('auth.verifyEmail.verifying')}</p>
       </div>
     )
   }
 
-  return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
-      <div className="card max-w-md w-full text-center">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/20 mb-6">
-          <span className="text-5xl">📧</span>
+  return authShell(
+    <div className="bd-card w-full max-w-sm p-8 text-center">
+      <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-sun text-4xl shadow-[4px_4px_0_#1F1B16]">
+        📧
+      </div>
+
+      <h1
+        className="mb-3 text-3xl font-extrabold text-bd-ink"
+        style={{ fontFamily: 'var(--bd-font-display)' }}
+      >
+        {t('auth.verifyEmail.title')}
+      </h1>
+
+      <p className="mb-6 text-sm leading-6 text-bd-ink-soft">
+        {t('auth.verifyEmail.description')}
+      </p>
+
+      {sent && (
+        <div className="mb-4 rounded-xl border border-bd-mint/40 bg-bd-mint/10 px-4 py-3 text-sm font-semibold text-bd-mint-deep">
+          ✓ {t('auth.verifyEmail.emailSent')}
         </div>
+      )}
 
-        <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
-          {t('auth.verifyEmail.title')}
-        </h1>
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={resendVerification}
+          disabled={loading || sent}
+          className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <LoadingSpinner />
+              <span className="ml-2">{t('auth.verifyEmail.sending')}</span>
+            </>
+          ) : sent ? (
+            t('auth.verifyEmail.sent')
+          ) : (
+            t('auth.verifyEmail.resendButton')
+          )}
+        </button>
 
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          {t('auth.verifyEmail.description')}
-        </p>
-
-        {sent && (
-          <div className="bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded mb-4">
-            ✓ {t('auth.verifyEmail.emailSent')}
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <button
-            onClick={resendVerification}
-            disabled={loading || sent}
-            className="btn btn-primary w-full"
-          >
-            {loading ? (
-              <>
-                <LoadingSpinner />
-                <span className="ml-2">{t('auth.verifyEmail.sending')}</span>
-              </>
-            ) : sent ? (
-              t('auth.verifyEmail.sent')
-            ) : (
-              t('auth.verifyEmail.resendButton')
-            )}
-          </button>
-
-          <button
-            onClick={() => router.push('/')}
-            className="btn btn-secondary w-full"
-          >
-            {t('auth.verifyEmail.backToHome')}
-          </button>
-        </div>
+        <button
+          onClick={() => router.push('/')}
+          className="bd-btn bd-btn-ghost w-full justify-center"
+        >
+          {t('auth.verifyEmail.backToHome')}
+        </button>
       </div>
     </div>
   )
