@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getAllEnabledGameTypes, getGameMetadata } from '@/lib/game-catalog'
+import { getAvailableGameTypes, getGameMetadata } from '@/lib/game-catalog'
 
 interface LeaderboardEntry {
   rank: number
@@ -15,17 +15,28 @@ interface LeaderboardEntry {
   winRate: number
 }
 
+const COMPACT_GAME_ICONS: Record<string, string> = {
+  tic_tac_toe: '❌',
+  rock_paper_scissors: '✊',
+}
+
+const getCompactGameIcon = (type: string, icon: string) => COMPACT_GAME_ICONS[type] ?? icon
+
 const GAME_FILTERS = [
-  { value: '', label: 'All Games', icon: '🎮' },
-  ...getAllEnabledGameTypes().map((type) => {
+  { value: '', label: 'All Games', icon: '🎮', displayIcon: '🎮' },
+  ...getAvailableGameTypes().map((type) => {
     const meta = getGameMetadata(type)
-    return { value: type, label: meta?.name ?? type, icon: meta?.icon ?? '🎮' }
+    const icon = meta?.icon ?? '🎮'
+    return {
+      value: type,
+      label: meta?.name ?? type,
+      icon,
+      displayIcon: getCompactGameIcon(type, icon),
+    }
   }),
 ]
 
 const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
-// Show as pills up to this many filters; above → dropdown
-const PILL_THRESHOLD = 5
 
 const rankAccent = (rank: number) => {
   if (rank === 1) return 'var(--bd-sun)'
@@ -113,8 +124,6 @@ export default function LeaderboardPage() {
     setGameMenuOpen(false)
   }
 
-  const usePills = GAME_FILTERS.length <= PILL_THRESHOLD
-
   const selectedFilter = GAME_FILTERS.find((f) => f.value === gameType) ?? GAME_FILTERS[0]
   const topPlayer = entries[0]
   const visibleWins = entries.reduce((total, entry) => total + entry.wins, 0)
@@ -177,114 +186,90 @@ export default function LeaderboardPage() {
             ))}
           </div>
 
-          {usePills ? (
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              {GAME_FILTERS.map((f) => {
-                const meta = f.value ? getGameMetadata(f.value) : null
-                const icon = meta?.icon ?? f.icon
-                const label = meta?.name ?? f.label
-                return (
-                  <button
-                    key={f.value}
-                    onClick={() => setGameType(f.value)}
-                    className={`bd-chip px-3.5 py-2 transition-all ${
-                      gameType === f.value
-                        ? 'border-bd-lav-deep bg-bd-lav text-white'
-                        : 'hover:border-bd-ink hover:bg-white'
-                    }`}
-                  >
-                    <span>{icon}</span>
-                    <span>{label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="flex lg:justify-end">
-              <div ref={gameMenuRef} className="relative w-full sm:w-auto">
-                <button
-                  type="button"
-                  aria-haspopup="listbox"
-                  aria-expanded={gameMenuOpen}
-                  onClick={() => setGameMenuOpen((open) => !open)}
-                  className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-white px-4 py-3 text-left shadow-[0_4px_0_#E8DDC8] transition-all sm:w-auto ${
-                    gameMenuOpen
-                      ? 'border-bd-ink shadow-[0_5px_0_#1F1B16]'
-                      : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_#1F1B16]'
+          <div className="flex lg:justify-end">
+            <div ref={gameMenuRef} className="relative w-full sm:w-auto">
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={gameMenuOpen}
+                onClick={() => setGameMenuOpen((open) => !open)}
+                className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-white px-4 py-3 text-left shadow-[0_4px_0_#E8DDC8] transition-all sm:w-auto ${
+                  gameMenuOpen
+                    ? 'border-bd-ink shadow-[0_5px_0_#1F1B16]'
+                    : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_#1F1B16]'
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-bd-bg2 text-lg leading-none">
+                    {selectedFilter.displayIcon}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="bd-kicker block text-[10px]">Game filter</span>
+                    <span className="block truncate text-sm font-bold text-bd-ink">{selectedFilter.label}</span>
+                  </span>
+                </span>
+                <span
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-bd-bg2 text-sm font-bold text-bd-ink transition-transform ${
+                    gameMenuOpen ? 'rotate-180' : ''
                   }`}
+                  aria-hidden="true"
                 >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-bd-bg2 text-lg">
-                      {selectedFilter.icon}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="bd-kicker block text-[10px]">Game filter</span>
-                      <span className="block truncate text-sm font-bold text-bd-ink">{selectedFilter.label}</span>
-                    </span>
-                  </span>
-                  <span
-                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-bd-bg2 text-sm font-bold text-bd-ink transition-transform ${
-                      gameMenuOpen ? 'rotate-180' : ''
-                    }`}
-                    aria-hidden="true"
-                  >
-                    ▾
-                  </span>
-                </button>
+                  ▾
+                </span>
+              </button>
 
-                {gameMenuOpen && (
-                  <div
-                    className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-white shadow-[0_8px_0_#1F1B16,0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
-                    role="listbox"
-                    aria-label="Game filter"
-                  >
-                    <div className="border-b border-bd-line bg-bd-card-warm px-4 py-3">
-                      <p className="bd-kicker">Choose game</p>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto p-2">
-                      {GAME_FILTERS.map((f) => {
-                        const meta = f.value ? getGameMetadata(f.value) : null
-                        const icon = meta?.icon ?? f.icon
-                        const label = meta?.name ?? f.label
-                        const selected = gameType === f.value
-
-                        return (
-                          <button
-                            key={f.value}
-                            type="button"
-                            role="option"
-                            aria-selected={selected}
-                            onClick={() => handleGameFilterSelect(f.value)}
-                            className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-                              selected
-                                ? 'bg-bd-lav text-white'
-                                : 'text-bd-ink hover:bg-bd-card-warm'
-                            }`}
-                          >
-                            <span className="flex min-w-0 items-center gap-3">
-                              <span
-                                className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-lg ${
-                                  selected ? 'bg-white/20' : 'bg-bd-bg2'
-                                }`}
-                              >
-                                {icon}
-                              </span>
-                              <span className="truncate text-sm font-bold">{label}</span>
-                            </span>
-                            {selected && (
-                              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-sm font-black text-bd-lav-deep">
-                                ✓
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
+              {gameMenuOpen && (
+                <div
+                  className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-white shadow-[0_8px_0_#1F1B16,0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
+                  role="listbox"
+                  aria-label="Game filter"
+                >
+                  <div className="border-b border-bd-line bg-bd-card-warm px-4 py-3">
+                    <p className="bd-kicker">Choose game</p>
                   </div>
-                )}
-              </div>
+                  <div className="max-h-80 overflow-y-auto p-2">
+                    {GAME_FILTERS.map((f) => {
+                      const meta = f.value ? getGameMetadata(f.value) : null
+                      const icon = f.value ? getCompactGameIcon(f.value, meta?.icon ?? f.icon) : f.displayIcon
+                      const label = meta?.name ?? f.label
+                      const selected = gameType === f.value
+
+                      return (
+                        <button
+                          key={f.value}
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          onClick={() => handleGameFilterSelect(f.value)}
+                          className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                            selected
+                              ? 'bg-bd-lav text-white'
+                              : 'text-bd-ink hover:bg-bd-card-warm'
+                          }`}
+                        >
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span
+                              className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-lg leading-none ${
+                                selected ? 'bg-white/20' : 'bg-bd-bg2'
+                              }`}
+                            >
+                              {icon}
+                            </span>
+                            <span className="truncate text-sm font-bold">{label}</span>
+                          </span>
+                          {selected && (
+                            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-sm font-black text-bd-lav-deep">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         <div className="mb-5 grid gap-3 sm:grid-cols-3">

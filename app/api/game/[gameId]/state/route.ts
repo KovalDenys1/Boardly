@@ -257,11 +257,15 @@ export async function POST(
         currentTurn: true,
         updatedAt: true,
         lastMoveAt: true,
+        startedAt: true,
         players: {
           select: {
             id: true,
             userId: true,
             score: true,
+            finalScore: true,
+            placement: true,
+            isWinner: true,
             scorecard: true,
             user: {
               select: {
@@ -297,6 +301,9 @@ export async function POST(
       id: string
       userId: string
       score: number
+      finalScore: number | null
+      placement: number | null
+      isWinner: boolean
       scorecard: string | null
       user: {
         id: string

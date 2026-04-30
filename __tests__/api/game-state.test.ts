@@ -131,6 +131,7 @@ describe('POST /api/game/[gameId]/state', () => {
     process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
     mockNotifySocket.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
+    mockPrisma.players.update.mockResolvedValue({} as any)
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -489,6 +490,80 @@ describe('POST /api/game/[gameId]/state', () => {
 
     expect(response.status).toBe(200)
     expect(mockPrisma.players.update).not.toHaveBeenCalled()
+  })
+
+  it('persists terminal player results when a game finishes', async () => {
+    const finishedState = {
+      ...persistedState,
+      status: 'finished',
+      winner: 'player-1',
+      currentPlayerIndex: 0,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => finishedState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 12 },
+        { id: 'player-2', score: 8 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce({
+      ...dbGame,
+      startedAt: new Date('2026-02-15T10:00:00.000Z'),
+    } as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(buildRequest({ move: { type: 'score', data: {} } }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mockPrisma.games.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'finished',
+          endedAt: expect.any(Date),
+          durationSeconds: expect.any(Number),
+          terminalMetadata: expect.objectContaining({
+            outcome: 'winner',
+            winnerUserId: 'player-1',
+            isDraw: false,
+            playerResults: [
+              { userId: 'player-1', placement: 1, finalScore: 12, isWinner: true },
+              { userId: 'player-2', placement: 2, finalScore: 8, isWinner: false },
+            ],
+          }),
+        }),
+      })
+    )
+    expect(mockPrisma.players.update).toHaveBeenCalledWith({
+      where: { id: 'db-player-1' },
+      data: {
+        score: 12,
+        scorecard: '{}',
+        finalScore: 12,
+        placement: 1,
+        isWinner: true,
+      },
+    })
+    expect(mockPrisma.players.update).toHaveBeenCalledWith({
+      where: { id: 'db-player-2' },
+      data: {
+        score: 8,
+        scorecard: '{}',
+        finalScore: 8,
+        placement: 2,
+        isWinner: false,
+      },
+    })
   })
 
   it('auto-triggers Tic-Tac-Toe bot turn when next player is bot', async () => {
