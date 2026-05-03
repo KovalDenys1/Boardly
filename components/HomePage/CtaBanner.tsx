@@ -1,14 +1,74 @@
+'use client'
+
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import { useGuest } from '@/contexts/GuestContext'
 import BoardlyAvatar from '@/components/ui/BoardlyAvatar'
 
 export default function CtaBanner() {
+  const { data: session, status } = useSession()
+  const { isGuest, guestName } = useGuest()
+  const isLoggedIn = status === 'authenticated'
+  const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'friend'
+
+  const content = isLoggedIn
+    ? {
+        title: `Welcome back, ${displayName}.`,
+        accent: 'Pick a game and start a room.',
+        body: 'Your profile, friends, stats, and game history are ready when you are.',
+        primaryHref: '/games',
+        primaryLabel: 'Browse games',
+        secondaryHref: '/profile',
+        secondaryLabel: 'Open profile',
+      }
+    : isGuest && guestName
+      ? {
+          title: `Ready for another round, ${guestName}?`,
+          accent: 'Keep playing as a guest.',
+          body: 'You can jump into games right away. Create an account later if you want to keep your profile, stats, and history.',
+          primaryHref: '/games',
+          primaryLabel: 'Browse games',
+          secondaryHref: '/auth/register',
+          secondaryLabel: 'Save my progress',
+        }
+      : {
+          title: 'Make a room.',
+          accent: 'Send a link. Play.',
+          body: 'Start as a guest when you just want to play. Create an account when you want to keep your profile, stats, and game history.',
+          primaryHref: '/games',
+          primaryLabel: 'Browse games',
+          secondaryHref: '/auth/register',
+          secondaryLabel: 'Create account',
+        }
+
+  const avatarNames = isLoggedIn
+    ? [
+        { name: displayName, color: 'coral' },
+        { name: 'Friend', color: 'mint' },
+        { name: 'Guest', color: 'sun' },
+        { name: 'Player', color: 'lav' },
+      ] as const
+    : isGuest && guestName
+      ? [
+          { name: guestName, color: 'sun' },
+          { name: 'Anna', color: 'coral' },
+          { name: 'Max', color: 'mint' },
+          { name: 'Liz', color: 'lav' },
+        ] as const
+      : [
+          { name: 'Anna', color: 'coral' },
+          { name: 'Max', color: 'mint' },
+          { name: 'Liz', color: 'sun' },
+          { name: 'Ivan', color: 'lav' },
+        ] as const
+
   return (
-    <section style={{ padding: '40px clamp(16px, 4vw, 48px) 80px', maxWidth: 1280, margin: '0 auto' }}>
+    <section className="home-cta-section">
       <div
         style={{
-          background: 'var(--bd-ink)',
           color: 'var(--bd-bg)',
-          borderRadius: 36,
+          maxWidth: 1280,
+          margin: '0 auto',
           padding: 'clamp(36px, 6vw, 56px) clamp(28px, 5vw, 64px)',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
@@ -18,47 +78,18 @@ export default function CtaBanner() {
           overflow: 'hidden',
         }}
       >
-        {/* decorative circles */}
-        <div
-          style={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 220,
-            height: 220,
-            borderRadius: '50%',
-            background: 'var(--bd-coral)',
-            opacity: 0.4,
-            pointerEvents: 'none',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: -60,
-            right: 120,
-            width: 160,
-            height: 160,
-            borderRadius: '50%',
-            background: 'var(--bd-sun)',
-            opacity: 0.3,
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* text */}
         <div style={{ position: 'relative' }}>
           <h2
             style={{
               fontFamily: 'var(--bd-font-display)',
-              fontSize: 'clamp(32px, 5vw, 52px)',
+              fontSize: 44,
               fontWeight: 800,
               lineHeight: 1,
               marginBottom: 16,
-              letterSpacing: '-0.03em',
+              letterSpacing: 0,
             }}
           >
-            Ready?<br />Your friends are waiting.
+            {content.title}<br />{content.accent}
           </h2>
           <p
             style={{
@@ -69,29 +100,24 @@ export default function CtaBanner() {
               lineHeight: 1.5,
             }}
           >
-            Sign up in 20 seconds. Use Google, GitHub, or play as a guest.
+            {content.body}
           </p>
-          <Link
-            href="/auth/register"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '16px 28px',
-              borderRadius: 16,
-              fontWeight: 700,
-              fontSize: 17,
-              background: 'var(--bd-coral)',
-              color: 'white',
-              textDecoration: 'none',
-              boxShadow: '0 4px 0 var(--bd-coral-deep)',
-            }}
-          >
-            Create account
-          </Link>
+          <div className="home-cta-row">
+            <Link
+              href={content.primaryHref}
+              className="home-cta-button home-cta-button-primary"
+            >
+              {content.primaryLabel}
+            </Link>
+            <Link
+              href={content.secondaryHref}
+              className="home-cta-button home-cta-button-outline home-cta-button-on-dark"
+            >
+              {content.secondaryLabel}
+            </Link>
+          </div>
         </div>
 
-        {/* avatars */}
         <div
           style={{
             display: 'flex',
@@ -101,14 +127,7 @@ export default function CtaBanner() {
             gap: 0,
           }}
         >
-          {(
-            [
-              { name: 'Anna', color: 'coral' },
-              { name: 'Max',  color: 'mint'  },
-              { name: 'Liz',  color: 'sun'   },
-              { name: 'Ivan', color: 'lav'   },
-            ] as const
-          ).map((a, i) => (
+          {avatarNames.map((a, i) => (
             <BoardlyAvatar
               key={a.name}
               name={a.name}

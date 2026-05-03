@@ -2,30 +2,9 @@ import Die from '@/components/ui/Die'
 
 export default function HeroBoard() {
   return (
-    <div
-      style={{
-        position: 'relative',
-        aspectRatio: '1 / 1',
-        maxWidth: 480,
-        margin: '0 auto',
-        width: '100%',
-      }}
-    >
+    <div className="home-hero-board">
       {/* main playing surface */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: '8%',
-          background: 'var(--bd-mint)',
-          border: '4px solid var(--bd-ink)',
-          borderRadius: 32,
-          boxShadow: '10px 10px 0 var(--bd-ink)',
-          transform: 'rotate(-3deg)',
-          overflow: 'hidden',
-          backgroundImage: 'radial-gradient(rgba(31,27,22,0.12) 1px, transparent 1px)',
-          backgroundSize: '18px 18px',
-        }}
-      >
+      <div className="home-hero-board-surface">
         <div
           style={{
             position: 'absolute',

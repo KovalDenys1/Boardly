@@ -1457,9 +1457,9 @@ const no = {
   },
   quickPlay: {
     finding: 'Finner spill…',
-    searching: 'Søker etter åpne lobbyer eller oppretter en med boter',
+    searching: 'Ser etter et rom eller setter opp et for deg',
     pickGame: 'Velg et spill — vi finner eller oppretter en kamp umiddelbart.',
-    createdLobby: 'Ny lobby med boter opprettet — klar til å spille!',
+    createdLobby: 'Nytt rom opprettet — klart til å spille!',
     joinedLobby: 'Fant en åpen lobby — kobler til!',
   },
   leaderboard: {
@@ -1819,20 +1819,20 @@ const no = {
       answer: 'Boardly tilbyr for øyeblikket Yahtzee, Tic Tac Toe, Memory-kortspill og Gjett spionen. Flere spill er under utvikling, inkludert Alias, Sketch & Guess og andre.',
     },
     q4: {
-      question: 'Kan jeg spille mot AI-boter?',
-      answer: 'Ja. Yahtzee og Tic Tac Toe støtter AI-motstandere, slik at du kan spille solo eller fylle tomme plasser når venner er offline.',
+      question: 'Kan jeg spille alene?',
+      answer: 'Ja. Yahtzee og Tic Tac Toe kan legge til dataspillere, så du kan starte selv når venner er offline.',
     },
     q5: {
       question: 'Hvordan spiller jeg med venner online?',
-      answer: 'Opprett en lobby, og del romkoden eller lenken med vennene dine. De blir med umiddelbart — ingen konto eller nedlasting kreves.',
+      answer: 'Opprett et rom, og del romkoden eller lenken med vennene dine. De blir med umiddelbart — ingen konto eller nedlasting kreves.',
     },
     q6: {
       question: 'Fungerer Boardly på mobil?',
-      answer: 'Ja. Boardly kjører i enhver moderne nettleser på desktop, nettbrett og mobil. Det finnes også en Progressive Web App (PWA) du kan installere fra nettleseren.',
+      answer: 'Ja. Boardly kjører i enhver moderne nettleser på desktop, nettbrett og mobil. Du kan også legge siden til som en app-lignende snarvei fra nettleseren.',
     },
     q7: {
       question: 'Hvor mange spillere kan spille samtidig?',
-      answer: 'Det avhenger av spillet. Tic Tac Toe støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i én lobby.',
+      answer: 'Det avhenger av spillet. Tic Tac Toe støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i ett rom.',
     },
     q8: {
       question: 'Er det noe å laste ned eller installere?',

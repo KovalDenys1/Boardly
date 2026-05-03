@@ -36,9 +36,9 @@ const warmSurfaceClassName =
 const tileClassName =
   'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-2.5 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_#E8DDC8] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-2.5 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
 
@@ -139,13 +139,13 @@ function getStatusBadgeClassName(status: string): string {
     case 'finished':
       return 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint'
     case 'playing':
-      return 'bg-bd-sun/25 text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun'
+      return 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun'
     case 'abandoned':
       return 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300'
     case 'cancelled':
       return 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300'
     default:
-      return 'bg-bd-lav/20 text-[#6758d8] dark:bg-bd-lav/15 dark:text-bd-lav'
+      return 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav'
   }
 }
 
@@ -360,7 +360,7 @@ export default function GameHistory() {
           </div>
 
           {error ? (
-            <div className="overflow-hidden rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] dark:border-red-500/30 dark:bg-red-500/10">
+            <div className="overflow-hidden rounded-[1.5rem] border border-bd-coral/40 bg-bd-coral/10 dark:border-red-500/30 dark:bg-red-500/10">
               <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
                 <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">{error}</p>
               </div>
@@ -371,7 +371,7 @@ export default function GameHistory() {
             <div className={`${panelClassName} relative overflow-hidden`}>
               <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
               <div className="relative p-6 sm:p-7">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
                   <BoardIcon />
                 </div>
                 <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink dark:text-white">
@@ -392,7 +392,7 @@ export default function GameHistory() {
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
                             <BoardIcon />
                           </div>
                           <div className="min-w-0">
@@ -426,7 +426,7 @@ export default function GameHistory() {
                             key={player.id}
                             className={`inline-flex max-w-full min-w-0 items-center gap-2 rounded-2xl border px-3 py-2 ${
                               player.isWinner
-                                ? 'border-[#E8C46C] bg-bd-sun/20 text-bd-ink'
+                                ? 'border-bd-sun-deep bg-bd-sun/20 text-bd-ink'
                                 : 'border-bd-line bg-white text-bd-ink-soft dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
                             }`}
                           >

@@ -1468,9 +1468,9 @@ const en = {
   },
   quickPlay: {
     finding: 'Finding a game…',
-    searching: 'Searching for open lobbies or creating one with bots',
+    searching: 'Looking for a room or setting one up for you',
     pickGame: "Pick a game — we'll find or create a match instantly.",
-    createdLobby: 'Created a new lobby with bots — ready to play!',
+    createdLobby: 'Created a new room — ready to play!',
     joinedLobby: 'Found an open lobby — joining now!',
   },
   leaderboard: {
@@ -1831,20 +1831,20 @@ const en = {
       answer: 'Boardly currently offers Yahtzee, Tic Tac Toe, Memory card game, and Guess the Spy. More games are in development, including Alias, Sketch & Guess, Telephone Doodle, and others.',
     },
     q4: {
-      question: 'Can I play against AI bots?',
-      answer: 'Yes. Yahtzee and Tic Tac Toe support AI opponents, so you can play solo or fill empty spots when friends are offline.',
+      question: 'Can I play solo?',
+      answer: 'Yes. Yahtzee and Tic Tac Toe can add computer players, so you can start even when friends are offline.',
     },
     q5: {
       question: 'How do I play with friends online?',
-      answer: 'Create a lobby, then share the room code or link with your friends. They join instantly — no account or download needed on their end either.',
+      answer: 'Create a room, then share the room code or link with your friends. They join instantly — no account or download needed on their end either.',
     },
     q6: {
       question: 'Does Boardly work on mobile?',
-      answer: 'Yes. Boardly runs in any modern browser on desktop, tablet, and mobile. There is also a Progressive Web App (PWA) you can install from your browser for a native-app feel.',
+      answer: 'Yes. Boardly runs in any modern browser on desktop, tablet, and mobile. You can also install it from your browser if you want an app-like shortcut.',
     },
     q7: {
       question: 'How many players can play at once?',
-      answer: 'It depends on the game. Tic Tac Toe supports 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one lobby.',
+      answer: 'It depends on the game. Tic Tac Toe supports 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one room.',
     },
     q8: {
       question: 'Is there anything to download or install?',

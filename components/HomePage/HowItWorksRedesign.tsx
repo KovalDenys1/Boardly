@@ -2,26 +2,26 @@ const STEPS = [
   {
     n: '01',
     color: 'var(--bd-coral)',
-    title: 'Create a lobby',
-    body: 'Pick a game, set up the room, add a password if you want.',
+    title: 'Pick a game',
+    body: 'Choose Yahtzee, Guess the Spy, Tic Tac Toe, Memory, or another game from the list.',
   },
   {
     n: '02',
     color: 'var(--bd-mint)',
-    title: 'Invite friends',
-    body: 'Drop a link or code into any chat — friends join with one click.',
+    title: 'Invite a friend or add a bot',
+    body: 'Create a room, send the link to a friend, or add a computer player when you want to start right away.',
   },
   {
     n: '03',
     color: 'var(--bd-sun)',
-    title: 'Play together!',
-    body: 'Voice chat, emotes, stats. No boring loading screens.',
+    title: 'Start playing',
+    body: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
   },
 ]
 
 export default function HowItWorksRedesign() {
   return (
-    <section style={{ padding: '60px clamp(16px, 4vw, 48px)', maxWidth: 1280, margin: '0 auto' }}>
+    <section className="home-section home-section-steps">
       <div style={{ textAlign: 'center', marginBottom: 48 }}>
         <span
           style={{
@@ -37,24 +37,18 @@ export default function HowItWorksRedesign() {
         <h2
           style={{
             fontFamily: 'var(--bd-font-display)',
-            fontSize: 'clamp(28px, 4vw, 44px)',
+            fontSize: 36,
             fontWeight: 700,
             color: 'var(--bd-ink)',
             marginTop: 8,
-            letterSpacing: '-0.02em',
+            letterSpacing: 0,
           }}
         >
           Three steps to play
         </h2>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
-          gap: 20,
-        }}
-      >
+      <div className="home-steps-grid">
         {STEPS.map((s) => (
           <div
             key={s.n}
@@ -75,7 +69,7 @@ export default function HowItWorksRedesign() {
                 color: s.color,
                 lineHeight: 1,
                 marginBottom: 12,
-                letterSpacing: '-0.04em',
+                letterSpacing: 0,
               }}
             >
               {s.n}

@@ -10,7 +10,18 @@ import { showToast } from '@/lib/i18n-toast'
 import QuickPlayButton from './QuickPlayButton'
 import HeroBoard from './HeroBoard'
 
-export default function HeroSectionRedesign() {
+export type HomeHeroFacts = {
+  availableGameCount: number
+  catalogGameCount: number
+  inDevelopmentGameCount: number
+  quickPlayGameCount: number
+}
+
+interface HeroSectionRedesignProps {
+  facts: HomeHeroFacts
+}
+
+export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { t } = useTranslation()
@@ -51,8 +62,8 @@ export default function HeroSectionRedesign() {
   if (isGuest && guestName) {
     return (
       <div
-        className="flex flex-col items-center justify-center text-center"
-        style={{ minHeight: 'calc(100vh - 64px)', padding: '48px 24px' }}
+        className="home-hero-shell flex-col justify-center text-center"
+        style={{ alignItems: 'center' }}
       >
         <div
           style={{
@@ -138,8 +149,8 @@ export default function HeroSectionRedesign() {
   if (showGuestForm) {
     return (
       <div
-        className="flex flex-col items-center justify-center text-center"
-        style={{ minHeight: 'calc(100vh - 64px)', padding: '48px 24px', position: 'relative' }}
+        className="home-hero-shell flex-col justify-center text-center"
+        style={{ alignItems: 'center', position: 'relative' }}
       >
         <button
           onClick={() => { setShowGuestForm(false); setName('') }}
@@ -249,18 +260,19 @@ export default function HeroSectionRedesign() {
     )
   }
 
-  // Main hero — 2-column layout (responsive: stacks on mobile)
   return (
-    <section style={{ padding: 'clamp(40px, 6vh, 80px) clamp(16px, 4vw, 48px) clamp(32px, 5vh, 56px)', maxWidth: 1280, margin: '0 auto' }}>
+    <section className="home-hero-shell">
       <div
         style={{
+          width: '100%',
+          maxWidth: 1280,
+          margin: '0 auto',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 440px), 1fr))',
           gap: 'clamp(32px, 5vw, 64px)',
           alignItems: 'center',
         }}
       >
-        {/* LEFT — text + CTAs */}
         <div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
             <span
@@ -279,55 +291,54 @@ export default function HeroSectionRedesign() {
                 boxShadow: '2px 2px 0 var(--bd-ink)',
               }}
             >
-              🎲 {isLoggedIn && displayName ? `Welcome back, ${displayName}!` : '1,248 playing now'}
+              🎲 {isLoggedIn && displayName ? `Welcome back, ${displayName}!` : `${facts.availableGameCount} games ready to play`}
+            </span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                borderRadius: 999,
+                fontFamily: 'var(--bd-font-display)',
+                fontWeight: 700,
+                fontSize: 13,
+                background: 'white',
+                color: 'var(--bd-ink-soft)',
+                border: '1.5px solid var(--bd-line)',
+              }}
+            >
+              {facts.inDevelopmentGameCount} more coming later
             </span>
           </div>
 
           <h1
-            style={{
-              fontFamily: 'var(--bd-font-display)',
-              fontSize: 'clamp(48px, 7vw, 84px)',
-              fontWeight: 800,
-              lineHeight: 0.95,
-              marginBottom: 24,
-              letterSpacing: '-0.04em',
-              color: 'var(--bd-ink)',
-            }}
+            className="mb-6 font-display text-5xl font-extrabold leading-none text-bd-ink sm:text-6xl lg:text-7xl"
           >
-            Game night.<br />
-            <span style={{ color: 'var(--bd-coral)' }}>No table required.</span>
+            Boardly.<br />
+            <span style={{ color: 'var(--bd-coral)' }}>Play board games online with friends.</span>
           </h1>
 
           <p
             style={{
-              fontSize: 'clamp(16px, 2vw, 19px)',
+              fontSize: 18,
               lineHeight: 1.5,
               color: 'var(--bd-ink-soft)',
               marginBottom: 36,
               maxWidth: 480,
             }}
           >
-            Hang out with friends, roll the dice, catch spies. Right in your browser — no download, no plugins.
+            Pick a game, make a room, and send your friends a link or room code.
+            They can join from any modern browser, and guests do not need an account to start playing.
           </p>
 
-          {/* CTA buttons */}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="home-cta-row">
             {isLoggedIn ? (
               <>
-                <QuickPlayButton className="inline-flex items-center gap-2 px-7 py-4 rounded-2xl font-bold text-lg text-white bg-bd-coral shadow-bd-coral-4 hover:scale-105 transition-transform duration-150" />
+                <QuickPlayButton className="home-cta-button home-cta-button-primary" />
                 <button
                   onClick={() => router.push('/games')}
-                  style={{
-                    padding: '16px 28px',
-                    borderRadius: 16,
-                    fontWeight: 600,
-                    fontSize: 17,
-                    background: 'transparent',
-                    color: 'var(--bd-ink)',
-                    border: '2px solid var(--bd-ink)',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
+                  className="home-cta-button home-cta-button-outline"
                 >
                   {t('home.browseGames')}
                 </button>
@@ -336,45 +347,26 @@ export default function HeroSectionRedesign() {
               <>
                 <button
                   onClick={() => router.push('/games')}
-                  style={{
-                    padding: '16px 28px',
-                    borderRadius: 16,
-                    fontWeight: 700,
-                    fontSize: 17,
-                    background: 'var(--bd-coral)',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 0 var(--bd-coral-deep)',
-                    fontFamily: 'inherit',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
+                  className="home-cta-button home-cta-button-primary"
                 >
-                  Play free →
+                  Browse games →
                 </button>
                 <button
                   onClick={() => setShowGuestForm(true)}
-                  style={{
-                    padding: '16px 28px',
-                    borderRadius: 16,
-                    fontWeight: 600,
-                    fontSize: 17,
-                    background: 'transparent',
-                    color: 'var(--bd-ink)',
-                    border: '2px solid var(--bd-ink)',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
+                  className="home-cta-button home-cta-button-outline"
                 >
-                  I have a lobby code
+                  Play as guest
+                </button>
+                <button
+                  onClick={() => router.push('/lobby')}
+                  className="home-cta-button home-cta-button-warm"
+                >
+                  Join a room
                 </button>
               </>
             )}
           </div>
 
-          {/* Stats row */}
           <div
             style={{
               display: 'flex',
@@ -386,10 +378,10 @@ export default function HeroSectionRedesign() {
             }}
           >
             {[
-              { label: 'Games played', value: '2.4M' },
-              { label: 'Players',       value: '180K' },
-              { label: 'Countries',     value: '64' },
-              { label: 'Rating',        value: '4.8★' },
+              { label: 'Games ready now', value: String(facts.availableGameCount) },
+              { label: 'Good for solo play', value: String(facts.quickPlayGameCount) },
+              { label: 'Games in the collection', value: String(facts.catalogGameCount) },
+              { label: 'Nothing to install', value: '0' },
             ].map((s) => (
               <div key={s.label}>
                 <div

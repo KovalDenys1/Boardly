@@ -1,81 +1,130 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+
 const ITEMS = [
-  { txt: 'Roll the dice',        icon: '🎲', color: 'var(--bd-coral)' },
-  { txt: 'Catch the spy',        icon: '🕵️', color: 'var(--bd-lav)'   },
-  { txt: 'Checkmate',            icon: '♟',  color: 'var(--bd-mint)'  },
-  { txt: 'Yahtzee!',             icon: '⭐', color: 'var(--bd-sun)'   },
-  { txt: 'Play with friends',    icon: '👯', color: 'var(--bd-sky)'   },
-  { txt: 'No download needed',   icon: '⚡', color: 'var(--bd-coral)' },
-  { txt: 'Free forever',         icon: '🆓', color: 'var(--bd-mint)'  },
-  { txt: 'Bring on game night',  icon: '🎉', color: 'var(--bd-sun)'   },
-  { txt: 'Open source',          icon: '⚙️', color: 'var(--bd-lav)'   },
-  { txt: '180K players online',  icon: '🌍', color: 'var(--bd-sky)'   },
+  { txt: 'Play Yahtzee',          icon: '🎲', color: 'var(--bd-coral)' },
+  { txt: 'Find the spy',          icon: '🕵️', color: 'var(--bd-lav)'   },
+  { txt: 'Quick Tic Tac Toe',     icon: '❌', color: 'var(--bd-mint)'  },
+  { txt: 'Match cards in Memory', icon: '🧠', color: 'var(--bd-sun)'   },
+  { txt: 'Join as a guest',       icon: '👤', color: 'var(--bd-sky)'   },
+  { txt: 'Share a room code',     icon: '🔗', color: 'var(--bd-coral)' },
+  { txt: 'Invite friends',        icon: '💌', color: 'var(--bd-mint)'  },
+  { txt: 'Keep your stats',       icon: '📊', color: 'var(--bd-lav)'   },
+  { txt: 'No download needed',    icon: '⚡', color: 'var(--bd-sky)'   },
+  { txt: 'Play in the browser',   icon: '🌐', color: 'var(--bd-sun)'   },
 ]
 
-const LOOP = [...ITEMS, ...ITEMS]
+function MarqueeItem({
+  item,
+  index,
+}: {
+  item: (typeof ITEMS)[number]
+  index: number
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 14,
+        fontFamily: 'var(--bd-font-display)',
+        fontSize: 28,
+        fontWeight: 700,
+        letterSpacing: 0,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span style={{ fontSize: 26 }}>{item.icon}</span>
+      <span style={{ color: index % 3 === 0 ? item.color : 'var(--bd-bg)' }}>{item.txt}</span>
+    </span>
+  )
+}
 
-export default function MarqueeStrip() {
+interface MarqueeStripProps {
+  variant?: 'section' | 'hero'
+}
+
+export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps) {
+  const [canAnimate, setCanAnimate] = useState(false)
+  const isHero = variant === 'hero'
+
+  useEffect(() => {
+    let cancelled = false
+    const fallbackTimer = window.setTimeout(() => {
+      if (!cancelled) setCanAnimate(true)
+    }, 1200)
+
+    if ('fonts' in document) {
+      document.fonts.ready
+        .then(() => {
+          if (!cancelled) setCanAnimate(true)
+        })
+        .catch(() => {
+          if (!cancelled) setCanAnimate(true)
+        })
+    } else {
+      setCanAnimate(true)
+    }
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(fallbackTimer)
+    }
+  }, [])
+
   return (
     <section
       aria-hidden
       style={{
-        margin: '24px 0',
-        padding: '20px 0',
+        margin: isHero ? 0 : '24px 0',
+        padding: isHero ? '20px 0' : '20px 0',
         background: 'var(--bd-ink)',
         color: 'var(--bd-bg)',
         borderTop: '3px solid var(--bd-ink)',
         borderBottom: '3px solid var(--bd-ink)',
         overflow: 'hidden',
-        transform: 'rotate(-1.2deg)',
         position: 'relative',
+        boxShadow: isHero ? '0 16px 0 rgba(31,27,22,0.08)' : 'none',
       }}
     >
       <style>{`
         @keyframes boardly-marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
+          from { transform: translate3d(0, 0, 0); }
+          to   { transform: translate3d(-33.333333%, 0, 0); }
         }
         .bd-marquee-track {
           display: flex;
-          gap: 48px;
           width: max-content;
           animation: boardly-marquee 40s linear infinite;
+          animation-play-state: paused;
+          transform: translate3d(0, 0, 0);
           will-change: transform;
+        }
+        .bd-marquee-track.is-ready {
+          animation-play-state: running;
+        }
+        .bd-marquee-group {
+          display: flex;
+          align-items: center;
+          gap: 48px;
+          padding-right: 48px;
         }
         @media (prefers-reduced-motion: reduce) {
           .bd-marquee-track { animation: none; }
         }
-        .bd-marquee-track:hover { animation-play-state: paused; }
       `}</style>
-      <div className="bd-marquee-track">
-        {LOOP.map((item, i) => (
-          <span
-            key={i}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 14,
-              fontFamily: 'var(--bd-font-display)',
-              fontSize: 28,
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <span style={{ fontSize: 26 }}>{item.icon}</span>
-            <span style={{ color: i % 3 === 0 ? item.color : 'var(--bd-bg)' }}>{item.txt}</span>
-            <span
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                background: item.color,
-                flexShrink: 0,
-                display: 'inline-block',
-              }}
-            />
-          </span>
+      <div className={`bd-marquee-track ${canAnimate ? 'is-ready' : ''}`}>
+        {[0, 1, 2].map((groupIndex) => (
+          <div key={groupIndex} className="bd-marquee-group">
+            {ITEMS.map((item, itemIndex) => (
+              <MarqueeItem
+                key={`${groupIndex}-${item.txt}`}
+                item={item}
+                index={itemIndex}
+              />
+            ))}
+          </div>
         ))}
       </div>
     </section>

@@ -54,13 +54,13 @@ const warmSurfaceClassName =
 const tileClassName =
   'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
 const primaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#7867E8] bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_#7867E8] transition-all hover:-translate-y-0.5 hover:bg-[#8b7dff] hover:shadow-[0_6px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-65'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-65'
 const secondaryButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_#E8DDC8] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-bd-line bg-white px-4 py-3 text-sm font-semibold text-bd-ink shadow-[0_3px_0_var(--bd-line)] transition-all hover:-translate-y-0.5 hover:bg-bd-card-warm dark:border-slate-700 dark:bg-slate-900/75 dark:text-slate-100 dark:shadow-none dark:hover:bg-slate-800'
 const dangerButtonClassName =
-  'inline-flex items-center justify-center gap-2 rounded-2xl border border-[#F0B3AC] bg-white px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-[#FFF2EF] dark:border-red-500/30 dark:bg-slate-900/75 dark:text-red-300 dark:hover:bg-red-500/10'
+  'inline-flex items-center justify-center gap-2 rounded-2xl border border-bd-coral/40 bg-white px-4 py-3 text-sm font-semibold text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:border-red-500/30 dark:bg-slate-900/75 dark:text-red-300 dark:hover:bg-red-500/10'
 const inputClassName =
-  'w-full rounded-2xl border border-bd-line bg-white px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-[#7867E8] focus:ring-4 focus:ring-[#9B8CFF]/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500'
+  'w-full rounded-2xl border border-bd-line bg-white px-4 py-3 text-sm font-medium text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted focus:border-bd-lav-deep focus:ring-4 focus:ring-bd-lav/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500'
 const eyebrowClassName =
   'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
 
@@ -591,7 +591,7 @@ export default function Friends() {
       <div className="relative p-6 sm:p-7">
         <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
         <div className="relative">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.15rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
             {icon}
           </div>
           <h3 className="mt-5 font-display text-2xl font-bold text-bd-ink dark:text-white">{title}</h3>
@@ -615,17 +615,17 @@ export default function Friends() {
   return (
     <div className="space-y-6">
       {!session?.user?.emailVerified && (
-        <div className="overflow-hidden rounded-[1.75rem] border-[1.5px] border-amber-200 bg-[#FFF4DF] shadow-[0_4px_14px_rgba(31,27,22,0.05)] dark:border-amber-500/30 dark:bg-amber-500/10">
+        <div className="overflow-hidden rounded-[1.75rem] border-[1.5px] border-bd-sun/50 bg-bd-sun/15 shadow-[0_4px_14px_rgba(31,27,22,0.05)] dark:border-amber-500/30 dark:bg-amber-500/10">
           <div className="border-l-4 border-bd-sun px-5 py-5 sm:px-6">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bd-sun/35 text-[#9b6b00]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-bd-sun/35 text-bd-ink-soft">
                 <MailIcon />
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-bold text-[#855400] dark:text-amber-200">
+                <h3 className="text-lg font-bold text-bd-ink-soft dark:text-amber-200">
                   {t('profile.friends.emailVerificationRequired')}
                 </h3>
-                <p className="mt-2 text-sm text-[#9b6b00] dark:text-amber-300/90">
+                <p className="mt-2 text-sm text-bd-ink-soft dark:text-amber-300/90">
                   {t('profile.friends.emailVerificationRequiredDesc')}
                 </p>
                 <a href="/auth/verify-email" className={`${secondaryButtonClassName} mt-4 inline-flex`}>
@@ -650,7 +650,7 @@ export default function Friends() {
                 <button
                   type="button"
                   onClick={copyFriendCode}
-                  className={`${warmSurfaceClassName} mt-4 block w-full border-dashed px-4 py-5 text-left transition-colors hover:border-[#7867E8] hover:bg-white dark:hover:bg-slate-900`}
+                  className={`${warmSurfaceClassName} mt-4 block w-full border-dashed px-4 py-5 text-left transition-colors hover:border-bd-lav-deep hover:bg-white dark:hover:bg-slate-900`}
                   title={t('profile.friends.copyCode')}
                   aria-label={t('profile.friends.copyCode')}
                 >
@@ -707,7 +707,7 @@ export default function Friends() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-semibold transition-all ${
                   activeTab === tab.id
-                    ? 'bg-bd-lav text-white shadow-[0_4px_0_#7867E8]'
+                    ? 'bg-bd-lav text-white shadow-[0_4px_0_var(--bd-lav-deep)]'
                     : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                 }`}
               >
@@ -766,9 +766,9 @@ export default function Friends() {
                   const isOnline = presence !== 'offline'
                   const presenceBadge =
                     presence === 'in_game'
-                      ? { label: 'In game', className: 'bg-bd-lav/20 text-[#6758d8] dark:bg-bd-lav/15 dark:text-bd-lav' }
+                      ? { label: 'In game', className: 'bg-bd-lav/20 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav' }
                       : presence === 'in_lobby'
-                        ? { label: 'In lobby', className: 'bg-bd-sun/25 text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun' }
+                        ? { label: 'In lobby', className: 'bg-bd-sun/25 text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun' }
                         : presence === 'online'
                           ? { label: 'Online', className: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint' }
                           : null
@@ -799,7 +799,7 @@ export default function Friends() {
                       }
                       className={`${panelClassName} group relative overflow-hidden ${
                         friend.publicProfileId
-                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-[#cfc3ff] hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-[#9B8CFF]/50'
+                          ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:border-bd-lav/40 hover:shadow-[0_10px_24px_-14px_rgba(120,103,232,0.8)] focus:outline-none focus:ring-2 focus:ring-bd-lav/50'
                           : ''
                       }`}
                     >
@@ -808,7 +808,7 @@ export default function Friends() {
                       <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
                         <div className="flex min-w-0 flex-1 items-start gap-4">
                           <div className="relative shrink-0">
-                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-white shadow-[2px_2px_0_#1F1B16]">
+                            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-white shadow-[2px_2px_0_var(--bd-ink)]">
                               {renderAvatar(friend.username || friend.email, friend.avatar)}
                             </div>
                             {isOnline && (
@@ -849,7 +849,7 @@ export default function Friends() {
                                 <span className="rounded-full bg-bd-mint/20 px-2.5 py-1 font-semibold text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint">
                                   Wins {friend.statistics.totalWins}
                                 </span>
-                                <span className="rounded-full bg-bd-lav/20 px-2.5 py-1 font-semibold text-[#6758d8] dark:bg-bd-lav/15 dark:text-bd-lav">
+                                <span className="rounded-full bg-bd-lav/20 px-2.5 py-1 font-semibold text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
                                   Win rate {Math.round(friend.statistics.winRate)}%
                                 </span>
                               </div>
@@ -863,7 +863,7 @@ export default function Friends() {
                             event.stopPropagation()
                             void handleRemoveFriend(friend.friendshipId, friend.username)
                           }}
-                          className="shrink-0 rounded-2xl p-3 text-bd-coral-deep transition-colors hover:bg-[#FFF2EF] dark:text-red-300 dark:hover:bg-red-500/10"
+                          className="shrink-0 rounded-2xl p-3 text-bd-coral-deep transition-colors hover:bg-bd-coral/10 dark:text-red-300 dark:hover:bg-red-500/10"
                           title={t('profile.friends.remove')}
                         >
                           <TrashIcon />
@@ -894,7 +894,7 @@ export default function Friends() {
                   <div className="p-5 sm:p-6">
                     <div className="flex items-start gap-4">
                       <div className="relative shrink-0">
-                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-white shadow-[2px_2px_0_#1F1B16]">
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-[1.15rem] border-2 border-bd-ink bg-bd-mint text-white shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.sender?.username || 'Unknown', request.sender?.avatar, 'text-2xl font-bold')}
                         </div>
                         <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-bd-lav text-white dark:border-slate-900">
@@ -948,7 +948,7 @@ export default function Friends() {
                   <div className="flex items-center justify-between gap-4 p-5 sm:p-6">
                     <div className="flex min-w-0 flex-1 items-center gap-4">
                       <div className="relative shrink-0">
-                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_#1F1B16]">
+                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-sun text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
                           {renderAvatar(request.receiver?.username || 'Unknown', request.receiver?.avatar)}
                         </div>
                         <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-bd-sun-deep dark:border-slate-900" />
@@ -965,7 +965,7 @@ export default function Friends() {
                       </div>
                     </div>
 
-                    <span className="shrink-0 rounded-full bg-bd-sun/25 px-3 py-1.5 text-xs font-bold text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun">
+                    <span className="shrink-0 rounded-full bg-bd-sun/25 px-3 py-1.5 text-xs font-bold text-bd-ink-soft dark:bg-bd-sun/15 dark:text-bd-sun">
                       {t('profile.friends.pending')}
                     </span>
                   </div>
@@ -1017,7 +1017,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('link')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'link'
-                          ? 'bg-bd-lav text-white shadow-[0_4px_0_#7867E8]'
+                          ? 'bg-bd-lav text-white shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                       }`}
                     >
@@ -1029,7 +1029,7 @@ export default function Friends() {
                       onClick={() => setAddMethod('code')}
                       className={`flex min-h-[48px] items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
                         addMethod === 'code'
-                          ? 'bg-bd-lav text-white shadow-[0_4px_0_#7867E8]'
+                          ? 'bg-bd-lav text-white shadow-[0_4px_0_var(--bd-lav-deep)]'
                           : 'text-bd-ink-soft hover:bg-white/80 hover:text-bd-ink dark:text-slate-300 dark:hover:bg-slate-900/70'
                       }`}
                     >
@@ -1140,7 +1140,7 @@ export default function Friends() {
                     <button
                       type="button"
                       onClick={copyFriendCode}
-                      className={`${warmSurfaceClassName} mt-3 block w-full border-dashed px-4 py-4 text-center transition-colors hover:border-[#7867E8] hover:bg-white dark:hover:bg-slate-900`}
+                      className={`${warmSurfaceClassName} mt-3 block w-full border-dashed px-4 py-4 text-center transition-colors hover:border-bd-lav-deep hover:bg-white dark:hover:bg-slate-900`}
                       title={t('profile.friends.copyCode')}
                       aria-label={t('profile.friends.copyCode')}
                     >
