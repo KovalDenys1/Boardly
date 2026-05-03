@@ -266,7 +266,7 @@ export default function GameLobbiesPage({
               />
               <div className="relative">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-[3px_3px_0_#1F1B16]">
+                  <span className="grid h-14 w-14 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-sun text-2xl shadow-[3px_3px_0_#1F1B16]">
                     {titleEmoji}
                   </span>
                   <span className="bd-chip border-bd-ink bg-bd-ink px-3 py-1 text-xs font-bold text-bd-bg">
@@ -331,7 +331,7 @@ export default function GameLobbiesPage({
 
             {lobbies.length === 0 ? (
               <div className="py-16 text-center">
-                <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-3xl shadow-bd-ink-4">
+                <div className="mx-auto mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-2xl shadow-bd-ink-4">
                   {titleEmoji}
                 </div>
                 <p className="font-bold text-bd-ink">{tx('noLobbiesTitle')}</p>

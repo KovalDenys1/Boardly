@@ -214,6 +214,7 @@ function getIllustration(gameId: string, emoji: string) {
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateRows: 'repeat(3, 1fr)',
           gap: 6,
           width: 108,
           height: 108,
@@ -222,25 +223,27 @@ function getIllustration(gameId: string, emoji: string) {
           boxShadow: '3px 3px 0 var(--bd-ink)',
           background: 'white',
           padding: 8,
+          overflow: 'hidden',
         }}
         className="bd-float"
       >
         {['❌','','⭕','','❌','','⭕','','❌'].map((s, i) => (
-          <div key={i} style={{ display: 'grid', placeItems: 'center', fontSize: 20 }}>{s}</div>
+          <div key={i} style={{ display: 'grid', placeItems: 'center', fontSize: 18, lineHeight: 1 }}>{s}</div>
         ))}
       </div>
       )
     case 'memory':
       return (
-        <div className="bd-float" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+        <div
+          className="bd-float"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 34px)', gridTemplateRows: 'repeat(2, 42px)', gap: 6 }}
+        >
           {['?', '★', '?', '●', '●', '?', '★', '?'].map((symbol, index) => (
             <span
               key={`${symbol}-${index}`}
               style={{
                 display: 'grid',
                 placeItems: 'center',
-                width: 34,
-                height: 42,
                 borderRadius: 8,
                 border: '2px solid var(--bd-ink)',
                 background: symbol === '?' ? 'var(--bd-sun)' : 'white',
