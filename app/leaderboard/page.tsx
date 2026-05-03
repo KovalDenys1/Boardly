@@ -1,6 +1,8 @@
 'use client'
 
+import { Suspense } from 'react'
 import Link from 'next/link'
+import LoadingSkeleton from '@/components/LoadingSkeleton'
 import { GAME_FILTERS, getCompactGameIcon, useLeaderboard, type LeaderboardEntry } from './use-leaderboard'
 import { getGameMetadata } from '@/lib/game-catalog'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
@@ -71,7 +73,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
   )
 }
 
-export default function LeaderboardPage() {
+function LeaderboardPageContent() {
   const {
     t,
     entries,
@@ -294,5 +296,13 @@ export default function LeaderboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LeaderboardPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <LeaderboardPageContent />
+    </Suspense>
   )
 }

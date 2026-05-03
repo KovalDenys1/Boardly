@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getAvailableGameTypes, getGameMetadata } from '@/lib/game-catalog'
 
@@ -30,10 +31,18 @@ export const GAME_FILTERS = [
 
 export function useLeaderboard() {
   const { t } = useTranslation()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const isFirstRender = useRef(true)
+
+  const initialPeriod = searchParams.get('period') === '30d' ? '30d' : 'all'
+  const rawGameType = searchParams.get('gameType') ?? ''
+  const initialGameType = GAME_FILTERS.some((f) => f.value === rawGameType) ? rawGameType : ''
+
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [gameType, setGameType] = useState('')
-  const [period, setPeriod] = useState<'all' | '30d'>('all')
+  const [gameType, setGameType] = useState(initialGameType)
+  const [period, setPeriod] = useState<'all' | '30d'>(initialPeriod)
   const [hasMore, setHasMore] = useState(false)
   const [page, setPage] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +74,16 @@ export function useLeaderboard() {
     setPage(0)
     fetchLeaderboard(0, true)
   }, [gameType, period, fetchLeaderboard])
+
+  // Sync filter state to URL
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    const params = new URLSearchParams()
+    if (period !== 'all') params.set('period', period)
+    if (gameType) params.set('gameType', gameType)
+    const newPath = params.toString() ? `/leaderboard?${params.toString()}` : '/leaderboard'
+    router.replace(newPath, { scroll: false })
+  }, [period, gameType, router])
 
   useEffect(() => {
     if (!gameMenuOpen) return

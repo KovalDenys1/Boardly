@@ -25,6 +25,15 @@ interface GamesClientProps {
   games: GameCatalogEntry[]
 }
 
+function accentColor(color: string): string {
+  if (color.includes('blue')) return 'var(--bd-sky)'
+  if (color.includes('red') || color.includes('coral')) return 'var(--bd-coral)'
+  if (color.includes('yellow') || color.includes('orange')) return 'var(--bd-sun)'
+  if (color.includes('green')) return 'var(--bd-mint)'
+  if (color.includes('purple') || color.includes('violet')) return 'var(--bd-lav)'
+  return 'var(--bd-coral)'
+}
+
 export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -40,87 +49,74 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
     status: game.availability === 'available' ? 'available' : 'coming-soon',
   }))
 
-  // Handle authentication redirect in useEffect to avoid hydration issues
   useEffect(() => {
-    // Don't redirect guests - they can access games page
     if (status === 'unauthenticated' && !isGuest) {
       router.push(buildCurrentAuthUrl('login'))
     }
   }, [status, isGuest, router])
 
-  // Show loading state or redirect without flickering
   if (status === 'loading') {
     return (
-      <div className="bd-page flex-1 overflow-y-auto" style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--bd-ink-muted)', fontSize: 18 }}>Loading…</div>
+      <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
+        <div className="text-[18px] text-bd-ink-muted">Loading…</div>
       </div>
     )
   }
 
-  // Allow access if authenticated OR guest
   if (status === 'unauthenticated' && !isGuest) {
     return (
-      <div className="bd-page flex-1 overflow-y-auto" style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--bd-ink-muted)', fontSize: 18 }}>Redirecting…</div>
+      <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
+        <div className="text-[18px] text-bd-ink-muted">Redirecting…</div>
       </div>
     )
   }
 
   const filters: Array<{ id: typeof selectedFilter; label: string }> = [
-    { id: 'all', label: t('common.all', 'All') },
+    { id: 'all', label: t('common.all') },
     { id: 'available', label: t('games.available') },
     { id: 'coming-soon', label: t('games.comingSoon') },
   ]
 
   const filteredGames = games
-    .filter(game => {
-      if (selectedFilter === 'all') return true
-      return game.status === selectedFilter
-    })
+    .filter(game => selectedFilter === 'all' || game.status === selectedFilter)
     .sort((a, b) => {
-      if (a.status !== b.status) {
-        return a.status === 'available' ? -1 : 1
-      }
-      const nameA = t(a.nameKey).toLowerCase()
-      const nameB = t(b.nameKey).toLowerCase()
-      return nameA.localeCompare(nameB)
+      if (a.status !== b.status) return a.status === 'available' ? -1 : 1
+      return t(a.nameKey).toLowerCase().localeCompare(t(b.nameKey).toLowerCase())
     })
 
   const handleGameClick = (game: Game) => {
-    if (game.status === 'available' && game.route) {
-      router.push(game.route)
-    }
+    if (game.status === 'available' && game.route) router.push(game.route)
   }
 
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 32px 80px' }}>
+      <div className="mx-auto max-w-[1280px] px-8 pb-20 pt-10">
 
         {/* Page header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, flexWrap: 'wrap', gap: 24 }}>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
           <div>
             <span className="bd-kicker">Catalog</span>
-            <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 'clamp(40px,5vw,64px)', lineHeight: 0.95, marginTop: 8, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
+            <h1
+              className="mt-2 text-[clamp(40px,5vw,64px)] font-extrabold leading-[0.95] tracking-[-0.02em] text-bd-ink"
+              style={{ fontFamily: 'var(--bd-font-display)' }}
+            >
               {t('games.title')}<br />
-              <span style={{ color: 'var(--bd-coral)' }}>{t('games.subtitle')}</span>
+              <span className="text-bd-coral">{t('games.subtitle')}</span>
             </h1>
           </div>
         </div>
 
         {/* Filter chips */}
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 32 }}>
+        <div className="mb-8 flex flex-wrap gap-2.5">
           {filters.map(f => (
             <button
               key={f.id}
               onClick={() => setSelectedFilter(f.id)}
-              className="bd-chip"
-              style={{
-                padding: '10px 18px', fontSize: 14,
-                background: selectedFilter === f.id ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
-                color: selectedFilter === f.id ? 'var(--bd-bg)' : 'var(--bd-ink-soft)',
-                borderColor: selectedFilter === f.id ? 'var(--bd-ink)' : 'var(--bd-line)',
-                cursor: 'pointer',
-              }}
+              className={`bd-chip px-[18px] py-2.5 text-sm transition-all ${
+                selectedFilter === f.id
+                  ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                  : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:border-bd-ink'
+              }`}
             >
               {f.label}
             </button>
@@ -128,68 +124,51 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
         </div>
 
         {/* Games grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20, marginBottom: 56 }}>
+        <div className="mb-14 grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {filteredGames.map(game => (
             <div
               key={game.id}
-              className="bd-card"
+              className={`bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition-all ${
+                game.status === 'available' ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
+              }`}
               onClick={() => handleGameClick(game)}
-              style={{
-                padding: 24, display: 'flex', flexDirection: 'column', gap: 12,
-                cursor: game.status === 'available' ? 'pointer' : 'default',
-                opacity: game.status === 'coming-soon' ? 0.72 : 1,
-                transition: 'transform 0.15s, box-shadow 0.15s',
-                position: 'relative', overflow: 'hidden',
-              }}
-              onMouseEnter={e => {
-                if (game.status === 'available') {
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                }
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
-              }}
             >
               {/* Color accent strip */}
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 4, borderRadius: '24px 24px 0 0',
-                background: `linear-gradient(90deg, ${game.color.includes('blue') ? 'var(--bd-sky)' : game.color.includes('red') || game.color.includes('coral') ? 'var(--bd-coral)' : game.color.includes('yellow') || game.color.includes('orange') ? 'var(--bd-sun)' : game.color.includes('green') ? 'var(--bd-mint)' : game.color.includes('purple') || game.color.includes('violet') ? 'var(--bd-lav)' : 'var(--bd-coral)'}, transparent)`,
-              }} />
+              <div
+                className="absolute inset-x-0 top-0 h-1 rounded-t-3xl"
+                style={{ background: `linear-gradient(90deg, ${accentColor(game.color)}, transparent)` }}
+              />
 
               {/* Header row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 8 }}>
-                <div style={{ fontSize: 44, lineHeight: 1 }}>{game.emoji}</div>
-                <span
-                  className={game.status === 'available' ? 'bd-chip bd-chip-mint' : 'bd-chip'}
-                  style={{ fontSize: 11 }}
-                >
+              <div className="mt-2 flex items-start justify-between">
+                <div className="text-[44px] leading-none">{game.emoji}</div>
+                <span className={`text-[11px] ${game.status === 'available' ? 'bd-chip bd-chip-mint' : 'bd-chip'}`}>
                   {game.status === 'available' ? t('games.available') : t('games.comingSoon')}
                 </span>
               </div>
 
               {/* Game info */}
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 22, color: 'var(--bd-ink)', marginBottom: 6, letterSpacing: '-0.01em' }}>
+              <div className="flex-1">
+                <h3
+                  className="mb-1.5 text-[22px] font-bold tracking-[-0.01em] text-bd-ink"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
                   {t(game.nameKey)}
                 </h3>
-                <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5 }}>
+                <p className="text-sm leading-[1.5] text-bd-ink-soft">
                   {t(game.descriptionKey)}
                 </p>
               </div>
 
               {/* Meta row */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span className="bd-chip" style={{ fontSize: 12 }}>
-                  👥 {game.players} {t('games.players')}
-                </span>
-                <span className="bd-chip" style={{ fontSize: 12 }}>
-                  ⚡ {t(game.difficultyKey)}
-                </span>
+              <div className="flex flex-wrap gap-2">
+                <span className="bd-chip text-xs">👥 {game.players} {t('games.players')}</span>
+                <span className="bd-chip text-xs">⚡ {t(game.difficultyKey)}</span>
               </div>
 
               {/* CTA */}
               {game.status === 'available' && (
-                <button className="bd-btn bd-btn-primary" style={{ justifyContent: 'center', marginTop: 4 }}>
+                <button className="bd-btn bd-btn-primary mt-1 justify-center">
                   {t('games.viewLobbies')} →
                 </button>
               )}
@@ -198,7 +177,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
         </div>
 
         {filteredGames.length === 0 && (
-          <div style={{ padding: 80, textAlign: 'center', color: 'var(--bd-ink-muted)', fontSize: 16 }}>
+          <div className="py-20 text-center text-base text-bd-ink-muted">
             No games found for this filter.
           </div>
         )}
