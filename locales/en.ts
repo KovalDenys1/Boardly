@@ -314,6 +314,11 @@ const en = {
     exitGuest: 'Exit Guest',
     guestSession: 'Guest session',
     language: 'Language',
+    audioSettings: 'Audio Settings',
+    openAudioSettings: 'Open audio settings',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    volume: 'Volume',
   },
   home: {
     title: 'Play Board Games Online with Friends',
@@ -1760,6 +1765,8 @@ const en = {
     socialRematchMessage: '{{player}} asked for a rematch in {{lobby}}',
     socialJoinAction: 'Join',
     socialOpenAction: 'Open',
+    hostReassigned: '👑 {{player}} is now the host',
+    youAreNowHost: '👑 You are now the host',
   },
   deleteAccount: {
     title: 'Delete Account',

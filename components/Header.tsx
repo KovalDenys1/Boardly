@@ -8,6 +8,7 @@ import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
 import { MobileMenu } from './Header/MobileMenu'
 import { NotificationsMenu } from './Header/NotificationsMenu'
+import { AudioSettingsButton } from './Header/AudioSettingsButton'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
 
@@ -98,6 +99,10 @@ export default function Header() {
 
             <div className="hidden lg:block">
               <LanguageSwitcher />
+            </div>
+
+            <div className="hidden lg:block">
+              <AudioSettingsButton />
             </div>
 
             {effectiveIsAuthenticated && <NotificationsMenu />}

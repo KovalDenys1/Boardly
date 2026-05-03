@@ -314,6 +314,11 @@ const ru = {
     exitGuest: 'Выйти из гостевого режима',
     guestSession: 'Гостевой режим',
     language: 'Язык',
+    audioSettings: 'Настройки звука',
+    openAudioSettings: 'Открыть настройки звука',
+    mute: 'Выключить звук',
+    unmute: 'Включить звук',
+    volume: 'Громкость',
   },
   home: {
     title: 'Играйте в настольные игры онлайн с друзьями',
@@ -1747,7 +1752,9 @@ const ru = {
     socialInviteMessage: '{{player}} пригласил вас в {{lobby}}',
     socialRematchMessage: '{{player}} запросил реванш в {{lobby}}',
     socialJoinAction: 'Войти',
-    socialOpenAction: 'Открыть'
+    socialOpenAction: 'Открыть',
+    hostReassigned: '👑 {{player}} теперь хост',
+    youAreNowHost: '👑 Вы теперь хост',
   },
   deleteAccount: {
     title: 'Удалить аккаунт',

@@ -314,6 +314,11 @@ const no = {
     exitGuest: 'Avslutt gjest',
     guestSession: 'Gjesteøkt',
     language: 'Språk',
+    audioSettings: 'Lydinnstillinger',
+    openAudioSettings: 'Åpne lydinnstillinger',
+    mute: 'Demp',
+    unmute: 'Aktiver lyd',
+    volume: 'Volum',
   },
   home: {
     title: 'Spill brettspill på nett med venner',
@@ -1747,7 +1752,9 @@ const no = {
     socialInviteMessage: '{{player}} inviterte deg til {{lobby}}',
     socialRematchMessage: '{{player}} ba om revansj i {{lobby}}',
     socialJoinAction: 'Bli med',
-    socialOpenAction: 'Åpne'
+    socialOpenAction: 'Åpne',
+    hostReassigned: '👑 {{player}} er nå vert',
+    youAreNowHost: '👑 Du er nå vert',
   },
   deleteAccount: {
     title: 'Slett konto',

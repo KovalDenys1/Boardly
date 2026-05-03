@@ -1,6 +1,7 @@
 class SoundManager {
   private sounds: Map<string, HTMLAudioElement> = new Map()
   private enabled: boolean = true
+  private volume: number = 0.7
   private initialized: boolean = false
   private userInteracted: boolean = false
   private playingSounds: Set<string> = new Set()
@@ -9,9 +10,13 @@ class SoundManager {
   constructor() {
     if (typeof window !== 'undefined') {
       this.loadSounds()
-      const saved = localStorage.getItem('soundEnabled')
-      this.enabled = saved !== 'false'
-      
+      const savedEnabled = localStorage.getItem('soundEnabled')
+      this.enabled = savedEnabled !== 'false'
+      const savedVolume = parseFloat(localStorage.getItem('soundVolume') ?? '')
+      if (!isNaN(savedVolume)) {
+        this.volume = Math.max(0, Math.min(1, savedVolume))
+      }
+
       // Listen for first user interaction to enable audio playback
       this.setupUserInteraction()
     }
@@ -118,7 +123,7 @@ class SoundManager {
       if (options.volume !== undefined) {
         sound.volume = Math.max(0, Math.min(1, options.volume))
       } else {
-        sound.volume = 0.7 // Default volume
+        sound.volume = this.volume
       }
       
       sound.loop = options.loop || false
@@ -171,13 +176,22 @@ class SoundManager {
   toggle() {
     this.enabled = !this.enabled
     localStorage.setItem('soundEnabled', String(this.enabled))
-    
+
     // Stop all sounds when disabling
     if (!this.enabled) {
       this.stopAll()
     }
-    
+
     return this.enabled
+  }
+
+  setVolume(value: number) {
+    this.volume = Math.max(0, Math.min(1, value))
+    localStorage.setItem('soundVolume', String(this.volume))
+  }
+
+  getVolume() {
+    return this.volume
   }
 
   isEnabled() {
@@ -201,6 +215,8 @@ export const sounds = {
         stop: () => {},
         stopAll: () => {},
         toggle: () => false,
+        setVolume: () => {},
+        getVolume: () => 0.7,
         isEnabled: () => false,
         hasUserInteracted: () => false,
       } as unknown as SoundManager
@@ -217,23 +233,31 @@ export const sounds = {
   play(soundName: string, options?: Parameters<SoundManager['play']>[1]) {
     return this.instance.play(soundName, options)
   },
-  
+
   stop(soundName: string) {
     return this.instance.stop(soundName)
   },
-  
+
   stopAll() {
     return this.instance.stopAll()
   },
-  
+
   toggle() {
     return this.instance.toggle()
   },
-  
+
+  setVolume(value: number) {
+    return this.instance.setVolume(value)
+  },
+
+  getVolume() {
+    return this.instance.getVolume()
+  },
+
   isEnabled() {
     return this.instance.isEnabled()
   },
-  
+
   hasUserInteracted() {
     return this.instance.hasUserInteracted()
   },
