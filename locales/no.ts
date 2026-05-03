@@ -380,7 +380,32 @@ const no = {
       name: 'Yatzy',
       title: 'Yatzy',
       description: 'Klassisk terningspill med strategisk poengberegning. Kast fem terninger for å lage kombinasjoner og score stort!',
-      difficulty: 'Lett'
+      difficulty: 'Lett',
+      lobbies: {
+        title: 'Yatzy-lobbyer',
+        subtitle: 'Bli med i et spill eller opprett din egen lobby!',
+        subtitleGuest: 'Bla gjennom lobbyer og logg inn når du vil være vert eller bli med.',
+        backToGames: 'Tilbake til spill',
+        wantToPlay: 'Vil du spille?',
+        wantToPlayDesc: 'Logg inn eller opprett en konto for å være vert for lobbyer og bli med i spill. Gjester kan fortsatt motta invitasjonslenker senere.',
+        signIn: 'Logg inn',
+        createAccount: 'Opprett konto',
+        createNewLobby: 'Opprett ny lobby',
+        createDescription: 'Start ditt eget Yatzy-spill og inviter venner til å bli med!',
+        createNow: 'Opprett nå',
+        quickJoin: 'Raskt bli med',
+        quickJoinDesc: 'Har du en lobbykode? Skriv den inn nedenfor for å bli med umiddelbart!',
+        enterCode: 'Skriv inn 4-sifret kode',
+        signInToJoin: 'Vennligst logg inn før du blir med i en lobby. Du kan fortsatt utforske aktive rom nedenfor.',
+        activeLobbies: 'Aktive lobbyer',
+        noLobbiesTitle: 'Ingen aktive lobbyer akkurat nå. Bli den første til å starte et spill!',
+        createFirstLobby: 'Opprett første lobby',
+        host: 'Vert',
+        waiting: 'Venter',
+        playing: 'Spiller',
+        full: 'Fullt',
+        newGame: 'NYTT SPILL'
+      }
     },
     guess_the_spy: {
       name: 'Gjett spionen',

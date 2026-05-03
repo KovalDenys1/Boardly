@@ -114,59 +114,64 @@ export default function LobbyInfo({
   }
 
   const inner = (
-      <div className={variant === 'header' ? 'px-3 sm:px-5 py-3 sm:py-4' : 'rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl px-3 sm:px-5 py-3 sm:py-4'}>
+      <div className={variant === 'header' ? 'px-4 py-4 sm:px-6 sm:py-5' : 'bd-card px-4 py-4 sm:px-6 sm:py-5'}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 flex-1">
-            <nav className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-white/65 mb-3">
+            <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-bd-ink-muted sm:text-xs">
               <button
                 onClick={() => router.push('/')}
                 aria-label={t('common.goHome')}
-                className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30"
               >
                 🏠 {t('breadcrumbs.home')}
               </button>
-              <span aria-hidden="true" className="text-white/30">
+              <span aria-hidden="true" className="text-bd-ink-muted/55">
                 ›
               </span>
               <button
                 onClick={() => router.push('/games')}
                 aria-label={t('games.title')}
-                className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30"
               >
                 🎮 {t('breadcrumbs.games')}
               </button>
-              <span aria-hidden="true" className="text-white/30">
+              <span aria-hidden="true" className="text-bd-ink-muted/55">
                 ›
               </span>
               <button
                 onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
                 aria-label={t('lobby.activeLobbies')}
-                className="hover:text-white transition-colors rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="rounded px-1 py-0.5 transition-colors hover:text-bd-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30"
               >
                 {gameMeta?.icon ?? '🎮'} {gameMeta?.name ?? 'Game'}
               </button>
             </nav>
 
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-lg sm:text-2xl font-extrabold text-white truncate">{lobby.name}</h1>
-              <span className="font-mono text-xs sm:text-sm font-bold tracking-wider text-cyan-100 bg-cyan-500/20 border border-cyan-300/30 px-2 py-1 rounded-lg">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <h1
+                className="truncate text-xl font-extrabold tracking-[-0.01em] text-bd-ink sm:text-3xl"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                {lobby.name}
+              </h1>
+              <span className="bd-chip border-bd-ink bg-bd-ink font-mono text-bd-bg">
                 {lobby.code}
               </span>
               <span
-                className={`text-xs font-semibold px-2 py-1 rounded-lg ${
+                className={`bd-chip ${
                   isPrivate
-                    ? 'bg-rose-500/25 text-rose-100 border border-rose-300/35'
-                    : 'bg-emerald-500/25 text-emerald-100 border border-emerald-300/35'
+                    ? 'border-bd-coral/45 bg-bd-coral/15 text-bd-coral-deep'
+                    : 'bd-chip-mint'
                 }`}
               >
                 {isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
               </span>
-              <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-white/10 text-white/85 border border-white/20">
+              <span className="bd-chip">
                 {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
               </span>
             </div>
 
-            <p className="text-xs sm:text-sm text-white/70 truncate">
+            <p className="truncate text-xs text-bd-ink-soft sm:text-sm">
               👤 {creatorName}
             </p>
           </div>
@@ -174,7 +179,7 @@ export default function LobbyInfo({
           <div className="flex w-full lg:w-auto flex-wrap sm:flex-nowrap items-center gap-2">
             <button
               onClick={handleCopyInvite}
-              className="inline-flex min-w-0 flex-1 lg:flex-none items-center justify-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all text-xs sm:text-sm font-semibold text-white"
+              className="bd-btn bd-btn-soft min-w-0 flex-1 justify-center px-3 py-2 text-xs sm:text-sm lg:flex-none"
             >
               <span className="shrink-0">🔗</span>
               <span className="truncate">{t('game.ui.copyInvite')}</span>
@@ -183,7 +188,7 @@ export default function LobbyInfo({
               onClick={onSoundToggle}
               aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
               aria-pressed={soundEnabled}
-              className="shrink-0 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+              className="bd-btn bd-btn-soft shrink-0 px-3 py-2"
               title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
             >
               {soundEnabled ? '🔊' : '🔇'}
@@ -191,7 +196,7 @@ export default function LobbyInfo({
             <button
               onClick={onLeave}
               aria-label={t('game.ui.leave')}
-              className="inline-flex shrink-0 items-center justify-center gap-1 px-3 sm:px-4 py-2 bg-red-500/35 hover:bg-red-500/55 text-white rounded-xl font-medium text-sm transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border-[1.5px] border-bd-coral/45 bg-bd-coral/15 px-3 py-2 text-sm font-semibold text-bd-coral-deep transition-all hover:bg-bd-coral hover:text-white sm:px-4"
             >
               <span aria-hidden>🚪</span>
               <span className="hidden sm:inline">{t('game.ui.leave')}</span>
@@ -199,11 +204,11 @@ export default function LobbyInfo({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div
-            className={`rounded-xl border border-white/15 bg-white/5 px-3 py-2 ${
+            className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
-                ? 'cursor-pointer hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70'
+                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
                 : ''
             }`}
             onClick={() => openEditor('maxPlayers')}
@@ -214,15 +219,15 @@ export default function LobbyInfo({
               canEditLobbySettings ? t('lobby.create.maxPlayers') : undefined
             }
           >
-            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.playersInLobbyTitle')}</p>
-            <p className="mt-1 text-sm font-semibold text-white break-words">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted">{t('game.ui.playersInLobbyTitle')}</p>
+            <p className="mt-1 break-words text-sm font-semibold text-bd-ink">
               {t('lobby.playerOccupancy', { current: currentPlayers, max: maxPlayers })}
             </p>
           </div>
           <div
-            className={`rounded-xl border border-white/15 bg-white/5 px-3 py-2 ${
+            className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
-                ? 'cursor-pointer hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70'
+                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
                 : ''
             }`}
             onClick={() => openEditor('turnTimer')}
@@ -231,15 +236,15 @@ export default function LobbyInfo({
             tabIndex={canEditLobbySettings ? 0 : undefined}
             aria-label={canEditLobbySettings ? t('game.ui.timeLimit') : undefined}
           >
-            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.timeLimit')}</p>
-            <p className="mt-1 text-sm font-semibold text-white break-words">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted">{t('game.ui.timeLimit')}</p>
+            <p className="mt-1 break-words text-sm font-semibold text-bd-ink">
               {lobby?.turnTimer ? `${lobby.turnTimer}s ${t('game.ui.perTurn')}` : '—'}
             </p>
           </div>
           <div
-            className={`rounded-xl border border-white/15 bg-white/5 px-3 py-2 ${
+            className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
-                ? 'cursor-pointer hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70'
+                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
                 : ''
             }`}
             onClick={() => openEditor('allowSpectators')}
@@ -248,16 +253,16 @@ export default function LobbyInfo({
             tabIndex={canEditLobbySettings ? 0 : undefined}
             aria-label={canEditLobbySettings ? t('game.ui.spectatorsLabel') : undefined}
           >
-            <p className="text-[11px] uppercase tracking-wider text-white/50">{t('game.ui.spectatorsLabel')}</p>
-            <p className="mt-1 text-sm font-semibold text-white break-words">{spectatorsLabel}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted">{t('game.ui.spectatorsLabel')}</p>
+            <p className="mt-1 break-words text-sm font-semibold text-bd-ink">{spectatorsLabel}</p>
           </div>
         </div>
 
         {canEditLobbySettings && activeSettingEditor && (
-          <div className="mt-3 rounded-xl border border-cyan-300/35 bg-cyan-500/10 px-3 py-3">
+          <div className="mt-3 rounded-xl border border-bd-mint/45 bg-bd-mint/10 px-3 py-3">
             {activeSettingEditor === 'maxPlayers' && (
               <>
-                <p className="text-xs font-semibold text-cyan-100 mb-2">
+                <p className="mb-2 text-xs font-semibold text-bd-mint-deep">
                   {t('lobby.create.maxPlayers')}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -269,8 +274,8 @@ export default function LobbyInfo({
                       onClick={() => void applySettingUpdate('maxPlayers', { maxPlayers: value })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         value === maxPlayers
-                          ? 'bg-cyan-500/80 border-cyan-300 text-white'
-                          : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                          ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                          : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {value}
@@ -282,7 +287,7 @@ export default function LobbyInfo({
 
             {activeSettingEditor === 'turnTimer' && (
               <>
-                <p className="text-xs font-semibold text-cyan-100 mb-2">
+                <p className="mb-2 text-xs font-semibold text-bd-mint-deep">
                   {t('game.ui.timeLimit')}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -294,8 +299,8 @@ export default function LobbyInfo({
                       onClick={() => void applySettingUpdate('turnTimer', { turnTimer: seconds })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         seconds === lobby?.turnTimer
-                          ? 'bg-cyan-500/80 border-cyan-300 text-white'
-                          : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                          ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                          : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {seconds}s
@@ -307,7 +312,7 @@ export default function LobbyInfo({
 
             {activeSettingEditor === 'allowSpectators' && (
               <>
-                <p className="text-xs font-semibold text-cyan-100 mb-2">
+                <p className="mb-2 text-xs font-semibold text-bd-mint-deep">
                   {t('game.ui.spectatorsLabel')}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -317,8 +322,8 @@ export default function LobbyInfo({
                     onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: true })}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       lobby?.allowSpectators
-                        ? 'bg-cyan-500/80 border-cyan-300 text-white'
-                        : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                        ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                        : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     Enabled
@@ -329,8 +334,8 @@ export default function LobbyInfo({
                     onClick={() => void applySettingUpdate('allowSpectators', { allowSpectators: false })}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       lobby?.allowSpectators === false
-                        ? 'bg-cyan-500/80 border-cyan-300 text-white'
-                        : 'bg-white/5 border-white/25 text-white/85 hover:bg-white/15'
+                        ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                        : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     Disabled
@@ -345,14 +350,14 @@ export default function LobbyInfo({
 
   if (variant === 'header') {
     return (
-      <div className="flex-shrink-0 border-b border-white/10">
+      <div className="flex-shrink-0 border-b border-bd-line bg-white">
         {inner}
       </div>
     )
   }
 
   return (
-    <div className="flex-shrink-0 sticky top-0 z-10 pt-2 pb-3">
+    <div className="sticky top-0 z-10 flex-shrink-0 pb-3 pt-2">
       {inner}
     </div>
   )

@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, type Socket } from 'socket.io-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import TicTacToeGameIcon from '@/components/ui/TicTacToeGameIcon'
 import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getLobbyCreateRoute } from '@/lib/public-game-access'
+import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 
@@ -35,14 +36,72 @@ type Lobby = {
 
 type GameLobbiesPageProps = {
   gameType: string
+  iconVariant?: 'tic-tac-toe'
   pagePath: string
   titleEmoji: string
   gameNameKey: TranslationKeys
   lobbiesNamespace: string
 }
 
+function GameLobbyIcon({
+  titleEmoji,
+  usage,
+  variant,
+}: {
+  titleEmoji: string
+  usage: 'breadcrumb' | 'title' | 'card' | 'empty'
+  variant?: GameLobbiesPageProps['iconVariant']
+}) {
+  if (variant === 'tic-tac-toe') {
+    if (usage === 'breadcrumb') {
+      return <span>{titleEmoji}</span>
+    }
+
+    if (usage === 'title') {
+      return null
+    }
+
+    if (usage === 'empty') {
+      return null
+    }
+
+    const size = {
+      card: 82,
+    }[usage]
+
+    const className = {
+      card: 'shrink-0',
+    }[usage]
+
+    return <TicTacToeGameIcon className={className} size={size} />
+  }
+
+  if (usage === 'breadcrumb') {
+    return <span>{titleEmoji}</span>
+  }
+
+  if (usage === 'title') {
+    return <span className="ml-3 text-[0.75em]">{titleEmoji}</span>
+  }
+
+  if (usage === 'empty') {
+    return (
+      <span className="mx-auto mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-2xl shadow-bd-ink-4">
+        {titleEmoji}
+      </span>
+    )
+  }
+
+  return (
+    <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-sun text-2xl shadow-[3px_3px_0_#1F1B16]">
+      {titleEmoji}
+    </span>
+  )
+}
+
 export default function GameLobbiesPage({
   gameType,
+  iconVariant,
   pagePath,
   titleEmoji,
   gameNameKey,
@@ -58,6 +117,7 @@ export default function GameLobbiesPage({
   const [joinCode, setJoinCode] = useState('')
   const isAuthenticated = status === 'authenticated' || isGuest
   const createLobbyPath = getLobbyCreateRoute(gameType) ?? '/lobby/create'
+  const canCreateLobby = !isTemporarilyUnavailableGameType(gameType)
 
   const tx = useCallback(
     (suffix: string) => t(`${lobbiesNamespace}.${suffix}` as TranslationKeys),
@@ -195,8 +255,9 @@ export default function GameLobbiesPage({
               🎮 <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
             </button>
             <span>›</span>
-            <span className="text-bd-ink">
-              {titleEmoji} <span className="hidden xs:inline">{t(gameNameKey)}</span>
+            <span className="inline-flex items-center gap-2 text-bd-ink">
+              <GameLobbyIcon titleEmoji={titleEmoji} usage="breadcrumb" variant={iconVariant} />
+              <span className="hidden xs:inline">{t(gameNameKey)}</span>
             </span>
           </div>
 
@@ -209,7 +270,7 @@ export default function GameLobbiesPage({
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
                 {tx('title')}
-                <span className="ml-3 text-[0.75em]">{titleEmoji}</span>
+                <GameLobbyIcon titleEmoji={titleEmoji} usage="title" variant={iconVariant} />
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-bd-ink-soft">
                 {isAuthenticated ? tx('subtitle') : tx('subtitleGuest')}
@@ -251,8 +312,14 @@ export default function GameLobbiesPage({
             {/* Create lobby card */}
             <button
               type="button"
-              className="bd-card group relative overflow-hidden p-6 text-left transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_0_#1F1B16,0_16px_36px_-12px_rgba(31,27,22,0.35)] sm:p-8"
+              aria-disabled={!canCreateLobby}
+              className={`bd-card group relative overflow-hidden p-6 text-left transition-all sm:p-8 ${
+                canCreateLobby
+                  ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_0_#1F1B16,0_16px_36px_-12px_rgba(31,27,22,0.35)]'
+                  : 'cursor-not-allowed opacity-75'
+              }`}
               onClick={() => {
+                if (!canCreateLobby) return
                 if (!isAuthenticated) {
                   router.push(`/auth/login?returnUrl=${encodeURIComponent(createLobbyPath)}`)
                   return
@@ -266,25 +333,29 @@ export default function GameLobbiesPage({
               />
               <div className="relative">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="grid h-14 w-14 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-sun text-2xl shadow-[3px_3px_0_#1F1B16]">
-                    {titleEmoji}
-                  </span>
+                  <GameLobbyIcon titleEmoji={titleEmoji} usage="card" variant={iconVariant} />
                   <span className="bd-chip border-bd-ink bg-bd-ink px-3 py-1 text-xs font-bold text-bd-bg">
-                    {tx('newGame')}
+                    {canCreateLobby ? tx('newGame') : 'Unavailable'}
                   </span>
                 </div>
                 <h2
                   className="mb-2 text-2xl font-extrabold text-bd-ink"
                   style={{ fontFamily: 'var(--bd-font-display)' }}
                 >
-                  {tx('createNewLobby')}
+                  {canCreateLobby ? tx('createNewLobby') : 'Lobby creation unavailable'}
                 </h2>
-                <p className="mb-5 text-sm leading-6 text-bd-ink-soft">{tx('createDescription')}</p>
+                <p className="mb-5 text-sm leading-6 text-bd-ink-soft">
+                  {canCreateLobby
+                    ? tx('createDescription')
+                    : 'This game is still being polished. You can check existing rooms below when any are open.'}
+                </p>
                 <span className="inline-flex items-center gap-2 font-bold text-bd-ink">
-                  {tx('createNow')}
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+                  {canCreateLobby ? tx('createNow') : 'Browse open lobbies'}
+                  {canCreateLobby && (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  )}
                 </span>
               </div>
             </button>
@@ -331,16 +402,15 @@ export default function GameLobbiesPage({
 
             {lobbies.length === 0 ? (
               <div className="py-16 text-center">
-                <div className="mx-auto mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-2xl shadow-bd-ink-4">
-                  {titleEmoji}
-                </div>
+                <GameLobbyIcon titleEmoji={titleEmoji} usage="empty" variant={iconVariant} />
                 <p className="font-bold text-bd-ink">{tx('noLobbiesTitle')}</p>
                 {isAuthenticated && (
                   <button
                     onClick={() => router.push(createLobbyPath)}
-                    className="bd-btn bd-btn-primary mx-auto mt-5"
+                    disabled={!canCreateLobby}
+                    className="bd-btn bd-btn-primary mx-auto mt-5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {tx('createFirstLobby')}
+                    {canCreateLobby ? tx('createFirstLobby') : 'Creation unavailable'}
                   </button>
                 )}
               </div>

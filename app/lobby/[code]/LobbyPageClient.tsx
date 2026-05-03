@@ -93,7 +93,7 @@ import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 
 function CenteredLoadingFallback() {
   return (
-    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+    <div className="bd-page page-shell flex items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   )
@@ -1567,10 +1567,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="bd-page page-shell flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner size="lg" />
-          <p className="text-white/70">Loading session...</p>
+          <p className="text-bd-ink-muted">Loading session...</p>
         </div>
       </div>
     )
@@ -1578,7 +1578,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (loading) {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="bd-page page-shell flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -1586,18 +1586,23 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (!lobby) {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl max-w-md w-full p-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-5">
+      <div className="bd-page page-shell flex items-center justify-center px-4">
+        <div className="bd-card w-full max-w-md p-8 text-center">
+          <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
             <span className="text-3xl">🔍</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white mb-3">Lobby Not Found</h1>
-          <p className="text-white/60 text-sm mb-6">
+          <h1
+            className="mb-3 text-2xl font-extrabold text-bd-ink"
+            style={{ fontFamily: 'var(--bd-font-display)' }}
+          >
+            Lobby Not Found
+          </h1>
+          <p className="mb-6 text-sm text-bd-ink-soft">
             The lobby you're looking for doesn't exist or has been closed.
           </p>
           <button
             onClick={() => router.push('/games')}
-            className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
+            className="bd-btn bd-btn-primary mx-auto"
           >
             Back to Games
           </button>
@@ -1607,25 +1612,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className={`${!isGameStarted ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500' : ''}`}>
-     <div className={`max-w-7xl mx-auto ${!isGameStarted ? 'h-[calc(100vh-64px)] flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
+    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`}>
+     <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
 
       {!isInGame && !isGameStarted ? (
         /* Join Prompt - centered in full height */
         <div className="flex-1 flex items-center justify-center">
           {showAutoJoinLoadingState ? (
             <div className="max-w-xl mx-auto w-full animate-scale-in">
-              <div className="rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl p-6 sm:p-8 text-center shadow-2xl">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 border border-white/20 mb-5">
+              <div className="bd-card p-6 text-center sm:p-8">
+                <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
                   <span className="text-3xl">🎮</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+                <h2
+                  className="mb-2 text-2xl font-extrabold text-bd-ink sm:text-3xl"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
                   {t('lobby.joinSection.title')}
                 </h2>
-                <p className="text-white/65 text-sm sm:text-base mb-6">
+                <p className="mb-6 text-sm text-bd-ink-soft sm:text-base">
                   {t('lobby.joinPromptPublic', { lobby: lobby.name })}
                 </p>
-                <div className="flex items-center justify-center gap-3 text-white">
+                <div className="flex items-center justify-center gap-3 text-bd-ink">
                   <LoadingSpinner />
                   <span>{t('lobby.joinSection.join')}</span>
                 </div>
@@ -1650,7 +1658,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         </div>
       ) : !isGameStarted ? (
         /* Waiting Room - unified card with pinned actions */
-        <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl overflow-hidden">
+        <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
           <LobbyInfo
             variant="header"
             lobby={lobby}

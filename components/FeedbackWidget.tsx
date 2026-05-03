@@ -13,6 +13,7 @@ const TYPE_LABELS: Record<FeedbackType, { label: string; shortLabel: string }> =
 
 export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isFooterFeedbackVisible, setIsFooterFeedbackVisible] = useState(false)
   const [type, setType] = useState<FeedbackType>('bug')
   const [message, setMessage] = useState('')
   const [email, setEmail] = useState('')
@@ -21,6 +22,23 @@ export default function FeedbackWidget() {
   const [error, setError] = useState<string | null>(null)
   const pathname = usePathname()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const footerFeedbackButton = document.getElementById('footer-feedback-trigger')
+
+    if (!footerFeedbackButton) {
+      setIsFooterFeedbackVisible(false)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterFeedbackVisible(entry.isIntersecting),
+      { threshold: 0.15 },
+    )
+
+    observer.observe(footerFeedbackButton)
+    return () => observer.disconnect()
+  }, [pathname])
 
   useEffect(() => {
     const handler = () => setIsOpen(true)
@@ -50,6 +68,7 @@ export default function FeedbackWidget() {
   }, [isOpen])
 
   const isGamePage = /^\/lobby\/[^/]+$/.test(pathname)
+  const shouldHideFloatingButton = isGamePage || isFooterFeedbackVisible
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,22 +106,24 @@ export default function FeedbackWidget() {
 
   return (
     <>
-      {!isGamePage && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          aria-label="Send feedback"
-          className="fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-hidden={shouldHideFloatingButton}
+        aria-label="Send feedback"
+        tabIndex={shouldHideFloatingButton ? -1 : 0}
+        className={`fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] ${
+          shouldHideFloatingButton ? 'pointer-events-none translate-y-2 opacity-0' : 'opacity-100'
+        }`}
+      >
+        <span
+          aria-hidden
+          className="grid h-5 w-5 place-items-center rounded-md bg-white/20 text-[11px] font-black"
         >
-          <span
-            aria-hidden
-            className="grid h-5 w-5 place-items-center rounded-md bg-white/20 text-[11px] font-black"
-          >
-            !
-          </span>
-          <span className="hidden sm:inline">Feedback</span>
-        </button>
-      )}
+          !
+        </span>
+        <span className="hidden sm:inline">Feedback</span>
+      </button>
 
       {isOpen && (
         <div

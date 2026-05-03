@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Die from '@/components/ui/Die'
+import TicTacToeGameIcon from '@/components/ui/TicTacToeGameIcon'
 import { getCatalogGames, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 
@@ -209,29 +210,7 @@ function getIllustration(gameId: string, emoji: string) {
       </div>
       )
     case 'tic-tac-toe':
-      return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gridTemplateRows: 'repeat(3, 1fr)',
-          gap: 6,
-          width: 108,
-          height: 108,
-          border: '3px solid var(--bd-ink)',
-          borderRadius: 12,
-          boxShadow: '3px 3px 0 var(--bd-ink)',
-          background: 'white',
-          padding: 8,
-          overflow: 'hidden',
-        }}
-        className="bd-float"
-      >
-        {['❌','','⭕','','❌','','⭕','','❌'].map((s, i) => (
-          <div key={i} style={{ display: 'grid', placeItems: 'center', fontSize: 18, lineHeight: 1 }}>{s}</div>
-        ))}
-      </div>
-      )
+      return <TicTacToeGameIcon floating />
     case 'memory':
       return (
         <div

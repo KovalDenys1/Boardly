@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
+import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import LobbyFilters from '@/components/LobbyFilters'
 import LobbyStats from '@/components/LobbyStats'
@@ -31,8 +32,8 @@ function LobbyListPageContent() {
   if (!ready || !i18n.isInitialized) return <LoadingSkeleton />
 
   return (
-    <div className="bd-page bd-screen flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1280px] px-8 pb-20 pt-10">
+    <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto">
+      <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
 
         {/* Page header */}
         <div
@@ -42,14 +43,16 @@ function LobbyListPageContent() {
           <div className="bd-dot-grid absolute inset-0 opacity-35" />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
             <div className="min-w-[280px] flex-1">
-              <button
-                type="button"
-                onClick={() => router.push('/games')}
-                className="bd-btn bd-btn-soft mb-4 px-3.5 py-2 text-sm"
-              >
-                ← {t('lobby.backToGames')}
-              </button>
-              <span className="bd-kicker mb-2 block">Lobbies</span>
+              <div className="mb-5">
+                <button
+                  type="button"
+                  onClick={() => router.push('/games')}
+                  className="bd-btn bd-btn-soft px-3.5 py-2 text-sm"
+                >
+                  ← {t('lobby.backToGames')}
+                </button>
+              </div>
+              <span className="bd-kicker mb-2 ml-1 block">Lobbies</span>
               <h1
                 className="mb-2 text-[clamp(32px,4vw,52px)] font-extrabold leading-none tracking-tight text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
@@ -188,6 +191,7 @@ function LobbyListPageContent() {
         </div>
 
       </div>
+      <Footer />
     </div>
   )
 }

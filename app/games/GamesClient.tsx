@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import Footer from '@/components/Footer'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import type { GameCatalogEntry } from '@/lib/game-catalog'
@@ -89,8 +90,8 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   }
 
   return (
-    <div className="bd-page bd-screen flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[1280px] px-8 pb-20 pt-10">
+    <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto">
+      <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
 
         {/* Page header */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
@@ -182,6 +183,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

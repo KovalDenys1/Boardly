@@ -4,8 +4,9 @@ export default function TicTacToeLobbiesPage() {
   return (
     <GameLobbiesPage
       gameType="tic_tac_toe"
+      iconVariant="tic-tac-toe"
       pagePath="/games/tic-tac-toe/lobbies"
-      titleEmoji="❌⭕"
+      titleEmoji="❌"
       gameNameKey="games.tictactoe.name"
       lobbiesNamespace="games.tictactoe.lobbies"
     />

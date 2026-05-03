@@ -31,7 +31,7 @@ export default function WaitingRoom({
   const missingPlayers = Math.max(minPlayers - playerCount, 0)
 
   return (
-    <div className="px-3 sm:px-5 py-4 space-y-1.5">
+    <div className="space-y-2 px-4 py-4 sm:px-6">
       {/* Players */}
       {game?.players?.map((p: GamePlayer, index: number) => {
         const isBot = !!p.user?.bot
@@ -47,31 +47,31 @@ export default function WaitingRoom({
             key={p.id}
             onClick={canClickProfile ? () => onProfileClick(p.userId) : undefined}
             role={canClickProfile ? 'button' : undefined}
-            className={`flex items-center gap-3 rounded-xl px-3 sm:px-4 py-2.5 border ${
+            className={`flex items-center gap-3 rounded-xl border px-3 py-3 sm:px-4 ${
               isCurrentUser
-                ? 'bg-emerald-500/15 border-emerald-300/40'
+                ? 'border-bd-mint/45 bg-bd-mint/15'
                 : isBot
-                  ? 'bg-violet-500/12 border-violet-300/25'
-                  : 'bg-white/5 border-white/12'
-            } ${canClickProfile ? 'cursor-pointer hover:bg-white/10 transition-colors' : ''}`}
+                  ? 'border-bd-lav/35 bg-bd-lav/10'
+                  : 'border-bd-line bg-white'
+            } ${canClickProfile ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-card-warm' : ''}`}
           >
-            <div className="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white/80 text-xs font-bold shrink-0">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xs font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
               {index + 1}
             </div>
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-              <span className="font-semibold text-white text-sm truncate">{playerName}</span>
+              <span className="truncate text-sm font-bold text-bd-ink">{playerName}</span>
               {isCurrentUser && !isBot && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/80 text-white">
+                <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
                   {t('game.ui.you')}
                 </span>
               )}
               {isBot && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/80 text-white">
+                <span className="rounded-full bg-bd-lav px-1.5 py-0.5 text-[10px] font-bold text-white">
                   AI
                 </span>
               )}
               {isBot && difficultyLabel && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/75 text-white">
+                <span className="rounded-full bg-bd-bg2 px-1.5 py-0.5 text-[10px] font-bold text-bd-ink-soft">
                   {difficultyLabel}
                 </span>
               )}
@@ -81,7 +81,7 @@ export default function WaitingRoom({
             {isBot && canManageBots && onKickBot && (
               <button
                 onClick={() => onKickBot(p.id)}
-                className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-white/35 hover:text-rose-300 hover:bg-rose-500/20 transition-all text-xs font-bold"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
                 title="Remove bot"
               >
                 ✕
@@ -95,12 +95,12 @@ export default function WaitingRoom({
       {Array.from({ length: openSlots }).map((_, i) => (
         <div
           key={`empty-${i}`}
-          className="flex items-center gap-3 rounded-xl px-3 sm:px-4 py-2.5 border border-white/8 border-dashed"
+          className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
         >
-          <div className="w-7 h-7 rounded-full bg-white/8 flex items-center justify-center text-white/30 text-xs font-bold shrink-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-bd-line bg-white text-xs font-bold text-bd-ink-muted">
             {playerCount + i + 1}
           </div>
-          <span className="text-sm text-white/30 italic">
+          <span className="text-sm italic text-bd-ink-muted">
             {i < missingPlayers ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
           </span>
         </div>
