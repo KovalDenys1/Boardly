@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getProviders, signIn } from 'next-auth/react'
+import Die from '@/components/ui/Die'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { loginSchema } from '@/lib/validation/auth'
@@ -422,11 +423,21 @@ export default function LoginForm() {
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'var(--bd-ink)', lineHeight: 0.95, marginBottom: 12 }}>
-                &ldquo;Best<br />Friday<br />night&rdquo;
+                &ldquo;Best<br />Friday<br />night ever&rdquo;
               </div>
               <div style={{ fontSize: 14, color: 'rgba(31,27,22,0.7)', maxWidth: 200 }}>
                 — our players about boardly
               </div>
+            </div>
+            {/* floating dice */}
+            <div style={{ position: 'absolute', top: '30%', right: '10%' }} className="bd-float">
+              <Die value={6} size={72} rotate="-4deg" />
+            </div>
+            <div style={{ position: 'absolute', top: '50%', right: '40%' }} className="bd-float">
+              <Die value={3} size={56} rotate="-8deg" animationDelay="0.4s" />
+            </div>
+            <div style={{ position: 'absolute', top: '62%', right: '12%' }} className="bd-float">
+              <Die value={5} size={64} rotate="10deg" animationDelay="0.8s" />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
               <div style={{ display: 'flex' }}>

@@ -64,6 +64,15 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
       >
         {t('header.leaderboard', 'Leaderboard')}
       </button>
+      {isAuthenticated && (
+        <button
+          onClick={() => router.push('/friends')}
+          className={navBtn(!!pathname?.startsWith('/friends'))}
+          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        >
+          Friends
+        </button>
+      )}
     </div>
   )
 }

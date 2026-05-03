@@ -77,6 +77,27 @@ export default function LobbyInfo({
     }
   }
 
+  const getInviteUrl = () =>
+    typeof window !== 'undefined' ? `${window.location.origin}/lobby/${lobby.code}` : ''
+
+  const handleShareTelegram = () => {
+    const url = getInviteUrl()
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(`Join my ${gameMeta?.name ?? 'game'} lobby on Boardly!`)}`, '_blank')
+  }
+
+  const handleShareWhatsApp = () => {
+    const url = getInviteUrl()
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Join my ${gameMeta?.name ?? 'game'} lobby on Boardly! ${url}`)}`, '_blank')
+  }
+
+  const handleShareDiscord = () => {
+    const url = getInviteUrl()
+    navigator.clipboard
+      .writeText(url)
+      .then(() => showToast.success('toast.linkCopied'))
+      .catch(() => showToast.error('toast.error'))
+  }
+
   const openEditor = (key: EditableSettingKey) => {
     if (!canEditLobbySettings) {
       return
@@ -257,6 +278,31 @@ export default function LobbyInfo({
             <p className="mt-1 break-words text-sm font-semibold text-bd-ink">{spectatorsLabel}</p>
           </div>
         </div>
+
+        {!isPlaying && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted mr-1">Share:</span>
+            <button
+              onClick={handleShareTelegram}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-white"
+            >
+              📱 Telegram
+            </button>
+            <button
+              onClick={handleShareWhatsApp}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-white"
+            >
+              💬 WhatsApp
+            </button>
+            <button
+              onClick={handleShareDiscord}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-white"
+              title="Copy link for Discord"
+            >
+              🎮 Discord
+            </button>
+          </div>
+        )}
 
         {canEditLobbySettings && activeSettingEditor && (
           <div className="mt-3 rounded-xl border border-bd-mint/45 bg-bd-mint/10 px-3 py-3">

@@ -169,6 +169,10 @@ function CreateLobbyPage() {
   )
   const gameInfo = GAME_INFO[selectedGameType]
 
+  const [boardSize, setBoardSize] = useState<3 | 4 | 5>(3)
+  const [bestOf, setBestOf] = useState<1 | 3 | 5>(1)
+  const [whoStarts, setWhoStarts] = useState<'host' | 'guest' | 'random'>('random')
+
   const [formData, setFormData] = useState({
     name: '',
     password: '',
@@ -262,7 +266,12 @@ function CreateLobbyPage() {
         allowSpectators: formData.allowSpectators,
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
-        ...(formData.gameType === 'tic_tac_toe' ? { ticTacToeRounds: formData.ticTacToeRounds } : {}),
+        ...(formData.gameType === 'tic_tac_toe' ? {
+          ticTacToeRounds: formData.ticTacToeRounds,
+          boardSize,
+          bestOf,
+          whoStarts,
+        } : {}),
         ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
       }
 
@@ -390,79 +399,161 @@ function CreateLobbyPage() {
     border: active ? '1.5px solid var(--bd-ink)' : '1.5px solid var(--bd-line)',
   })
 
+  const isTTT = selectedGameType === 'tic_tac_toe'
+
+  // MiniBoard component inline — shows a tic-tac-toe preview grid with demo moves
+  const MiniBoard = ({ size }: { size: 3 | 4 | 5 }) => {
+    const dim = 160
+    const demoCells: Record<number, 'x' | 'o'> = size === 3 ? { 0: 'x', 4: 'o', 8: 'x' } : size === 4 ? { 5: 'x', 10: 'o' } : { 6: 'x', 12: 'o', 18: 'x' }
+    const total = size * size
+    return (
+      <div style={{
+        width: dim, height: dim,
+        display: 'grid', gridTemplateColumns: `repeat(${size}, 1fr)`,
+        background: 'white', borderRadius: 16, border: '2px solid var(--bd-ink)',
+        boxShadow: '0 4px 0 var(--bd-ink)', overflow: 'hidden', flexShrink: 0,
+      }}>
+        {Array.from({ length: total }).map((_, i) => {
+          const m = demoCells[i]
+          return (
+            <div key={i} style={{
+              display: 'grid', placeItems: 'center',
+              borderRight: (i % size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
+              borderBottom: Math.floor(i / size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
+              fontSize: Math.floor(dim / size * 0.55),
+              fontFamily: 'var(--bd-font-display)', fontWeight: 800,
+              color: m === 'x' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
+            }}>{m === 'x' ? '✕' : m === 'o' ? '○' : ''}</div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const SegPicker = <T extends string | number>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { v: T; l: string }[] }) => (
+    <div style={{
+      display: 'grid', gridAutoFlow: 'column', gridAutoColumns: '1fr', gap: 4,
+      padding: 4, background: 'var(--bd-card-warm)', borderRadius: 12, border: '1.5px solid var(--bd-line)',
+    }}>
+      {options.map(o => (
+        <button key={String(o.v)} type="button" onClick={() => onChange(o.v)} style={{
+          padding: '8px 10px', borderRadius: 9, fontWeight: 600, fontSize: 13,
+          background: value === o.v ? 'var(--bd-ink)' : 'transparent',
+          color: value === o.v ? 'var(--bd-bg)' : 'var(--bd-ink-soft)',
+          border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+          transition: 'all 0.12s',
+        }}>{o.l}</button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 16px 80px' }} className="md:px-8">
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px 80px' }} className="md:px-8">
 
-        {/* Back button */}
-        <button
-          type="button"
-          onClick={() => router.push('/games')}
-          className="bd-btn bd-btn-soft"
-          style={{ padding: '8px 14px', fontSize: 14, marginBottom: 20 }}
-        >
-          ← {t('lobby.create.cancel')}
-        </button>
-
-        {/* Page heading */}
-        <div style={{ marginBottom: 24 }}>
-          <span className="bd-kicker" style={{ display: 'block', marginBottom: 8 }}>
-            {t('lobby.createLobby')}
+        {/* Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <button
+            type="button"
+            onClick={() => router.push('/games')}
+            className="bd-btn bd-btn-soft"
+            style={{ padding: '6px 12px', fontSize: 13 }}
+          >
+            ← {t('lobby.create.cancel')}
+          </button>
+          <span className="bd-kicker" style={{ fontSize: 11 }}>
+            Games · {gameInfo.name} · <span style={{ color: 'var(--bd-ink)' }}>Create lobby</span>
           </span>
-          <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 'clamp(28px,4vw,42px)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
-            {t('lobby.create.create')}
-          </h1>
         </div>
 
-        {/* Main three-panel card */}
-        <div className="bd-card flex flex-col md:flex-row overflow-hidden md:max-h-[820px]" style={{ minHeight: 0 }}>
+        {/* Game selector strip */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+          {Object.entries(GAME_INFO)
+            .filter(([key]) => !isTemporarilyUnavailableGameType(key))
+            .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+            .map(([key, info]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedGameType(key as GameType)}
+                className="bd-btn"
+                style={{
+                  padding: '8px 14px', fontSize: 13, fontWeight: 600, gap: 6,
+                  background: selectedGameType === key ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
+                  color: selectedGameType === key ? 'var(--bd-bg)' : 'var(--bd-ink-soft)',
+                  border: `1.5px solid ${selectedGameType === key ? 'var(--bd-ink)' : 'var(--bd-line)'}`,
+                }}
+                aria-label={t('lobby.create.selectGame', { name: info.name })}
+              >
+                <span>{info.emoji}</span>
+                <span style={{ fontFamily: 'var(--bd-font-display)' }}>{info.name}</span>
+              </button>
+            ))}
+        </div>
 
-          {/* 1. Game type selector */}
-          <div
-            className="md:w-1/4 w-full flex flex-col overflow-y-auto order-1 border-b border-bd-line md:border-b-0 md:border-r"
-            style={{ background: 'var(--bd-card-warm)' }}
-          >
-            {Object.entries(GAME_INFO)
-              .filter(([key]) => !isTemporarilyUnavailableGameType(key))
-              .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-              .map(([key, info]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedGameType(key as GameType)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '16px 20px',
-                    fontWeight: 700,
-                    fontSize: 15,
-                    background: selectedGameType === key ? 'var(--bd-ink)' : 'transparent',
-                    color: selectedGameType === key ? 'var(--bd-bg)' : 'var(--bd-ink)',
-                    cursor: 'pointer',
-                    borderTop: 'none',
-                    borderLeft: 'none',
-                    borderRight: 'none',
-                    borderBottom: '1.5px solid var(--bd-line)',
-                    transition: 'background 0.12s, color 0.12s',
-                    fontFamily: 'inherit',
-                    textAlign: 'left',
-                    width: '100%',
-                  } as React.CSSProperties}
-                  aria-label={t('lobby.create.selectGame', { name: info.name })}
-                >
-                  <span style={{ fontSize: 26, flexShrink: 0 }}>{info.emoji}</span>
-                  <span style={{ fontFamily: 'var(--bd-font-display)' }}>{info.name}</span>
-                </button>
-              ))}
-          </div>
+        {/* Split layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: isTTT ? 'minmax(280px,340px) 1fr' : '1fr', gap: 20 }}>
 
-          {/* 2. Form */}
+          {/* PREVIEW COLUMN — only for tic_tac_toe */}
+          {isTTT && (
+            <div className="bd-card" style={{
+              padding: 20, display: 'flex', flexDirection: 'column', gap: 16,
+              background: 'linear-gradient(155deg, var(--bd-card) 0%, rgba(155,140,255,0.10) 100%)',
+              position: 'relative', overflow: 'hidden', alignSelf: 'start',
+            }}>
+              <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,196,77,0.18)', pointerEvents: 'none' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
+                <span className="bd-kicker" style={{ fontSize: 10 }}>Preview</span>
+                <span style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
+              </div>
+              <div style={{ alignSelf: 'center', position: 'relative' }}>
+                <MiniBoard size={boardSize} />
+              </div>
+              <div style={{ position: 'relative' }}>
+                <div className="bd-kicker" style={{ fontSize: 10, marginBottom: 4 }}>Lobby name</div>
+                <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
+                  {formData.name || 'Untitled lobby'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', position: 'relative' }}>
+                <span className="bd-chip bd-chip-lav">{formData.password ? '🔒 Private' : '🌐 Public'}</span>
+                <span className="bd-chip bd-chip-mint">2 players</span>
+                <span className="bd-chip">{boardSize}×{boardSize}</span>
+                {bestOf > 1 && <span className="bd-chip bd-chip-coral">Bo{bestOf}</span>}
+              </div>
+              <div style={{ marginTop: 'auto', position: 'relative' }}>
+                <div style={{ height: 1, background: 'var(--bd-line)', margin: '8px 0 12px' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div className="bd-avatar bd-avatar-coral" style={{ width: 36, height: 36, flexShrink: 0 }}>You</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--bd-ink)' }}>You</div>
+                    <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>Host · waiting for opponent</div>
+                  </div>
+                  <span className="bd-chip bd-chip-sun" style={{ padding: '3px 8px', fontSize: 10 }}>HOST</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SETTINGS COLUMN */}
           <form
             onSubmit={handleSubmit}
-            className="md:w-2/4 w-full order-3 md:order-2 overflow-y-auto"
-            style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 20, borderRight: '1.5px solid var(--bd-line)' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
           >
+            <div className="bd-card" style={{ overflow: 'hidden', marginBottom: 12 }}>
+              {/* Header */}
+              <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--bd-line)' }}>
+                <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 'clamp(22px,3vw,32px)', lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
+                  Set up your <span style={{ color: 'var(--bd-coral)' }}>{gameInfo.name}</span> room
+                </h1>
+                <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 4 }}>
+                  {gameInfo.emoji} {gameInfo.name} · {gameInfo.allowedPlayers.join('–')} players
+                </div>
+              </div>
+
+              {/* Settings grid */}
+              <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+
 
             {/* Lobby name */}
             <div>
@@ -776,44 +867,67 @@ function CreateLobbyPage() {
               </div>
             )}
 
-            {/* Game mode (coming soon) */}
-            {gameInfo.settings.hasGameModes && (
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                  🎮 {t('lobby.create.gameMode')}
-                </label>
-                <button
-                  type="button"
-                  disabled
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: 12,
-                    background: 'var(--bd-bg2)',
-                    color: 'var(--bd-ink-muted)',
-                    border: '1.5px solid var(--bd-line)',
-                    fontFamily: 'inherit',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: 'not-allowed',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <span>🔒</span>
-                  <span>{t('lobby.create.comingSoon')}</span>
-                </button>
-                <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 6, textAlign: 'center' }}>
-                  {t('lobby.create.gameModeHelper')}
-                </p>
-              </div>
-            )}
+                {/* Game mode (coming soon) */}
+                {gameInfo.settings.hasGameModes && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
+                      🎮 {t('lobby.create.gameMode')}
+                    </label>
+                    <button type="button" disabled style={{
+                      width: '100%', padding: '12px 16px', borderRadius: 12,
+                      background: 'var(--bd-bg2)', color: 'var(--bd-ink-muted)',
+                      border: '1.5px solid var(--bd-line)', fontFamily: 'inherit',
+                      fontSize: 14, fontWeight: 600, cursor: 'not-allowed',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}>
+                      <span>🔒</span>
+                      <span>{t('lobby.create.comingSoon')}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* TicTacToe-specific settings */}
+                {isTTT && (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                        Board size
+                      </label>
+                      <SegPicker
+                        value={boardSize}
+                        onChange={(v) => setBoardSize(v as 3 | 4 | 5)}
+                        options={[{ v: 3, l: '3×3' }, { v: 4, l: '4×4' }, { v: 5, l: '5×5' }]}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                        Match length
+                      </label>
+                      <SegPicker
+                        value={bestOf}
+                        onChange={(v) => setBestOf(v as 1 | 3 | 5)}
+                        options={[{ v: 1, l: 'Single' }, { v: 3, l: 'Bo3' }, { v: 5, l: 'Bo5' }]}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                        First move
+                      </label>
+                      <SegPicker
+                        value={whoStarts}
+                        onChange={(v) => setWhoStarts(v as 'host' | 'guest' | 'random')}
+                        options={[{ v: 'host', l: 'You (X)' }, { v: 'guest', l: 'Guest' }, { v: 'random', l: '🎲 Random' }]}
+                      />
+                    </div>
+                  </>
+                )}
+
+              </div>{/* end settings grid */}
+            </div>{/* end settings card */}
 
             {/* Error */}
             {error && (
-              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <svg style={{ width: 18, height: 18, flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
@@ -821,13 +935,20 @@ function CreateLobbyPage() {
               </div>
             )}
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 12 }}>
+            {/* Dark action bar */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '12px 16px', borderRadius: 16,
+              background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+              boxShadow: '0 6px 0 0 rgba(31,27,22,0.12)',
+            }}>
+              <span style={{ fontSize: 13, opacity: 0.6 }}>Invite code generated on create</span>
+              <span style={{ flex: 1 }} />
               <button
                 type="button"
                 onClick={() => router.push('/games')}
-                className="bd-btn bd-btn-ghost"
-                style={{ flex: 1, justifyContent: 'center' }}
+                className="bd-btn bd-btn-soft"
+                style={{ padding: '10px 16px' }}
               >
                 {t('lobby.create.cancel')}
               </button>
@@ -835,110 +956,25 @@ function CreateLobbyPage() {
                 type="submit"
                 disabled={loading}
                 className="bd-btn bd-btn-coral"
-                style={{ flex: 1, justifyContent: 'center', opacity: loading ? 0.6 : 1 }}
+                style={{ padding: '10px 20px', fontWeight: 700, opacity: loading ? 0.6 : 1 }}
               >
                 {loading ? (
                   <>
-                    <svg className="animate-spin" style={{ width: 18, height: 18 }} fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin" style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24">
                       <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                     {t('lobby.create.creating')}
                   </>
                 ) : (
-                  <>✨ {t('lobby.create.create')}</>
+                  <>{t('lobby.create.create')} →</>
                 )}
               </button>
             </div>
 
-            {/* Tips */}
-            <div className="bd-card" style={{ padding: 16, background: 'var(--bd-card-warm)' }}>
-              <button
-                type="button"
-                onClick={() => setTipsOpen(o => !o)}
-                style={{
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                  fontWeight: 700, fontSize: 14, color: 'var(--bd-ink)', padding: 0,
-                }}
-              >
-                <span>💡 {t('lobby.create.tips.title')}</span>
-                <span style={{ color: 'var(--bd-ink-muted)', fontSize: 12 }}>{tipsOpen ? '▲' : '▼'}</span>
-              </button>
-              {tipsOpen && (
-                <ul style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8, padding: 0, listStyle: 'none' }}>
-                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--bd-ink-soft)' }}>
-                    <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 700, flexShrink: 0 }}>✓</span>
-                    {t('lobby.create.tips.autoAdd')}
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--bd-ink-soft)' }}>
-                    <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 700, flexShrink: 0 }}>✓</span>
-                    {t('lobby.create.tips.shareCode')}
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--bd-ink-soft)' }}>
-                    <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 700, flexShrink: 0 }}>✓</span>
-                    {t('lobby.create.tips.startReady')}
-                  </li>
-                </ul>
-              )}
-            </div>
-
           </form>
 
-          {/* 3. Preview */}
-          <div
-            className="md:w-1/4 w-full order-2 md:order-3 flex flex-col items-center justify-center border-t border-bd-line md:border-t-0 md:border-l"
-            style={{ padding: 24, background: 'var(--bd-card-warm)', textAlign: 'center' }}
-          >
-            <div style={{ fontSize: 52, marginBottom: 12 }}>{gameInfo.emoji}</div>
-            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, color: 'var(--bd-ink)', marginBottom: 6 }}>
-              {gameInfo.name}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--bd-ink-muted)', marginBottom: 16, maxWidth: 180 }}>
-              {t(`games.${gameInfo.translationKey}.description` as Parameters<typeof t>[0])}
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: 16 }}>
-              <span className="bd-chip">
-                👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}
-              </span>
-              {formData.password && (
-                <span className="bd-chip bd-chip-sun">
-                  🔒 {t('lobby.create.preview.private')}
-                </span>
-              )}
-              {gameInfo.settings.hasTurnTimer && (
-                <span className="bd-chip">
-                  ⏱️ {formData.turnTimer}s
-                </span>
-              )}
-              {gameInfo.settings.hasRoundSelection && (
-                <span className="bd-chip bd-chip-lav">
-                  🔁 {formData.ticTacToeRounds === null
-                    ? t('lobby.create.unlimitedRounds')
-                    : t('lobby.create.rounds', { count: formData.ticTacToeRounds })}
-                </span>
-              )}
-              {gameInfo.settings.hasDifficultySelection && (
-                <span className="bd-chip bd-chip-mint">
-                  🧠 {formData.memoryDifficulty === 'easy'
-                    ? t('lobby.create.difficultyEasy')
-                    : formData.memoryDifficulty === 'medium'
-                      ? t('lobby.create.difficultyMedium')
-                      : t('lobby.create.difficultyHard')}
-                </span>
-              )}
-            </div>
-
-            <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>
-              {t('lobby.create.preview.lobbyName')}{' '}
-              <span style={{ fontWeight: 700, color: 'var(--bd-ink)' }}>
-                {formData.name || t('lobby.create.preview.noName')}
-              </span>
-            </div>
-          </div>
-
-        </div>
+        </div>{/* end split layout */}
       </div>
 
       {!isGuest && (

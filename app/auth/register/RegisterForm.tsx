@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
+import Die from '@/components/ui/Die'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { registerSchema, zodIssuesToFieldErrors } from '@/lib/validation/auth'
@@ -384,6 +385,16 @@ export default function RegisterForm() {
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', maxWidth: 200, lineHeight: 1.5 }}>
                 Join thousands of players for epic board game nights.
               </div>
+            </div>
+            {/* floating dice */}
+            <div style={{ position: 'absolute', top: '28%', right: '8%' }} className="bd-float">
+              <Die value={4} size={68} rotate="6deg" />
+            </div>
+            <div style={{ position: 'absolute', top: '48%', right: '38%' }} className="bd-float">
+              <Die value={2} size={54} rotate="-10deg" animationDelay="0.5s" />
+            </div>
+            <div style={{ position: 'absolute', top: '60%', right: '10%' }} className="bd-float">
+              <Die value={6} size={62} rotate="8deg" animationDelay="1s" />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ display: 'flex' }}>
