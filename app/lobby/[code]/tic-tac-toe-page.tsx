@@ -4,10 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { TicTacToeGame, TicTacToeGameData, PlayerSymbol, CellValue } from '@/lib/games/tic-tac-toe-game'
-import { io, Socket } from 'socket.io-client'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
+import { useGameSocket } from '@/hooks/use-game-socket'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
@@ -331,7 +329,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [lobby, setLobby] = useState<Lobby | null>(null)
     const [game, setGame] = useState<Game | null>(null)
     const [gameEngine, setGameEngine] = useState<TicTacToeGame | null>(null)
-    const [socket, setSocket] = useState<Socket | null>(null)
     const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
@@ -493,6 +490,31 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         void loadLobby()
     }, [loadLobby, minPlayersRequired, triggerLifecycleRedirect, isGuest, guestId, session?.user?.id])
 
+  useEffect(() => {
+    if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
+    if (isGuest && !guestToken) return
+    void loadLobby()
+  }, [status, isGuest, guestToken, loadLobby])
+
+  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+    clientLogger.log('📡 Game update received:', payload)
+    const activeGameId = activeGameIdRef.current
+    const directState = extractAuthoritativeStateFromGameUpdate(payload)
+    if (directState && activeGameId) { applyAuthoritativeState(activeGameId, directState); return }
+    void loadLobby()
+  }, [applyAuthoritativeState, loadLobby])
+
+  const socket = useGameSocket({
+    code,
+    status,
+    isGuest,
+    guestToken,
+    gameName: 'Tic-Tac-Toe',
+    onGameUpdate: handleGameUpdate,
+    onGameAbandoned: handleGameAbandoned,
+    onPlayerLeft: handlePlayerLeft,
+  })
+
     const handleMove = useCallback(async (move: Move) => {
         if (!gameEngine || !game || isMoveSubmitting) return
         const submitStartedAt = Date.now()
@@ -553,41 +575,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             setIsMoveSubmitting(false)
         }
     }, [applyAuthoritativeState, gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
-
-    useEffect(() => {
-        if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
-        if (isGuest && !guestToken) return
-        let isMounted = true
-        let activeSocket: Socket | null = null
-        void loadLobby()
-        const initSocket = async () => {
-            const url = getBrowserSocketUrl()
-            const useGuestAuth = isGuest && status !== 'authenticated'
-            const socketAuth = await resolveSocketClientAuth({ isGuest: useGuestAuth, guestToken: useGuestAuth ? guestToken : null })
-            if (!socketAuth) { clientLogger.warn('Skipping Tic-Tac-Toe socket connection: auth payload unavailable'); return }
-            if (!isMounted) return
-            const newSocket = io(url, { transports: ['websocket', 'polling'], reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000, auth: socketAuth.authPayload, query: socketAuth.queryPayload })
-            activeSocket = newSocket
-            newSocket.on('connect', () => { clientLogger.log('✅ Socket connected for Tic-Tac-Toe'); newSocket.emit('join-lobby', code) })
-            newSocket.on('game-update', (payload: Record<string, unknown>) => {
-                clientLogger.log('📡 Game update received:', payload)
-                const activeGameId = activeGameIdRef.current
-                const directState = extractAuthoritativeStateFromGameUpdate(payload)
-                if (directState && activeGameId) { applyAuthoritativeState(activeGameId, directState); return }
-                void loadLobby()
-            })
-            newSocket.on('game-abandoned', (payload: { gameId: string; reason?: string }) => { handleGameAbandoned(payload) })
-            newSocket.on('player-left', (payload: { userId: string; username?: string; playerName?: string; remainingPlayers?: number; nextCreatorId?: string; nextCreatorName?: string }) => { handlePlayerLeft(payload) })
-            newSocket.on('disconnect', () => { clientLogger.log('❌ Socket disconnected from Tic-Tac-Toe') })
-            setSocket(newSocket)
-        }
-        void initSocket()
-        return () => {
-            isMounted = false
-            if (activeSocket?.connected) { activeSocket.emit('leave-lobby', code); activeSocket.disconnect() }
-            else activeSocket?.close()
-        }
-    }, [applyAuthoritativeState, status, isGuest, guestToken, code, loadLobby, handleGameAbandoned, handlePlayerLeft])
 
     const isMyTurn = useCallback(() => {
         if (!gameEngine || !game) return false
