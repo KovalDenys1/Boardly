@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { PlayerResults } from '@/lib/yahtzee-results'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { ALL_CATEGORIES } from '@/lib/yahtzee'
@@ -14,6 +15,8 @@ interface YahtzeeResultsProps {
   onPlayAgain: () => void
   onRequestRematch?: () => void
   onBackToLobby: () => void
+  onReturnToLobbyRoom?: () => void
+  autoReturnAt?: number | null
   isGuest?: boolean
   registerUrl?: string
 }
@@ -27,15 +30,15 @@ function getRankIcon(rank: number) {
 
 function getPlacementCardClass(rank: number) {
   if (rank === 0) {
-    return 'border-yellow-400 bg-gradient-to-r from-yellow-100/90 via-orange-50/90 to-yellow-100/90 dark:from-yellow-900/25 dark:via-orange-900/20 dark:to-yellow-900/25 shadow-lg'
+    return 'shadow-sm'
   }
   if (rank === 1) {
-    return 'border-slate-300 bg-slate-100/80 dark:border-slate-600 dark:bg-slate-800/70'
+    return ''
   }
   if (rank === 2) {
-    return 'border-orange-300 bg-orange-100/70 dark:border-orange-700 dark:bg-orange-900/25'
+    return ''
   }
-  return 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+  return ''
 }
 
 export default function YahtzeeResults({
@@ -47,11 +50,27 @@ export default function YahtzeeResults({
   onPlayAgain,
   onRequestRematch,
   onBackToLobby,
+  onReturnToLobbyRoom,
+  autoReturnAt = null,
   isGuest = false,
   registerUrl = '/auth/register',
 }: YahtzeeResultsProps) {
   const { t } = useTranslation()
   const totalRounds = ALL_CATEGORIES.length
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!autoReturnAt) {
+      return
+    }
+
+    setNow(Date.now())
+    const timer = window.setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [autoReturnAt])
 
   if (results.length === 0) {
     return null
@@ -62,86 +81,137 @@ export default function YahtzeeResults({
   const secondPlace = results[1] ?? null
   const winnerMargin = secondPlace ? winner.totalScore - secondPlace.totalScore : winner.totalScore
   const winnerScoreBase = Math.max(1, winner.totalScore)
+  const autoReturnSeconds = autoReturnAt ? Math.max(0, Math.ceil((autoReturnAt - now) / 1000)) : null
 
   return (
-    <div className="fixed inset-0 top-20 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-3 sm:p-5">
-      <div className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-6">
-        <div className="mb-6 text-center sm:mb-8">
-          <div className="mx-auto mb-3 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 text-5xl shadow-2xl sm:h-24 sm:w-24 sm:text-6xl">
-            🏆
-          </div>
-          <h2 className="mb-1 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-3xl font-extrabold text-transparent sm:text-4xl">
-            {t('yahtzee.results.gameOver')}
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300 sm:text-base">
-            {t('yahtzee.results.roundsCompleted', { count: totalRounds })} • {results.length}{' '}
-            {t('yahtzee.results.players', { count: results.length })}
-          </p>
-        </div>
+    <div
+      className="flex h-full min-h-0 flex-col overflow-y-auto px-3 pb-6 pt-4 sm:px-5 sm:pb-8"
+      style={{
+        background:
+          'radial-gradient(circle at top, rgba(255,196,77,0.18), transparent 30%), linear-gradient(180deg, rgba(255,252,247,1) 0%, rgba(252,246,236,1) 100%)',
+      }}
+    >
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="bd-card overflow-hidden">
+          <div
+            className="border-b px-4 py-5 sm:px-6 sm:py-6"
+            style={{
+              borderColor: 'var(--bd-line)',
+              background:
+                'linear-gradient(135deg, rgba(255,196,77,0.2) 0%, rgba(255,255,255,0.96) 46%, rgba(155,140,255,0.14) 100%)',
+            }}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="bd-kicker">Match Complete</div>
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4 sm:h-20 sm:w-20">
+                    <span className="text-4xl sm:text-5xl">🏆</span>
+                  </div>
+                  <div className="min-w-0">
+                    <h2
+                      className="text-3xl font-extrabold text-bd-ink sm:text-4xl"
+                      style={{ fontFamily: 'var(--bd-font-display)' }}
+                    >
+                      {t('yahtzee.results.gameOver')}
+                    </h2>
+                    <p className="mt-1 text-sm text-bd-ink-soft sm:text-base">
+                      {t('yahtzee.results.roundsCompleted', { count: totalRounds })} • {results.length}{' '}
+                      {t('yahtzee.results.players', { count: results.length })}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:mb-8 sm:grid-cols-3 sm:gap-4">
-          <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-3 text-center dark:border-yellow-700/60 dark:bg-yellow-900/20 sm:p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-yellow-800 dark:text-yellow-200">Winner Score</p>
-            <p className="mt-1 text-2xl font-extrabold text-yellow-700 dark:text-yellow-300 sm:text-3xl">{winner.totalScore}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-center dark:border-emerald-700/60 dark:bg-emerald-900/20 sm:p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">Win Margin</p>
-            <p className="mt-1 text-2xl font-extrabold text-emerald-700 dark:text-emerald-300 sm:text-3xl">+{winnerMargin}</p>
-          </div>
-          <div className="rounded-xl border border-blue-300 bg-blue-50 p-3 text-center dark:border-blue-700/60 dark:bg-blue-900/20 sm:p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-800 dark:text-blue-200">Players</p>
-            <p className="mt-1 text-2xl font-extrabold text-blue-700 dark:text-blue-300 sm:text-3xl">{results.length}</p>
-          </div>
-        </div>
-
-        <div className="mb-6 rounded-2xl border-2 border-yellow-400 bg-gradient-to-r from-yellow-100 via-orange-100 to-yellow-50 p-4 shadow-lg dark:border-yellow-600 dark:from-yellow-900/30 dark:via-orange-900/25 dark:to-yellow-900/20 sm:mb-8 sm:p-5">
-          <div className="mb-2 flex items-center justify-center gap-2 text-yellow-700 dark:text-yellow-300">
-            <span className="text-xl sm:text-2xl">👑</span>
-            <span className="text-xs font-bold uppercase tracking-wide sm:text-sm">Winner</span>
-          </div>
-          <p className="text-center text-xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">
-            {isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
-          </p>
-          <p className="mt-1 text-center text-3xl font-black text-yellow-700 dark:text-yellow-300 sm:text-5xl">
-            {t('yahtzee.results.points', { count: winner.totalScore })}
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-center">
-            <div className="rounded-lg bg-white/60 p-3 dark:bg-slate-800/70">
-              <p className="text-xs text-slate-500 dark:text-slate-300">{t('yahtzee.results.upperSection')}</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">
-                {winner.upperSectionScore}
-                {winner.bonusAchieved && (
-                  <span className="ml-1 text-sm font-semibold text-green-600 dark:text-green-400 sm:text-base">
-                    +{winner.bonusPoints}
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <span className="bd-chip bd-chip-sun px-3 py-1.5 text-[11px]">Winner {winner.totalScore}</span>
+                <span className="bd-chip bd-chip-mint px-3 py-1.5 text-[11px]">Margin +{winnerMargin}</span>
+                <span className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]">{results.length} players</span>
+                {autoReturnSeconds !== null && (
+                  <span className="bd-chip px-3 py-1.5 text-[11px]">
+                    Lobby in {autoReturnSeconds}s
                   </span>
                 )}
-              </p>
-            </div>
-            <div className="rounded-lg bg-white/60 p-3 dark:bg-slate-800/70">
-              <p className="text-xs text-slate-500 dark:text-slate-300">{t('yahtzee.results.lowerSection')}</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{winner.lowerSectionScore}</p>
+              </div>
             </div>
           </div>
-          {winner.achievements.length > 0 && (
-            <div className="mt-3 flex flex-wrap justify-center gap-2">
-              {winner.achievements.map((achievement, idx) => (
-                <span
-                  key={idx}
-                  className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700 dark:bg-purple-900/35 dark:text-purple-200 sm:text-sm"
-                >
-                  <span>{achievement.icon}</span>
-                  <span>{achievement.label}</span>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div className="mb-6 sm:mb-8">
-          <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-white sm:mb-4 sm:text-2xl">
-            {t('yahtzee.results.finalStandings')}
-          </h3>
-          <div className="space-y-3">
+          <div className="grid gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.3fr)]">
+            <section
+              className="rounded-[24px] border p-4 sm:p-5"
+              style={{
+                borderColor: 'rgba(255,196,77,0.32)',
+                background:
+                  'linear-gradient(180deg, rgba(255,244,213,0.68) 0%, rgba(255,255,255,0.92) 100%)',
+              }}
+            >
+              <div className="flex items-center gap-2 text-[var(--bd-coral-deep)]">
+                <span className="text-xl">👑</span>
+                <span className="bd-kicker">Winner</span>
+              </div>
+              <p className="mt-3 text-2xl font-extrabold text-bd-ink sm:text-3xl">
+                {isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
+              </p>
+              <p
+                className="mt-2 text-4xl font-black text-bd-ink sm:text-5xl"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                {winner.totalScore}
+              </p>
+              <p className="mt-1 text-sm text-bd-ink-soft">
+                {winner.playerName}
+              </p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,255,255,0.78)' }}>
+                  <div className="bd-kicker">Upper</div>
+                  <div className="mt-1 text-2xl font-bold text-bd-ink">
+                    {winner.upperSectionScore}
+                    {winner.bonusAchieved && (
+                      <span className="ml-1 text-sm font-semibold text-[var(--bd-mint-deep)]">+{winner.bonusPoints}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,255,255,0.78)' }}>
+                  <div className="bd-kicker">Lower</div>
+                  <div className="mt-1 text-2xl font-bold text-bd-ink">{winner.lowerSectionScore}</div>
+                </div>
+              </div>
+
+              {winner.achievements.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {winner.achievements.map((achievement, idx) => (
+                    <span
+                      key={idx}
+                      className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]"
+                    >
+                      {achievement.icon} {achievement.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3
+                  className="text-2xl font-extrabold text-bd-ink"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
+                  {t('yahtzee.results.finalStandings')}
+                </h3>
+                {onReturnToLobbyRoom && (
+                  <button
+                    type="button"
+                    onClick={onReturnToLobbyRoom}
+                    className="bd-btn bd-btn-soft !rounded-xl !px-3 !py-2 !text-xs"
+                  >
+                    Return to Lobby
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
             {results.map((player) => {
               const isCurrentUser = player.playerId === currentUserId
               const scorePercent = Math.max(0, Math.min(100, Math.round((player.totalScore / winnerScoreBase) * 100)))
@@ -149,57 +219,75 @@ export default function YahtzeeResults({
               return (
                 <div
                   key={player.playerId}
-                  className={`rounded-xl border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
-                    isCurrentUser ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900' : ''
+                  className={`rounded-[22px] border p-3 transition-all sm:p-4 ${getPlacementCardClass(player.rank)} ${
+                    isCurrentUser ? 'ring-2 ring-[var(--bd-sky)] ring-offset-2 ring-offset-[var(--bd-bg)]' : ''
                   }`}
+                  style={{
+                    borderColor:
+                      player.rank === 0
+                        ? 'rgba(255,196,77,0.34)'
+                        : player.rank === 1
+                          ? 'rgba(155,140,255,0.24)'
+                          : player.rank === 2
+                            ? 'rgba(255,107,91,0.22)'
+                            : 'var(--bd-line)',
+                    background:
+                      player.rank === 0
+                        ? 'linear-gradient(135deg, rgba(255,244,213,0.8), rgba(255,255,255,0.96))'
+                        : player.rank === 1
+                          ? 'linear-gradient(135deg, rgba(155,140,255,0.12), rgba(255,255,255,0.96))'
+                          : player.rank === 2
+                            ? 'linear-gradient(135deg, rgba(255,107,91,0.1), rgba(255,255,255,0.96))'
+                            : 'rgba(255,255,255,0.92)',
+                  }}
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-bold sm:text-2xl">{getRankIcon(player.rank)}</span>
-                        <p className="truncate text-base font-bold text-slate-900 dark:text-white sm:text-lg">
+                        <p className="truncate text-base font-bold text-bd-ink sm:text-lg">
                           {player.playerName}
                         </p>
                         {isCurrentUser && (
-                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                          <span className="bd-chip px-2 py-1 text-[11px]">
                             {t('yahtzee.results.you')}
                           </span>
                         )}
                         {player.rank === 0 && (
-                          <span className="rounded-full bg-yellow-200 px-2 py-0.5 text-xs font-bold text-yellow-800 dark:bg-yellow-800/50 dark:text-yellow-200">
+                          <span className="bd-chip bd-chip-sun px-2 py-1 text-[11px]">
                             WINNER
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">{player.totalScore}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-300">{t('profile.gameResults.points')}</p>
+                      <p className="text-2xl font-extrabold text-bd-ink sm:text-3xl">{player.totalScore}</p>
+                      <p className="text-[11px] text-bd-ink-muted">{t('profile.gameResults.points')}</p>
                     </div>
                   </div>
 
-                  <div className="mb-2 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div className="mb-2 h-2 w-full overflow-hidden rounded-full" style={{ background: 'rgba(41,37,36,0.08)' }}>
                     <div
                       className={`h-full rounded-full ${
-                        player.rank === 0 ? 'bg-yellow-500' : player.rank === 1 ? 'bg-slate-500' : player.rank === 2 ? 'bg-orange-500' : 'bg-blue-500'
+                        player.rank === 0 ? 'bg-[var(--bd-sun-deep)]' : player.rank === 1 ? 'bg-[var(--bd-lav-deep)]' : player.rank === 2 ? 'bg-[var(--bd-coral)]' : 'bg-[var(--bd-sky)]'
                       }`}
                       style={{ width: `${scorePercent}%` }}
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 text-sm text-bd-ink-soft sm:grid-cols-2">
                     <div>
                       <span className="font-medium">{t('yahtzee.results.upper')}</span>{' '}
-                      <span className="font-semibold text-slate-900 dark:text-white">{player.upperSectionScore}</span>
+                      <span className="font-semibold text-bd-ink">{player.upperSectionScore}</span>
                       {player.bonusAchieved && (
-                        <span className="ml-1 text-green-600 dark:text-green-400">
+                        <span className="ml-1 text-[var(--bd-mint-deep)]">
                           {t('yahtzee.results.bonus', { count: player.bonusPoints })}
                         </span>
                       )}
                     </div>
                     <div>
                       <span className="font-medium">{t('yahtzee.results.lower')}</span>{' '}
-                      <span className="font-semibold text-slate-900 dark:text-white">{player.lowerSectionScore}</span>
+                      <span className="font-semibold text-bd-ink">{player.lowerSectionScore}</span>
                     </div>
                   </div>
 
@@ -208,10 +296,10 @@ export default function YahtzeeResults({
                       {player.achievements.map((achievement, idx) => (
                         <span
                           key={idx}
-                          className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-0.5 text-[11px] font-semibold text-purple-700 dark:bg-purple-900/35 dark:text-purple-200 sm:text-xs"
+                          className="bd-chip bd-chip-lav px-2 py-1 text-[11px]"
                         >
                           <span>{achievement.icon}</span>
-                          <span className="hidden sm:inline">{achievement.label}</span>
+                          <span>{achievement.label}</span>
                         </span>
                       ))}
                     </div>
@@ -219,46 +307,67 @@ export default function YahtzeeResults({
                 </div>
               )
             })}
+              </div>
+            </section>
           </div>
-        </div>
 
-        <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-          <div className="flex flex-col items-center">
-            <button
-              onClick={onPlayAgain}
-              disabled={!canStartGame}
-              className="btn btn-success flex items-center justify-center gap-2 px-6 py-3 text-sm transition-all hover:brightness-110 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 sm:text-base"
-            >
-              <span className="text-lg">🔄</span>
-              <span>{t('yahtzee.results.playAgain')}</span>
-            </button>
-            {!canStartGame && (
-              <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-300">
-                {t('yahtzee.results.hostCanStartNextRound')}
-              </p>
-            )}
-          </div>
-          {onRequestRematch && canRequestRematch && (
-            <button
-              onClick={onRequestRematch}
-              disabled={isRequestRematchPending}
-              className="btn btn-primary flex items-center justify-center gap-2 px-6 py-3 text-sm transition-all hover:brightness-110 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
-            >
-              <span className="text-lg">📣</span>
-              <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
-            </button>
-          )}
-          <button
-            onClick={onBackToLobby}
-            className="btn btn-secondary flex items-center justify-center gap-2 px-6 py-3 text-sm transition-all hover:brightness-110 hover:shadow-xl sm:text-base"
+          <div
+            className="border-t px-4 py-4 sm:px-6"
+            style={{
+              borderColor: 'var(--bd-line)',
+              background: 'rgba(255,255,255,0.72)',
+            }}
           >
-            <span className="text-lg">↩️</span>
-            <span>{t('yahtzee.results.backToLobbies')}</span>
-          </button>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="bd-kicker">Next Step</div>
+                <p className="mt-1 text-sm font-medium text-bd-ink">
+                  {autoReturnSeconds !== null
+                    ? `You can review the table for a few more seconds before we return to the lobby.`
+                    : `Start another round, ask for a rematch, or head back to the lobbies.`}
+                </p>
+                {!canStartGame && (
+                  <p className="mt-1 text-xs text-bd-ink-muted">
+                    {t('yahtzee.results.hostCanStartNextRound')}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={onPlayAgain}
+                  disabled={!canStartGame}
+                  className="bd-btn bd-btn-primary flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="text-lg">🔄</span>
+                  <span>{t('yahtzee.results.playAgain')}</span>
+                </button>
+                {onRequestRematch && canRequestRematch && (
+                  <button
+                    onClick={onRequestRematch}
+                    disabled={isRequestRematchPending}
+                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="text-lg">📣</span>
+                    <span>{isRequestRematchPending ? t('common.loading') : t('yahtzee.results.requestRematch')}</span>
+                  </button>
+                )}
+                <button
+                  onClick={onBackToLobby}
+                  className="bd-btn bd-btn-coral flex items-center justify-center gap-2"
+                >
+                  <span className="text-lg">↩️</span>
+                  <span>{t('yahtzee.results.backToLobbies')}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {isGuest && (
-          <GuestConversionNudge registerUrl={registerUrl} />
+          <div className="mt-4">
+            <GuestConversionNudge registerUrl={registerUrl} />
+          </div>
         )}
       </div>
     </div>

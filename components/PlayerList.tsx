@@ -117,18 +117,21 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 animate-fade-in h-auto md:h-full flex flex-col">
+      <div
+        className="bd-card animate-fade-in h-auto md:h-full flex flex-col p-4"
+        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+      >
         <button
           onClick={() => {
             sounds.play('click', { force: true })
             setIsModalOpen(true)
           }}
-          className="text-sm font-bold mb-3 flex items-center gap-2 flex-shrink-0 w-full text-left hover:opacity-70 transition-opacity cursor-pointer"
+          className="mb-3 flex w-full flex-shrink-0 items-center gap-2 text-left text-sm font-bold transition-opacity hover:opacity-70 cursor-pointer"
         >
           <span className="text-lg">👥</span>
           <span className="truncate">{t('lobby.players.title', 'Players')}</span>
           {onPlayerClick && (
-            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-auto shrink-0">
+            <span className="text-xs font-normal text-bd-ink-muted dark:text-gray-300 ml-auto shrink-0">
               {t('lobby.players.clickToView', 'Click')}
             </span>
           )}
@@ -140,29 +143,50 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
+            const isClickable = !!onPlayerClick
             const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
+            const handlePlayerActivate = () => {
+              if (!onPlayerClick) return
+              sounds.play('click', { force: true })
+              onPlayerClick(player.userId)
+            }
 
             return (
-              <button
+              <div
                 key={`player-${player.id}-${player.userId}`}
-                onClick={() => {
-                  if (!onPlayerClick) return
-                  sounds.play('click', { force: true })
-                  onPlayerClick(player.userId)
-                }}
-                className={`
-                w-full text-left p-2 rounded-lg transition-all duration-200 shadow-sm snap-start
-                ${isCurrentTurn
-                    ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-400 dark:border-blue-500 shadow-md'
-                    : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-transparent'
+                onClick={isClickable ? handlePlayerActivate : undefined}
+                onKeyDown={isClickable ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handlePlayerActivate()
                   }
-                ${isCurrentUser ? 'border-2 !border-green-500 dark:!border-green-400' : ''}
-                ${isSelected ? 'border-2 !border-purple-500 dark:!border-purple-400' : ''}
-                ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30' : ''}
-                ${onPlayerClick ? 'cursor-pointer hover:shadow-lg' : ''}
+                } : undefined}
+                role={isClickable ? 'button' : undefined}
+                tabIndex={isClickable ? 0 : undefined}
+                className={`
+                w-full text-left p-2.5 rounded-2xl transition-all duration-200 shadow-sm snap-start border
+                ${isCurrentTurn
+                    ? 'shadow-md'
+                    : ''
+                  }
+                ${isCurrentUser ? '!border-green-500' : ''}
+                ${isSelected ? '!border-purple-400' : ''}
+                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400' : ''}
               `}
+                style={{
+                  background: isBot
+                    ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, rgba(255,255,255,0.92) 100%)'
+                    : isCurrentTurn
+                    ? 'linear-gradient(90deg, rgba(107,193,240,0.16) 0%, rgba(79,201,166,0.12) 100%)'
+                    : 'rgba(255,255,255,0.82)',
+                  borderColor:
+                    isCurrentTurn
+                      ? 'rgba(107,193,240,0.28)'
+                      : 'var(--bd-line)',
+                }}
+                aria-pressed={isClickable ? isSelected : undefined}
               >
                 <div className="flex items-center justify-between gap-1.5">
                   <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(6px, 0.6vw, 10px)' }}>
@@ -173,46 +197,46 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     ${index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : ''}
                     ${index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' : ''}
                     ${index >= 3 ? 'bg-gradient-to-br from-gray-400 to-gray-600' : ''}
-                  `} style={{ width: 'clamp(22px, 2.2vw, 28px)', height: 'clamp(22px, 2.2vw, 28px)', fontSize: 'clamp(10px, 0.75vw, 12px)' }}>
+                  `} style={{ width: 'clamp(24px, 2.4vw, 30px)', height: 'clamp(24px, 2.4vw, 30px)', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                     </div>
 
                     {/* Player Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center flex-wrap" style={{ gap: 'clamp(3px, 0.3vw, 6px)', marginBottom: 'clamp(1px, 0.1vh, 3px)' }}>
-                        <span className="font-semibold truncate" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
+                        <span className="font-semibold truncate text-bd-ink dark:text-white" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {playerName}
                         </span>
                         {isBot && (
-                          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
+                          <span className="bd-chip bd-chip-lav shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             AI
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
-                          <span className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
+                          <span className="bd-chip shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
-                          <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full shrink-0 shadow-sm" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
+                          <span className="bd-chip bd-chip-mint shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             {t('game.ui.you')}
                           </span>
                         )}
                         {isCurrentTurn && (
-                          <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
+                          <span className="animate-bounce shrink-0" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                             🎲
                           </span>
                         )}
                       </div>
                       <div className="flex items-center" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
-                        <span className="text-gray-500 dark:text-gray-400" style={{ fontSize: 'clamp(9px, 0.7vw, 11px)' }}>{t('game.ui.score')}:</span>
+                        <span className="text-bd-ink-muted dark:text-gray-400" style={{ fontSize: 'clamp(10px, 0.78vw, 12px)' }}>{t('game.ui.score')}:</span>
                         <span className={`font-bold ${animatingScores[player.id]
                             ? 'text-green-600 dark:text-green-400 animate-pulse'
-                            : 'text-gray-900 dark:text-white'
-                          }`} style={{ fontSize: 'clamp(11px, 0.85vw, 14px)' }}>
+                            : 'text-bd-ink dark:text-white'
+                          }`} style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {player.score}
                           {animatingScores[player.id] && (
-                            <span className="text-green-500" style={{ marginLeft: 'clamp(2px, 0.2vw, 4px)', fontSize: 'clamp(9px, 0.7vw, 11px)' }}>✨</span>
+                            <span className="text-green-500" style={{ marginLeft: 'clamp(2px, 0.2vw, 4px)', fontSize: 'clamp(10px, 0.78vw, 12px)' }}>✨</span>
                           )}
                         </span>
                       </div>
@@ -235,17 +259,17 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         sounds.play('click', { force: true })
                         onProfileClick(player.userId)
                       }}
-                      className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all"
+                      className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-bd-ink-muted hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 transition-all"
                       title="View profile"
                       aria-label="View player profile"
                     >
-                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                         <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
                       </svg>
                     </button>
                   )}
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
