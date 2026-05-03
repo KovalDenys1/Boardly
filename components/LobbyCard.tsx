@@ -34,18 +34,14 @@ interface LobbyCardProps {
 
 export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: LobbyCardProps) {
   const { t } = useTranslation()
-  const getGamePresentation = (gameType: string | undefined): { icon: string; label: string } => {
+
+  const getGamePresentation = (gameType: string | undefined): { icon: string; label: string; accent: string } => {
     switch (gameType) {
-      case 'yahtzee':
-        return { icon: '🎲', label: t('games.yahtzee.title', 'Yahtzee') }
-      case 'guess_the_spy':
-        return { icon: '🕵️', label: t('games.spy.name', 'Guess the Spy') }
-      case 'tic_tac_toe':
-        return { icon: '❌⭕', label: t('games.tictactoe.name', 'Tic-Tac-Toe') }
-      case 'rock_paper_scissors':
-        return { icon: '✊✋✌️', label: t('games.rock_paper_scissors.name', 'Rock Paper Scissors') }
-      default:
-        return { icon: '🎮', label: t('lobby.gameUnknown') }
+      case 'yahtzee':            return { icon: '🎲', label: t('games.yahtzee.title', 'Yahtzee'),              accent: 'var(--bd-lav)' }
+      case 'guess_the_spy':      return { icon: '🕵️', label: t('games.spy.name', 'Guess the Spy'),            accent: 'var(--bd-coral)' }
+      case 'tic_tac_toe':        return { icon: '❌', label: t('games.tictactoe.name', 'Tic-Tac-Toe'),         accent: 'var(--bd-mint)' }
+      case 'rock_paper_scissors':return { icon: '✊', label: t('games.rock_paper_scissors.name', 'RPS'),        accent: 'var(--bd-sun)' }
+      default:                   return { icon: '🎮', label: t('lobby.gameUnknown'),                           accent: 'var(--bd-sky)' }
     }
   }
 
@@ -54,105 +50,68 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
   const playerCount = activeGame?._count?.players ?? 0
   const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
   const creatorName = lobby.creator.username || t('lobby.ownerFallback')
-  const gamePresentation = getGamePresentation(lobby.gameType)
+  const game = getGamePresentation(lobby.gameType)
   const occupancyPercent = lobby.maxPlayers > 0 ? Math.min(100, Math.round((playerCount / lobby.maxPlayers) * 100)) : 0
-  const statusClass = isPlaying
-    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-    : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
 
   return (
     <article
-      className="group relative overflow-hidden rounded-2xl border border-white/90 bg-white/96 p-5 shadow-sm shadow-indigo-900/5 transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md dark:border-slate-700/60 dark:bg-slate-900/60 dark:hover:border-blue-500/30"
-      style={{ animationDelay: `${index * 0.05}s` }}
+      style={{
+        background: 'white', borderRadius: 18, border: '1.5px solid var(--bd-line)',
+        boxShadow: '0 4px 14px rgba(31,27,22,0.07)', padding: '16px 20px',
+        display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
+        transition: 'transform 0.15s, box-shadow 0.15s', animationDelay: `${index * 0.05}s`,
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(31,27,22,0.07)'; }}
     >
-      <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 opacity-0 transition-opacity group-hover:opacity-100" />
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-white/90 dark:bg-slate-800/80 dark:ring-0">
-              {gamePresentation.icon}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="max-w-full truncate text-lg font-bold text-slate-900 dark:text-white" title={lobby.name}>
-                  {lobby.name}
-                </h3>
-                <span className="rounded-full bg-blue-100 px-2.5 py-1 font-mono text-xs font-bold text-blue-700 ring-1 ring-blue-200/80 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-0">
-                  {lobby.code}
-                </span>
-              </div>
-              <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
-                {creatorName}
-              </p>
-            </div>
-          </div>
+      {/* Game icon */}
+      <div style={{ width: 48, height: 48, borderRadius: 14, background: `${game.accent}22`, border: `1.5px solid ${game.accent}44`, display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0 }}>
+        {game.icon}
+      </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className={`rounded-full px-2.5 py-1 font-semibold ${statusClass}`}>
-              {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
-            </span>
-            <span className="rounded-full bg-indigo-100 px-2.5 py-1 font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
-              {gamePresentation.label}
-            </span>
-            <span
-              className={`rounded-full px-2.5 py-1 font-semibold ${
-                lobby.isPrivate
-                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
-                  : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
-              }`}
-            >
-              {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
-            </span>
-            {lobby.allowSpectators && (
-              <span className="rounded-full bg-sky-100 px-2.5 py-1 font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
-                {t('lobby.spectators', {
-                  count: lobby.spectatorCount ?? 0,
-                })}
-              </span>
-            )}
-          </div>
+      {/* Main info */}
+      <div style={{ flex: 1, minWidth: 200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+          <span style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 17, color: 'var(--bd-ink)' }}>{lobby.name}</span>
+          <span style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--bd-bg2)', color: 'var(--bd-ink-muted)', padding: '3px 8px', borderRadius: 8 }}>{lobby.code}</span>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--bd-ink-muted)', marginBottom: 10 }}>{creatorName} · {game.label}</div>
 
-          <div className="mt-4">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-slate-500 dark:text-slate-400">
-                {t('lobby.playerOccupancy', {
-                  current: playerCount,
-                  max: lobby.maxPlayers,
-                })}
-              </span>
-              <span className="font-semibold text-slate-700 dark:text-slate-200">
-                {occupancyPercent}%
-              </span>
-            </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-800">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all"
-                style={{ width: `${occupancyPercent}%` }}
-              />
-            </div>
-          </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+          <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', background: isPlaying ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.22)', color: isPlaying ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)', borderColor: isPlaying ? 'rgba(79,201,166,0.3)' : 'rgba(255,196,77,0.3)' }}>
+            {isPlaying ? t('lobby.status.playing') : t('lobby.status.waiting')}
+          </span>
+          <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px', background: lobby.isPrivate ? 'rgba(255,107,91,0.12)' : 'rgba(79,201,166,0.12)', color: lobby.isPrivate ? 'var(--bd-coral-deep)' : 'var(--bd-mint-deep)', borderColor: lobby.isPrivate ? 'rgba(255,107,91,0.2)' : 'rgba(79,201,166,0.2)' }}>
+            {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
+          </span>
+          {lobby.allowSpectators && (
+            <span className="bd-chip" style={{ fontSize: 11, padding: '4px 10px' }}>
+              👁 {t('lobby.spectators', { count: lobby.spectatorCount ?? 0 })}
+            </span>
+          )}
         </div>
 
-        <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[180px] lg:items-end">
-          <div className="flex w-full gap-2 lg:w-auto">
-            {canSpectate && (
-              <button
-                type="button"
-                onClick={() => onWatchLobby(lobby.code)}
-                className="flex-1 rounded-xl border border-white/90 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-white dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 lg:flex-none"
-              >
-                <span className="block truncate">{t('lobby.watch')}</span>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => onOpenLobby(lobby.code)}
-              className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow lg:flex-none"
-            >
-              <span className="block truncate">{t('lobby.openLobby')}</span>
-            </button>
+        {/* Occupancy bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, height: 6, borderRadius: 99, background: 'var(--bd-bg2)', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${occupancyPercent}%`, background: game.accent, borderRadius: 99, transition: 'width 0.5s' }} />
           </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', whiteSpace: 'nowrap' }}>
+            {t('lobby.playerOccupancy', { current: playerCount, max: lobby.maxPlayers })}
+          </span>
         </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        {canSpectate && (
+          <button type="button" onClick={() => onWatchLobby(lobby.code)} className="bd-btn bd-btn-soft" style={{ padding: '10px 16px', fontSize: 13 }}>
+            {t('lobby.watch')}
+          </button>
+        )}
+        <button type="button" onClick={() => onOpenLobby(lobby.code)} className="bd-btn bd-btn-coral" style={{ padding: '10px 16px', fontSize: 13 }}>
+          {t('lobby.openLobby')} →
+        </button>
       </div>
     </article>
   )

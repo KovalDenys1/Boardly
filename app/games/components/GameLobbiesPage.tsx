@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, type Socket } from 'socket.io-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import TicTacToeGameIcon from '@/components/ui/TicTacToeGameIcon'
 import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getLobbyCreateRoute } from '@/lib/public-game-access'
+import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 
@@ -35,21 +36,73 @@ type Lobby = {
 
 type GameLobbiesPageProps = {
   gameType: string
+  iconVariant?: 'tic-tac-toe'
   pagePath: string
-  pageGradientClassName: string
-  createCardGradientClassName: string
-  accentTextClassName: string
   titleEmoji: string
   gameNameKey: TranslationKeys
   lobbiesNamespace: string
 }
 
+function GameLobbyIcon({
+  titleEmoji,
+  usage,
+  variant,
+}: {
+  titleEmoji: string
+  usage: 'breadcrumb' | 'title' | 'card' | 'empty'
+  variant?: GameLobbiesPageProps['iconVariant']
+}) {
+  if (variant === 'tic-tac-toe') {
+    if (usage === 'breadcrumb') {
+      return <span>{titleEmoji}</span>
+    }
+
+    if (usage === 'title') {
+      return null
+    }
+
+    if (usage === 'empty') {
+      return null
+    }
+
+    const size = {
+      card: 82,
+    }[usage]
+
+    const className = {
+      card: 'shrink-0',
+    }[usage]
+
+    return <TicTacToeGameIcon className={className} size={size} />
+  }
+
+  if (usage === 'breadcrumb') {
+    return <span>{titleEmoji}</span>
+  }
+
+  if (usage === 'title') {
+    return <span className="ml-3 text-[0.75em]">{titleEmoji}</span>
+  }
+
+  if (usage === 'empty') {
+    return (
+      <span className="mx-auto mb-4 grid h-16 w-16 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-2xl shadow-bd-ink-4">
+        {titleEmoji}
+      </span>
+    )
+  }
+
+  return (
+    <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-bd-ink bg-bd-sun text-2xl shadow-[3px_3px_0_#1F1B16]">
+      {titleEmoji}
+    </span>
+  )
+}
+
 export default function GameLobbiesPage({
   gameType,
+  iconVariant,
   pagePath,
-  pageGradientClassName,
-  createCardGradientClassName,
-  accentTextClassName,
   titleEmoji,
   gameNameKey,
   lobbiesNamespace,
@@ -64,6 +117,7 @@ export default function GameLobbiesPage({
   const [joinCode, setJoinCode] = useState('')
   const isAuthenticated = status === 'authenticated' || isGuest
   const createLobbyPath = getLobbyCreateRoute(gameType) ?? '/lobby/create'
+  const canCreateLobby = !isTemporarilyUnavailableGameType(gameType)
 
   const tx = useCallback(
     (suffix: string) => t(`${lobbiesNamespace}.${suffix}` as TranslationKeys),
@@ -187,60 +241,65 @@ export default function GameLobbiesPage({
   }
 
   return (
-    <div className={`page-shell bg-gradient-to-br ${pageGradientClassName}`}>
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          <div className="mb-4 sm:mb-6 flex items-center gap-1.5 sm:gap-2 text-white/80 text-xs sm:text-sm overflow-x-auto">
-            <button
-              onClick={() => router.push('/')}
-              className="hover:text-white transition-colors whitespace-nowrap"
-            >
+    <div className="bd-page bd-screen page-shell">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+
+          {/* Breadcrumb */}
+          <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-bd-ink-muted sm:text-sm">
+            <button onClick={() => router.push('/')} className="hover:text-bd-ink transition-colors">
               🏠 <span className="hidden xs:inline">{t('breadcrumbs.home')}</span>
             </button>
             <span>›</span>
-            <button
-              onClick={() => router.push('/games')}
-              className="hover:text-white transition-colors whitespace-nowrap"
-            >
+            <button onClick={() => router.push('/games')} className="hover:text-bd-ink transition-colors">
               🎮 <span className="hidden xs:inline">{t('breadcrumbs.games')}</span>
             </button>
             <span>›</span>
-            <span className="text-white font-semibold whitespace-nowrap">
-              {titleEmoji} <span className="hidden xs:inline">{t(gameNameKey)}</span>
+            <span className="inline-flex items-center gap-2 text-bd-ink">
+              <GameLobbyIcon titleEmoji={titleEmoji} usage="breadcrumb" variant={iconVariant} />
+              <span className="hidden xs:inline">{t(gameNameKey)}</span>
             </span>
           </div>
 
-          <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-2 drop-shadow-lg">
-                {titleEmoji} {tx('title')}
+          {/* Header */}
+          <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-end">
+            <div>
+              <span className="bd-kicker">{t(gameNameKey)}</span>
+              <h1
+                className="mt-3 max-w-2xl text-[clamp(2.5rem,7vw,4.5rem)] font-extrabold leading-[0.92] text-bd-ink"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                {tx('title')}
+                <GameLobbyIcon titleEmoji={titleEmoji} usage="title" variant={iconVariant} />
               </h1>
-              <p className="text-sm sm:text-base lg:text-xl text-white/90">
+              <p className="mt-4 max-w-xl text-base leading-7 text-bd-ink-soft">
                 {isAuthenticated ? tx('subtitle') : tx('subtitleGuest')}
               </p>
             </div>
+
             <button
               onClick={() => router.push('/games')}
-              className="px-4 sm:px-6 py-2 sm:py-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 text-sm sm:text-base w-full sm:w-auto"
+              className="bd-btn bd-btn-ghost self-end justify-center lg:justify-start"
             >
               ← {tx('backToGames')}
             </button>
           </div>
 
+          {/* Guest / unauthenticated CTA */}
           {!isAuthenticated && (
-            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white/10 border border-white/20 rounded-xl text-white/90">
-              <p className="font-semibold text-sm sm:text-base">{tx('wantToPlay')}</p>
-              <p className="text-xs sm:text-sm mt-1">{tx('wantToPlayDesc')}</p>
-              <div className="mt-3 flex flex-col xs:flex-row gap-2 sm:gap-3">
+            <div className="mb-6 rounded-2xl border border-bd-sun/40 bg-bd-sun/10 p-5">
+              <p className="font-bold text-bd-ink">{tx('wantToPlay')}</p>
+              <p className="mt-1 text-sm text-bd-ink-soft">{tx('wantToPlayDesc')}</p>
+              <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   onClick={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(pagePath)}`)}
-                  className={`px-4 py-2 bg-white rounded-lg font-bold transition-colors text-sm sm:text-base ${accentTextClassName}`}
+                  className="bd-btn bd-btn-primary"
                 >
                   {tx('signIn')}
                 </button>
                 <button
                   onClick={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(pagePath)}`)}
-                  className="px-4 py-2 border border-white/40 rounded-lg font-semibold hover:bg-white/10 transition-colors text-sm sm:text-base"
+                  className="bd-btn bd-btn-ghost"
                 >
                   {tx('createAccount')}
                 </button>
@@ -248,42 +307,73 @@ export default function GameLobbiesPage({
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div
-              className={`bg-gradient-to-br ${createCardGradientClassName} rounded-2xl shadow-2xl p-5 sm:p-8 text-white hover:shadow-3xl transition-all hover:scale-105 cursor-pointer border-2 sm:border-4 border-white/20`}
+          {/* Create + Quick Join */}
+          <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {/* Create lobby card */}
+            <button
+              type="button"
+              aria-disabled={!canCreateLobby}
+              className={`bd-card group relative overflow-hidden p-6 text-left transition-all sm:p-8 ${
+                canCreateLobby
+                  ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_0_#1F1B16,0_16px_36px_-12px_rgba(31,27,22,0.35)]'
+                  : 'cursor-not-allowed opacity-75'
+              }`}
               onClick={() => {
+                if (!canCreateLobby) return
                 if (!isAuthenticated) {
                   router.push(`/auth/login?returnUrl=${encodeURIComponent(createLobbyPath)}`)
                   return
                 }
-
                 router.push(createLobbyPath)
               }}
             >
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="text-4xl sm:text-6xl">{titleEmoji}</div>
-                <div className="px-2 sm:px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
-                  {tx('newGame')}
+              <div
+                className="absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-20"
+                style={{ background: 'var(--bd-sun)' }}
+              />
+              <div className="relative">
+                <div className="mb-4 flex items-center justify-between">
+                  <GameLobbyIcon titleEmoji={titleEmoji} usage="card" variant={iconVariant} />
+                  <span className="bd-chip border-bd-ink bg-bd-ink px-3 py-1 text-xs font-bold text-bd-bg">
+                    {canCreateLobby ? tx('newGame') : 'Unavailable'}
+                  </span>
                 </div>
+                <h2
+                  className="mb-2 text-2xl font-extrabold text-bd-ink"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
+                  {canCreateLobby ? tx('createNewLobby') : 'Lobby creation unavailable'}
+                </h2>
+                <p className="mb-5 text-sm leading-6 text-bd-ink-soft">
+                  {canCreateLobby
+                    ? tx('createDescription')
+                    : 'This game is still being polished. You can check existing rooms below when any are open.'}
+                </p>
+                <span className="inline-flex items-center gap-2 font-bold text-bd-ink">
+                  {canCreateLobby ? tx('createNow') : 'Browse open lobbies'}
+                  {canCreateLobby && (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  )}
+                </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">{tx('createNewLobby')}</h2>
-              <p className="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base lg:text-lg">{tx('createDescription')}</p>
-              <div className="flex items-center text-white font-bold text-base sm:text-lg">
-                <span>{tx('createNow')}</span>
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </div>
-            </div>
+            </button>
 
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg p-5 sm:p-8 hover:shadow-xl transition-shadow border-2 border-white/20">
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">🔍 {tx('quickJoin')}</h2>
-              <p className="text-xs sm:text-sm text-white/80 mb-4 sm:mb-6">{tx('quickJoinDesc')}</p>
-              <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
+            {/* Quick join card */}
+            <div className="bd-card flex h-full flex-col justify-center p-6 sm:p-8">
+              <h2
+                className="mb-1 text-xl font-extrabold text-bd-ink"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                🔍 {tx('quickJoin')}
+              </h2>
+              <p className="mb-5 text-sm text-bd-ink-soft">{tx('quickJoinDesc')}</p>
+              <div className="flex gap-3">
                 <input
                   type="text"
                   placeholder={tx('enterCode')}
-                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 font-mono text-base sm:text-lg"
+                  className="bd-input flex-1 font-mono text-lg uppercase"
                   value={joinCode}
                   onChange={(event) => setJoinCode(event.target.value.toUpperCase().slice(0, 4))}
                   maxLength={4}
@@ -292,39 +382,41 @@ export default function GameLobbiesPage({
                 <button
                   onClick={handleJoinByCode}
                   disabled={joinCode.length !== 4 || !isAuthenticated}
-                  className={`px-6 sm:px-8 py-2 sm:py-3 bg-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg text-sm sm:text-base ${accentTextClassName}`}
+                  className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t('lobby.join')}
                 </button>
               </div>
               {!isAuthenticated && (
-                <p className="text-xs text-white/70 mt-3">{tx('signInToJoin')}</p>
+                <p className="mt-3 text-xs text-bd-ink-muted">{tx('signInToJoin')}</p>
               )}
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-white/20">
-            <h2 className="text-white text-2xl font-bold mb-6 flex items-center justify-between">
-              <span>🎮 {tx('activeLobbies')}</span>
-              <span className="text-lg font-normal text-white/80">({lobbies.length})</span>
-            </h2>
+          {/* Active lobbies */}
+          <div className="bd-card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-bd-line bg-bd-card-warm px-5 py-4">
+              <h2 className="font-bold text-bd-ink">🎮 {tx('activeLobbies')}</h2>
+              <span className="bd-kicker">{lobbies.length}</span>
+            </div>
 
             {lobbies.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">{titleEmoji}</div>
-                <p className="text-white/70 text-lg mb-6">{tx('noLobbiesTitle')}</p>
+              <div className="py-16 text-center">
+                <GameLobbyIcon titleEmoji={titleEmoji} usage="empty" variant={iconVariant} />
+                <p className="font-bold text-bd-ink">{tx('noLobbiesTitle')}</p>
                 {isAuthenticated && (
                   <button
                     onClick={() => router.push(createLobbyPath)}
-                    className={`px-6 py-3 bg-gradient-to-r ${createCardGradientClassName} text-white rounded-xl font-bold hover:shadow-lg transition-all hover:scale-105`}
+                    disabled={!canCreateLobby}
+                    className="bd-btn bd-btn-primary mx-auto mt-5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {tx('createFirstLobby')}
+                    {canCreateLobby ? tx('createFirstLobby') : 'Creation unavailable'}
                   </button>
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {lobbies.map((lobby) => {
+              <div className="grid grid-cols-1 gap-0 md:grid-cols-2 lg:grid-cols-3">
+                {lobbies.map((lobby, idx) => {
                   const activeGame = lobby.games.find((game) => game.status === 'waiting' || game.status === 'playing')
                   const playerCount = activeGame?._count?.players ?? 0
                   const isWaiting = activeGame?.status === 'waiting'
@@ -335,45 +427,41 @@ export default function GameLobbiesPage({
                   return (
                     <div
                       key={lobby.id}
-                      className="bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-5 hover:from-white/30 hover:to-white/20 hover:border-white/40 transition-all duration-300 cursor-pointer transform hover:scale-105 hover:shadow-2xl"
+                      className={`cursor-pointer p-5 transition-colors hover:bg-bd-card-warm ${
+                        idx % 3 !== 2 ? 'md:border-r md:border-bd-line' : ''
+                      } ${idx < lobbies.length - (lobbies.length % 3 || 3) ? 'border-b border-bd-line' : ''}`}
                       onClick={() => router.push(`/lobby/${lobby.code}`)}
                     >
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-white font-bold text-lg truncate pr-2 flex-1">{lobby.name}</h3>
-                        <span className="text-xs bg-purple-500 text-white px-3 py-1 rounded-full font-mono font-bold shadow-lg">
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <h3 className="truncate font-bold text-bd-ink">{lobby.name}</h3>
+                        <span className="shrink-0 rounded-lg border border-bd-lav/40 bg-bd-lav/15 px-2 py-0.5 font-mono text-xs font-bold text-bd-lav-deep">
                           {lobby.code}
                         </span>
                       </div>
 
-                      <div className="text-white/80 text-sm mb-4 flex items-center">
-                        <span className="mr-2">👤</span>
-                        <span className="truncate">
-                          {tx('host')}: {hostName}
-                        </span>
-                      </div>
+                      <p className="mb-4 truncate text-sm text-bd-ink-muted">
+                        👤 {tx('host')}: {hostName}
+                      </p>
 
-                      <div className="flex justify-between items-center pt-3 border-t border-white/20">
-                        <div className="flex items-center text-white font-semibold">
-                          <span className="mr-2">👥</span>
-                          <span className={isFull ? 'text-yellow-300' : ''}>
-                            {playerCount}/{lobby.maxPlayers}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
+                          👥 {playerCount}/{lobby.maxPlayers}
+                        </span>
+                        <div className="flex items-center gap-1.5">
                           {isWaiting && (
-                            <span className="flex items-center text-xs bg-yellow-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
-                              <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-ping"></span>
+                            <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-[#9b6b00]">
+                              <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#9b6b00]" />
                               {tx('waiting')}
                             </span>
                           )}
                           {isPlaying && (
-                            <span className="flex items-center text-xs bg-green-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
-                              <span className="w-2 h-2 bg-white rounded-full mr-1.5"></span>
+                            <span className="flex items-center gap-1 rounded-full bg-bd-mint/20 px-2.5 py-1 text-[11px] font-bold text-bd-mint-deep">
+                              <span className="h-1.5 w-1.5 rounded-full bg-bd-mint-deep" />
                               {tx('playing')}
                             </span>
                           )}
                           {isFull && (
-                            <span className="text-xs bg-red-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
+                            <span className="rounded-full bg-bd-coral/15 px-2.5 py-1 text-[11px] font-bold text-bd-coral-deep">
                               {tx('full')}
                             </span>
                           )}

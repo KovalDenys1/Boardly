@@ -1,30 +1,22 @@
-export type ThemeMode = 'light' | 'dark' | 'system'
+export type ThemeMode = 'light'
 
 export const THEME_STORAGE_KEY = 'theme'
 export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
 
 export function normalizeThemeMode(value: string | null | undefined): ThemeMode {
-  if (value === 'light' || value === 'dark' || value === 'system') {
-    return value
-  }
-
-  return 'system'
+  void value
+  return 'light'
 }
 
 export function getStoredThemeMode(storage?: Pick<Storage, 'getItem'>): ThemeMode {
-  if (!storage) {
-    return 'system'
-  }
-
-  return normalizeThemeMode(storage.getItem(THEME_STORAGE_KEY))
+  void storage
+  return 'light'
 }
 
 export function resolveThemeMode(mode: ThemeMode, prefersDark: boolean): 'light' | 'dark' {
-  if (mode === 'system') {
-    return prefersDark ? 'dark' : 'light'
-  }
-
-  return mode
+  void mode
+  void prefersDark
+  return 'light'
 }
 
 export function applyThemeMode(
@@ -34,30 +26,21 @@ export function applyThemeMode(
     matchMedia?: (query: string) => MediaQueryList
   }
 ) {
+  void mode
   if (typeof window === 'undefined' && !options?.documentElement) {
     return
   }
 
   const documentElement = options?.documentElement ?? document.documentElement
-  const matchMedia =
-    options?.matchMedia ?? ((query: string) => window.matchMedia(query))
-  const resolvedTheme = resolveThemeMode(mode, matchMedia(DARK_MEDIA_QUERY).matches)
-  const isDark = resolvedTheme === 'dark'
-
-  documentElement.classList.toggle('dark', isDark)
-  documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+  documentElement.classList.remove('dark')
+  documentElement.style.colorScheme = 'light'
 }
 
 export function getThemeInitScript() {
   return `(() => {
   try {
-    const theme = ${JSON.stringify(THEME_STORAGE_KEY)};
-    const stored = window.localStorage.getItem(theme);
-    const mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
-    const prefersDark = window.matchMedia(${JSON.stringify(DARK_MEDIA_QUERY)}).matches;
-    const isDark = mode === 'dark' || (mode === 'system' && prefersDark);
-    document.documentElement.classList.toggle('dark', isDark);
-    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = 'light';
   } catch {}
 })();`
 }

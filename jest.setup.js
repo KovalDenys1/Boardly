@@ -46,6 +46,19 @@ if (typeof window !== 'undefined') {
   })
 }
 
+if (typeof global.ResizeObserver === 'undefined') {
+  class ResizeObserverMock {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  global.ResizeObserver = ResizeObserverMock
+  if (typeof window !== 'undefined') {
+    window.ResizeObserver = ResizeObserverMock
+  }
+}
+
 // Polyfill for fetch API (using whatwg-fetch for Jest compatibility)
 require('whatwg-fetch')
 

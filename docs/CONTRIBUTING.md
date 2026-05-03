@@ -48,6 +48,9 @@ npm run db:rls:smoke
 
 ## Adding a new game (minimal checklist)
 
+Use `docs/GAME_DEVELOPMENT.md` as the canonical playbook for game lifecycle decisions,
+availability, stats, achievements, and replay expectations.
+
 1. Implement game class extending `GameEngine` in `lib/games/`.
 2. Add game type support in `prisma/schema.prisma` and lobby create API.
 3. Add UI board/page integration in lobby flow.

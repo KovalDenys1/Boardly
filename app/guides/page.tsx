@@ -42,46 +42,64 @@ const guides = [
 
 export default function GuidesPage() {
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="bd-page bd-screen flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
 
         {/* Breadcrumb */}
-        <nav className="mb-8 text-white/60 text-sm flex items-center gap-2" aria-label="Breadcrumb">
-          <Link href="/" className="hover:text-white transition-colors">Home</Link>
+        <nav className="mb-8 flex items-center gap-2 text-sm text-bd-ink-muted" aria-label="Breadcrumb">
+          <Link href="/" className="transition-colors hover:text-bd-ink">Home</Link>
           <span>/</span>
-          <span className="text-white">Guides</span>
+          <span className="text-bd-ink">Guides</span>
         </nav>
 
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
-            Guides
-          </h1>
-          <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            How to play, strategy tips, and everything you need to win.
-          </p>
+        {/* Header */}
+        <div
+          className="bd-card relative mb-8 overflow-hidden p-7 sm:p-8"
+          style={{ background: 'linear-gradient(120deg, white 0%, rgba(155,140,255,0.08) 100%)' }}
+        >
+          <div className="bd-dot-grid absolute inset-0 opacity-35" />
+          <div className="relative">
+            <span className="bd-kicker mb-2 block">Guides</span>
+            <h1
+              className="mb-2 text-[clamp(32px,4vw,52px)] font-extrabold leading-none tracking-tight text-bd-ink"
+              style={{ fontFamily: 'var(--bd-font-display)' }}
+            >
+              Tips & How-to-Play
+            </h1>
+            <p className="max-w-[480px] text-[15px] text-bd-ink-soft">
+              How to play, strategy tips, and everything you need to win.
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-6">
+        {/* Guide list */}
+        <div className="flex flex-col gap-3">
           {guides.map(({ slug, title, description, emoji, readTime }) => (
             <Link
               key={slug}
               href={`/guides/${slug}`}
-              className="group flex gap-5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl p-6 text-white transition-all duration-300 hover:scale-[1.01]"
+              className="bd-card group flex gap-5 p-6 transition-all hover:-translate-y-0.5"
             >
-              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center text-3xl">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-bg2 text-3xl shadow-[2px_2px_0_var(--bd-ink)]">
                 {emoji}
               </div>
-              <div className="flex-grow">
-                <h2 className="text-xl font-bold mb-1 group-hover:underline">{title}</h2>
-                <p className="text-white/70 text-sm mb-2">{description}</p>
-                <span className="text-white/50 text-xs">{readTime}</span>
+              <div className="min-w-0 flex-1">
+                <h2
+                  className="mb-1 text-lg font-bold text-bd-ink group-hover:text-bd-coral"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
+                  {title}
+                </h2>
+                <p className="mb-2 text-sm text-bd-ink-soft">{description}</p>
+                <span className="bd-chip text-xs">{readTime}</span>
               </div>
-              <div className="flex-shrink-0 self-center text-white/40 group-hover:text-white text-xl transition-colors">
+              <div className="flex shrink-0 items-center text-bd-ink-muted transition-colors group-hover:text-bd-ink">
                 →
               </div>
             </Link>
           ))}
         </div>
+
       </div>
     </div>
   )

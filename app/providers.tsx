@@ -6,14 +6,17 @@ import { SessionProvider } from 'next-auth/react'
 import { ToastProvider } from '@/contexts/ToastContext'
 import { GuestProvider } from '@/contexts/GuestContext'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
-import { OnboardingModal } from '@/components/Onboarding/OnboardingModal'
-import { Toaster } from 'react-hot-toast'
+import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n from '@/i18n'
-import { applyThemeMode, DARK_MEDIA_QUERY, getStoredThemeMode } from '@/lib/theme'
+import { applyThemeMode } from '@/lib/theme'
 import { getStoredAppearanceLocale } from '@/lib/appearance-preferences'
 
-const DeferredGlobalEffects = dynamic(
-  () => import('@/components/DeferredGlobalEffects'),
+const OnboardingModal = dynamic(
+  () => import('@/components/Onboarding/OnboardingModal').then((mod) => mod.OnboardingModal),
+  { ssr: false }
+)
+const GlobalToaster = dynamic(
+  () => import('react-hot-toast').then((mod) => mod.Toaster),
   { ssr: false }
 )
 
@@ -27,32 +30,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const applyStoredTheme = () => {
-      applyThemeMode(getStoredThemeMode(window.localStorage))
-    }
-
-    applyStoredTheme()
-
-    const mediaQuery = window.matchMedia(DARK_MEDIA_QUERY)
-    const handleThemeChange = () => {
-      if (getStoredThemeMode(window.localStorage) === 'system') {
-        applyStoredTheme()
-      }
-    }
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleThemeChange)
-    } else {
-      mediaQuery.addListener(handleThemeChange)
-    }
-
-    return () => {
-      if (typeof mediaQuery.removeEventListener === 'function') {
-        mediaQuery.removeEventListener('change', handleThemeChange)
-      } else {
-        mediaQuery.removeListener(handleThemeChange)
-      }
-    }
+    applyThemeMode('light')
   }, [])
 
   return (
@@ -60,7 +38,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <GuestProvider>
         <OnboardingProvider>
           <ToastProvider>
-            <Toaster position="top-right" />
+            <GlobalToaster position="top-right" />
             <DeferredGlobalEffects />
             <OnboardingModal />
             {children}

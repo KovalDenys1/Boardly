@@ -41,6 +41,7 @@ const profile = {
   createdAt: '2026-03-01T00:00:00.000Z',
   friendsCount: 4,
   gamesPlayed: 12,
+  completedGamesCount: 12,
 }
 
 describe('PublicProfileView', () => {
@@ -97,5 +98,20 @@ describe('PublicProfileView', () => {
     expect(screen.getByRole('link', { name: 'Sign In to Add' }).getAttribute('href')).toBe(
       '/auth/login?returnUrl=%2Fu%2FAbC123xYz890'
     )
+  })
+
+  it('uses completed games count for the level badge', () => {
+    render(
+      <PublicProfileView
+        profile={{
+          ...profile,
+          gamesPlayed: 42,
+          completedGamesCount: 0,
+        }}
+        initialRelation="can_send"
+      />
+    )
+
+    expect(screen.getByText('Lv. 1')).toBeTruthy()
   })
 })

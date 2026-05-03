@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+import Footer from '@/components/Footer'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
-import { getGameLobbiesRoute, isTemporarilyUnavailableGameType, getPublicRegisteredGameTypes } from '@/lib/public-game-access'
+import type { GameCatalogEntry } from '@/lib/game-catalog'
 
 interface Game {
   id: string
@@ -22,333 +23,153 @@ interface Game {
 }
 
 interface GamesClientProps {
-  // IDs of experimental games that are currently enabled via feature flags
-  enabledExperimental: string[]
+  games: GameCatalogEntry[]
 }
 
-export default function GamesClient({ enabledExperimental }: GamesClientProps) {
+function accentColor(color: string): string {
+  if (color.includes('blue')) return 'var(--bd-sky)'
+  if (color.includes('red') || color.includes('coral')) return 'var(--bd-coral)'
+  if (color.includes('yellow') || color.includes('orange')) return 'var(--bd-sun)'
+  if (color.includes('green')) return 'var(--bd-mint)'
+  if (color.includes('purple') || color.includes('violet')) return 'var(--bd-lav)'
+  return 'var(--bd-coral)'
+}
+
+export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest } = useGuest()
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
-  const enabled = new Set(enabledExperimental)
-  const publicRegistered = new Set(getPublicRegisteredGameTypes())
+  const games: Game[] = catalogGames.map((game) => ({
+    ...game,
+    nameKey: game.nameKey as TranslationKeys,
+    descriptionKey: game.descriptionKey as TranslationKeys,
+    difficultyKey: game.difficultyKey as TranslationKeys,
+    status: game.availability === 'available' ? 'available' : 'coming-soon',
+  }))
 
-  const games: Game[] = [
-    {
-      id: 'yahtzee',
-      nameKey: 'games.yahtzee.name',
-      emoji: '🎲',
-      descriptionKey: 'games.yahtzee.description',
-      players: '2-8',
-      difficultyKey: 'games.yahtzee.difficulty',
-      status: publicRegistered.has('yahtzee') ? 'available' : 'coming-soon',
-      route: getGameLobbiesRoute('yahtzee') || undefined,
-      color: 'from-blue-500 to-purple-600'
-    },
-    {
-      id: 'spy',
-      nameKey: 'games.spy.name',
-      emoji: '🕵️',
-      descriptionKey: 'games.spy.description',
-      players: '3-10',
-      difficultyKey: 'games.spy.difficulty',
-      status: publicRegistered.has('guess_the_spy') ? 'available' : 'coming-soon',
-      route: getGameLobbiesRoute('guess_the_spy') || undefined,
-      color: 'from-red-500 to-pink-600'
-    },
-    {
-      id: 'tic-tac-toe',
-      nameKey: 'games.tictactoe.name',
-      emoji: '❌',
-      descriptionKey: 'games.tictactoe.description',
-      players: '2',
-      difficultyKey: 'games.tictactoe.difficulty',
-      status: publicRegistered.has('tic_tac_toe') ? 'available' : 'coming-soon',
-      route: getGameLobbiesRoute('tic_tac_toe') || undefined,
-      color: 'from-yellow-400 to-orange-500'
-    },
-    {
-      id: 'memory',
-      nameKey: 'games.memory.name',
-      emoji: '🧠',
-      descriptionKey: 'games.memory.description',
-      players: '2-4',
-      difficultyKey: 'games.memory.difficulty',
-      status: publicRegistered.has('memory') ? 'available' : 'coming-soon',
-      route: getGameLobbiesRoute('memory') || undefined,
-      color: 'from-green-400 to-teal-500'
-    },
-    {
-      id: 'rps',
-      nameKey: 'games.rock_paper_scissors.name',
-      emoji: '🍂',
-      descriptionKey: 'games.rock_paper_scissors.description',
-      players: '2',
-      difficultyKey: 'games.rock_paper_scissors.difficulty',
-      status: publicRegistered.has('rock_paper_scissors') ? 'available' : 'coming-soon',
-      route: getGameLobbiesRoute('rock_paper_scissors') || undefined,
-      color: 'from-indigo-400 to-purple-500'
-    },
-    {
-      id: 'alias',
-      nameKey: 'games.alias.name',
-      emoji: '🗣️',
-      descriptionKey: 'games.alias.description',
-      players: '4-16',
-      difficultyKey: 'games.alias.difficulty',
-      status: enabled.has('alias') && !isTemporarilyUnavailableGameType('alias') ? 'available' : 'coming-soon',
-      route: '/games/alias/lobbies',
-      color: 'from-orange-400 to-red-500'
-    },
-    {
-      id: 'liars-party',
-      nameKey: 'games.liars_party.name',
-      emoji: '🎭',
-      descriptionKey: 'games.liars_party.description',
-      players: '4-12',
-      difficultyKey: 'games.liars_party.difficulty',
-      status: enabled.has('liars-party') && !isTemporarilyUnavailableGameType('liars_party') ? 'available' : 'coming-soon',
-      route: '/games/liars-party/lobbies',
-      color: 'from-rose-500 to-orange-500'
-    },
-    {
-      id: 'words-mines',
-      nameKey: 'games.wordsmines.name',
-      emoji: '💣',
-      descriptionKey: 'games.wordsmines.description',
-      players: '2-8',
-      difficultyKey: 'games.wordsmines.difficulty',
-      status: 'coming-soon',
-      color: 'from-gray-400 to-black'
-    },
-    {
-      id: 'anagrams',
-      nameKey: 'games.anagrams.name',
-      emoji: '🔀',
-      descriptionKey: 'games.anagrams.description',
-      players: '2-8',
-      difficultyKey: 'games.anagrams.difficulty',
-      status: 'coming-soon',
-      color: 'from-blue-300 to-indigo-500'
-    },
-    {
-      id: 'crocodile',
-      nameKey: 'games.crocodile.name',
-      emoji: '🐊',
-      descriptionKey: 'games.crocodile.description',
-      players: '3-12',
-      difficultyKey: 'games.crocodile.difficulty',
-      status: 'coming-soon',
-      color: 'from-green-600 to-lime-400'
-    },
-    {
-      id: 'guess-my-drawing',
-      nameKey: 'games.guess_my_drawing.name',
-      emoji: '🎨',
-      descriptionKey: 'games.guess_my_drawing.description',
-      players: '3-10',
-      difficultyKey: 'games.guess_my_drawing.difficulty',
-      status: enabled.has('guess-my-drawing') ? 'available' : 'coming-soon',
-      route: '/games/sketch-and-guess/lobbies',
-      color: 'from-cyan-500 to-blue-600'
-    },
-    {
-      id: 'fake-artist',
-      nameKey: 'games.fake_artist.name',
-      emoji: '🖌️',
-      descriptionKey: 'games.fake_artist.description',
-      players: '4-10',
-      difficultyKey: 'games.fake_artist.difficulty',
-      status: enabled.has('fake-artist') ? 'available' : 'coming-soon',
-      route: '/games/fake-artist/lobbies',
-      color: 'from-fuchsia-500 to-violet-600'
-    },
-    {
-      id: 'telephone-doodle',
-      nameKey: 'games.telephone_doodle.name',
-      emoji: '📞',
-      descriptionKey: 'games.telephone_doodle.description',
-      players: '3-12',
-      difficultyKey: 'games.telephone_doodle.difficulty',
-      status: enabled.has('telephone-doodle') ? 'available' : 'coming-soon',
-      route: '/games/telephone-doodle/lobbies',
-      color: 'from-sky-500 to-indigo-600'
-    },
-    {
-      id: 'alibi-night',
-      nameKey: 'games.alibi_night.name',
-      emoji: '🕶️',
-      descriptionKey: 'games.alibi_night.description',
-      players: '4-12',
-      difficultyKey: 'games.alibi_night.difficulty',
-      status: 'coming-soon',
-      color: 'from-amber-500 to-red-600'
-    },
-  ]
-
-  // Handle authentication redirect in useEffect to avoid hydration issues
   useEffect(() => {
-    // Don't redirect guests - they can access games page
     if (status === 'unauthenticated' && !isGuest) {
       router.push(buildCurrentAuthUrl('login'))
     }
   }, [status, isGuest, router])
 
-  // Show loading state or redirect without flickering
   if (status === 'loading') {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading...</div>
+      <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
+        <div className="text-[18px] text-bd-ink-muted">Loading…</div>
       </div>
     )
   }
 
-  // Allow access if authenticated OR guest
   if (status === 'unauthenticated' && !isGuest) {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
-        <div className="text-white text-2xl">Redirecting...</div>
+      <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
+        <div className="text-[18px] text-bd-ink-muted">Redirecting…</div>
       </div>
     )
   }
 
+  const filters: Array<{ id: typeof selectedFilter; label: string }> = [
+    { id: 'all', label: t('common.all') },
+    { id: 'available', label: t('games.available') },
+    { id: 'coming-soon', label: t('games.comingSoon') },
+  ]
+
   const filteredGames = games
-    .filter(game => {
-      if (selectedFilter === 'all') return true
-      return game.status === selectedFilter
-    })
+    .filter(game => selectedFilter === 'all' || game.status === selectedFilter)
     .sort((a, b) => {
-      // First, sort by status: available games first
-      if (a.status !== b.status) {
-        return a.status === 'available' ? -1 : 1
-      }
-      // Within the same status group, sort alphabetically by translated name
-      const nameA = t(a.nameKey).toLowerCase()
-      const nameB = t(b.nameKey).toLowerCase()
-      return nameA.localeCompare(nameB)
+      if (a.status !== b.status) return a.status === 'available' ? -1 : 1
+      return t(a.nameKey).toLowerCase().localeCompare(t(b.nameKey).toLowerCase())
     })
 
   const handleGameClick = (game: Game) => {
-    if (game.status === 'available' && game.route) {
-      router.push(game.route)
-    }
+    if (game.status === 'available' && game.route) router.push(game.route)
   }
 
   return (
-    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      <div className="flex-1 overflow-y-auto min-h-0">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-12 animate-scale-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-6 animate-bounce-in">
-            <span className="text-5xl">🎮</span>
+    <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto">
+      <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
+
+        {/* Page header */}
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <span className="bd-kicker">Catalog</span>
+            <h1
+              className="mt-2 text-[clamp(40px,5vw,64px)] font-extrabold leading-[0.95] tracking-[-0.02em] text-bd-ink"
+              style={{ fontFamily: 'var(--bd-font-display)' }}
+            >
+              {t('games.title')}<br />
+              <span className="text-bd-coral">{t('games.subtitle')}</span>
+            </h1>
           </div>
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
-            {t('games.title')}
-          </h1>
-          <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            {t('games.subtitle')}
-          </p>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12 animate-fade-in">
-          <button
-            onClick={() => setSelectedFilter('all')}
-            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'all'
-              ? 'bg-white text-blue-600 shadow-lg scale-105'
-              : 'bg-white/20 text-white hover:bg-white/30'
+        {/* Filter chips */}
+        <div className="mb-8 flex flex-wrap gap-2.5">
+          {filters.map(f => (
+            <button
+              key={f.id}
+              onClick={() => setSelectedFilter(f.id)}
+              className={`bd-chip px-[18px] py-2.5 text-sm transition-all ${
+                selectedFilter === f.id
+                  ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                  : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:border-bd-ink'
               }`}
-          >
-            {t('common.filter')} - {t('common.all', 'All')}
-          </button>
-          <button
-            onClick={() => setSelectedFilter('available')}
-            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'available'
-              ? 'bg-white text-blue-600 shadow-lg scale-105'
-              : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-          >
-            {t('games.available')}
-          </button>
-          <button
-            onClick={() => setSelectedFilter('coming-soon')}
-            className={`px-4 sm:px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap ${selectedFilter === 'coming-soon'
-              ? 'bg-white text-blue-600 shadow-lg scale-105'
-              : 'bg-white/20 text-white hover:bg-white/30'
-              }`}
-          >
-            {t('games.comingSoon')}
-          </button>
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
-        {/* Games Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {filteredGames.map((game, index) => (
+        {/* Games grid */}
+        <div className="mb-14 grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+          {filteredGames.map(game => (
             <div
               key={game.id}
+              className={`bd-card relative flex flex-col gap-3 overflow-hidden p-6 transition-all ${
+                game.status === 'available' ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default opacity-[0.72]'
+              }`}
               onClick={() => handleGameClick(game)}
-              className={`
-                relative bg-white/10 backdrop-blur-md rounded-2xl p-8 text-white
-                transition-all duration-300 hover:scale-105 hover:shadow-2xl
-                flex flex-col
-                ${game.status === 'available' ? 'cursor-pointer hover:bg-white/20' : 'opacity-75'}
-              `}
             >
-              {/* Status Badge */}
-              {game.status === 'coming-soon' && (
-                <div className="absolute top-4 right-4 bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-                  {t('games.comingSoon')}
-                </div>
-              )}
-              {game.status === 'available' && (
-                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-                  {t('games.available')}
-                </div>
-              )}
+              {/* Color accent strip */}
+              <div
+                className="absolute inset-x-0 top-0 h-1 rounded-t-3xl"
+                style={{ background: `linear-gradient(90deg, ${accentColor(game.color)}, transparent)` }}
+              />
 
-              {/* Game Icon */}
-              <div className={`
-                inline-flex items-center justify-center w-20 h-20 rounded-2xl
-                bg-gradient-to-br ${game.color} mb-6 shadow-lg
-                ${game.emoji.length > 2 ? 'px-2' : ''}
-              `}>
-                <span
-                  className={
-                    game.emoji.length > 2
-                      ? 'text-3xl flex flex-wrap justify-center items-center w-full h-full'
-                      : 'text-5xl'
-                  }
-                  style={game.emoji.length > 2 ? { lineHeight: '1.1', letterSpacing: '0.05em' } : {}}
-                >
-                  {game.emoji}
+              {/* Header row */}
+              <div className="mt-2 flex items-start justify-between">
+                <div className="text-[44px] leading-none">{game.emoji}</div>
+                <span className={`text-[11px] ${game.status === 'available' ? 'bd-chip bd-chip-mint' : 'bd-chip'}`}>
+                  {game.status === 'available' ? t('games.available') : t('games.comingSoon')}
                 </span>
               </div>
 
-              {/* Game Info */}
-              <h3 className="text-2xl font-bold mb-2 break-words">{t(game.nameKey)}</h3>
-              <p className="text-white/80 text-sm mb-4 break-words leading-relaxed flex-grow">{t(game.descriptionKey)}</p>
-
-              {/* Game Details */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-white/60">👥</span>
-                  <span className="text-white/90 break-words">{game.players} {t('games.players')}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm flex-wrap">
-                  <span className="text-white/60">⚡</span>
-                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-500/30 text-blue-200 break-words">
-                    {t('games.difficulty')}: {t(game.difficultyKey)}
-                  </span>
-                </div>
+              {/* Game info */}
+              <div className="flex-1">
+                <h3
+                  className="mb-1.5 text-[22px] font-bold tracking-[-0.01em] text-bd-ink"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
+                  {t(game.nameKey)}
+                </h3>
+                <p className="text-sm leading-[1.5] text-bd-ink-soft">
+                  {t(game.descriptionKey)}
+                </p>
               </div>
 
-              {/* Play Button */}
+              {/* Meta row */}
+              <div className="flex flex-wrap gap-2">
+                <span className="bd-chip text-xs">👥 {game.players} {t('games.players')}</span>
+                <span className="bd-chip text-xs">⚡ {t(game.difficultyKey)}</span>
+              </div>
+
+              {/* CTA */}
               {game.status === 'available' && (
-                <button className="w-full mt-auto px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg hover:shadow-xl">
+                <button className="bd-btn bd-btn-primary mt-1 justify-center">
                   {t('games.viewLobbies')} →
                 </button>
               )}
@@ -356,17 +177,13 @@ export default function GamesClient({ enabledExperimental }: GamesClientProps) {
           ))}
         </div>
 
-        {/* Back Button */}
-        <div className="text-center animate-fade-in">
-          <button
-            onClick={() => router.push('/')}
-            className="px-8 py-4 bg-white/20 backdrop-blur-md text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300"
-          >
-            ← Back to Home
-          </button>
-        </div>
+        {filteredGames.length === 0 && (
+          <div className="py-20 text-center text-base text-bd-ink-muted">
+            No games found for this filter.
+          </div>
+        )}
       </div>
-      </div>
+      <Footer />
     </div>
   )
 }

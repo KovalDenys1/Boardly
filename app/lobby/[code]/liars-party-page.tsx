@@ -3,14 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, type Socket } from 'socket.io-client'
 import { useTranslation } from 'react-i18next'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
+import { useGameSocket } from '@/hooks/use-game-socket'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -502,7 +500,6 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
   const [lobby, setLobby] = useState<Lobby | null>(null)
   const [game, setGame] = useState<Game | null>(null)
   const [gameEngine, setGameEngine] = useState<LiarsPartyGame | null>(null)
-  const [socket, setSocket] = useState<Socket | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
 
@@ -590,88 +587,46 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
   useEffect(() => {
     if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
     if (isGuest && !guestToken) return
-
-    let isMounted = true
-    let activeSocket: Socket | null = null
-
     void loadLobby()
+  }, [status, isGuest, guestToken, loadLobby])
 
-    const initSocket = async () => {
-      const url = getBrowserSocketUrl()
-      const useGuestAuth = isGuest && status !== 'authenticated'
-      const socketAuth = await resolveSocketClientAuth({
-        isGuest: useGuestAuth,
-        guestToken: useGuestAuth ? guestToken : null,
-      })
-
-      if (!socketAuth || !isMounted) return
-
-      const newSocket = io(url, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-      })
-      activeSocket = newSocket
-
-      newSocket.on('connect', () => {
-        clientLogger.log('✅ LiarsParty socket connected')
-        newSocket.emit('join-lobby', code)
-      })
-
-      newSocket.on('game-update', (payload: Record<string, unknown>) => {
-        const activeGameId = activeGameIdRef.current
-        if (payload?.action === 'state-change' && activeGameId) {
-          const state = (payload?.payload as Record<string, unknown>)?.state
-          if (state) {
-            applyAuthoritativeState(activeGameId, state)
-            return
-          }
-        }
-        void loadLobby()
-      })
-
-      newSocket.on('game-abandoned', (payload: { gameId: string; reason?: string }) => {
-        clientLogger.log('📡 LiarsParty game abandoned', payload)
-        void loadLobby()
-        triggerLifecycleRedirect('liars-party-lifecycle-redirect')
-      })
-
-      newSocket.on('player-left', (payload: { userId: string; username?: string; remainingPlayers?: number }) => {
-        clientLogger.log('📡 LiarsParty player left', payload)
-        const name = payload.username
-        if (name) showToast.info('toast.playerLeft', undefined, { player: name })
-        if (typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
-          triggerLifecycleRedirect('liars-party-lifecycle-redirect')
-          return
-        }
-        void loadLobby()
-      })
-
-      newSocket.on('lobby-update', () => void loadLobby())
-      newSocket.on('player-joined', () => void loadLobby())
-
-      newSocket.on('disconnect', () => {
-        clientLogger.log('❌ LiarsParty socket disconnected')
-      })
-
-      setSocket(newSocket)
+  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+    const activeGameId = activeGameIdRef.current
+    if (payload?.action === 'state-change' && activeGameId) {
+      const state = (payload?.payload as Record<string, unknown>)?.state
+      if (state) { applyAuthoritativeState(activeGameId, state); return }
     }
+    void loadLobby()
+  }, [applyAuthoritativeState, loadLobby])
 
-    void initSocket()
+  const handleGameAbandoned = useCallback(() => {
+    clientLogger.log('📡 LiarsParty game abandoned')
+    void loadLobby()
+    triggerLifecycleRedirect('liars-party-lifecycle-redirect')
+  }, [loadLobby, triggerLifecycleRedirect])
 
-    return () => {
-      isMounted = false
-      if (activeSocket) {
-        if (activeSocket.connected) {
-          activeSocket.emit('leave-lobby', code)
-        }
-        activeSocket.disconnect()
-      }
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number }) => {
+    clientLogger.log('📡 LiarsParty player left', payload)
+    if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
+    if (typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
+      triggerLifecycleRedirect('liars-party-lifecycle-redirect')
+      return
     }
-  }, [status, isGuest, guestToken, code, loadLobby, applyAuthoritativeState, triggerLifecycleRedirect, minPlayersRequired])
+    void loadLobby()
+  }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
+
+  const socket = useGameSocket({
+    code,
+    status,
+    isGuest,
+    guestToken,
+    gameName: 'LiarsParty',
+    onGameUpdate: handleGameUpdate,
+    onGameAbandoned: handleGameAbandoned,
+    onPlayerLeft: handlePlayerLeft,
+    onLobbyUpdate: loadLobby,
+    onPlayerJoined: loadLobby,
+  })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
     if (!game || isMoveSubmitting) return

@@ -2,24 +2,29 @@ import './globals.css'
 import type { Metadata } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Analytics } from '@vercel/analytics/react'
 import { getThemeInitScript } from '@/lib/theme'
-import FeedbackWidget from '@/components/FeedbackWidget'
+
+const FeedbackWidget = dynamic(() => import('@/components/FeedbackWidget'), {
+  loading: () => null,
+})
+
+const DeferredTelemetry = dynamic(() => import('@/components/DeferredTelemetry'), {
+  loading: () => null,
+})
 
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
   return (
-    <header className="site-header bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+    <header className="site-header sticky top-0 z-50" style={{ height: '64px', minHeight: '64px', background: '#FBF6EE', borderBottom: '1.5px solid #E8DDC8' }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex justify-between items-center" style={{ height: '100%' }}>
-          <div className="flex items-center gap-2 text-2xl font-bold text-white" style={{ minWidth: '120px' }}>
-            🎲 Boardly
+          <div className="flex items-center gap-2" style={{ minWidth: '120px', fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, color: '#1F1B16' }}>
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: '#1F1B16', color: '#FFC44D', display: 'grid', placeItems: 'center', fontSize: 20, transform: 'rotate(-6deg)', boxShadow: '3px 3px 0 #FF6B5B', flexShrink: 0 }}>B</span>
+            boardly
           </div>
           <div className="flex items-center gap-4" style={{ minWidth: '200px' }}>
-            <div className="w-20 h-8 bg-white/20 rounded animate-pulse"></div>
-            <div className="w-24 h-10 bg-white/20 rounded-lg animate-pulse"></div>
+            <div className="w-20 h-8 rounded-xl animate-pulse" style={{ background: '#E8DDC8' }}></div>
+            <div className="w-24 h-10 rounded-xl animate-pulse" style={{ background: '#1F1B16', opacity: 0.15 }}></div>
           </div>
         </div>
       </nav>
@@ -27,10 +32,8 @@ function HeaderSkeleton() {
   )
 }
 
-// Import Header with SSR for better FCP, but handle i18n client-side
 const Header = dynamic(() => import('@/components/Header'), {
-  ssr: true, // Enable SSR for better FCP
-  loading: () => <HeaderSkeleton />
+  loading: () => <HeaderSkeleton />,
 })
 
 export const metadata: Metadata = {
@@ -190,6 +193,10 @@ export default function RootLayout({
         {/* Preconnect to external domains - moved before font loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap"
+        />
         {isProduction && (
           <>
             <link rel="dns-prefetch" href="https://vitals.vercel-insights.com" />
@@ -201,7 +208,7 @@ export default function RootLayout({
         <style 
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: 'body{margin:0}.site-header{min-height:64px;height:64px}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+            __html: 'body{margin:0}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
         />
         <script
@@ -222,18 +229,11 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
-          <Suspense fallback={<HeaderSkeleton />}>
-            <Header />
-          </Suspense>
+          <Header />
           <main>{children}</main>
           <FeedbackWidget />
         </Providers>
-        {isProduction && (
-          <>
-            <SpeedInsights />
-            <Analytics />
-          </>
-        )}
+        {isProduction && <DeferredTelemetry />}
       </body>
     </html>
   )

@@ -10,6 +10,7 @@ This folder contains the canonical project documentation.
 - `docs/OPERATIONS.md` - environment setup, local runbook, deployment, troubleshooting
 - `docs/ROADMAP.md` - active priorities and near-term milestones
 - `docs/CONTRIBUTING.md` - workflow and engineering standards
+- `docs/GAME_DEVELOPMENT.md` - source-of-truth rules and checklist for adding/promoting games
 - `docs/SECURITY_MODEL.md` - auth boundaries, RLS posture, secrets policy
 - `docs/REALTIME_TELEMETRY.md` - reconnect telemetry events, dashboards, SLOs, alerts
 - `docs/DEPENDENCY_UPGRADE_PLAN.md` - staged dependency maintenance plan and migration sequencing

@@ -1,15 +1,29 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
-import { MobileMenu } from './Header/MobileMenu'
-import { NotificationsMenu } from './Header/NotificationsMenu'
-import LanguageSwitcher from './LanguageSwitcher'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
+
+const MobileMenu = dynamic(
+  () => import('./Header/MobileMenu').then((mod) => mod.MobileMenu),
+  { loading: () => null }
+)
+const NotificationsMenu = dynamic(
+  () => import('./Header/NotificationsMenu').then((mod) => mod.NotificationsMenu),
+  { loading: () => null }
+)
+const AudioSettingsButton = dynamic(
+  () => import('./Header/AudioSettingsButton').then((mod) => mod.AudioSettingsButton),
+  { loading: () => null }
+)
+const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
+  loading: () => null,
+})
 
 export default function Header() {
   const { data: session, status } = useSession()
@@ -31,24 +45,55 @@ export default function Header() {
   const isAuthenticated = status === 'authenticated'
   const isLoading = status === 'loading'
   const isAdmin = session?.user?.role === 'admin'
-  const isGuestSession = isGuestUiReady && isGuest && !isAuthenticated
+  const isAuthUiReady = isGuestUiReady && !isLoading
+  const effectiveIsAuthenticated = isAuthUiReady && isAuthenticated
+  const effectiveIsAdmin = isAuthUiReady && isAdmin
+  const isGuestSession = isAuthUiReady && isGuest && !isAuthenticated
 
   return (
-    <header className="site-header bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg sticky top-0 z-50" style={{ height: '64px', minHeight: '64px' }}>
+    <header
+      className="site-header sticky top-0 z-50"
+      style={{
+        height: '64px',
+        minHeight: '64px',
+        background: 'var(--bd-bg)',
+        borderBottom: '1.5px solid var(--bd-line)',
+      }}
+    >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex items-center justify-between gap-3 sm:gap-4 min-w-0" style={{ height: '100%' }}>
           {/* Logo and main navigation */}
           <div className="flex items-center min-w-0 flex-1">
             <button
               onClick={() => router.push('/')}
-              className="flex shrink-0 items-center gap-2 whitespace-nowrap text-xl sm:text-2xl font-bold text-white hover:scale-105 transition-transform"
+              className="flex shrink-0 items-center gap-2 whitespace-nowrap hover:opacity-80 transition-opacity"
+              style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', color: 'var(--bd-ink)' }}
             >
-              🎲 Boardly
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 9,
+                  background: 'var(--bd-ink)',
+                  color: 'var(--bd-sun)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontFamily: 'var(--bd-font-display)',
+                  fontWeight: 800,
+                  fontSize: 20,
+                  transform: 'rotate(-6deg)',
+                  boxShadow: '3px 3px 0 var(--bd-coral)',
+                  flexShrink: 0,
+                }}
+              >
+                B
+              </span>
+              boardly
             </button>
 
             <HeaderNavigation
-              isAuthenticated={isAuthenticated}
-              isAdmin={isAdmin}
+              isAuthenticated={effectiveIsAuthenticated}
+              isAdmin={effectiveIsAdmin}
               isGuest={isGuestSession}
             />
           </div>
@@ -57,8 +102,11 @@ export default function Header() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {/* Guest indicator */}
             {isGuestSession && guestName && (
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-yellow-400/20 backdrop-blur-sm rounded-full border border-yellow-400/30">
-                <span className="max-w-[140px] truncate text-yellow-100 text-sm">👤 {guestName}</span>
+              <div
+                className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full"
+                style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: 'var(--bd-ink-soft)', fontSize: 13, fontWeight: 600 }}
+              >
+                👤 {guestName}
               </div>
             )}
 
@@ -66,13 +114,17 @@ export default function Header() {
               <LanguageSwitcher />
             </div>
 
-            {isAuthenticated && !isLoading && <NotificationsMenu />}
+            <div className="hidden lg:block">
+              <AudioSettingsButton />
+            </div>
 
-            {isLoading ? (
+            {effectiveIsAuthenticated && <NotificationsMenu />}
+
+            {!isAuthUiReady ? (
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <HeaderActions
-                isAuthenticated={isAuthenticated}
+                isAuthenticated={effectiveIsAuthenticated}
                 userName={session?.user?.name}
                 userEmail={session?.user?.email}
                 userImage={session?.user?.image}
@@ -80,8 +132,8 @@ export default function Header() {
             )}
 
             <MobileMenu
-              isAuthenticated={isAuthenticated}
-              isAdmin={isAdmin}
+              isAuthenticated={effectiveIsAuthenticated}
+              isAdmin={effectiveIsAdmin}
               userName={session?.user?.name}
               userEmail={session?.user?.email}
               userImage={session?.user?.image}

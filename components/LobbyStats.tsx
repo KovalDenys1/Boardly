@@ -13,60 +13,24 @@ export default function LobbyStats({ totalLobbies, waitingLobbies, playingLobbie
   const { t } = useTranslation()
 
   const stats = [
-    {
-      id: 'total',
-      label: t('lobby.stats.total'),
-      value: totalLobbies,
-      icon: '🎮',
-      accent: 'from-blue-500 to-indigo-500',
-      dot: 'bg-blue-500 dark:bg-blue-300',
-    },
-    {
-      id: 'waiting',
-      label: t('lobby.stats.waiting'),
-      value: waitingLobbies,
-      icon: '⏳',
-      accent: 'from-amber-500 to-orange-500',
-      dot: 'bg-amber-500 dark:bg-amber-300',
-    },
-    {
-      id: 'playing',
-      label: t('lobby.stats.playing'),
-      value: playingLobbies,
-      icon: '🎲',
-      accent: 'from-emerald-500 to-teal-500',
-      dot: 'bg-emerald-500 dark:bg-emerald-300',
-    },
-    {
-      id: 'players',
-      label: t('lobby.stats.players'),
-      value: totalPlayers,
-      icon: '👥',
-      accent: 'from-purple-500 to-fuchsia-500',
-      dot: 'bg-purple-500 dark:bg-purple-300',
-    },
+    { id: 'total',   label: t('lobby.stats.total'),   value: totalLobbies,  icon: '🎮', accent: 'var(--bd-sky)' },
+    { id: 'waiting', label: t('lobby.stats.waiting'), value: waitingLobbies, icon: '⏳', accent: 'var(--bd-sun)' },
+    { id: 'playing', label: t('lobby.stats.playing'), value: playingLobbies, icon: '🎲', accent: 'var(--bd-mint)' },
+    { id: 'players', label: t('lobby.stats.players'), value: totalPlayers,  icon: '👥', accent: 'var(--bd-coral)' },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
-        <div
-          key={stat.id}
-          className="group relative overflow-hidden rounded-2xl border border-white/90 bg-white/96 p-4 shadow-sm shadow-indigo-900/5 transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700/50 dark:bg-slate-800/50"
-        >
-          <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${stat.accent} opacity-0 transition-opacity group-hover:opacity-100`} />
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm ring-1 ring-white/90 dark:bg-slate-700/70 dark:ring-0">
-              {stat.icon}
-            </div>
-            <span className={`mt-1 inline-flex h-2.5 w-2.5 rounded-full ${stat.dot}`} />
-          </div>
-          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-            {stat.label}
-          </p>
-          <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white">
-            {stat.value}
-          </p>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+      {stats.map(stat => (
+        <div key={stat.id} style={{
+          padding: '14px 16px', borderRadius: 16,
+          background: 'var(--bd-card-warm)', border: '1.5px solid var(--bd-line)',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: -12, right: -12, width: 48, height: 48, borderRadius: '50%', background: stat.accent, opacity: 0.2 }} />
+          <div style={{ fontSize: 22, marginBottom: 8 }}>{stat.icon}</div>
+          <div style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bd-ink-muted)', marginBottom: 4 }}>{stat.label}</div>
+          <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 28, color: stat.accent, lineHeight: 1 }}>{stat.value}</div>
         </div>
       ))}
     </div>

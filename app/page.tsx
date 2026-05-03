@@ -1,52 +1,59 @@
-import HeroSection from '@/components/HomePage/HeroSection'
 import Footer from '@/components/Footer'
-
-import AnimatedSection from '@/components/ui/AnimatedSection'
-import FeaturesGrid from '@/components/HomePage/FeaturesGrid'
-import HowItWorks from '@/components/HomePage/HowItWorks'
 import FaqSection from '@/components/HomePage/FaqSection'
-import GamesShowcase from '@/components/HomePage/GamesShowcase'
+import HeroSectionRedesign from '@/components/HomePage/HeroSectionRedesign'
+import MarqueeStrip from '@/components/HomePage/MarqueeStrip'
+import GameRibbon from '@/components/HomePage/GameRibbon'
+import HowItWorksRedesign from '@/components/HomePage/HowItWorksRedesign'
+import CtaBanner from '@/components/HomePage/CtaBanner'
+import { getCatalogAvailableGames, getCatalogGames, hasBotSupport } from '@/lib/game-catalog'
 
 // Keep home page fully static for fast global TTFB.
 export const dynamic = 'force-static'
 export const revalidate = 3600
 
 export default function HomePage() {
-  return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex flex-col">
-      {/* Hero Block - Full viewport height minus nav, flex centered, responsive */}
-      <section
-        className="relative flex flex-col items-center justify-center flex-shrink-0 w-full px-4"
-        style={{ minHeight: 'calc(100vh - 64px)' }}
-      >
-        <div className="w-full max-w-3xl flex flex-col items-center justify-center h-full">
-          {/* Render hero immediately to avoid delaying LCP/FCP behind client-side intersection animations. */}
-          <HeroSection />
-        </div>
-      </section>
+  const catalogGames = getCatalogGames()
+  const availableGames = getCatalogAvailableGames()
+  const quickPlayGameCount = availableGames.filter((game) => game.gameType && hasBotSupport(game.gameType)).length
+  const inDevelopmentGameCount = catalogGames.filter((game) => game.availability === 'in-development').length
 
-      {/* Main content below hero */}
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-        {/* Features Grid - Animated */}
-        <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 520px' }}>
-          <AnimatedSection className="mb-8" threshold={0.5}>
-            <FeaturesGrid />
-          </AnimatedSection>
+  return (
+    <div
+      className="home-page-shell flex flex-col"
+      style={{
+        background: 'var(--bd-bg)',
+        color: 'var(--bd-ink)',
+        overflowX: 'hidden',
+      }}
+    >
+      <div className="home-first-screen">
+        {/* Hero */}
+        <HeroSectionRedesign
+          facts={{
+            availableGameCount: availableGames.length,
+            catalogGameCount: catalogGames.length,
+            inDevelopmentGameCount,
+            quickPlayGameCount,
+          }}
+        />
+
+        <div className="home-marquee-anchor">
+          <MarqueeStrip variant="hero" />
         </div>
-        {/* How It Works - Animated */}
-        <div style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 440px' }}>
-          <AnimatedSection className="mb-8" threshold={0.4}>
-            <HowItWorks />
-          </AnimatedSection>
-        </div>
-        {/* Games Showcase - Static server component with links to game pages */}
-        <div className="mb-8">
-          <GamesShowcase />
-        </div>
-        {/* FAQ - Static server component for SEO */}
-        <div className="mb-8">
-          <FaqSection />
-        </div>
+      </div>
+
+      {/* Game ribbon */}
+      <GameRibbon />
+
+      {/* How it works */}
+      <HowItWorksRedesign />
+
+      {/* CTA banner */}
+      <CtaBanner />
+
+      {/* FAQ — kept for SEO value */}
+      <div className="home-faq-wrap">
+        <FaqSection />
       </div>
 
       <Footer />

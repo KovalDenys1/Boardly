@@ -16,62 +16,63 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
 
   const isActive = (path: string) => pathname === path
 
+  const navBtn = (active: boolean) =>
+    `rounded-xl font-medium transition-all duration-150 ${
+      active
+        ? 'bg-bd-ink text-bd-bg'
+        : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
+    }`
+
   return (
-    <div className="hidden lg:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(10px, 1vw, 20px)' }}>
+    <div className="hidden lg:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(4px, 0.5vw, 8px)' }}>
       <button
         onClick={() => router.push('/')}
-        className={`rounded-lg font-medium transition-colors ${isActive('/')
-          ? 'bg-white/20 text-white'
-          : 'text-white/80 hover:bg-white/10 hover:text-white'
-          }`}
-        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+        className={navBtn(isActive('/'))}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
       >
-        🏠 {t('header.home', 'Home')}
+        {t('header.home', 'Home')}
       </button>
       {(isAuthenticated || isGuest) && (
         <button
           onClick={() => router.push('/games')}
-          className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/games')
-            ? 'bg-white/20 text-white'
-            : 'text-white/80 hover:bg-white/10 hover:text-white'
-            }`}
-          style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+          className={navBtn(!!pathname?.startsWith('/games'))}
+          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
         >
-          🎮 {t('header.games', 'Games')}
+          {t('header.games', 'Games')}
         </button>
       )}
       {isAuthenticated && isAdmin && (
         <button
           onClick={() => router.push('/analytics')}
-          className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/analytics')
-            ? 'bg-white/20 text-white'
-            : 'text-white/80 hover:bg-white/10 hover:text-white'
-            }`}
-          style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+          className={navBtn(!!pathname?.startsWith('/analytics'))}
+          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
         >
-          📊 Analytics
+          Analytics
         </button>
       )}
       <button
         onClick={() => router.push('/lobby')}
-        className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/lobby')
-          ? 'bg-white/20 text-white'
-          : 'text-white/80 hover:bg-white/10 hover:text-white'
-          }`}
-        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+        className={navBtn(!!pathname?.startsWith('/lobby'))}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
       >
-        🎯 {t('header.lobbies', 'Lobbies')}
+        {t('header.lobbies', 'Lobbies')}
       </button>
       <button
         onClick={() => router.push('/leaderboard')}
-        className={`rounded-lg font-medium transition-colors ${pathname?.startsWith('/leaderboard')
-          ? 'bg-white/20 text-white'
-          : 'text-white/80 hover:bg-white/10 hover:text-white'
-          }`}
-        style={{ padding: 'clamp(6px, 0.6vh, 12px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 16px)' }}
+        className={navBtn(!!pathname?.startsWith('/leaderboard'))}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
       >
-        🏆 {t('header.leaderboard', 'Leaderboard')}
+        {t('header.leaderboard', 'Leaderboard')}
       </button>
+      {isAuthenticated && (
+        <button
+          onClick={() => router.push('/friends')}
+          className={navBtn(!!pathname?.startsWith('/friends'))}
+          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        >
+          Friends
+        </button>
+      )}
     </div>
   )
 }

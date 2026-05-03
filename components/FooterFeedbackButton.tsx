@@ -3,10 +3,11 @@
 export default function FooterFeedbackButton() {
   return (
     <button
+      type="button"
       onClick={() => window.dispatchEvent(new CustomEvent('open-feedback'))}
-      className="text-white/50 hover:text-white text-sm transition-colors cursor-pointer bg-transparent border-0 p-0 text-left"
+      className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-left text-sm font-semibold text-bd-lav transition-colors hover:border-bd-lav/40 hover:bg-bd-lav/10 hover:text-white"
     >
-      Send Feedback ↗
+      Send Feedback
     </button>
   )
 }

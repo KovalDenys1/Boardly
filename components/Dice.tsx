@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { sounds } from '@/lib/sounds'
 
 interface DiceProps {
@@ -12,8 +11,6 @@ interface DiceProps {
 }
 
 export default function Dice({ value, held, onToggleHold, isRolling = false, disabled = false }: DiceProps) {
-  const [animationKey, setAnimationKey] = useState(0)
-
   const getDotPositions = (num: number) => {
     const positions: string[] = []
     
@@ -65,32 +62,45 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
       aria-pressed={held}
       className={`
-        relative w-14 h-14 md:w-16 md:h-16 max-w-[64px] max-h-[64px] rounded-xl shadow-lg transition-all duration-200
+        relative w-14 h-14 md:w-16 md:h-16 max-w-[64px] max-h-[64px] rounded-[20px] transition-all duration-200
         ${held 
-          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 border-4 border-yellow-600 scale-95 ring-4 ring-yellow-300' 
-          : 'bg-white dark:bg-gray-100 border-4 border-gray-800 dark:border-gray-700 hover:shadow-2xl hover:brightness-105 active:scale-95'
+          ? 'scale-95 ring-4 ring-[rgba(255,196,77,0.35)]'
+          : 'hover:-translate-y-0.5 active:scale-95'
         }
         ${isRolling ? 'animate-shake-roll' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none
         transform-gpu
       `}
-      key={animationKey}
+      style={
+        held
+          ? {
+              background: 'linear-gradient(180deg, rgba(255,196,77,0.92) 0%, rgba(255,168,46,0.98) 100%)',
+              border: '3px solid var(--bd-ink)',
+              boxShadow: '0 4px 0 0 rgba(31,27,22,0.18)',
+            }
+          : {
+              background: 'linear-gradient(180deg, #FFFFFF 0%, var(--bd-bg) 100%)',
+              border: '3px solid var(--bd-ink)',
+              boxShadow: '0 4px 0 0 rgba(31,27,22,0.18)',
+            }
+      }
     >
       {/* Dots */}
       {getDotPositions(value).map((position, index) => (
         <div
           key={`${position}-${index}`}
-          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-md ${
-            held ? 'bg-gray-900' : 'bg-gray-900 dark:bg-gray-800'
-          } ${dotClasses[position]}`}
+          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm bg-[var(--bd-ink)] ${dotClasses[position]}`}
         />
       ))}
       
       {/* Held indicator */}
       {held && (
-        <div className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white text-base font-bold shadow-lg border-2 border-white">
-          🔒
+        <div
+          className="absolute -top-2 -right-2 min-w-[28px] h-7 rounded-full flex items-center justify-center px-1.5 text-white text-[11px] font-bold shadow-sm border-2 border-white"
+          style={{ background: 'var(--bd-coral)' }}
+        >
+          HOLD
         </div>
       )}
     </button>
