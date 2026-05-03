@@ -7,7 +7,7 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
-import { getCatalogGames, type GameCatalogAvailability } from '@/lib/game-catalog'
+import type { GameCatalogEntry } from '@/lib/game-catalog'
 
 interface Game {
   id: string
@@ -17,24 +17,22 @@ interface Game {
   players: string
   difficultyKey: TranslationKeys
   status: 'available' | 'coming-soon'
-  availability: GameCatalogAvailability
   route?: string
   color: string
 }
 
 interface GamesClientProps {
-  // IDs of experimental games that are currently enabled via feature flags
-  enabledExperimental: string[]
+  games: GameCatalogEntry[]
 }
 
-export default function GamesClient({ enabledExperimental }: GamesClientProps) {
+export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest } = useGuest()
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
-  const games: Game[] = getCatalogGames({ enabledExperimental }).map((game) => ({
+  const games: Game[] = catalogGames.map((game) => ({
     ...game,
     nameKey: game.nameKey as TranslationKeys,
     descriptionKey: game.descriptionKey as TranslationKeys,

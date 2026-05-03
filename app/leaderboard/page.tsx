@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { GAME_FILTERS, getCompactGameIcon, useLeaderboard, type LeaderboardEntry } from './use-leaderboard'
 import { getGameMetadata } from '@/lib/game-catalog'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
@@ -19,7 +20,7 @@ const winRateColor = (winRate: number) => {
   return 'var(--bd-ink-soft)'
 }
 
-function LeaderboardRow({ entry, isLast }: { entry: LeaderboardEntry; isLast: boolean }) {
+function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
   const medal = MEDAL[entry.rank]
   const isTop3 = entry.rank <= 3
   const rowClass = `grid gap-3 px-4 py-4 transition-colors sm:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem] sm:items-center sm:px-5 ${
@@ -35,28 +36,28 @@ function LeaderboardRow({ entry, isLast }: { entry: LeaderboardEntry; isLast: bo
         >
           {medal ?? entry.rank}
         </span>
-        <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">Rank</span>
+        <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.rank')}</span>
       </div>
       <div className="min-w-0">
         <span className="block truncate text-base font-bold text-bd-ink">{entry.username}</span>
         {entry.publicProfileId && (
-          <span className="text-xs font-semibold text-bd-ink-muted">View profile ↗</span>
+          <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
         )}
       </div>
       <div className="grid grid-cols-3 gap-2 sm:contents">
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">Played</span>
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.gamesPlayed')}</span>
           {entry.gamesPlayed}
         </span>
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">Wins</span>
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.wins')}</span>
           {entry.wins}
         </span>
         <span
           className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-extrabold sm:bg-transparent sm:p-0 sm:text-right"
           style={{ color: winRateColor(entry.winRate) }}
         >
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">Win %</span>
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.winRate')}</span>
           {entry.winRate}%
         </span>
       </div>
@@ -98,7 +99,7 @@ export default function LeaderboardPage() {
           {/* Header */}
           <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_21rem] lg:items-end">
             <div>
-              <span className="bd-kicker">Hall of fame</span>
+              <span className="bd-kicker">{t('leaderboard.hallOfFame')}</span>
               <h1
                 className="mt-3 max-w-3xl text-[clamp(2.5rem,7vw,5rem)] font-extrabold leading-[0.92] text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
@@ -165,7 +166,7 @@ export default function LeaderboardPage() {
                       {selectedFilter.displayIcon}
                     </span>
                     <span className="min-w-0">
-                      <span className="bd-kicker block text-[10px]">Game filter</span>
+                      <span className="bd-kicker block text-[10px]">{t('leaderboard.gameFilter')}</span>
                       <span className="block truncate text-sm font-bold text-bd-ink">{selectedFilter.label}</span>
                     </span>
                   </span>
@@ -183,10 +184,10 @@ export default function LeaderboardPage() {
                   <div
                     className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-white shadow-[0_8px_0_#1F1B16,0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
                     role="listbox"
-                    aria-label="Game filter"
+                    aria-label={t('leaderboard.gameFilter')}
                   >
                     <div className="border-b border-bd-line bg-bd-card-warm px-4 py-3">
-                      <p className="bd-kicker">Choose game</p>
+                      <p className="bd-kicker">{t('leaderboard.chooseGame')}</p>
                     </div>
                     <div className="max-h-80 overflow-y-auto p-2">
                       {GAME_FILTERS.map((f) => {
@@ -227,7 +228,7 @@ export default function LeaderboardPage() {
           {/* Stats */}
           <div className="mb-5 grid gap-3 sm:grid-cols-3">
             <div className="bd-card p-4">
-              <p className="bd-kicker">Players</p>
+              <p className="bd-kicker">{t('leaderboard.players')}</p>
               <p className="mt-2 truncate text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
                 {entries.length}
               </p>
@@ -249,7 +250,7 @@ export default function LeaderboardPage() {
           {/* Table */}
           <div className="bd-card overflow-hidden">
             <div className="hidden grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem] gap-3 border-b border-bd-line bg-bd-card-warm px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:grid">
-              <span>Rank</span>
+              <span>{t('leaderboard.rank')}</span>
               <span>{t('leaderboard.player', 'Player')}</span>
               <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>
               <span className="text-right">{t('leaderboard.wins', 'Wins')}</span>
@@ -273,7 +274,7 @@ export default function LeaderboardPage() {
               </div>
             ) : (
               entries.map((entry, idx) => (
-                <LeaderboardRow key={entry.userId} entry={entry} isLast={idx === entries.length - 1} />
+                <LeaderboardRow key={entry.userId} entry={entry} isLast={idx === entries.length - 1} t={t} />
               ))
             )}
 
