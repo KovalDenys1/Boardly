@@ -1,12 +1,16 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import Providers from './providers'
-import { Suspense } from 'react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Analytics } from '@vercel/analytics/react'
+import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
-import FeedbackWidget from '@/components/FeedbackWidget'
-import Header from '@/components/Header'
+
+const FeedbackWidget = dynamic(() => import('@/components/FeedbackWidget'), {
+  loading: () => null,
+})
+
+const DeferredTelemetry = dynamic(() => import('@/components/DeferredTelemetry'), {
+  loading: () => null,
+})
 
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
@@ -27,6 +31,10 @@ function HeaderSkeleton() {
     </header>
   )
 }
+
+const Header = dynamic(() => import('@/components/Header'), {
+  loading: () => <HeaderSkeleton />,
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://boardly.online'),
@@ -221,18 +229,11 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
-          <Suspense fallback={<HeaderSkeleton />}>
-            <Header />
-          </Suspense>
+          <Header />
           <main>{children}</main>
           <FeedbackWidget />
         </Providers>
-        {isProduction && (
-          <>
-            <SpeedInsights />
-            <Analytics />
-          </>
-        )}
+        {isProduction && <DeferredTelemetry />}
       </body>
     </html>
   )

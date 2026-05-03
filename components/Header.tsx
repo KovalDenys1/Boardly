@@ -1,16 +1,29 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
-import { MobileMenu } from './Header/MobileMenu'
-import { NotificationsMenu } from './Header/NotificationsMenu'
-import { AudioSettingsButton } from './Header/AudioSettingsButton'
-import LanguageSwitcher from './LanguageSwitcher'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
+
+const MobileMenu = dynamic(
+  () => import('./Header/MobileMenu').then((mod) => mod.MobileMenu),
+  { loading: () => null }
+)
+const NotificationsMenu = dynamic(
+  () => import('./Header/NotificationsMenu').then((mod) => mod.NotificationsMenu),
+  { loading: () => null }
+)
+const AudioSettingsButton = dynamic(
+  () => import('./Header/AudioSettingsButton').then((mod) => mod.AudioSettingsButton),
+  { loading: () => null }
+)
+const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
+  loading: () => null,
+})
 
 export default function Header() {
   const { data: session, status } = useSession()
