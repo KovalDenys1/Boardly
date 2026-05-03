@@ -9,6 +9,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -20,6 +21,11 @@ interface AutoActionContext {
     rollsLeft: number
     updatedAt: string | number | null
   }
+}
+
+interface BotAutoResponse {
+  type: 'undo' | 'draw'
+  accepted: boolean
 }
 
 const autoActionDebounceMap = new Map<string, number>()
@@ -444,6 +450,43 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
 
+    let botAutoResponse: BotAutoResponse | null = null
+    if (game.lobby.gameType === 'tic_tac_toe') {
+      const ticTacToeEngine = gameEngine as TicTacToeGame
+      const pendingRequest = ticTacToeEngine.getPendingRequest()
+
+      if (pendingRequest) {
+        const responderPlayer = (game.players as GamePlayer[]).find(
+          (player) => player.userId === pendingRequest.responderId
+        )
+
+        if (responderPlayer?.user?.bot) {
+          const accepted =
+            pendingRequest.type === 'undo' ? true : ticTacToeEngine.isTheoreticalDraw()
+          const responseMove: Move = {
+            playerId: pendingRequest.responderId,
+            type: pendingRequest.type === 'undo' ? 'respond-undo' : 'respond-draw',
+            data: { accept: accepted },
+            timestamp: new Date(),
+          }
+
+          const responseApplied = gameEngine.makeMove(responseMove)
+          if (responseApplied) {
+            botAutoResponse = {
+              type: pendingRequest.type,
+              accepted,
+            }
+          } else {
+            log.warn('Bot auto-response for Tic-Tac-Toe request failed validation', {
+              gameId,
+              responderId: pendingRequest.responderId,
+              requestType: pendingRequest.type,
+            })
+          }
+        }
+      }
+    }
+
     // Check if game status changed after this move
     const newState = gameEngine.getState()
     const botUserIds = new Set(
@@ -712,6 +755,7 @@ export async function POST(
         }),
       },
       serverBroadcasted,
+      ...(botAutoResponse ? { autoResponse: botAutoResponse } : {}),
     }
 
     return NextResponse.json(response)

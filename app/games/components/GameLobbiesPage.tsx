@@ -361,7 +361,7 @@ export default function GameLobbiesPage({
             </button>
 
             {/* Quick join card */}
-            <div className="bd-card p-6 sm:p-8">
+            <div className="bd-card flex h-full flex-col justify-center p-6 sm:p-8">
               <h2
                 className="mb-1 text-xl font-extrabold text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}

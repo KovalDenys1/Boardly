@@ -10,6 +10,32 @@ export interface TicTacToeMatchState {
   draws: number
 }
 
+export interface TicTacToeMoveRecord {
+  playerId: string
+  symbol: PlayerSymbol
+  row: number
+  col: number
+  timestamp: number
+}
+
+export interface TicTacToePendingRequest {
+  type: 'undo' | 'draw'
+  requesterId: string
+  responderId: string
+  requestedAt: number
+}
+
+interface TicTacToeUndoSnapshot {
+  board: CellValue[][]
+  currentSymbol: PlayerSymbol
+  winner: PlayerSymbol | 'draw' | null
+  winningLine: [number, number][] | null
+  moveCount: number
+  match: TicTacToeMatchState
+  currentPlayerIndex: number
+  status: 'playing' | 'finished'
+}
+
 export interface TicTacToeGameData {
   board: CellValue[][]
   currentSymbol: PlayerSymbol
@@ -17,6 +43,9 @@ export interface TicTacToeGameData {
   winningLine: [number, number][] | null
   moveCount: number
   match?: TicTacToeMatchState
+  moveHistory?: TicTacToeMoveRecord[]
+  undoSnapshots?: TicTacToeUndoSnapshot[]
+  pendingRequest?: TicTacToePendingRequest | null
 }
 
 export class TicTacToeGame extends GameEngine {
@@ -40,11 +69,14 @@ export class TicTacToeGame extends GameEngine {
       winningLine: null,
       moveCount: 0,
       match,
+      moveHistory: [],
+      undoSnapshots: [],
+      pendingRequest: null,
     }
   }
 
   validateMove(move: Move): boolean {
-    const gameData = this.state.data as TicTacToeGameData
+    const gameData = this.ensureGameData(this.state.data as TicTacToeGameData)
 
     if (move.type === 'next-round') {
       const playerIndex = this.state.players.findIndex((player) => player.id === move.playerId)
@@ -56,8 +88,75 @@ export class TicTacToeGame extends GameEngine {
         return false
       }
 
+      if (gameData.pendingRequest) {
+        return false
+      }
+
       const match = this.ensureMatchState(gameData)
       return !this.isMatchComplete(match)
+    }
+
+    if (move.type === 'request-undo') {
+      const playerIndex = this.state.players.findIndex((player) => player.id === move.playerId)
+      if (playerIndex === -1) {
+        return false
+      }
+
+      if (this.state.status !== 'playing' && this.state.status !== 'finished') {
+        return false
+      }
+
+      if (gameData.pendingRequest || (gameData.moveHistory?.length ?? 0) === 0) {
+        return false
+      }
+
+      return this.resolveResponderId(move.playerId) !== null
+    }
+
+    if (move.type === 'respond-undo') {
+      if (gameData.pendingRequest?.type !== 'undo' || gameData.pendingRequest.responderId !== move.playerId) {
+        return false
+      }
+
+      return typeof move.data.accept === 'boolean'
+    }
+
+    if (move.type === 'request-draw') {
+      const playerIndex = this.state.players.findIndex((player) => player.id === move.playerId)
+      if (playerIndex === -1) {
+        return false
+      }
+
+      if (this.state.status !== 'playing' || gameData.winner !== null) {
+        return false
+      }
+
+      if (gameData.pendingRequest || (gameData.moveHistory?.length ?? 0) === 0) {
+        return false
+      }
+
+      return this.resolveResponderId(move.playerId) !== null
+    }
+
+    if (move.type === 'respond-draw') {
+      if (gameData.pendingRequest?.type !== 'draw' || gameData.pendingRequest.responderId !== move.playerId) {
+        return false
+      }
+
+      return typeof move.data.accept === 'boolean'
+    }
+
+    if (move.type === 'timeout-forfeit') {
+      const playerIndex = this.state.players.findIndex((player) => player.id === move.playerId)
+      if (playerIndex === -1 || playerIndex !== this.state.currentPlayerIndex) {
+        return false
+      }
+
+      if (this.state.status !== 'playing' || gameData.winner !== null || gameData.pendingRequest) {
+        return false
+      }
+
+      return true
     }
 
     if (move.type !== 'place') {
@@ -65,6 +164,10 @@ export class TicTacToeGame extends GameEngine {
     }
 
     if (this.state.status !== 'playing') {
+      return false
+    }
+
+    if (gameData.pendingRequest) {
       return false
     }
 
@@ -99,7 +202,7 @@ export class TicTacToeGame extends GameEngine {
   }
 
   processMove(move: Move): void {
-    const gameData = this.state.data as TicTacToeGameData
+    const gameData = this.ensureGameData(this.state.data as TicTacToeGameData)
 
     if (move.type === 'next-round') {
       const match = this.ensureMatchState(gameData)
@@ -117,6 +220,9 @@ export class TicTacToeGame extends GameEngine {
       gameData.winner = null
       gameData.winningLine = null
       gameData.moveCount = 0
+      gameData.moveHistory = []
+      gameData.undoSnapshots = []
+      gameData.pendingRequest = null
 
       this.state.currentPlayerIndex = nextStartingSymbol === 'X' ? 0 : 1
       this.state.status = 'playing'
@@ -125,11 +231,69 @@ export class TicTacToeGame extends GameEngine {
       return
     }
 
+    if (move.type === 'request-undo' || move.type === 'request-draw') {
+      const responderId = this.resolveResponderId(move.playerId)
+      if (!responderId) {
+        return
+      }
+
+      gameData.pendingRequest = {
+        type: move.type === 'request-undo' ? 'undo' : 'draw',
+        requesterId: move.playerId,
+        responderId,
+        requestedAt: move.timestamp.getTime(),
+      }
+      return
+    }
+
+    if (move.type === 'respond-undo') {
+      const accept = move.data.accept === true
+      if (accept) {
+        this.undoLastMove(gameData)
+      }
+      gameData.pendingRequest = null
+      return
+    }
+
+    if (move.type === 'respond-draw') {
+      const accept = move.data.accept === true
+      if (accept) {
+        gameData.winner = 'draw'
+        gameData.winningLine = null
+        this.recordRoundResult(gameData, 'draw')
+        this.state.status = 'finished'
+        this.state.winner = undefined
+      }
+      gameData.pendingRequest = null
+      return
+    }
+
+    if (move.type === 'timeout-forfeit') {
+      const forfeitingSymbol = gameData.currentSymbol
+      const winnerSymbol: PlayerSymbol = forfeitingSymbol === 'X' ? 'O' : 'X'
+      gameData.pendingRequest = null
+      gameData.winner = winnerSymbol
+      gameData.winningLine = null
+      this.recordRoundResult(gameData, winnerSymbol)
+      this.state.status = 'finished'
+      return
+    }
+
+    gameData.pendingRequest = null
+    gameData.undoSnapshots?.push(this.captureSnapshot(gameData))
+
     const { row, col } = move.data as { row: number; col: number }
     const currentSymbol = gameData.currentSymbol
 
     gameData.board[row][col] = currentSymbol
     gameData.moveCount += 1
+    gameData.moveHistory?.push({
+      playerId: move.playerId,
+      symbol: currentSymbol,
+      row,
+      col,
+      timestamp: move.timestamp.getTime(),
+    })
 
     const winningLine = this.checkForWinner(gameData.board)
     if (winningLine) {
@@ -173,14 +337,34 @@ export class TicTacToeGame extends GameEngine {
   }
 
   protected canProcessMoveWhenNotPlaying(move: Move): boolean {
-    return move.type === 'next-round' && this.state.status === 'finished'
+    return (
+      this.state.status === 'finished' &&
+      (move.type === 'next-round' || move.type === 'request-undo' || move.type === 'respond-undo')
+    )
   }
 
   protected shouldAdvanceTurn(move: Move): boolean {
-    if (move.type === 'next-round') {
+    if (move.type !== 'place') {
       return false
     }
     return this.state.status === 'playing'
+  }
+
+  getPendingRequest(): TicTacToePendingRequest | null {
+    const gameData = this.ensureGameData(this.state.data as TicTacToeGameData)
+    return gameData.pendingRequest ? { ...gameData.pendingRequest } : null
+  }
+
+  isTheoreticalDraw(): boolean {
+    const gameData = this.ensureGameData(this.state.data as TicTacToeGameData)
+    if (this.state.status === 'finished') {
+      return gameData.winner === 'draw'
+    }
+
+    return this.evaluateTheoreticalOutcome(
+      gameData.board.map((row) => [...row]),
+      gameData.currentSymbol,
+    ) === 'draw'
   }
 
   private getConfiguredTargetRounds(): number | null {
@@ -253,6 +437,18 @@ export class TicTacToeGame extends GameEngine {
     return gameData.match
   }
 
+  private ensureGameData(gameData: TicTacToeGameData): TicTacToeGameData {
+    gameData.match = this.normalizeMatchState(gameData.match)
+    gameData.moveHistory = Array.isArray(gameData.moveHistory) ? gameData.moveHistory : []
+    gameData.undoSnapshots = Array.isArray(gameData.undoSnapshots) ? gameData.undoSnapshots : []
+    gameData.pendingRequest =
+      gameData.pendingRequest &&
+      (gameData.pendingRequest.type === 'undo' || gameData.pendingRequest.type === 'draw')
+        ? gameData.pendingRequest
+        : null
+    return gameData
+  }
+
   private isMatchComplete(match: TicTacToeMatchState): boolean {
     if (match.targetRounds === null) {
       return false
@@ -276,6 +472,96 @@ export class TicTacToeGame extends GameEngine {
     if (this.state.players[1]) {
       this.state.players[1].score = match.winsBySymbol.O
     }
+  }
+
+  private resolveResponderId(requesterId: string): string | null {
+    const responder = this.state.players.find((player) => player.id !== requesterId)
+    return responder?.id ?? null
+  }
+
+  private captureSnapshot(gameData: TicTacToeGameData): TicTacToeUndoSnapshot {
+    return {
+      board: gameData.board.map((row) => [...row]),
+      currentSymbol: gameData.currentSymbol,
+      winner: gameData.winner,
+      winningLine: gameData.winningLine ? gameData.winningLine.map(([row, col]) => [row, col]) as [number, number][] : null,
+      moveCount: gameData.moveCount,
+      match: this.normalizeMatchState(gameData.match),
+      currentPlayerIndex: this.state.currentPlayerIndex,
+      status: 'playing',
+    }
+  }
+
+  private undoLastMove(gameData: TicTacToeGameData) {
+    const snapshot = gameData.undoSnapshots?.pop()
+    if (!snapshot) {
+      return
+    }
+
+    gameData.board = snapshot.board.map((row) => [...row])
+    gameData.currentSymbol = snapshot.currentSymbol
+    gameData.winner = snapshot.winner
+    gameData.winningLine = snapshot.winningLine ? snapshot.winningLine.map(([row, col]) => [row, col]) as [number, number][] : null
+    gameData.moveCount = snapshot.moveCount
+    gameData.match = this.normalizeMatchState(snapshot.match)
+    gameData.moveHistory = (gameData.moveHistory || []).slice(0, -1)
+
+    this.state.currentPlayerIndex = snapshot.currentPlayerIndex
+    this.state.status = snapshot.status
+    this.state.winner =
+      snapshot.status === 'finished' && snapshot.winner && snapshot.winner !== 'draw'
+        ? this.state.players[snapshot.winner === 'X' ? 0 : 1]?.id
+        : undefined
+    this.state.lastMoveAt = Date.now()
+
+    this.syncPlayerScores(gameData.match)
+  }
+
+  private syncPlayerScores(match: TicTacToeMatchState) {
+    if (this.state.players[0]) {
+      this.state.players[0].score = match.winsBySymbol.X
+    }
+    if (this.state.players[1]) {
+      this.state.players[1].score = match.winsBySymbol.O
+    }
+  }
+
+  private evaluateTheoreticalOutcome(board: CellValue[][], nextSymbol: PlayerSymbol): PlayerSymbol | 'draw' {
+    const winnerLine = this.checkForWinner(board)
+    if (winnerLine) {
+      const [row, col] = winnerLine[0]
+      return board[row][col] as PlayerSymbol
+    }
+
+    const emptyCells: Array<{ row: number; col: number }> = []
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 3; col += 1) {
+        if (board[row][col] === null) {
+          emptyCells.push({ row, col })
+        }
+      }
+    }
+
+    if (emptyCells.length === 0) {
+      return 'draw'
+    }
+
+    const opponentSymbol: PlayerSymbol = nextSymbol === 'X' ? 'O' : 'X'
+    let canForceDraw = false
+
+    for (const cell of emptyCells) {
+      const nextBoard = board.map((row) => [...row])
+      nextBoard[cell.row][cell.col] = nextSymbol
+      const outcome = this.evaluateTheoreticalOutcome(nextBoard, opponentSymbol)
+      if (outcome === nextSymbol) {
+        return nextSymbol
+      }
+      if (outcome === 'draw') {
+        canForceDraw = true
+      }
+    }
+
+    return canForceDraw ? 'draw' : opponentSymbol
   }
 
   private checkForWinner(board: CellValue[][]): [number, number][] | null {

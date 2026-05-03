@@ -3,7 +3,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { TicTacToeGame, TicTacToeGameData, PlayerSymbol, CellValue } from '@/lib/games/tic-tac-toe-game'
+import {
+    TicTacToeGame,
+    TicTacToeGameData,
+    TicTacToeMoveRecord,
+    TicTacToePendingRequest,
+    PlayerSymbol,
+    CellValue,
+} from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
 import { useGameSocket } from '@/hooks/use-game-socket'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -20,6 +27,7 @@ import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
+import { useGameTimer } from './hooks/useGameTimer'
 
 // ─── Design sub-components ───────────────────────────────────────────────────
 
@@ -61,16 +69,17 @@ function TttMark({ mark, size = 24, responsive = false, pop = false }: {
     )
 }
 
-function TttBoard({ board, winningLine, onCellClick, disabled }: {
+function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     board: CellValue[][];
     winningLine: [number, number][] | null;
     onCellClick: (row: number, col: number) => void;
     disabled: boolean;
+    testId?: string;
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
     return (
         <div className="ttt-board-wrap">
-            <div className="ttt-board">
+            <div className="ttt-board" data-testid={testId}>
                 {board.map((row, ri) =>
                     row.map((cell, ci) => (
                         <button
@@ -146,9 +155,9 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side }: {
     )
 }
 
-function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum }: {
+function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit }: {
     isFinished: boolean; winnerName: string | null; isDraw: boolean;
-    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number;
+    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number;
 }) {
     if (isFinished && !isDraw && winnerName) {
         return (
@@ -180,7 +189,7 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
             </div>
         )
     }
-    const pct = (secs / 20) * 100
+    const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
     const danger = secs <= 5
     return (
         <div style={{
@@ -292,19 +301,42 @@ interface Lobby {
     creatorId: string
     name: string
     isActive?: boolean
+    turnTimer?: number
 }
 
 interface TicTacToeLobbyPageProps {
     code: string
 }
 
-interface LocalMove { n: number; symbol: 'X' | 'O'; playerName: string; row: number; col: number }
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
+
+interface AutoActionContext {
+    source: 'turn-timeout'
+    debounceKey: string
+    turnSnapshot: {
+        currentPlayerId: string
+        currentPlayerIndex: number
+        lastMoveAt: number | null
+        rollsLeft: number
+        updatedAt: string | number | null
+    }
+}
+
+function isExpectedAutoActionSkip(status: number, error: unknown): boolean {
+    if (status === 202 || status === 409) return true
+
+    const code =
+        typeof error === 'object' && error !== null
+            ? (error as Record<string, unknown>).code
+            : undefined
+
+    return code === 'TURN_ALREADY_ENDED' || code === 'AUTO_ACTION_DEBOUNCED' || code === 'STATE_CONFLICT'
+}
 
 function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState | null {
     if (!payload || typeof payload !== 'object') return null
@@ -341,9 +373,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'tic_tac_toe').minPlayersRequired
 
     // Design states
-    const [secs, setSecs] = useState(20)
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
-    const [localMoveHistory, setLocalMoveHistory] = useState<LocalMove[]>([])
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -515,71 +545,176 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     onPlayerLeft: handlePlayerLeft,
   })
 
-    const handleMove = useCallback(async (move: Move) => {
-        if (!gameEngine || !game || isMoveSubmitting) return
+    const isMyTurn = useCallback(() => {
+        if (!gameEngine || !game) return false
+        return gameEngine.getCurrentPlayer()?.id === getCurrentUserId()
+    }, [gameEngine, game, getCurrentUserId])
+
+    const handleMove = useCallback(async (
+        move: Move,
+        options?: {
+            autoActionContext?: AutoActionContext
+            isAutoAction?: boolean
+        }
+    ): Promise<boolean> => {
+        if (!gameEngine || !game || isMoveSubmitting) return false
+        const normalizedAutoActionContext = options?.autoActionContext
+        const isAutoAction = options?.isAutoAction === true
         const submitStartedAt = Date.now()
         let responseStatus: number | undefined
         try {
             const userId = getCurrentUserId()
-            if (!userId) return
+            if (!userId) return false
             const optimisticEngine = new TicTacToeGame(game.id)
             optimisticEngine.restoreState(gameEngine.getState())
             if (!optimisticEngine.validateMove(move)) {
-                showToast.error('errors.invalidActionData')
-                return
-            }
-            optimisticEngine.processMove(move)
-            const optimisticState = optimisticEngine.getState()
-            setGameEngine(optimisticEngine)
-            setGame((prevGame) => {
-                if (!prevGame) return prevGame
-                return {
-                    ...prevGame,
-                    status: optimisticState.status as Game['status'],
-                    currentTurn: optimisticState.currentPlayerIndex,
-                    state: JSON.stringify(optimisticState),
+                if (!isAutoAction) {
+                    showToast.error('errors.invalidActionData')
                 }
-            })
+                return false
+            }
+            let optimisticState = optimisticEngine.getState()
+            if (!isAutoAction) {
+                optimisticEngine.processMove(move)
+                optimisticState = optimisticEngine.getState()
+                setGameEngine(optimisticEngine)
+                setGame((prevGame) => {
+                    if (!prevGame) return prevGame
+                    return {
+                        ...prevGame,
+                        status: optimisticState.status as Game['status'],
+                        currentTurn: optimisticState.currentPlayerIndex,
+                        state: JSON.stringify(optimisticState),
+                    }
+                })
+            }
             setIsMoveSubmitting(true)
             const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gameId: game.id, move, userId }),
+                body: JSON.stringify({ gameId: game.id, move, userId, autoActionContext: normalizedAutoActionContext }),
             })
             responseStatus = res.status
-            const data = await res.json()
+            const data = await res.json().catch(() => null)
+            if (isAutoAction && isExpectedAutoActionSkip(res.status, data)) {
+                return false
+            }
             if (!res.ok) {
                 trackMoveSubmitApplied({ gameType: 'tic_tac_toe', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'tic_tac_toe_page' })
-                clientLogger.error('Move failed:', data.error)
-                showToast.error('games.tictactoe.game.moveFailed', undefined, { message: (typeof data?.details === 'string' && data.details) || (typeof data?.error === 'string' && data.error) || 'Failed to submit move' })
+                clientLogger.error('Move failed:', data?.error)
+                if (!isAutoAction) {
+                    showToast.error('games.tictactoe.game.moveFailed', undefined, { message: (typeof data?.details === 'string' && data.details) || (typeof data?.error === 'string' && data.error) || 'Failed to submit move' })
+                }
                 await loadLobby()
-                return
+                return false
             }
             const authoritativeState = data?.game?.state
             if (authoritativeState && !applyAuthoritativeState(game.id, authoritativeState, data?.game?.status)) await loadLobby()
             trackMoveSubmitApplied({ gameType: 'tic_tac_toe', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: true, applied: true, statusCode: responseStatus, source: 'tic_tac_toe_page' })
-            if (socket?.connected) {
+            if (move.type === 'request-undo') {
+                if (data?.autoResponse?.type === 'undo') {
+                    showToast.infoText(data.autoResponse.accepted ? 'Undo request accepted.' : 'Undo request declined.')
+                } else {
+                    showToast.infoText('Undo request sent.')
+                }
+            } else if (move.type === 'request-draw') {
+                if (data?.autoResponse?.type === 'draw') {
+                    showToast.infoText(data.autoResponse.accepted ? 'Draw offer accepted.' : 'Draw offer declined.')
+                } else {
+                    showToast.infoText('Draw offer sent.')
+                }
+            } else if (move.type === 'respond-undo' || move.type === 'respond-draw') {
+                showToast.infoText(move.data.accept === true ? 'Request accepted.' : 'Request declined.')
+            } else if (move.type === 'timeout-forfeit') {
+                showToast.infoText('Time expired. Round forfeited.')
+            }
+            if (socket?.connected && !isAutoAction) {
                 socket.emit('game-move', { lobbyCode: code, gameId: game.id, move, state: optimisticState, playerId: userId })
             }
-            const winner = optimisticEngine.checkWinCondition()
-            if (winner || optimisticEngine.getState().status === 'finished') {
+            const resolvedEngine = isAutoAction
+                ? (() => {
+                    if (!authoritativeState || typeof authoritativeState !== 'object') return null
+                    const authoritativeEngine = new TicTacToeGame(game.id)
+                    authoritativeEngine.restoreState(authoritativeState as AnyGameState)
+                    return authoritativeEngine
+                })()
+                : optimisticEngine
+            const winner = resolvedEngine?.checkWinCondition()
+            if (winner || resolvedEngine?.getState().status === 'finished') {
                 if (winner) showToast.success('games.tictactoe.game.gameWon')
                 else showToast.info('game.ui.gameFinished')
             }
+            return true
         } catch (error) {
             trackMoveSubmitApplied({ gameType: 'tic_tac_toe', moveType: move.type, durationMs: Date.now() - submitStartedAt, isGuest, success: false, applied: false, statusCode: responseStatus, source: 'tic_tac_toe_page' })
             clientLogger.error('Error making move:', error)
-            showToast.errorFrom(error, 'games.tictactoe.game.moveFailed')
+            if (!isAutoAction) {
+                showToast.errorFrom(error, 'games.tictactoe.game.moveFailed')
+            }
             await loadLobby()
+            return false
         } finally {
             setIsMoveSubmitting(false)
         }
     }, [applyAuthoritativeState, gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
 
-    const isMyTurn = useCallback(() => {
-        if (!gameEngine || !game) return false
-        return gameEngine.getCurrentPlayer()?.id === getCurrentUserId()
-    }, [gameEngine, game, getCurrentUserId])
+    const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
+        if (!gameEngine) return null
+        const state = gameEngine.getState()
+        const debounceKey = `${game?.id || 'unknown'}:${playerId}:${state.currentPlayerIndex}:${state.lastMoveAt ?? 'none'}`
+
+        return {
+            source: 'turn-timeout',
+            debounceKey,
+            turnSnapshot: {
+                currentPlayerId: playerId,
+                currentPlayerIndex: state.currentPlayerIndex,
+                lastMoveAt: typeof state.lastMoveAt === 'number' ? state.lastMoveAt : null,
+                rollsLeft: 0,
+                updatedAt: state.updatedAt ? String(state.updatedAt) : null,
+            },
+        }
+    }, [game?.id, gameEngine])
+
+    const timerState = gameEngine?.getState() ?? null
+    const timerStateData = timerState?.data as TicTacToeGameData | undefined
+    const turnTimerLimit =
+        typeof lobby?.turnTimer === 'number' && Number.isFinite(lobby.turnTimer) && lobby.turnTimer > 0
+            ? Math.floor(lobby.turnTimer)
+            : 20
+
+    const { timeLeft } = useGameTimer({
+        isMyTurn: isMyTurn(),
+        gameState: timerStateData?.pendingRequest ? null : timerState,
+        turnTimerLimit,
+        onTimeout: async (): Promise<boolean> => {
+            if (!gameEngine || !game || !isMyTurn()) {
+                return true
+            }
+
+            const userId = getCurrentUserId()
+            if (!userId) {
+                return false
+            }
+
+            const autoActionContext = buildAutoActionContext(userId)
+            if (!autoActionContext) {
+                return false
+            }
+
+            clientLogger.warn('⏰ Tic-Tac-Toe turn timer expired, forfeiting round', {
+                code,
+                gameId: game.id,
+                userId,
+                currentPlayerIndex: gameEngine.getState().currentPlayerIndex,
+            })
+
+            return handleMove(
+                { playerId: userId, type: 'timeout-forfeit', data: {}, timestamp: new Date() },
+                { autoActionContext, isAutoAction: true }
+            )
+        },
+    })
 
     const handleLeave = async () => {
         if (isLeavingLobbyRef.current) return
@@ -674,26 +809,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     // ─── Design effects ───────────────────────────────────────────────────────
 
-    // Turn timer — reset when current symbol changes or game ends
-    const currentSymbolForTimer = gameEngine?.getState()?.data
-        ? (gameEngine.getState().data as TicTacToeGameData).currentSymbol
-        : null
-    const isGameFinished = gameEngine?.getState().status === 'finished'
-
-    useEffect(() => {
-        if (isGameFinished) { setSecs(0); return }
-        setSecs(20)
-        const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000)
-        return () => clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentSymbolForTimer, isGameFinished])
-
-    // Reset move history on new round
-    const roundsPlayed = gameEngine?.getState()?.data
-        ? (gameEngine.getState().data as TicTacToeGameData).match?.roundsPlayed
-        : undefined
-    useEffect(() => { setLocalMoveHistory([]) }, [roundsPlayed])
-
     // Scroll chat to bottom
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
@@ -772,6 +887,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     const myWins = mySymbol ? (match?.winsBySymbol[mySymbol] ?? 0) : 0
     const myLosses = opponentSymbol ? (match?.winsBySymbol[opponentSymbol] ?? 0) : 0
+    const moveHistory = Array.isArray(gameData.moveHistory) ? gameData.moveHistory : []
+    const pendingRequest = (gameData.pendingRequest ?? null) as TicTacToePendingRequest | null
+    const pendingRequesterName = pendingRequest ? getDisplayName(pendingRequest.requesterId) : null
+    const isPendingResponder = !!pendingRequest && pendingRequest.responderId === currentUserId
+    const isPendingRequester = !!pendingRequest && pendingRequest.requesterId === currentUserId
+    const canRequestUndo = !isMoveSubmitting && !pendingRequest && moveHistory.length > 0
+    const canRequestDraw = !isMoveSubmitting && !pendingRequest && !isFinished && moveHistory.length > 0
 
     // Cell click handler
     const handleCellClick = async (row: number, col: number) => {
@@ -780,10 +902,30 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         if (!isMyTurn() || isMoveSubmitting) return
         const userId = getCurrentUserId()
         if (!userId) return
-        const symbol = gameData.currentSymbol
-        const playerName = gameEngine.getCurrentPlayer()?.name ?? 'Player'
-        setLocalMoveHistory(h => [...h, { n: h.length + 1, symbol, playerName, row, col }])
         await handleMove({ playerId: userId, type: 'place', data: { row, col }, timestamp: new Date() })
+    }
+
+    const handleRequestUndo = async () => {
+        const userId = getCurrentUserId()
+        if (!userId || !canRequestUndo) return
+        await handleMove({ playerId: userId, type: 'request-undo', data: {}, timestamp: new Date() })
+    }
+
+    const handleRequestDraw = async () => {
+        const userId = getCurrentUserId()
+        if (!userId || !canRequestDraw) return
+        await handleMove({ playerId: userId, type: 'request-draw', data: {}, timestamp: new Date() })
+    }
+
+    const handleRespondToRequest = async (type: 'undo' | 'draw', accept: boolean) => {
+        const userId = getCurrentUserId()
+        if (!userId || !pendingRequest || pendingRequest.type !== type || pendingRequest.responderId !== userId) return
+        await handleMove({
+            playerId: userId,
+            type: type === 'undo' ? 'respond-undo' : 'respond-draw',
+            data: { accept },
+            timestamp: new Date(),
+        })
     }
 
     const sendChat = () => {
@@ -835,18 +977,85 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             isDraw={isDraw}
             currentSymbol={gameData.currentSymbol}
             currentPlayerName={gameData.currentSymbol === 'X' ? xName : oName}
-            secs={secs}
+            secs={timeLeft}
             moveNum={gameData.moveCount + 1}
+            turnTimerLimit={turnTimerLimit}
         />
     )
 
-    const boardSection = (
+    const requestSection = pendingRequest ? (
+        <div style={{
+            padding: '8px 10px',
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.92)',
+            border: '1.5px solid var(--bd-line)',
+            boxShadow: '0 3px 10px rgba(31,27,22,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            flexWrap: 'wrap',
+        }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--bd-ink)', lineHeight: 1.35, flex: '1 1 220px' }}>
+                {pendingRequest.type === 'undo'
+                    ? `${pendingRequesterName || 'Your opponent'} wants to undo the last move.`
+                    : `${pendingRequesterName || 'Your opponent'} offered a draw.`}
+            </div>
+            {isPendingResponder ? (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button
+                        onClick={() => void handleRespondToRequest(pendingRequest.type, true)}
+                        disabled={isMoveSubmitting}
+                        style={{
+                            padding: '6px 11px',
+                            fontSize: 12,
+                            borderRadius: 12,
+                            fontWeight: 700,
+                            background: 'var(--bd-mint-deep)',
+                            color: 'white',
+                            border: 'none',
+                            cursor: isMoveSubmitting ? 'not-allowed' : 'pointer',
+                            opacity: isMoveSubmitting ? 0.65 : 1,
+                            fontFamily: 'inherit',
+                        }}
+                    >
+                        Accept
+                    </button>
+                    <button
+                        onClick={() => void handleRespondToRequest(pendingRequest.type, false)}
+                        disabled={isMoveSubmitting}
+                        style={{
+                            padding: '6px 11px',
+                            fontSize: 12,
+                            borderRadius: 12,
+                            fontWeight: 600,
+                            background: 'var(--bd-card-warm)',
+                            border: '1px solid var(--bd-line)',
+                            color: 'var(--bd-ink-soft)',
+                            cursor: isMoveSubmitting ? 'not-allowed' : 'pointer',
+                            opacity: isMoveSubmitting ? 0.65 : 1,
+                            fontFamily: 'inherit',
+                        }}
+                    >
+                        Decline
+                    </button>
+                </div>
+            ) : isPendingRequester ? (
+                <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>
+                    Waiting for response...
+                </div>
+            ) : null}
+        </div>
+    ) : null
+
+    const renderBoardSection = (testId?: string) => (
         <div className="ttt-board-card">
             <TttBoard
                 board={gameData.board}
                 winningLine={gameData.winningLine}
                 onCellClick={handleCellClick}
                 disabled={!isMyTurn() || isFinished || isMoveSubmitting}
+                testId={testId}
             />
             {isFinished && (
                 <div className="ttt-board-overlay">
@@ -865,14 +1074,44 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     const actionsSection = (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button disabled style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)', cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5 }}>
+            <button
+                onClick={() => void handleRequestUndo()}
+                disabled={!canRequestUndo}
+                style={{
+                    padding: '8px 14px',
+                    fontSize: 13,
+                    borderRadius: 14,
+                    fontWeight: 600,
+                    background: 'var(--bd-card-warm)',
+                    border: '1px solid var(--bd-line)',
+                    color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)',
+                    cursor: canRequestUndo ? 'pointer' : 'not-allowed',
+                    fontFamily: 'inherit',
+                    opacity: canRequestUndo ? 1 : 0.5,
+                }}
+            >
                 ↶ Undo
             </button>
-            <button disabled style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)', cursor: 'not-allowed', fontFamily: 'inherit', opacity: 0.5 }}>
+            <button
+                onClick={() => void handleRequestDraw()}
+                disabled={!canRequestDraw}
+                style={{
+                    padding: '8px 14px',
+                    fontSize: 13,
+                    borderRadius: 14,
+                    fontWeight: 600,
+                    background: 'var(--bd-card-warm)',
+                    border: '1px solid var(--bd-line)',
+                    color: canRequestDraw ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)',
+                    cursor: canRequestDraw ? 'pointer' : 'not-allowed',
+                    fontFamily: 'inherit',
+                    opacity: canRequestDraw ? 1 : 0.5,
+                }}
+            >
                 🤝 Draw
             </button>
             <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                🏳 Resign
+                Leave lobby
             </button>
         </div>
     )
@@ -882,19 +1121,19 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
                 <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Moves</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
-                    {localMoveHistory.length}/9
+                    {moveHistory.length}/9
                 </span>
             </div>
             <div className="ttt-history-list">
-                {localMoveHistory.length === 0
+                {moveHistory.length === 0
                     ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — X starts.</div>
-                    : localMoveHistory.slice().reverse().map(m => (
-                        <div key={m.n} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
+                    : moveHistory.slice().reverse().map((m: TicTacToeMoveRecord, index) => (
+                        <div key={`${m.timestamp}-${m.row}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
-                                #{String(m.n).padStart(2, '0')}
+                                #{String(moveHistory.length - index).padStart(2, '0')}
                             </span>
                             <TttMark mark={m.symbol} size={16} />
-                            <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.playerName}</span>
+                            <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(m.playerId)}</span>
                             <span style={{ marginLeft: 'auto', fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>{tttCoord(m.row, m.col)}</span>
                         </div>
                     ))
@@ -985,7 +1224,8 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     <div className="ttt-center-col">
                         {headerSection}
                         {statusSection}
-                        {boardSection}
+                        {requestSection}
+                        {renderBoardSection('ttt-board')}
                         {actionsSection}
                     </div>
                     <div className="ttt-right-col">
@@ -999,10 +1239,11 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             <div className="ttt-mobile-layout">
                 {headerSection}
                 {statusSection}
+                {requestSection}
                 <div className="ttt-tabs">
                     {([
                         { id: 'board', label: 'Board' },
-                        { id: 'history', label: `Moves (${localMoveHistory.length})` },
+                        { id: 'history', label: `Moves (${moveHistory.length})` },
                         { id: 'chat', label: 'Chat' },
                     ] as const).map(tab => (
                         <button
@@ -1015,7 +1256,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     ))}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {mobileTab === 'board' && <>{boardSection}{actionsSection}</>}
+                    {mobileTab === 'board' && <>{renderBoardSection()}{actionsSection}</>}
                     {mobileTab === 'history' && historySection}
                     {mobileTab === 'chat' && chatSection}
                 </div>

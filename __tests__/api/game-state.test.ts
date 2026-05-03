@@ -603,6 +603,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
     const mockEngine = {
       makeMove: jest.fn().mockReturnValue(true),
+      getPendingRequest: jest.fn(() => null),
       getState: jest.fn(() => tttState),
       getCurrentPlayer: jest.fn(() => ({ id: 'bot-1' })),
       getPlayers: jest.fn(() => [
@@ -734,6 +735,119 @@ describe('POST /api/game/[gameId]/state', () => {
         triggeredAt: expect.any(Number),
       })
     )
+  })
+
+  it('auto-accepts Tic-Tac-Toe draw offers from a bot when the position is a theoretical draw', async () => {
+    const ticTacToeState = {
+      players: [
+        { id: 'player-1', isActive: true },
+        { id: 'bot-1', isActive: true },
+      ],
+      currentPlayerIndex: 0,
+      status: 'finished',
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+      data: {
+        board: [
+          ['X', 'O', 'X'],
+          ['X', 'O', null],
+          ['O', 'X', null],
+        ],
+        currentSymbol: 'X',
+        winner: 'draw',
+        winningLine: null,
+        moveCount: 7,
+        match: {
+          targetRounds: null,
+          roundsPlayed: 1,
+          winsBySymbol: { X: 0, O: 0 },
+          draws: 1,
+        },
+        moveHistory: [],
+        undoSnapshots: [],
+        pendingRequest: null,
+      },
+    }
+
+    const ticTacToeDbGame = {
+      ...dbGame,
+      state: JSON.stringify(ticTacToeState),
+      lobby: {
+        ...dbGame.lobby,
+        gameType: 'tic_tac_toe',
+      },
+      players: [
+        {
+          id: 'db-player-1',
+          userId: 'player-1',
+          score: 0,
+          finalScore: null,
+          placement: null,
+          isWinner: false,
+          scorecard: '{}',
+          user: { id: 'player-1', username: 'Player 1', bot: null },
+        },
+        {
+          id: 'db-player-bot',
+          userId: 'bot-1',
+          score: 0,
+          finalScore: null,
+          placement: null,
+          isWinner: false,
+          scorecard: '{}',
+          user: { id: 'bot-1', username: 'Bot 1', bot: { id: 'bot-meta-1' } },
+        },
+      ],
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValueOnce(true).mockReturnValueOnce(true),
+      getPendingRequest: jest.fn(() => ({
+        type: 'draw',
+        requesterId: 'player-1',
+        responderId: 'bot-1',
+        requestedAt: Date.now(),
+      })),
+      isTheoreticalDraw: jest.fn(() => true),
+      getState: jest.fn(() => ticTacToeState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 0, name: 'Player 1' },
+        { id: 'bot-1', score: 0, name: 'Bot 1' },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValueOnce(ticTacToeDbGame as any)
+    mockPrisma.games.updateMany.mockResolvedValue({ count: 1 } as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const response = await POST(buildRequest({
+      move: { type: 'request-draw', data: {} },
+    }), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(mockEngine.makeMove).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        playerId: 'player-1',
+        type: 'request-draw',
+      })
+    )
+    expect(mockEngine.makeMove).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        playerId: 'bot-1',
+        type: 'respond-draw',
+        data: { accept: true },
+      })
+    )
+    expect(payload.autoResponse).toEqual({ type: 'draw', accepted: true })
   })
 
   it('auto-triggers Yahtzee bot turn when next player is bot', async () => {

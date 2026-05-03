@@ -644,34 +644,32 @@ export default function Friends() {
           <div className="absolute -right-12 top-4 h-24 w-24 rounded-full bg-bd-lav/15" />
           <div className="absolute -bottom-8 left-10 h-20 w-20 rotate-12 rounded-[1.5rem] bg-bd-mint/15" />
           <div className="relative p-5 sm:p-6">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
-              <div className="min-w-0">
-                <p className={eyebrowClassName}>{t('profile.friends.myFriendCode')}</p>
-                <button
-                  type="button"
-                  onClick={copyFriendCode}
-                  className={`${warmSurfaceClassName} mt-4 block w-full border-dashed px-4 py-5 text-left transition-colors hover:border-bd-lav-deep hover:bg-white dark:hover:bg-slate-900`}
-                  title={t('profile.friends.copyCode')}
-                  aria-label={t('profile.friends.copyCode')}
-                >
-                  <p className="font-display text-sm font-bold text-bd-ink-muted dark:text-slate-400">
-                    {t('profile.friends.shareCodeHint')}
-                  </p>
-                  <p className="mt-3 text-center font-mono text-4xl font-black tracking-[0.28em] text-bd-ink dark:text-white sm:text-5xl">
-                    {myFriendCode}
-                  </p>
-                </button>
-              </div>
+            <p className={eyebrowClassName}>{t('profile.friends.myFriendCode')}</p>
+            <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
+              <button
+                type="button"
+                onClick={copyFriendCode}
+                className={`${warmSurfaceClassName} block w-full border-dashed px-4 py-5 text-left transition-colors hover:border-bd-lav-deep hover:bg-white dark:hover:bg-slate-900`}
+                title={t('profile.friends.copyCode')}
+                aria-label={t('profile.friends.copyCode')}
+              >
+                <p className="font-display text-sm font-bold text-bd-ink-muted dark:text-slate-400">
+                  {t('profile.friends.shareCodeHint')}
+                </p>
+                <p className="mt-3 text-center font-mono text-4xl font-black tracking-[0.28em] text-bd-ink dark:text-white sm:text-5xl">
+                  {myFriendCode}
+                </p>
+              </button>
 
-              <div className="grid gap-3">
-                <button onClick={copyFriendCode} className={primaryButtonClassName} title={t('profile.friends.copyCode')}>
+              <div className="flex flex-col gap-3">
+                <button onClick={copyFriendCode} className={`${primaryButtonClassName} w-full`} title={t('profile.friends.copyCode')}>
                   <CopyIcon />
                   {t('profile.friends.copyCode')}
                 </button>
                 <button
                   onClick={copyProfileLink}
                   disabled={!myPublicProfileId}
-                  className={secondaryButtonClassName}
+                  className={`${secondaryButtonClassName} w-full`}
                   title={t('profile.friends.copyLink')}
                 >
                   <LinkIcon />
@@ -1148,8 +1146,8 @@ export default function Friends() {
                         {myFriendCode}
                       </span>
                     </button>
-                    <div className="mt-4 grid gap-2">
-                      <button type="button" onClick={copyFriendCode} className={primaryButtonClassName}>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <button type="button" onClick={copyFriendCode} className={`${primaryButtonClassName} w-full`}>
                         <CopyIcon />
                         {t('profile.friends.copyCode')}
                       </button>
@@ -1157,7 +1155,7 @@ export default function Friends() {
                         type="button"
                         onClick={copyProfileLink}
                         disabled={!myPublicProfileId}
-                        className={secondaryButtonClassName}
+                        className={`${secondaryButtonClassName} w-full`}
                       >
                         <LinkIcon />
                         {t('profile.friends.copyLink')}

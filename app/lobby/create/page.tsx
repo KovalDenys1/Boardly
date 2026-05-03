@@ -169,7 +169,7 @@ function CreateLobbyPage() {
   )
   const gameInfo = GAME_INFO[selectedGameType]
 
-  const [boardSize, setBoardSize] = useState<3 | 4 | 5>(3)
+  const boardSize = 3
   const [bestOf, setBestOf] = useState<1 | 3 | 5>(1)
   const [whoStarts, setWhoStarts] = useState<'host' | 'guest' | 'random'>('random')
 
@@ -386,41 +386,29 @@ function CreateLobbyPage() {
     ? ((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100
     : 0
 
-  const optionBtnStyle = (active: boolean): React.CSSProperties => ({
-    padding: '8px 14px',
-    borderRadius: 10,
-    fontWeight: 600,
-    fontSize: 14,
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    transition: 'background 0.12s, color 0.12s',
-    background: active ? 'var(--bd-ink)' : 'var(--bd-bg2)',
-    color: active ? 'var(--bd-bg)' : 'var(--bd-ink)',
-    border: active ? '1.5px solid var(--bd-ink)' : '1.5px solid var(--bd-line)',
-  })
-
   const isTTT = selectedGameType === 'tic_tac_toe'
 
-  // MiniBoard component inline — shows a tic-tac-toe preview grid with demo moves
   const MiniBoard = ({ size }: { size: 3 | 4 | 5 }) => {
-    const dim = 160
-    const demoCells: Record<number, 'x' | 'o'> = size === 3 ? { 0: 'x', 4: 'o', 8: 'x' } : size === 4 ? { 5: 'x', 10: 'o' } : { 6: 'x', 12: 'o', 18: 'x' }
-    const total = size * size
+    const dim = 168
+    const demoCells: Record<number, 'x' | 'o'> =
+      size === 3 ? { 4: 'x', 0: 'o', 8: 'x' } :
+      size === 4 ? { 5: 'x', 10: 'o', 0: 'x' } :
+      { 12: 'x', 6: 'o', 18: 'x', 24: 'o' }
     return (
       <div style={{
         width: dim, height: dim,
         display: 'grid', gridTemplateColumns: `repeat(${size}, 1fr)`,
         background: 'white', borderRadius: 16, border: '2px solid var(--bd-ink)',
-        boxShadow: '0 4px 0 var(--bd-ink)', overflow: 'hidden', flexShrink: 0,
+        boxShadow: '4px 4px 0 var(--bd-ink)', overflow: 'hidden', flexShrink: 0,
       }}>
-        {Array.from({ length: total }).map((_, i) => {
+        {Array.from({ length: size * size }).map((_, i) => {
           const m = demoCells[i]
           return (
             <div key={i} style={{
               display: 'grid', placeItems: 'center',
               borderRight: (i % size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
               borderBottom: Math.floor(i / size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
-              fontSize: Math.floor(dim / size * 0.55),
+              fontSize: Math.floor(dim / size * 0.48),
               fontFamily: 'var(--bd-font-display)', fontWeight: 800,
               color: m === 'x' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
             }}>{m === 'x' ? '✕' : m === 'o' ? '○' : ''}</div>
@@ -447,27 +435,214 @@ function CreateLobbyPage() {
     </div>
   )
 
-  return (
-    <div className="bd-page bd-screen flex-1 overflow-y-auto">
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 16px 80px' }} className="md:px-8">
-
-        {/* Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <button
-            type="button"
-            onClick={() => router.push('/games')}
-            className="bd-btn bd-btn-soft"
-            style={{ padding: '6px 12px', fontSize: 13 }}
-          >
-            ← {t('lobby.create.cancel')}
-          </button>
-          <span className="bd-kicker" style={{ fontSize: 11 }}>
-            Games · {gameInfo.name} · <span style={{ color: 'var(--bd-ink)' }}>Create lobby</span>
-          </span>
+  const GamePreview = () => {
+    if (selectedGameType === 'tic_tac_toe') {
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <MiniBoard size={boardSize} />
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Tic-Tac-Toe</p>
+            <p className="text-sm text-bd-ink-muted">{boardSize}×{boardSize} grid</p>
+          </div>
         </div>
+      )
+    }
+    if (selectedGameType === 'yahtzee') {
+      const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
+      const vals = [6, 3, 3, 1, 5]
+      const rotations = [-5, 3, -8, 5, -3]
+      const offsets = [0, -4, 0, -6, 2]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-end gap-2">
+            {vals.map((v, i) => (
+              <div key={i} style={{
+                width: 50, height: 50, borderRadius: 12, background: 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
+                display: 'grid', placeItems: 'center', fontSize: 26,
+                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
+              }}>{faces[v - 1]}</div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Yahtzee!</p>
+            <p className="text-sm text-bd-ink-muted">Roll dice · score combos</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'memory') {
+      const cols = formData.memoryDifficulty === 'easy' ? 4 : formData.memoryDifficulty === 'medium' ? 5 : 6
+      const emojis = ['🦊', '🐧', '🦁', '🐬', '🌟', '🍕', '🎸', '🚀', '🎨', '🎭', '🎲', '🌈']
+      const revealed = [0, 5, 3]
+      const total = Math.min(cols * cols, 20)
+      const sz = formData.memoryDifficulty === 'easy' ? 38 : formData.memoryDifficulty === 'medium' ? 32 : 28
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 5 }}>
+            {Array.from({ length: total }).map((_, i) => (
+              <div key={i} style={{
+                width: sz, height: sz, borderRadius: 7, display: 'grid', placeItems: 'center',
+                background: revealed.includes(i) ? 'white' : 'var(--bd-ink)',
+                border: '1.5px solid var(--bd-line)', fontSize: sz * 0.52, transition: 'all 0.2s',
+              }}>
+                {revealed.includes(i) ? emojis[i % emojis.length] : ''}
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Memory</p>
+            <p className="text-sm text-bd-ink-muted capitalize">{formData.memoryDifficulty} · find pairs</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'guess_the_spy') {
+      const cards = [
+        { emoji: '🏖️', label: 'Beach', dark: false },
+        { emoji: '🕵️', label: '???', dark: true },
+        { emoji: '🏔️', label: 'Mountain', dark: false },
+      ]
+      const rotations = [-6, 0, 6]
+      const offsets = [4, 0, 4]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-end gap-2">
+            {cards.map((card, i) => (
+              <div key={i} style={{
+                width: 80, height: 108, borderRadius: 14, flexShrink: 0,
+                background: card.dark ? 'var(--bd-ink)' : 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
+              }}>
+                <span style={{ fontSize: 26 }}>{card.emoji}</span>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                  color: card.dark ? 'rgba(255,255,255,0.5)' : 'var(--bd-ink-muted)',
+                }}>{card.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Guess the Spy</p>
+            <p className="text-sm text-bd-ink-muted">Find the impostor</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'rock_paper_scissors') {
+      const choices = [{ e: '✊', l: 'Rock' }, { e: '✋', l: 'Paper' }, { e: '✌️', l: 'Scissors' }]
+      const rotations = [-5, 0, 5]
+      const offsets = [4, 0, 4]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-end gap-3">
+            {choices.map((c, i) => (
+              <div key={c.l} style={{
+                width: 74, height: 94, borderRadius: 14, background: 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
+              }}>
+                <span style={{ fontSize: 28 }}>{c.e}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--bd-ink-muted)' }}>{c.l}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Rock Paper Scissors</p>
+            <p className="text-sm text-bd-ink-muted">2 players · classic showdown</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'alias') {
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div style={{
+            width: 188, borderRadius: 18, background: 'white',
+            border: '2px solid var(--bd-ink)', boxShadow: '4px 4px 0 var(--bd-ink)',
+            padding: '18px 20px', transform: 'rotate(-2deg)',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+              Describe this:
+            </div>
+            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 14, lineHeight: 1.1 }}>
+              ALGORITHM
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: 'var(--bd-bg2)', overflow: 'hidden' }}>
+              <div style={{ width: '60%', height: '100%', background: 'var(--bd-mint)', borderRadius: 3 }} />
+            </div>
+            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--bd-ink-muted)', textAlign: 'right' }}>0:35</div>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Alias</p>
+            <p className="text-sm text-bd-ink-muted">Describe without saying it</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'liars_party') {
+      const cards = [
+        { rank: 'K', suit: '♠', red: false },
+        { rank: 'A', suit: '♥', red: true },
+        { rank: '7', suit: '♣', red: false },
+        { rank: 'Q', suit: '♦', red: true },
+      ]
+      const rotations = [-8, -3, 3, 8]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div style={{ position: 'relative', width: 170, height: 110 }}>
+            {cards.map((card, i) => (
+              <div key={i} style={{
+                position: 'absolute', top: 0, left: `${i * 28}px`,
+                width: 68, height: 90, borderRadius: 10, background: 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transform: `rotate(${rotations[i]}deg)`,
+              }}>
+                <span style={{
+                  fontSize: 19, fontWeight: 800, fontFamily: 'var(--bd-font-display)',
+                  color: card.red ? 'var(--bd-coral)' : 'var(--bd-ink)',
+                }}>{card.rank}{card.suit}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Liar's Party</p>
+            <p className="text-sm text-bd-ink-muted">Bluff your way to victory</p>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="text-center">
+        <div style={{ fontSize: 60, marginBottom: 12 }}>{gameInfo.emoji}</div>
+        <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{gameInfo.name}</p>
+      </div>
+    )
+  }
 
-        {/* Game selector strip */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+  const chipOpt = (active: boolean) =>
+    `bd-chip flex-1 cursor-pointer justify-center py-2 text-sm transition-all ${
+      active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink'
+    }`
+
+  return (
+    <div className="page-shell bd-page bd-screen flex flex-col">
+
+      {/* Top bar: back + game selector */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-bd-line bg-white px-5 py-3">
+        <button
+          type="button"
+          onClick={() => router.push('/games')}
+          className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+        >
+          ← {t('lobby.create.cancel')}
+        </button>
+        <div className="h-4 w-px shrink-0 bg-bd-line" />
+        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {Object.entries(GAME_INFO)
             .filter(([key]) => !isTemporarilyUnavailableGameType(key))
             .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
@@ -476,90 +651,71 @@ function CreateLobbyPage() {
                 key={key}
                 type="button"
                 onClick={() => setSelectedGameType(key as GameType)}
-                className="bd-btn"
-                style={{
-                  padding: '8px 14px', fontSize: 13, fontWeight: 600, gap: 6,
-                  background: selectedGameType === key ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
-                  color: selectedGameType === key ? 'var(--bd-bg)' : 'var(--bd-ink-soft)',
-                  border: `1.5px solid ${selectedGameType === key ? 'var(--bd-ink)' : 'var(--bd-line)'}`,
-                }}
                 aria-label={t('lobby.create.selectGame', { name: info.name })}
+                className={`bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all ${
+                  selectedGameType === key
+                    ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                    : 'hover:border-bd-ink hover:bg-white'
+                }`}
               >
-                <span>{info.emoji}</span>
-                <span style={{ fontFamily: 'var(--bd-font-display)' }}>{info.name}</span>
+                {info.emoji} {info.name}
               </button>
             ))}
         </div>
+      </div>
 
-        {/* Split layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: isTTT ? 'minmax(280px,340px) 1fr' : '1fr', gap: 20 }}>
+      {/* Main area */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
 
-          {/* PREVIEW COLUMN — only for tic_tac_toe */}
-          {isTTT && (
-            <div className="bd-card" style={{
-              padding: 20, display: 'flex', flexDirection: 'column', gap: 16,
-              background: 'linear-gradient(155deg, var(--bd-card) 0%, rgba(155,140,255,0.10) 100%)',
-              position: 'relative', overflow: 'hidden', alignSelf: 'start',
-            }}>
-              <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,196,77,0.18)', pointerEvents: 'none' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative' }}>
-                <span className="bd-kicker" style={{ fontSize: 10 }}>Preview</span>
-                <span style={{ flex: 1, height: 1, background: 'var(--bd-line)' }} />
-              </div>
-              <div style={{ alignSelf: 'center', position: 'relative' }}>
-                <MiniBoard size={boardSize} />
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div className="bd-kicker" style={{ fontSize: 10, marginBottom: 4 }}>Lobby name</div>
-                <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
-                  {formData.name || 'Untitled lobby'}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', position: 'relative' }}>
-                <span className="bd-chip bd-chip-lav">{formData.password ? '🔒 Private' : '🌐 Public'}</span>
-                <span className="bd-chip bd-chip-mint">2 players</span>
-                <span className="bd-chip">{boardSize}×{boardSize}</span>
-                {bestOf > 1 && <span className="bd-chip bd-chip-coral">Bo{bestOf}</span>}
-              </div>
-              <div style={{ marginTop: 'auto', position: 'relative' }}>
-                <div style={{ height: 1, background: 'var(--bd-line)', margin: '8px 0 12px' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div className="bd-avatar bd-avatar-coral" style={{ width: 36, height: 36, flexShrink: 0 }}>You</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--bd-ink)' }}>You</div>
-                    <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>Host · waiting for opponent</div>
-                  </div>
-                  <span className="bd-chip bd-chip-sun" style={{ padding: '3px 8px', fontSize: 10 }}>HOST</span>
-                </div>
+        {/* Left: game preview */}
+        <div className="hidden w-72 shrink-0 flex-col border-r border-bd-line bg-bd-card-warm xl:flex">
+          <div className="flex flex-1 items-center justify-center p-8">
+            <GamePreview />
+          </div>
+          <div className="shrink-0 border-t border-bd-line p-4">
+            <div className="bd-card p-4">
+              <p className="bd-kicker mb-2">Lobby preview</p>
+              <p className="mb-3 text-[17px] font-extrabold leading-tight text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                {formData.name || <span className="text-sm font-normal italic text-bd-ink-muted">Untitled lobby</span>}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className={`bd-chip ${formData.password ? 'bd-chip-coral' : 'bd-chip-mint'}`}>
+                  {formData.password ? '🔒 Private' : '🌐 Public'}
+                </span>
+                <span className="bd-chip">👥 {formData.maxPlayers}</span>
+                {isTTT && bestOf > 1 && <span className="bd-chip bd-chip-lav">Bo{bestOf}</span>}
+                {selectedGameType === 'memory' && (
+                  <span className="bd-chip bd-chip-mint capitalize">{formData.memoryDifficulty}</span>
+                )}
               </div>
             </div>
-          )}
+          </div>
+        </div>
 
-          {/* SETTINGS COLUMN */}
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: 'flex', flexDirection: 'column', gap: 0 }}
-          >
-            <div className="bd-card" style={{ overflow: 'hidden', marginBottom: 12 }}>
-              {/* Header */}
-              <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--bd-line)' }}>
-                <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 'clamp(22px,3vw,32px)', lineHeight: 1.1, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
-                  Set up your <span style={{ color: 'var(--bd-coral)' }}>{gameInfo.name}</span> room
-                </h1>
-                <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 4 }}>
-                  {gameInfo.emoji} {gameInfo.name} · {gameInfo.allowedPlayers.join('–')} players
-                </div>
-              </div>
+        {/* Right: settings form */}
+        <form
+          id="create-lobby-form"
+          onSubmit={handleSubmit}
+          className="flex flex-1 flex-col overflow-y-auto"
+        >
+          <div className="mx-auto my-auto w-full max-w-lg space-y-5 px-6 py-7">
 
-              {/* Settings grid */}
-              <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-
+            {/* Title */}
+            <div>
+              <span className="bd-kicker mb-1 block">Create Lobby</span>
+              <h1
+                className="text-[clamp(22px,3vw,30px)] font-extrabold leading-tight text-bd-ink"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                Set up your <span style={{ color: 'var(--bd-coral)' }}>{gameInfo.name}</span> room
+              </h1>
+            </div>
 
             {/* Lobby name */}
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                🎮 {t('lobby.create.lobbyName')}{' '}
-                <span style={{ fontWeight: 400, color: 'var(--bd-ink-muted)' }}>({t('common.optional')})</span>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-bd-ink">
+                {t('lobby.create.lobbyName')}{' '}
+                <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
               </label>
               <input
                 type="text"
@@ -576,16 +732,17 @@ function CreateLobbyPage() {
                 onBlur={() => setShowNameWarning(false)}
               />
               {showNameWarning && (
-                <p style={{ fontSize: 12, color: 'var(--bd-coral-deep)', marginTop: 6 }}>
+                <p className="text-sm" style={{ color: 'var(--bd-coral-deep)' }}>
                   ⚠️ {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
                 </p>
               )}
             </div>
 
             {/* Password */}
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                🔒 {t('lobby.create.password')}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-bd-ink">
+                🔒 {t('lobby.create.password')}{' '}
+                <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
               </label>
               <input
                 type="text"
@@ -598,383 +755,215 @@ function CreateLobbyPage() {
             </div>
 
             {/* Max players */}
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                👥 {t('lobby.create.maxPlayers')} *
-              </label>
-
-              {gameInfo.allowedPlayers.length === 1 ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'var(--bd-bg2)', borderRadius: 12, border: '1.5px solid var(--bd-line)' }}>
-                    <span style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 22, color: 'var(--bd-ink)' }}>
-                      {gameInfo.allowedPlayers[0]}
-                    </span>
-                    <span style={{ fontSize: 14, color: 'var(--bd-ink-soft)', fontWeight: 600 }}>
-                      {gameInfo.allowedPlayers[0] === 1 ? t('lobby.create.player') : t('lobby.create.players')}
-                    </span>
-                  </div>
+            {gameInfo.allowedPlayers.length > 1 ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-bd-ink">👥 {t('lobby.create.maxPlayers')}</label>
+                  <span className="text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                    {formData.maxPlayers}
+                  </span>
                 </div>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-                    <input
-                      type="number"
-                      min={gameInfo.allowedPlayers[0]}
-                      max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                      value={maxPlayersInput}
-                      onChange={(e) => {
-                        const inputValue = e.target.value
-                        setMaxPlayersInput(inputValue)
-                        if (inputValue === '') { setShowPlayerWarning(false); return }
-                        const value = parseInt(inputValue)
-                        if (!isNaN(value)) {
-                          if (gameInfo.allowedPlayers.includes(value)) {
-                            setFormData({ ...formData, maxPlayers: value })
-                            setShowPlayerWarning(false)
-                          } else if (value < gameInfo.allowedPlayers[0] || value > gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]) {
-                            setShowPlayerWarning(true)
-                          } else {
-                            setShowPlayerWarning(false)
-                          }
-                        }
-                      }}
-                      onFocus={() => setShowPlayerWarning(false)}
-                      onBlur={() => {
-                        setMaxPlayersInput(formData.maxPlayers.toString())
-                        setShowPlayerWarning(false)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Backspace' || e.key === 'Delete') setShowPlayerWarning(false)
-                      }}
-                      style={{
-                        width: 56, padding: '8px 4px', textAlign: 'center',
-                        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16,
-                        border: '2px solid var(--bd-line)', borderRadius: 10,
-                        background: 'white', color: 'var(--bd-ink)',
-                        appearance: 'textfield',
-                      } as React.CSSProperties}
-                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    {showPlayerWarning && (
-                      <p style={{ fontSize: 12, color: 'var(--bd-coral-deep)', marginTop: 6, textAlign: 'center' }}>
-                        ⚠️ {t('lobby.create.mustBeBetween', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
-                      </p>
+                <input
+                  type="range"
+                  min={gameInfo.allowedPlayers[0]}
+                  max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                  step="1"
+                  value={formData.maxPlayers}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value)
+                    if (gameInfo.allowedPlayers.includes(value)) {
+                      setFormData({ ...formData, maxPlayers: value })
+                      setMaxPlayersInput(value.toString())
+                      setShowPlayerWarning(false)
+                    }
+                  }}
+                  className="slider-thumb w-full"
+                  style={{
+                    background: `linear-gradient(to right, var(--bd-ink) 0%, var(--bd-ink) ${sliderPct}%, var(--bd-bg2) ${sliderPct}%, var(--bd-bg2) 100%)`,
+                  }}
+                />
+                <div className="flex justify-between px-0.5">
+                  {gameInfo.allowedPlayers.map((n) => (
+                    <span key={n} className={`text-xs font-semibold ${formData.maxPlayers === n ? 'text-bd-ink' : 'text-bd-ink-muted'}`}>
+                      {n}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-bd-ink">👥 {t('lobby.create.maxPlayers')}</span>
+                <span className="bd-chip">{gameInfo.allowedPlayers[0]} {t('lobby.create.players')}</span>
+              </div>
+            )}
+
+            {/* Game-specific settings */}
+            {(isTTT || gameInfo.settings.hasDifficultySelection || gameInfo.settings.hasTurnTimer) && (
+              <>
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="h-px flex-1 bg-bd-line" />
+                  <span className="bd-kicker text-[10px]">Game settings</span>
+                  <div className="h-px flex-1 bg-bd-line" />
+                </div>
+
+                {isTTT && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-bd-ink">Match length</label>
+                      <SegPicker value={bestOf} onChange={(v) => setBestOf(v as 1 | 3 | 5)} options={[{ v: 1, l: 'Single' }, { v: 3, l: 'Best of 3' }, { v: 5, l: 'Best of 5' }]} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-bd-ink">First move</label>
+                      <SegPicker value={whoStarts} onChange={(v) => setWhoStarts(v as 'host' | 'guest' | 'random')} options={[{ v: 'host', l: 'You (✕)' }, { v: 'guest', l: 'Guest (○)' }, { v: 'random', l: '🎲 Random' }]} />
+                    </div>
+                    {gameInfo.settings.hasRoundSelection && (
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-bd-ink">{t('lobby.create.roundsToPlay')}</label>
+                        <div className="flex gap-2">
+                          {[3, 5, 10].map((r) => (
+                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>{r}</button>
+                          ))}
+                          <button type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: null })} className={chipOpt(formData.ticTacToeRounds === null)}>∞</button>
+                        </div>
+                      </div>
                     )}
                   </div>
+                )}
 
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="range"
-                      min={gameInfo.allowedPlayers[0]}
-                      max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                      step="1"
-                      value={formData.maxPlayers}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value)
-                        if (gameInfo.allowedPlayers.includes(value)) {
-                          setFormData({ ...formData, maxPlayers: value })
-                          setMaxPlayersInput(value.toString())
-                          setShowPlayerWarning(false)
-                        }
-                      }}
-                      className="slider-thumb"
-                      style={{
-                        width: '100%',
-                        background: `linear-gradient(to right, var(--bd-ink) 0%, var(--bd-ink) ${sliderPct}%, var(--bd-bg2) ${sliderPct}%, var(--bd-bg2) 100%)`,
-                      }}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, padding: '0 2px' }}>
-                      {gameInfo.allowedPlayers.map((num) => (
-                        <span
-                          key={num}
-                          style={{
-                            fontSize: 12,
-                            fontWeight: formData.maxPlayers === num ? 700 : 400,
-                            color: formData.maxPlayers === num ? 'var(--bd-ink)' : 'var(--bd-ink-muted)',
-                          }}
-                        >
-                          {num}
-                        </span>
+                {gameInfo.settings.hasDifficultySelection && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-bd-ink">🧠 {t('lobby.create.memoryDifficulty')}</label>
+                    <div className="flex gap-2">
+                      {(['easy', 'medium', 'hard'] as MemoryDifficulty[]).map((d) => (
+                        <button key={d} type="button" onClick={() => setFormData({ ...formData, memoryDifficulty: d })} className={chipOpt(formData.memoryDifficulty === d)}>
+                          {d === 'easy' ? '🟢 Easy' : d === 'medium' ? '🟡 Medium' : '🔴 Hard'}
+                        </button>
                       ))}
                     </div>
                   </div>
-                </>
-              )}
+                )}
 
-              <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 8, textAlign: 'center' }}>
-                {gameInfo.allowedPlayers.length === 1
-                  ? t('lobby.create.playerCountHelperExact', { count: gameInfo.allowedPlayers[0] })
-                  : t('lobby.create.playerCountHelperRange', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
-              </p>
+                {gameInfo.settings.hasTurnTimer && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-bd-ink">⏱ {t('lobby.create.turnTimer')}</label>
+                    <div className="flex gap-2">
+                      {[30, 60, 90, 120].map((s) => (
+                        <button key={s} type="button" onClick={() => setFormData({ ...formData, turnTimer: s })} className={chipOpt(formData.turnTimer === s)}>{s}s</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Lobby options */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="h-px flex-1 bg-bd-line" />
+              <span className="bd-kicker text-[10px]">Lobby options</span>
+              <div className="h-px flex-1 bg-bd-line" />
             </div>
 
-            {/* Round settings — Tic-Tac-Toe */}
-            {gameInfo.settings.hasRoundSelection && (
+            {/* Spectators */}
+            <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                  🔁 {t('lobby.create.roundsToPlay')}
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                  {(gameInfo.settings.roundOptions || [3, 5, 10]).map((rounds) => (
-                    <button
-                      key={rounds}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, ticTacToeRounds: rounds })}
-                      style={optionBtnStyle(formData.ticTacToeRounds === rounds)}
-                    >
-                      {rounds}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, ticTacToeRounds: null })}
-                    style={optionBtnStyle(formData.ticTacToeRounds === null)}
-                  >
-                    ∞
-                  </button>
-                </div>
-                <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 8, textAlign: 'center' }}>
-                  {t('lobby.create.roundsHelper')}
-                </p>
+                <p className="font-semibold text-bd-ink">Spectators</p>
+                <p className="text-[13px] text-bd-ink-muted">Allow others to watch</p>
               </div>
-            )}
-
-            {/* Difficulty — Memory */}
-            {gameInfo.settings.hasDifficultySelection && (
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                  🧠 {t('lobby.create.memoryDifficulty')}
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {(gameInfo.settings.difficultyOptions || ['easy', 'medium', 'hard']).map((difficulty) => (
-                    <button
-                      key={difficulty}
-                      type="button"
-                      onClick={() => setFormData((prev) => ({ ...prev, memoryDifficulty: difficulty as MemoryDifficulty }))}
-                      style={optionBtnStyle(formData.memoryDifficulty === difficulty)}
-                    >
-                      {difficulty === 'easy'
-                        ? t('lobby.create.difficultyEasy')
-                        : difficulty === 'medium'
-                          ? t('lobby.create.difficultyMedium')
-                          : t('lobby.create.difficultyHard')}
-                    </button>
-                  ))}
-                </div>
-                <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 8, textAlign: 'center' }}>
-                  {t('lobby.create.memoryDifficultyHelper')}
-                </p>
-              </div>
-            )}
-
-            {/* Turn timer */}
-            {gameInfo.settings.hasTurnTimer && (
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                  ⏱️ {t('lobby.create.turnTimer')} *
-                </label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {(gameInfo.settings.turnTimerOptions || [30, 60, 90, 120]).map((seconds) => (
-                    <button
-                      key={seconds}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, turnTimer: seconds })}
-                      style={{ ...optionBtnStyle(formData.turnTimer === seconds), flex: 1 }}
-                    >
-                      {seconds}s
-                    </button>
-                  ))}
-                </div>
-                <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)', marginTop: 8, textAlign: 'center' }}>
-                  {t('lobby.create.turnTimerHelper')}
-                </p>
-              </div>
-            )}
-
-            {/* Spectators toggle */}
-            <div className="bd-card" style={{ padding: 16, background: 'var(--bd-card-warm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)', marginBottom: 2 }}>Spectators</p>
-                  <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>Allow users to watch in read-only mode</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
-                  style={{
-                    position: 'relative',
-                    display: 'inline-flex',
-                    height: 28,
-                    width: 52,
-                    alignItems: 'center',
-                    borderRadius: 999,
-                    border: 'none',
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                    transition: 'background 0.2s',
-                    background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
-                  }}
-                  aria-pressed={formData.allowSpectators}
-                  aria-label="Toggle spectators"
-                >
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: 20,
-                      height: 20,
-                      borderRadius: '50%',
-                      background: 'white',
-                      boxShadow: '0 1px 4px rgba(31,27,22,0.2)',
-                      transition: 'transform 0.2s',
-                      transform: formData.allowSpectators ? 'translateX(28px)' : 'translateX(4px)',
-                    }}
-                  />
-                </button>
-              </div>
-              <p style={{ marginTop: 10, fontSize: 12, color: 'var(--bd-ink-muted)' }}>
-                Spectator capacity is unlimited when enabled.
-              </p>
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
+                aria-pressed={formData.allowSpectators}
+                aria-label="Toggle spectators"
+                style={{
+                  position: 'relative', display: 'inline-flex', height: 28, width: 52,
+                  alignItems: 'center', borderRadius: 999, border: 'none', cursor: 'pointer',
+                  flexShrink: 0, transition: 'background 0.2s',
+                  background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
+                }}
+              >
+                <span style={{
+                  display: 'inline-block', width: 20, height: 20, borderRadius: '50%',
+                  background: 'white', boxShadow: '0 1px 4px rgba(31,27,22,0.2)',
+                  transition: 'transform 0.2s',
+                  transform: formData.allowSpectators ? 'translateX(28px)' : 'translateX(4px)',
+                }} />
+              </button>
             </div>
 
             {/* Invite friends */}
             {!isGuest && (
-              <div className="bd-card" style={{ padding: 16, background: 'var(--bd-card-warm)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)', marginBottom: 2 }}>
-                      👥 {t('lobby.invite.title')}
-                    </p>
-                    <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>
-                      {t('lobby.invite.description')}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowFriendsModal(true)}
-                    className="bd-btn bd-btn-soft"
-                    style={{ padding: '8px 14px', fontSize: 13, flexShrink: 0 }}
-                  >
+              <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
+                <div>
+                  <p className="font-semibold text-bd-ink">👥 {t('lobby.invite.title')}</p>
+                  <p className="text-[13px] text-bd-ink-muted">
                     {selectedFriendIds.length > 0
-                      ? t('lobby.invite.send', { count: selectedFriendIds.length })
-                      : t('lobby.invite.title')}
-                  </button>
-                </div>
-                {selectedFriendIds.length > 0 && (
-                  <p style={{ marginTop: 10, fontSize: 12, color: 'var(--bd-mint-deep)', fontWeight: 600 }}>
-                    ✓ {t('lobby.invite.send', { count: selectedFriendIds.length })}
+                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}>✓ {selectedFriendIds.length} selected</span>
+                      : t('lobby.invite.description')}
                   </p>
-                )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFriendsModal(true)}
+                  className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+                >
+                  {selectedFriendIds.length > 0 ? 'Edit' : t('lobby.invite.title')}
+                </button>
               </div>
             )}
 
-                {/* Game mode (coming soon) */}
-                {gameInfo.settings.hasGameModes && (
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--bd-ink)', marginBottom: 8 }}>
-                      🎮 {t('lobby.create.gameMode')}
-                    </label>
-                    <button type="button" disabled style={{
-                      width: '100%', padding: '12px 16px', borderRadius: 12,
-                      background: 'var(--bd-bg2)', color: 'var(--bd-ink-muted)',
-                      border: '1.5px solid var(--bd-line)', fontFamily: 'inherit',
-                      fontSize: 14, fontWeight: 600, cursor: 'not-allowed',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    }}>
-                      <span>🔒</span>
-                      <span>{t('lobby.create.comingSoon')}</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* TicTacToe-specific settings */}
-                {isTTT && (
-                  <>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                        Board size
-                      </label>
-                      <SegPicker
-                        value={boardSize}
-                        onChange={(v) => setBoardSize(v as 3 | 4 | 5)}
-                        options={[{ v: 3, l: '3×3' }, { v: 4, l: '4×4' }, { v: 5, l: '5×5' }]}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                        Match length
-                      </label>
-                      <SegPicker
-                        value={bestOf}
-                        onChange={(v) => setBestOf(v as 1 | 3 | 5)}
-                        options={[{ v: 1, l: 'Single' }, { v: 3, l: 'Bo3' }, { v: 5, l: 'Bo5' }]}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--bd-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                        First move
-                      </label>
-                      <SegPicker
-                        value={whoStarts}
-                        onChange={(v) => setWhoStarts(v as 'host' | 'guest' | 'random')}
-                        options={[{ v: 'host', l: 'You (X)' }, { v: 'guest', l: 'Guest' }, { v: 'random', l: '🎲 Random' }]}
-                      />
-                    </div>
-                  </>
-                )}
-
-              </div>{/* end settings grid */}
-            </div>{/* end settings card */}
-
             {/* Error */}
             {error && (
-              <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <svg style={{ width: 18, height: 18, flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
+              <div
+                className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm"
+                style={{ background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)' }}
+              >
+                <svg style={{ width: 16, height: 16, flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
                 {error}
               </div>
             )}
 
-            {/* Dark action bar */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 16px', borderRadius: 16,
-              background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-              boxShadow: '0 6px 0 0 rgba(31,27,22,0.12)',
-            }}>
-              <span style={{ fontSize: 13, opacity: 0.6 }}>Invite code generated on create</span>
-              <span style={{ flex: 1 }} />
-              <button
-                type="button"
-                onClick={() => router.push('/games')}
-                className="bd-btn bd-btn-soft"
-                style={{ padding: '10px 16px' }}
-              >
-                {t('lobby.create.cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bd-btn bd-btn-coral"
-                style={{ padding: '10px 20px', fontWeight: 700, opacity: loading ? 0.6 : 1 }}
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin" style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24">
-                      <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    {t('lobby.create.creating')}
-                  </>
-                ) : (
-                  <>{t('lobby.create.create')} →</>
-                )}
-              </button>
-            </div>
+          </div>
+        </form>
+      </div>
 
-          </form>
-
-        </div>{/* end split layout */}
+      {/* Bottom action bar */}
+      <div
+        className="flex shrink-0 items-center gap-4 border-t px-6 py-4"
+        style={{ background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)' }}
+      >
+        <span className="hidden text-sm sm:block" style={{ color: 'rgba(251,246,238,0.4)' }}>
+          Invite code generated on create
+        </span>
+        <div className="ml-auto flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push('/games')}
+            className="bd-btn bd-btn-soft px-4 py-2.5 text-sm"
+          >
+            {t('lobby.create.cancel')}
+          </button>
+          <button
+            type="submit"
+            form="create-lobby-form"
+            disabled={loading}
+            className="bd-btn bd-btn-coral px-5 py-2.5 font-bold"
+            style={{ opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {t('lobby.create.creating')}
+              </>
+            ) : (
+              <>{t('lobby.create.create')} →</>
+            )}
+          </button>
+        </div>
       </div>
 
       {!isGuest && (

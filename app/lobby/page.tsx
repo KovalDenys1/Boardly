@@ -4,7 +4,6 @@ import { Suspense } from 'react'
 import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import LobbyFilters from '@/components/LobbyFilters'
-import LobbyStats from '@/components/LobbyStats'
 import LobbyCard from '@/components/LobbyCard'
 import i18n from '@/i18n'
 import { useLobbyList } from './use-lobby-list'
@@ -41,8 +40,10 @@ function LobbyListPageContent() {
           style={{ background: 'linear-gradient(120deg, white 0%, rgba(155,140,255,0.08) 100%)' }}
         >
           <div className="bd-dot-grid absolute inset-0 opacity-35" />
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="min-w-[280px] flex-1">
+          <div className="relative flex items-stretch gap-6">
+
+            {/* Left: nav + title + stats */}
+            <div className="flex flex-1 flex-col">
               <div className="mb-5">
                 <button
                   type="button"
@@ -52,53 +53,43 @@ function LobbyListPageContent() {
                   ← {t('lobby.backToGames')}
                 </button>
               </div>
-              <span className="bd-kicker mb-2 ml-1 block">Lobbies</span>
+              <span className="bd-kicker mb-2 block">Lobbies</span>
               <h1
                 className="mb-2 text-[clamp(32px,4vw,52px)] font-extrabold leading-none tracking-tight text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
                 {t('lobby.title')}
               </h1>
-              <p className="max-w-[480px] text-[15px] text-bd-ink-soft">
+              <p className="text-[15px] text-bd-ink-soft">
                 {t('lobby.subtitle')}
               </p>
-              <div className="mt-3">
+              <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-bd-line pt-4">
                 <span className="bd-chip">
                   <span className="bd-live-dot h-1.5 w-1.5" />
                   {t('lobby.lobbiesCount', { count: lobbies.length })}
                 </span>
+                <span className="bd-chip">⏳ {stats.waitingLobbies} {t('lobby.status.waiting')}</span>
+                <span className="bd-chip bd-chip-mint">🎲 {stats.playingLobbies} {t('lobby.status.playing')}</span>
+                <span className="bd-chip">👥 {stats.totalPlayers} {t('lobby.stats.players')}</span>
               </div>
             </div>
 
+            {/* Right: full-height create button */}
             <button
               type="button"
               onClick={() => router.push('/lobby/create')}
-              className="flex min-w-[280px] cursor-pointer flex-col gap-2 rounded-3xl border-[3px] border-bd-ink bg-bd-coral p-6 text-left text-white shadow-[6px_6px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[6px_8px_0_var(--bd-ink)]"
+              className="flex w-[220px] shrink-0 flex-col items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="bd-kicker text-white/75">{t('lobby.createLobby')}</span>
-                  <div
-                    className="mt-1.5 text-[22px] font-extrabold"
-                    style={{ fontFamily: 'var(--bd-font-display)' }}
-                  >
-                    {t('lobby.createNew')}
-                  </div>
-                  <div className="mt-1 text-[13px] text-white/80">{t('lobby.createDescription')}</div>
-                </div>
-                <span className="text-[28px]">✨</span>
-              </div>
-              <div className="mt-2 text-sm font-bold">{t('lobby.getStarted')} →</div>
+              <span className="text-4xl">✨</span>
+              <span
+                className="text-center text-[18px] font-extrabold leading-tight"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                {t('lobby.createNew')}
+              </span>
+              <span className="text-sm font-bold opacity-80">{t('lobby.getStarted')} →</span>
             </button>
-          </div>
 
-          <div className="mt-6">
-            <LobbyStats
-              totalLobbies={stats.totalLobbies}
-              waitingLobbies={stats.waitingLobbies}
-              playingLobbies={stats.playingLobbies}
-              totalPlayers={stats.totalPlayers}
-            />
           </div>
         </div>
 
