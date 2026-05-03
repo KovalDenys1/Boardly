@@ -4,14 +4,12 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, Socket } from 'socket.io-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import RockPaperScissorsGameBoard from '@/components/RockPaperScissorsGameBoard'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 import { clientLogger } from '@/lib/client-logger'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { showToast } from '@/lib/i18n-toast'
+import { useGameSocket } from '@/hooks/use-game-socket'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -57,12 +55,11 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
 
     const [loading, setLoading] = useState(true)
     const [lobby, setLobby] = useState<LobbyData | null>(null)
-    const [socket, setSocket] = useState<Socket | null>(null)
     const [socketConnected, setSocketConnected] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const socketRef = useRef<Socket | null>(null)
+
     const lifecycleRedirectInFlightRef = useRef(false)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'rock_paper_scissors').minPlayersRequired
     const getCurrentUserId = useCallback(() => {
@@ -258,106 +255,46 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
         void loadLobbyData()
     }, [loadLobbyData, minPlayersRequired, triggerLifecycleRedirect])
 
-    // Initialize Socket.IO connection
     useEffect(() => {
-        if (status === 'loading') return
-        if (!isGuest && status === 'unauthenticated') {
-            router.push('/')
-            return
-        }
+        if (status === 'loading' || (status === 'unauthenticated' && !isGuest)) return
         if (isGuest && !guestToken) return
+        void loadLobbyData()
+    }, [status, isGuest, guestToken, loadLobbyData])
 
-        let isMounted = true
+    const handleSocketConnect = useCallback(() => {
+        setSocketConnected(true)
+        clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
+    }, [])
 
-        const initSocket = async () => {
-            try {
-                // Load initial lobby data
-                await loadLobbyData()
-                if (!isMounted) return
+    const handleGameUpdate = useCallback(async () => {
+        await loadLobbyData()
+        clientLogger.log('📡 RPS: Received game update')
+    }, [loadLobbyData])
 
-                // Initialize Socket.IO
-                const socketUrl = getBrowserSocketUrl()
-                const useGuestAuth = isGuest && status !== 'authenticated'
-                const socketAuth = await resolveSocketClientAuth({
-                    isGuest: useGuestAuth,
-                    guestToken: useGuestAuth ? guestToken : null,
-                })
+    const handleLobbyUpdate = useCallback(async () => {
+        await loadLobbyData()
+        clientLogger.log('📡 RPS: Received lobby update')
+    }, [loadLobbyData])
 
-                if (!socketAuth) {
-                    clientLogger.warn('Skipping RPS socket connection: auth payload unavailable')
-                    return
-                }
+    const handleSocketDisconnect = useCallback(() => {
+        setSocketConnected(false)
+        clientLogger.log('🔌 RPS: Socket disconnected')
+    }, [])
 
-                const newSocket = io(socketUrl, {
-                    transports: ['websocket', 'polling'],
-                    reconnection: true,
-                    reconnectionDelay: 1000,
-                    reconnectionDelayMax: 5000,
-                    reconnectionAttempts: 5,
-                    auth: socketAuth.authPayload,
-                    query: socketAuth.queryPayload,
-                })
-
-                if (!isMounted) {
-                    newSocket.close()
-                    return
-                }
-
-                socketRef.current = newSocket
-                setSocket(newSocket)
-
-                newSocket.on('connect', () => {
-                    if (!isMounted) return
-                    newSocket.emit('join-lobby', code)
-                    setSocketConnected(true)
-                    clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
-                })
-
-                // Listen for updates
-                newSocket.on('game-update', async () => {
-                    await loadLobbyData()
-                    clientLogger.log('📡 RPS: Received game update')
-                })
-
-                newSocket.on('lobby-update', async () => {
-                    await loadLobbyData()
-                    clientLogger.log('📡 RPS: Received lobby update')
-                })
-
-                newSocket.on('game-abandoned', (payload: { gameId: string; reason?: string }) => {
-                    handleGameAbandoned(payload)
-                })
-
-                newSocket.on('player-left', (payload: {
-                    userId: string
-                    username?: string
-                    playerName?: string
-                    remainingPlayers?: number
-                }) => {
-                    handlePlayerLeft(payload)
-                })
-
-                newSocket.on('disconnect', () => {
-                    setSocketConnected(false)
-                    clientLogger.log('🔌 RPS: Socket disconnected')
-                })
-            } catch (err) {
-                clientLogger.error('RPS socket error:', err)
-            }
-        }
-
-        initSocket()
-
-        return () => {
-            isMounted = false
-            if (socketRef.current) {
-                socketRef.current.emit('leave-lobby', code)
-                socketRef.current.disconnect()
-                socketRef.current = null
-            }
-            setSocketConnected(false)
-        }
-    }, [code, status, isGuest, guestToken, loadLobbyData, router, session?.user?.id, handleGameAbandoned, handlePlayerLeft])
+    const socket = useGameSocket({
+        code,
+        status,
+        isGuest,
+        guestToken,
+        gameName: 'RPS',
+        onConnect: handleSocketConnect,
+        onGameUpdate: handleGameUpdate,
+        onLobbyUpdate: handleLobbyUpdate,
+        onGameAbandoned: handleGameAbandoned,
+        onPlayerLeft: handlePlayerLeft,
+        onDisconnect: handleSocketDisconnect,
+        extraOptions: { reconnectionAttempts: 5, reconnectionDelayMax: 5000 },
+    })
 
     const handleSubmitChoice = async (choice: RPSChoice) => {
         if (!lobby?.game) return

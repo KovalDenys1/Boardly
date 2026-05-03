@@ -228,8 +228,10 @@ describe('ProfilePage', () => {
 
     fireEvent.click(settingsTab)
 
-    const comboboxes = await screen.findAllByRole('combobox')
-    expect((comboboxes[0] as HTMLSelectElement).value).toBe('en')
+    const languageButton = await screen.findByRole('button', {
+      name: 'profile.settings.language.title',
+    })
+    expect(languageButton.textContent).toContain('English')
   })
 
   it('updates tab query param when switching tabs', async () => {

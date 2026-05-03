@@ -64,33 +64,50 @@ export async function GET(req: NextRequest) {
     // Raw SQL needed for FILTER aggregates and conditional clauses —
     // Prisma groupBy cannot express this query.
     const rows = await prisma.$queryRaw<LeaderboardRow[]>(Prisma.sql`
+      WITH leaderboard_rows AS (
+        SELECT
+          u.id AS "userId",
+          u.username,
+          u."publicProfileId",
+          p.id AS "playerId",
+          (
+            p."isWinner" = true
+            OR EXISTS (
+              SELECT 1
+              FROM jsonb_array_elements(COALESCE(g."terminalMetadata"->'playerResults', '[]'::jsonb)) result
+              WHERE result->>'userId' = p."userId"
+                AND result->>'isWinner' = 'true'
+            )
+          ) AS "isWinner"
+        FROM "Players" p
+        JOIN "Games" g   ON g.id = p."gameId"
+        JOIN "Users" u   ON u.id = p."userId"
+        LEFT JOIN "Bots" b ON b."userId" = u.id
+        LEFT JOIN "AccountPreferences" ap ON ap."userId" = u.id
+        WHERE g.status = 'finished'
+          AND b.id IS NULL
+          AND (ap."profileVisibility" IS NULL OR ap."profileVisibility" != 'private')
+          ${gameTypeClause}
+          ${sinceClause}
+      )
       SELECT
-        u.id                              AS "userId",
-        u.username,
-        u."publicProfileId",
-        COUNT(p.id)                       AS "gamesPlayed",
-        COUNT(p.id) FILTER (WHERE p."isWinner" = true) AS wins,
+        "userId",
+        username,
+        "publicProfileId",
+        COUNT("playerId")                       AS "gamesPlayed",
+        COUNT("playerId") FILTER (WHERE "isWinner" = true) AS wins,
         ROUND(
-          COUNT(p.id) FILTER (WHERE p."isWinner" = true)::numeric
-          / NULLIF(COUNT(p.id), 0) * 100,
+          COUNT("playerId") FILTER (WHERE "isWinner" = true)::numeric
+          / NULLIF(COUNT("playerId"), 0) * 100,
           1
         )::float                         AS "winRate"
-      FROM "Players" p
-      JOIN "Games" g   ON g.id = p."gameId"
-      JOIN "Users" u   ON u.id = p."userId"
-      LEFT JOIN "Bots" b ON b."userId" = u.id
-      LEFT JOIN "AccountPreferences" ap ON ap."userId" = u.id
-      WHERE g.status = 'finished'
-        AND b.id IS NULL
-        AND (ap."profileVisibility" IS NULL OR ap."profileVisibility" != 'private')
-        ${gameTypeClause}
-        ${sinceClause}
-      GROUP BY u.id, u.username
-      HAVING COUNT(p.id) >= ${MIN_GAMES}
+      FROM leaderboard_rows
+      GROUP BY "userId", username, "publicProfileId"
+      HAVING COUNT("playerId") >= ${MIN_GAMES}
       ORDER BY
-        COUNT(p.id) FILTER (WHERE p."isWinner" = true)::numeric
-        / NULLIF(COUNT(p.id), 0) DESC NULLS LAST,
-        COUNT(p.id) FILTER (WHERE p."isWinner" = true) DESC
+        COUNT("playerId") FILTER (WHERE "isWinner" = true)::numeric
+        / NULLIF(COUNT("playerId"), 0) DESC NULLS LAST,
+        COUNT("playerId") FILTER (WHERE "isWinner" = true) DESC
       LIMIT ${PAGE_SIZE}
       OFFSET ${offset}
     `)

@@ -91,50 +91,56 @@ function LinkAccountContent() {
     }
   }, [status, provider, linking, showWarning, linked, router, handleLinkAccount, getProviderName])
 
+  const authBg: React.CSSProperties = {
+    background:
+      'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
+  }
+
   // Show warning about different email before linking
   if (showWarning) {
     return (
-      <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="text-6xl mb-4">{getProviderIcon()}</div>
-            <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+      <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
+        <div className="bd-card w-full max-w-md p-8">
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-[3px_3px_0_#1F1B16]">
+              {getProviderIcon()}
+            </div>
+            <h1
+              className="text-2xl font-extrabold text-bd-ink"
+              style={{ fontFamily: 'var(--bd-font-display)' }}
+            >
               Link {getProviderName()} Account?
             </h1>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-400 dark:border-blue-600 rounded-lg p-4 mb-6">
-            <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+          <div className="mb-6 rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
+            <p className="mb-2 text-sm font-semibold text-bd-lav-deep">
               ℹ️ You're about to link your {getProviderName()} account to this profile.
             </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300">
-              <strong>Note:</strong> Your {getProviderName()} email may be different from your current account email ({session?.user?.email}). This is okay - you'll be able to sign in with either email after linking.
+            <p className="text-xs leading-5 text-bd-ink-soft">
+              <strong>Note:</strong> Your {getProviderName()} email may differ from your current account email ({session?.user?.email}). That's fine — you'll be able to sign in with either after linking.
             </p>
           </div>
 
-          <div className="space-y-4 mb-6">
-            <p className="text-gray-700 dark:text-gray-300 text-sm">
-              <strong>What will happen:</strong>
-            </p>
-            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2 list-disc list-inside">
-              <li>Your {getProviderName()} account will be linked to this profile</li>
-              <li>You can sign in using {getProviderName()} in the future</li>
-              <li>Your current email and password login will still work</li>
-              <li>All your game data remains on this account</li>
-            </ul>
+          <div className="mb-6 space-y-2">
+            {[
+              `Your ${getProviderName()} account will be linked to this profile`,
+              `You can sign in using ${getProviderName()} in the future`,
+              'Your current email and password login will still work',
+              'All your game data remains on this account',
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-2 text-sm text-bd-ink-soft">
+                <span className="mt-0.5 shrink-0 text-bd-mint-deep">✓</span>
+                <span>{item}</span>
+              </div>
+            ))}
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={handleConfirmLink}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-            >
-              ✓ Continue to {getProviderName()}
+            <button onClick={handleConfirmLink} className="bd-btn bd-btn-primary flex-1 justify-center">
+              Continue to {getProviderName()} →
             </button>
-            <button
-              onClick={() => router.push('/profile')}
-              className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
-            >
+            <button onClick={() => router.push('/profile')} className="bd-btn bd-btn-ghost justify-center px-5">
               Cancel
             </button>
           </div>
@@ -145,19 +151,22 @@ function LinkAccountContent() {
 
   // Show loading state while linking
   return (
-    <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-        <div className="text-6xl mb-4 animate-bounce">{getProviderIcon()}</div>
-        <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+    <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
+      <div className="bd-card w-full max-w-sm p-8 text-center">
+        <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-[3px_3px_0_#1F1B16]">
+          {getProviderIcon()}
+        </div>
+        <h1
+          className="mb-2 text-2xl font-extrabold text-bd-ink"
+          style={{ fontFamily: 'var(--bd-font-display)' }}
+        >
           Linking {getProviderName()} Account
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Please wait while we connect your {getProviderName()} account...
+        <p className="mb-6 text-sm leading-6 text-bd-ink-soft">
+          Please wait while we connect your {getProviderName()} account…
         </p>
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-        <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+        <LoadingSpinner />
+        <p className="mt-5 text-xs text-bd-ink-muted">
           You'll be redirected to {getProviderName()} to authorize the connection
         </p>
       </div>
@@ -167,7 +176,7 @@ function LinkAccountContent() {
 
 export default function LinkAccountPage() {
   return (
-    <Suspense fallback={<div className="page-shell-full bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="page-shell-full flex items-center justify-center" style={{ background: 'var(--bd-bg)' }}><LoadingSpinner /></div>}>
       <LinkAccountContent />
     </Suspense>
   )

@@ -127,24 +127,25 @@ export function MobileMenu({
         className="lg:hidden rounded-lg transition-all duration-200 relative z-50"
         style={{
           padding: 'clamp(8px, 0.8vh, 12px)',
-          backgroundColor: mobileMenuOpen ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
+          backgroundColor: mobileMenuOpen ? 'rgba(31, 27, 22, 0.06)' : 'transparent',
+          borderRadius: 10,
         }}
         aria-label={mobileMenuOpen ? t('common.close') : t('header.menu')}
       >
         <div className="relative" style={{ width: 'clamp(24px, 2.5vw, 28px)', height: 'clamp(24px, 2.5vw, 28px)' }}>
           {/* Animated hamburger icon */}
           <span
-            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
+            className={`absolute left-0 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
               }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none' }}
           />
           <span
-            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'
+            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'
               }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)' }}
           />
           <span
-            className={`absolute left-0 bg-gray-700 dark:bg-gray-300 rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
+            className={`absolute left-0 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
               }`}
             style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none' }}
           />
@@ -172,8 +173,8 @@ export function MobileMenu({
           >
             {/* Header with close button */}
             <div
-              className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20"
-              style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
+              className="flex items-center justify-between border-b border-bd-line"
+              style={{ background: 'var(--bd-bg2)', padding: 'clamp(16px, 1.6vh, 24px)' }}
             >
               <h2 className="font-bold text-gray-900 dark:text-white" style={{ fontSize: 'clamp(18px, 1.8vw, 22px)' }}>
                 {t('header.menu')}

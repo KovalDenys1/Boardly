@@ -385,7 +385,32 @@ const no = {
       name: 'Yatzy',
       title: 'Yatzy',
       description: 'Klassisk terningspill med strategisk poengberegning. Kast fem terninger for å lage kombinasjoner og score stort!',
-      difficulty: 'Lett'
+      difficulty: 'Lett',
+      lobbies: {
+        title: 'Yatzy-lobbyer',
+        subtitle: 'Bli med i et spill eller opprett din egen lobby!',
+        subtitleGuest: 'Bla gjennom lobbyer og logg inn når du vil være vert eller bli med.',
+        backToGames: 'Tilbake til spill',
+        wantToPlay: 'Vil du spille?',
+        wantToPlayDesc: 'Logg inn eller opprett en konto for å være vert for lobbyer og bli med i spill. Gjester kan fortsatt motta invitasjonslenker senere.',
+        signIn: 'Logg inn',
+        createAccount: 'Opprett konto',
+        createNewLobby: 'Opprett ny lobby',
+        createDescription: 'Start ditt eget Yatzy-spill og inviter venner til å bli med!',
+        createNow: 'Opprett nå',
+        quickJoin: 'Raskt bli med',
+        quickJoinDesc: 'Har du en lobbykode? Skriv den inn nedenfor for å bli med umiddelbart!',
+        enterCode: 'Skriv inn 4-sifret kode',
+        signInToJoin: 'Vennligst logg inn før du blir med i en lobby. Du kan fortsatt utforske aktive rom nedenfor.',
+        activeLobbies: 'Aktive lobbyer',
+        noLobbiesTitle: 'Ingen aktive lobbyer akkurat nå. Bli den første til å starte et spill!',
+        createFirstLobby: 'Opprett første lobby',
+        host: 'Vert',
+        waiting: 'Venter',
+        playing: 'Spiller',
+        full: 'Fullt',
+        newGame: 'NYTT SPILL'
+      }
     },
     guess_the_spy: {
       name: 'Gjett spionen',
@@ -1071,9 +1096,33 @@ const no = {
           losses: 'Tap',
           draws: 'Uavgjort',
           drawRate: 'Uavgjort-rate',
+          lossRate: 'Tapsrate',
+          unbeatenRate: 'Uten tap',
           quickFacts: 'Kort fortalt',
           currentStreak: 'Nåværende streak',
           bestStreak: 'Beste streak'
+        },
+        gameProfiles: {
+          default: {
+            title: 'Kampresultater',
+            description: 'En kort resultatoversikt for valgt spillmodus.'
+          },
+          yahtzee: {
+            title: 'Poengkort',
+            description: 'Yahtzee-statistikk med vekt på snittscore og beste score.'
+          },
+          ticTacToe: {
+            title: 'Brettresultater',
+            description: 'For Tic-Tac-Toe betyr uavgjort og spill uten tap mer enn score.'
+          },
+          memory: {
+            title: 'Memory-prestasjon',
+            description: 'Viser seire sammen med snittscore og beste resultat i Memory.'
+          },
+          guessTheSpy: {
+            title: 'Bordresultater',
+            description: 'En sosialdeduksjonsvisning med fokus på fullførte runder og utfall.'
+          }
         },
         sections: {
           byGame: {
@@ -1438,20 +1487,26 @@ const no = {
   },
   quickPlay: {
     finding: 'Finner spill…',
-    searching: 'Søker etter åpne lobbyer eller oppretter en med boter',
+    searching: 'Ser etter et rom eller setter opp et for deg',
     pickGame: 'Velg et spill — vi finner eller oppretter en kamp umiddelbart.',
-    createdLobby: 'Ny lobby med boter opprettet — klar til å spille!',
+    createdLobby: 'Nytt rom opprettet — klart til å spille!',
     joinedLobby: 'Fant en åpen lobby — kobler til!',
   },
   leaderboard: {
     title: 'Toppliste',
     subtitle: 'Toppspillere rangert etter seierrate (min. 10 spill)',
+    hallOfFame: 'Æresgalleri',
     allTime: 'Alle tider',
     last30days: 'Siste 30 dager',
     player: 'Spiller',
+    players: 'Spillere',
+    rank: 'Rang',
     gamesPlayed: 'Spilt',
     wins: 'Seire',
     winRate: 'Seier %',
+    gameFilter: 'Spillfilter',
+    chooseGame: 'Velg spill',
+    viewProfile: 'Se profil ↗',
     loading: 'Laster toppliste…',
     empty: 'Ingen kvalifiserte spillere ennå',
     emptyHint: 'Spill minst 10 spill for å vises her',
@@ -1802,20 +1857,20 @@ const no = {
       answer: 'Boardly tilbyr for øyeblikket Yahtzee, Tic Tac Toe, Memory-kortspill og Gjett spionen. Flere spill er under utvikling, inkludert Alias, Sketch & Guess og andre.',
     },
     q4: {
-      question: 'Kan jeg spille mot AI-boter?',
-      answer: 'Ja. Yahtzee og Tic Tac Toe støtter AI-motstandere, slik at du kan spille solo eller fylle tomme plasser når venner er offline.',
+      question: 'Kan jeg spille alene?',
+      answer: 'Ja. Yahtzee og Tic Tac Toe kan legge til dataspillere, så du kan starte selv når venner er offline.',
     },
     q5: {
       question: 'Hvordan spiller jeg med venner online?',
-      answer: 'Opprett en lobby, og del romkoden eller lenken med vennene dine. De blir med umiddelbart — ingen konto eller nedlasting kreves.',
+      answer: 'Opprett et rom, og del romkoden eller lenken med vennene dine. De blir med umiddelbart — ingen konto eller nedlasting kreves.',
     },
     q6: {
       question: 'Fungerer Boardly på mobil?',
-      answer: 'Ja. Boardly kjører i enhver moderne nettleser på desktop, nettbrett og mobil. Det finnes også en Progressive Web App (PWA) du kan installere fra nettleseren.',
+      answer: 'Ja. Boardly kjører i enhver moderne nettleser på desktop, nettbrett og mobil. Du kan også legge siden til som en app-lignende snarvei fra nettleseren.',
     },
     q7: {
       question: 'Hvor mange spillere kan spille samtidig?',
-      answer: 'Det avhenger av spillet. Tic Tac Toe støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i én lobby.',
+      answer: 'Det avhenger av spillet. Tic Tac Toe støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i ett rom.',
     },
     q8: {
       question: 'Er det noe å laste ned eller installere?',

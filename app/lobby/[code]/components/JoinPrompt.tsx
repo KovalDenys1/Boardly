@@ -1,5 +1,6 @@
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { useRouter } from 'next/navigation'
+import { getGameMetadata } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 
@@ -42,6 +43,7 @@ export default function JoinPrompt({
 }: JoinPromptProps) {
   const router = useRouter()
   const { t } = useTranslation()
+  const gameMeta = typeof lobby.gameType === 'string' ? getGameMetadata(lobby.gameType) : null
   const isAnonymousViewer = viewerMode === 'anonymous'
   const requiresPassword = Boolean(lobby.isPrivate)
   const primaryAction = isAnonymousViewer ? onJoinAsGuest : onJoin
@@ -53,28 +55,38 @@ export default function JoinPrompt({
 
   return (
     <div className="max-w-2xl mx-auto w-full animate-scale-in">
-      <div className="rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl p-6 sm:p-8 text-center shadow-2xl">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 border border-white/20 mb-5">
-          <span className="text-3xl">🎮</span>
-        </div>
+      <div className="bd-card relative overflow-hidden p-6 text-center sm:p-8">
+        <div className="bd-dot-grid pointer-events-none absolute inset-0 opacity-35" />
+        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-bd-sun/25" />
+        <div className="pointer-events-none absolute -bottom-14 left-10 h-28 w-28 rotate-12 rounded-[1.75rem] bg-bd-lav/20" />
 
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-          <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-100 border border-cyan-300/30 font-mono">
-            {lobby.code}
-          </span>
-          <span
-            className={`text-xs font-semibold px-2 py-1 rounded-lg border ${
-              lobby.isPrivate
-                ? 'bg-rose-500/20 text-rose-100 border-rose-300/35'
-                : 'bg-emerald-500/20 text-emerald-100 border-emerald-300/35'
-            }`}
-          >
-            {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
-          </span>
-        </div>
+        <div className="relative">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">
+            <span>{gameMeta?.icon ?? '🎮'}</span>
+          </div>
 
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">{t('lobby.joinSection.title')}</h2>
-        <p className="text-white/65 text-sm sm:text-base mb-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <span className="bd-chip border-bd-ink bg-bd-ink font-mono text-bd-bg">
+              {lobby.code}
+            </span>
+            <span
+              className={`bd-chip ${
+                lobby.isPrivate
+                  ? 'border-bd-coral/50 bg-bd-coral/15 text-bd-coral-deep'
+                  : 'bd-chip-mint'
+              }`}
+            >
+              {lobby.isPrivate ? t('lobby.privateLobby') : t('lobby.publicLobby')}
+            </span>
+          </div>
+
+        <h2
+          className="mb-2 text-2xl font-extrabold tracking-[-0.01em] text-bd-ink sm:text-3xl"
+          style={{ fontFamily: 'var(--bd-font-display)' }}
+        >
+          {t('lobby.joinSection.title')}
+        </h2>
+        <p className="mx-auto mb-6 max-w-lg text-sm leading-6 text-bd-ink-soft sm:text-base">
           {lobby.isPrivate
             ? t('lobby.joinPromptPrivate', { lobby: lobby.name })
             : t('lobby.joinPromptPublic', { lobby: lobby.name })}
@@ -82,12 +94,12 @@ export default function JoinPrompt({
 
         {isAnonymousViewer && (
           <div className="text-left mb-4">
-            <label className="block font-semibold text-white/80 text-sm mb-2">
+            <label className="mb-2 block text-sm font-semibold text-bd-ink">
               {t('guest.enterName')}
             </label>
             <input
               type="text"
-              className="w-full bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/30 px-4 py-3 focus:ring-2 focus:ring-white/40 focus:border-transparent transition-all focus-visible:outline-none"
+              className="bd-input"
               placeholder={t('guest.namePlaceholder')}
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
@@ -100,7 +112,7 @@ export default function JoinPrompt({
               disabled={isJoining}
               maxLength={20}
             />
-            <p className="text-white/45 text-xs mt-2">
+            <p className="mt-2 text-xs text-bd-ink-muted">
               {t('guest.nameDescription')}
             </p>
           </div>
@@ -108,12 +120,12 @@ export default function JoinPrompt({
 
         {requiresPassword && (
           <div className="text-left mb-6">
-            <label className="block font-semibold text-white/80 text-sm mb-2">
+            <label className="mb-2 block text-sm font-semibold text-bd-ink">
               🔒 {t('lobby.joinSection.password')}
             </label>
             <input
               type="password"
-              className="w-full bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-white/30 px-4 py-3 focus:ring-2 focus:ring-white/40 focus:border-transparent transition-all focus-visible:outline-none"
+              className="bd-input"
               placeholder={t('lobby.joinSection.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -129,7 +141,7 @@ export default function JoinPrompt({
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-400/30 text-red-200 rounded-xl px-4 py-3 mb-6 animate-shake">
+          <div className="mb-6 animate-shake rounded-xl border border-bd-coral/35 bg-bd-coral/10 px-4 py-3 text-bd-coral-deep">
             <div className="flex items-center gap-2">
               <span className="text-lg">⚠️</span>
               <p className="font-semibold text-sm">{error}</p>
@@ -141,7 +153,7 @@ export default function JoinPrompt({
           <button
             type="button"
             onClick={() => router.push(getGameLobbiesRoute(lobby?.gameType) ?? '/games')}
-            className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold border border-white/20 transition-all disabled:opacity-60"
+            className="bd-btn bd-btn-ghost w-full justify-center"
             disabled={isJoining}
           >
             {t('lobby.backToGames')}
@@ -150,10 +162,10 @@ export default function JoinPrompt({
             type="button"
             onClick={primaryAction}
             disabled={primaryActionDisabled}
-            className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold shadow-xl hover:brightness-110 transition-all disabled:cursor-not-allowed disabled:opacity-70"
+            className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="inline-flex items-center justify-center gap-2">
-              {isJoining ? <LoadingSpinner /> : <span>🚀</span>}
+              {isJoining ? <LoadingSpinner /> : <span>→</span>}
               <span>{primaryActionLabel}</span>
             </span>
           </button>
@@ -163,10 +175,10 @@ export default function JoinPrompt({
           <>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
+                <div className="w-full border-t border-bd-line"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-slate-900/80 text-white/45">or</span>
+                <span className="bg-white px-4 text-bd-ink-muted">or</span>
               </div>
             </div>
 
@@ -175,7 +187,7 @@ export default function JoinPrompt({
                 type="button"
                 onClick={onLogin}
                 disabled={isJoining}
-                className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold border border-white/20 transition-all disabled:opacity-60"
+                className="bd-btn bd-btn-soft w-full justify-center disabled:opacity-60"
               >
                 {t('auth.login.submit')}
               </button>
@@ -183,7 +195,7 @@ export default function JoinPrompt({
                 type="button"
                 onClick={onRegister}
                 disabled={isJoining}
-                className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-semibold border border-white/20 transition-all disabled:opacity-60"
+                className="bd-btn bd-btn-ghost w-full justify-center disabled:opacity-60"
               >
                 {t('auth.register.title')}
               </button>
@@ -191,9 +203,10 @@ export default function JoinPrompt({
           </>
         )}
 
-        <p className="text-white/45 text-xs mt-4">
+        <p className="mt-4 text-xs text-bd-ink-muted">
           💡 {t('lobby.joinPromptHint')}
         </p>
+        </div>
       </div>
     </div>
   )

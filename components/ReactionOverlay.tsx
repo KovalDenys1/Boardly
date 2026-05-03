@@ -1,14 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Socket } from 'socket.io-client'
 import { SocketEvents } from '@/types/socket-events'
 
-const ALLOWED_EMOJIS = ['👍', '😂', '😮', '🎉', '🔥'] as const
-type AllowedEmoji = typeof ALLOWED_EMOJIS[number]
-
 const REACTION_DURATION_MS = 1600
-const CLIENT_THROTTLE_MS = 3000
 
 interface FloatingReaction {
   id: string
@@ -32,9 +28,6 @@ interface ReactionOverlayProps {
 
 export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
   const [reactions, setReactions] = useState<FloatingReaction[]>([])
-  const [disabledEmoji, setDisabledEmoji] = useState<AllowedEmoji | null>(null)
-  const [collapsed, setCollapsed] = useState(false)
-  const lastSentAtRef = useRef<number>(0)
 
   useEffect(() => {
     if (!socket) return
@@ -65,16 +58,6 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
     }
   }, [socket])
 
-  const sendReaction = (emoji: AllowedEmoji) => {
-    if (!socket || disabledEmoji) return
-    const now = Date.now()
-    if (now - lastSentAtRef.current < CLIENT_THROTTLE_MS) return
-    lastSentAtRef.current = now
-    socket.emit(SocketEvents.SEND_REACTION, { lobbyCode, emoji })
-    setDisabledEmoji(emoji)
-    setTimeout(() => setDisabledEmoji(null), CLIENT_THROTTLE_MS)
-  }
-
   return (
     <>
       {/* Floating reactions */}
@@ -90,32 +73,6 @@ export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
           <span className="text-[28px] leading-none">{r.emoji}</span>
         </div>
       ))}
-
-      {/* Reaction bar */}
-      <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2">
-        <div className="flex items-center gap-1 rounded-full bg-black/50 px-2 py-1.5 backdrop-blur-sm">
-          {!collapsed && ALLOWED_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => sendReaction(emoji)}
-              disabled={!!disabledEmoji}
-              aria-label={`React with ${emoji}`}
-              className={`rounded-full px-1.5 py-0.5 text-[22px] transition-all duration-150 hover:scale-125 active:scale-110 disabled:cursor-not-allowed ${
-                disabledEmoji ? 'opacity-50' : 'opacity-100'
-              }`}
-            >
-              {emoji}
-            </button>
-          ))}
-          <button
-            onClick={() => setCollapsed((v) => !v)}
-            aria-label={collapsed ? 'Show reactions' : 'Hide reactions'}
-            className="rounded-full w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all duration-150 text-sm ml-0.5"
-          >
-            {collapsed ? '😊' : '✕'}
-          </button>
-        </div>
-      </div>
     </>
   )
 }

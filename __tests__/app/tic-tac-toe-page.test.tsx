@@ -61,6 +61,7 @@ jest.mock('@/lib/i18n-toast', () => ({
     errorFrom: jest.fn(),
     success: jest.fn(),
     info: jest.fn(),
+    infoText: jest.fn(),
   },
 }))
 
@@ -209,5 +210,13 @@ describe('TicTacToeLobbyPage', () => {
       )
       expect(mockReplace).toHaveBeenCalledWith('/games')
     })
+  })
+
+  it('shows active match controls including undo, draw, and leave lobby', async () => {
+    render(<TicTacToeLobbyPage code="ABCD" />)
+
+    expect((await screen.findAllByRole('button', { name: /undo/i })).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /draw/i }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /leave lobby/i }).length).toBeGreaterThan(0)
   })
 })

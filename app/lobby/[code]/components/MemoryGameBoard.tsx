@@ -255,7 +255,7 @@ export default function MemoryGameBoard({
                   onClick={onPlayAgain}
                   className="w-full rounded-xl bg-white/20 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
                 >
-                  {t('yahtzee.results.playAgain')}
+                  {t('lobby.game.playAgain')}
                 </button>
               ) : (
                 <p className="text-center text-sm text-white/50">{t('game.ui.waitingForHost')}</p>

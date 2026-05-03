@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { clientLogger } from '@/lib/client-logger'
+import BoardlyErrorState from '@/components/BoardlyErrorState'
 
 interface Props {
   children: ReactNode
@@ -49,23 +50,12 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-[100dvh] flex items-center justify-center bg-gray-900">
-          <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-white mb-4">
-              Something went wrong
-            </h1>
-            <p className="text-gray-400 mb-6">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-            >
-              Reload Page
-            </button>
-          </div>
-        </div>
+        <BoardlyErrorState
+          error={this.state.error}
+          onRetry={() => window.location.reload()}
+          kicker="Boardly · Component Error"
+          retryLabel="Reload Page"
+        />
       )
     }
 

@@ -9,6 +9,7 @@ import { notifySocket } from '@/lib/socket-url'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -20,6 +21,11 @@ interface AutoActionContext {
     rollsLeft: number
     updatedAt: string | number | null
   }
+}
+
+interface BotAutoResponse {
+  type: 'undo' | 'draw'
+  accepted: boolean
 }
 
 const autoActionDebounceMap = new Map<string, number>()
@@ -257,11 +263,15 @@ export async function POST(
         currentTurn: true,
         updatedAt: true,
         lastMoveAt: true,
+        startedAt: true,
         players: {
           select: {
             id: true,
             userId: true,
             score: true,
+            finalScore: true,
+            placement: true,
+            isWinner: true,
             scorecard: true,
             user: {
               select: {
@@ -297,6 +307,9 @@ export async function POST(
       id: string
       userId: string
       score: number
+      finalScore: number | null
+      placement: number | null
+      isWinner: boolean
       scorecard: string | null
       user: {
         id: string
@@ -437,6 +450,43 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid move' }, { status: 400 })
     }
 
+    let botAutoResponse: BotAutoResponse | null = null
+    if (game.lobby.gameType === 'tic_tac_toe') {
+      const ticTacToeEngine = gameEngine as TicTacToeGame
+      const pendingRequest = ticTacToeEngine.getPendingRequest()
+
+      if (pendingRequest) {
+        const responderPlayer = (game.players as GamePlayer[]).find(
+          (player) => player.userId === pendingRequest.responderId
+        )
+
+        if (responderPlayer?.user?.bot) {
+          const accepted =
+            pendingRequest.type === 'undo' ? true : ticTacToeEngine.isTheoreticalDraw()
+          const responseMove: Move = {
+            playerId: pendingRequest.responderId,
+            type: pendingRequest.type === 'undo' ? 'respond-undo' : 'respond-draw',
+            data: { accept: accepted },
+            timestamp: new Date(),
+          }
+
+          const responseApplied = gameEngine.makeMove(responseMove)
+          if (responseApplied) {
+            botAutoResponse = {
+              type: pendingRequest.type,
+              accepted,
+            }
+          } else {
+            log.warn('Bot auto-response for Tic-Tac-Toe request failed validation', {
+              gameId,
+              responderId: pendingRequest.responderId,
+              requestType: pendingRequest.type,
+            })
+          }
+        }
+      }
+    }
+
     // Check if game status changed after this move
     const newState = gameEngine.getState()
     const botUserIds = new Set(
@@ -467,28 +517,6 @@ export async function POST(
     const enginePlayers = gameEngine.getPlayers()
     const gamePlayers = game.players as GamePlayer[]
     const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
-    const changedPlayerUpdates: Array<{ id: string; score: number; scorecard: string }> = []
-
-    for (const player of enginePlayers as Player[]) {
-      const dbPlayer = dbPlayersByUserId.get(player.id)
-      if (!dbPlayer) continue
-
-      const nextScore = typeof player.score === 'number' ? player.score : 0
-      const nextScorecard = JSON.stringify(
-        getScorecard ? getScorecard(player.id) : {}
-      )
-
-      if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
-        continue
-      }
-
-      changedPlayerUpdates.push({
-        id: dbPlayer.id,
-        score: nextScore,
-        scorecard: nextScorecard,
-      })
-    }
-
     const TERMINAL_STATUSES = new Set(['finished', 'abandoned', 'cancelled'])
     const isTerminal = TERMINAL_STATUSES.has(newState.status)
     const terminalFields = statusChanged && isTerminal
@@ -510,7 +538,7 @@ export async function POST(
             winnerUserId: winnerPlayer?.userId ?? null,
             isDraw: newState.status === 'finished' && !newState.winner,
             playerResults: (enginePlayers as Player[]).map((ep, i) => ({
-              userId: gamePlayers[i]?.userId ?? ep.id,
+              userId: dbPlayersByUserId.get(ep.id)?.userId ?? gamePlayers[i]?.userId ?? ep.id,
               placement: typeof (ep as { placement?: number }).placement === 'number' ? (ep as { placement?: number }).placement : i + 1,
               finalScore: typeof ep.score === 'number' ? ep.score : null,
               isWinner: ep.id === newState.winner,
@@ -519,6 +547,64 @@ export async function POST(
           return { endedAt: now, durationSeconds, terminalMetadata }
         })()
       : {}
+    const terminalPlayerResultsByUserId = new Map(
+      (terminalFields as {
+        terminalMetadata?: {
+          playerResults?: Array<{
+            userId: string
+            placement: number
+            finalScore: number | null
+            isWinner: boolean
+          }>
+        }
+      }).terminalMetadata?.playerResults?.map((result) => [result.userId, result]) ?? []
+    )
+    const changedPlayerUpdates: Array<{
+      id: string
+      score: number
+      scorecard: string
+      finalScore?: number | null
+      placement?: number | null
+      isWinner?: boolean
+    }> = []
+
+    for (const player of enginePlayers as Player[]) {
+      const dbPlayer = dbPlayersByUserId.get(player.id)
+      if (!dbPlayer) continue
+
+      const nextScore = typeof player.score === 'number' ? player.score : 0
+      const nextScorecard = JSON.stringify(
+        getScorecard ? getScorecard(player.id) : {}
+      )
+      const terminalResult = terminalPlayerResultsByUserId.get(player.id)
+      const nextFinalScore = terminalResult?.finalScore
+      const nextPlacement = terminalResult?.placement
+      const nextIsWinner = terminalResult?.isWinner
+
+      if (
+        dbPlayer.score === nextScore &&
+        dbPlayer.scorecard === nextScorecard &&
+        (terminalResult == null ||
+          (dbPlayer.finalScore === nextFinalScore &&
+            dbPlayer.placement === nextPlacement &&
+            dbPlayer.isWinner === nextIsWinner))
+      ) {
+        continue
+      }
+
+      changedPlayerUpdates.push({
+        id: dbPlayer.id,
+        score: nextScore,
+        scorecard: nextScorecard,
+        ...(terminalResult != null
+          ? {
+              finalScore: nextFinalScore,
+              placement: nextPlacement,
+              isWinner: nextIsWinner,
+            }
+          : {}),
+      })
+    }
 
     const gameUpdateResult = await prisma.$transaction(async (tx) => {
       // Optimistic concurrency control:
@@ -549,6 +635,9 @@ export async function POST(
           data: {
             score: scoreUpdate.score,
             scorecard: scoreUpdate.scorecard,
+            ...(scoreUpdate.finalScore !== undefined ? { finalScore: scoreUpdate.finalScore } : {}),
+            ...(scoreUpdate.placement !== undefined ? { placement: scoreUpdate.placement } : {}),
+            ...(scoreUpdate.isWinner !== undefined ? { isWinner: scoreUpdate.isWinner } : {}),
           },
         })
       }
@@ -666,6 +755,7 @@ export async function POST(
         }),
       },
       serverBroadcasted,
+      ...(botAutoResponse ? { autoResponse: botAutoResponse } : {}),
     }
 
     return NextResponse.json(response)

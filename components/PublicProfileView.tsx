@@ -24,6 +24,7 @@ export type PublicProfileViewData = {
   createdAt: string
   friendsCount: number
   gamesPlayed: number
+  completedGamesCount?: number
 }
 
 type PublicProfileViewProps = {
@@ -33,6 +34,13 @@ type PublicProfileViewProps = {
   mode?: 'page' | 'embedded-preview'
   onBack?: () => void
 }
+
+const primaryActionClassName =
+  'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950'
+const secondaryActionClassName =
+  'inline-flex w-full items-center justify-center rounded-2xl border-2 border-bd-ink bg-white px-5 py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-bg2 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800'
+const quietActionClassName =
+  'inline-flex items-center justify-center rounded-2xl border border-bd-line bg-white px-5 py-3 text-sm font-bold text-bd-ink-soft transition-colors hover:bg-bd-bg2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
 
 export default function PublicProfileView({
   profile,
@@ -44,15 +52,28 @@ export default function PublicProfileView({
   const { t, i18n } = useTranslation()
   const [relation, setRelation] = useState<PublicProfileRelation>(initialRelation)
   const [submitting, setSubmitting] = useState(false)
+  const [copiedProfileLink, setCopiedProfileLink] = useState(false)
   const isEmbeddedPreview = mode === 'embedded-preview'
   const shouldShowAction = !isEmbeddedPreview
 
   const displayName = profile.username?.trim() || t('profile.publicProfile.playerFallback')
+  const handle = displayName.replace(/\s+/g, '').toLowerCase()
+  const levelSourceGames = profile.completedGamesCount ?? profile.gamesPlayed
+  const level = Math.max(1, Math.floor(levelSourceGames / 10) + 1)
   const memberSince = new Date(profile.createdAt).toLocaleDateString(i18n.language || undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   })
+  const publicProfilePath = `/u/${profile.publicProfileId}`
+
+  const getPublicProfileUrl = () => {
+    if (typeof window === 'undefined') {
+      return publicProfilePath
+    }
+
+    return new URL(publicProfilePath, window.location.origin).toString()
+  }
 
   const handleBack = () => {
     if (onBack) {
@@ -107,12 +128,37 @@ export default function PublicProfileView({
     }
   }
 
+  const handleCopyProfileLink = async () => {
+    const profileUrl = getPublicProfileUrl()
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(profileUrl)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = profileUrl
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.left = '-9999px'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+
+      setCopiedProfileLink(true)
+      window.setTimeout(() => setCopiedProfileLink(false), 1600)
+    } catch (error) {
+      showToast.errorFrom(error, 'toast.error')
+    }
+  }
+
   const renderAction = () => {
     if (relation === 'self') {
       return (
         <Link
           href="/profile"
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
+          className="inline-flex w-full max-w-xs items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-5 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
         >
           {t('profile.publicProfile.goToOwnProfile')}
         </Link>
@@ -121,7 +167,7 @@ export default function PublicProfileView({
 
     if (relation === 'friends') {
       return (
-        <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-2xl border border-bd-mint/40 bg-bd-mint/15 px-4 py-3 text-sm font-semibold text-bd-mint-deep dark:text-emerald-300">
           {t('profile.publicProfile.alreadyFriends')}
         </div>
       )
@@ -129,7 +175,7 @@ export default function PublicProfileView({
 
     if (relation === 'request_sent') {
       return (
-        <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+        <div className="rounded-2xl border border-bd-sun/60 bg-bd-sun/20 px-4 py-3 text-sm font-semibold text-[#9b6b00] dark:text-amber-300">
           {t('profile.publicProfile.requestPending')}
         </div>
       )
@@ -137,10 +183,7 @@ export default function PublicProfileView({
 
     if (relation === 'request_received') {
       return (
-        <Link
-          href="/profile?tab=friends"
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-        >
+        <Link href="/profile?tab=friends" className={secondaryActionClassName}>
           {t('profile.publicProfile.reviewRequest')}
         </Link>
       )
@@ -150,7 +193,7 @@ export default function PublicProfileView({
       return (
         <Link
           href={buildAuthUrl('login', `/u/${profile.publicProfileId}`)}
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-300"
+          className={primaryActionClassName}
         >
           {t('profile.publicProfile.signInToAdd')}
         </Link>
@@ -159,10 +202,7 @@ export default function PublicProfileView({
 
     if (relation === 'verification_required') {
       return (
-        <Link
-          href="/auth/verify-email"
-          className="inline-flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-        >
+        <Link href="/auth/verify-email" className={secondaryActionClassName}>
           {t('profile.publicProfile.verifyEmailToAdd')}
         </Link>
       )
@@ -173,42 +213,55 @@ export default function PublicProfileView({
         type="button"
         onClick={() => void handleAddFriend()}
         disabled={submitting}
-        className="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+        className={primaryActionClassName}
       >
         {submitting ? t('common.loading') : t('profile.publicProfile.addFriend')}
       </button>
     )
   }
 
+  const renderAvatar = (sizeClassName = 'h-48 w-48 sm:h-56 sm:w-56') => (
+    <div className="relative">
+      <div
+        className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-[2rem] border-[3px] border-bd-ink bg-bd-lav text-white shadow-[6px_6px_0_var(--bd-ink)]`}
+      >
+        {profile.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.image} alt={displayName} className="h-full w-full object-cover" />
+        ) : (
+          <span className="font-display text-7xl font-black uppercase sm:text-8xl">
+            {displayName.charAt(0)}
+          </span>
+        )}
+      </div>
+      <div className="absolute -bottom-3 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+        Lv. {level}
+      </div>
+    </div>
+  )
+
   const renderRestrictedState = () => {
     if (accessState === 'private') {
       return (
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-[32px] border border-white/10 bg-white/8 px-6 py-10 text-center shadow-2xl backdrop-blur-xl sm:px-10">
-          <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/10 bg-white/10 text-4xl shadow-[0_10px_40px_rgba(15,23,42,0.28)]">
-            🔒
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center rounded-[2rem] border-[1.5px] border-bd-line bg-white px-6 py-10 text-center shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 sm:px-10">
+          <div className="grid h-20 w-20 place-items-center rounded-[1.4rem] border-2 border-bd-ink bg-bd-sun font-display text-sm font-black uppercase tracking-[0.12em] text-bd-ink shadow-[4px_4px_0_var(--bd-ink)]">
+            Lock
           </div>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
+          <p className="mt-6 font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
             {t('profile.publicProfile.eyebrow')}
           </p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-3 font-display text-3xl font-black leading-tight text-bd-ink dark:text-white sm:text-4xl">
             {t('profile.publicProfile.privateTitle')}
           </h1>
-          <p className="mt-4 max-w-lg text-sm text-slate-200/80 sm:text-base">
+          <p className="mt-4 max-w-lg text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
             {t('profile.publicProfile.privateSubtitle')}
           </p>
           <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-            >
+            <button type="button" onClick={handleBack} className={quietActionClassName}>
               {t('common.back')}
             </button>
             {!isEmbeddedPreview && (
-              <Link
-                href="/"
-                className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-100"
-              >
+              <Link href="/" className={primaryActionClassName}>
                 {t('common.goHome')}
               </Link>
             )}
@@ -218,40 +271,32 @@ export default function PublicProfileView({
     }
 
     return (
-      <div className="mx-auto flex w-full max-w-3xl flex-col rounded-[32px] border border-white/10 bg-white/8 shadow-2xl backdrop-blur-xl lg:flex-row">
-        <div className="flex-1 px-6 py-8 sm:px-8 sm:py-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
+      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="px-6 py-8 sm:px-8 sm:py-10">
+          <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
             {t('profile.publicProfile.eyebrow')}
           </p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-3 font-display text-3xl font-black leading-tight text-bd-ink dark:text-white sm:text-4xl">
             {t('profile.publicProfile.friendsOnlyTitle')}
           </h1>
-          <p className="mt-4 max-w-xl text-sm text-slate-200/80 sm:text-base">
+          <p className="mt-4 max-w-xl text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
             {t('profile.publicProfile.friendsOnlySubtitle')}
           </p>
           {isEmbeddedPreview && (
             <div className="mt-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-              >
+              <button type="button" onClick={handleBack} className={quietActionClassName}>
                 {t('common.back')}
               </button>
             </div>
           )}
-          {shouldShowAction && (
-            <div className="mt-8">
-              {renderAction()}
-            </div>
-          )}
+          {shouldShowAction && <div className="mt-8">{renderAction()}</div>}
         </div>
-        <div className="flex items-center border-t border-white/10 bg-black/15 px-6 py-8 sm:px-8 lg:w-[18rem] lg:border-l lg:border-t-0">
-          <div className="w-full rounded-3xl border border-dashed border-white/15 bg-white/5 p-5 text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300/70">
+        <div className="flex items-center border-t border-bd-line bg-bd-card-warm px-6 py-8 sm:px-8 lg:border-l lg:border-t-0 dark:border-slate-700 dark:bg-slate-800/70">
+          <div className="w-full rounded-3xl border border-dashed border-bd-line bg-white p-5 text-left dark:border-slate-700 dark:bg-slate-900/70">
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
               {t('profile.settings.privacy.friendsOnly')}
             </p>
-            <p className="mt-3 text-sm leading-6 text-slate-200/80">
+            <p className="mt-3 text-sm leading-6 text-bd-ink-soft dark:text-slate-300">
               {t('profile.publicProfile.friendsOnlyHint')}
             </p>
           </div>
@@ -262,105 +307,115 @@ export default function PublicProfileView({
 
   return (
     <div
-      className={`relative overflow-hidden bg-slate-950 text-white ${
+      className={`relative overflow-hidden bg-bd-bg text-bd-ink ${
         isEmbeddedPreview
-          ? 'rounded-3xl border border-slate-700/50 shadow-xl shadow-slate-950/30'
+          ? 'rounded-[2rem] border-[1.5px] border-bd-line shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700'
           : 'flex min-h-[calc(100vh-64px)] items-center safe-left safe-right'
       }`}
       style={isEmbeddedPreview ? undefined : { minHeight: 'calc(100dvh - 64px)' }}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(34,211,238,0.22),transparent_38%),radial-gradient(circle_at_80%_10%,rgba(96,165,250,0.18),transparent_34%),radial-gradient(circle_at_85%_85%,rgba(168,85,247,0.22),transparent_32%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(255,196,77,0.18),transparent_35%),radial-gradient(circle_at_88%_14%,rgba(155,140,255,0.16),transparent_40%),radial-gradient(circle_at_50%_100%,rgba(79,201,166,0.14),transparent_50%)]"
       />
+      <div className="pointer-events-none absolute right-[-4rem] top-20 h-44 w-44 rounded-full bg-bd-lav/10" />
+      <div className="pointer-events-none absolute left-[-3rem] bottom-20 h-36 w-36 rotate-12 rounded-[2rem] bg-bd-mint/10" />
 
       <div
         className={`relative ${
           isEmbeddedPreview
             ? 'w-full px-4 py-4 sm:px-6 sm:py-6'
-            : 'mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8'
+            : 'mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8'
         }`}
       >
-        {accessState !== 'available' ? renderRestrictedState() : (
-        <div className="w-full overflow-hidden rounded-[32px] border border-white/10 bg-white/8 shadow-2xl backdrop-blur-xl">
-          <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="p-6 sm:p-8 lg:p-10">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="inline-flex items-center gap-2 text-sm font-medium text-cyan-200 transition-colors hover:text-cyan-100"
-              >
-                <span aria-hidden>←</span>
-                {t('common.back')}
-              </button>
+        {accessState !== 'available' ? (
+          renderRestrictedState()
+        ) : (
+          <div className="relative w-full overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900">
+            <div className="dot-grid absolute inset-0 opacity-30" />
+            <div className="relative grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="p-6 sm:p-8 lg:p-10">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  <span aria-hidden>{'<-'}</span>
+                  {t('common.back')}
+                </button>
 
-              <div className="mt-8 max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
-                  {t('profile.publicProfile.eyebrow')}
-                </p>
-                <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">
-                  {displayName}
-                </h1>
-                <p className="mt-4 max-w-xl text-sm text-slate-200/80 sm:text-base">
-                  {t('profile.publicProfile.subtitle')}
-                </p>
+                <div className="mt-8 max-w-2xl">
+                  <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
+                    {t('profile.publicProfile.eyebrow')}
+                  </p>
+                  <h1 className="mt-3 font-display text-4xl font-black leading-none text-bd-ink dark:text-white sm:text-5xl">
+                    {displayName}
+                  </h1>
+                  <p className="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
+                    @{handle}
+                  </p>
+                  <p className="mt-4 max-w-xl text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
+                    {t('profile.publicProfile.subtitle')}
+                  </p>
+                </div>
+
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                  <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-coral opacity-20" />
+                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                      {t('profile.friends.title')}
+                    </p>
+                    <p className="mt-3 font-display text-3xl font-bold text-bd-coral-deep dark:text-white">
+                      {profile.friendsCount}
+                    </p>
+                  </div>
+                  <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-mint opacity-20" />
+                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                      {t('profile.stats.gamesPlayed')}
+                    </p>
+                    <p className="mt-3 font-display text-3xl font-bold text-bd-mint-deep dark:text-white">
+                      {profile.gamesPlayed}
+                    </p>
+                  </div>
+                  <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
+                    <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-sun opacity-25" />
+                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                      {t('profile.memberSince')}
+                    </p>
+                    <p className="mt-3 text-lg font-bold text-bd-ink dark:text-white">{memberSince}</p>
+                  </div>
+                </div>
+
+                {shouldShowAction && (
+                  <div
+                    className={`mt-8 ${
+                      relation === 'self' ? 'flex w-full justify-center' : 'max-w-sm'
+                    }`}
+                  >
+                    {renderAction()}
+                  </div>
+                )}
               </div>
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-300/70">
-                    {t('profile.friends.title')}
+              <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10 dark:border-slate-700 dark:bg-slate-800/70">
+                <div className="relative flex w-full max-w-sm flex-col items-center text-center">
+                  {renderAvatar()}
+                  <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">
+                    {t('profile.publicProfile.linkHint')}
                   </p>
-                  <p className="mt-3 text-2xl font-bold text-white">{profile.friendsCount}</p>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyProfileLink()}
+                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+                  >
+                    <span>{copiedProfileLink ? 'Copied' : 'Copy profile link'}</span>
+                    <span aria-hidden>{copiedProfileLink ? '✓' : '↗'}</span>
+                  </button>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-300/70">
-                    {t('profile.stats.gamesPlayed')}
-                  </p>
-                  <p className="mt-3 text-2xl font-bold text-white">{profile.gamesPlayed}</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-300/70">
-                    {t('profile.memberSince')}
-                  </p>
-                  <p className="mt-3 text-lg font-semibold text-white">{memberSince}</p>
-                </div>
-              </div>
-
-              {shouldShowAction && (
-                <div className="mt-8">
-                  {renderAction()}
-                </div>
-              )}
-            </div>
-
-            <div className="relative flex items-center justify-center border-t border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.2),rgba(15,23,42,0.55))] p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-              <div
-                aria-hidden
-                className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(56,189,248,0.18),transparent_35%),radial-gradient(circle_at_50%_80%,rgba(168,85,247,0.18),transparent_40%)]"
-              />
-              <div className="relative flex w-full max-w-sm flex-col items-center text-center">
-                <div className="flex h-48 w-48 items-center justify-center overflow-hidden rounded-[36px] border border-white/15 bg-gradient-to-br from-cyan-400/35 via-blue-500/30 to-violet-500/35 shadow-[0_20px_80px_rgba(34,211,238,0.22)] sm:h-56 sm:w-56">
-                  {profile.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.image}
-                      alt={displayName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-7xl font-black uppercase text-white sm:text-8xl">
-                      {displayName.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-6 text-sm text-slate-300/80">
-                  {t('profile.publicProfile.linkHint')}
-                </p>
               </div>
             </div>
           </div>
-        </div>
         )}
       </div>
     </div>

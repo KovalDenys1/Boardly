@@ -22,16 +22,16 @@ type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
 
 type GameSettings = {
-  hasTurnTimer?: boolean // Whether this game supports turn timer
-  hasGameModes?: boolean // Whether this game supports game modes
-  hasRoundSelection?: boolean // Whether this game supports selecting number of rounds
-  hasDifficultySelection?: boolean // Whether this game supports selecting difficulty
-  turnTimerOptions?: number[] // Available turn timer options (in seconds)
-  defaultTurnTimer?: number // Default turn timer value
-  roundOptions?: number[] // Available round count options
-  defaultRounds?: number | null // Default number of rounds (null = unlimited)
-  difficultyOptions?: MemoryDifficulty[] // Available game difficulty options
-  defaultDifficulty?: MemoryDifficulty // Default game difficulty
+  hasTurnTimer?: boolean
+  hasGameModes?: boolean
+  hasRoundSelection?: boolean
+  hasDifficultySelection?: boolean
+  turnTimerOptions?: number[]
+  defaultTurnTimer?: number
+  roundOptions?: number[]
+  defaultRounds?: number | null
+  difficultyOptions?: MemoryDifficulty[]
+  defaultDifficulty?: MemoryDifficulty
 }
 
 type GameInfo = {
@@ -39,19 +39,17 @@ type GameInfo = {
   emoji: string
   description: string
   gradient: string
-  translationKey: string // Translation namespace key (e.g. 'yahtzee', 'tictactoe')
+  translationKey: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
-  settings: GameSettings // Game-specific settings configuration
+  settings: GameSettings
 }
 
-// Game info with settings configuration for each game
-// Keyed by SupportedCatalogGameType; experimental entries only shown when feature flag is on
 const GAME_INFO: Record<string, GameInfo> = {
   yahtzee: {
     name: 'Yahtzee',
     emoji: '🎲',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-purple-600 via-pink-500 to-orange-400',
     translationKey: 'yahtzee',
     allowedPlayers: [2, 3, 4],
@@ -66,7 +64,7 @@ const GAME_INFO: Record<string, GameInfo> = {
   guess_the_spy: {
     name: 'Guess the Spy',
     emoji: '🕵️‍♂️',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-blue-600 via-cyan-500 to-green-400',
     translationKey: 'guess_the_spy',
     allowedPlayers: [3, 4, 5, 6, 7, 8],
@@ -79,7 +77,7 @@ const GAME_INFO: Record<string, GameInfo> = {
   tic_tac_toe: {
     name: 'Tic-Tac-Toe',
     emoji: '❌',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-indigo-600 via-blue-500 to-sky-400',
     translationKey: 'tictactoe',
     allowedPlayers: [2],
@@ -95,7 +93,7 @@ const GAME_INFO: Record<string, GameInfo> = {
   rock_paper_scissors: {
     name: 'Rock Paper Scissors',
     emoji: '🍂',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-indigo-500 via-purple-500 to-pink-400',
     translationKey: 'rock_paper_scissors',
     allowedPlayers: [2],
@@ -108,7 +106,7 @@ const GAME_INFO: Record<string, GameInfo> = {
   memory: {
     name: 'Memory',
     emoji: '🧠',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-emerald-500 via-teal-500 to-cyan-400',
     translationKey: 'memory',
     allowedPlayers: [2, 3, 4],
@@ -124,7 +122,7 @@ const GAME_INFO: Record<string, GameInfo> = {
   alias: {
     name: 'Alias',
     emoji: '🗣️',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-violet-600 via-fuchsia-500 to-pink-400',
     translationKey: 'alias',
     allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -137,7 +135,7 @@ const GAME_INFO: Record<string, GameInfo> = {
   liars_party: {
     name: "Liar's Party",
     emoji: '🎭',
-    description: '', // Set via i18n
+    description: '',
     gradient: 'from-rose-600 via-pink-500 to-orange-400',
     translationKey: 'liars_party',
     allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -156,9 +154,6 @@ function isSelectableGameType(value: string | null | undefined): value is GameTy
   return !isTemporarilyUnavailableGameType(value)
 }
 
-
-import { Disclosure } from '@headlessui/react'
-
 const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 
 function CreateLobbyPage() {
@@ -174,24 +169,29 @@ function CreateLobbyPage() {
   )
   const gameInfo = GAME_INFO[selectedGameType]
 
+  const boardSize = 3
+  const [bestOf, setBestOf] = useState<1 | 3 | 5>(1)
+  const [whoStarts, setWhoStarts] = useState<'host' | 'guest' | 'random'>('random')
+
   const [formData, setFormData] = useState({
     name: '',
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
     allowSpectators: true,
-    turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60, // Use game-specific default or fallback to 60
+    turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60,
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
     gameType: selectedGameType as GameType,
   })
-  const LOBBY_NAME_MAX = 22;
-  const [showNameWarning, setShowNameWarning] = useState(false);
+  const LOBBY_NAME_MAX = 22
+  const [showNameWarning, setShowNameWarning] = useState(false)
   const [maxPlayersInput, setMaxPlayersInput] = useState(GAME_INFO[selectedGameType].defaultMaxPlayers.toString())
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPlayerWarning, setShowPlayerWarning] = useState(false)
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
+  const [tipsOpen, setTipsOpen] = useState(false)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -199,7 +199,7 @@ function CreateLobbyPage() {
       setFormData(prev => ({
         ...prev,
         maxPlayers: gameInfo.defaultMaxPlayers,
-        turnTimer: gameInfo.settings.defaultTurnTimer || 60, // Update turn timer when game changes
+        turnTimer: gameInfo.settings.defaultTurnTimer || 60,
         ticTacToeRounds: gameInfo.settings.defaultRounds ?? null,
         memoryDifficulty: gameInfo.settings.defaultDifficulty ?? 'easy',
         gameType: selectedGameType,
@@ -222,16 +222,19 @@ function CreateLobbyPage() {
 
   if (!gameInfo) {
     return (
-      <div className="min-h-[100dvh] bg-gradient-to-br from-red-500 to-purple-600 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-white mb-4">{t('lobby.create.gameNotFound')}</h1>
-          <p className="text-white/80 mb-6">
+      <div className="bd-page bd-screen flex-1 flex items-center justify-center p-4">
+        <div className="bd-card" style={{ padding: 40, maxWidth: 400, width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: 52, marginBottom: 16 }}>⚠️</div>
+          <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 12 }}>
+            {t('lobby.create.gameNotFound')}
+          </h1>
+          <p style={{ color: 'var(--bd-ink-muted)', marginBottom: 24, fontSize: 15 }}>
             {t('lobby.create.gameNotSupported', { gameType: selectedGameType })}
           </p>
           <button
             onClick={() => router.push('/games')}
-            className="w-full bg-white text-purple-600 rounded-xl px-6 py-3 font-semibold hover:bg-white/90 transition-colors"
+            className="bd-btn bd-btn-coral bd-btn-lg"
+            style={{ width: '100%', justifyContent: 'center' }}
           >
             {t('lobby.create.backToGames')}
           </button>
@@ -249,7 +252,6 @@ function CreateLobbyPage() {
     let createMetricTracked = false
 
     try {
-      // Allow both authenticated users and guests to create lobbies
       if (!session && !isGuest) {
         router.push(buildCurrentAuthUrl('login'))
         return
@@ -264,15 +266,18 @@ function CreateLobbyPage() {
         allowSpectators: formData.allowSpectators,
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
-        ...(formData.gameType === 'tic_tac_toe' ? { ticTacToeRounds: formData.ticTacToeRounds } : {}),
+        ...(formData.gameType === 'tic_tac_toe' ? {
+          ticTacToeRounds: formData.ticTacToeRounds,
+          boardSize,
+          bestOf,
+          whoStarts,
+        } : {}),
         ...(formData.gameType === 'memory' ? { memoryDifficulty: formData.memoryDifficulty } : {}),
       }
 
       const res = await fetchWithGuest('/api/lobby', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       responseStatus = res.status
@@ -325,36 +330,23 @@ function CreateLobbyPage() {
         try {
           const inviteResponse = await fetch(`/api/lobby/${lobbyCode}/invite`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ friendIds: selectedFriendIds }),
           })
-
           const inviteResult = await inviteResponse.json().catch(() => null)
           if (!inviteResponse.ok) {
             clientLogger.warn('Lobby created but party invite request failed', {
-              lobbyCode,
-              status: inviteResponse.status,
-              error: inviteResult,
+              lobbyCode, status: inviteResponse.status, error: inviteResult,
             })
           } else {
             clientLogger.log('Party invite flow completed during lobby creation', {
               lobbyCode,
-              invitedCount:
-                typeof inviteResult?.invitedCount === 'number'
-                  ? inviteResult.invitedCount
-                  : selectedFriendIds.length,
-              skippedCount: Array.isArray(inviteResult?.skippedFriendIds)
-                ? inviteResult.skippedFriendIds.length
-                : 0,
+              invitedCount: typeof inviteResult?.invitedCount === 'number' ? inviteResult.invitedCount : selectedFriendIds.length,
+              skippedCount: Array.isArray(inviteResult?.skippedFriendIds) ? inviteResult.skippedFriendIds.length : 0,
             })
           }
         } catch (inviteError) {
-          clientLogger.warn('Lobby created but party invite request threw an error', {
-            lobbyCode,
-            error: inviteError,
-          })
+          clientLogger.warn('Lobby created but party invite request threw an error', { lobbyCode, error: inviteError })
         }
       }
 
@@ -380,8 +372,8 @@ function CreateLobbyPage() {
 
   if (status === 'loading') {
     return (
-      <div className="page-shell flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-        <div className="text-white text-xl">{t('common.loading')}</div>
+      <div className="bd-page bd-screen flex-1 flex items-center justify-center">
+        <div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>{t('common.loading')}</div>
       </div>
     )
   }
@@ -390,486 +382,589 @@ function CreateLobbyPage() {
     return null
   }
 
-  return (
-    <div className={`page-shell bg-gradient-to-br ${gameInfo.gradient}`}>
-      <section
-        className="flex-1 flex flex-col w-full px-4 py-4 md:py-0 md:items-center md:justify-center overflow-y-auto md:overflow-hidden"
-      >
-        <div className="w-full max-w-4xl flex flex-col items-center justify-center">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-white/20 flex flex-col md:flex-row md:gap-0 gap-4 overflow-visible md:overflow-hidden w-full md:h-[80vh] md:max-h-[800px]">
-            {/* 1. Game Type Selector - clean scrollable list */}
-            <div className="md:w-1/4 w-full flex flex-col overflow-visible md:overflow-y-auto bg-white/5 border-b-2 md:border-b-0 md:border-r-2 border-white/10 order-1">
-              {Object.entries(GAME_INFO)
-                .filter(([key]) => !isTemporarilyUnavailableGameType(key))
-                .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-                .map(([key, info]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedGameType(key as GameType)}
-                  className={`flex items-center gap-3 px-4 py-5 h-20 w-full font-semibold transition-all border-b border-white/10 last:border-b-0 ${selectedGameType === key
-                    ? 'bg-white text-blue-600 shadow-lg'
-                    : 'text-white hover:bg-white/10'
-                    }`}
-                  aria-label={t('lobby.create.selectGame', { name: info.name })}
-                >
-                  <span className="text-3xl flex-shrink-0">{info.emoji}</span>
-                  <span className="text-left text-base md:text-lg font-bold">{info.name}</span>
-                </button>
-              ))}
+  const sliderPct = gameInfo.allowedPlayers.length > 1
+    ? ((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100
+    : 0
+
+  const isTTT = selectedGameType === 'tic_tac_toe'
+
+  const MiniBoard = ({ size }: { size: 3 | 4 | 5 }) => {
+    const dim = 168
+    const demoCells: Record<number, 'x' | 'o'> =
+      size === 3 ? { 4: 'x', 0: 'o', 8: 'x' } :
+      size === 4 ? { 5: 'x', 10: 'o', 0: 'x' } :
+      { 12: 'x', 6: 'o', 18: 'x', 24: 'o' }
+    return (
+      <div style={{
+        width: dim, height: dim,
+        display: 'grid', gridTemplateColumns: `repeat(${size}, 1fr)`,
+        background: 'white', borderRadius: 16, border: '2px solid var(--bd-ink)',
+        boxShadow: '4px 4px 0 var(--bd-ink)', overflow: 'hidden', flexShrink: 0,
+      }}>
+        {Array.from({ length: size * size }).map((_, i) => {
+          const m = demoCells[i]
+          return (
+            <div key={i} style={{
+              display: 'grid', placeItems: 'center',
+              borderRight: (i % size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
+              borderBottom: Math.floor(i / size) < size - 1 ? '1.5px solid var(--bd-line)' : 'none',
+              fontSize: Math.floor(dim / size * 0.48),
+              fontFamily: 'var(--bd-font-display)', fontWeight: 800,
+              color: m === 'x' ? 'var(--bd-coral)' : 'var(--bd-lav-deep)',
+            }}>{m === 'x' ? '✕' : m === 'o' ? '○' : ''}</div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const SegPicker = <T extends string | number>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { v: T; l: string }[] }) => (
+    <div style={{
+      display: 'grid', gridAutoFlow: 'column', gridAutoColumns: '1fr', gap: 4,
+      padding: 4, background: 'var(--bd-card-warm)', borderRadius: 12, border: '1.5px solid var(--bd-line)',
+    }}>
+      {options.map(o => (
+        <button key={String(o.v)} type="button" onClick={() => onChange(o.v)} style={{
+          padding: '8px 10px', borderRadius: 9, fontWeight: 600, fontSize: 13,
+          background: value === o.v ? 'var(--bd-ink)' : 'transparent',
+          color: value === o.v ? 'var(--bd-bg)' : 'var(--bd-ink-soft)',
+          border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
+          transition: 'all 0.12s',
+        }}>{o.l}</button>
+      ))}
+    </div>
+  )
+
+  const GamePreview = () => {
+    if (selectedGameType === 'tic_tac_toe') {
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <MiniBoard size={boardSize} />
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Tic-Tac-Toe</p>
+            <p className="text-sm text-bd-ink-muted">{boardSize}×{boardSize} grid</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'yahtzee') {
+      const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅']
+      const vals = [6, 3, 3, 1, 5]
+      const rotations = [-5, 3, -8, 5, -3]
+      const offsets = [0, -4, 0, -6, 2]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-end gap-2">
+            {vals.map((v, i) => (
+              <div key={i} style={{
+                width: 50, height: 50, borderRadius: 12, background: 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
+                display: 'grid', placeItems: 'center', fontSize: 26,
+                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
+              }}>{faces[v - 1]}</div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Yahtzee!</p>
+            <p className="text-sm text-bd-ink-muted">Roll dice · score combos</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'memory') {
+      const cols = formData.memoryDifficulty === 'easy' ? 4 : formData.memoryDifficulty === 'medium' ? 5 : 6
+      const emojis = ['🦊', '🐧', '🦁', '🐬', '🌟', '🍕', '🎸', '🚀', '🎨', '🎭', '🎲', '🌈']
+      const revealed = [0, 5, 3]
+      const total = Math.min(cols * cols, 20)
+      const sz = formData.memoryDifficulty === 'easy' ? 38 : formData.memoryDifficulty === 'medium' ? 32 : 28
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 5 }}>
+            {Array.from({ length: total }).map((_, i) => (
+              <div key={i} style={{
+                width: sz, height: sz, borderRadius: 7, display: 'grid', placeItems: 'center',
+                background: revealed.includes(i) ? 'white' : 'var(--bd-ink)',
+                border: '1.5px solid var(--bd-line)', fontSize: sz * 0.52, transition: 'all 0.2s',
+              }}>
+                {revealed.includes(i) ? emojis[i % emojis.length] : ''}
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Memory</p>
+            <p className="text-sm text-bd-ink-muted capitalize">{formData.memoryDifficulty} · find pairs</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'guess_the_spy') {
+      const cards = [
+        { emoji: '🏖️', label: 'Beach', dark: false },
+        { emoji: '🕵️', label: '???', dark: true },
+        { emoji: '🏔️', label: 'Mountain', dark: false },
+      ]
+      const rotations = [-6, 0, 6]
+      const offsets = [4, 0, 4]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-end gap-2">
+            {cards.map((card, i) => (
+              <div key={i} style={{
+                width: 80, height: 108, borderRadius: 14, flexShrink: 0,
+                background: card.dark ? 'var(--bd-ink)' : 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
+              }}>
+                <span style={{ fontSize: 26 }}>{card.emoji}</span>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+                  color: card.dark ? 'rgba(255,255,255,0.5)' : 'var(--bd-ink-muted)',
+                }}>{card.label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Guess the Spy</p>
+            <p className="text-sm text-bd-ink-muted">Find the impostor</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'rock_paper_scissors') {
+      const choices = [{ e: '✊', l: 'Rock' }, { e: '✋', l: 'Paper' }, { e: '✌️', l: 'Scissors' }]
+      const rotations = [-5, 0, 5]
+      const offsets = [4, 0, 4]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-end gap-3">
+            {choices.map((c, i) => (
+              <div key={c.l} style={{
+                width: 74, height: 94, borderRadius: 14, background: 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-ink)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transform: `rotate(${rotations[i]}deg) translateY(${offsets[i]}px)`,
+              }}>
+                <span style={{ fontSize: 28 }}>{c.e}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--bd-ink-muted)' }}>{c.l}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Rock Paper Scissors</p>
+            <p className="text-sm text-bd-ink-muted">2 players · classic showdown</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'alias') {
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div style={{
+            width: 188, borderRadius: 18, background: 'white',
+            border: '2px solid var(--bd-ink)', boxShadow: '4px 4px 0 var(--bd-ink)',
+            padding: '18px 20px', transform: 'rotate(-2deg)',
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
+              Describe this:
             </div>
-            {/* 2. Form */}
-            <form onSubmit={handleSubmit} className="md:w-2/4 w-full p-4 md:p-6 space-y-2.5 md:space-y-3 flex flex-col order-3 md:order-2 overflow-visible md:overflow-y-auto max-h-none">
-              <div>
-                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🎮 {t('lobby.create.lobbyName')} <span className="font-medium text-white/70">({t('common.optional')})</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('lobby.create.lobbyNamePlaceholder')}
-                  maxLength={LOBBY_NAME_MAX}
-                  className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
-                  value={formData.name}
-                  onChange={(e) => {
-                    let value = e.target.value;
-                    if (value.length > LOBBY_NAME_MAX) {
-                      value = value.slice(0, LOBBY_NAME_MAX);
-                    }
-                    setFormData({ ...formData, name: value });
-                    setShowNameWarning(value.length >= LOBBY_NAME_MAX);
-                  }}
-                  onBlur={() => setShowNameWarning(false)}
-                />
-                {/* Validation warning for name length */}
-                {showNameWarning && (
-                  <p className="text-xs text-red-300 mt-1 animate-fade-in">
-                    ⚠️ {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
-                  </p>
-                )}
+            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'var(--bd-ink)', marginBottom: 14, lineHeight: 1.1 }}>
+              ALGORITHM
+            </div>
+            <div style={{ height: 6, borderRadius: 3, background: 'var(--bd-bg2)', overflow: 'hidden' }}>
+              <div style={{ width: '60%', height: '100%', background: 'var(--bd-mint)', borderRadius: 3 }} />
+            </div>
+            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--bd-ink-muted)', textAlign: 'right' }}>0:35</div>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Alias</p>
+            <p className="text-sm text-bd-ink-muted">Describe without saying it</p>
+          </div>
+        </div>
+      )
+    }
+    if (selectedGameType === 'liars_party') {
+      const cards = [
+        { rank: 'K', suit: '♠', red: false },
+        { rank: 'A', suit: '♥', red: true },
+        { rank: '7', suit: '♣', red: false },
+        { rank: 'Q', suit: '♦', red: true },
+      ]
+      const rotations = [-8, -3, 3, 8]
+      return (
+        <div className="flex flex-col items-center gap-5">
+          <div style={{ position: 'relative', width: 170, height: 110 }}>
+            {cards.map((card, i) => (
+              <div key={i} style={{
+                position: 'absolute', top: 0, left: `${i * 28}px`,
+                width: 68, height: 90, borderRadius: 10, background: 'white',
+                border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transform: `rotate(${rotations[i]}deg)`,
+              }}>
+                <span style={{
+                  fontSize: 19, fontWeight: 800, fontFamily: 'var(--bd-font-display)',
+                  color: card.red ? 'var(--bd-coral)' : 'var(--bd-ink)',
+                }}>{card.rank}{card.suit}</span>
               </div>
-              <div>
-                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  🔒 {t('lobby.create.password')}
-                </label>
-                <input
-                  type="text"
-                  autoComplete="off"
-                  placeholder={t('lobby.create.passwordPlaceholder')}
-                  className="w-full px-4 py-2.5 border-2 border-white/30 rounded-xl focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white placeholder-white/60 transition-all"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                  👥 {t('lobby.create.maxPlayers')} *
-                </label>
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>Liar's Party</p>
+            <p className="text-sm text-bd-ink-muted">Bluff your way to victory</p>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="text-center">
+        <div style={{ fontSize: 60, marginBottom: 12 }}>{gameInfo.emoji}</div>
+        <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{gameInfo.name}</p>
+      </div>
+    )
+  }
 
-                {gameInfo.allowedPlayers.length === 1 ? (
-                  // Static display for games with fixed player count (e.g., Tic-Tac-Toe)
-                  <div className="flex flex-col items-center py-2">
-                    <div className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
-                      <span className="text-2xl font-extrabold text-white">
-                        {gameInfo.allowedPlayers[0]}
-                      </span>
-                      <span className="text-sm text-white/90 font-semibold">
-                        {gameInfo.allowedPlayers[0] === 1
-                          ? t('lobby.create.player')
-                          : t('lobby.create.players')
-                        }
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* Number Input - Centered above slider */}
-                    <div className="flex flex-col items-center mb-2">
-                      <input
-                        type="number"
-                        min={gameInfo.allowedPlayers[0]}
-                        max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                        value={maxPlayersInput}
-                        onChange={(e) => {
-                          const inputValue = e.target.value;
-                          setMaxPlayersInput(inputValue);
+  const chipOpt = (active: boolean) =>
+    `bd-chip flex-1 cursor-pointer justify-center py-2 text-sm transition-all ${
+      active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink'
+    }`
 
-                          // Check for validation warnings
-                          if (inputValue === '') {
-                            setShowPlayerWarning(false);
-                            return;
-                          }
+  return (
+    <div className="page-shell bd-page bd-screen flex flex-col">
 
-                          const value = parseInt(inputValue);
-                          if (!isNaN(value)) {
-                            // If value is allowed, sync to formData
-                            if (gameInfo.allowedPlayers.includes(value)) {
-                              setFormData({ ...formData, maxPlayers: value });
-                              setShowPlayerWarning(false);
-                            } else {
-                              // If value is out of bounds, show warning
-                              if (value < gameInfo.allowedPlayers[0] || value > gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]) {
-                                setShowPlayerWarning(true);
-                              } else {
-                                // Valid number but not in allowed set (if gaps exist), treat as warning or just ignore
-                                setShowPlayerWarning(false);
-                              }
-                            }
-                          }
-                        }}
-                        onFocus={() => {
-                          setShowPlayerWarning(false);
-                        }}
-                        onBlur={() => {
-                          // On blur, reset to the last valid value in formData
-                          setMaxPlayersInput(formData.maxPlayers.toString());
-                          setShowPlayerWarning(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Backspace' || e.key === 'Delete') {
-                            setShowPlayerWarning(false);
-                          }
-                        }}
-                        className="w-12 px-2 py-1.5 text-center text-base border-2 border-white/30 rounded-md focus:ring-2 focus:ring-white focus:border-transparent bg-white/20 backdrop-blur-sm text-white font-bold transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-md"
-                      />
-                      {/* Validation warning */}
-                      {showPlayerWarning && (
-                        <p className="text-xs text-red-300 mt-1 animate-fade-in">
-                          ⚠️ {t('lobby.create.mustBeBetween', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })}
-                        </p>
-                      )}
-                    </div>
+      {/* Top bar: back + game selector */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-bd-line bg-white px-5 py-3">
+        <button
+          type="button"
+          onClick={() => router.push('/games')}
+          className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+        >
+          ← {t('lobby.create.cancel')}
+        </button>
+        <div className="h-4 w-px shrink-0 bg-bd-line" />
+        <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {Object.entries(GAME_INFO)
+            .filter(([key]) => !isTemporarilyUnavailableGameType(key))
+            .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+            .map(([key, info]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelectedGameType(key as GameType)}
+                aria-label={t('lobby.create.selectGame', { name: info.name })}
+                className={`bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all ${
+                  selectedGameType === key
+                    ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                    : 'hover:border-bd-ink hover:bg-white'
+                }`}
+              >
+                {info.emoji} {info.name}
+              </button>
+            ))}
+        </div>
+      </div>
 
-                    {/* Range Slider */}
-                    <div className="relative">
-                      <input
-                        type="range"
-                        min={gameInfo.allowedPlayers[0]}
-                        max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
-                        step="1"
-                        value={formData.maxPlayers}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          if (gameInfo.allowedPlayers.includes(value)) {
-                            setFormData({ ...formData, maxPlayers: value });
-                            setMaxPlayersInput(value.toString());
-                            setShowPlayerWarning(false);
-                          }
-                        }}
-                        className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider-thumb"
-                        style={{
-                          background: `linear-gradient(to right, white 0%, white ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) ${((formData.maxPlayers - gameInfo.allowedPlayers[0]) / (gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] - gameInfo.allowedPlayers[0])) * 100}%, rgba(255,255,255,0.2) 100%)`
-                        }}
-                      />
-                      {/* Tick marks for allowed values */}
-                      <div className="flex justify-between mt-1 px-0.5">
-                        {gameInfo.allowedPlayers.map((num) => (
-                          <span
-                            key={num}
-                            className={`text-xs transition-all ${formData.maxPlayers === num ? 'text-white font-bold scale-110' : 'text-white/50'}`}
-                          >
-                            {num}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
+      {/* Main area */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
 
-                {/* Helper text */}
-                <p className="text-xs text-white/70 mt-2 text-center">
-                  {gameInfo.allowedPlayers.length === 1
-                    ? t('lobby.create.playerCountHelperExact', { count: gameInfo.allowedPlayers[0] })
-                    : t('lobby.create.playerCountHelperRange', { min: gameInfo.allowedPlayers[0], max: gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1] })
-                  }
-                </p>
-              </div>
-
-              {/* Round Settings - Tic-Tac-Toe */}
-              {gameInfo.settings.hasRoundSelection && (
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                    🔁 {t('lobby.create.roundsToPlay')}
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {(gameInfo.settings.roundOptions || [3, 5, 10]).map((rounds) => (
-                      <button
-                        key={rounds}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, ticTacToeRounds: rounds })}
-                        className={`px-3 py-2 rounded-xl font-semibold transition-all ${formData.ticTacToeRounds === rounds
-                          ? 'bg-white text-blue-600 shadow-lg scale-105'
-                          : 'bg-white/20 text-white hover:bg-white/30'
-                          }`}
-                      >
-                        {rounds}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, ticTacToeRounds: null })}
-                      className={`px-3 py-2 rounded-xl font-semibold transition-all ${formData.ticTacToeRounds === null
-                        ? 'bg-white text-blue-600 shadow-lg scale-105'
-                        : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                    >
-                      ∞
-                    </button>
-                  </div>
-                  <p className="text-xs text-white/70 mt-2 text-center">
-                    {t('lobby.create.roundsHelper')}
-                  </p>
-                </div>
-              )}
-
-              {/* Difficulty Settings - Memory */}
-              {gameInfo.settings.hasDifficultySelection && (
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                    🧠 {t('lobby.create.memoryDifficulty')}
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(gameInfo.settings.difficultyOptions || ['easy', 'medium', 'hard']).map((difficulty) => (
-                      <button
-                        key={difficulty}
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            memoryDifficulty: difficulty as MemoryDifficulty,
-                          }))
-                        }
-                        className={`px-3 py-2 rounded-xl font-semibold transition-all ${
-                          formData.memoryDifficulty === difficulty
-                            ? 'bg-white text-blue-600 shadow-lg scale-105'
-                            : 'bg-white/20 text-white hover:bg-white/30'
-                        }`}
-                      >
-                        {difficulty === 'easy'
-                          ? t('lobby.create.difficultyEasy')
-                          : difficulty === 'medium'
-                            ? t('lobby.create.difficultyMedium')
-                            : t('lobby.create.difficultyHard')}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-white/70 mt-2 text-center">
-                    {t('lobby.create.memoryDifficultyHelper')}
-                  </p>
-                </div>
-              )}
-
-              {/* Turn Timer Settings - Only for games that support it */}
-              {gameInfo.settings.hasTurnTimer && (
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                    ⏱️ {t('lobby.create.turnTimer')} *
-                  </label>
-                  <div className="flex gap-2">
-                    {(gameInfo.settings.turnTimerOptions || [30, 60, 90, 120]).map((seconds) => (
-                      <button
-                        key={seconds}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, turnTimer: seconds })}
-                        className={`flex-1 px-3 py-2 rounded-xl font-semibold transition-all ${formData.turnTimer === seconds
-                          ? 'bg-white text-blue-600 shadow-lg scale-105'
-                          : 'bg-white/20 text-white hover:bg-white/30'
-                          }`}
-                      >
-                        {seconds}s
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-white/70 mt-2 text-center">
-                    {t('lobby.create.turnTimerHelper')}
-                  </p>
-                </div>
-              )}
-
-              <div className="rounded-xl border border-white/20 bg-white/10 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-white">Spectators</p>
-                    <p className="text-xs text-white/70">
-                      Allow users to watch in read-only mode
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))
-                    }
-                    className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                      formData.allowSpectators ? 'bg-emerald-400' : 'bg-white/25'
-                    }`}
-                    aria-pressed={formData.allowSpectators}
-                    aria-label="Toggle spectators"
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                        formData.allowSpectators ? 'translate-x-8' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                <p className="mt-3 text-xs text-white/70">
-                  Spectator capacity is unlimited when enabled.
-                </p>
-              </div>
-
-              {!isGuest && (
-                <div className="rounded-xl border border-white/20 bg-white/10 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-white">👥 {t('lobby.invite.title')}</p>
-                      <p className="text-xs text-white/70">
-                        {t('lobby.invite.description')}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowFriendsModal(true)}
-                      className="px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all"
-                    >
-                      {selectedFriendIds.length > 0
-                        ? t('lobby.invite.send', { count: selectedFriendIds.length })
-                        : t('lobby.invite.title')}
-                    </button>
-                  </div>
-                  {selectedFriendIds.length > 0 && (
-                    <p className="mt-3 text-xs text-emerald-200">
-                      {t('lobby.invite.send', { count: selectedFriendIds.length })}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Game Mode - Only for games that support it */}
-              {gameInfo.settings.hasGameModes && (
-                <div>
-                  <label className="block text-xs md:text-sm font-bold text-white mb-1.5 md:mb-2">
-                    🎮 {t('lobby.create.gameMode')}
-                  </label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full px-4 py-2.5 rounded-xl font-semibold bg-white/10 text-white/50 cursor-not-allowed flex items-center justify-center gap-2 border-2 border-white/20"
-                    >
-                      <span>🔒</span>
-                      <span>{t('lobby.create.comingSoon')}</span>
-                    </button>
-                    <p className="text-xs text-white/70 mt-2 text-center">
-                      {t('lobby.create.gameModeHelper')}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <div className="bg-red-500/20 border-2 border-red-400 text-white px-4 py-3 rounded-xl flex items-center gap-2 backdrop-blur-sm">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                  {error}
-                </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => router.push('/games')}
-                  className="flex-1 px-4 py-2.5 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all"
-                >
-                  {t('lobby.create.cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                      {t('lobby.create.creating')}
-                    </>
-                  ) : (
-                    <>
-                      <span>✨</span>
-                      {t('lobby.create.create')}
-                    </>
-                  )}
-                </button>
-              </div>
-              {/* Tips - compact under the form */}
-              <Disclosure defaultOpen={false}>
-                {({ open }) => (
-                  <div className="bg-white/10 rounded-2xl p-3 mt-2">
-                    <Disclosure.Button className="w-full flex items-center justify-between text-white font-bold text-base focus:outline-none">
-                      <span>💡 {t('lobby.create.tips.title')}</span>
-                      <span className="ml-2">{open ? '▲' : '▼'}</span>
-                    </Disclosure.Button>
-                    <Disclosure.Panel>
-                      <ul className="space-y-2 text-sm text-white/80 mt-3">
-                        <li className="flex items-start gap-2">
-                          <span className="text-green-400 font-bold mt-0.5">✓</span>
-                          <span>{t('lobby.create.tips.autoAdd')}</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-green-400 font-bold mt-0.5">✓</span>
-                          <span>{t('lobby.create.tips.shareCode')}</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-green-400 font-bold mt-0.5">✓</span>
-                          <span>{t('lobby.create.tips.startReady')}</span>
-                        </li>
-                      </ul>
-                    </Disclosure.Panel>
-                  </div>
-                )}
-              </Disclosure>
-            </form>
-            {/* 3. Preview/Info */}
-            <div className="md:w-1/4 w-full bg-white/5 md:bg-white/10 p-4 md:p-6 flex flex-col items-center justify-center text-center border-t-2 md:border-t-0 md:border-l-2 border-white/10 order-2 md:order-3">
-              <div className="text-5xl mb-2">{gameInfo.emoji}</div>
-              <div className="text-2xl font-bold text-white mb-1">{gameInfo.name}</div>
-              <div className="text-white/80 mb-2 text-sm">{t(`games.${gameInfo.translationKey}.description` as Parameters<typeof t>[0])}</div>
-              <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                  👥 {t('lobby.create.preview.players', { count: formData.maxPlayers })}
+        {/* Left: game preview */}
+        <div className="hidden w-72 shrink-0 flex-col border-r border-bd-line bg-bd-card-warm xl:flex">
+          <div className="flex flex-1 items-center justify-center p-8">
+            <GamePreview />
+          </div>
+          <div className="shrink-0 border-t border-bd-line p-4">
+            <div className="bd-card p-4">
+              <p className="bd-kicker mb-2">Lobby preview</p>
+              <p className="mb-3 text-[17px] font-extrabold leading-tight text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                {formData.name || <span className="text-sm font-normal italic text-bd-ink-muted">Untitled lobby</span>}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className={`bd-chip ${formData.password ? 'bd-chip-coral' : 'bd-chip-mint'}`}>
+                  {formData.password ? '🔒 Private' : '🌐 Public'}
                 </span>
-                {formData.password && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                    🔒 {t('lobby.create.preview.private')}
-                  </span>
+                <span className="bd-chip">👥 {formData.maxPlayers}</span>
+                {isTTT && bestOf > 1 && <span className="bd-chip bd-chip-lav">Bo{bestOf}</span>}
+                {selectedGameType === 'memory' && (
+                  <span className="bd-chip bd-chip-mint capitalize">{formData.memoryDifficulty}</span>
                 )}
-                {gameInfo.settings.hasTurnTimer && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                    ⏱️ {formData.turnTimer}s
-                  </span>
-                )}
-                {gameInfo.settings.hasRoundSelection && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                    🔁 {formData.ticTacToeRounds === null
-                      ? t('lobby.create.unlimitedRounds')
-                      : t('lobby.create.rounds', { count: formData.ticTacToeRounds })}
-                  </span>
-                )}
-                {gameInfo.settings.hasDifficultySelection && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/30 text-white text-sm font-semibold">
-                    🧠 {formData.memoryDifficulty === 'easy'
-                      ? t('lobby.create.difficultyEasy')
-                      : formData.memoryDifficulty === 'medium'
-                        ? t('lobby.create.difficultyMedium')
-                        : t('lobby.create.difficultyHard')}
-                  </span>
-                )}
-              </div>
-              <div className="mt-4 text-xs text-white/70">
-                {t('lobby.create.preview.lobbyName')} <span className="font-semibold text-white">{formData.name || t('lobby.create.preview.noName')}</span>
               </div>
             </div>
           </div>
         </div>
-      </section>
+
+        {/* Right: settings form */}
+        <form
+          id="create-lobby-form"
+          onSubmit={handleSubmit}
+          className="flex flex-1 flex-col overflow-y-auto"
+        >
+          <div className="mx-auto my-auto w-full max-w-lg space-y-5 px-6 py-7">
+
+            {/* Title */}
+            <div>
+              <span className="bd-kicker mb-1 block">Create Lobby</span>
+              <h1
+                className="text-[clamp(22px,3vw,30px)] font-extrabold leading-tight text-bd-ink"
+                style={{ fontFamily: 'var(--bd-font-display)' }}
+              >
+                Set up your <span style={{ color: 'var(--bd-coral)' }}>{gameInfo.name}</span> room
+              </h1>
+            </div>
+
+            {/* Lobby name */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-bd-ink">
+                {t('lobby.create.lobbyName')}{' '}
+                <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
+              </label>
+              <input
+                type="text"
+                placeholder={t('lobby.create.lobbyNamePlaceholder')}
+                maxLength={LOBBY_NAME_MAX}
+                className="bd-input"
+                value={formData.name}
+                onChange={(e) => {
+                  let value = e.target.value
+                  if (value.length > LOBBY_NAME_MAX) value = value.slice(0, LOBBY_NAME_MAX)
+                  setFormData({ ...formData, name: value })
+                  setShowNameWarning(value.length >= LOBBY_NAME_MAX)
+                }}
+                onBlur={() => setShowNameWarning(false)}
+              />
+              {showNameWarning && (
+                <p className="text-sm" style={{ color: 'var(--bd-coral-deep)' }}>
+                  ⚠️ {t('lobby.create.maxCharacters', { max: LOBBY_NAME_MAX })}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-bd-ink">
+                🔒 {t('lobby.create.password')}{' '}
+                <span className="font-normal text-bd-ink-muted">({t('common.optional')})</span>
+              </label>
+              <input
+                type="text"
+                autoComplete="off"
+                placeholder={t('lobby.create.passwordPlaceholder')}
+                className="bd-input"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+
+            {/* Max players */}
+            {gameInfo.allowedPlayers.length > 1 ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-bd-ink">👥 {t('lobby.create.maxPlayers')}</label>
+                  <span className="text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                    {formData.maxPlayers}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={gameInfo.allowedPlayers[0]}
+                  max={gameInfo.allowedPlayers[gameInfo.allowedPlayers.length - 1]}
+                  step="1"
+                  value={formData.maxPlayers}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value)
+                    if (gameInfo.allowedPlayers.includes(value)) {
+                      setFormData({ ...formData, maxPlayers: value })
+                      setMaxPlayersInput(value.toString())
+                      setShowPlayerWarning(false)
+                    }
+                  }}
+                  className="slider-thumb w-full"
+                  style={{
+                    background: `linear-gradient(to right, var(--bd-ink) 0%, var(--bd-ink) ${sliderPct}%, var(--bd-bg2) ${sliderPct}%, var(--bd-bg2) 100%)`,
+                  }}
+                />
+                <div className="flex justify-between px-0.5">
+                  {gameInfo.allowedPlayers.map((n) => (
+                    <span key={n} className={`text-xs font-semibold ${formData.maxPlayers === n ? 'text-bd-ink' : 'text-bd-ink-muted'}`}>
+                      {n}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-bd-ink">👥 {t('lobby.create.maxPlayers')}</span>
+                <span className="bd-chip">{gameInfo.allowedPlayers[0]} {t('lobby.create.players')}</span>
+              </div>
+            )}
+
+            {/* Game-specific settings */}
+            {(isTTT || gameInfo.settings.hasDifficultySelection || gameInfo.settings.hasTurnTimer) && (
+              <>
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="h-px flex-1 bg-bd-line" />
+                  <span className="bd-kicker text-[10px]">Game settings</span>
+                  <div className="h-px flex-1 bg-bd-line" />
+                </div>
+
+                {isTTT && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-bd-ink">Match length</label>
+                      <SegPicker value={bestOf} onChange={(v) => setBestOf(v as 1 | 3 | 5)} options={[{ v: 1, l: 'Single' }, { v: 3, l: 'Best of 3' }, { v: 5, l: 'Best of 5' }]} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-bd-ink">First move</label>
+                      <SegPicker value={whoStarts} onChange={(v) => setWhoStarts(v as 'host' | 'guest' | 'random')} options={[{ v: 'host', l: 'You (✕)' }, { v: 'guest', l: 'Guest (○)' }, { v: 'random', l: '🎲 Random' }]} />
+                    </div>
+                    {gameInfo.settings.hasRoundSelection && (
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-bd-ink">{t('lobby.create.roundsToPlay')}</label>
+                        <div className="flex gap-2">
+                          {[3, 5, 10].map((r) => (
+                            <button key={r} type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: r })} className={chipOpt(formData.ticTacToeRounds === r)}>{r}</button>
+                          ))}
+                          <button type="button" onClick={() => setFormData({ ...formData, ticTacToeRounds: null })} className={chipOpt(formData.ticTacToeRounds === null)}>∞</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {gameInfo.settings.hasDifficultySelection && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-bd-ink">🧠 {t('lobby.create.memoryDifficulty')}</label>
+                    <div className="flex gap-2">
+                      {(['easy', 'medium', 'hard'] as MemoryDifficulty[]).map((d) => (
+                        <button key={d} type="button" onClick={() => setFormData({ ...formData, memoryDifficulty: d })} className={chipOpt(formData.memoryDifficulty === d)}>
+                          {d === 'easy' ? '🟢 Easy' : d === 'medium' ? '🟡 Medium' : '🔴 Hard'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {gameInfo.settings.hasTurnTimer && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-bd-ink">⏱ {t('lobby.create.turnTimer')}</label>
+                    <div className="flex gap-2">
+                      {[30, 60, 90, 120].map((s) => (
+                        <button key={s} type="button" onClick={() => setFormData({ ...formData, turnTimer: s })} className={chipOpt(formData.turnTimer === s)}>{s}s</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Lobby options */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="h-px flex-1 bg-bd-line" />
+              <span className="bd-kicker text-[10px]">Lobby options</span>
+              <div className="h-px flex-1 bg-bd-line" />
+            </div>
+
+            {/* Spectators */}
+            <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
+              <div>
+                <p className="font-semibold text-bd-ink">Spectators</p>
+                <p className="text-[13px] text-bd-ink-muted">Allow others to watch</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
+                aria-pressed={formData.allowSpectators}
+                aria-label="Toggle spectators"
+                style={{
+                  position: 'relative', display: 'inline-flex', height: 28, width: 52,
+                  alignItems: 'center', borderRadius: 999, border: 'none', cursor: 'pointer',
+                  flexShrink: 0, transition: 'background 0.2s',
+                  background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
+                }}
+              >
+                <span style={{
+                  display: 'inline-block', width: 20, height: 20, borderRadius: '50%',
+                  background: 'white', boxShadow: '0 1px 4px rgba(31,27,22,0.2)',
+                  transition: 'transform 0.2s',
+                  transform: formData.allowSpectators ? 'translateX(28px)' : 'translateX(4px)',
+                }} />
+              </button>
+            </div>
+
+            {/* Invite friends */}
+            {!isGuest && (
+              <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
+                <div>
+                  <p className="font-semibold text-bd-ink">👥 {t('lobby.invite.title')}</p>
+                  <p className="text-[13px] text-bd-ink-muted">
+                    {selectedFriendIds.length > 0
+                      ? <span style={{ color: 'var(--bd-mint-deep)', fontWeight: 600 }}>✓ {selectedFriendIds.length} selected</span>
+                      : t('lobby.invite.description')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowFriendsModal(true)}
+                  className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+                >
+                  {selectedFriendIds.length > 0 ? 'Edit' : t('lobby.invite.title')}
+                </button>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div
+                className="flex items-center gap-2 rounded-2xl px-4 py-3 text-sm"
+                style={{ background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.3)', color: 'var(--bd-coral-deep)' }}
+              >
+                <svg style={{ width: 16, height: 16, flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </div>
+            )}
+
+          </div>
+        </form>
+      </div>
+
+      {/* Bottom action bar */}
+      <div
+        className="flex shrink-0 items-center gap-4 border-t px-6 py-4"
+        style={{ background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)' }}
+      >
+        <span className="hidden text-sm sm:block" style={{ color: 'rgba(251,246,238,0.4)' }}>
+          Invite code generated on create
+        </span>
+        <div className="ml-auto flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.push('/games')}
+            className="bd-btn bd-btn-soft px-4 py-2.5 text-sm"
+          >
+            {t('lobby.create.cancel')}
+          </button>
+          <button
+            type="submit"
+            form="create-lobby-form"
+            disabled={loading}
+            className="bd-btn bd-btn-coral px-5 py-2.5 font-bold"
+            style={{ opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {t('lobby.create.creating')}
+              </>
+            ) : (
+              <>{t('lobby.create.create')} →</>
+            )}
+          </button>
+        </div>
+      </div>
 
       {!isGuest && (
         <FriendsListModal
@@ -885,10 +980,9 @@ function CreateLobbyPage() {
   )
 }
 
-// Wrap component with Suspense for useSearchParams
 export default function CreateLobbyPageWrapper() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600"><div className="text-white text-xl">Loading...</div></div>}>
+    <Suspense fallback={<div className="bd-page bd-screen flex-1 flex items-center justify-center"><div style={{ color: 'var(--bd-ink-soft)', fontSize: 18 }}>Loading...</div></div>}>
       <CreateLobbyPage />
     </Suspense>
   )

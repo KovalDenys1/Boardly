@@ -106,7 +106,7 @@ export default function PrivacyPolicy() {
               </p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Keep you logged in</li>
-                <li>Remember your preferences (language, theme)</li>
+                <li>Remember your language preference</li>
                 <li>Analyze usage patterns to improve our service</li>
               </ul>
               <p className="mt-4">

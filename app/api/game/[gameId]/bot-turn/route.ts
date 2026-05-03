@@ -103,12 +103,17 @@ export async function POST(
           state: true,
           status: true,
           currentTurn: true,
+          startedAt: true,
+          updatedAt: true,
           players: {
             select: {
               id: true,
               userId: true,
               score: true,
               scorecard: true,
+              finalScore: true,
+              placement: true,
+              isWinner: true,
               user: {
                 select: {
                   id: true,
@@ -304,6 +309,45 @@ export async function POST(
           const lastMoveAtDate = typeof newState.lastMoveAt === 'number' && Number.isFinite(newState.lastMoveAt)
             ? new Date(newState.lastMoveAt)
             : undefined
+          const dbPlayersByUserId = new Map(
+            game.players.map((player) => [player.userId, player])
+          )
+          const enginePlayers = gameEngine.getPlayers()
+          const TERMINAL_STATUSES = new Set(['finished', 'abandoned', 'cancelled'])
+          const isTerminal = TERMINAL_STATUSES.has(newState.status)
+          const terminalFields = statusChanged && isTerminal
+            ? (() => {
+                const now = new Date()
+                const durationSeconds =
+                  game.startedAt instanceof Date
+                    ? Math.floor((now.getTime() - game.startedAt.getTime()) / 1000)
+                    : null
+                const terminalMetadata = {
+                  outcome: newState.winner ? 'winner' : newState.status === 'finished' ? 'draw' : newState.status,
+                  winnerUserId: newState.winner ?? null,
+                  isDraw: newState.status === 'finished' && !newState.winner,
+                  playerResults: enginePlayers.map((ep, i) => ({
+                    userId: dbPlayersByUserId.get(ep.id)?.userId ?? ep.id,
+                    placement: typeof (ep as { placement?: number }).placement === 'number' ? (ep as { placement?: number }).placement : i + 1,
+                    finalScore: typeof ep.score === 'number' ? ep.score : null,
+                    isWinner: ep.id === newState.winner,
+                  })),
+                }
+                return { endedAt: now, durationSeconds, terminalMetadata }
+              })()
+            : {}
+          const terminalPlayerResultsByUserId = new Map(
+            (terminalFields as {
+              terminalMetadata?: {
+                playerResults?: Array<{
+                  userId: string
+                  placement: number
+                  finalScore: number | null
+                  isWinner: boolean
+                }>
+              }
+            }).terminalMetadata?.playerResults?.map((result) => [result.userId, result]) ?? []
+          )
 
           log.info('Saving bot move to database...', {
             moveType: botMove.type,
@@ -318,6 +362,7 @@ export async function POST(
                 status: newState.status,
                 currentTurn: newState.currentPlayerIndex,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+                ...terminalFields,
                 updatedAt: new Date(),
               },
             }).catch(async (dbError) => {
@@ -331,6 +376,7 @@ export async function POST(
                   status: newState.status,
                   currentTurn: newState.currentPlayerIndex,
                   ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+                  ...terminalFields,
                   updatedAt: new Date(),
                 },
               })
@@ -362,19 +408,34 @@ export async function POST(
               typeof (gameEngine as unknown as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
                 ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
                 : null
-            const dbPlayersByUserId = new Map(
-              game.players.map((player) => [player.userId, player])
-            )
-            const changedPlayerUpdates: Array<{ id: string; score: number; scorecard: string }> = []
+            const changedPlayerUpdates: Array<{
+              id: string
+              score: number
+              scorecard: string
+              finalScore?: number | null
+              placement?: number | null
+              isWinner?: boolean
+            }> = []
 
-            for (const player of gameEngine.getPlayers()) {
+            for (const player of enginePlayers) {
               const dbPlayer = dbPlayersByUserId.get(player.id)
               if (!dbPlayer) continue
 
               const nextScore = typeof player.score === 'number' ? player.score : 0
               const nextScorecard = JSON.stringify(getScorecard ? getScorecard(player.id) : {})
+              const terminalResult = terminalPlayerResultsByUserId.get(player.id)
+              const nextFinalScore = terminalResult?.finalScore
+              const nextPlacement = terminalResult?.placement
+              const nextIsWinner = terminalResult?.isWinner
 
-              if (dbPlayer.score === nextScore && dbPlayer.scorecard === nextScorecard) {
+              if (
+                dbPlayer.score === nextScore &&
+                dbPlayer.scorecard === nextScorecard &&
+                (terminalResult == null ||
+                  (dbPlayer.finalScore === nextFinalScore &&
+                    dbPlayer.placement === nextPlacement &&
+                    dbPlayer.isWinner === nextIsWinner))
+              ) {
                 continue
               }
 
@@ -382,6 +443,13 @@ export async function POST(
                 id: dbPlayer.id,
                 score: nextScore,
                 scorecard: nextScorecard,
+                ...(terminalResult != null
+                  ? {
+                      finalScore: nextFinalScore,
+                      placement: nextPlacement,
+                      isWinner: nextIsWinner,
+                    }
+                  : {}),
               })
             }
 
@@ -408,6 +476,9 @@ export async function POST(
                   data: {
                     score: scoreUpdate.score,
                     scorecard: scoreUpdate.scorecard,
+                    ...(scoreUpdate.finalScore !== undefined ? { finalScore: scoreUpdate.finalScore } : {}),
+                    ...(scoreUpdate.placement !== undefined ? { placement: scoreUpdate.placement } : {}),
+                    ...(scoreUpdate.isWinner !== undefined ? { isWinner: scoreUpdate.isWinner } : {}),
                   },
                 }).catch(async () => {
                   log.warn('Player update failed, retrying...', { playerId: scoreUpdate.id })
@@ -417,6 +488,9 @@ export async function POST(
                     data: {
                       score: scoreUpdate.score,
                       scorecard: scoreUpdate.scorecard,
+                      ...(scoreUpdate.finalScore !== undefined ? { finalScore: scoreUpdate.finalScore } : {}),
+                      ...(scoreUpdate.placement !== undefined ? { placement: scoreUpdate.placement } : {}),
+                      ...(scoreUpdate.isWinner !== undefined ? { isWinner: scoreUpdate.isWinner } : {}),
                     },
                   })
                 })

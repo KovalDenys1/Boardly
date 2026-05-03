@@ -17,9 +17,10 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
   const { t } = useTranslation()
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-2 sm:gap-4 p-2 sm:p-4">
+    <div className="flex h-full flex-col items-center justify-center gap-3 p-3 sm:gap-4 sm:p-4">
       {/* Dice Grid - Optimized for visibility */}
-      <div className="flex flex-wrap gap-2 sm:gap-4 justify-center items-center max-w-full">
+      <div className="bd-dot-grid rounded-[28px] border border-bd-line bg-white/55 px-4 py-5 sm:px-5 sm:py-6">
+        <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 max-w-full">
         {dice.map((value, index) => (
           <Dice
             key={`die-${index}`}
@@ -30,22 +31,23 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
             disabled={disabled}
           />
         ))}
+        </div>
       </div>
 
       {/* Helpful hint - compact */}
       <div className="text-center px-2">
         {!isMyTurn ? (
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 sm:gap-2 justify-center">
+          <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
             <span className="text-sm sm:text-base">⏳</span>
             <span className="break-words">{t('yahtzee.ui.waitTurnHint')}</span>
           </p>
         ) : disabled ? (
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 sm:gap-2 justify-center">
+          <p className="bd-chip px-3 py-2 text-bd-ink-soft flex items-center gap-1 sm:gap-2 justify-center">
             <span className="text-sm sm:text-base">🎲</span>
             <span className="break-words">{t('yahtzee.ui.rollFirstHint')}</span>
           </p>
         ) : (
-          <p className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1 sm:gap-2 justify-center">
+          <p className="bd-chip bd-chip-lav px-3 py-2 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 justify-center">
             <span className="text-sm sm:text-base">👆</span>
             <span className="break-words">{t('yahtzee.ui.holdHint')}</span>
           </p>

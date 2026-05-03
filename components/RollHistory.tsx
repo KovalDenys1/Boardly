@@ -12,8 +12,8 @@ export interface RollHistoryEntry {
   dice?: number[]
   held?: number[]
   timestamp: number
-  isBot?: boolean  // Optional for backwards compatibility, use botId instead
-  botId?: string | null  // New: null = human, string = bot user ID
+  isBot?: boolean
+  botId?: string | null
   type?: 'roll' | 'score'
   category?: YahtzeeCategory
   scoredPoints?: number
@@ -24,18 +24,24 @@ interface RollHistoryProps {
   compact?: boolean
 }
 
-export default function RollHistory({ entries, compact = false }: RollHistoryProps) {
+export default function RollHistory({ entries }: RollHistoryProps) {
   const { t } = useTranslation()
 
   if (entries.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border border-gray-200 dark:border-gray-700 h-full flex flex-col">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl">📜</span>
-          <h3 className="font-bold text-base text-gray-900 dark:text-white">Roll History</h3>
+      <div
+        className="bd-card h-full flex flex-col p-4"
+        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-xl">🧾</span>
+          <div>
+            <div className="bd-kicker">Recent Activity</div>
+            <h3 className="text-base font-bold text-bd-ink">Recent Rolls</h3>
+          </div>
         </div>
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-sm text-bd-ink-soft">
             No rolls yet
           </p>
         </div>
@@ -44,112 +50,134 @@ export default function RollHistory({ entries, compact = false }: RollHistoryPro
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col" style={{ borderRadius: 'clamp(12px, 1.2vw, 20px)', padding: 'clamp(10px, 1vh, 18px)' }}>
-      <div className="flex items-center flex-shrink-0" style={{ gap: 'clamp(5px, 0.5vw, 10px)', marginBottom: 'clamp(8px, 0.8vh, 14px)' }}>
-        <span style={{ fontSize: 'clamp(14px, 1vw, 20px)' }}>📜</span>
-        <h3 className="font-bold text-gray-900 dark:text-white truncate" style={{ fontSize: 'clamp(12px, 0.9vw, 16px)' }}>Recent Rolls</h3>
-        <span className="bg-gray-200 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-400 shrink-0" style={{ fontSize: 'clamp(9px, 0.75vw, 12px)', padding: 'clamp(2px, 0.2vh, 3px) clamp(5px, 0.5vw, 8px)' }}>
+    <div
+      className="bd-card h-full flex flex-col p-4"
+      style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-xl">🧾</span>
+        <div className="min-w-0 flex-1">
+          <div className="bd-kicker">Recent Activity</div>
+          <h3 className="truncate text-base font-bold text-bd-ink">Recent Rolls</h3>
+        </div>
+        <span className="bd-chip px-2 py-0.5 text-xs">
           {entries.length}
         </span>
       </div>
 
-      <div className="overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory" style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(5px, 0.5vh, 10px)' }}>
-        {[...entries].reverse().map((entry) => (
-          (() => {
-            const entryType = entry.type || 'roll'
-            const held = entry.held || []
-            const dice = entry.dice || []
-            const isBotEntry = !!(entry.isBot || entry.botId)
-            const categoryLabel = entry.category ? t(`yahtzee.categories.${entry.category}`) : 'Category'
+      <div className="custom-scrollbar flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
+        {[...entries].reverse().map((entry) => {
+          const entryType = entry.type || 'roll'
+          const held = entry.held || []
+          const dice = entry.dice || []
+          const isBotEntry = !!(entry.isBot || entry.botId)
+          const categoryLabel = entry.category ? t(`yahtzee.categories.${entry.category}`) : 'Category'
+          const heldCount = held.length
 
-            return (
-              <div
-                key={entry.id}
-                className={`
-                  rounded-lg transition-all shadow-sm border-2 snap-start
-                  ${
-                    entryType === 'score'
-                      ? isBotEntry
-                        ? 'bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 border-purple-300 dark:border-purple-700'
-                        : 'bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border-emerald-300 dark:border-emerald-700'
-                      : isBotEntry
-                        ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 border-purple-200 dark:border-purple-700'
-                        : 'bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-700'
-                  }
-                `}
-                style={{ padding: 'clamp(7px, 0.7vh, 12px)' }}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(4px, 0.4vh, 7px)' }}>
-                  <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
-                    <span style={{ fontSize: 'clamp(11px, 0.85vw, 14px)', flexShrink: 0 }}>
-                      {entryType === 'score' ? '📝' : isBotEntry ? '🤖' : '🎲'}
-                    </span>
-                    <span className="font-bold text-gray-900 dark:text-white truncate" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
+          return (
+            <div
+              key={entry.id}
+              className="rounded-2xl border p-3 shadow-sm"
+              style={{
+                background:
+                  entryType === 'score'
+                    ? isBotEntry
+                      ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, rgba(255,255,255,0.95) 100%)'
+                      : 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, rgba(255,255,255,0.95) 100%)'
+                    : isBotEntry
+                      ? 'linear-gradient(90deg, rgba(155,140,255,0.1) 0%, rgba(255,248,236,0.95) 100%)'
+                      : 'linear-gradient(90deg, rgba(107,193,240,0.12) 0%, rgba(255,248,236,0.95) 100%)',
+                borderColor:
+                  entryType === 'score'
+                    ? isBotEntry
+                      ? 'rgba(155,140,255,0.28)'
+                      : 'rgba(79,201,166,0.28)'
+                    : isBotEntry
+                      ? 'rgba(155,140,255,0.22)'
+                      : 'rgba(107,193,240,0.22)',
+              }}
+            >
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{entryType === 'score' ? '🏁' : isBotEntry ? '🤖' : '🎲'}</span>
+                    <span className="truncate text-sm font-bold text-bd-ink">
                       {entry.playerName}
                     </span>
-                  </div>
-                  <div className="bg-white/50 dark:bg-gray-900/50 rounded-full text-gray-700 dark:text-gray-300 shrink-0" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)' }}>
-                    {entryType === 'score'
-                      ? `T${entry.turnNumber} • Score`
-                      : `T${entry.turnNumber} • R${entry.rollNumber ?? '-'}`
-                    }
-                  </div>
-                </div>
-
-                {entryType === 'score' ? (
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-gray-900 dark:text-white" style={{ fontSize: 'clamp(10px, 0.8vw, 13px)' }}>
-                        {categoryLabel}
-                      </p>
-                      <p className="text-gray-600 dark:text-gray-300" style={{ fontSize: 'clamp(9px, 0.7vw, 11px)' }}>
-                        Category selected
-                      </p>
-                    </div>
-                    <div className="shrink-0 rounded-lg bg-emerald-500/20 dark:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 font-bold" style={{ fontSize: 'clamp(9px, 0.7vw, 12px)', padding: 'clamp(2px, 0.2vh, 4px) clamp(6px, 0.5vw, 10px)' }}>
-                      +{entry.scoredPoints ?? 0}
-                    </div>
-                  </div>
-                ) : (
-                  /* Dice Display */
-                  <div className="flex items-center" style={{ gap: 'clamp(4px, 0.4vw, 8px)' }}>
-                    <div className="flex flex-wrap flex-1" style={{ gap: 'clamp(2px, 0.2vw, 4px)' }}>
-                      {dice.map((die, index) => {
-                        const isHeld = held.includes(index)
-                        return (
-                          <div
-                            key={index}
-                            className={`
-                              rounded-md flex items-center justify-center
-                              font-bold transition-all shadow-sm
-                              ${
-                                isHeld
-                                  ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-gray-900 ring-2 ring-yellow-600'
-                                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-600'
-                              }
-                            `}
-                            style={{ width: 'clamp(18px, 1.8vw, 24px)', height: 'clamp(18px, 1.8vw, 24px)', fontSize: 'clamp(9px, 0.7vw, 11px)' }}
-                          >
-                            {die}
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    {/* Held indicator */}
-                    {held.length > 0 && (
-                      <div className="bg-yellow-500/20 dark:bg-yellow-500/30 rounded-lg text-yellow-800 dark:text-yellow-300 font-bold shrink-0 flex items-center" style={{ fontSize: 'clamp(8px, 0.65vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(4px, 0.4vw, 7px)', gap: 'clamp(2px, 0.2vw, 4px)' }}>
-                        <span>🔒</span>
-                        <span>{held.length}</span>
-                      </div>
+                    {isBotEntry && (
+                      <span className="bd-chip bd-chip-lav px-2 py-0.5 text-[10px]">AI</span>
                     )}
                   </div>
-                )}
+                  <p className="mt-1 text-xs text-bd-ink-soft">
+                    {entryType === 'score'
+                      ? `Scored ${categoryLabel}`
+                      : `Roll ${entry.rollNumber ?? 1} of turn ${entry.turnNumber}`}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <span className="bd-chip px-2 py-0.5 text-[10px]">
+                    Turn {entry.turnNumber}
+                  </span>
+                  {entryType === 'score' && (
+                    <span className="bd-chip bd-chip-mint px-2 py-0.5 text-[10px] font-bold">
+                      +{entry.scoredPoints ?? 0}
+                    </span>
+                  )}
+                </div>
               </div>
-            )
-          })()
-        ))}
+
+              {entryType === 'score' ? (
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm text-bd-ink-soft">
+                    {entry.scoredPoints === 0 ? 'Burned this category to keep the turn moving.' : `${entry.scoredPoints ?? 0} points banked in ${categoryLabel}.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {dice.map((die, index) => {
+                      const isHeld = held.includes(index)
+                      return (
+                        <div
+                          key={`${entry.id}-die-${index}`}
+                          className="flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-bold"
+                          style={
+                            isHeld
+                              ? {
+                                  background: 'var(--bd-sun)',
+                                  borderColor: 'var(--bd-ink)',
+                                  color: 'var(--bd-ink)',
+                                }
+                              : {
+                                  background: 'rgba(255,255,255,0.96)',
+                                  borderColor: 'var(--bd-line)',
+                                  color: 'var(--bd-ink)',
+                                }
+                          }
+                        >
+                          {die}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-bd-ink-soft">
+                      {heldCount > 0
+                        ? `${heldCount} dice held for the next decision.`
+                        : 'Fresh roll with no dice held.'}
+                    </p>
+                    {heldCount > 0 && (
+                      <span className="bd-chip bd-chip-sun px-2 py-0.5 text-[10px] font-bold">
+                        Hold {heldCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

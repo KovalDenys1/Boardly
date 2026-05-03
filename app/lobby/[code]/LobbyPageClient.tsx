@@ -55,6 +55,11 @@ function normalizeHeldIndexes(rawHeld: unknown): number[] {
     .map((value) => Number(value))
 }
 
+function getYahtzeeTurnNumberFromScorecard(scorecard: Partial<Record<YahtzeeCategory, number>> | null | undefined): number {
+  const filledCount = ALL_CATEGORIES.filter((category) => scorecard?.[category] !== undefined).length
+  return Math.min(ALL_CATEGORIES.length, filledCount + 1)
+}
+
 interface DBPlayer {
   id: string
   userId: string
@@ -81,6 +86,7 @@ import { useBotTurn } from './hooks/useBotTurn'
 import type { TabId } from './components/MobileTabs'
 import { LobbyPageErrorFallback, LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 import { showToast } from '@/lib/i18n-toast'
+import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -93,7 +99,7 @@ import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
 
 function CenteredLoadingFallback() {
   return (
-    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+    <div className="bd-page page-shell flex items-center justify-center">
       <LoadingSpinner size="lg" />
     </div>
   )
@@ -144,6 +150,7 @@ const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 const WAITING_LOBBY_SYNC_INTERVAL_MS = 2000
+const YAHTZEE_RESULTS_HOLD_MS = 12000
 type LeaveApiOutcome = 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
 
 function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage?: (gameType: string) => void }) {
@@ -207,6 +214,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return []
   })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
+  const [yahtzeeResultsHold, setYahtzeeResultsHold] = useState<{ gameId: string; releaseAt: number } | null>(null)
 
   // Mobile tabs state
   const [mobileActiveTab, setMobileActiveTab] = useState<TabId>('game')
@@ -237,12 +245,58 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
   }, [gameEngine, code])
 
+  useEffect(() => {
+    if (
+      lobby?.gameType !== 'yahtzee' ||
+      !(gameEngine instanceof YahtzeeGame) ||
+      !game?.id ||
+      !gameEngine.isGameFinished()
+    ) {
+      return
+    }
+
+    setYahtzeeResultsHold((prev) => {
+      if (prev?.gameId === game.id) {
+        return prev
+      }
+
+      return {
+        gameId: game.id,
+        releaseAt: Date.now() + YAHTZEE_RESULTS_HOLD_MS,
+      }
+    })
+  }, [game?.id, gameEngine, lobby?.gameType])
+
+  useEffect(() => {
+    if (!yahtzeeResultsHold || typeof window === 'undefined') {
+      return
+    }
+
+    const remainingMs = Math.max(0, yahtzeeResultsHold.releaseAt - Date.now())
+    const timer = window.setTimeout(() => {
+      setYahtzeeResultsHold((prev) =>
+        prev?.gameId === yahtzeeResultsHold.gameId ? null : prev
+      )
+    }, remainingMs)
+
+    return () => window.clearTimeout(timer)
+  }, [yahtzeeResultsHold])
+
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
   const isLeavingLobbyRef = React.useRef(false)
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
+  const yahtzeeMobileTurnStateRef = React.useRef<{
+    currentPlayerId: string | null
+    wasMyTurn: boolean
+    rollsLeft: number | null
+  }>({
+    currentPlayerId: null,
+    wasMyTurn: false,
+    rollsLeft: null,
+  })
   const hasLobbyPageInteractionRef = React.useRef(false)
   const leaveStartedAtRef = React.useRef<number | null>(null)
   const leaveApiOutcomeRef = React.useRef<LeaveApiOutcome>('pending')
@@ -494,7 +548,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 'Unknown'
               const isBot = !!(dbPlayer?.user?.bot || dbPlayer?.bot)
               const botId = dbPlayer?.user?.bot ? dbPlayer.userId : null
-              const turnNumber = Object.keys(nextScorecard || {}).length
+              const turnNumber = ALL_CATEGORIES.filter(
+                (category) => nextScorecard?.[category] !== undefined
+              ).length
 
               for (const category of ALL_CATEGORIES) {
                 if (
@@ -547,16 +603,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
             // Safety check: ensure player exists and has required data
             if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp) {
-              const playerCount = game.players.length
-              const currentRound = parsedState.data.round || 1
-              const turnNumber = Math.floor((currentRound - 1) / playerCount) + 1
+              const turnNumber = getYahtzeeTurnNumberFromScorecard(
+                newEngine instanceof YahtzeeGame ? newEngine.getScorecard(lastRoll.playerId) : null
+              )
               const currentUserId = getCurrentUserId()
+              const rollEntryId = `${lastRoll.playerId}-${lastRoll.timestamp}`
 
-              // Check if this roll is already in history (by timestamp)
               setRollHistory(prev => {
-                const exists = prev.some(entry =>
-                  Math.abs(entry.timestamp - lastRoll.timestamp) < 1000 // Within 1 second
-                )
+                const exists = prev.some((entry) => entry.id === rollEntryId)
 
                 if (exists) return prev
 
@@ -566,7 +620,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 }
 
                 const newRollEntry: RollHistoryEntry = {
-                  id: `${lastRoll.playerId}-${lastRoll.timestamp}`,
+                  id: rollEntryId,
                   type: 'roll',
                   playerName: player.user?.username || player.name || 'Unknown',
                   dice: lastRoll.dice,
@@ -663,33 +717,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     const botName = event.botName || 'Bot'
 
-    // Add bot action to roll history ONLY if dice are present (after roll, not before)
+    // Roll history is synced from authoritative game-update snapshots.
+    // Avoid duplicating bot rolls here with optimistic local entries.
     if (event.type === 'roll' && event.data?.dice) {
-      // Play sound as soon as roll result is received.
       playAmbientSound('diceRoll', { force: true })
-
-      if (gameEngine) {
-        const currentRound = gameEngine instanceof YahtzeeGame ? gameEngine.getRound() : 1
-        const playerCount = game?.players?.length || 1
-        const turnNumber = Math.floor(currentRound / playerCount) + 1
-        const yahtzeeEvent = event as YahtzeeBotActionEvent
-
-        setRollHistory(prev => {
-          const newRollEntry: RollHistoryEntry = {
-            id: `bot-${Date.now()}-${Math.random()}`,
-            type: 'roll',
-            playerName: botName,
-            dice: yahtzeeEvent.data?.dice ?? [],
-            rollNumber: yahtzeeEvent.data?.rollNumber ?? 1,
-            turnNumber: turnNumber,
-            held: normalizeHeldIndexes(yahtzeeEvent.data?.held),
-            isBot: true,
-            timestamp: Date.now(),
-          }
-
-          return [...prev, newRollEntry].slice(-20)
-        })
-      }
     }
 
     if (event.type === 'hold' && Array.isArray((event as YahtzeeBotActionEvent).data?.held) && ((event as YahtzeeBotActionEvent).data?.held?.length ?? 0) > 0) {
@@ -698,13 +729,37 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     // Only show toast for final scoring action - skip thinking/hold/roll toasts
     if (event.type === 'score') {
-      showToast.successText(event.message)
+      const scoreEvent = event as YahtzeeBotActionEvent
+      const category = scoreEvent.data?.category
+      const score = scoreEvent.data?.score
+
+      if (typeof category === 'string' && typeof score === 'number') {
+        const celebration = detectCelebration(
+          Array.isArray(scoreEvent.data?.dice) ? scoreEvent.data.dice as number[] : [],
+          category,
+          score
+        )
+        const shown = showYahtzeeCategoryToast({
+          category,
+          score,
+          playerName: botName,
+          celebration,
+          id: `yahtzee-bot-score-${botName}-${category}-${score}`,
+        })
+
+        if (!shown) {
+          showToast.successText(event.message)
+        }
+      } else {
+        showToast.successText(event.message)
+      }
+
       playAmbientSound('score')
     }
 
     // Log all actions to console for debugging
     clientLogger.log(`🤖 ${event.message}`)
-  }, [gameEngine, game?.players?.length, playAmbientSound])
+  }, [playAmbientSound])
 
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
@@ -1422,6 +1477,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+  const finishedYahtzeeEngine =
+    lobby?.gameType === 'yahtzee' &&
+    gameEngine instanceof YahtzeeGame &&
+    gameEngine.isGameFinished()
+      ? gameEngine
+      : null
+  const shouldShowHeldYahtzeeResults = Boolean(
+    finishedYahtzeeEngine &&
+    game?.id &&
+    yahtzeeResultsHold?.gameId === game.id
+  )
   const joinViewerMode = status === 'authenticated'
     ? 'authenticated'
     : isGuest
@@ -1496,6 +1562,60 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setRollHistory([])
   }, [lobby?.gameType, isGameStarted, game?.id])
 
+  useEffect(() => {
+    if (
+      lobby?.gameType !== 'yahtzee' ||
+      !isGameStarted ||
+      !(gameEngine instanceof YahtzeeGame) ||
+      typeof window === 'undefined'
+    ) {
+      return
+    }
+
+    const isMobileViewport = window.matchMedia('(max-width: 767px)').matches
+    if (!isMobileViewport) {
+      return
+    }
+
+    const currentPlayer = gameEngine.getCurrentPlayer()
+    const currentPlayerId = currentPlayer?.id ?? null
+    const rollsLeft = gameEngine.getRollsLeft()
+    const mine = isMyTurn()
+    const prev = yahtzeeMobileTurnStateRef.current
+
+    if (!currentPlayerId) {
+      yahtzeeMobileTurnStateRef.current = {
+        currentPlayerId: null,
+        wasMyTurn: mine,
+        rollsLeft,
+      }
+      return
+    }
+
+    if (!prev.wasMyTurn && mine && mobileActiveTab !== 'chat') {
+      setMobileActiveTab('game')
+      setSelectedPlayerId(null)
+    }
+
+    const ranOutOfRollsThisTurn =
+      mine &&
+      prev.currentPlayerId === currentPlayerId &&
+      prev.rollsLeft !== null &&
+      prev.rollsLeft > 0 &&
+      rollsLeft === 0
+
+    if (ranOutOfRollsThisTurn && mobileActiveTab === 'game') {
+      setMobileActiveTab('scorecard')
+      setSelectedPlayerId(null)
+    }
+
+    yahtzeeMobileTurnStateRef.current = {
+      currentPlayerId,
+      wasMyTurn: mine,
+      rollsLeft,
+    }
+  }, [game?.id, gameEngine, isGameStarted, isMyTurn, lobby?.gameType, mobileActiveTab])
+
   const playersForLeaderboard = React.useMemo(() => {
     if (!gameEngine || !Array.isArray(game?.players)) {
       return []
@@ -1522,6 +1642,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       isReady: true,
     }))
   }, [game?.players, gameEngine])
+
+  const yahtzeeScoreTabBadge = React.useMemo(() => {
+    if (
+      lobby?.gameType !== 'yahtzee' ||
+      !isGameStarted ||
+      !(gameEngine instanceof YahtzeeGame) ||
+      !isMyTurn()
+    ) {
+      return undefined
+    }
+
+    return gameEngine.getRollsLeft() < 3 ? '!' : undefined
+  }, [gameEngine, isGameStarted, isMyTurn, lobby?.gameType])
 
   // When a game with a dedicated active-game page starts, notify parent to switch.
   useEffect(() => {
@@ -1578,10 +1711,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Show loading while session is being fetched (for non-guest users)
   if (!isGuest && status === 'loading') {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="bd-page page-shell flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner size="lg" />
-          <p className="text-white/70">Loading session...</p>
+          <p className="text-bd-ink-muted">Loading session...</p>
         </div>
       </div>
     )
@@ -1589,7 +1722,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (loading) {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center">
+      <div className="bd-page page-shell flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
@@ -1597,18 +1730,23 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   if (!lobby) {
     return (
-      <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center px-4">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl max-w-md w-full p-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-5">
+      <div className="bd-page page-shell flex items-center justify-center px-4">
+        <div className="bd-card w-full max-w-md p-8 text-center">
+          <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
             <span className="text-3xl">🔍</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white mb-3">Lobby Not Found</h1>
-          <p className="text-white/60 text-sm mb-6">
+          <h1
+            className="mb-3 text-2xl font-extrabold text-bd-ink"
+            style={{ fontFamily: 'var(--bd-font-display)' }}
+          >
+            Lobby Not Found
+          </h1>
+          <p className="mb-6 text-sm text-bd-ink-soft">
             The lobby you're looking for doesn't exist or has been closed.
           </p>
           <button
             onClick={() => router.push('/games')}
-            className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-lg"
+            className="bd-btn bd-btn-primary mx-auto"
           >
             Back to Games
           </button>
@@ -1618,25 +1756,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className={`${!isGameStarted ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500' : ''}`}>
-     <div className={`max-w-7xl mx-auto ${!isGameStarted ? 'h-[calc(100vh-64px)] flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
+    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`}>
+     <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
 
       {!isInGame && !isGameStarted ? (
         /* Join Prompt - centered in full height */
         <div className="flex-1 flex items-center justify-center">
           {showAutoJoinLoadingState ? (
             <div className="max-w-xl mx-auto w-full animate-scale-in">
-              <div className="rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl p-6 sm:p-8 text-center shadow-2xl">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 border border-white/20 mb-5">
+              <div className="bd-card p-6 text-center sm:p-8">
+                <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4">
                   <span className="text-3xl">🎮</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-2">
+                <h2
+                  className="mb-2 text-2xl font-extrabold text-bd-ink sm:text-3xl"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
+                >
                   {t('lobby.joinSection.title')}
                 </h2>
-                <p className="text-white/65 text-sm sm:text-base mb-6">
+                <p className="mb-6 text-sm text-bd-ink-soft sm:text-base">
                   {t('lobby.joinPromptPublic', { lobby: lobby.name })}
                 </p>
-                <div className="flex items-center justify-center gap-3 text-white">
+                <div className="flex items-center justify-center gap-3 text-bd-ink">
                   <LoadingSpinner />
                   <span>{t('lobby.joinSection.join')}</span>
                 </div>
@@ -1659,9 +1800,29 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           )}
         </div>
+      ) : shouldShowHeldYahtzeeResults ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <YahtzeeResults
+            results={analyzeResults(
+              finishedYahtzeeEngine!.getPlayers().map(p => ({ ...p, score: p.score || 0 })),
+              (id) => finishedYahtzeeEngine!.getScorecard(id)
+            )}
+            currentUserId={getCurrentUserId() || null}
+            canStartGame={!!canStartGame}
+            canRequestRematch={!!isInGame}
+            isRequestRematchPending={isRequestingRematch}
+            onPlayAgain={handleStartGame}
+            onRequestRematch={handleRequestRematch}
+            onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+            onReturnToLobbyRoom={() => setYahtzeeResultsHold(null)}
+            autoReturnAt={yahtzeeResultsHold?.releaseAt ?? null}
+            isGuest={isGuest}
+            registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
+          />
+        </div>
       ) : !isGameStarted ? (
         /* Waiting Room - unified card with pinned actions */
-        <div className="flex-1 min-h-0 flex flex-col rounded-2xl border border-white/20 bg-slate-900/55 backdrop-blur-xl shadow-xl overflow-hidden">
+        <div className="bd-card flex min-h-0 flex-1 flex-col overflow-hidden">
           <LobbyInfo
             variant="header"
             lobby={lobby}
@@ -1739,29 +1900,34 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             <>
               {/* Top Status Bar - Responsive */}
               <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
-                <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-2xl px-3 sm:px-5 py-2.5 shadow-lg">
+                <div
+                  className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+                  }}
+                >
                   {/* Mobile: Compact 2-row layout */}
                   <div className="md:hidden">
                     {/* Row 1: Game Info */}
-                    <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+                    <div className="mb-2 flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--bd-line)' }}>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
                           <span className="text-base">🎯</span>
-                          <span className="text-sm font-bold">
+                          <span className="text-sm font-bold text-bd-ink">
                             {t('game.ui.round')}: {roundInfo.current}/{roundInfo.total}
                           </span>
                         </div>
-                        <div className="h-4 w-px bg-white/20"></div>
+                        <div className="h-4 w-px" style={{ background: 'var(--bd-line)' }}></div>
                         <div className="flex items-center gap-1 max-w-[120px]">
                           <span className="text-base">👤</span>
-                          <span className="text-sm font-bold truncate">
+                          <span className="truncate text-sm font-bold text-bd-ink">
                             {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <span className="text-base">🏆</span>
-                        <span className="text-sm font-bold">
+                        <span className="text-sm font-bold text-bd-ink">
                           {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
                         </span>
                       </div>
@@ -1780,7 +1946,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           })
                         }}
                         aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-                        className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-sm flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+                        className="bd-btn bd-btn-soft !rounded-xl !px-2.5 !py-1.5 !text-sm flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                         title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
                       >
                         <span className="text-base">{soundEnabled ? '🔊' : '🔇'}</span>
@@ -1791,7 +1957,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label={t('game.ui.leave')}
-                        className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+                        className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
                         <span>{t('game.ui.leave')}</span>
@@ -1805,28 +1971,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
                         <div>
-                          <div className="text-[10px] text-white/50 leading-tight">{t('game.ui.round')}</div>
-                          <div className="text-base font-bold leading-tight">
+                          <div className="bd-kicker leading-tight">{t('game.ui.round')}</div>
+                          <div className="text-base font-bold leading-tight text-bd-ink">
                             {roundInfo.current}/{roundInfo.total}
                           </div>
                         </div>
                       </div>
-                      <div className="h-6 w-px bg-white/20"></div>
+                      <div className="h-6 w-px" style={{ background: 'var(--bd-line)' }}></div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">👤</span>
                         <div>
-                          <div className="text-[10px] text-white/50 leading-tight">{t('game.ui.turn')}</div>
-                          <div className="text-base font-bold leading-tight truncate max-w-[100px] sm:max-w-[150px]">
+                          <div className="bd-kicker leading-tight">{t('game.ui.turn')}</div>
+                          <div className="max-w-[100px] truncate text-base font-bold leading-tight text-bd-ink sm:max-w-[150px]">
                             {gameEngine.getCurrentPlayer()?.name || t('game.ui.playerFallback')}
                           </div>
                         </div>
                       </div>
-                      <div className="h-6 w-px bg-white/20"></div>
+                      <div className="h-6 w-px" style={{ background: 'var(--bd-line)' }}></div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🏆</span>
                         <div>
-                          <div className="text-[10px] text-white/50 leading-tight">Your Score</div>
-                          <div className="text-base font-bold leading-tight">
+                          <div className="bd-kicker leading-tight">Your Score</div>
+                          <div className="text-base font-bold leading-tight text-bd-ink">
                             {gameEngine.getPlayers().find(p => p.id === getCurrentUserId())?.score || 0}
                           </div>
                         </div>
@@ -1845,7 +2011,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           })
                         }}
                         aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
-                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-base font-medium flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+                        className="bd-btn bd-btn-soft !rounded-xl !px-3 !py-1.5 !text-base flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                         title={soundEnabled ? 'Disable sound' : 'Enable sound'}
                       >
                         <span className="text-lg">{soundEnabled ? '🔊' : '🔇'}</span>
@@ -1857,7 +2023,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           setShowLeaveConfirmModal(true)
                         }}
                         aria-label="Leave game"
-                        className="px-3 py-1.5 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-all font-medium text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
+                        className="bd-btn bd-btn-coral !rounded-xl !px-3 !py-1.5 !text-xs flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
                       >
                         <span className="text-base">🚪</span>
                         <span>Leave</span>
@@ -1910,6 +2076,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                             <Scorecard
                               scorecard={scorecard}
                               currentDice={gameEngine.getDice()}
+                              rollsLeft={gameEngine.getRollsLeft()}
                               onSelectCategory={handleScore}
                               canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
                               isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
@@ -1992,6 +2159,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         onToggleHold={handleToggleHold}
                         onScore={handleScore}
                         onCelebrationComplete={() => setCelebrationEvent(null)}
+                        onReviewScorecard={() => setMobileActiveTab('scorecard')}
+                        showReviewScorecardButton={true}
                       />
                     </div>
                   </MobileTabPanel>
@@ -2011,6 +2180,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           <Scorecard
                             scorecard={scorecard}
                             currentDice={gameEngine.getDice()}
+                            rollsLeft={gameEngine.getRollsLeft()}
                             onSelectCategory={handleScore}
                             canSelectCategory={!isMoveInProgress && gameEngine.getRollsLeft() < 3 && !isViewingOtherPlayer}
                             isCurrentPlayer={isMyTurn() && !isViewingOtherPlayer}
@@ -2127,7 +2297,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 }}
                 tabs={[
                   { id: 'game', label: 'Game', icon: '🎲' },
-                  { id: 'scorecard', label: 'Score', icon: '📊' },
+                  { id: 'scorecard', label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
                   { id: 'players', label: 'Players', icon: '👥' },
                   { id: 'chat', label: 'Chat', icon: '💬', badge: unreadMessageCount },
                 ]}

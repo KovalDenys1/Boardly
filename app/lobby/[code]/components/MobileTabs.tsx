@@ -8,7 +8,7 @@ interface Tab {
   id: TabId
   label: string
   icon: string
-  badge?: number
+  badge?: number | string
 }
 
 interface MobileTabsProps {
@@ -24,7 +24,11 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
       <div className="grid grid-cols-4 gap-0">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
-          const hasBadge = tab.id === 'chat' && unreadChatCount && unreadChatCount > 0
+          const badgeValue =
+            tab.id === 'chat'
+              ? (unreadChatCount && unreadChatCount > 0 ? (unreadChatCount > 9 ? '9+' : unreadChatCount) : null)
+              : tab.badge ?? null
+          const hasBadge = badgeValue !== null && badgeValue !== undefined && badgeValue !== 0
           
           return (
             <button
@@ -42,7 +46,7 @@ export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCou
               {/* Badge */}
               {hasBadge && (
                 <div className="absolute top-1 right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 animate-pulse shadow-lg">
-                  {unreadChatCount! > 9 ? '9+' : unreadChatCount}
+                  {badgeValue}
                 </div>
               )}
               

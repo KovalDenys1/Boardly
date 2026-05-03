@@ -616,4 +616,168 @@ describe('TicTacToeGame', () => {
             expect(finalBoard).toEqual(initialBoard)
         })
     })
+
+    describe('undo and draw requests', () => {
+        beforeEach(() => {
+            testPlayers.forEach(player => game.addPlayer(player))
+            game.startGame()
+        })
+
+        it('should undo the last move after the opponent accepts the request', () => {
+            game.makeMove({
+                playerId: 'player-x',
+                type: 'place',
+                data: { row: 0, col: 0 },
+                timestamp: new Date()
+            })
+            game.makeMove({
+                playerId: 'player-o',
+                type: 'place',
+                data: { row: 1, col: 1 },
+                timestamp: new Date()
+            })
+
+            expect(game.makeMove({
+                playerId: 'player-x',
+                type: 'request-undo',
+                data: {},
+                timestamp: new Date()
+            })).toBe(true)
+
+            const pendingRequest = game.getPendingRequest()
+            expect(pendingRequest).toMatchObject({
+                type: 'undo',
+                requesterId: 'player-x',
+                responderId: 'player-o',
+            })
+
+            expect(game.makeMove({
+                playerId: 'player-o',
+                type: 'respond-undo',
+                data: { accept: true },
+                timestamp: new Date()
+            })).toBe(true)
+
+            const data = getGameData(game)
+            expect(data.board).toEqual([
+                ['X', null, null],
+                [null, null, null],
+                [null, null, null],
+            ])
+            expect(data.moveCount).toBe(1)
+            expect(data.currentSymbol).toBe('O')
+            expect(data.moveHistory).toEqual([
+                expect.objectContaining({
+                    playerId: 'player-x',
+                    symbol: 'X',
+                    row: 0,
+                    col: 0,
+                }),
+            ])
+            expect(data.pendingRequest).toBeNull()
+            expect(game.getState().status).toBe('playing')
+            expect(game.getState().currentPlayerIndex).toBe(1)
+        })
+
+        it('should finish the round as a draw when a draw offer is accepted', () => {
+            game.makeMove({
+                playerId: 'player-x',
+                type: 'place',
+                data: { row: 0, col: 0 },
+                timestamp: new Date()
+            })
+            game.makeMove({
+                playerId: 'player-o',
+                type: 'place',
+                data: { row: 1, col: 1 },
+                timestamp: new Date()
+            })
+
+            expect(game.makeMove({
+                playerId: 'player-x',
+                type: 'request-draw',
+                data: {},
+                timestamp: new Date()
+            })).toBe(true)
+            expect(game.makeMove({
+                playerId: 'player-o',
+                type: 'respond-draw',
+                data: { accept: true },
+                timestamp: new Date()
+            })).toBe(true)
+
+            const data = getGameData(game)
+            expect(data.winner).toBe('draw')
+            expect(game.getState().status).toBe('finished')
+            expect(data.match?.draws).toBe(1)
+            expect(data.match?.roundsPlayed).toBe(1)
+            expect(data.pendingRequest).toBeNull()
+        })
+
+        it('should award the round to the opponent when the active player times out', () => {
+            game.makeMove({
+                playerId: 'player-x',
+                type: 'place',
+                data: { row: 0, col: 0 },
+                timestamp: new Date()
+            })
+
+            expect(game.makeMove({
+                playerId: 'player-o',
+                type: 'timeout-forfeit',
+                data: {},
+                timestamp: new Date()
+            })).toBe(true)
+
+            const data = getGameData(game)
+            expect(data.winner).toBe('X')
+            expect(data.winningLine).toBeNull()
+            expect(data.match?.winsBySymbol.X).toBe(1)
+            expect(data.match?.winsBySymbol.O).toBe(0)
+            expect(data.match?.roundsPlayed).toBe(1)
+            expect(game.getState().status).toBe('finished')
+            expect(game.getState().winner).toBe('player-x')
+        })
+
+        it('should recognize when the remaining position is a theoretical draw', () => {
+            game.restoreState({
+                ...game.getState(),
+                players: testPlayers,
+                currentPlayerIndex: 0,
+                status: 'playing',
+                data: {
+                    board: [
+                        ['X', 'O', 'X'],
+                        ['X', 'O', null],
+                        ['O', 'X', null],
+                    ],
+                    currentSymbol: 'X',
+                    winner: null,
+                    winningLine: null,
+                    moveCount: 7,
+                    match: {
+                        targetRounds: null,
+                        roundsPlayed: 0,
+                        winsBySymbol: { X: 0, O: 0 },
+                        draws: 0,
+                    },
+                    moveHistory: [
+                        { playerId: 'player-x', symbol: 'X', row: 0, col: 0, timestamp: Date.now() - 7000 },
+                        { playerId: 'player-o', symbol: 'O', row: 0, col: 1, timestamp: Date.now() - 6000 },
+                        { playerId: 'player-x', symbol: 'X', row: 0, col: 2, timestamp: Date.now() - 5000 },
+                        { playerId: 'player-o', symbol: 'O', row: 1, col: 1, timestamp: Date.now() - 4000 },
+                        { playerId: 'player-x', symbol: 'X', row: 1, col: 0, timestamp: Date.now() - 3000 },
+                        { playerId: 'player-o', symbol: 'O', row: 2, col: 0, timestamp: Date.now() - 2000 },
+                        { playerId: 'player-x', symbol: 'X', row: 2, col: 1, timestamp: Date.now() - 1000 },
+                    ],
+                    undoSnapshots: [],
+                    pendingRequest: null,
+                },
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            })
+
+            expect(game.isTheoreticalDraw()).toBe(true)
+        })
+    })
 })

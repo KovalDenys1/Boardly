@@ -8,6 +8,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
+import LoadingSpinner from '@/components/LoadingSpinner'
 import { SocketEvents, JoinedSpectatorsPayload, SpectatorJoinedPayload, SpectatorLeftPayload, SpectatorChatMessagePayload } from '@/types/socket-events'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 
@@ -49,8 +50,8 @@ function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; p
         {dice.map((die: unknown, index: number) => (
           <div
             key={`${index}-${die}`}
-            className={`rounded-xl border p-3 text-center text-xl font-bold ${
-              held[index] ? 'border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+            className={`rounded-2xl border-[1.5px] p-3 text-center text-xl font-black shadow-[0_2px_0_var(--bd-line)] ${
+              held[index] ? 'border-bd-sun bg-bd-sun/25 text-bd-sun-deep' : 'border-bd-line bg-white text-bd-ink'
             }`}
           >
             {Number(die) || '-'}
@@ -58,16 +59,16 @@ function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; p
         ))}
       </div>
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-lg border p-3">Rolls Left: {typeof data.rollsLeft === 'number' ? data.rollsLeft : '-'}</div>
-        <div className="rounded-lg border p-3">
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Rolls Left: {typeof data.rollsLeft === 'number' ? data.rollsLeft : '-'}</div>
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
           Current Turn:{' '}
           {currentPlayerIndex !== null && players[currentPlayerIndex]
             ? players[currentPlayerIndex].user?.username || players[currentPlayerIndex].user?.email || `Player ${currentPlayerIndex + 1}`
             : '-'}
         </div>
       </div>
-      <div className="rounded-xl border p-3">
-        <h3 className="mb-2 font-semibold">Scorecards</h3>
+      <div className="rounded-2xl border border-bd-line bg-white p-3">
+        <h3 className="mb-2 font-bold text-bd-ink">Scorecards</h3>
         <div className="space-y-2">
           {players.map((player: GamePlayer, index: number) => {
             const scorecard = isRecord(scores[index]) ? scores[index] : {}
@@ -77,12 +78,12 @@ function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; p
               0
             )
             return (
-              <div key={player.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+              <div key={player.id} className="flex items-center justify-between rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm">
                 <span>
                   {player.user?.username || player.user?.email || `Player ${index + 1}`}
                   {currentPlayerIndex === index ? ' • turn' : ''}
                 </span>
-                <span className="text-gray-600 dark:text-gray-300">
+                <span className="text-bd-ink-muted">
                   score {total} • filled {filled}
                 </span>
               </div>
@@ -99,12 +100,12 @@ function ReadOnlyTicTacToeView({ state }: { state: Record<string, any> }) {
   const board = Array.isArray(data.board) ? data.board : []
   return (
     <div className="space-y-4">
-      <div className="mx-auto grid w-fit grid-cols-3 gap-2 rounded-xl border p-3">
+      <div className="mx-auto grid w-fit grid-cols-3 gap-2 rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm p-3 shadow-[0_4px_0_var(--bd-line)]">
         {board.flatMap((row: unknown, rowIndex: number) =>
           (Array.isArray(row) ? row : [null, null, null]).map((cell: unknown, colIndex: number) => (
             <div
               key={`${rowIndex}-${colIndex}`}
-              className="flex h-16 w-16 items-center justify-center rounded-lg border bg-gray-50 text-2xl font-bold dark:bg-gray-800"
+              className="flex h-16 w-16 items-center justify-center rounded-2xl border-[1.5px] border-bd-line bg-white text-2xl font-black text-bd-ink shadow-[0_2px_0_var(--bd-line)]"
             >
               {typeof cell === 'string' || typeof cell === 'number' ? cell : ''}
             </div>
@@ -112,8 +113,8 @@ function ReadOnlyTicTacToeView({ state }: { state: Record<string, any> }) {
         )}
       </div>
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-lg border p-3">Current Symbol: {data.currentSymbol || '-'}</div>
-        <div className="rounded-lg border p-3">Winner: {data.winner || 'None'}</div>
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Current Symbol: {data.currentSymbol || '-'}</div>
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Winner: {data.winner || 'None'}</div>
       </div>
     </div>
   )
@@ -129,22 +130,22 @@ function ReadOnlyRpsView({ state, players }: { state: Record<string, any>; playe
         {players.map((player: GamePlayer, index: number) => {
           const playerId = player.userId
           return (
-            <div key={player.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+            <div key={player.id} className="flex items-center justify-between rounded-2xl border border-bd-line bg-bd-card-warm p-3 text-sm">
               <span>{player.user?.username || player.user?.email || `Player ${index + 1}`}</span>
-              <span>Score: {typeof scores[playerId] === 'number' ? scores[playerId] : 0}</span>
+              <span className="font-bold text-bd-ink">Score: {typeof scores[playerId] === 'number' ? scores[playerId] : 0}</span>
             </div>
           )
         })}
       </div>
-      <div className="rounded-xl border p-3">
-        <div className="mb-2 text-sm font-semibold">Recent Rounds ({rounds.length})</div>
+      <div className="rounded-2xl border border-bd-line bg-white p-3">
+        <div className="mb-2 text-sm font-bold">Recent Rounds ({rounds.length})</div>
         <div className="space-y-2 text-sm">
           {rounds.slice(-5).map((round: Record<string, unknown>, index: number) => (
-            <div key={`${index}-${typeof round.winner === 'string' ? round.winner : 'none'}`} className="rounded-lg border px-3 py-2">
+            <div key={`${index}-${typeof round.winner === 'string' ? round.winner : 'none'}`} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
               Winner: {typeof round.winner === 'string' ? round.winner : 'pending'} • choices hidden until reveal logic
             </div>
           ))}
-          {rounds.length === 0 && <div className="text-gray-500">No completed rounds yet</div>}
+          {rounds.length === 0 && <div className="text-bd-ink-muted">No completed rounds yet</div>}
         </div>
       </div>
     </div>
@@ -157,28 +158,28 @@ function ReadOnlySpyView({ state }: { state: Record<string, any> }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-lg border p-3">Phase: {data.phase || '-'}</div>
-        <div className="rounded-lg border p-3">
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Phase: {data.phase || '-'}</div>
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
           Round: {data.currentRound || '-'} / {data.totalRounds || '-'}
         </div>
-        <div className="rounded-lg border p-3">Location: {data.location || 'Hidden / not started'}</div>
-        <div className="rounded-lg border p-3">
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Location: {data.location || 'Hidden / not started'}</div>
+        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
           Questions: {questionHistory.length}
         </div>
       </div>
-      <div className="rounded-xl border p-3">
-        <div className="mb-2 text-sm font-semibold">Recent Q&A (sanitized)</div>
+      <div className="rounded-2xl border border-bd-line bg-white p-3">
+        <div className="mb-2 text-sm font-bold">Recent Q&A</div>
         <div className="space-y-2 text-sm">
           {questionHistory.slice(-5).map((entry: Record<string, unknown>, index: number) => (
-            <div key={`${index}-${typeof entry.timestamp === 'number' ? entry.timestamp : index}`} className="rounded-lg border px-3 py-2">
+            <div key={`${index}-${typeof entry.timestamp === 'number' ? entry.timestamp : index}`} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
               <div className="font-medium">
                 {typeof entry.askerName === 'string' ? entry.askerName : 'Player'} → {typeof entry.targetName === 'string' ? entry.targetName : 'Player'}
               </div>
-              <div className="text-gray-600 dark:text-gray-300">{typeof entry.question === 'string' ? entry.question : '-'}</div>
-              <div className="text-gray-500 dark:text-gray-400">{typeof entry.answer === 'string' ? entry.answer : '-'}</div>
+              <div className="text-bd-ink-soft">{typeof entry.question === 'string' ? entry.question : '-'}</div>
+              <div className="text-bd-ink-muted">{typeof entry.answer === 'string' ? entry.answer : '-'}</div>
             </div>
           ))}
-          {questionHistory.length === 0 && <div className="text-gray-500">No questions yet</div>}
+          {questionHistory.length === 0 && <div className="text-bd-ink-muted">No questions yet</div>}
         </div>
       </div>
     </div>
@@ -195,7 +196,7 @@ function ReadOnlySpectatorBoard({
   players: GamePlayer[]
 }) {
   if (!parsedState) {
-    return <div className="text-sm text-gray-500">Game state unavailable</div>
+    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">Game state unavailable</div>
   }
 
   switch (gameType) {
@@ -208,7 +209,7 @@ function ReadOnlySpectatorBoard({
     case 'guess_the_spy':
       return <ReadOnlySpyView state={parsedState} />
     default:
-      return <div className="text-sm text-gray-500">No specialized spectator board for this game yet.</div>
+      return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">No specialized spectator board for this game yet.</div>
   }
 }
 
@@ -387,19 +388,32 @@ export default function SpectatorLobbyPage() {
   }, [code, data?.canJoinAsPlayer, joiningAsPlayer, router])
 
   if (loading) {
-    return <div className="min-h-[100dvh] flex items-center justify-center">Loading spectator view...</div>
+    return (
+      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+        <div className="bd-card flex w-full max-w-sm flex-col items-center gap-4 p-8 text-center">
+          <LoadingSpinner size="lg" />
+          <div>
+            <h1 className="font-display text-2xl font-black text-bd-ink">Opening spectator view</h1>
+            <p className="mt-2 text-sm text-bd-ink-muted">Loading the latest lobby snapshot.</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!data) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center p-6">
-        <div className="max-w-xl w-full rounded-xl border p-6 bg-white dark:bg-gray-900">
-          <h1 className="text-xl font-bold mb-2">Spectator mode unavailable</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300">{error || 'No data'}</p>
+      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            👀
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">Spectator mode unavailable</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{error || 'No data'}</p>
           <button
             type="button"
             onClick={() => router.push('/lobby')}
-            className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white"
+            className="bd-btn bd-btn-primary mx-auto mt-5"
           >
             Back to lobbies
           </button>
@@ -411,26 +425,25 @@ export default function SpectatorLobbyPage() {
   const players = Array.isArray(data.activeGame?.players) ? data.activeGame.players : []
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-900 dark:bg-indigo-950/40">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                Spectator Mode
-              </div>
-              <h1 className="text-2xl font-bold">{data.lobby.name}</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Lobby {data.lobby.code} • {data.activeGame?.status || 'waiting'}
+    <div className="bd-page bd-screen min-h-[calc(100dvh-64px)] text-bd-ink">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <section className="bd-card relative mb-6 overflow-hidden p-5 sm:p-6">
+          <div className="bd-dot-grid pointer-events-none absolute inset-0 opacity-30" />
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <span className="bd-kicker mb-2 block">Spectator mode</span>
+              <h1 className="font-display text-3xl font-black leading-tight text-bd-ink sm:text-4xl">{data.lobby.name}</h1>
+              <p className="mt-2 text-sm font-medium text-bd-ink-muted">
+                Lobby <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span> · {data.activeGame?.status || 'waiting'}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               {data.canJoinAsPlayer && (
                 <button
                   type="button"
                   onClick={joinAsPlayer}
                   disabled={joiningAsPlayer}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-white font-semibold disabled:opacity-60"
+                  className="bd-btn bd-btn-coral justify-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {joiningAsPlayer ? 'Joining...' : 'Join as Player'}
                 </button>
@@ -438,20 +451,20 @@ export default function SpectatorLobbyPage() {
               <button
                 type="button"
                 onClick={() => router.push(`/lobby/${code}`)}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-white font-semibold"
+                className="bd-btn bd-btn-soft justify-center"
               >
                 Open Lobby
               </button>
             </div>
           </div>
-          {error && <p className="mt-3 text-sm text-red-600 dark:text-red-300">{error}</p>}
-        </div>
+          {error && <p className="relative mt-4 rounded-2xl border border-bd-coral/30 bg-bd-coral/10 px-4 py-3 text-sm font-medium text-bd-coral-deep">{error}</p>}
+        </section>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl border bg-white p-4 dark:bg-gray-900">
+          <section className="bd-card p-4 sm:p-5 lg:col-span-2">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-bold">Read-only Game Snapshot</h2>
-              <span className="text-xs rounded-full bg-gray-100 px-2 py-1 dark:bg-gray-800">
+              <h2 className="font-display text-xl font-black text-bd-ink">Live game snapshot</h2>
+              <span className="bd-chip text-xs">
                 {data.lobby.gameType}
               </span>
             </div>
@@ -466,54 +479,54 @@ export default function SpectatorLobbyPage() {
               <summary className="cursor-pointer font-semibold text-gray-200">Raw Snapshot JSON</summary>
               <pre className="mt-3 max-h-[420px] overflow-auto">{JSON.stringify(parsedState ?? data.activeGame ?? {}, null, 2)}</pre>
             </details>
-          </div>
+          </section>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900">
-              <h2 className="mb-3 text-lg font-bold">Players ({players.length}/{data.lobby.maxPlayers})</h2>
+            <section className="bd-card p-4">
+              <h2 className="mb-3 font-display text-lg font-black">Players ({players.length}/{data.lobby.maxPlayers})</h2>
               <div className="space-y-2">
                 {players.map((player: GamePlayer) => (
-                  <div key={player.id} className="rounded-lg border px-3 py-2 text-sm">
+                  <div key={player.id} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm font-semibold text-bd-ink-soft">
                     {player.user?.username || player.user?.email || 'Player'}
                   </div>
                 ))}
-                {players.length === 0 && <div className="text-sm text-gray-500">No players yet</div>}
+                {players.length === 0 && <div className="text-sm text-bd-ink-muted">No players yet</div>}
               </div>
-            </div>
+            </section>
 
-            <details className="rounded-2xl border bg-white p-4 dark:bg-gray-900" open>
-              <summary className="cursor-pointer font-bold">
+            <details className="bd-card p-4" open>
+              <summary className="cursor-pointer font-display text-lg font-black">
                 Spectators ({spectatorCount})
               </summary>
               <div className="mt-3 space-y-2">
                 {spectators.map((spectator) => (
-                  <div key={spectator.userId} className="rounded-lg border px-3 py-2 text-sm">
+                  <div key={spectator.userId} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm font-semibold text-bd-ink-soft">
                     {spectator.username}
                   </div>
                 ))}
                 {spectators.length === 0 && (
-                  <div className="text-sm text-gray-500">No spectators connected</div>
+                  <div className="text-sm text-bd-ink-muted">No spectators connected</div>
                 )}
               </div>
             </details>
 
-            <div className="rounded-2xl border bg-white p-4 text-sm dark:bg-gray-900">
-              <h3 className="font-bold mb-2">Notes</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                This spectator view is read-only. Interactive game controls and player chat are disabled.
+            <section className="rounded-[1.5rem] border border-bd-line bg-bd-card-warm p-4 text-sm">
+              <h3 className="mb-2 font-display text-lg font-black">Good to know</h3>
+              <p className="font-medium leading-relaxed text-bd-ink-muted">
+                You can watch the game here without changing the board. Player controls stay locked unless you join as a player.
               </p>
-            </div>
+            </section>
 
-            <div className="rounded-2xl border bg-white p-4 dark:bg-gray-900">
-              <h3 className="font-bold mb-3">Spectator Chat</h3>
-              <div className="mb-3 max-h-52 overflow-auto space-y-2 rounded-xl border bg-gray-50 p-3 dark:bg-gray-950">
+            <section className="bd-card p-4">
+              <h3 className="mb-3 font-display text-lg font-black">Spectator Chat</h3>
+              <div className="mb-3 max-h-52 space-y-2 overflow-auto rounded-2xl border border-bd-line bg-bd-card-warm p-3">
                 {chatMessages.length === 0 && (
-                  <div className="text-sm text-gray-500">No spectator messages yet</div>
+                  <div className="text-sm text-bd-ink-muted">No spectator messages yet</div>
                 )}
                 {chatMessages.map((message) => (
                   <div key={message.id} className="text-sm">
                     <span className="font-semibold">{message.username}: </span>
-                    <span className="text-gray-700 dark:text-gray-300">{message.message}</span>
+                    <span className="text-bd-ink-soft">{message.message}</span>
                   </div>
                 ))}
               </div>
@@ -524,17 +537,17 @@ export default function SpectatorLobbyPage() {
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Say something to spectators..."
                   maxLength={500}
-                  className="flex-1 rounded-lg border px-3 py-2 text-sm bg-white dark:bg-gray-950"
+                  className="bd-input min-w-0 flex-1 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={!chatInput.trim()}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="bd-btn bd-btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Send
                 </button>
               </form>
-            </div>
+            </section>
           </div>
         </div>
       </div>

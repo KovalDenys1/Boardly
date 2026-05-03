@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import BoardlySelect from '@/components/ui/BoardlySelect'
 import { clientLogger } from '@/lib/client-logger'
+import { getAvailableGameTypes, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import { formatGameTypeLabel } from '@/lib/game-display'
 import { useTranslation } from '@/lib/i18n-helpers'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 interface OverallStats {
   totalGames: number
@@ -44,60 +47,256 @@ interface StatsResponse {
   generatedAt: string
 }
 
-interface DateRange {
-  from: string
-  to: string
-}
-
-type RangePreset = 30 | 90 | 'all'
-
-const primarySurfaceClassName =
-  'rounded-3xl border border-slate-200/60 bg-white/80 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/60'
-const secondarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-slate-50/80 dark:border-slate-700/60 dark:bg-slate-800/60'
-const tertiarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-white/80 dark:border-slate-700/60 dark:bg-slate-900/65'
+const panelClassName =
+  'rounded-[1.75rem] border-[1.5px] border-bd-line bg-white shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700/60 dark:bg-slate-900/80'
+const warmSurfaceClassName =
+  'rounded-[1.5rem] border border-bd-line bg-bd-card-warm/90 dark:border-slate-700/60 dark:bg-slate-800/70'
+const tileClassName =
+  'rounded-2xl border border-bd-line bg-white/90 dark:border-slate-700/60 dark:bg-slate-900/70'
+const eyebrowClassName =
+  'font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400'
 
 function formatPercent(value: number): string {
   return `${value}%`
 }
 
-function supportsScoreMetrics(stats: ByGameStats): boolean {
-  return stats.avgScore !== null || stats.bestScore !== null
+function formatNumber(value: number | null): string {
+  return value === null ? '' : String(value)
 }
 
-function getGameSelectClassName(isActive: boolean): string {
-  return `w-full appearance-none rounded-2xl border bg-white px-4 py-3 pr-10 text-sm font-medium shadow-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 dark:bg-slate-900 ${
-    isActive
-      ? 'border-blue-400 text-blue-700 dark:border-blue-400 dark:text-blue-300'
-      : 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-200'
-  }`
+function formatOptionalScore(value: number | null, fallback: string): string {
+  return value === null ? fallback : formatNumber(value)
 }
 
-function toDateInputValue(date: Date): string {
-  return date.toISOString().slice(0, 10)
+function formatRate(numerator: number, denominator: number): string {
+  return formatPercent(denominator > 0 ? Math.round((numerator / denominator) * 100) : 0)
 }
 
-function buildDefaultRange(): DateRange {
-  return buildRangeForPreset(30)
+function getLastPlayedValue(stats: ByGameStats, fallback: string): string {
+  return stats.lastPlayed ? new Date(stats.lastPlayed).toLocaleDateString() : fallback
 }
 
-function buildRangeForPreset(preset: RangePreset): DateRange {
-  if (preset === 'all') {
-    return {
-      from: '',
-      to: '',
-    }
-  }
+type AnalyticsMetric = {
+  id: string
+  label: string
+  value: string | number
+  accentClassName?: string
+}
 
-  const now = new Date()
-  const from = new Date(now)
-  from.setDate(now.getDate() - preset)
+type AccentMetric = {
+  id: string
+  labelKey: TranslationKeys
+  value: string | number
+}
 
-  return {
-    from: toDateInputValue(from),
-    to: toDateInputValue(now),
-  }
+type GameAnalyticsProfile = {
+  titleKey: TranslationKeys
+  descriptionKey: TranslationKeys
+  accentMetric: (stats: ByGameStats, notAvailable: string) => AccentMetric
+  highlights: (stats: ByGameStats, labels: GameAnalyticsLabels) => AnalyticsMetric[]
+  quickFacts: (stats: ByGameStats, labels: GameAnalyticsLabels) => AnalyticsMetric[]
+}
+
+type GameAnalyticsLabels = {
+  played: string
+  wins: string
+  losses: string
+  draws: string
+  winRate: string
+  drawRate: string
+  lossRate: string
+  unbeatenRate: string
+  avgScore: string
+  bestScore: string
+  lastPlayed: string
+  notAvailable: string
+}
+
+const metricAccents = {
+  wins: 'bg-bd-mint/20 text-bd-mint-deep dark:bg-bd-mint/15 dark:text-bd-mint',
+  losses: 'bg-bd-coral/15 text-bd-coral-deep dark:bg-red-500/15 dark:text-red-300',
+  draws: 'bg-bd-bg2 text-bd-ink-soft dark:bg-slate-800 dark:text-slate-300',
+  score: 'bg-bd-sun/25 text-[#9b6b00] dark:bg-bd-sun/15 dark:text-bd-sun',
+  rate: 'bg-bd-lav/15 text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav',
+}
+
+const defaultAnalyticsProfile: GameAnalyticsProfile = {
+  titleKey: 'profile.stats.dashboard.gameProfiles.default.title',
+  descriptionKey: 'profile.stats.dashboard.gameProfiles.default.description',
+  accentMetric: (stats) => ({
+    id: 'winRate',
+    labelKey: 'profile.stats.dashboard.summary.winRate',
+    value: formatPercent(stats.winRate),
+  }),
+  highlights: (stats, labels) => [
+    {
+      id: 'wins',
+      label: labels.wins,
+      value: stats.wins,
+      accentClassName: metricAccents.wins,
+    },
+    {
+      id: 'losses',
+      label: labels.losses,
+      value: stats.losses,
+      accentClassName: metricAccents.losses,
+    },
+    {
+      id: 'draws',
+      label: labels.draws,
+      value: stats.draws,
+      accentClassName: metricAccents.draws,
+    },
+  ],
+  quickFacts: (stats, labels) => [
+    { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+    { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+    { id: 'drawRate', label: labels.drawRate, value: formatRate(stats.draws, stats.gamesPlayed) },
+    { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+  ],
+}
+
+const gameAnalyticsProfiles: Record<string, GameAnalyticsProfile> = {
+  yahtzee: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.yahtzee.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.yahtzee.description',
+    accentMetric: (stats, notAvailable) => ({
+      id: 'bestScore',
+      labelKey: 'profile.stats.dashboard.sections.byGame.columns.bestScore',
+      value: formatOptionalScore(stats.bestScore, notAvailable),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'avgScore',
+        label: labels.avgScore,
+        value: formatOptionalScore(stats.avgScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+      {
+        id: 'bestScore',
+        label: labels.bestScore,
+        value: formatOptionalScore(stats.bestScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'lossRate', label: labels.lossRate, value: formatRate(stats.losses, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
+  tic_tac_toe: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.ticTacToe.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.ticTacToe.description',
+    accentMetric: (stats) => ({
+      id: 'unbeatenRate',
+      labelKey: 'profile.stats.dashboard.summary.unbeatenRate',
+      value: formatRate(stats.wins + stats.draws, stats.gamesPlayed),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+      {
+        id: 'draws',
+        label: labels.draws,
+        value: stats.draws,
+        accentClassName: metricAccents.draws,
+      },
+      {
+        id: 'unbeatenRate',
+        label: labels.unbeatenRate,
+        value: formatRate(stats.wins + stats.draws, stats.gamesPlayed),
+        accentClassName: metricAccents.rate,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'drawRate', label: labels.drawRate, value: formatRate(stats.draws, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
+  memory: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.memory.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.memory.description',
+    accentMetric: (stats, notAvailable) => ({
+      id: 'bestScore',
+      labelKey: 'profile.stats.dashboard.sections.byGame.columns.bestScore',
+      value: formatOptionalScore(stats.bestScore, notAvailable),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+      {
+        id: 'avgScore',
+        label: labels.avgScore,
+        value: formatOptionalScore(stats.avgScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+      {
+        id: 'bestScore',
+        label: labels.bestScore,
+        value: formatOptionalScore(stats.bestScore, labels.notAvailable),
+        accentClassName: metricAccents.score,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'played', label: labels.played, value: String(stats.gamesPlayed) },
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'lossRate', label: labels.lossRate, value: formatRate(stats.losses, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
+  guess_the_spy: {
+    titleKey: 'profile.stats.dashboard.gameProfiles.guessTheSpy.title',
+    descriptionKey: 'profile.stats.dashboard.gameProfiles.guessTheSpy.description',
+    accentMetric: (stats) => ({
+      id: 'winRate',
+      labelKey: 'profile.stats.dashboard.summary.winRate',
+      value: formatPercent(stats.winRate),
+    }),
+    highlights: (stats, labels) => [
+      {
+        id: 'played',
+        label: labels.played,
+        value: stats.gamesPlayed,
+        accentClassName: metricAccents.rate,
+      },
+      {
+        id: 'wins',
+        label: labels.wins,
+        value: stats.wins,
+        accentClassName: metricAccents.wins,
+      },
+      {
+        id: 'losses',
+        label: labels.losses,
+        value: stats.losses,
+        accentClassName: metricAccents.losses,
+      },
+    ],
+    quickFacts: (stats, labels) => [
+      { id: 'winRate', label: labels.winRate, value: formatPercent(stats.winRate) },
+      { id: 'lossRate', label: labels.lossRate, value: formatRate(stats.losses, stats.gamesPlayed) },
+      { id: 'drawRate', label: labels.drawRate, value: formatRate(stats.draws, stats.gamesPlayed) },
+      { id: 'lastPlayed', label: labels.lastPlayed, value: getLastPlayedValue(stats, labels.notAvailable) },
+    ],
+  },
 }
 
 interface PlayerStatsDashboardProps {
@@ -106,12 +305,11 @@ interface PlayerStatsDashboardProps {
 
 export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardProps) {
   const { t } = useTranslation()
-  const [rangePreset, setRangePreset] = useState<RangePreset>(30)
-  const [appliedRange, setAppliedRange] = useState<DateRange>(() => buildDefaultRange())
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [selectedGameType, setSelectedGameType] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const availableGameTypes = useMemo(() => new Set(getAvailableGameTypes()), [])
 
   const loadStats = useCallback(async () => {
     if (!userId) return
@@ -120,11 +318,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
     setError(null)
 
     try {
-      const params = new URLSearchParams()
-      if (appliedRange.from) params.set('from', appliedRange.from)
-      if (appliedRange.to) params.set('to', appliedRange.to)
-
-      const response = await fetch(`/api/user/${userId}/stats?${params.toString()}`, {
+      const response = await fetch(`/api/user/${userId}/stats`, {
         cache: 'no-store',
       })
       const data = await response.json()
@@ -140,31 +334,34 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
     } finally {
       setLoading(false)
     }
-  }, [appliedRange.from, appliedRange.to, t, userId])
+  }, [t, userId])
 
   useEffect(() => {
     void loadStats()
   }, [loadStats])
 
+  const availableByGameStats = useMemo(() => {
+    return (
+      stats?.byGame.filter((item) =>
+        availableGameTypes.has(item.gameType as SupportedCatalogGameType)
+      ) ?? []
+    )
+  }, [availableGameTypes, stats])
+
   useEffect(() => {
-    if (!stats?.byGame.length) {
+    if (availableByGameStats.length === 0) {
       setSelectedGameType('')
       return
     }
 
     setSelectedGameType((previousValue) => {
-      if (stats.byGame.some((item) => item.gameType === previousValue)) {
+      if (availableByGameStats.some((item) => item.gameType === previousValue)) {
         return previousValue
       }
 
-      return stats.byGame[0].gameType
+      return availableByGameStats[0].gameType
     })
-  }, [stats])
-
-  function selectPreset(preset: RangePreset) {
-    setRangePreset(preset)
-    setAppliedRange(buildRangeForPreset(preset))
-  }
+  }, [availableByGameStats])
 
   const summaryCards = useMemo(() => {
     if (!stats) return []
@@ -174,6 +371,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         id: 'games',
         label: t('profile.stats.dashboard.summary.totalGames'),
         value: String(stats.overall.totalGames),
+        accentClassName: 'bg-bd-coral text-bd-coral-deep',
       },
       {
         id: 'favoriteGame',
@@ -181,11 +379,13 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         value: stats.overall.favoriteGame
           ? formatGameTypeLabel(stats.overall.favoriteGame)
           : t('profile.stats.dashboard.common.notAvailable'),
+        accentClassName: 'bg-bd-mint text-bd-mint-deep',
       },
       {
         id: 'winRate',
         label: t('profile.stats.dashboard.summary.winRate'),
         value: formatPercent(stats.overall.winRate),
+        accentClassName: 'bg-bd-lav text-[#6758d8]',
       },
       {
         id: 'avgDuration',
@@ -193,108 +393,63 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         value: `${Math.round(stats.overall.avgGameDurationMinutes)}${t(
           'profile.stats.dashboard.summary.minutesSuffix'
         )}`,
+        accentClassName: 'bg-bd-sun text-[#9b6b00]',
       },
     ]
   }, [stats, t])
 
   const selectedGameStats = useMemo(() => {
-    if (!stats?.byGame.length) {
+    if (!availableByGameStats.length) {
       return null
     }
 
-    return stats.byGame.find((item) => item.gameType === selectedGameType) ?? stats.byGame[0]
-  }, [selectedGameType, stats])
+    return (
+      availableByGameStats.find((item) => item.gameType === selectedGameType) ??
+      availableByGameStats[0]
+    )
+  }, [availableByGameStats, selectedGameType])
 
   const selectedGameLabel = selectedGameStats ? formatGameTypeLabel(selectedGameStats.gameType) : ''
+  const selectedAnalyticsProfile = selectedGameStats
+    ? gameAnalyticsProfiles[selectedGameStats.gameType] ?? defaultAnalyticsProfile
+    : defaultAnalyticsProfile
 
-  const recordItems = useMemo(() => {
+  const gameAnalyticsLabels = useMemo<GameAnalyticsLabels>(
+    () => ({
+      played: t('profile.stats.dashboard.sections.byGame.columns.played'),
+      wins: t('profile.stats.dashboard.summary.wins'),
+      losses: t('profile.stats.dashboard.summary.losses'),
+      draws: t('profile.stats.dashboard.summary.draws'),
+      winRate: t('profile.stats.dashboard.summary.winRate'),
+      drawRate: t('profile.stats.dashboard.summary.drawRate'),
+      lossRate: t('profile.stats.dashboard.summary.lossRate'),
+      unbeatenRate: t('profile.stats.dashboard.summary.unbeatenRate'),
+      avgScore: t('profile.stats.dashboard.sections.byGame.columns.avgScore'),
+      bestScore: t('profile.stats.dashboard.sections.byGame.columns.bestScore'),
+      lastPlayed: t('profile.stats.dashboard.sections.byGame.columns.lastPlayed'),
+      notAvailable: t('profile.stats.dashboard.common.notAvailable'),
+    }),
+    [t]
+  )
+
+  const highlightItems = useMemo(() => {
     if (!selectedGameStats) return []
 
-    return [
-      {
-        id: 'wins',
-        label: t('profile.stats.dashboard.summary.wins'),
-        value: selectedGameStats.wins,
-      },
-      {
-        id: 'losses',
-        label: t('profile.stats.dashboard.summary.losses'),
-        value: selectedGameStats.losses,
-      },
-      {
-        id: 'draws',
-        label: t('profile.stats.dashboard.summary.draws'),
-        value: selectedGameStats.draws,
-      },
-    ]
-  }, [selectedGameStats, t])
+    return selectedAnalyticsProfile.highlights(selectedGameStats, gameAnalyticsLabels)
+  }, [gameAnalyticsLabels, selectedAnalyticsProfile, selectedGameStats])
 
   const quickFacts = useMemo(() => {
     if (!selectedGameStats) return []
 
-    const lastPlayedValue = selectedGameStats.lastPlayed
-      ? new Date(selectedGameStats.lastPlayed).toLocaleDateString()
-      : t('profile.stats.dashboard.common.notAvailable')
+    return selectedAnalyticsProfile.quickFacts(selectedGameStats, gameAnalyticsLabels)
+  }, [gameAnalyticsLabels, selectedAnalyticsProfile, selectedGameStats])
 
-    if (supportsScoreMetrics(selectedGameStats)) {
-      return [
-        {
-          id: 'played',
-          label: t('profile.stats.dashboard.sections.byGame.columns.played'),
-          value: String(selectedGameStats.gamesPlayed),
-        },
-        {
-          id: 'avgScore',
-          label: t('profile.stats.dashboard.sections.byGame.columns.avgScore'),
-          value:
-            selectedGameStats.avgScore === null
-              ? t('profile.stats.dashboard.common.notAvailable')
-              : String(selectedGameStats.avgScore),
-        },
-        {
-          id: 'bestScore',
-          label: t('profile.stats.dashboard.sections.byGame.columns.bestScore'),
-          value:
-            selectedGameStats.bestScore === null
-              ? t('profile.stats.dashboard.common.notAvailable')
-              : String(selectedGameStats.bestScore),
-        },
-        {
-          id: 'lastPlayed',
-          label: t('profile.stats.dashboard.sections.byGame.columns.lastPlayed'),
-          value: lastPlayedValue,
-        },
-      ]
-    }
-
-    const drawRate =
-      selectedGameStats.gamesPlayed > 0
-        ? Math.round((selectedGameStats.draws / selectedGameStats.gamesPlayed) * 100)
-        : 0
-
-    return [
-      {
-        id: 'played',
-        label: t('profile.stats.dashboard.sections.byGame.columns.played'),
-        value: String(selectedGameStats.gamesPlayed),
-      },
-      {
-        id: 'winRate',
-        label: t('profile.stats.dashboard.summary.winRate'),
-        value: formatPercent(selectedGameStats.winRate),
-      },
-      {
-        id: 'drawRate',
-        label: t('profile.stats.dashboard.summary.drawRate'),
-        value: formatPercent(drawRate),
-      },
-      {
-        id: 'lastPlayed',
-        label: t('profile.stats.dashboard.sections.byGame.columns.lastPlayed'),
-        value: lastPlayedValue,
-      },
-    ]
-  }, [selectedGameStats, t])
+  const accentMetric = selectedGameStats
+    ? selectedAnalyticsProfile.accentMetric(
+        selectedGameStats,
+        t('profile.stats.dashboard.common.notAvailable')
+      )
+    : null
 
   const overallInsightItems = useMemo(() => {
     if (!stats) return []
@@ -330,7 +485,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
   if (loading && !stats) {
     return (
-      <div className={`${primarySurfaceClassName} flex items-center justify-center py-14`}>
+      <div className={`${panelClassName} flex min-h-[220px] items-center justify-center`}>
         <LoadingSpinner />
       </div>
     )
@@ -338,58 +493,31 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
   return (
     <div className="space-y-6">
-      <div className={`${primarySurfaceClassName} overflow-hidden`}>
-        <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className={`${panelClassName} overflow-hidden`}>
+        <div className="relative p-6 sm:p-7">
+          <div className="dot-grid pointer-events-none absolute inset-0 opacity-25" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                {t('profile.stats.title')}
-              </p>
-              <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <p className={eyebrowClassName}>{t('profile.stats.title')}</p>
+              <h2 className="mt-3 font-display text-3xl font-bold text-bd-ink dark:text-white">
                 {t('profile.stats.dashboard.title')}
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-2 max-w-2xl text-sm text-bd-ink-muted dark:text-slate-400">
                 {t('profile.stats.dashboard.subtitle')}
               </p>
             </div>
 
-            <div className={`${secondarySurfaceClassName} p-1.5`}>
-              <div className="flex gap-1">
-                {([
-                  { id: 30, label: t('profile.stats.dashboard.filters.last30Days') },
-                  { id: 90, label: t('profile.stats.dashboard.filters.last90Days') },
-                  { id: 'all', label: t('profile.stats.dashboard.filters.allTime') },
-                ] as const).map((preset) => (
-                  <button
-                    key={String(preset.id)}
-                    type="button"
-                    onClick={() => selectPreset(preset.id)}
-                    className={`min-h-[44px] rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all ${
-                      rangePreset === preset.id
-                        ? 'bg-white text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-800 dark:text-blue-400 dark:ring-slate-700/70'
-                        : 'text-slate-500 hover:bg-white/60 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
+            <div className={`${warmSurfaceClassName} px-4 py-3`}>
+              <p className={eyebrowClassName}>{t('profile.stats.dashboard.filters.allTime')}</p>
             </div>
           </div>
         </div>
       </div>
 
       {error ? (
-        <div className="overflow-hidden rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5">
-          <div className="border-l-4 border-rose-400 px-5 py-5 sm:px-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-2xl shadow-sm dark:bg-rose-500/15">
-                !
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-rose-900 dark:text-rose-200">{error}</p>
-              </div>
-            </div>
+        <div className="overflow-hidden rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] dark:border-red-500/30 dark:bg-red-500/10">
+          <div className="border-l-4 border-bd-coral px-5 py-5 sm:px-6">
+            <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">{error}</p>
           </div>
         </div>
       ) : null}
@@ -398,53 +526,49 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {summaryCards.map((card) => (
-              <div key={card.id} className={`${primarySurfaceClassName} min-w-0 p-5`}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                  {card.label}
-                </p>
-                <p className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  {card.value}
-                </p>
+              <div key={card.id} className={`${panelClassName} min-w-0 overflow-hidden`}>
+                <div className="p-5">
+                  <p className={eyebrowClassName}>{card.label}</p>
+                  <p className="mt-4 text-2xl font-bold text-bd-ink dark:text-white">{card.value}</p>
+                </div>
+                <div className={`h-2 w-full ${card.accentClassName.split(' ')[0]}`} />
               </div>
             ))}
           </div>
 
-          <div className={`${primarySurfaceClassName} overflow-hidden`}>
-            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-6 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-8">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className={`${panelClassName} overflow-hidden`}>
+            <div className="relative border-b border-bd-line p-6 sm:p-7 dark:border-slate-700/60">
+              <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="min-w-0">
-                  <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  <h3 className="text-2xl font-bold text-bd-ink dark:text-white">
                     {t('profile.stats.dashboard.sections.byGame.title')}
                   </h3>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
                     {t('profile.stats.dashboard.sections.byGame.subtitle')}
                   </p>
                 </div>
 
-                {stats.byGame.length > 0 ? (
+                {availableByGameStats.length > 0 ? (
                   <fieldset className="w-full lg:max-w-sm">
-                    <legend className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    <legend className={eyebrowClassName}>
                       {t('profile.stats.dashboard.filters.gameLabel')}
                     </legend>
-                    <div className="relative mt-3">
-                      <select
-                        id="profile-stats-game-select"
+                    <div className="mt-3">
+                      <BoardlySelect
                         value={selectedGameType}
-                        onChange={(event) => setSelectedGameType(event.target.value)}
-                        className={getGameSelectClassName(selectedGameType !== '')}
-                      >
-                        {stats.byGame.map((item) => (
-                          <option key={item.gameType} value={item.gameType}>
-                            {formatGameTypeLabel(item.gameType)}
-                          </option>
-                        ))}
-                      </select>
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400"
-                      >
-                        ▾
-                      </span>
+                        onChange={setSelectedGameType}
+                        ariaLabel={t('profile.stats.dashboard.filters.gameLabel')}
+                        options={availableByGameStats.map((item) => ({
+                          value: item.gameType,
+                          label: formatGameTypeLabel(item.gameType),
+                          badge: String(item.gamesPlayed),
+                        }))}
+                        renderValue={(option) => (
+                          <span className="block truncate text-bd-lav-deep dark:text-bd-lav">
+                            {option?.label ?? ''}
+                          </span>
+                        )}
+                      />
                     </div>
                   </fieldset>
                 ) : null}
@@ -452,62 +576,63 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
             </div>
 
             <div className="p-5 sm:p-6">
-              {stats.byGame.length === 0 ? (
-                <div className={`${secondarySurfaceClassName} p-6 sm:p-8`}>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
+              {availableByGameStats.length === 0 ? (
+                <div className={`${warmSurfaceClassName} p-6 sm:p-8`}>
+                  <p className="text-sm text-bd-ink-muted dark:text-slate-400">
                     {t('profile.stats.dashboard.sections.byGame.empty')}
                   </p>
                 </div>
               ) : (
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)]">
                   <div className="space-y-5">
-                    <div className={`${secondarySurfaceClassName} p-5`}>
+                    <div className={`${warmSurfaceClassName} p-5`}>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
-                            {t('profile.stats.dashboard.filters.gameLabel')}
-                          </p>
-                          <p className="mt-3 truncate text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                          <p className={eyebrowClassName}>{t('profile.stats.dashboard.filters.gameLabel')}</p>
+                          <p className="mt-3 truncate text-2xl font-bold text-bd-ink dark:text-white">
                             {selectedGameLabel}
                           </p>
-                          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                            {t('profile.stats.dashboard.sections.byGame.selectedDescription')}
+                          <p className="mt-2 text-sm text-bd-ink-muted dark:text-slate-400">
+                            {t(selectedAnalyticsProfile.descriptionKey)}
                           </p>
                         </div>
 
-                        <div className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:text-blue-300 dark:ring-slate-700/70">
-                          {selectedGameStats ? formatPercent(selectedGameStats.winRate) : formatPercent(0)}
-                        </div>
+                        {accentMetric ? (
+                          <div className="inline-flex flex-col items-end rounded-2xl bg-bd-lav/15 px-4 py-2 text-right text-bd-lav-deep dark:bg-bd-lav/15 dark:text-bd-lav">
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
+                              {t(accentMetric.labelKey)}
+                            </span>
+                            <span className="mt-1 text-lg font-bold">{accentMetric.value}</span>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        {recordItems.map((item) => (
-                          <div key={item.id} className={`${tertiarySurfaceClassName} px-4 py-4 text-center`}>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                        {highlightItems.map((item) => (
+                          <div key={item.id} className={`${tileClassName} px-4 py-4 text-center`}>
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${item.accentClassName ?? metricAccents.rate}`}>
                               {item.label}
-                            </p>
-                            <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                              {item.value}
-                            </p>
+                            </span>
+                            <p className="mt-3 text-3xl font-bold text-bd-ink dark:text-white">{item.value}</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div className={`${secondarySurfaceClassName} p-5`}>
-                      <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                        {t('profile.stats.dashboard.summary.wld')}
+                    <div className={`${warmSurfaceClassName} p-5`}>
+                      <h4 className="text-lg font-bold text-bd-ink dark:text-white">
+                        {t(selectedAnalyticsProfile.titleKey)}
                       </h4>
                       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
                         {overallInsightItems.map((item) => (
                           <div
                             key={item.id}
-                            className={`${tertiarySurfaceClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}
+                            className={`${tileClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400 sm:text-[11px]">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400 sm:text-[11px]">
                               {item.label}
                             </p>
-                            <p className="mt-3 text-xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                            <p className="mt-3 text-xl font-bold text-bd-ink dark:text-white sm:text-2xl">
                               {item.value}
                             </p>
                           </div>
@@ -516,20 +641,18 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                     </div>
                   </div>
 
-                  <div className={`${secondarySurfaceClassName} flex h-full flex-col p-5`}>
-                    <h4 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                  <div className={`${warmSurfaceClassName} flex h-full flex-col p-5`}>
+                    <h4 className="text-lg font-bold text-bd-ink dark:text-white">
                       {t('profile.stats.dashboard.summary.quickFacts')}
                     </h4>
                     <div className="mt-4 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-fr xl:grid-cols-1 xl:grid-rows-4">
                       {quickFacts.map((fact) => (
                         <div
                           key={fact.id}
-                          className={`${tertiarySurfaceClassName} flex h-full min-h-[96px] items-center justify-between gap-4 px-4 py-3`}
+                          className={`${tileClassName} flex h-full min-h-[96px] items-center justify-between gap-4 px-4 py-3`}
                         >
-                          <span className="text-sm text-slate-600 dark:text-slate-300">{fact.label}</span>
-                          <span className="text-base font-semibold text-slate-900 dark:text-white">
-                            {fact.value}
-                          </span>
+                          <span className="text-sm text-bd-ink-muted dark:text-slate-300">{fact.label}</span>
+                          <span className="text-base font-semibold text-bd-ink dark:text-white">{fact.value}</span>
                         </div>
                       ))}
                     </div>

@@ -73,59 +73,60 @@ function OAuthErrorContent() {
     router.push(buildAuthUrl('login', returnUrl))
   }
 
+  const authBg: React.CSSProperties = {
+    background:
+      'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18), transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16), transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14), transparent 50%), var(--bd-bg)',
+  }
+
   if (status === 'loading') {
     return (
-      <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-y-auto">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="page-shell-full flex items-center justify-center" style={authBg}>
+        <LoadingSpinner />
       </div>
     )
   }
 
   if (status === 'unauthenticated') {
     return (
-      <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-y-auto p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">{getProviderIcon()}</div>
-          <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+      <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
+        <div className="bd-card w-full max-w-md p-8 text-center">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-[3px_3px_0_#1F1B16]">
+            {getProviderIcon()}
+          </div>
+          <h1
+            className="mb-3 text-2xl font-extrabold text-bd-ink"
+            style={{ fontFamily: 'var(--bd-font-display)' }}
+          >
             Email Already Registered
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="mb-5 text-sm leading-6 text-bd-ink-soft">
             An account with this email already exists. You can either:
           </p>
 
-          <div className="space-y-3 mb-6 text-left">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                1️⃣ Sign in with {getProviderName()}
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+          <div className="mb-6 space-y-3 text-left">
+            <div className="rounded-xl border border-bd-lav/40 bg-bd-lav/10 p-4">
+              <p className="text-sm font-bold text-bd-lav-deep">1️⃣ Sign in with {getProviderName()}</p>
+              <p className="mt-1 text-xs text-bd-ink-soft">
                 If this is your {getProviderName()} account, sign in to access your profile
               </p>
             </div>
-
-            <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-              <p className="text-sm font-semibold text-green-900 dark:text-green-100">
-                2️⃣ Sign in with your existing account
-              </p>
-              <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+            <div className="rounded-xl border border-bd-mint/40 bg-bd-mint/10 p-4">
+              <p className="text-sm font-bold text-bd-mint-deep">2️⃣ Sign in with your existing account</p>
+              <p className="mt-1 text-xs text-bd-ink-soft">
                 Then link {getProviderName()} from your profile settings
               </p>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <button
               onClick={handleSignInWithProvider}
               disabled={merging}
-              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {merging ? 'Redirecting...' : `Sign in with ${getProviderName()}`}
+              {merging ? 'Redirecting…' : `Sign in with ${getProviderName()}`}
             </button>
-
-            <button
-              onClick={handleSignInDifferent}
-              className="w-full px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
-            >
+            <button onClick={handleSignInDifferent} className="bd-btn bd-btn-ghost w-full justify-center">
               Sign in with Email/Password
             </button>
           </div>
@@ -136,53 +137,48 @@ function OAuthErrorContent() {
 
   // User is authenticated - different account trying to link
   return (
-    <div className="page-shell-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-y-auto p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+    <div className="page-shell-full flex items-center justify-center overflow-y-auto p-4" style={authBg}>
+      <div className="bd-card w-full max-w-md p-8">
+        <div className="mb-6 text-center">
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-coral-deep bg-bd-coral/15 text-3xl shadow-[3px_3px_0_#1F1B16]">
+            ⚠️
+          </div>
+          <h1
+            className="text-2xl font-extrabold text-bd-ink"
+            style={{ fontFamily: 'var(--bd-font-display)' }}
+          >
             Cannot Link Account
           </h1>
         </div>
 
-        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg p-4 mb-6">
-          <p className="text-sm text-red-800 dark:text-red-200 mb-2">
+        <div className="mb-6 rounded-xl border border-bd-coral/40 bg-bd-coral/10 p-4">
+          <p className="text-sm font-semibold text-bd-coral-deep">
             This {getProviderName()} account is already registered with a different email address.
           </p>
         </div>
 
-        <div className="space-y-4 mb-6">
-          <p className="text-gray-700 dark:text-gray-300 text-sm">
-            <strong>Your options:</strong>
-          </p>
-          <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-            <li className="flex items-start gap-2">
-              <span>1️⃣</span>
-              <span>Sign out and sign in with {getProviderName()} instead</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span>2️⃣</span>
-              <span>Continue using your current account</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span>3️⃣</span>
-              <span>Contact support to merge accounts manually</span>
-            </li>
-          </ul>
+        <div className="mb-6 space-y-2">
+          {[
+            `Sign out and sign in with ${getProviderName()} instead`,
+            'Continue using your current account',
+            'Contact support to merge accounts manually',
+          ].map((option, i) => (
+            <div key={option} className="flex items-start gap-2 text-sm text-bd-ink-soft">
+              <span className="shrink-0 font-bold text-bd-ink">{i + 1}.</span>
+              <span>{option}</span>
+            </div>
+          ))}
         </div>
 
         <div className="flex gap-3">
           <button
             onClick={handleSignInWithProvider}
             disabled={merging}
-            className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+            className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {merging ? 'Redirecting...' : `Use ${getProviderName()}`}
+            {merging ? 'Redirecting…' : `Use ${getProviderName()}`}
           </button>
-          <button
-            onClick={handleTryAgain}
-            className="px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg font-semibold transition-colors"
-          >
+          <button onClick={handleTryAgain} className="bd-btn bd-btn-ghost justify-center px-5">
             Go Back
           </button>
         </div>
@@ -193,7 +189,7 @@ function OAuthErrorContent() {
 
 export default function OAuthErrorPage() {
   return (
-    <Suspense fallback={<div className="page-shell-full bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="page-shell-full flex items-center justify-center" style={{ background: 'var(--bd-bg)' }}><LoadingSpinner /></div>}>
       <OAuthErrorContent />
     </Suspense>
   )

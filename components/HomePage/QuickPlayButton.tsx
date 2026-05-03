@@ -88,7 +88,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                   {t('quickPlay.finding', 'Finding a game…')}
                 </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  {t('quickPlay.searching', 'Searching for open lobbies or creating one with bots')}
+                  {t('quickPlay.searching', 'Looking for a room or setting one up for you')}
                 </p>
               </div>
             ) : (

@@ -1,253 +1,312 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { useTranslation } from '@/lib/i18n-helpers'
-import { getAllEnabledGameTypes, getGameMetadata } from '@/lib/game-catalog'
-
-interface LeaderboardEntry {
-  rank: number
-  userId: string
-  username: string
-  publicProfileId: string | null
-  gamesPlayed: number
-  wins: number
-  winRate: number
-}
-
-const GAME_FILTERS = [
-  { value: '', label: 'All Games', icon: '🎮' },
-  ...getAllEnabledGameTypes().map((type) => {
-    const meta = getGameMetadata(type)
-    return { value: type, label: meta?.name ?? type, icon: meta?.icon ?? '🎮' }
-  }),
-]
+import Footer from '@/components/Footer'
+import LoadingSkeleton from '@/components/LoadingSkeleton'
+import { GAME_FILTERS, getCompactGameIcon, useLeaderboard, type LeaderboardEntry } from './use-leaderboard'
+import { getGameMetadata } from '@/lib/game-catalog'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
-// Show as pills up to this many filters; above → dropdown
-const PILL_THRESHOLD = 5
 
-export default function LeaderboardPage() {
-  const { t } = useTranslation()
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [gameType, setGameType] = useState('')
-  const [period, setPeriod] = useState<'all' | '30d'>('all')
-  const [hasMore, setHasMore] = useState(false)
-  const [page, setPage] = useState(0)
-  const [error, setError] = useState<string | null>(null)
+const rankAccent = (rank: number) => {
+  if (rank === 1) return 'var(--bd-sun)'
+  if (rank === 2) return 'var(--bd-lav)'
+  if (rank === 3) return 'var(--bd-mint)'
+  return 'var(--bd-bg2)'
+}
 
-  const fetchLeaderboard = useCallback(
-    async (nextPage: number, replace: boolean) => {
-      setLoading(true)
-      setError(null)
-      try {
-        const params = new URLSearchParams({ period, page: String(nextPage) })
-        if (gameType) params.set('gameType', gameType)
-        const res = await fetch(`/api/leaderboard?${params}`)
-        if (!res.ok) throw new Error('Failed to fetch leaderboard')
-        const data = await res.json()
-        setEntries((prev) => (replace ? data.entries : [...prev, ...data.entries]))
-        setHasMore(data.hasMore)
-      } catch {
-        setError(t('errors.general', 'Something went wrong'))
-      } finally {
-        setLoading(false)
-      }
-    },
-    [gameType, period, t]
+const winRateColor = (winRate: number) => {
+  if (winRate >= 60) return 'var(--bd-mint-deep)'
+  if (winRate >= 40) return 'var(--bd-sun-deep)'
+  return 'var(--bd-ink-soft)'
+}
+
+function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
+  const medal = MEDAL[entry.rank]
+  const isTop3 = entry.rank <= 3
+  const rowClass = `grid gap-3 px-4 py-4 transition-colors sm:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem] sm:items-center sm:px-5 ${
+    entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
+  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-white' : 'bg-white/75'}`
+
+  const content = (
+    <>
+      <div className="flex items-center gap-3 sm:block">
+        <span
+          className="inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold text-bd-ink shadow-[2px_2px_0_#1F1B16]"
+          style={{ background: rankAccent(entry.rank), fontFamily: 'var(--bd-font-display)' }}
+        >
+          {medal ?? entry.rank}
+        </span>
+        <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.rank')}</span>
+      </div>
+      <div className="min-w-0">
+        <span className="block truncate text-base font-bold text-bd-ink">{entry.username}</span>
+        {entry.publicProfileId && (
+          <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
+        )}
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:contents">
+        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.gamesPlayed')}</span>
+          {entry.gamesPlayed}
+        </span>
+        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.wins')}</span>
+          {entry.wins}
+        </span>
+        <span
+          className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-extrabold sm:bg-transparent sm:p-0 sm:text-right"
+          style={{ color: winRateColor(entry.winRate) }}
+        >
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.winRate')}</span>
+          {entry.winRate}%
+        </span>
+      </div>
+    </>
   )
 
-  useEffect(() => {
-    setPage(0)
-    fetchLeaderboard(0, true)
-  }, [gameType, period, fetchLeaderboard])
+  return entry.publicProfileId ? (
+    <Link href={`/u/${entry.publicProfileId}`} className={rowClass}>{content}</Link>
+  ) : (
+    <div className={rowClass}>{content}</div>
+  )
+}
 
-  const handleLoadMore = () => {
-    const next = page + 1
-    setPage(next)
-    fetchLeaderboard(next, false)
-  }
-
-  const usePills = GAME_FILTERS.length <= PILL_THRESHOLD
-
-  const selectedFilter = GAME_FILTERS.find((f) => f.value === gameType) ?? GAME_FILTERS[0]
+function LeaderboardPageContent() {
+  const {
+    t,
+    entries,
+    loading,
+    error,
+    hasMore,
+    period,
+    setPeriod,
+    gameMenuOpen,
+    setGameMenuOpen,
+    gameMenuRef,
+    selectedFilter,
+    topPlayer,
+    visibleWins,
+    totalGamesPlayed,
+    handleLoadMore,
+    handleGameFilterSelect,
+  } = useLeaderboard()
 
   return (
-    <div className="page-shell bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-      <div className="flex-1 overflow-y-auto min-h-0 px-4 py-6">
-      <div className="max-w-3xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-2">
-            🏆 {t('leaderboard.title', 'Leaderboard')}
-          </h1>
-          <p className="text-white/50 text-sm">
-            {t('leaderboard.subtitle', 'Top players ranked by win rate (min 10 games)')}
-          </p>
-        </div>
+    <div className="bd-page bd-screen page-shell">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="grow px-4 pb-10 pt-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl">
 
-        {/* Filters */}
-        <div className="mb-6 space-y-3">
-          {/* Period toggle — centered */}
-          <div className="flex justify-center gap-2">
-            {(['all', '30d'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-5 py-2 rounded-full font-semibold text-sm transition-all border ${
-                  period === p
-                    ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-900/40'
-                    : 'bg-white/5 border-white/15 text-white/60 hover:bg-white/10 hover:text-white/80'
-                }`}
-              >
-                {p === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}
-              </button>
-            ))}
-          </div>
-
-          {/* Game type filter */}
-          {usePills ? (
-            /* Pills layout — centered, wrapping */
-            <div className="flex flex-wrap justify-center gap-2">
-              {GAME_FILTERS.map((f) => {
-                const meta = f.value ? getGameMetadata(f.value) : null
-                const icon = meta?.icon ?? f.icon
-                const label = meta?.name ?? f.label
-                return (
-                  <button
-                    key={f.value}
-                    onClick={() => setGameType(f.value)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-semibold text-xs transition-all border whitespace-nowrap ${
-                      gameType === f.value
-                        ? 'bg-purple-600 border-purple-400 text-white shadow shadow-purple-900/30'
-                        : 'bg-white/5 border-white/15 text-white/60 hover:bg-white/10 hover:text-white/80'
-                    }`}
-                  >
-                    <span>{icon}</span>
-                    <span>{label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
-            /* Dropdown when many games */
-            <div className="flex justify-center">
-              <div className="relative">
-                <select
-                  value={gameType}
-                  onChange={(e) => setGameType(e.target.value)}
-                  className="appearance-none bg-white/5 border border-white/15 text-white/80 text-sm font-semibold rounded-full pl-10 pr-8 py-2 cursor-pointer hover:bg-white/10 transition-all focus:outline-none focus:border-purple-400"
+            {/* Header */}
+            <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_21rem] lg:items-end">
+              <div>
+                <span className="bd-kicker">{t('leaderboard.hallOfFame')}</span>
+                <h1
+                  className="mt-3 max-w-3xl text-[clamp(2.5rem,7vw,5rem)] font-extrabold leading-[0.92] text-bd-ink"
+                  style={{ fontFamily: 'var(--bd-font-display)' }}
                 >
-                  {GAME_FILTERS.map((f) => {
-                    const meta = f.value ? getGameMetadata(f.value) : null
-                    const label = meta?.name ?? f.label
-                    return (
-                      <option key={f.value} value={f.value} className="bg-slate-800">
-                        {label}
-                      </option>
-                    )
-                  })}
-                </select>
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">
-                  {selectedFilter.icon}
-                </span>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/40 text-xs">
-                  ▾
-                </span>
+                  {t('leaderboard.title', 'Leaderboard')}
+                  <span className="block text-bd-coral">{selectedFilter.label}</span>
+                </h1>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-bd-ink-soft sm:text-lg">
+                  {t('leaderboard.subtitle', 'Top players ranked by win rate (min 10 games)')}
+                </p>
+              </div>
+              <div className="bd-card relative overflow-hidden p-5">
+                <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full" style={{ background: 'rgba(255,196,77,0.28)' }} />
+                <div className="relative flex items-center gap-4">
+                  <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">
+                    🏆
+                  </div>
+                  <div className="min-w-0">
+                    <p className="bd-kicker">{period === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}</p>
+                    <p className="mt-1 truncate text-lg font-bold text-bd-ink">
+                      {topPlayer?.username ?? t('leaderboard.empty', 'No qualifying players yet')}
+                    </p>
+                    <p className="text-sm text-bd-ink-muted">
+                      {topPlayer
+                        ? `${topPlayer.winRate}% ${t('leaderboard.winRate', 'Win %')}`
+                        : t('leaderboard.emptyHint', 'Play at least 10 games to appear here')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Table */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md overflow-hidden">
-          {/* Header row */}
-          <div className="grid grid-cols-[2.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-2 px-4 py-2.5 border-b border-white/10 text-xs font-semibold uppercase tracking-wider text-white/35">
-            <span>#</span>
-            <span>{t('leaderboard.player', 'Player')}</span>
-            <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>
-            <span className="text-right">{t('leaderboard.wins', 'Wins')}</span>
-            <span className="text-right">{t('leaderboard.winRate', 'Win %')}</span>
-          </div>
-
-          {loading && entries.length === 0 ? (
-            <div className="py-16 text-center">
-              <div className="text-4xl mb-3 animate-bounce">🏆</div>
-              <p className="text-white/40 text-sm">{t('leaderboard.loading', 'Loading leaderboard…')}</p>
-            </div>
-          ) : error ? (
-            <div className="py-16 text-center">
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          ) : entries.length === 0 ? (
-            <div className="py-16 text-center">
-              <p className="text-white/40 text-sm">{t('leaderboard.empty', 'No qualifying players yet')}</p>
-              <p className="text-white/25 text-xs mt-1">{t('leaderboard.emptyHint', 'Play at least 10 games to appear here')}</p>
-            </div>
-          ) : (
-            entries.map((entry, idx) => {
-              const medal = MEDAL[entry.rank]
-              const isTop3 = entry.rank <= 3
-              const rowClass = `grid grid-cols-[2.5rem_1fr_4.5rem_4.5rem_4.5rem] gap-2 px-4 py-3 items-center transition-colors ${
-                entry.publicProfileId ? 'hover:bg-white/8' : ''
-              } ${idx < entries.length - 1 ? 'border-b border-white/8' : ''} ${
-                isTop3 ? 'bg-white/[0.03]' : ''
-              }`
-
-              const rowContent = (
-                <>
-                  <span className={`text-center font-bold ${medal ? 'text-xl leading-none' : 'text-sm text-white/45'}`}>
-                    {medal ?? entry.rank}
-                  </span>
-                  <span className="font-semibold text-sm truncate text-white">
-                    {entry.username}
-                    {entry.publicProfileId && (
-                      <span className="ml-1.5 text-white/25 text-xs">↗</span>
-                    )}
-                  </span>
-                  <span className="text-right text-white/55 text-sm">{entry.gamesPlayed}</span>
-                  <span className="text-right text-white/55 text-sm">{entry.wins}</span>
-                  <span
-                    className={`text-right font-bold text-sm ${
-                      entry.winRate >= 60
-                        ? 'text-emerald-400'
-                        : entry.winRate >= 40
-                          ? 'text-amber-300'
-                          : 'text-white/55'
+            {/* Filters */}
+            <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="flex flex-wrap gap-2">
+                {(['all', '30d'] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`bd-chip px-4 py-2 text-sm transition-all ${
+                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-white'
                     }`}
                   >
-                    {entry.winRate}%
-                  </span>
-                </>
-              )
+                    {p === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}
+                  </button>
+                ))}
+              </div>
 
-              return entry.publicProfileId ? (
-                <Link key={entry.userId} href={`/u/${entry.publicProfileId}`} className={rowClass}>
-                  {rowContent}
-                </Link>
-              ) : (
-                <div key={entry.userId} className={rowClass}>
-                  {rowContent}
+              <div className="flex lg:justify-end">
+                <div ref={gameMenuRef} className="relative w-full sm:w-auto">
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={gameMenuOpen}
+                    onClick={() => setGameMenuOpen((open) => !open)}
+                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-white px-4 py-3 text-left shadow-[0_4px_0_#E8DDC8] transition-all sm:w-auto ${
+                      gameMenuOpen
+                        ? 'border-bd-ink shadow-[0_5px_0_#1F1B16]'
+                        : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_#1F1B16]'
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-bd-bg2 text-lg leading-none">
+                        {selectedFilter.displayIcon}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="bd-kicker block text-[10px]">{t('leaderboard.gameFilter')}</span>
+                        <span className="block truncate text-sm font-bold text-bd-ink">{selectedFilter.label}</span>
+                      </span>
+                    </span>
+                    <span
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-bd-bg2 text-sm font-bold text-bd-ink transition-transform ${
+                        gameMenuOpen ? 'rotate-180' : ''
+                      }`}
+                      aria-hidden="true"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {gameMenuOpen && (
+                    <div
+                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-white shadow-[0_8px_0_#1F1B16,0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
+                      role="listbox"
+                      aria-label={t('leaderboard.gameFilter')}
+                    >
+                      <div className="border-b border-bd-line bg-bd-card-warm px-4 py-3">
+                        <p className="bd-kicker">{t('leaderboard.chooseGame')}</p>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto p-2">
+                        {GAME_FILTERS.map((f) => {
+                          const meta = f.value ? getGameMetadata(f.value) : null
+                          const icon = f.value ? getCompactGameIcon(f.value, meta?.icon ?? f.icon) : f.displayIcon
+                          const label = meta?.name ?? f.label
+                          const selected = selectedFilter.value === f.value
+                          return (
+                            <button
+                              key={f.value}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              onClick={() => handleGameFilterSelect(f.value)}
+                              className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                                selected ? 'bg-bd-lav text-white' : 'text-bd-ink hover:bg-bd-card-warm'
+                              }`}
+                            >
+                              <span className="flex min-w-0 items-center gap-3">
+                                <span className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-lg leading-none ${selected ? 'bg-white/20' : 'bg-bd-bg2'}`}>
+                                  {icon}
+                                </span>
+                                <span className="truncate text-sm font-bold">{label}</span>
+                              </span>
+                              {selected && (
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-sm font-black text-bd-lav-deep">✓</span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )
-            })
-          )}
-
-          {hasMore && (
-            <div className="px-4 py-3 border-t border-white/10">
-              <button
-                onClick={handleLoadMore}
-                disabled={loading}
-                className="w-full py-2.5 rounded-xl bg-white/8 hover:bg-white/12 text-white/70 text-sm font-semibold transition-all disabled:opacity-40"
-              >
-                {loading ? t('leaderboard.loading', 'Loading…') : t('leaderboard.loadMore', 'Load more')}
-              </button>
+              </div>
             </div>
-          )}
+
+            {/* Stats */}
+            <div className="mb-5 grid gap-3 sm:grid-cols-3">
+              <div className="bd-card p-4">
+                <p className="bd-kicker">{t('leaderboard.players')}</p>
+                <p className="mt-2 truncate text-2xl font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                  {entries.length}
+                </p>
+              </div>
+              <div className="bd-card p-4">
+                <p className="bd-kicker">{t('leaderboard.wins', 'Wins')}</p>
+                <p className="mt-2 truncate text-2xl font-extrabold text-bd-coral" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                  {visibleWins}
+                </p>
+              </div>
+              <div className="bd-card p-4">
+                <p className="bd-kicker">{t('leaderboard.gamesPlayed', 'Played')}</p>
+                <p className="mt-2 truncate text-2xl font-extrabold text-bd-lav-deep" style={{ fontFamily: 'var(--bd-font-display)' }}>
+                  {totalGamesPlayed}
+                </p>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="bd-card overflow-hidden">
+              <div className="hidden grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem] gap-3 border-b border-bd-line bg-bd-card-warm px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:grid">
+                <span>{t('leaderboard.rank')}</span>
+                <span>{t('leaderboard.player', 'Player')}</span>
+                <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>
+                <span className="text-right">{t('leaderboard.wins', 'Wins')}</span>
+                <span className="text-right">{t('leaderboard.winRate', 'Win %')}</span>
+              </div>
+
+              {loading && entries.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-sun text-3xl shadow-bd-ink-4">🏆</div>
+                  <p className="text-sm font-semibold text-bd-ink-muted">{t('leaderboard.loading', 'Loading leaderboard…')}</p>
+                </div>
+              ) : error ? (
+                <div className="py-16 text-center">
+                  <p className="text-sm font-semibold text-bd-coral-deep">{error}</p>
+                </div>
+              ) : entries.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl border-2 border-bd-ink bg-bd-lav text-3xl shadow-bd-ink-4">☆</div>
+                  <p className="font-bold text-bd-ink">{t('leaderboard.empty', 'No qualifying players yet')}</p>
+                  <p className="mt-1 text-sm text-bd-ink-muted">{t('leaderboard.emptyHint', 'Play at least 10 games to appear here')}</p>
+                </div>
+              ) : (
+                entries.map((entry, idx) => (
+                  <LeaderboardRow key={entry.userId} entry={entry} isLast={idx === entries.length - 1} t={t} />
+                ))
+              )}
+
+              {hasMore && (
+                <div className="border-t border-bd-line bg-bd-card-warm px-4 py-4">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {loading ? t('leaderboard.loading', 'Loading…') : t('leaderboard.loadMore', 'Load more')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
-      </div>
+        <Footer />
       </div>
     </div>
+  )
+}
+
+export default function LeaderboardPage() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <LeaderboardPageContent />
+    </Suspense>
   )
 }

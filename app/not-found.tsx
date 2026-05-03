@@ -9,61 +9,51 @@ export default function NotFound() {
   const { t } = useTranslation()
 
   return (
-    <div className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 text-slate-100">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.25),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.2),transparent_40%)]"
-      />
+    <div
+      className="mobile-vh-100 safe-top safe-bottom safe-left safe-right relative overflow-hidden"
+      style={{
+        background:
+          'radial-gradient(circle at 15% 15%, rgba(255,196,77,0.22), transparent 38%), radial-gradient(circle at 85% 10%, rgba(155,140,255,0.18), transparent 38%), radial-gradient(circle at 50% 90%, rgba(79,201,166,0.16), transparent 42%), var(--bd-bg)',
+      }}
+    >
+      <div className="relative mx-auto grid h-full w-full max-w-4xl place-items-center p-4 sm:p-6">
+        <div className="bd-card w-full max-w-xl px-6 py-8 text-center sm:px-10 sm:py-10">
+          <span className="bd-kicker">Boardly · {t('notFoundPage.lostRoute')}</span>
 
-      <div className="relative mx-auto grid h-full w-full max-w-4xl place-items-center p-3 sm:p-5">
-        <div className="w-full max-w-2xl rounded-3xl border border-white/15 bg-white/10 px-4 py-5 text-center shadow-2xl backdrop-blur-xl sm:px-7 sm:py-7">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200/80">
-            Boardly • {t('notFoundPage.lostRoute')}
+          <p
+            className="mt-2 text-[clamp(5rem,24vw,9rem)] font-black leading-none text-bd-ink"
+            style={{ fontFamily: 'var(--bd-font-display)' }}
+          >
+            404
           </p>
 
-          <h1 className="text-[clamp(4.5rem,22vw,9rem)] font-black leading-none tracking-tight text-transparent [text-shadow:0_0_32px_rgba(56,189,248,0.4)] bg-gradient-to-b from-cyan-200 via-sky-300 to-emerald-300 bg-clip-text">
-            404
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-lg text-[clamp(1rem,2.8vw,1.3rem)] font-semibold text-white">
+          <p className="mx-auto mt-3 max-w-sm text-lg font-bold text-bd-ink">
             {t('notFoundPage.description')}
           </p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-slate-200/85 sm:text-base">
+          <p className="mx-auto mt-1.5 max-w-sm text-sm leading-6 text-bd-ink-soft">
             {t('notFoundPage.description2')}
           </p>
 
-          <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-            <Link
-              href="/lobby"
-              className="btn bg-cyan-500 text-slate-950 hover:bg-cyan-400 focus-visible:ring-cyan-300"
-            >
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Link href="/lobby" className="bd-btn bd-btn-primary justify-center">
               {t('notFoundPage.browseLobby')}
             </Link>
-            <Link
-              href="/"
-              className="btn bg-white/15 text-white hover:bg-white/25 focus-visible:ring-white/40"
-            >
+            <Link href="/" className="bd-btn bd-btn-ghost justify-center">
               {t('notFoundPage.goHome')}
             </Link>
             <button
               onClick={() => router.back()}
-              className="btn bg-emerald-500 text-slate-950 hover:bg-emerald-400 focus-visible:ring-emerald-300 sm:col-span-2"
+              className="bd-btn bd-btn-soft justify-center sm:col-span-2"
             >
               {t('notFoundPage.goBack')}
             </button>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm">
-            <Link
-              href="/lobby/create"
-              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100 transition-colors hover:bg-white/20"
-            >
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <Link href="/lobby/create" className="bd-chip px-3 py-1.5 text-xs">
               {t('notFound.createLobby')}
             </Link>
-            <Link
-              href="/games"
-              className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-slate-100 transition-colors hover:bg-white/20"
-            >
+            <Link href="/games" className="bd-chip px-3 py-1.5 text-xs">
               {t('header.games')}
             </Link>
           </div>
