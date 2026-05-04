@@ -19,6 +19,10 @@ jobs:
     timeout-minutes: 10
     environment: production
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -34,12 +38,12 @@ jobs:
 
       - name: Generate Prisma client
         run: npm run db:generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
-      - name: Run migrations
+      - name: Prepare Supabase roles
+        run: npm run db:prepare-roles
+
+      - name: Apply migrations
         run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+      - name: Verify migration status
+        run: npm run db:migrate:status
