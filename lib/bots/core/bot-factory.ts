@@ -11,10 +11,13 @@ import { YahtzeeBotExecutor } from '../yahtzee/yahtzee-bot-executor'
 import { YahtzeeGame } from '@/lib/games/yahtzee-game'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from '@/lib/games/rock-paper-scissors-game'
+import { MemoryGame } from '@/lib/games/memory-game'
 import { TicTacToeBot } from '../tic-tac-toe/tic-tac-toe-bot'
 import { TicTacToeBotExecutor } from '../tic-tac-toe/tic-tac-toe-bot-executor'
 import { RockPaperScissorsBot } from '../rock-paper-scissors/rock-paper-scissors-bot'
 import { RockPaperScissorsBotExecutor } from '../rock-paper-scissors/rock-paper-scissors-bot-executor'
+import { MemoryBot } from '../memory/memory-bot'
+import { MemoryBotExecutor } from '../memory/memory-bot-executor'
 import type { RegisteredGameType } from '@/lib/game-registry'
 // Future imports:
 // import { SpyBot } from '../spy/spy-bot'
@@ -36,6 +39,9 @@ export function createBot<T extends GameEngine>(
 
         case 'rock_paper_scissors':
             return new RockPaperScissorsBot(gameEngine as unknown as RockPaperScissorsGame, difficulty) as unknown as BaseBot<T, unknown>
+
+        case 'memory':
+            return new MemoryBot(gameEngine as unknown as MemoryGame, difficulty) as unknown as BaseBot<T, unknown>
 
         // Future game bots:
         // case 'guess_the_spy':
@@ -92,6 +98,20 @@ export async function executeBotTurn(
                 throw new Error('Expected RockPaperScissorsGame engine for rock_paper_scissors bot turn')
             }
             await RockPaperScissorsBotExecutor.executeBotTurn(
+                gameEngine,
+                botUserId,
+                difficulty,
+                onMove,
+                onBotAction,
+            )
+            return
+        }
+
+        case 'memory': {
+            if (!(gameEngine instanceof MemoryGame)) {
+                throw new Error('Expected MemoryGame engine for memory bot turn')
+            }
+            await MemoryBotExecutor.executeBotTurn(
                 gameEngine,
                 botUserId,
                 difficulty,

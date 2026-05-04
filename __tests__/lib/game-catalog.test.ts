@@ -1,7 +1,9 @@
 import {
   getAvailableGameTypes,
+  getBotSupportedGameTypes,
   getCatalogAvailableGames,
   getCatalogGames,
+  hasBotSupport,
   isAvailableGameType,
 } from '@/lib/game-catalog'
 
@@ -43,6 +45,11 @@ describe('game catalog availability', () => {
     ])
     expect(isAvailableGameType('yahtzee')).toBe(true)
     expect(isAvailableGameType('rock_paper_scissors')).toBe(false)
+  })
+
+  it('exposes memory as a bot-supported game type', () => {
+    expect(hasBotSupport('memory')).toBe(true)
+    expect(getBotSupportedGameTypes()).toContain('memory')
   })
 
   it('can promote experimental catalog entries through the shared availability path', () => {

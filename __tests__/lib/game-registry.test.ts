@@ -186,7 +186,7 @@ describe('Game Registry', () => {
       expect(meta.name).toBe('Memory')
       expect(meta.minPlayers).toBe(2)
       expect(meta.maxPlayers).toBe(4)
-      expect(meta.supportsBots).toBe(false)
+      expect(meta.supportsBots).toBe(true)
     })
 
     it('should throw error for unknown type', () => {
@@ -217,11 +217,11 @@ describe('Game Registry', () => {
       expect(hasBotSupport('yahtzee')).toBe(true)
       expect(hasBotSupport('tic_tac_toe')).toBe(true)
       expect(hasBotSupport('rock_paper_scissors')).toBe(true)
+      expect(hasBotSupport('memory')).toBe(true)
     })
 
     it('should return false for games without bot support', () => {
       expect(hasBotSupport('guess_the_spy')).toBe(false)
-      expect(hasBotSupport('memory')).toBe(false)
     })
 
     it('should return false for unknown game types', () => {
