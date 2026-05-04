@@ -72,7 +72,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
       {/* Main info */}
       <div style={{ flex: 1, minWidth: 200 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-          <span style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 17, color: 'var(--bd-ink)' }}>{lobby.name}</span>
+          <span title={lobby.name} className="truncate" style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 17, color: 'var(--bd-ink)', maxWidth: '100%' }}>{lobby.name}</span>
           <span style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: 'var(--bd-bg2)', color: 'var(--bd-ink-muted)', padding: '3px 8px', borderRadius: 8 }}>{lobby.code}</span>
         </div>
         <div style={{ fontSize: 13, color: 'var(--bd-ink-muted)', marginBottom: 10 }}>{creatorName} · {game.label}</div>

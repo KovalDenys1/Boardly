@@ -1,22 +1,24 @@
-export type ThemeMode = 'light'
+export type ThemeMode = 'light' | 'dark' | 'system'
 
 export const THEME_STORAGE_KEY = 'theme'
 export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
 
+const VALID_THEME_MODES: ThemeMode[] = ['light', 'dark', 'system']
+
 export function normalizeThemeMode(value: string | null | undefined): ThemeMode {
-  void value
-  return 'light'
+  if (value && (VALID_THEME_MODES as string[]).includes(value)) {
+    return value as ThemeMode
+  }
+  return 'system'
 }
 
 export function getStoredThemeMode(storage?: Pick<Storage, 'getItem'>): ThemeMode {
-  void storage
-  return 'light'
+  return normalizeThemeMode(storage?.getItem(THEME_STORAGE_KEY))
 }
 
 export function resolveThemeMode(mode: ThemeMode, prefersDark: boolean): 'light' | 'dark' {
-  void mode
-  void prefersDark
-  return 'light'
+  if (mode === 'system') return prefersDark ? 'dark' : 'light'
+  return mode
 }
 
 export function applyThemeMode(
@@ -26,21 +28,27 @@ export function applyThemeMode(
     matchMedia?: (query: string) => MediaQueryList
   }
 ) {
-  void mode
-  if (typeof window === 'undefined' && !options?.documentElement) {
+  const isServer = typeof window === 'undefined'
+  if (isServer && (!options?.documentElement || !options?.matchMedia)) {
     return
   }
 
   const documentElement = options?.documentElement ?? document.documentElement
-  documentElement.classList.remove('dark')
-  documentElement.style.colorScheme = 'light'
+  const matchMedia = options?.matchMedia ?? window.matchMedia
+  const resolved = resolveThemeMode(mode, matchMedia(DARK_MEDIA_QUERY).matches)
+
+  documentElement.classList.toggle('dark', resolved === 'dark')
+  documentElement.style.colorScheme = resolved
 }
 
 export function getThemeInitScript() {
   return `(() => {
   try {
-    document.documentElement.classList.remove('dark');
-    document.documentElement.style.colorScheme = 'light';
+    const stored = localStorage.getItem('${THEME_STORAGE_KEY}');
+    const prefersDark = window.matchMedia('${DARK_MEDIA_QUERY}').matches;
+    const resolved = stored === 'dark' || (stored !== 'light' && prefersDark) ? 'dark' : 'light';
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
+    document.documentElement.style.colorScheme = resolved;
   } catch {}
 })();`
 }
