@@ -28,7 +28,8 @@ export function applyThemeMode(
     matchMedia?: (query: string) => MediaQueryList
   }
 ) {
-  if (typeof window === 'undefined' && !options?.documentElement) {
+  const isServer = typeof window === 'undefined'
+  if (isServer && (!options?.documentElement || !options?.matchMedia)) {
     return
   }
 
