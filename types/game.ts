@@ -95,7 +95,7 @@ export interface Lobby {
   code?: string
   status?: string
   hostId?: string
-  creatorId?: string
+  creatorId?: string | null
   allowSpectators?: boolean
   isActive?: boolean
   games?: Game[]

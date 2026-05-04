@@ -298,7 +298,7 @@ interface Lobby {
     id: string
     code: string
     gameType: string
-    creatorId: string
+    creatorId: string | null
     name: string
     isActive?: boolean
     turnTimer?: number

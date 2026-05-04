@@ -422,7 +422,7 @@ export default function GameLobbiesPage({
                   const isWaiting = activeGame?.status === 'waiting'
                   const isPlaying = activeGame?.status === 'playing'
                   const isFull = playerCount >= lobby.maxPlayers
-                  const hostName = lobby.creator.username || lobby.creator.email?.split('@')[0] || 'Anonymous'
+                  const hostName = lobby.creator?.username || lobby.creator?.email?.split('@')[0] || 'Anonymous'
 
                   return (
                     <div

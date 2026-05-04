@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
           spectatorCount: number
           turnTimer: number
           gameType: string
-          creatorId: string
+          creatorId: string | null
         }
       | null = null
 

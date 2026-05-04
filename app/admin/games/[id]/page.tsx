@@ -111,9 +111,13 @@ export default async function AdminGameDetailPage({ params }: { params: Promise<
           <p className="text-sm text-slate-200">Active: {String(game.lobby.isActive)}</p>
           <p className="text-sm text-slate-200">
             Creator:{' '}
-            <Link href={`/admin/users/${game.lobby.creator.id}`} className="text-cyan-300 hover:text-cyan-200">
-              {game.lobby.creator.username || game.lobby.creator.email || game.lobby.creator.id}
-            </Link>
+            {game.lobby.creator ? (
+              <Link href={`/admin/users/${game.lobby.creator.id}`} className="text-cyan-300 hover:text-cyan-200">
+                {game.lobby.creator.username || game.lobby.creator.email || game.lobby.creator.id}
+              </Link>
+            ) : (
+              <span className="text-slate-500">deleted guest</span>
+            )}
           </p>
         </div>
       </section>
