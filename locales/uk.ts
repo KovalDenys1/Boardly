@@ -1096,6 +1096,7 @@ const uk: Translation = {
     stats: {
       title: 'Статистика',
       gamesPlayed: 'Зіграно ігор',
+      gamesCompleted: 'Завершено ігор',
       gamesWon: 'Виграно ігор',
       winRate: 'Відсоток перемог',
       dashboard: {

@@ -227,8 +227,8 @@ export default function ProfilePage() {
       },
       {
         id: 'games',
-        label: t('profile.stats.gamesPlayed'),
-        value: String(profileSummary?.gamesPlayed ?? 0),
+        label: t('profile.stats.gamesCompleted'),
+        value: String(profileSummary?.achievementStats?.completedGamesCount ?? 0),
         accent: 'bg-bd-mint text-bd-mint-deep',
       },
       {
@@ -244,7 +244,7 @@ export default function ProfilePage() {
         accent: 'bg-bd-lav text-[#7867e8]',
       },
     ],
-    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.gamesPlayed, t]
+    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t]
   )
 
   const fetchProfileSummary = useCallback(async () => {

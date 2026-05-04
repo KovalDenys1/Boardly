@@ -1094,6 +1094,7 @@ const ru = {
     stats: {
       title: 'Статистика',
       gamesPlayed: 'Сыграно игр',
+      gamesCompleted: 'Завершено игр',
       gamesWon: 'Выиграно игр',
       winRate: 'Процент побед',
       dashboard: {

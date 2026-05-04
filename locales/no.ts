@@ -1094,6 +1094,7 @@ const no = {
     stats: {
       title: 'Statistikk',
       gamesPlayed: 'Spill spilt',
+      gamesCompleted: 'Fullførte spill',
       gamesWon: 'Spill vunnet',
       winRate: 'Vinnrate',
       dashboard: {

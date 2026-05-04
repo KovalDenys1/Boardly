@@ -372,10 +372,10 @@ export default function PublicProfileView({
                   <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
                     <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-mint opacity-20" />
                     <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
-                      {t('profile.stats.gamesPlayed')}
+                      {t('profile.stats.gamesCompleted')}
                     </p>
                     <p className="mt-3 font-display text-3xl font-bold text-bd-mint-deep dark:text-white">
-                      {profile.gamesPlayed}
+                      {levelSourceGames}
                     </p>
                   </div>
                   <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">

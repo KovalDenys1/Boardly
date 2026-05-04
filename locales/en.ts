@@ -1094,6 +1094,7 @@ const en = {
     stats: {
       title: 'Statistics',
       gamesPlayed: 'Games Played',
+      gamesCompleted: 'Games Completed',
       gamesWon: 'Games Won',
       winRate: 'Win Rate',
       dashboard: {
