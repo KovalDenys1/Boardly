@@ -5,17 +5,19 @@
 - `main` — production, only merges from `develop` via PR
 
 ## Rules for merging to main
-**NEVER merge develop → main unless ALL of the following are true:**
+**NEVER open a PR develop → main unless ALL of the following are true:**
 1. All GitHub Actions checks on the `develop` branch are green (CI passes)
 2. Full test suite passes: `pnpm test` shows 0 failures
 3. No unresolved review comments on the PR
 4. Vercel preview build for the PR has deployed successfully
 
-To verify before merging:
+**Before opening the PR, verify:**
 ```bash
 pnpm test          # must be 0 failures
 npm run ci:quick   # lint + typecheck + arch audit
 ```
+
+Check GitHub Actions for the develop branch — all checks must be green before creating the PR. If any check is red, fix it first, then open the PR.
 
 ## Migrations
 - `prisma migrate deploy` is NOT part of the Vercel build (it hangs cross-region)
