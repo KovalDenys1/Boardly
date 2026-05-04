@@ -78,7 +78,7 @@ export default function SpyRoleReveal({
           disabled={isReady}
           className={`bd-btn w-full justify-center ${isReady ? 'bd-btn-soft cursor-not-allowed opacity-70' : 'bd-btn-primary'}`}
         >
-          {isReady ? t('spy.ready') : t('spy.ready')}
+          {isReady ? t('spy.readyConfirmed') : t('spy.ready')}
         </button>
 
         <div className="spy-ready-meter">
