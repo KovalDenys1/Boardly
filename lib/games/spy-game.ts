@@ -177,10 +177,7 @@ export class SpyGame extends GameEngine {
         )
 
       case 'start-voting':
-        return (
-          data.phase === SpyGamePhase.QUESTIONING &&
-          move.data.creatorId === move.playerId
-        )
+        return data.phase === SpyGamePhase.QUESTIONING
 
       case 'vote':
         return (
