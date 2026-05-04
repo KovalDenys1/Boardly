@@ -30,7 +30,7 @@ module.exports = {
         'bd-card-warm':  '#FFF8EC',
       },
       fontFamily: {
-        display: ["'Bricolage Grotesque'", 'Georgia', 'serif'],
+        display: ['var(--bd-font-display)', 'Georgia', 'serif'],
       },
       boxShadow: {
         // chunky illustrative shadows

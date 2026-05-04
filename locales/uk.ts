@@ -80,6 +80,7 @@ const uk: Translation = {
     ownerFallback: 'Анонім',
     gameUnknown: 'Невідома гра',
     spectators: 'Глядачі {{count}}',
+    spectatingBanner: 'Ви спостерігаєте за цією грою',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',
     copyInviteLink: 'Скопіювати посилання',
@@ -1638,6 +1639,7 @@ const uk: Translation = {
     waitingForQuestioner: 'Очікування наступного гравця...',
     targetLabel: 'Ціль: {{player}}.',
     waitingForAnswer: 'Очікування відповіді від {{player}}.',
+    startVoting: 'Завершити раунд і почати голосування',
     rules: {
       title: 'Як грати',
       setup: 'Налаштування',

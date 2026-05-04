@@ -62,7 +62,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       aria-label={`Dice showing ${value}, ${held ? 'held' : 'not held'}. Click to ${held ? 'release' : 'hold'}.`}
       aria-pressed={held}
       className={`
-        relative w-14 h-14 md:w-16 md:h-16 max-w-[64px] max-h-[64px] rounded-[20px] transition-all duration-200
+        relative w-14 h-14 md:w-16 md:h-16 lg:w-12 lg:h-12 max-w-[64px] max-h-[64px] rounded-[20px] lg:rounded-[16px] transition-all duration-200
         ${held 
           ? 'scale-95 ring-4 ring-[rgba(255,196,77,0.35)]'
           : 'hover:-translate-y-0.5 active:scale-95'

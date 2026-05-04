@@ -21,7 +21,7 @@
   --bd-lav-deep: #7867E8;
   --bd-sky: #6BC1F0;
   --bd-card-warm: #FFF8EC;
-  --bd-font-display: 'Bricolage Grotesque', Georgia, serif;
+  --bd-font-display: Georgia, serif;
 }
 
 @keyframes bd-float {
@@ -573,8 +573,8 @@
 }
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --foreground-rgb: 31, 27, 22;
+  --background-rgb: 251, 246, 238;
   --primary-500: 59, 130, 246;
   --primary-600: 37, 99, 235;
   --primary-700: 29, 78, 216;
@@ -1543,6 +1543,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 @media (min-width: 900px) {
   .ttt-mobile-layout { display: none !important; }
+  /* Enable height-based container queries on the board card so the board
+     shrinks to fit on short-viewport tablets (e.g. landscape iPad). */
+  .ttt-board-card { container-type: size; }
+  .ttt-board-wrap { width: min(100%, 560px, calc(100cqh - 24px)); }
 }
 @media (max-width: 899px) {
   .ttt-desktop-layout { display: none !important; }
@@ -1811,6 +1815,8 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: #fff;
   color: var(--bd-ink);
   padding: 10px;
+  min-height: 60px;
+  box-sizing: border-box;
   transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s, background 0.12s;
 }
 
@@ -1854,7 +1860,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .memory-side-stack {
@@ -1862,6 +1868,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-width: 0;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
 }
 
 .memory-board-panel {
@@ -1874,8 +1881,8 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-chat-panel {
-  min-height: 380px;
-  height: min(520px, calc(100vh - 320px));
+  flex: 1;
+  min-height: 280px;
   overflow: hidden;
   background: #fff;
   border: 1.5px solid var(--bd-line);
@@ -2002,6 +2009,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 
   .memory-chat-panel {
+    flex: none;
     height: 420px;
   }
 }

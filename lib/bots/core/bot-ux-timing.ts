@@ -1,10 +1,10 @@
 import { BotDifficulty } from './bot-types'
 
-const DEFAULT_DELAY_SCALE = 0.55
+const DEFAULT_DELAY_SCALE = 1.5
 const MIN_DELAY_SCALE = 0
 const MAX_DELAY_SCALE = 2
 const DEFAULT_DELAY_MIN_MS = 0
-const DEFAULT_DELAY_MAX_MS = 1200
+const DEFAULT_DELAY_MAX_MS = 2000
 
 const DIFFICULTY_MULTIPLIER: Record<BotDifficulty, number> = {
   easy: 1.15,

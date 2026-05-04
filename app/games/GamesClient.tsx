@@ -9,6 +9,7 @@ import Footer from '@/components/Footer'
 import { useGuest } from '@/contexts/GuestContext'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import type { GameCatalogEntry } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
 
 interface Game {
   id: string
@@ -142,7 +143,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
 
               {/* Header row */}
               <div className="mt-2 flex items-start justify-between">
-                <div className="text-[44px] leading-none">{game.emoji}</div>
+                <GameIcon gameId={game.id} accentColor={accentColor(game.color)} />
                 <span className={`text-[11px] ${game.status === 'available' ? 'bd-chip bd-chip-mint' : 'bd-chip'}`}>
                   {game.status === 'available' ? t('games.available') : t('games.comingSoon')}
                 </span>

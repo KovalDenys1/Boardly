@@ -15,10 +15,10 @@ describe('resolveBotUxDelayMs', () => {
     process.env = originalEnv
   })
 
-  it('uses short default delays with difficulty scaling', () => {
-    expect(resolveBotUxDelayMs('easy', 300)).toBe(190)
-    expect(resolveBotUxDelayMs('medium', 300)).toBe(165)
-    expect(resolveBotUxDelayMs('hard', 300)).toBe(140)
+  it('uses default delays with difficulty scaling', () => {
+    expect(resolveBotUxDelayMs('easy', 300)).toBe(518)
+    expect(resolveBotUxDelayMs('medium', 300)).toBe(450)
+    expect(resolveBotUxDelayMs('hard', 300)).toBe(383)
   })
 
   it('supports fixed delay override', () => {

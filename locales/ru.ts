@@ -71,6 +71,7 @@ const ru = {
     ownerFallback: 'Аноним',
     gameUnknown: 'Неизвестная игра',
     spectators: 'Зрители {{count}}',
+    spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
     copyInviteLink: 'Скопировать ссылку',
@@ -1624,6 +1625,7 @@ const ru = {
     waitingForQuestioner: 'Ожидание следующего игрока...',
     targetLabel: 'Цель: {{player}}.',
     waitingForAnswer: 'Ожидание ответа от {{player}}.',
+    startVoting: 'Завершить раунд и начать голосование',
     rules: {
       title: 'Как играть',
       setup: 'Настройка',

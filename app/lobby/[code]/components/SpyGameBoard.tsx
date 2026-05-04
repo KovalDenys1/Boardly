@@ -455,17 +455,24 @@ export default function SpyGameBoard({
                 {isMyQuestionTurn && !data.currentTargetId && (
                   <div className="mt-5 space-y-3">
                     <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.targetPlayer')}</label>
-                    <select
-                      value={questionTargetId}
-                      onChange={(event) => setQuestionTargetId(event.target.value)}
-                      className="bd-input"
-                    >
-                      {availableTargets.map((player) => (
-                        <option key={player.id} value={player.id}>
-                          {player.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={questionTargetId}
+                        onChange={(event) => setQuestionTargetId(event.target.value)}
+                        className="bd-input w-full appearance-none pr-10 cursor-pointer"
+                      >
+                        {availableTargets.map((player) => (
+                          <option key={player.id} value={player.id}>
+                            {player.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                        <svg className="h-4 w-4 text-bd-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
 
                     <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.questionLabel')}</label>
                     <textarea
@@ -540,6 +547,20 @@ export default function SpyGameBoard({
                 {isMyQuestionTurn && data.currentTargetId && (
                   <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
                     {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
+                  </div>
+                )}
+
+
+                {isCreator && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      disabled={isActionLoading}
+                      onClick={() => void submitAction('start-voting')}
+                      className="bd-btn bd-btn-coral w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {t('spy.startVoting')}
+                    </button>
                   </div>
                 )}
               </section>

@@ -67,6 +67,14 @@ export async function POST(
       return NextResponse.json({ error: 'Player not in this game' }, { status: 403 })
     }
 
+    // Creator-only actions: verify against DB, not client payload
+    if (action === 'start-voting' && game.lobby.creatorId !== userId) {
+      return NextResponse.json(
+        { error: 'Only the lobby creator can start voting early' },
+        { status: 403 }
+      )
+    }
+
     // Load game engine
     const spyGame = new SpyGame(gameId)
     spyGame.loadState(parsePersistedGameState(game.state))

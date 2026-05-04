@@ -3,6 +3,19 @@ import type { Metadata } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
+import { Bricolage_Grotesque, Inter } from 'next/font/google'
+
+const bricolageFont = Bricolage_Grotesque({
+  subsets: ['latin'],
+  axes: ['opsz'],
+  variable: '--bd-font-display',
+  display: 'swap',
+})
+
+const interFont = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 const FeedbackWidget = dynamic(() => import('@/components/FeedbackWidget'), {
   loading: () => null,
@@ -160,7 +173,7 @@ export default function RootLayout({
     : null
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
       <head>
         {/* Mobile viewport configuration with safe area support */}
         <meta 
@@ -190,13 +203,6 @@ export default function RootLayout({
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
         <link rel="apple-touch-startup-image" href="/splash/apple-splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
 
-        {/* Preconnect to external domains - moved before font loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap"
-        />
         {isProduction && (
           <>
             <link rel="dns-prefetch" href="https://vitals.vercel-insights.com" />
@@ -208,7 +214,7 @@ export default function RootLayout({
         <style 
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: 'body{margin:0}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+            __html: 'body{margin:0;background:#FBF6EE}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
         />
         <script

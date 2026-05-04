@@ -71,6 +71,7 @@ const no = {
     ownerFallback: 'Anonym',
     gameUnknown: 'Ukjent spill',
     spectators: 'Tilskuere {{count}}',
+    spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
     copyInviteLink: 'Kopier invitasjonslenke',
@@ -1624,6 +1625,7 @@ const no = {
     waitingForQuestioner: 'Venter på neste spiller...',
     targetLabel: 'Mål: {{player}}.',
     waitingForAnswer: 'Venter på svar fra {{player}}.',
+    startVoting: 'Avslutt runden og start avstemning',
     rules: {
       title: 'Hvordan spille',
       setup: 'Oppsett',

@@ -71,6 +71,7 @@ const en = {
     ownerFallback: 'Anonymous',
     gameUnknown: 'Unknown Game',
     spectators: 'Spectators {{count}}',
+    spectatingBanner: 'You are spectating this game',
     backToGames: 'Back to Games',
     leftLobby: 'You left the lobby',
     copyInviteLink: 'Copy Invite Link',
@@ -1636,6 +1637,7 @@ const en = {
     waitingForQuestioner: 'Waiting for the current questioner...',
     targetLabel: 'Target: {{player}}.',
     waitingForAnswer: 'Waiting for {{player}} to answer.',
+    startVoting: 'End Round & Start Voting',
     rules: {
       title: 'How to Play',
       setup: 'Setup',
