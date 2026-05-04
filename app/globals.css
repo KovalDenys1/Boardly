@@ -573,8 +573,8 @@
 }
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --foreground-rgb: 31, 27, 22;
+  --background-rgb: 251, 246, 238;
   --primary-500: 59, 130, 246;
   --primary-600: 37, 99, 235;
   --primary-700: 29, 78, 216;

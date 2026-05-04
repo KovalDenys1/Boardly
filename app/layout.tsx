@@ -214,7 +214,7 @@ export default function RootLayout({
         <style 
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: 'body{margin:0}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+            __html: 'body{margin:0;background:#FBF6EE}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
         />
         <script
