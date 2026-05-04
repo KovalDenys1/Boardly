@@ -1543,6 +1543,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 @media (min-width: 900px) {
   .ttt-mobile-layout { display: none !important; }
+  /* Enable height-based container queries on the board card so the board
+     shrinks to fit on short-viewport tablets (e.g. landscape iPad). */
+  .ttt-board-card { container-type: size; }
+  .ttt-board-wrap { width: min(100%, 560px, calc(100cqh - 24px)); }
 }
 @media (max-width: 899px) {
   .ttt-desktop-layout { display: none !important; }
