@@ -89,7 +89,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     icon: '🧠',
     minPlayers: 2,
     maxPlayers: 4,
-    supportsBots: false,
+    supportsBots: true,
     translationKey: 'memory',
   },
 }

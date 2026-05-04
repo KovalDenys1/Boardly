@@ -34,3 +34,7 @@ export {
     RockPaperScissorsBotExecutor,
     type RockPaperScissorsBotActionEvent,
 } from './rock-paper-scissors/rock-paper-scissors-bot-executor'
+
+// Memory exports
+export { MemoryBot, type MemoryBotDecision } from './memory/memory-bot'
+export { MemoryBotExecutor, type MemoryBotActionEvent } from './memory/memory-bot-executor'

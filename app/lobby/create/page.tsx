@@ -112,7 +112,9 @@ const GAME_INFO: Record<string, GameInfo> = {
     allowedPlayers: [2, 3, 4],
     defaultMaxPlayers: 4,
     settings: {
-      hasTurnTimer: false,
+      hasTurnTimer: true,
+      turnTimerOptions: [30, 60, 90, 120],
+      defaultTurnTimer: 60,
       hasGameModes: false,
       hasDifficultySelection: true,
       difficultyOptions: ['easy', 'medium', 'hard'],

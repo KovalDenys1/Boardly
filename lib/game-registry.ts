@@ -130,7 +130,7 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
       icon: '🧠',
       minPlayers: 2,
       maxPlayers: 4,
-      supportsBots: false,
+      supportsBots: true,
       translationKey: 'memory',
     },
     create: (id, cfg) =>
