@@ -6,7 +6,7 @@
 import { NextRequest } from 'next/server'
 import { POST } from '@/app/api/auth/login/route'
 import { prisma } from '@/lib/db'
-import { comparePassword, createToken } from '@/lib/auth'
+import { comparePassword } from '@/lib/auth'
 
 let mockRateLimitResult: Response | null = null
 
@@ -20,7 +20,6 @@ jest.mock('@/lib/db', () => ({
 
 jest.mock('@/lib/auth', () => ({
   comparePassword: jest.fn(),
-  createToken: jest.fn(() => 'mock.jwt.token'),
 }))
 
 jest.mock('@/lib/rate-limit', () => ({
@@ -43,7 +42,6 @@ jest.mock('@/lib/logger', () => ({
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockComparePassword = comparePassword as jest.MockedFunction<typeof comparePassword>
-const mockCreateToken = createToken as jest.MockedFunction<typeof createToken>
 
 function buildRequest(body: unknown) {
   return new NextRequest('http://localhost:3000/api/auth/login', {
@@ -78,7 +76,6 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(401)
     expect(payload.error).toBe('Account suspended')
-    expect(mockCreateToken).not.toHaveBeenCalled()
   })
 
   it('returns 401 for invalid password', async () => {
@@ -101,10 +98,9 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(401)
     expect(payload.error).toBe('Invalid credentials')
-    expect(mockCreateToken).not.toHaveBeenCalled()
   })
 
-  it('normalizes email casing before querying and creating the token', async () => {
+  it('normalizes email casing before querying', async () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-3',
       email: 'mixed@example.com',
@@ -132,10 +128,6 @@ describe('POST /api/auth/login', () => {
         },
       },
     })
-    expect(mockCreateToken).toHaveBeenCalledWith({
-      userId: 'user-3',
-      email: 'mixed@example.com',
-    })
   })
 
   it('returns the limiter response when auth rate limiting triggers', async () => {
@@ -157,7 +149,7 @@ describe('POST /api/auth/login', () => {
     expect(mockPrisma.users.findFirst).not.toHaveBeenCalled()
   })
 
-  it('returns 200 and token for active user with valid password', async () => {
+  it('returns 200 and user info for active user with valid password', async () => {
     mockPrisma.users.findFirst.mockResolvedValue({
       id: 'user-2',
       email: 'active@example.com',
@@ -182,11 +174,7 @@ describe('POST /api/auth/login', () => {
         email: 'active@example.com',
         username: 'active-user',
       },
-      token: 'mock.jwt.token',
     })
-    expect(mockCreateToken).toHaveBeenCalledWith({
-      userId: 'user-2',
-      email: 'active@example.com',
-    })
+    expect(payload.token).toBeUndefined()
   })
 })

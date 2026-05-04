@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { hashPassword, createToken } from '@/lib/auth'
+import { hashPassword } from '@/lib/auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { sendVerificationEmail } from '@/lib/email'
 import { nanoid } from 'nanoid'
@@ -45,18 +45,6 @@ export async function POST(request: NextRequest) {
 
     // Create user
     const passwordHash = await hashPassword(password)
-    
-    // Check if username already exists
-    const existingUsername = await prisma.users.findUnique({
-      where: { username },
-    })
-    
-    if (existingUsername) {
-      return NextResponse.json(
-        { error: 'Username already taken' },
-        { status: 400 }
-      )
-    }
     
     const user = await prisma.users.create({
       data: {

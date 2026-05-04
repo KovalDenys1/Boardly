@@ -92,7 +92,7 @@ export function verifyCsrfToken(request: NextRequest): boolean {
     if (process.env.NODE_ENV === 'development') {
       return true
     }
-    logger.warn('CSRF check failed: No origin or referer header')
+    logger?.warn('CSRF check failed: No origin or referer header')
     return false
   }
 
@@ -103,7 +103,7 @@ export function verifyCsrfToken(request: NextRequest): boolean {
   )
 
   if (!isAllowed) {
-    logger.warn(`CSRF check failed: Origin ${requestOrigin} not in allowed list`)
+    logger?.warn(`CSRF check failed: Origin ${requestOrigin} not in allowed list`)
   }
 
   return isAllowed

@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import jwt from 'jsonwebtoken'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
-/**
- * Generate a short-lived JWT token for Socket.IO authentication
- * Required when socket server is on different domain (Vercel → Render)
- */
+const limiter = rateLimit(rateLimitPresets.api)
+
 export async function GET(request: NextRequest) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   try {
     const session = await getServerSession(authOptions)
     

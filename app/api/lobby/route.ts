@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { generateLobbyCode } from '@/lib/lobby'
 import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { verifyCsrfToken } from '@/lib/csrf'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
@@ -52,6 +53,10 @@ function isLobbyCodeConflict(error: unknown): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  if (!verifyCsrfToken(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   // Apply rate limiting for lobby creation
   const rateLimitResult = await createLimiter(request)
   if (rateLimitResult) {

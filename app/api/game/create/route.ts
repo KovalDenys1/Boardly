@@ -529,7 +529,6 @@ export async function POST(request: NextRequest) {
           user: {
             id: p.user.id,
             username: p.user.username,
-            email: p.user.email,
             bot: p.user.bot, // Include bot relation for bot detection
           },
         })),

@@ -100,6 +100,10 @@ jest.mock('@/lib/lobby-snapshot', () => ({
   pickRelevantLobbyGame: jest.fn((games: any[]) => games[0] || null),
 }))
 
+jest.mock('@/lib/csrf', () => ({
+  verifyCsrfToken: jest.fn(() => true),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 const mockGetOrCreateBotUser = getOrCreateBotUser as jest.Mock

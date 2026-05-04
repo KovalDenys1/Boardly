@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { SpyGame } from '@/lib/games/spy-game'
+import { SpyGame, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
@@ -137,24 +137,26 @@ export async function POST(
       log.info('Spy game action processed', { userId, action, gameId })
     }
 
+    const broadcastState = sanitizeSpyStateForBroadcast(updatedState)
+
     // Notify all clients via WebSocket
     await notifySocket(`lobby:${game.lobby.code}`, 'spy-action', {
       action,
       playerId: userId,
       playerName: username,
       data,
-      state: updatedState,
+      state: broadcastState,
     })
 
     // Also send game-update for consistency
     await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
       action: 'spy-action',
-      payload: { state: updatedState },
+      payload: { state: broadcastState },
     })
 
     return NextResponse.json({
       success: true,
-      state: updatedState,
+      state: broadcastState,
     })
   } catch (err) {
     log.error('Error processing Spy game action', err as Error)

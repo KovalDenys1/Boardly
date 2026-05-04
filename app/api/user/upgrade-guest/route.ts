@@ -5,6 +5,9 @@ import { prisma } from '@/lib/db'
 import { getGuestClaimsFromRequest } from '@/lib/guest-auth'
 import { apiLogger } from '@/lib/logger'
 import { AuthenticationError, ValidationError, withErrorHandler } from '@/lib/error-handler'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.auth)
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -231,6 +234,9 @@ async function upgradeGuestInTransaction(
 }
 
 async function upgradeGuestHandler(request: NextRequest) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     throw new AuthenticationError('Unauthorized')
