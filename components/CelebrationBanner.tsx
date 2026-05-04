@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { CelebrationEvent, getCategoryDisplayName } from '@/lib/celebrations'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -12,22 +12,21 @@ interface CelebrationBannerProps {
 export default function CelebrationBanner({ event, onComplete }: CelebrationBannerProps) {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   useEffect(() => {
     if (event) {
-      // Show banner
       setVisible(true)
 
-      // Auto-hide after 2.5 seconds
       const timer = setTimeout(() => {
         setVisible(false)
-        // Wait for fade-out animation, then notify parent
-        setTimeout(onComplete, 300)
+        setTimeout(() => onCompleteRef.current(), 300)
       }, 2500)
 
       return () => clearTimeout(timer)
     }
-  }, [event, onComplete])
+  }, [event])
 
   if (!event || !visible) return null
 
