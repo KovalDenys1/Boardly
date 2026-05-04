@@ -1815,6 +1815,8 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: #fff;
   color: var(--bd-ink);
   padding: 10px;
+  min-height: 60px;
+  box-sizing: border-box;
   transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s, background 0.12s;
 }
 
