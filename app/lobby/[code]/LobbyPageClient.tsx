@@ -1123,8 +1123,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       try {
         const scoredEngine = await scoreHandler(bestCategory, autoActionContext)
         if (!scoredEngine) {
-          clientLogger.log('⏰ Auto-score skipped by server guard')
-          return false
+          // Server returned 409 (TURN_ALREADY_ENDED) — turn already advanced server-side.
+          // Reconcile to pull fresh state so the client unsticks immediately.
+          clientLogger.log('⏰ Auto-score skipped by server guard, reconciling state')
+          try { await reconcileWithServerSnapshot() } catch {}
+          return true
         }
 
         const appliedEngine = scoredEngine instanceof YahtzeeGame ? scoredEngine : null
