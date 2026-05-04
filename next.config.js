@@ -30,7 +30,7 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/(.*)',
+        source: '/:path*',
         has: [{ type: 'host', value: 'www.boardly.online' }],
         destination: 'https://boardly.online/:path*',
         permanent: true,
