@@ -109,11 +109,11 @@ export async function POST(
     }
 
     const isCreator = lobby.creatorId === requestUser.id
-    const targetUserIds = isCreator
+    const targetUserIds: string[] = isCreator
       ? participantIds.filter((userId) => userId !== requestUser.id)
-      : [lobby.creatorId]
+      : lobby.creatorId ? [lobby.creatorId] : []
 
-    const dedupedTargetUserIds = Array.from(new Set(targetUserIds)).filter(Boolean)
+    const dedupedTargetUserIds = Array.from(new Set(targetUserIds))
 
     if (dedupedTargetUserIds.length === 0) {
       return NextResponse.json({
