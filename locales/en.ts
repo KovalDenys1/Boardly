@@ -1586,6 +1586,7 @@ const en = {
     votes: 'Votes',
     votedOut: '{{player}} was voted out!',
     votedOutShort: 'Voted out',
+    tieNoElimination: 'Tie vote: no player was eliminated.',
     voteLabel: 'vote',
     votesLabel: 'votes',
     scores: 'Scores',
