@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Providers from './providers'
 import dynamic from 'next/dynamic'
 import { getThemeInitScript } from '@/lib/theme'
@@ -100,6 +100,16 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  minimumScale: 1,
+  viewportFit: 'cover',
+  userScalable: true,
+  themeColor: '#1F1B16',
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -175,16 +185,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${bricolageFont.variable} ${interFont.className}`}>
       <head>
-        {/* Mobile viewport configuration with safe area support */}
-        <meta 
-          name="viewport" 
-          content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=yes" 
-        />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Boardly" />
-        <meta name="theme-color" content="#1F1B16" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icons/icon-192.svg" sizes="192x192" type="image/svg+xml" />
         <link rel="icon" href="/icons/icon-512.svg" sizes="512x512" type="image/svg+xml" />

@@ -26,6 +26,17 @@ const allowedDevOrigins = Array.from(new Set([
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  async redirects() {
+    return [
+      {
+        source: '/(.*)',
+        has: [{ type: 'host', value: 'www.boardly.online' }],
+        destination: 'https://boardly.online/:path*',
+        permanent: true,
+      },
+    ]
+  },
   // Allow local host variants in development to prevent HMR/CORS failures
   // when opening the app via localhost, 127.0.0.1, or LAN IP.
   allowedDevOrigins,
