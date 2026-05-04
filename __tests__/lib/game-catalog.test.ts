@@ -10,12 +10,8 @@ const FEATURE_ENV_KEYS = [
   'NEXT_PUBLIC_ENABLE_TELEPHONE_DOODLE',
   'ENABLE_SKETCH_AND_GUESS',
   'NEXT_PUBLIC_ENABLE_SKETCH_AND_GUESS',
-  'ENABLE_LIARS_PARTY',
-  'NEXT_PUBLIC_ENABLE_LIARS_PARTY',
   'ENABLE_FAKE_ARTIST',
   'NEXT_PUBLIC_ENABLE_FAKE_ARTIST',
-  'ENABLE_ALIAS',
-  'NEXT_PUBLIC_ENABLE_ALIAS',
 ] as const
 
 describe('game catalog availability', () => {
@@ -50,9 +46,9 @@ describe('game catalog availability', () => {
   })
 
   it('can promote experimental catalog entries through the shared availability path', () => {
-    const availableGames = getCatalogAvailableGames({ enabledExperimental: ['alias'] })
+    const availableGames = getCatalogAvailableGames({ enabledExperimental: ['guess-my-drawing'] })
 
-    expect(availableGames.map((game) => game.gameType)).toContain('alias')
-    expect(getAvailableGameTypes({ enabledExperimental: ['alias'] })).toContain('alias')
+    expect(availableGames.map((game) => game.gameType)).toContain('sketch_and_guess')
+    expect(getAvailableGameTypes({ enabledExperimental: ['guess-my-drawing'] })).toContain('sketch_and_guess')
   })
 })
