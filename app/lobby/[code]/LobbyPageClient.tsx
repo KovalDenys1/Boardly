@@ -655,7 +655,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (chatMinimized) {
       setUnreadMessageCount(prev => prev + 1)
     }
-  }, [chatMinimized])
+    const currentUserId = isGuest ? guestId : session?.user?.id
+    if (message.userId !== currentUserId) {
+      playAmbientSound('message')
+    }
+  }, [chatMinimized, isGuest, guestId, session?.user?.id, playAmbientSound])
 
   const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
 
@@ -802,6 +806,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     const departedPlayerName = data.username || data.playerName
     if (departedPlayerName) {
       showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+      playAmbientSound('playerLeave')
     }
 
     if (data.nextCreatorId) {
@@ -824,7 +829,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (loadLobbyRef.current) {
       void loadLobbyRef.current()
     }
-  }, [isGuest, guestId, session?.user?.id, minPlayersRequired, triggerLifecycleRedirect])
+  }, [isGuest, guestId, session?.user?.id, minPlayersRequired, triggerLifecycleRedirect, playAmbientSound])
 
   const currentUserIdForMembership = isGuest ? guestId : session?.user?.id
   const canJoinSocketLobbyRoom = React.useMemo(() => {
@@ -1206,6 +1211,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     handleScoreRef.current = handleScore
     handleRollDiceRef.current = handleRollDice
   }, [handleScore, handleRollDice])
+
+  // Countdown tick for last 3 seconds of turn timer
+  React.useEffect(() => {
+    if (timerActive && isMyTurn() && timeLeft > 0 && timeLeft <= 3) {
+      playAmbientSound('countdown')
+    }
+  }, [timeLeft, timerActive, playAmbientSound])
 
   // Load lobby on mount
   useEffect(() => {

@@ -46,10 +46,13 @@ class SoundManager {
       win: '/sounds/win.mp3',
       turnChange: '/sounds/turn-change.mp3',
       score: '/sounds/score.mp3',
-      message: '/sounds/click.mp3', // Use click sound for messages
-      playerJoin: '/sounds/click.mp3',
-      gameStart: '/sounds/turn-change.mp3',
-      celebration: '/sounds/win.mp3',
+      message: '/sounds/message.wav',
+      playerJoin: '/sounds/player-join.wav',
+      playerLeave: '/sounds/player-leave.wav',
+      gameStart: '/sounds/game-start.wav',
+      celebration: '/sounds/celebration.wav',
+      countdown: '/sounds/countdown.wav',
+      cardFlip: '/sounds/card-flip.wav',
     }
 
     Object.entries(soundFiles).forEach(([key, path]) => {
