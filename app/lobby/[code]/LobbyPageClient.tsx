@@ -2130,12 +2130,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       />
                     </div>
 
-                    {/* Roll History - 60% of space */}
-                    {rollHistory.length > 0 && (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <RollHistory entries={rollHistory} />
-                      </div>
-                    )}
+                    {/* Roll History - 60% of space. Always rendered to prevent layout jump on first roll. */}
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <RollHistory entries={rollHistory} />
+                    </div>
                   </div>
                 </div>
 
@@ -2230,12 +2228,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         selectedPlayerId={selectedPlayerId || undefined}
                       />
 
-                      {rollHistory.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Roll History</h3>
-                          <RollHistory entries={rollHistory} />
-                        </div>
-                      )}
+                      <div className="mt-4">
+                        <RollHistory entries={rollHistory} />
+                      </div>
                     </div>
                   </MobileTabPanel>
 
