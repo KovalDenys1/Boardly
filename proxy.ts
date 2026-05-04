@@ -178,10 +178,15 @@ export async function proxy(request: NextRequest) {
 
   response.headers.set('Content-Security-Policy', buildCspHeaderValue())
 
-  // Add CORS headers for API routes
+  // Add CORS headers for API routes.
+  // When no Origin header is present (same-origin requests), Safari still performs
+  // access-control checks in certain conditions. Fall back to the server's own origin
+  // so CORS headers are always present on API responses.
   if (pathname.startsWith('/api')) {
     const origin = request.headers.get('origin')
-    const allowedOrigin = resolveAllowedCorsOrigin(origin)
+    const allowedOrigin =
+      resolveAllowedCorsOrigin(origin) ??
+      (origin === null ? resolveAllowedCorsOrigin(request.nextUrl.origin) : null)
 
     if (allowedOrigin) {
       response.headers.set('Access-Control-Allow-Origin', allowedOrigin)
