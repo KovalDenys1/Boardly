@@ -26,14 +26,14 @@ interface FriendsListModalProps {
   lobbyCode: string
 }
 
-export default function FriendsListModal({ 
-  isOpen, 
-  onClose, 
+export default function FriendsListModal({
+  isOpen,
+  onClose,
   onInvite,
   onSelect,
   initialSelectedFriendIds = [],
   confirmLabel,
-  lobbyCode 
+  lobbyCode,
 }: FriendsListModalProps) {
   const { t } = useTranslation()
   const [friends, setFriends] = useState<Friend[]>([])
@@ -55,7 +55,7 @@ export default function FriendsListModal({
       setLoading(true)
       const res = await fetch('/api/friends')
       if (!res.ok) throw new Error('Failed to load friends')
-      
+
       const data = await res.json()
       setFriends(data.friends || [])
       clientLogger.log('Friends loaded for invite', { count: data.friends?.length })
@@ -136,15 +136,19 @@ export default function FriendsListModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div
+        className="rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto"
+        style={{ background: 'var(--bd-card-warm)', border: '1.5px solid var(--bd-line)' }}
+      >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <h3 className="text-xl font-bold" style={{ color: 'var(--bd-ink)' }}>
             {t('lobby.invite.title')}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="transition-opacity hover:opacity-60"
+            style={{ color: 'var(--bd-ink-muted)' }}
           >
             ✕
           </button>
@@ -155,19 +159,18 @@ export default function FriendsListModal({
             <LoadingSpinner />
           </div>
         ) : friends.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-8">
             <p className="text-lg mb-2">👥</p>
-            <p>{t('lobby.invite.noFriends')}</p>
-            <p className="text-sm mt-2">{t('lobby.invite.addFriendsFirst')}</p>
+            <p style={{ color: 'var(--bd-ink-soft)' }}>{t('lobby.invite.noFriends')}</p>
+            <p className="text-sm mt-2" style={{ color: 'var(--bd-ink-muted)' }}>{t('lobby.invite.addFriendsFirst')}</p>
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm mb-4" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('lobby.invite.description')}
             </p>
 
             <div className="space-y-2 mb-6">
-              {/* Sort friends by server-derived presence, then alphabetically */}
               {[...friends]
                 .sort((a, b) => {
                   const priorityDiff =
@@ -189,40 +192,47 @@ export default function FriendsListModal({
                         : presence === 'online'
                           ? 'Online'
                           : null
-                  
+
+                  const isSelected = selectedFriends.has(friend.id)
+
                   return (
                     <button
                       key={friend.id}
                       onClick={() => toggleFriend(friend.id)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-colors ${
-                        selectedFriends.has(friend.id)
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl transition-all"
+                      style={{
+                        border: isSelected ? '2px solid var(--bd-sun)' : '1.5px solid var(--bd-line)',
+                        background: isSelected ? '#FFC44D18' : 'var(--bd-bg)',
+                      }}
                     >
                       <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                          style={{ background: 'var(--bd-ink)' }}
+                        >
                           {friend.username?.[0]?.toUpperCase() || '?'}
                         </div>
-                        {/* Online Status Indicator */}
                         {isOnline && (
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                          <div
+                            className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
+                            style={{ background: '#22C55E', border: '2px solid var(--bd-card-warm)' }}
+                          />
                         )}
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                          <span className="font-medium" style={{ color: 'var(--bd-ink)' }}>
                             {friend.username || friend.email}
                           </span>
                           {presenceLabel && (
-                            <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                            <span className="text-xs font-medium" style={{ color: '#22C55E' }}>
                               {presenceLabel}
                             </span>
                           )}
                         </div>
                       </div>
-                      {selectedFriends.has(friend.id) && (
-                        <span className="text-blue-600 dark:text-blue-400">✓</span>
+                      {isSelected && (
+                        <span style={{ color: 'var(--bd-ink)' }}>✓</span>
                       )}
                     </button>
                   )

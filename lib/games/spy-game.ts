@@ -35,6 +35,8 @@ export interface SpyGameData {
   votes: Record<string, string> // voterId -> targetId
   questionHistory: QuestionAnswerPair[]
   scores: Record<string, number>
+  allLocationNames: string[]
+  spyGuessedLocation?: string
   phaseStartTime: number
   questionTimeLimit: number // seconds
   votingTimeLimit: number // seconds
@@ -72,6 +74,8 @@ export class SpyGame extends GameEngine {
       currentTargetId: null,
       pendingQuestion: null,
       playersReady: [],
+      allLocationNames: [],
+      spyGuessedLocation: undefined,
     }
   }
 
@@ -96,6 +100,7 @@ export class SpyGame extends GameEngine {
       data.currentRound += 1
     }
 
+    data.allLocationNames = locations.map((l) => l.name).sort()
     const randomLocation = locations[Math.floor(Math.random() * locations.length)]
     data.location = randomLocation.name
     data.locationCategory = randomLocation.category
@@ -134,6 +139,7 @@ export class SpyGame extends GameEngine {
     data.currentQuestionerId = null
     data.currentTargetId = null
     data.pendingQuestion = null
+    data.spyGuessedLocation = undefined
 
     // Start role reveal phase
     data.phase = SpyGamePhase.ROLE_REVEAL
@@ -187,6 +193,14 @@ export class SpyGame extends GameEngine {
           this.state.players.some((p) => p.id === move.data.targetId)
         )
 
+      case 'spy-guess-location':
+        return (
+          data.phase === SpyGamePhase.QUESTIONING &&
+          move.playerId === data.spyPlayerId &&
+          typeof move.data.location === 'string' &&
+          (data.allLocationNames ?? []).includes(move.data.location as string)
+        )
+
       default:
         return false
     }
@@ -222,6 +236,10 @@ export class SpyGame extends GameEngine {
 
       case 'vote':
         this.processVote(move.playerId, move.data.targetId as string)
+        break
+
+      case 'spy-guess-location':
+        this.processSpyGuessLocation(move.playerId, move.data.location as string)
         break
     }
 
@@ -331,6 +349,27 @@ export class SpyGame extends GameEngine {
     }
   }
 
+  private processSpyGuessLocation(playerId: string, guessedLocation: string): void {
+    const data = this.state.data as SpyGameData
+    data.spyGuessedLocation = guessedLocation
+
+    const isCorrect = guessedLocation === data.location
+
+    if (isCorrect) {
+      // Spy correctly guessed — big bonus for the risk
+      data.scores[data.spyPlayerId] = (data.scores[data.spyPlayerId] || 0) + 500
+    } else {
+      // Wrong guess — regular players win
+      for (const player of this.state.players) {
+        if (player.id !== data.spyPlayerId) {
+          data.scores[player.id] = (data.scores[player.id] || 0) + 100
+        }
+      }
+    }
+
+    data.phase = SpyGamePhase.RESULTS
+  }
+
   private calculateResults(): void {
     const data = this.state.data as SpyGameData
 
@@ -429,14 +468,15 @@ export class SpyGame extends GameEngine {
     location?: string
     locationRole?: string
     possibleCategories?: string[]
+    possibleLocations?: string[]
   } {
     const data = this.state.data as SpyGameData
 
     if (playerId === data.spyPlayerId) {
-      // Spy sees list of possible categories
       return {
         role: 'Spy',
         possibleCategories: ['Travel', 'Entertainment', 'Public', 'Workplace', 'Recreation', 'Shopping', 'Culture'],
+        possibleLocations: data.allLocationNames ?? [],
       }
     } else {
       // Regular player sees location and their specific role

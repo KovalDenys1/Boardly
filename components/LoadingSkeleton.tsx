@@ -4,12 +4,14 @@ interface LoadingSkeletonProps {
   lines?: number
 }
 
-export default function LoadingSkeleton({ 
-  className = '', 
+export default function LoadingSkeleton({
+  className = '',
   type = 'text',
-  lines = 1 
+  lines = 1
 }: LoadingSkeletonProps) {
-  const baseClass = 'animate-pulse bg-gray-300 dark:bg-gray-700 rounded'
+  const baseClass = 'animate-pulse rounded'
+  const baseStyle = { background: 'var(--bd-line)' }
+  const darkerStyle = { background: '#D4C9B0' }
 
   if (type === 'text') {
     return (
@@ -18,7 +20,7 @@ export default function LoadingSkeleton({
           <div
             key={i}
             className={`${baseClass} h-4 ${className}`}
-            style={{ width: i === lines - 1 ? '80%' : '100%' }}
+            style={{ ...baseStyle, width: i === lines - 1 ? '80%' : '100%' }}
           />
         ))}
       </div>
@@ -27,23 +29,23 @@ export default function LoadingSkeleton({
 
   if (type === 'card') {
     return (
-      <div className={`${baseClass} p-6 ${className}`}>
-        <div className="h-6 bg-gray-400 dark:bg-gray-600 rounded w-1/3 mb-4" />
+      <div className={`${baseClass} p-6 ${className}`} style={baseStyle}>
+        <div className="h-6 rounded w-1/3 mb-4" style={darkerStyle} />
         <div className="space-y-2">
-          <div className="h-4 bg-gray-400 dark:bg-gray-600 rounded w-full" />
-          <div className="h-4 bg-gray-400 dark:bg-gray-600 rounded w-5/6" />
+          <div className="h-4 rounded w-full" style={darkerStyle} />
+          <div className="h-4 rounded w-5/6" style={darkerStyle} />
         </div>
       </div>
     )
   }
 
   if (type === 'avatar') {
-    return <div className={`${baseClass} w-12 h-12 rounded-full ${className}`} />
+    return <div className={`${baseClass} w-12 h-12 rounded-full ${className}`} style={baseStyle} />
   }
 
   if (type === 'button') {
-    return <div className={`${baseClass} h-10 w-24 ${className}`} />
+    return <div className={`${baseClass} h-10 w-24 ${className}`} style={baseStyle} />
   }
 
-  return <div className={`${baseClass} ${className}`} />
+  return <div className={`${baseClass} ${className}`} style={baseStyle} />
 }

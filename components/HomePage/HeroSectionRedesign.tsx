@@ -94,7 +94,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
         </h1>
         <div
           style={{
-            background: 'white',
+            background: 'var(--bd-card-warm)',
             border: '1.5px solid var(--bd-line)',
             borderRadius: 24,
             padding: '20px 28px',
@@ -202,7 +202,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
 
         <div
           style={{
-            background: 'white',
+            background: 'var(--bd-card-warm)',
             border: '1.5px solid var(--bd-line)',
             borderRadius: 24,
             padding: 32,
@@ -229,7 +229,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               outline: 'none',
               fontFamily: 'inherit',
               color: 'var(--bd-ink)',
-              background: 'white',
+              background: 'var(--bd-card-warm)',
             }}
           />
           <p style={{ color: 'var(--bd-ink-muted)', fontSize: 13, marginBottom: 20, textAlign: 'left' }}>
@@ -291,7 +291,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                 boxShadow: '2px 2px 0 var(--bd-ink)',
               }}
             >
-              🎲 {isLoggedIn && displayName ? `Welcome back, ${displayName}!` : `${facts.availableGameCount} games ready to play`}
+              🎲 {isLoggedIn && displayName ? t('home.welcomeBack', { name: displayName }) : t('home.gamesReadyBadge', { count: facts.availableGameCount })}
             </span>
             <span
               style={{
@@ -303,12 +303,12 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                 fontFamily: 'var(--bd-font-display)',
                 fontWeight: 700,
                 fontSize: 13,
-                background: 'white',
+                background: 'var(--bd-card-warm)',
                 color: 'var(--bd-ink-soft)',
                 border: '1.5px solid var(--bd-line)',
               }}
             >
-              {facts.inDevelopmentGameCount} more coming later
+              {t('home.moreComingLater', { count: facts.inDevelopmentGameCount })}
             </span>
           </div>
 
@@ -316,7 +316,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             className="mb-6 font-display text-5xl font-extrabold leading-none text-bd-ink sm:text-6xl lg:text-7xl"
           >
             Boardly.<br />
-            <span style={{ color: 'var(--bd-coral)' }}>Play board games online with friends.</span>
+            <span style={{ color: 'var(--bd-coral)' }}>{t('home.heroTagline')}</span>
           </h1>
 
           <p
@@ -328,8 +328,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               maxWidth: 480,
             }}
           >
-            Pick a game, make a room, and send your friends a link or room code.
-            They can join from any modern browser, and guests do not need an account to start playing.
+            {t('home.heroSubtitle')}
           </p>
 
           <div className="home-cta-row">
@@ -349,19 +348,13 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                   onClick={() => router.push('/games')}
                   className="home-cta-button home-cta-button-primary"
                 >
-                  Browse games →
+                  {t('home.browseGamesArrow')}
                 </button>
                 <button
                   onClick={() => setShowGuestForm(true)}
                   className="home-cta-button home-cta-button-outline"
                 >
-                  Play as guest
-                </button>
-                <button
-                  onClick={() => router.push('/lobby')}
-                  className="home-cta-button home-cta-button-warm"
-                >
-                  Join a room
+                  {t('home.playAsGuest')}
                 </button>
               </>
             )}
@@ -378,10 +371,10 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
             }}
           >
             {[
-              { label: 'Games ready now', value: String(facts.availableGameCount) },
-              { label: 'Good for solo play', value: String(facts.quickPlayGameCount) },
-              { label: 'Games in the collection', value: String(facts.catalogGameCount) },
-              { label: 'Nothing to install', value: '0' },
+              { label: t('home.statsGamesReady'), value: String(facts.availableGameCount) },
+              { label: t('home.statsBotsAvailable'), value: String(facts.quickPlayGameCount) },
+              { label: t('home.statsInCollection'), value: String(facts.catalogGameCount) },
+              { label: t('home.statsBrowserNative'), value: '100%' },
             ].map((s) => (
               <div key={s.label}>
                 <div

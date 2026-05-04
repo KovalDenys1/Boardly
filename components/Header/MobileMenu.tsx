@@ -38,6 +38,7 @@ export function MobileMenu({
   const canAccessGames = isAuthenticated || isGuestSession
 
   const isActive = (path: string) => pathname === path
+  const isActiveStart = (path: string) => !!pathname?.startsWith(path)
 
   const clearCloseTimeout = useCallback(() => {
     if (closeTimeoutRef.current) {
@@ -53,7 +54,7 @@ export function MobileMenu({
       setMobileMenuOpen(false)
       setIsClosing(false)
       closeTimeoutRef.current = null
-    }, 300) // Match animation duration
+    }, 300)
   }, [clearCloseTimeout])
 
   const closeMenuImmediately = useCallback(() => {
@@ -82,38 +83,44 @@ export function MobileMenu({
     navigateToProfile(router, pathname, { tab: 'settings' })
   }
 
-  // Prevent body scroll when menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
     }
-
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
+    return () => { document.body.style.overflow = 'unset' }
   }, [mobileMenuOpen])
 
-  // Close on route change
   useEffect(() => {
     const pathnameChanged = previousPathnameRef.current !== pathname
     previousPathnameRef.current = pathname
-
-    if (mobileMenuOpen && pathnameChanged) {
-      closeMenu()
-    }
+    if (mobileMenuOpen && pathnameChanged) closeMenu()
   }, [pathname, mobileMenuOpen, closeMenu])
 
-  useEffect(() => {
-    return () => {
-      clearCloseTimeout()
-    }
-  }, [clearCloseTimeout])
+  useEffect(() => { return () => { clearCloseTimeout() } }, [clearCloseTimeout])
+
+  const navBtn = (active: boolean) => ({
+    width: '100%',
+    textAlign: 'left' as const,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '11px 14px',
+    borderRadius: 12,
+    fontSize: 15,
+    fontWeight: 600,
+    fontFamily: 'inherit',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+    background: active ? 'var(--bd-sun)' : 'transparent',
+    color: active ? 'var(--bd-ink)' : 'var(--bd-ink-soft)',
+  })
 
   return (
     <>
-      {/* Mobile menu button - Improved design */}
+      {/* Hamburger button */}
       <button
         onClick={() => {
           if (mobileMenuOpen) {
@@ -124,145 +131,177 @@ export function MobileMenu({
             setMobileMenuOpen(true)
           }
         }}
-        className="lg:hidden rounded-lg transition-all duration-200 relative z-50"
+        className="lg:hidden relative z-50"
         style={{
-          padding: 'clamp(8px, 0.8vh, 12px)',
-          backgroundColor: mobileMenuOpen ? 'rgba(31, 27, 22, 0.06)' : 'transparent',
+          padding: 8,
           borderRadius: 10,
+          border: 'none',
+          cursor: 'pointer',
+          background: mobileMenuOpen ? 'var(--bd-bg2)' : 'transparent',
+          transition: 'background 0.2s',
         }}
         aria-label={mobileMenuOpen ? t('common.close') : t('header.menu')}
       >
-        <div className="relative" style={{ width: 'clamp(24px, 2.5vw, 28px)', height: 'clamp(24px, 2.5vw, 28px)' }}>
-          {/* Animated hamburger icon */}
+        <div style={{ width: 24, height: 24, position: 'relative' }}>
           <span
-            className={`absolute left-0 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 rotate-45' : 'top-1/4'
-              }`}
-            style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none' }}
+            style={{
+              position: 'absolute',
+              left: 0,
+              width: '100%',
+              height: 2.5,
+              borderRadius: 99,
+              background: 'var(--bd-ink)',
+              transition: 'all 0.3s',
+              top: mobileMenuOpen ? '50%' : '25%',
+              transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none',
+            }}
           />
           <span
-            className={`absolute left-0 top-1/2 -translate-y-1/2 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'opacity-0' : 'opacity-100'
-              }`}
-            style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)' }}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '100%',
+              height: 2.5,
+              borderRadius: 99,
+              background: 'var(--bd-ink)',
+              transition: 'all 0.3s',
+              opacity: mobileMenuOpen ? 0 : 1,
+            }}
           />
           <span
-            className={`absolute left-0 bg-bd-ink rounded-full transition-all duration-300 ${mobileMenuOpen ? 'top-1/2 -rotate-45' : 'bottom-1/4'
-              }`}
-            style={{ width: '100%', height: 'clamp(2.5px, 0.25vw, 3px)', transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none' }}
+            style={{
+              position: 'absolute',
+              left: 0,
+              width: '100%',
+              height: 2.5,
+              borderRadius: 99,
+              background: 'var(--bd-ink)',
+              transition: 'all 0.3s',
+              top: mobileMenuOpen ? '50%' : '75%',
+              transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none',
+            }}
           />
         </div>
       </button>
 
-      {/* Full-screen mobile menu overlay */}
       {mobileMenuOpen && (
         <>
           {/* Backdrop */}
           <div
-            className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'
-              }`}
+            className={`fixed inset-0 z-40 lg:hidden ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
+            style={{ background: 'rgba(31,27,22,0.45)', backdropFilter: 'blur(4px)' }}
             onClick={closeMenu}
           />
 
-          {/* Menu panel */}
+          {/* Panel */}
           <div
-            className={`fixed top-0 right-0 bottom-0 flex h-full w-[85vw] max-w-sm flex-col bg-white dark:bg-gray-900 shadow-2xl z-50 lg:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'
-              }`}
+            className={`fixed top-0 right-0 bottom-0 z-50 flex h-full flex-col lg:hidden overflow-hidden ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
             style={{
-              borderLeft: '1px solid',
-              borderColor: 'rgb(229 231 235 / 1)',
+              width: '85vw',
+              maxWidth: 360,
+              background: 'var(--bd-bg)',
+              borderLeft: '1.5px solid var(--bd-line)',
+              boxShadow: '-8px 0 32px rgba(31,27,22,0.12)',
             }}
           >
-            {/* Header with close button */}
+            {/* Header */}
             <div
-              className="flex items-center justify-between border-b border-bd-line"
-              style={{ background: 'var(--bd-bg2)', padding: 'clamp(16px, 1.6vh, 24px)' }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderBottom: '1.5px solid var(--bd-line)',
+                background: 'var(--bd-bg)',
+              }}
             >
-              <h2 className="font-bold text-gray-900 dark:text-white" style={{ fontSize: 'clamp(18px, 1.8vw, 22px)' }}>
-                {t('header.menu')}
-              </h2>
+              <span
+                style={{
+                  fontFamily: 'var(--bd-font-display)',
+                  fontSize: 20,
+                  fontWeight: 800,
+                  color: 'var(--bd-ink)',
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                boardly
+              </span>
               <button
                 onClick={closeMenu}
-                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                style={{
+                  padding: 6,
+                  borderRadius: 8,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: 'var(--bd-ink-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'background 0.15s',
+                }}
                 aria-label={t('common.close')}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                  <path d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* User info section (authenticated or guest session) */}
+            {/* User section */}
             {(isAuthenticated || isGuestSession) && (
-              <div
-                className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-blue-500/5 to-purple-500/5 dark:from-blue-500/10 dark:to-purple-500/10"
-                style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
-              >
+              <div style={{ padding: '16px 20px', borderBottom: '1.5px solid var(--bd-line)' }}>
                 {isAuthenticated ? (
                   <button
                     type="button"
                     onClick={handleProfileNavigation}
-                    className="group flex w-full items-center gap-4 rounded-2xl p-1 text-left transition-colors hover:bg-white/70 dark:hover:bg-gray-800/60"
+                    style={{
+                      display: 'flex',
+                      width: '100%',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 12px',
+                      borderRadius: 14,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: 'var(--bd-card-warm)',
+                      textAlign: 'left',
+                      transition: 'background 0.15s',
+                    }}
                     aria-label={t('header.profile')}
                   >
                     <UserAvatar
                       image={userImage}
                       userName={userName}
                       userEmail={userEmail}
-                      className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                      textClassName="font-bold"
-                      style={{
-                        width: 'clamp(48px, 5vw, 64px)',
-                        height: 'clamp(48px, 5vw, 64px)',
-                        fontSize: 'clamp(20px, 2vw, 26px)'
-                      }}
+                      style={{ width: 44, height: 44, fontSize: 18, flexShrink: 0 }}
                     />
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="truncate font-semibold text-gray-900 dark:text-white"
-                        style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
-                      >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {userName || t('common.error')}
                       </p>
-                      <p
-                        className="truncate text-gray-600 dark:text-gray-400"
-                        style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
-                      >
+                      <p style={{ fontSize: 12, color: 'var(--bd-ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
                         {userEmail}
                       </p>
                     </div>
-                    <svg
-                      className="h-5 w-5 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-500 dark:text-gray-500 dark:group-hover:text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bd-ink-muted)" strokeWidth={2.5} strokeLinecap="round" style={{ flexShrink: 0 }}>
+                      <path d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-4">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 14, background: 'var(--bd-card-warm)' }}>
                     <UserAvatar
                       image={null}
                       userName={guestName}
                       userEmail={null}
-                      className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                      textClassName="font-bold"
-                      style={{
-                        width: 'clamp(48px, 5vw, 64px)',
-                        height: 'clamp(48px, 5vw, 64px)',
-                        fontSize: 'clamp(20px, 2vw, 26px)'
-                      }}
+                      style={{ width: 44, height: 44, fontSize: 18, flexShrink: 0 }}
                     />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="truncate font-semibold text-gray-900 dark:text-white"
-                        style={{ fontSize: 'clamp(15px, 1.5vw, 18px)' }}
-                      >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {guestName || t('guest.playAsGuest')}
                       </p>
-                      <p
-                        className="truncate text-gray-600 dark:text-gray-400"
-                        style={{ fontSize: 'clamp(12px, 1.2vw, 14px)' }}
-                      >
+                      <p style={{ fontSize: 12, color: 'var(--bd-ink-soft)', marginTop: 1 }}>
                         {t('header.guestSession')}
                       </p>
                     </div>
@@ -271,122 +310,75 @@ export function MobileMenu({
               </div>
             )}
 
-            {/* Navigation links */}
-            <nav
-              className="flex-1 overflow-y-auto"
-              style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(8px, 0.8vh, 12px)' }}>
-                <button
-                  onClick={() => router.push('/')}
-                  className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${isActive('/')
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  style={{
-                    padding: 'clamp(12px, 1.2vh, 16px)',
-                    fontSize: 'clamp(15px, 1.5vw, 17px)'
-                  }}
-                >
-                  <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🏠</span>
-                  <span>{t('header.home')}</span>
-                </button>
+            {/* Nav links */}
+            <nav style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <button onClick={() => router.push('/')} style={navBtn(isActive('/'))}>
+                {t('header.home')}
+              </button>
 
-                {canAccessGames && (
-                  <>
-                    <button
-                      onClick={() => router.push('/games')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/games')
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                      style={{
-                        padding: 'clamp(12px, 1.2vh, 16px)',
-                        fontSize: 'clamp(15px, 1.5vw, 17px)'
-                      }}
-                    >
-                      <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🎮</span>
-                      <span>{t('header.games')}</span>
+              {canAccessGames && (
+                <>
+                  <button onClick={() => router.push('/games')} style={navBtn(isActiveStart('/games'))}>
+                    {t('header.games')}
+                  </button>
+                  <button onClick={() => router.push('/lobby')} style={navBtn(isActiveStart('/lobby'))}>
+                    {t('header.lobbies')}
+                  </button>
+                  <button onClick={() => router.push('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
+                    {t('header.leaderboard')}
+                  </button>
+                  {isAuthenticated && (
+                    <button onClick={() => router.push('/friends')} style={navBtn(isActiveStart('/friends'))}>
+                      {t('header.friends')}
                     </button>
-
-                    <button
-                      onClick={() => router.push('/lobby')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/lobby')
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                      style={{
-                        padding: 'clamp(12px, 1.2vh, 16px)',
-                        fontSize: 'clamp(15px, 1.5vw, 17px)'
-                      }}
-                    >
-                      <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🎲</span>
-                      <span>{t('header.lobbies')}</span>
+                  )}
+                  {isAuthenticated && isAdmin && (
+                    <button onClick={() => router.push('/analytics')} style={navBtn(isActiveStart('/analytics'))}>
+                      {t('header.analytics')}
                     </button>
+                  )}
+                </>
+              )}
 
-                    <button
-                      onClick={() => router.push('/leaderboard')}
-                      className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/leaderboard')
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                      style={{
-                        padding: 'clamp(12px, 1.2vh, 16px)',
-                        fontSize: 'clamp(15px, 1.5vw, 17px)'
-                      }}
-                    >
-                      <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🏆</span>
-                      <span>{t('header.leaderboard')}</span>
-                    </button>
+              <div style={{ height: 1, background: 'var(--bd-line)', margin: '8px 0' }} />
 
-                    {isAuthenticated && isAdmin && (
-                      <button
-                        onClick={() => router.push('/analytics')}
-                        className={`w-full text-left rounded-xl font-medium transition-all duration-200 flex items-center gap-3 ${pathname?.startsWith('/analytics')
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        style={{
-                          padding: 'clamp(12px, 1.2vh, 16px)',
-                          fontSize: 'clamp(15px, 1.5vw, 17px)'
-                        }}
-                      >
-                        <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>📊</span>
-                        <span>{t('header.analytics')}</span>
-                      </button>
-                    )}
-
-                    {/* Divider */}
-                    <div className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
-                  </>
-                )}
-
-                <div className="rounded-2xl border border-gray-200 bg-white/80 p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    {t('header.language')}
-                  </p>
-                  <LanguageSwitcher variant="panel" />
-                </div>
-
-                <AudioSettingsMobilePanel />
+              <div style={{ borderRadius: 14, border: '1.5px solid var(--bd-line)', background: 'var(--bd-card-warm)', padding: '12px 14px' }}>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--bd-ink-muted)', marginBottom: 10 }}>
+                  {t('header.language')}
+                </p>
+                <LanguageSwitcher variant="panel" />
               </div>
+
+              <AudioSettingsMobilePanel />
             </nav>
 
             {/* Bottom actions */}
             <div
-              className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
-              style={{ padding: 'clamp(16px, 1.6vh, 24px)' }}
+              style={{
+                padding: '16px 20px',
+                borderTop: '1.5px solid var(--bd-line)',
+                background: 'var(--bd-bg2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
             >
               {isAuthenticated ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
-                  <div className="grid grid-cols-2 gap-3">
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                     <button
                       type="button"
                       onClick={handleProfileNavigation}
-                      className="rounded-xl border-2 border-gray-300 bg-white font-semibold text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                       style={{
-                        padding: 'clamp(12px, 1.2vh, 16px)',
-                        fontSize: 'clamp(14px, 1.4vw, 16px)'
+                        padding: '11px 12px',
+                        borderRadius: 12,
+                        border: '1.5px solid var(--bd-line)',
+                        background: 'var(--bd-bg)',
+                        color: 'var(--bd-ink)',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
                       }}
                     >
                       {t('header.profile')}
@@ -394,10 +386,16 @@ export function MobileMenu({
                     <button
                       type="button"
                       onClick={handleSettingsNavigation}
-                      className="rounded-xl border-2 border-blue-300 bg-blue-50 font-semibold text-blue-700 transition-all duration-200 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
                       style={{
-                        padding: 'clamp(12px, 1.2vh, 16px)',
-                        fontSize: 'clamp(14px, 1.4vw, 16px)'
+                        padding: '11px 12px',
+                        borderRadius: 12,
+                        border: '1.5px solid var(--bd-line)',
+                        background: 'var(--bd-bg)',
+                        color: 'var(--bd-ink)',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
                       }}
                     >
                       {t('header.settings')}
@@ -405,66 +403,97 @@ export function MobileMenu({
                   </div>
                   <button
                     onClick={handleSignOut}
-                    className="w-full rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
                     style={{
-                      padding: 'clamp(14px, 1.4vh, 18px)',
-                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: 12,
+                      border: '1.5px solid var(--bd-line)',
+                      background: 'var(--bd-ink)',
+                      color: 'var(--bd-bg)',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
-                    <span>{t('header.logout')}</span>
+                    {t('header.logout')}
                   </button>
-                </div>
+                </>
               ) : isGuestSession ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
+                <>
                   <button
                     onClick={() => router.push(buildCurrentAuthUrl('login'))}
-                    className="w-full rounded-xl font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 flex items-center justify-center gap-3"
                     style={{
-                      padding: 'clamp(12px, 1.2vh, 16px)',
-                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: 12,
+                      border: '1.5px solid var(--bd-line)',
+                      background: 'var(--bd-bg)',
+                      color: 'var(--bd-ink)',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🔐</span>
-                    <span>{t('header.login')}</span>
+                    {t('header.login')}
                   </button>
                   <button
                     onClick={handleGuestExit}
-                    className="w-full rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
                     style={{
-                      padding: 'clamp(14px, 1.4vh, 18px)',
-                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: 12,
+                      border: '1.5px solid var(--bd-line)',
+                      background: 'var(--bd-ink)',
+                      color: 'var(--bd-bg)',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🚪</span>
-                    <span>{t('header.exitGuest')}</span>
+                    {t('header.exitGuest')}
                   </button>
-                </div>
+                </>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(10px, 1vh, 14px)' }}>
+                <>
                   <button
                     onClick={() => router.push(buildCurrentAuthUrl('login'))}
-                    className="w-full rounded-xl font-semibold text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-gray-300 dark:border-gray-600 transition-all duration-200 flex items-center justify-center gap-3"
                     style={{
-                      padding: 'clamp(12px, 1.2vh, 16px)',
-                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: 12,
+                      border: '1.5px solid var(--bd-line)',
+                      background: 'var(--bd-bg)',
+                      color: 'var(--bd-ink)',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>🔐</span>
-                    <span>{t('header.login')}</span>
+                    {t('header.login')}
                   </button>
                   <button
                     onClick={() => router.push(buildCurrentAuthUrl('register'))}
-                    className="w-full rounded-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
                     style={{
-                      padding: 'clamp(14px, 1.4vh, 18px)',
-                      fontSize: 'clamp(15px, 1.5vw, 17px)'
+                      width: '100%',
+                      padding: '13px 16px',
+                      borderRadius: 12,
+                      border: 'none',
+                      background: 'var(--bd-ink)',
+                      color: 'var(--bd-bg)',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      boxShadow: '0 4px 0 var(--bd-coral)',
                     }}
                   >
-                    <span style={{ fontSize: 'clamp(20px, 2vw, 24px)' }}>✨</span>
-                    <span>{t('header.signUp')}</span>
+                    {t('header.signUp')}
                   </button>
-                </div>
+                </>
               )}
             </div>
           </div>

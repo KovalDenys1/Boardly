@@ -60,7 +60,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   if (status === 'loading') {
     return (
       <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
-        <div className="text-[18px] text-bd-ink-muted">Loading…</div>
+        <div className="text-[18px] text-bd-ink-muted">{t('games.loading')}</div>
       </div>
     )
   }
@@ -68,7 +68,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   if (status === 'unauthenticated' && !isGuest) {
     return (
       <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
-        <div className="text-[18px] text-bd-ink-muted">Redirecting…</div>
+        <div className="text-[18px] text-bd-ink-muted">{t('games.redirecting')}</div>
       </div>
     )
   }
@@ -87,7 +87,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
     })
 
   const handleGameClick = (game: Game) => {
-    if (game.status === 'available' && game.route) router.push(game.route)
+    if (game.status === 'available') router.push(`/games/${game.id}`)
   }
 
   return (
@@ -97,7 +97,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
         {/* Page header */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
           <div>
-            <span className="bd-kicker">Catalog</span>
+            <span className="bd-kicker">{t('games.catalog')}</span>
             <h1
               className="mt-2 text-[clamp(40px,5vw,64px)] font-extrabold leading-[0.95] tracking-[-0.02em] text-bd-ink"
               style={{ fontFamily: 'var(--bd-font-display)' }}
@@ -171,7 +171,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
               {/* CTA */}
               {game.status === 'available' && (
                 <button className="bd-btn bd-btn-primary mt-1 justify-center">
-                  {t('games.viewLobbies')} →
+                  {t('games.seeGame')}
                 </button>
               )}
             </div>
@@ -180,7 +180,7 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
 
         {filteredGames.length === 0 && (
           <div className="py-20 text-center text-base text-bd-ink-muted">
-            No games found for this filter.
+            {t('games.noGamesFound')}
           </div>
         )}
       </div>

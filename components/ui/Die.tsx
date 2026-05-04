@@ -27,7 +27,7 @@ export default function Die({ value = 5, size = 56, held = false, animationDelay
       style={{
         display: 'inline-grid',
         placeItems: 'center',
-        background: held ? 'var(--bd-sun)' : 'white',
+        background: held ? 'var(--bd-sun)' : 'var(--bd-bg)',
         border: '2px solid var(--bd-ink)',
         borderRadius: radius,
         width: size,

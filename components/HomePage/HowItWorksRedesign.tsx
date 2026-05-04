@@ -1,25 +1,16 @@
-const STEPS = [
-  {
-    n: '01',
-    color: 'var(--bd-coral)',
-    title: 'Pick a game',
-    body: 'Choose Yahtzee, Guess the Spy, Tic Tac Toe, Memory, or another game from the list.',
-  },
-  {
-    n: '02',
-    color: 'var(--bd-mint)',
-    title: 'Invite a friend or add a bot',
-    body: 'Create a room, send the link to a friend, or add a computer player when you want to start right away.',
-  },
-  {
-    n: '03',
-    color: 'var(--bd-sun)',
-    title: 'Start playing',
-    body: 'Everyone sees the same board, scores, and turns in their browser. No download needed.',
-  },
-]
+'use client'
+
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function HowItWorksRedesign() {
+  const { t } = useTranslation()
+
+  const steps = [
+    { n: '01', color: 'var(--bd-coral)', title: t('home.howItWorks.step1.title'), body: t('home.howItWorks.step1.description') },
+    { n: '02', color: 'var(--bd-mint)', title: t('home.howItWorks.step2.title'), body: t('home.howItWorks.step2.description') },
+    { n: '03', color: 'var(--bd-sun)', title: t('home.howItWorks.step3.title'), body: t('home.howItWorks.step3.description') },
+  ]
+
   return (
     <section className="home-section home-section-steps">
       <div style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -32,7 +23,7 @@ export default function HowItWorksRedesign() {
             color: 'var(--bd-ink-muted)',
           }}
         >
-          How it works
+          {t('home.howItWorks.kicker')}
         </span>
         <h2
           style={{
@@ -44,16 +35,16 @@ export default function HowItWorksRedesign() {
             letterSpacing: 0,
           }}
         >
-          Three steps to play
+          {t('home.howItWorks.title')}
         </h2>
       </div>
 
       <div className="home-steps-grid">
-        {STEPS.map((s) => (
+        {steps.map((s) => (
           <div
             key={s.n}
             style={{
-              background: 'white',
+              background: 'var(--bd-card-warm)',
               borderRadius: 24,
               border: '1.5px solid var(--bd-line)',
               boxShadow: '0 6px 0 rgba(31,27,22,0.08)',

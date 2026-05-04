@@ -32,7 +32,7 @@ export default function TicTacToeGameIcon({
         border: `${borderWidth}px solid var(--bd-ink)`,
         borderRadius,
         boxShadow: `${shadowOffset}px ${shadowOffset}px 0 var(--bd-ink)`,
-        background: 'white',
+        background: 'var(--bd-card-warm)',
         padding,
         overflow: 'hidden',
       }}

@@ -14,21 +14,30 @@ export default function Icon() {
     (
       <div
         style={{
-          fontSize: 24,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: '50%',
+          background: '#1F1B16',
+          borderRadius: 8,
+          boxShadow: '3px 3px 0 #FF6B5B',
         }}
       >
-        🎲
+        <span
+          style={{
+            fontSize: 22,
+            fontWeight: 900,
+            color: '#FFC44D',
+            fontFamily: 'system-ui, sans-serif',
+            lineHeight: 1,
+            marginTop: -1,
+          }}
+        >
+          B
+        </span>
       </div>
     ),
-    {
-      ...size,
-    }
+    { ...size }
   )
 }

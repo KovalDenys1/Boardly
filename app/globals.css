@@ -25,12 +25,15 @@
 }
 
 @keyframes bd-float {
-  0%, 100% { transform: translateY(0) rotate(var(--bd-rot, 0deg)); }
-  50%       { transform: translateY(-12px) rotate(calc(var(--bd-rot, 0deg) + 4deg)); }
+  0%   { transform: translateY(7px)  rotate(0deg);  }
+  25%  { transform: translateY(-7px) rotate(5deg);  }
+  50%  { transform: translateY(7px)  rotate(0deg);  }
+  75%  { transform: translateY(-7px) rotate(-5deg); }
+  100% { transform: translateY(7px)  rotate(0deg);  }
 }
 
 .bd-float {
-  animation: bd-float 6s ease-in-out infinite;
+  animation: bd-float 5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -820,11 +823,21 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-primary {
-  @apply bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:ring-blue-500;
+  background: var(--bd-ink);
+  color: white;
+  box-shadow: 0 4px 0 var(--bd-coral);
+  @apply hover:shadow-lg hover:-translate-y-0.5;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 0 var(--bd-coral);
 }
 
 .btn-secondary {
-  @apply bg-gray-600 text-white hover:bg-gray-700 hover:shadow-lg hover:-translate-y-0.5 focus-visible:ring-gray-500;
+  background: var(--bd-bg2);
+  color: var(--bd-ink);
+  border: 1.5px solid var(--bd-line);
+  @apply hover:-translate-y-0.5;
 }
 
 .btn-success {

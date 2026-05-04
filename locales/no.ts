@@ -133,14 +133,6 @@ const no = {
       ready: 'Klar',
       viewCards: 'Se kort'
     },
-    playersSection: {
-      title: 'Spillere',
-      clickToView: 'Klikk for å se kort',
-      fullList: 'Alle spillere',
-      position: 'Posisjon',
-      ready: 'Klar',
-      viewCards: 'Se kort'
-    },
     create: {
       title: 'Opprett lobby',
       lobbyName: 'Lobbynavn',
@@ -208,10 +200,6 @@ const no = {
     joinPromptPrivate: 'Skriv inn passordet for å bli med i {{lobby}}',
     joinPromptPublic: 'Du er i ferd med å bli med i {{lobby}}',
     joinPromptHint: 'Du blir lagt til i det aktive spillet etter at du blir med',
-    noLobbiesDescriptionSection: {
-      title: 'Ingen aktive lobbyer',
-      description: 'Bli den første til å opprette en og begynne å spille!'
-    },
     quick: {
       join: 'Raskt bli med',
       description: 'Har du en lobbykode? Skriv den inn nedenfor for å bli med umiddelbart!',
@@ -288,6 +276,7 @@ const no = {
     games: 'Spill',
     lobbies: 'Lobbyer',
     leaderboard: 'Toppliste',
+    friends: 'Venner',
     profile: 'Profil',
     login: 'Logg inn',
     register: 'Registrer',
@@ -322,55 +311,51 @@ const no = {
     volume: 'Volum',
   },
   home: {
-    title: 'Spill brettspill på nett med venner',
-    subtitle: 'Sanntids flerspiller spillplattform. Opprett lobbyer, inviter venner og begynn å spille umiddelbart!',
     welcomeBack: 'Velkommen tilbake, {{name}}!',
-    signUpFree: 'Registrer deg gratis',
-    createLobby: 'Opprett lobby',
-    joinLobby: 'Bli med i lobby',
     browseGames: 'Bla gjennom spill',
+    browseGamesArrow: 'Se spill →',
+    playAsGuest: 'Spill som gjest',
     quickPlay: 'Rask spill',
-    features: {
-      title: 'Hvorfor velge Boardly?',
-      realTime: {
-        title: 'Sanntidsspilling',
-        description: 'Opplev jevn, lag-fri spilling med WebSocket-teknologi'
-      },
-      noDownload: {
-        title: 'Ingen nedlasting kreves',
-        description: 'Spill direkte i nettleseren din - ingen installasjon nødvendig'
-      },
-      multiplayer: {
-        title: 'Flerspillermoro',
-        description: 'Spill med 2-8 venner i private eller offentlige lobbyer'
-      },
-      aiOpponents: {
-        title: 'AI-motstandere',
-        description: 'Øv med smarte boter når venner ikke er tilgjengelige'
-      },
-      freeToPlay: {
-        title: 'Gratis å spille',
-        description: 'Alle spill er helt gratis, ingen skjulte avgifter'
-      },
-      responsive: {
-        title: 'Mobilvennlig',
-        description: 'Optimalisert for alle enheter - PC, nettbrett og mobil'
-      }
-    },
+    openProfile: 'Åpne profil',
+    keepPlaying: 'Fortsett å spille',
+    createFreeAccount: 'Opprett gratis konto',
+    heroSubtitle: 'Velg et spill, opprett et rom og del lenken. Ingen nedlasting, ingen konto nødvendig — gjester kan bli med på sekunder.',
+    gamesReadyBadge: '{{count}} spill klare',
+    moreComingLater: '{{count}} til kommer snart',
+    statsGamesReady: 'Spill tilgjengelig',
+    statsBotsAvailable: 'Spill solo med bots',
+    statsInCollection: 'Spill i samlingen',
+    statsBrowserNative: 'I nettleseren',
+    chooseWhatToPlay: 'Hva skal vi spille?',
+    seeAllGames: 'Se alle spill →',
+    heroTagline: 'Vennene dine er én lenke unna.',
+    ribbonBadgeLater: 'Kommer snart',
+    ribbonBadgePlanned: 'På planen',
+    ribbonDescription: '{{available}} spill er klare nå. {{more}} til er under utvikling.',
+    ctaLoggedInTitle: 'Godt å se deg igjen, {{name}}.',
+    ctaLoggedInAccent: 'Neste spill er ett klikk unna.',
+    ctaLoggedInBody: 'Statistikken din, venner og spillhistorikk er der du forlot dem.',
+    ctaGuestTitle: 'Liker det så langt?',
+    ctaGuestAccent: 'Lagre fremgangen din før det er for sent.',
+    ctaGuestBody: 'Gjesteøkter er midlertidige. Opprett en gratis konto for å beholde statistikk og spillhistorikk.',
+    ctaVisitorTitle: 'Spillkvelden starter her.',
+    ctaVisitorAccent: 'Ingen planlegging nødvendig.',
+    ctaVisitorBody: 'Velg et spill, åpne et rom, del lenken. Venner er med på sekunder — ingen konto, ingen nedlasting.',
     howItWorks: {
-      title: 'Slik fungerer det',
+      kicker: 'Slik fungerer det',
+      title: 'Tre steg for å spille',
       step1: {
-        title: 'Opprett eller bli med',
-        description: 'Start en ny lobby eller bli med i eksisterende med en kode'
+        title: 'Velg et spill',
+        description: 'Velg Yahtzee, Finn spionen, Tre på rad, Memory eller et annet spill fra listen.',
       },
       step2: {
-        title: 'Inviter venner',
-        description: 'Del lobbykoden med vennene dine'
+        title: 'Inviter en venn eller legg til en bot',
+        description: 'Opprett et rom, send lenken til en venn, eller legg til en datamaskin-spiller for å starte med én gang.',
       },
       step3: {
-        title: 'Spill sammen',
-        description: 'Nyt sanntidsspilling med vennene dine'
-      }
+        title: 'Begynn å spille',
+        description: 'Alle ser samme brett, poeng og trekk i nettleseren sin. Ingen nedlasting nødvendig.',
+      },
     }
   },
   games: {
@@ -382,11 +367,63 @@ const no = {
     comingSoon: 'Kommer snart',
     playNow: 'Spill nå',
     viewLobbies: 'Se lobbyer',
+    catalog: 'Katalog',
+    seeGame: 'Se spillet →',
+    noGamesFound: 'Ingen spill funnet for dette filteret.',
+    loading: 'Laster…',
+    redirecting: 'Omdirigerer…',
+    gameGuide: 'Om spillet',
+    howToPlay: 'Slik spiller du',
+    startPlaying: 'Begynn å spille',
+    noDownloadNeeded: 'Spill som gjest. Ingen nedlasting nødvendig.',
+    stillBeingPolished: 'Dette spillet er fortsatt under utvikling.',
+    detail: {
+      labels: {
+        players: 'Spillere',
+        price: 'Pris',
+        download: 'Nedlasting',
+        botSupport: 'Robotstøtte',
+        gameType: 'Spilltype',
+        difficulty: 'Vanskelighetsgrad',
+      },
+      values: {
+        free: 'Gratis',
+        none: 'Ingen',
+        yes: 'Ja',
+        party: 'Fest',
+        threeLevels: '3 nivåer',
+      },
+    },
     yahtzee: {
       name: 'Yatzy',
       title: 'Yatzy',
       description: 'Klassisk terningspill med strategisk poengberegning. Kast fem terninger for å lage kombinasjoner og score stort!',
       difficulty: 'Lett',
+      ribbon: {
+        desc: 'Rull fem terninger, fyll ut poenglisten og jakt de beste kombinasjonene. Spill med venner eller start en rask solo-kamp.',
+        tag: 'Terninger',
+        time: '15 min',
+      },
+      detail: {
+        title: 'Spill Yatzy online',
+        heroDesc: 'Rull fem terninger, velg de beste kategoriene og spill en full runde med venner eller roboter rett i nettleseren.',
+        introTitle: 'Hva er Yatzy?',
+        intro0: 'Yatzy er et klassisk terningspill der spillerne ruller fem terninger og prøver å score i 15 ulike kategorier, fra tre like og fullt hus til den store fem-av-ett — Yatzy.',
+        intro1: 'På Boardly kan du spille online med venner, legge til roboter når du mangler spillere, eller øve alene. Alt kjører i nettleseren, så en delt lenke er nok for å starte.',
+        step1Title: 'Opprett eller bli med i et lobby',
+        step1Desc: 'Åpne et rom fra lobbysiden eller skriv inn koden fra en venn.',
+        step2Title: 'Rull terningene',
+        step2Desc: 'Opptil tre kast per tur. Behold terningene du liker og rull resten på nytt.',
+        step3Title: 'Velg en kategori',
+        step3Desc: 'Velg én ledig kategori etter kastet. Hver kategori kan bare brukes én gang.',
+        step4Title: 'Fyll ut poenglisten',
+        step4Desc: 'Når alle kategorier er fylt, vinner spilleren med høyest totalscore.',
+        benefitsTitle: 'Hvorfor spille Yatzy på Boardly?',
+        benefit1: 'Live-flerspiller der turer oppdateres for alle.',
+        benefit2: 'Roboter tilgjengelig når venner er offline.',
+        benefit3: 'Fungerer på mobil, nettbrett og datamaskin.',
+        benefit4: 'Gratis å spille som gjest.',
+      },
       lobbies: {
         title: 'Yatzy-lobbyer',
         subtitle: 'Bli med i et spill eller opprett din egen lobby!',
@@ -413,15 +450,35 @@ const no = {
         newGame: 'NYTT SPILL'
       }
     },
-    guess_the_spy: {
-      name: 'Gjett spionen',
-      description: 'Sosial deduksjonsspill der én spiller er spionen. Finn spionen før tiden går ut!',
-      difficulty: 'Middels'
-    },
     spy: {
       name: 'Gjett spionen',
       description: 'Sosialt deduksjonsspill der én spiller er spionen. Finn dem før tiden går ut!',
       difficulty: 'Middels',
+      ribbon: {
+        desc: 'Alle får samme sted bortsett fra spionen. Still spørsmål, lytt nøye og stem.',
+        tag: 'Deduksjon',
+        time: '10 min',
+      },
+      detail: {
+        title: 'Spill Gjett spionen online',
+        heroDesc: 'Et spill om spørsmål, bluffing og én skjult spion. Klarer gruppen å avsløre dem — eller vil spionen navngi stedet først?',
+        introTitle: 'Hva er Gjett spionen?',
+        intro0: 'I starten av hver runde får hver spiller et hemmelig sted og en rolle der — bortsett fra spionen, som bare vet at de er spion og prøver å finne ut hvor alle er.',
+        intro1: 'Gruppen stiller hverandre spørsmål for å finne den rare fuglen. Spionen kan blande seg inn og overleve avstemningen — eller ta en risiko og gjette stedet for en stor poengbonus.',
+        step1Title: 'Opprett et lobby',
+        step1Desc: 'Åpne et rom og inviter gruppen med en kode eller lenke.',
+        step2Title: 'Få din rolle',
+        step2Desc: 'Alle ser stedet og sin rolle. Spionen ser bare at de er spion.',
+        step3Title: 'Still smarte spørsmål',
+        step3Desc: 'Still spørsmål etter tur. Vanlige spillere prøver å avsløre spionen; spionen prøver å blande seg inn.',
+        step4Title: 'Stem eller gjett',
+        step4Desc: 'Gruppen kan kalle en avstemning når som helst. Spionen kan også gjette stedet tidlig — riktig gjett gir 500 poeng, feil gjett avslutter runden.',
+        benefitsTitle: 'Hvorfor spille Gjett spionen på Boardly?',
+        benefit1: 'Enkelt å starte med en delt romlenke.',
+        benefit2: 'Perfekt for grupper, fester og korte pauser.',
+        benefit3: 'Fungerer i alle moderne nettlesere.',
+        benefit4: 'Gratis å spille som gjest.',
+      },
       lobbies: {
         title: 'Gjett spionen',
         subtitle: 'Bli med i et spill eller opprett din egen lobby!',
@@ -452,6 +509,31 @@ const no = {
       name: 'Tre på rad',
       description: 'Enkelt og raskt spill. Få tre på rad for å vinne!',
       difficulty: 'Lett',
+      ribbon: {
+        desc: 'En rask klassiker for to. Spill med en venn eller start en rask kamp når du bare har et minutt.',
+        tag: 'Strategi',
+        time: '5 min',
+      },
+      detail: {
+        title: 'Spill Tre på rad online',
+        heroDesc: 'En ren nettversjon av den klassiske X og O-spillet. Inviter en venn, legg til en robot og spill en rask kamp i nettleseren.',
+        introTitle: 'Hva er Tre på rad?',
+        intro0: 'Tre på rad er et spill for to på et 3×3-rutenett. Spillerne plasserer X og O etter tur, og den første som lager en full rad, kolonne eller diagonal, vinner.',
+        intro1: 'På Boardly kan du spille med en venn, legge til en robot eller bruke kampmoduset når én rask runde ikke er nok.',
+        step1Title: 'Opprett eller bli med i et lobby',
+        step1Desc: 'Åpne et rom og del koden med motstanderen din.',
+        step2Title: 'Velg venn eller robot',
+        step2Desc: 'Inviter en annen spiller eller legg til en robot når du vil spille med en gang.',
+        step3Title: 'Plasser merket ditt',
+        step3Desc: 'Velg tomme celler på brettet etter tur.',
+        step4Title: 'Vinn linjen',
+        step4Desc: 'Få tre merker på rad før motstanderen gjør det.',
+        benefitsTitle: 'Hvorfor spille Tre på rad på Boardly?',
+        benefit1: 'Raske rom for kjappe kamper.',
+        benefit2: 'Robotstøtte for solospilling.',
+        benefit3: 'Kampmoduset for best-av-serier.',
+        benefit4: 'Gratis å spille som gjest.',
+      },
       lobbies: {
         title: 'Tre på rad lobbyer',
         subtitle: 'Bli med i et spill eller opprett din egen lobby!',
@@ -525,6 +607,31 @@ const no = {
       name: 'Hukommelse',
       description: 'Finn alle matchende par. Test hukommelsen din!',
       difficulty: 'Lett',
+      ribbon: {
+        desc: 'Vend kort, husk posisjoner og match par på lett, middels eller vanskelig brett.',
+        tag: 'Kort',
+        time: '10 min',
+      },
+      detail: {
+        title: 'Spill Hukommelse online',
+        heroDesc: 'Vend kort, finn matchende par og test hukommelsen mot venner på et rent flerspillerbrett.',
+        introTitle: 'Hva er Hukommelse?',
+        intro0: 'Hukommelse, også kalt Finn par, er et kortspill der alle kort starter med baksiden opp. I løpet av turen snur en spiller to kort og prøver å finne et par.',
+        intro1: 'Hvis kortene matcher, scorer spilleren paret. Hvis ikke, snues kortene tilbake og alle prøver å huske hvor de var.',
+        step1Title: 'Opprett eller bli med i et lobby',
+        step1Desc: 'Velg vanskelighetsgrad og inviter venner med romkoden.',
+        step2Title: 'Vend to kort',
+        step2Desc: 'Avslør to baksidevendte kort i løpet av turen din.',
+        step3Title: 'Behold parene',
+        step3Desc: 'Matchende par forblir åpne og legges til poengsummen din.',
+        step4Title: 'Finn flest par',
+        step4Desc: 'Når alle kort er matchet, vinner spilleren med høyest poengsum.',
+        benefitsTitle: 'Hvorfor spille Hukommelse på Boardly?',
+        benefit1: 'Tre vanskelighetsgrader for ulike grupper.',
+        benefit2: 'Brettet oppdateres live for alle spillere.',
+        benefit3: 'Enkle kontroller som fungerer godt på mobil.',
+        benefit4: 'Gratis å spille som gjest.',
+      },
       lobbies: {
         title: 'Hukommelse-lobbyer',
         subtitle: 'Bli med i et spill eller opprett din egen lobby!',
@@ -684,7 +791,7 @@ const no = {
         host: 'Vert',
         waiting: 'Venter',
         playing: 'Spiller',
-        full: 'Full',
+        full: 'Fullt',
         newGame: 'NYTT SPILL',
       },
     },
@@ -1094,6 +1201,7 @@ const no = {
     stats: {
       title: 'Statistikk',
       gamesPlayed: 'Spill spilt',
+      gamesCompleted: 'Fullførte spill',
       gamesWon: 'Spill vunnet',
       winRate: 'Vinnrate',
       dashboard: {
@@ -1621,12 +1729,17 @@ const no = {
     conversation: 'Samtale',
     noQuestionsYet: 'Ingen spørsmål stilt ennå.',
     questionPrefix: 'S:',
-    answerPrefix: 'A:',
+    answerPrefix: 'Sv:',
     decidingQuestion: '{{player}} tenker på et spørsmål.',
     waitingForQuestioner: 'Venter på neste spiller...',
     targetLabel: 'Mål: {{player}}.',
     waitingForAnswer: 'Venter på svar fra {{player}}.',
     startVoting: 'Avslutt runden og start avstemning',
+    guessLocation: 'Gjett stedet',
+    guessLocationWarning: 'Feil gjett avslutter runden — vanlige spillere vinner. Riktig gjett gir spionen +500 poeng.',
+    guessLocationConfirm: 'Bekreft gjett',
+    guessCorrect: '{{player}} gjettet stedet riktig!',
+    guessWrong: '{{player}} gjettet feil — de sa "{{guess}}".',
     rules: {
       title: 'Hvordan spille',
       setup: 'Oppsett',
@@ -1704,7 +1817,7 @@ const no = {
     round: 'Runde {{current}} / {{total}}',
     eliminated: 'Du er eliminert',
     eliminatedAt: 'Eliminert i runde {{round}}',
-    strikes: '{{count}} / {{max}} strikes',
+    strikes: '{{count}} / {{max}} forsøk',
     wins: '{{name}} vinner!',
     playAgain: 'Spill igjen',
     lastPlayerStanding: 'Siste spiller igjen!',

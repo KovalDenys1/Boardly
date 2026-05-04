@@ -15,11 +15,11 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
     return () => clearTimeout(timer)
   }, [onClose, duration])
 
-  const typeStyles = {
-    success: 'bg-green-500 text-white',
-    error: 'bg-red-500 text-white',
-    info: 'bg-blue-500 text-white',
-    warning: 'bg-yellow-500 text-gray-900',
+  const typeStyles: Record<string, React.CSSProperties> = {
+    success: { background: '#2D6A4F', color: 'white' },
+    error: { background: 'var(--bd-coral)', color: 'white' },
+    info: { background: 'var(--bd-ink)', color: 'white' },
+    warning: { background: 'var(--bd-sun)', color: 'var(--bd-ink)' },
   }
 
   const icons = {
@@ -31,7 +31,8 @@ export default function Toast({ message, type = 'info', onClose, duration = 3000
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in-right ${typeStyles[type]}`}
+      className="fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-slide-in-right"
+      style={typeStyles[type]}
       role="alert"
     >
       <span className="text-xl font-bold">{icons[type]}</span>

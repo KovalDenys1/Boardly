@@ -42,12 +42,11 @@ export default function BotMoveOverlay({
   const currentStep = steps[currentStepIndex]
 
   useEffect(() => {
-    // Auto-complete when all steps are shown
     if (currentStepIndex >= steps.length - 1 && onComplete) {
       const timer = setTimeout(() => {
         setVisible(false)
         onComplete()
-      }, 1500) // Wait 1.5s on last step before closing
+      }, 1500)
       return () => clearTimeout(timer)
     }
   }, [currentStepIndex, steps.length, onComplete])
@@ -60,11 +59,37 @@ export default function BotMoveOverlay({
         return (
           <div className="flex items-center" style={{ gap: `clamp(10px, 1vw, 16px)` }}>
             <div className="flex" style={{ gap: `clamp(3px, 0.3vw, 5px)` }}>
-              <div className="bg-blue-400 rounded-full animate-bounce" style={{ width: `clamp(6px, 0.6vw, 10px)`, height: `clamp(6px, 0.6vw, 10px)`, animationDelay: '0ms' }}></div>
-              <div className="bg-blue-400 rounded-full animate-bounce" style={{ width: `clamp(6px, 0.6vw, 10px)`, height: `clamp(6px, 0.6vw, 10px)`, animationDelay: '150ms' }}></div>
-              <div className="bg-blue-400 rounded-full animate-bounce" style={{ width: `clamp(6px, 0.6vw, 10px)`, height: `clamp(6px, 0.6vw, 10px)`, animationDelay: '300ms' }}></div>
+              <div
+                className="rounded-full animate-bounce"
+                style={{
+                  width: `clamp(6px, 0.6vw, 10px)`,
+                  height: `clamp(6px, 0.6vw, 10px)`,
+                  background: 'var(--bd-sun)',
+                  animationDelay: '0ms',
+                }}
+              />
+              <div
+                className="rounded-full animate-bounce"
+                style={{
+                  width: `clamp(6px, 0.6vw, 10px)`,
+                  height: `clamp(6px, 0.6vw, 10px)`,
+                  background: 'var(--bd-sun)',
+                  animationDelay: '150ms',
+                }}
+              />
+              <div
+                className="rounded-full animate-bounce"
+                style={{
+                  width: `clamp(6px, 0.6vw, 10px)`,
+                  height: `clamp(6px, 0.6vw, 10px)`,
+                  background: 'var(--bd-sun)',
+                  animationDelay: '300ms',
+                }}
+              />
             </div>
-            <p className="text-gray-700 dark:text-gray-300" style={{ fontSize: `clamp(14px, 1.4vw, 20px)` }}>{currentStep.message}</p>
+            <p style={{ fontSize: `clamp(14px, 1.4vw, 20px)`, color: 'var(--bd-ink-soft)' }}>
+              {currentStep.message}
+            </p>
           </div>
         )
 
@@ -73,7 +98,7 @@ export default function BotMoveOverlay({
           <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
             <div className="flex items-center" style={{ gap: `clamp(6px, 0.6vw, 10px)` }}>
               <span className="animate-spin" style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}>🎲</span>
-              <p className="font-semibold text-gray-800 dark:text-gray-200" style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>
+              <p className="font-semibold" style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, color: 'var(--bd-ink)' }}>
                 {currentStep.message}
               </p>
             </div>
@@ -82,13 +107,15 @@ export default function BotMoveOverlay({
                 {currentStep.data.dice.map((die, index) => (
                   <div
                     key={index}
-                    className="bg-white dark:bg-gray-700 rounded-lg shadow-lg flex items-center justify-center font-bold text-gray-800 dark:text-white border-gray-300 dark:border-gray-600 animate-bounce-in"
+                    className="rounded-lg shadow-lg flex items-center justify-center font-bold animate-bounce-in"
                     style={{
                       width: `clamp(40px, 4vw, 60px)`,
                       height: `clamp(40px, 4vw, 60px)`,
                       fontSize: `clamp(18px, 1.8vw, 28px)`,
-                      borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-                      animationDelay: `${index * 50}ms`
+                      background: 'var(--bd-bg)',
+                      border: `clamp(1.5px, 0.15vw, 2.5px) solid var(--bd-line)`,
+                      color: 'var(--bd-ink)',
+                      animationDelay: `${index * 50}ms`,
                     }}
                   >
                     {die}
@@ -104,7 +131,7 @@ export default function BotMoveOverlay({
           <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
             <div className="flex items-center" style={{ gap: `clamp(6px, 0.6vw, 10px)` }}>
               <span style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}>🤔</span>
-              <p className="font-semibold text-gray-800 dark:text-gray-200" style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>
+              <p className="font-semibold" style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, color: 'var(--bd-ink)' }}>
                 {currentStep.message}
               </p>
             </div>
@@ -115,16 +142,17 @@ export default function BotMoveOverlay({
                   return (
                     <div
                       key={index}
-                      className={`rounded-lg shadow-lg flex items-center justify-center font-bold transition-all ${
-                        isHeld
-                          ? 'bg-yellow-400 dark:bg-yellow-500 border-yellow-600 dark:border-yellow-700 scale-110 ring-2 ring-yellow-500'
-                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 opacity-50'
-                      }`}
+                      className="rounded-lg shadow-lg flex items-center justify-center font-bold transition-all"
                       style={{
                         width: `clamp(40px, 4vw, 60px)`,
                         height: `clamp(40px, 4vw, 60px)`,
                         fontSize: `clamp(18px, 1.8vw, 28px)`,
-                        borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
+                        background: isHeld ? 'var(--bd-sun)' : 'var(--bd-bg)',
+                        border: `clamp(1.5px, 0.15vw, 2.5px) solid ${isHeld ? '#E6B040' : 'var(--bd-line)'}`,
+                        color: 'var(--bd-ink)',
+                        opacity: isHeld ? 1 : 0.5,
+                        transform: isHeld ? 'scale(1.1)' : 'scale(1)',
+                        outline: isHeld ? '2px solid var(--bd-sun)' : 'none',
                       }}
                     >
                       {die}
@@ -134,7 +162,7 @@ export default function BotMoveOverlay({
               </div>
             )}
             {currentStep.data?.held && currentStep.data.held.length > 0 && (
-              <p className="text-center text-gray-600 dark:text-gray-400" style={{ fontSize: `clamp(11px, 1vw, 14px)` }}>
+              <p className="text-center" style={{ fontSize: `clamp(11px, 1vw, 14px)`, color: 'var(--bd-ink-muted)' }}>
                 Holding {currentStep.data.held.length} {currentStep.data.held.length === 1 ? 'die' : 'dice'}
               </p>
             )}
@@ -146,30 +174,31 @@ export default function BotMoveOverlay({
           <div style={{ display: 'flex', flexDirection: 'column', gap: `clamp(10px, 1vh, 16px)` }}>
             <div className="flex items-center" style={{ gap: `clamp(6px, 0.6vw, 10px)` }}>
               <span style={{ fontSize: `clamp(24px, 2.5vw, 36px)` }}>📊</span>
-              <p className="font-semibold text-gray-800 dark:text-gray-200" style={{ fontSize: `clamp(16px, 1.6vw, 24px)` }}>
+              <p className="font-semibold" style={{ fontSize: `clamp(16px, 1.6vw, 24px)`, color: 'var(--bd-ink)' }}>
                 {currentStep.message}
               </p>
             </div>
             {currentStep.data?.category && currentStep.data?.score !== undefined && (
               <div
-                className="bg-green-100 dark:bg-green-900 rounded-lg animate-pulse"
+                className="rounded-xl animate-pulse"
                 style={{
                   padding: `clamp(12px, 1.2vh, 20px)`,
-                  borderWidth: `clamp(1.5px, 0.15vw, 2.5px)`,
-                  borderColor: 'rgb(34 197 94)', // green-500
+                  background: '#D1FAE5',
+                  border: `clamp(1.5px, 0.15vw, 2.5px) solid #22C55E`,
                 }}
               >
                 <p
-                  className="font-bold text-green-800 dark:text-green-200 text-center"
-                  style={{ fontSize: `clamp(18px, 1.8vw, 28px)` }}
+                  className="font-bold text-center"
+                  style={{ fontSize: `clamp(18px, 1.8vw, 28px)`, color: '#166534' }}
                 >
                   {CATEGORY_DISPLAY_NAMES[currentStep.data.category as YahtzeeCategory] || currentStep.data.category}
                 </p>
                 <p
-                  className="font-bold text-green-600 dark:text-green-400 text-center"
+                  className="font-bold text-center"
                   style={{
                     fontSize: `clamp(22px, 2.2vw, 36px)`,
                     marginTop: `clamp(6px, 0.6vh, 10px)`,
+                    color: '#16A34A',
                   }}
                 >
                   +{currentStep.data.score} points
@@ -180,19 +209,24 @@ export default function BotMoveOverlay({
         )
 
       default:
-        return <p className="text-lg text-gray-700 dark:text-gray-300">{currentStep.message}</p>
+        return (
+          <p style={{ fontSize: '1.125rem', color: 'var(--bd-ink-soft)' }}>
+            {currentStep.message}
+          </p>
+        )
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
       <div
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl mx-4 animate-scale-in border-blue-500 dark:border-blue-600"
+        className="rounded-2xl shadow-2xl mx-4 animate-scale-in"
         style={{
           padding: `clamp(24px, 2.4vh, 40px)`,
           maxWidth: 'min(560px, 90vw)',
           width: '100%',
-          borderWidth: `clamp(3px, 0.3vw, 5px)`,
+          background: 'var(--bd-card-warm)',
+          border: `clamp(3px, 0.3vw, 5px) solid var(--bd-sun)`,
         }}
       >
         {/* Header */}
@@ -205,8 +239,8 @@ export default function BotMoveOverlay({
         >
           <span style={{ fontSize: `clamp(32px, 3.5vw, 48px)` }}>🤖</span>
           <h2
-            className="font-bold text-gray-900 dark:text-white"
-            style={{ fontSize: `clamp(20px, 2vw, 32px)` }}
+            className="font-bold"
+            style={{ fontSize: `clamp(20px, 2vw, 32px)`, color: 'var(--bd-ink)' }}
           >
             {botName}
           </h2>
@@ -215,22 +249,24 @@ export default function BotMoveOverlay({
         {/* Progress Bar */}
         <div style={{ marginBottom: `clamp(20px, 2vh, 32px)` }}>
           <div
-            className="w-full bg-gray-200 dark:bg-gray-700 rounded-full"
-            style={{ height: `clamp(6px, 0.6vh, 10px)` }}
+            className="w-full rounded-full"
+            style={{ height: `clamp(6px, 0.6vh, 10px)`, background: 'var(--bd-line)' }}
           >
             <div
-              className="bg-blue-500 dark:bg-blue-600 rounded-full transition-all duration-500"
+              className="rounded-full transition-all duration-500"
               style={{
                 width: `${((currentStepIndex + 1) / steps.length) * 100}%`,
                 height: `clamp(6px, 0.6vh, 10px)`,
+                background: 'var(--bd-ink)',
               }}
             />
           </div>
           <p
-            className="text-center text-gray-500 dark:text-gray-400"
+            className="text-center"
             style={{
               fontSize: `clamp(10px, 0.9vw, 12px)`,
               marginTop: `clamp(6px, 0.6vh, 10px)`,
+              color: 'var(--bd-ink-muted)',
             }}
           >
             Step {currentStepIndex + 1} of {steps.length}

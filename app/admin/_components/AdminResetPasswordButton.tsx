@@ -43,7 +43,7 @@ export default function AdminResetPasswordButton({ userId }: { userId: string })
             }
           })
         }}
-        className="rounded-md bg-blue-600/20 px-2.5 py-1 text-xs font-semibold text-blue-200 hover:bg-blue-600/30 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-md px-2.5 py-1 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60" style={{ background: "#FFC44D20", color: "#FFC44D" }}
       >
         {isPending ? 'Generating...' : 'Reset password'}
       </button>

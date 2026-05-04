@@ -9,7 +9,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
   const { code } = await params
 
   let gameName = 'Board Game'
-  let gameIcon = '🎲'
   let hostName = 'Host'
   let playerCount = 0
   let maxPlayers = 4
@@ -37,7 +36,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
       const meta = getGameMetadata(lobby.gameType)
       if (meta) {
         gameName = meta.name
-        gameIcon = meta.icon
       }
       hostName = lobby.creator?.username || 'Host'
       maxPlayers = lobby.maxPlayers
@@ -51,7 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: '#FBF6EE',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -60,117 +58,126 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
           justifyContent: 'center',
           fontFamily: 'system-ui, sans-serif',
           position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        {/* dot pattern */}
+        {/* Dot grid */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage:
-              'radial-gradient(circle at 25px 25px, rgba(255,255,255,0.1) 2%, transparent 0%), radial-gradient(circle at 75px 75px, rgba(255,255,255,0.1) 2%, transparent 0%)',
-            backgroundSize: '100px 100px',
-            opacity: 0.3,
+            backgroundImage: 'radial-gradient(circle, #1F1B1618 1.5px, transparent 1.5px)',
+            backgroundSize: '32px 32px',
           }}
         />
+
+        {/* Decorative blobs */}
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 360, height: 360, borderRadius: '50%', background: '#FF6B5B22', display: 'flex' }} />
+        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 280, height: 280, borderRadius: '50%', background: '#FFC44D22', display: 'flex' }} />
 
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '28px',
+            gap: 0,
             zIndex: 1,
             padding: '0 80px',
           }}
         >
-          {/* game icon */}
+          {/* Logo mark */}
           <div
             style={{
-              fontSize: '100px',
+              width: 80,
+              height: 80,
+              borderRadius: 20,
+              background: '#1F1B16',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(255,255,255,0.15)',
-              borderRadius: '50%',
-              width: '180px',
-              height: '180px',
+              boxShadow: '5px 5px 0 #FF6B5B',
+              marginBottom: 32,
             }}
           >
-            {gameIcon}
+            <span style={{ fontSize: 48, fontWeight: 900, color: '#FFC44D', lineHeight: 1 }}>B</span>
           </div>
 
-          {/* headline */}
+          {/* Headline */}
           <div
             style={{
-              fontSize: '64px',
-              fontWeight: 'bold',
-              color: 'white',
+              fontSize: 68,
+              fontWeight: 900,
+              color: '#1F1B16',
               textAlign: 'center',
-              letterSpacing: '-1px',
-              textShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              letterSpacing: '-2px',
+              lineHeight: 1.1,
+              marginBottom: 20,
             }}
           >
             {found ? `Join ${gameName}` : 'Join a Game'}
           </div>
 
-          {/* sub-info */}
+          {/* Sub-info */}
           {found ? (
-            <div style={{ display: 'flex', gap: '32px' }}>
+            <div style={{ display: 'flex', gap: 20, marginBottom: 12 }}>
               <div
                 style={{
-                  fontSize: '26px',
-                  color: 'rgba(255,255,255,0.9)',
-                  background: 'rgba(255,255,255,0.15)',
+                  fontSize: 26,
+                  color: '#1F1B16',
+                  background: '#F2E9D8',
                   padding: '12px 28px',
-                  borderRadius: '50px',
-                  border: '1px solid rgba(255,255,255,0.25)',
+                  borderRadius: 999,
+                  border: '1.5px solid #1F1B1620',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: 8,
+                  fontWeight: 600,
                 }}
               >
-                👤 {hostName}
+                {hostName}&apos;s room
               </div>
               <div
                 style={{
-                  fontSize: '26px',
-                  color: 'rgba(255,255,255,0.9)',
-                  background: 'rgba(255,255,255,0.15)',
+                  fontSize: 26,
+                  color: '#1F1B16',
+                  background: '#F2E9D8',
                   padding: '12px 28px',
-                  borderRadius: '50px',
-                  border: '1px solid rgba(255,255,255,0.25)',
+                  borderRadius: 999,
+                  border: '1.5px solid #1F1B1620',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: 8,
+                  fontWeight: 600,
                 }}
               >
-                🧑‍🤝‍🧑 {playerCount}/{maxPlayers} players
+                {playerCount}/{maxPlayers} players
               </div>
             </div>
           ) : (
             <div
               style={{
-                fontSize: '32px',
-                color: 'rgba(255,255,255,0.75)',
+                fontSize: 32,
+                color: '#4A3F33',
                 textAlign: 'center',
+                marginBottom: 12,
               }}
             >
-              Play Board Games Online with Friends
+              Play board games online with friends
             </div>
           )}
+        </div>
 
-          {/* branding */}
-          <div
-            style={{
-              fontSize: '24px',
-              color: 'rgba(255,255,255,0.7)',
-              fontWeight: '500',
-              marginTop: '12px',
-            }}
-          >
-            boardly.online
-          </div>
+        {/* Bottom branding */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 36,
+            fontSize: 22,
+            fontWeight: 600,
+            color: '#8A7A66',
+          }}
+        >
+          boardly.online
         </div>
       </div>
     ),

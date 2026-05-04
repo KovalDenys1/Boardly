@@ -227,8 +227,8 @@ export default function ProfilePage() {
       },
       {
         id: 'games',
-        label: t('profile.stats.gamesPlayed'),
-        value: String(profileSummary?.gamesPlayed ?? 0),
+        label: t('profile.stats.gamesCompleted'),
+        value: String(profileSummary?.achievementStats?.completedGamesCount ?? 0),
         accent: 'bg-bd-mint text-bd-mint-deep',
       },
       {
@@ -244,7 +244,7 @@ export default function ProfilePage() {
         accent: 'bg-bd-lav text-[#7867e8]',
       },
     ],
-    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.gamesPlayed, t]
+    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t]
   )
 
   const fetchProfileSummary = useCallback(async () => {
@@ -1449,7 +1449,7 @@ export default function ProfilePage() {
 
   return (
     <div className="page-shell bg-bd-bg text-bd-ink">
-      <div className="relative flex-1 overflow-y-auto min-h-0 bg-[radial-gradient(circle_at_12%_8%,rgba(255,196,77,0.18),transparent_35%),radial-gradient(circle_at_88%_14%,rgba(155,140,255,0.16),transparent_40%),radial-gradient(circle_at_50%_100%,rgba(79,201,166,0.14),transparent_50%)]">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden min-h-0 bg-[radial-gradient(circle_at_12%_8%,rgba(255,196,77,0.18),transparent_35%),radial-gradient(circle_at_88%_14%,rgba(155,140,255,0.16),transparent_40%),radial-gradient(circle_at_50%_100%,rgba(79,201,166,0.14),transparent_50%)]">
         <div className="pointer-events-none absolute right-[-4rem] top-24 h-44 w-44 rounded-full bg-bd-lav/10" />
         <div className="pointer-events-none absolute left-[-3rem] top-[34rem] h-36 w-36 rotate-12 rounded-[2rem] bg-bd-mint/10" />
       <div className="relative max-w-7xl mx-auto px-4 pt-5 sm:px-6 sm:pt-7 lg:px-8 pb-10">
@@ -1579,9 +1579,6 @@ export default function ProfilePage() {
 
                     <div className="shrink-0 lg:w-[220px]">
                       <div className="flex h-full flex-col justify-center gap-3 rounded-3xl border border-bd-line bg-bd-card-warm/85 p-5 text-center dark:border-slate-700 dark:bg-slate-800/70">
-                        <p className="font-display text-xl font-bold text-bd-ink dark:text-white">
-                          {t('profile.inline.avatarCaption')}
-                        </p>
                         {canPreviewPublicProfile && (
                           <button
                             type="button"
@@ -1591,7 +1588,7 @@ export default function ProfilePage() {
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
-                              {'->'}
+                              →
                             </span>
                           </button>
                         )}

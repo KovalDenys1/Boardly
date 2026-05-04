@@ -15,7 +15,7 @@ export interface LobbyCardData {
   creator: {
     username: string | null
     email: string | null
-  }
+  } | null
   games: {
     id: string
     status: string
@@ -49,14 +49,14 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
   const isPlaying = activeGame?.status === 'playing'
   const playerCount = activeGame?._count?.players ?? 0
   const canSpectate = Boolean(lobby.allowSpectators && isPlaying)
-  const creatorName = lobby.creator.username || t('lobby.ownerFallback')
+  const creatorName = lobby.creator?.username || t('lobby.ownerFallback')
   const game = getGamePresentation(lobby.gameType)
   const occupancyPercent = lobby.maxPlayers > 0 ? Math.min(100, Math.round((playerCount / lobby.maxPlayers) * 100)) : 0
 
   return (
     <article
       style={{
-        background: 'white', borderRadius: 18, border: '1.5px solid var(--bd-line)',
+        background: 'var(--bd-card-warm)', borderRadius: 18, border: '1.5px solid var(--bd-line)',
         boxShadow: '0 4px 14px rgba(31,27,22,0.07)', padding: '16px 20px',
         display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
         transition: 'transform 0.15s, box-shadow 0.15s', animationDelay: `${index * 0.05}s`,

@@ -73,7 +73,7 @@ export default async function AdminAuditLogsPage({
               placeholder="Target type..."
               className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2 text-sm text-white placeholder:text-slate-500"
             />
-            <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            <button className="rounded-xl px-3 py-2 text-sm font-semibold text-white" style={{ background: "var(--bd-sun)", color: "var(--bd-ink)" }}>
               Filter
             </button>
           </form>

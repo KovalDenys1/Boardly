@@ -28,19 +28,19 @@ export async function sendVerificationEmail(email: string, token: string, userna
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎮 Boardly</h1>
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #333; margin-top: 0;">Hi ${displayName}! 👋</h2>
               <p>Thanks for signing up for Boardly! Please click the button below to verify your email address and activate your account.</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${verifyUrl}" target="_blank" rel="noopener noreferrer" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${verifyUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   ✓ Verify Email
                 </a>
               </div>
               <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="color: #667eea; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
+              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${verifyUrl}</p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
@@ -87,8 +87,8 @@ export async function sendUnverifiedAccountWarningEmail(
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">⚠️ Boardly</h1>
+            <div style="background: #FFC44D; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #1F1B16; margin: 0; font-size: 28px; font-weight: 900;">⚠️ boardly</h1>
             </div>
             <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #111827; margin-top: 0;">Hi ${username || 'there'}!</h2>
@@ -147,18 +147,18 @@ export async function sendPasswordResetEmail(email: string, token: string) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎲 Boardly</h1>
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <p style="margin-top: 0;">We received a request to reset your password. Click the button below to create a new password.</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${resetUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Reset Password
                 </a>
               </div>
               <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="color: #667eea; word-break: break-all; font-size: 12px;">${resetUrl}</p>
+              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${resetUrl}</p>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
               <p style="color: #999; font-size: 12px; margin: 0;">
                 This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
@@ -197,13 +197,13 @@ export async function sendWelcomeEmail(email: string, name: string) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎲 Boardly</h1>
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #333; margin-top: 0;">Welcome, ${name}! 🎉</h2>
               <p>Your email has been verified successfully. You're all set to start playing!</p>
-              <h3 style="color: #667eea;">What's next?</h3>
+              <h3 style="color: #FF6B5B;">What's next?</h3>
               <ul style="color: #666;">
                 <li>Create your first lobby and invite friends</li>
                 <li>Join existing games with lobby codes</li>
@@ -211,13 +211,13 @@ export async function sendWelcomeEmail(email: string, name: string) {
                 <li>Customize your profile</li>
               </ul>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.NEXTAUTH_URL}/games" target="_blank" rel="noopener noreferrer" style="background: #667eea; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                <a href="${process.env.NEXTAUTH_URL}/games" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                   Start Playing
                 </a>
               </div>
               <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
               <p style="color: #999; font-size: 12px; margin: 0;">
-                Need help? Check out our <a href="${process.env.NEXTAUTH_URL}" style="color: #667eea;">website</a> or reply to this email.
+                Need help? Check out our <a href="${process.env.NEXTAUTH_URL}" style="color: #FF6B5B;">website</a> or reply to this email.
               </p>
             </div>
           </body>
@@ -255,8 +255,8 @@ export async function sendAccountDeletionEmail(email: string, token: string, use
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">⚠️ Boardly</h1>
+            <div style="background: #FF6B5B; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 900;">⚠️ boardly</h1>
             </div>
             <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
               <h2 style="color: #333; margin-top: 0;">Hi ${username},</h2>

@@ -21,12 +21,25 @@ const GAME_HISTORY_STATUS_KEYS = {
   cancelled: 'profile.gameHistory.cancelled',
 } as const satisfies Record<string, TranslationKeys>
 
-const primarySurfaceClassName =
-  'rounded-3xl border border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/70'
-const secondarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-slate-50/85 dark:border-slate-700/60 dark:bg-slate-800/60'
-const tertiarySurfaceClassName =
-  'rounded-2xl border border-slate-200/70 bg-white/85 dark:border-slate-700/60 dark:bg-slate-900/70'
+const cardStyle: React.CSSProperties = {
+  borderRadius: 24,
+  border: '1.5px solid var(--bd-line)',
+  background: 'var(--bd-card-warm)',
+  boxShadow: '0 1px 4px #1F1B160A',
+  overflow: 'hidden',
+}
+
+const innerCardStyle: React.CSSProperties = {
+  borderRadius: 16,
+  border: '1.5px solid var(--bd-line)',
+  background: 'var(--bd-bg2)',
+}
+
+const innerCardAltStyle: React.CSSProperties = {
+  borderRadius: 16,
+  border: '1.5px solid var(--bd-line)',
+  background: 'var(--bd-bg)',
+}
 
 interface Player {
   id: string
@@ -168,12 +181,15 @@ export default function GameResultsModal({
     const categories: YahtzeeCategory[] = [...ALL_CATEGORIES]
 
     return (
-      <div className={`${primarySurfaceClassName} overflow-hidden`}>
-        <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-4 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+      <div style={cardStyle}>
+        <div
+          className="px-5 py-4 sm:px-6"
+          style={{ borderBottom: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+        >
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
             {t('profile.gameResults.scorecard')}
           </p>
-          <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+          <h3 className="mt-2 text-lg font-bold tracking-tight" style={{ color: 'var(--bd-ink)' }}>
             {t('profile.gameResults.scorecard')}
           </h3>
         </div>
@@ -182,14 +198,18 @@ export default function GameResultsModal({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] border-collapse text-sm">
               <thead>
-                <tr className="bg-slate-100/90 dark:bg-slate-800/80">
-                  <th className="border border-slate-200 px-3 py-2 text-left font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                <tr style={{ background: 'var(--bd-bg2)' }}>
+                  <th
+                    className="px-3 py-2 text-left font-semibold"
+                    style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
+                  >
                     {t('profile.gameResults.category')}
                   </th>
                   {game.players.map((player, index) => (
                     <th
                       key={player.id}
-                      className="border border-slate-200 px-3 py-2 text-center font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                      className="px-3 py-2 text-center font-semibold"
+                      style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
                     >
                       {getPlayerLabel(player, index)}
                     </th>
@@ -200,9 +220,12 @@ export default function GameResultsModal({
                 {categories.map((category) => (
                   <tr
                     key={category}
-                    className="bg-white/80 transition-colors hover:bg-slate-50 dark:bg-slate-900/40 dark:hover:bg-slate-900/70"
+                    style={{ background: 'var(--bd-bg)' }}
                   >
-                    <td className="border border-slate-200 px-3 py-2 font-medium capitalize text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                    <td
+                      className="px-3 py-2 font-medium capitalize"
+                      style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
+                    >
                       {t(`yahtzee.categories.${category}`)}
                     </td>
                     {game.players.map((player) => {
@@ -215,7 +238,8 @@ export default function GameResultsModal({
                       return (
                         <td
                           key={player.id}
-                          className="border border-slate-200 px-3 py-2 text-center text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                          className="px-3 py-2 text-center"
+                          style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
                         >
                           {score !== null && score !== undefined ? score : '-'}
                         </td>
@@ -223,14 +247,18 @@ export default function GameResultsModal({
                     })}
                   </tr>
                 ))}
-                <tr className="bg-amber-50/90 font-bold dark:bg-amber-500/10">
-                  <td className="border border-slate-200 px-3 py-2 text-slate-900 dark:border-slate-700 dark:text-white">
+                <tr style={{ background: '#FFC44D22', fontWeight: 700 }}>
+                  <td
+                    className="px-3 py-2"
+                    style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
+                  >
                     {t('profile.gameResults.total')}
                   </td>
                   {game.players.map((player) => (
                     <td
                       key={player.id}
-                      className="border border-slate-200 px-3 py-2 text-center text-slate-900 dark:border-slate-700 dark:text-white"
+                      className="px-3 py-2 text-center"
+                      style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
                     >
                       {getScoreValue(player)}
                     </td>
@@ -336,28 +364,39 @@ export default function GameResultsModal({
           <LoadingSpinner />
         </div>
       ) : error ? (
-        <div className="rounded-3xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-orange-50 p-5 text-rose-800 shadow-sm dark:border-rose-500/30 dark:from-rose-500/10 dark:to-orange-500/5 dark:text-rose-200">
+        <div
+          className="rounded-3xl p-5 text-sm font-medium"
+          style={{
+            border: '1.5px solid #FF6B5B60',
+            background: '#FF6B5B10',
+            color: 'var(--bd-coral)',
+          }}
+        >
           {error}
         </div>
       ) : game ? (
         <div className="space-y-5">
-          <div className={`${primarySurfaceClassName} overflow-hidden`}>
-            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
+          <div style={cardStyle}>
+            <div
+              className="px-5 py-5 sm:px-6"
+              style={{ borderBottom: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+            >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
                     {t('profile.gameResults.overview')}
                   </p>
                   <h3
-                    className="mt-3 truncate text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
+                    className="mt-3 truncate text-2xl font-bold tracking-tight"
+                    style={{ color: 'var(--bd-ink)' }}
                     title={game.lobbyName}
                   >
                     {game.lobbyName}
                   </h3>
-                  <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                  <p className="mt-2 text-sm font-medium" style={{ color: 'var(--bd-ink)' }}>
                     {summaryText}
                   </p>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  <p className="mt-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                     {t('profile.gameResults.playedOn')} {formatDate(game.createdAt)}
                   </p>
                 </div>
@@ -370,7 +409,10 @@ export default function GameResultsModal({
                   >
                     {formatStatusLabel(game.status)}
                   </span>
-                  <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <span
+                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                    style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
+                  >
                     {formatGameTypeLabel(game.gameType)}
                   </span>
                 </div>
@@ -378,15 +420,15 @@ export default function GameResultsModal({
             </div>
 
             <div className="grid gap-5 p-5 xl:grid-cols-[1.05fr_0.95fr] sm:p-6">
-              <div className={`${secondarySurfaceClassName} flex h-full flex-col justify-between p-5`}>
+              <div className="flex h-full flex-col justify-between p-5" style={innerCardStyle}>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
                     {t('profile.gameResults.replay')}
                   </p>
-                  <h3 className="mt-3 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  <h3 className="mt-3 text-xl font-bold tracking-tight" style={{ color: 'var(--bd-ink)' }}>
                     {t('profile.gameResults.replay')}
                   </h3>
-                  <p className="mt-2 max-w-xl text-sm text-slate-600 dark:text-slate-400">
+                  <p className="mt-2 max-w-xl text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                     {game.hasReplay
                       ? t('profile.gameResults.replayReady')
                       : game.status === 'abandoned'
@@ -407,23 +449,28 @@ export default function GameResultsModal({
                     }
                   }}
                   disabled={!game.hasReplay}
-                  className="mt-5 inline-flex items-center justify-center rounded-2xl bg-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-800 dark:disabled:text-slate-400"
+                  className="mt-5 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed"
+                  style={{
+                    background: game.hasReplay ? 'var(--bd-ink)' : 'var(--bd-line)',
+                    color: game.hasReplay ? 'white' : 'var(--bd-ink-muted)',
+                    boxShadow: game.hasReplay ? '0 3px 0 var(--bd-coral)' : 'none',
+                  }}
                 >
                   {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
                 </button>
               </div>
 
-              <div className={`${secondarySurfaceClassName} p-5`}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+              <div className="p-5" style={innerCardStyle}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
                   {t('profile.gameResults.quickFacts')}
                 </p>
                 <dl className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
                   {quickFacts.map((fact) => (
-                    <div key={fact.label} className={`${tertiarySurfaceClassName} min-h-[5.5rem] p-4`}>
-                      <dt className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    <div key={fact.label} className="min-h-[5.5rem] p-4" style={innerCardAltStyle}>
+                      <dt className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--bd-ink-muted)' }}>
                         {fact.label}
                       </dt>
-                      <dd className="mt-3 text-base font-semibold text-slate-900 dark:text-white">
+                      <dd className="mt-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>
                         {fact.value}
                       </dd>
                     </div>
@@ -433,15 +480,18 @@ export default function GameResultsModal({
             </div>
           </div>
 
-          <div className={`${primarySurfaceClassName} overflow-hidden`}>
-            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-5 py-4 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+          <div style={cardStyle}>
+            <div
+              className="px-5 py-4 sm:px-6"
+              style={{ borderBottom: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
                 {t('profile.gameResults.rankings')}
               </p>
-              <h3 className="mt-2 text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+              <h3 className="mt-2 text-lg font-bold tracking-tight" style={{ color: 'var(--bd-ink)' }}>
                 {t('profile.gameResults.rankings')}
               </h3>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                 {t('profile.gameResults.standingsDescription')}
               </p>
             </div>
@@ -450,14 +500,18 @@ export default function GameResultsModal({
               {rankedPlayers.map((player, index) => (
                 <div
                   key={player.id}
-                  className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+                  className="flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  style={
                     player.isWinner
-                      ? 'border-yellow-300 bg-yellow-50/90 text-yellow-900 dark:border-yellow-500/40 dark:bg-yellow-500/10 dark:text-yellow-100'
-                      : 'border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
-                  }`}
+                      ? { border: '1.5px solid #FFC44D80', background: '#FFC44D15', color: 'var(--bd-ink)' }
+                      : { border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink)' }
+                  }
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-sm font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <span
+                      className="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold"
+                      style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
+                    >
                       #{index + 1}
                     </span>
                     <div className="min-w-0">
@@ -490,7 +544,7 @@ export default function GameResultsModal({
           {renderYahtzeeScorecard()}
         </div>
       ) : (
-        <div className="py-14 text-center text-slate-500 dark:text-slate-400">
+        <div className="py-14 text-center" style={{ color: 'var(--bd-ink-muted)' }}>
           {t('errors.gameNotFound')}
         </div>
       )}

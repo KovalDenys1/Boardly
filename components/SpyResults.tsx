@@ -9,6 +9,7 @@ interface SpyResultsProps {
   eliminatedId: string
   spyId: string
   location: string
+  spyGuessedLocation?: string
   scores: Record<string, number>
   currentRound: number
   totalRounds: number
@@ -25,6 +26,7 @@ export default function SpyResults({
   eliminatedId,
   spyId,
   location,
+  spyGuessedLocation,
   scores,
   currentRound,
   totalRounds,
@@ -36,10 +38,12 @@ export default function SpyResults({
 }: SpyResultsProps) {
   const { t } = useTranslation()
 
-  const spyWon = eliminatedId !== spyId
+  const wasGuessRound = spyGuessedLocation !== undefined
+  const guessWasCorrect = spyGuessedLocation === location
+  const spyWon = wasGuessRound ? guessWasCorrect : eliminatedId !== spyId
   const eliminatedPlayer = players.find((p) => p.id === eliminatedId)
   const spyPlayer = players.find((p) => p.id === spyId)
-  const noElimination = eliminatedId.length === 0
+  const noElimination = !wasGuessRound && eliminatedId.length === 0
 
   // Count votes for each player
   const voteCounts: Record<string, number> = {}
@@ -67,7 +71,13 @@ export default function SpyResults({
           <h2 className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
-          {!noElimination ? (
+          {wasGuessRound ? (
+            <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">
+              {guessWasCorrect
+                ? t('spy.guessCorrect', { player: spyPlayer?.name })
+                : t('spy.guessWrong', { player: spyPlayer?.name, guess: spyGuessedLocation })}
+            </p>
+          ) : !noElimination ? (
             <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">
               {spyWon
                 ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })

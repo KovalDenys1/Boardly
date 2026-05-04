@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GameDetailPage from '../components/GameDetailPage'
+import TicTacToeDetailContent from './TicTacToeDetailContent'
 
 export const metadata: Metadata = {
   title: 'Play Tic Tac Toe Online Free - Multiplayer',
@@ -82,40 +82,7 @@ export default function TicTacToePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <GameDetailPage
-        gameName="Tic Tac Toe"
-        title="Play Tic Tac Toe Online"
-        description="A clean online version of the classic X and O game. Invite a friend, add a bot, and play a quick match in the browser."
-        icon="X"
-        iconLabel="Tic Tac Toe board"
-        iconVariant="tic-tac-toe"
-        accent="var(--bd-sun)"
-        lobbiesHref="/games/tic-tac-toe/lobbies"
-        facts={[
-          { label: 'Players', value: '2' },
-          { label: 'Price', value: 'Free' },
-          { label: 'Download', value: 'None' },
-          { label: 'Bot support', value: 'Yes' },
-        ]}
-        introTitle="What is Tic Tac Toe?"
-        intro={[
-          'Tic Tac Toe is a two-player game on a 3x3 grid. Players take turns placing X and O, and the first player to make a full row, column, or diagonal wins.',
-          'On Boardly, you can play with a friend, add a bot, or use match mode when one quick round is not enough.',
-        ]}
-        steps={[
-          { title: 'Create or join a lobby', desc: 'Open a room and share the code with your opponent.' },
-          { title: 'Choose friend or bot', desc: 'Invite another player or add a bot when you want to play right away.' },
-          { title: 'Place your mark', desc: 'Take turns choosing empty cells on the board.' },
-          { title: 'Win the line', desc: 'Get three marks in a row before your opponent does.' },
-        ]}
-        benefitsTitle="Why play Tic Tac Toe on Boardly?"
-        benefits={[
-          'Fast rooms for quick matches.',
-          'Bot support for solo play.',
-          'Match mode for best-of series.',
-          'Free to play as a guest.',
-        ]}
-      />
+      <TicTacToeDetailContent />
     </>
   )
 }

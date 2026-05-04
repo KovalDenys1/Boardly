@@ -85,20 +85,20 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
         {loading ? (
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0" />
+              <div className="w-14 h-14 rounded-full shrink-0" style={{ background: 'var(--bd-line)' }} />
               <div className="space-y-2 flex-1">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                <div className="h-4 rounded w-2/3" style={{ background: 'var(--bd-line)' }} />
+                <div className="h-3 rounded w-1/3" style={{ background: 'var(--bd-line)' }} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                <div key={i} className="h-16 rounded-xl" style={{ background: 'var(--bd-line)' }} />
               ))}
             </div>
           </div>
         ) : !data ? (
-          <p className="text-center text-gray-500 dark:text-gray-400 py-6 text-sm">
+          <p className="text-center py-6 text-sm" style={{ color: 'var(--bd-ink-muted)' }}>
             Profile unavailable
           </p>
         ) : (
@@ -109,20 +109,27 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                 <img
                   src={data.image}
                   alt=""
-                  className="w-14 h-14 rounded-full object-cover ring-2 ring-gray-100 dark:ring-gray-700 shrink-0"
+                  className="w-14 h-14 rounded-full object-cover shrink-0"
+                  style={{ outline: '2px solid var(--bd-line)' }}
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                <div
+                  className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl shrink-0"
+                  style={{ background: 'var(--bd-ink)', color: 'var(--bd-sun)' }}
+                >
                   {initials}
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-gray-900 dark:text-white text-base truncate">
+                  <span className="font-bold text-base truncate" style={{ color: 'var(--bd-ink)' }}>
                     {data.username ?? 'Unknown'}
                   </span>
                   {data.isGuest && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300">
+                    <span
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                      style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
+                    >
                       Guest
                     </span>
                   )}
@@ -132,7 +139,8 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                     href={`/u/${data.publicProfileId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:underline"
+                    className="text-xs hover:underline"
+                    style={{ color: 'var(--bd-coral)' }}
                     onClick={onClose}
                   >
                     View full profile →
@@ -151,10 +159,11 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
                 ].map(({ label, value }) => (
                   <div
                     key={label}
-                    className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 text-center"
+                    className="rounded-xl p-3 text-center"
+                    style={{ background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)' }}
                   >
-                    <div className="text-xl font-bold text-gray-900 dark:text-white">{value}</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                    <div className="text-xl font-bold" style={{ color: 'var(--bd-ink)' }}>{value}</div>
+                    <div className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--bd-ink-muted)' }}>
                       {label}
                     </div>
                   </div>
@@ -164,9 +173,9 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
 
             {/* Favourite game */}
             {!data.isGuest && gameLabel && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                 <span>Favourite:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="font-semibold" style={{ color: 'var(--bd-ink)' }}>
                   {gameLabel.emoji} {gameLabel.name}
                 </span>
               </div>
@@ -176,18 +185,19 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
             {!data.isGuest && data.relation !== 'self' && status === 'authenticated' && (
               <div>
                 {data.relation === 'friends' ? (
-                  <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
+                  <p className="text-sm font-semibold" style={{ color: '#22C55E' }}>
                     ✓ Friends
                   </p>
                 ) : data.relation === 'request_sent' ? (
-                  <p className="text-sm text-blue-500 font-semibold">📨 Request sent</p>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-ink-soft)' }}>📨 Request sent</p>
                 ) : data.relation === 'request_received' ? (
-                  <p className="text-sm text-orange-500 font-semibold">📩 Friend request received</p>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--bd-sun)' }}>📩 Friend request received</p>
                 ) : data.relation === 'can_send' ? (
                   <button
                     onClick={handleAddFriend}
                     disabled={friendState === 'loading'}
-                    className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors"
+                    className="w-full py-2 px-4 text-white rounded-xl text-sm font-semibold transition-opacity disabled:opacity-60 hover:opacity-80"
+                    style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
                   >
                     {friendState === 'loading' ? 'Sending…' : '+ Add Friend'}
                   </button>

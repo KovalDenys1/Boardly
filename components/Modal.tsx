@@ -79,12 +79,14 @@ export default function Modal({
       
       {/* Modal Content */}
       <div
-        className={`relative z-10 flex w-full flex-col bg-white shadow-2xl animate-scale-in dark:border-gray-700 dark:bg-gray-800 ${
+        className={`relative z-10 flex w-full flex-col shadow-2xl animate-scale-in ${
           mobileFullscreen
             ? 'h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:max-h-[92vh] sm:rounded-3xl sm:border'
             : 'max-h-[90vh] rounded-2xl border'
         }`}
         style={{
+          background: 'var(--bd-card-warm)',
+          borderColor: 'var(--bd-line)',
           maxWidth: maxWidthStyles[maxWidth],
           borderWidth: `clamp(1px, 0.1vw, 2px)`,
         }}
@@ -92,23 +94,23 @@ export default function Modal({
         {/* Header */}
         {title && (
           <div
-            className={`flex flex-shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-700 ${
+            className={`flex flex-shrink-0 items-center justify-between border-b ${
               mobileFullscreen ? 'px-4 py-4 sm:px-6 sm:py-5' : ''
             }`}
-            style={mobileFullscreen ? undefined : { padding: `clamp(12px, 1.2vh, 20px)` }}
+            style={mobileFullscreen ? { borderColor: 'var(--bd-line)' } : { padding: `clamp(12px, 1.2vh, 20px)`, borderColor: 'var(--bd-line)' }}
           >
             <h2
-              className={`font-bold text-gray-900 dark:text-white ${
+              className={`font-bold ${
                 mobileFullscreen ? 'pr-4 text-lg sm:text-2xl' : ''
               }`}
-              style={mobileFullscreen ? undefined : { fontSize: `clamp(16px, 1.6vw, 24px)` }}
+              style={{ ...(mobileFullscreen ? {} : { fontSize: `clamp(16px, 1.6vw, 24px)` }), color: 'var(--bd-ink)' }}
             >
               {title}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-              style={{ padding: `clamp(3px, 0.3vh, 5px)` }}
+              className="transition-colors rounded-xl"
+              style={{ padding: `clamp(3px, 0.3vh, 5px)`, color: 'var(--bd-ink-muted)' }}
               aria-label="Close modal"
             >
               <svg

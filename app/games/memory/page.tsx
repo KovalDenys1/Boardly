@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GameDetailPage from '../components/GameDetailPage'
+import MemoryDetailContent from './MemoryDetailContent'
 
 export const metadata: Metadata = {
   title: 'Play Memory Card Game Online Free - Multiplayer',
@@ -82,39 +82,7 @@ export default function MemoryPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <GameDetailPage
-        gameName="Memory"
-        title="Play Memory Online"
-        description="Flip cards, find matching pairs, and test your memory against friends in a clean multiplayer board."
-        icon="🧠"
-        iconLabel="Brain"
-        accent="var(--bd-mint)"
-        lobbiesHref="/games/memory/lobbies"
-        facts={[
-          { label: 'Players', value: '2–4' },
-          { label: 'Price', value: 'Free' },
-          { label: 'Download', value: 'None' },
-          { label: 'Difficulty', value: '3 levels' },
-        ]}
-        introTitle="What is Memory?"
-        intro={[
-          'Memory, also called Matching Pairs, is a card game where all cards start face-down. On each turn, a player flips two cards and tries to find a match.',
-          'If the cards match, that player scores the pair. If they do not match, the cards turn back over and everyone tries to remember where they were.',
-        ]}
-        steps={[
-          { title: 'Create or join a lobby', desc: 'Pick a difficulty and invite friends with the room code.' },
-          { title: 'Flip two cards', desc: 'Reveal two face-down cards on your turn.' },
-          { title: 'Keep the matches', desc: 'Matched pairs stay open and add to your score.' },
-          { title: 'Find the most pairs', desc: 'When all cards are matched, the highest score wins.' },
-        ]}
-        benefitsTitle="Why play Memory on Boardly?"
-        benefits={[
-          'Three difficulty levels for different groups.',
-          'Live board updates for every player.',
-          'Simple controls that work well on mobile.',
-          'Free to play as a guest.',
-        ]}
-      />
+      <MemoryDetailContent />
     </>
   )
 }

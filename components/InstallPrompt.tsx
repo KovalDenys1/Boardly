@@ -86,14 +86,23 @@ export default function InstallPrompt() {
 
   return (
     <div className="fixed inset-x-3 bottom-[max(0.75rem,calc(0.75rem+env(safe-area-inset-bottom)))] z-[70] sm:inset-x-auto sm:right-4 sm:bottom-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:max-w-sm">
-      <div className="rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl backdrop-blur dark:border-blue-900/60 dark:bg-gray-900/95">
+      <div
+        className="rounded-2xl p-4 shadow-2xl"
+        style={{
+          background: 'var(--bd-card-warm)',
+          border: '1.5px solid var(--bd-line)',
+        }}
+      >
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white">
-            <span aria-hidden="true">▣</span>
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
+            style={{ background: 'var(--bd-ink)', boxShadow: '3px 3px 0 var(--bd-coral)' }}
+          >
+            <span aria-hidden="true" style={{ fontWeight: 900, color: 'var(--bd-sun)', fontSize: 18 }}>B</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('installPrompt.title')}</p>
-            <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+            <p className="text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>{t('installPrompt.title')}</p>
+            <p className="mt-1 text-xs" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('installPrompt.description')}
             </p>
             <div className="mt-3 flex gap-2">
@@ -101,14 +110,20 @@ export default function InstallPrompt() {
                 type="button"
                 onClick={handleInstall}
                 disabled={isPrompting}
-                className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                className="rounded-xl px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-60"
+                style={{ background: 'var(--bd-ink)' }}
               >
                 {isPrompting ? t('installPrompt.installing') : t('installPrompt.install')}
               </button>
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                className="rounded-xl px-3 py-2 text-xs font-semibold transition"
+                style={{
+                  border: '1.5px solid var(--bd-line)',
+                  color: 'var(--bd-ink-soft)',
+                  background: 'var(--bd-bg2)',
+                }}
               >
                 {t('installPrompt.notNow')}
               </button>
