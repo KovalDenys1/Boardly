@@ -1858,7 +1858,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .memory-side-stack {
@@ -1866,6 +1866,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   min-width: 0;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
 }
 
 .memory-board-panel {
@@ -1878,8 +1879,8 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-chat-panel {
-  min-height: 380px;
-  height: min(520px, calc(100vh - 320px));
+  flex: 1;
+  min-height: 280px;
   overflow: hidden;
   background: #fff;
   border: 1.5px solid var(--bd-line);
@@ -2006,6 +2007,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
 
   .memory-chat-panel {
+    flex: none;
     height: 420px;
   }
 }
