@@ -191,6 +191,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const [chatMinimized, setChatMinimized] = useState(true) // Chat minimized by default
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [someoneTyping, setSomeoneTyping] = useState(false)
+  const [waitingRoomTab, setWaitingRoomTab] = useState<'players' | 'chat'>('players')
 
   // Bot visualization state
   const [botMoveSteps, setBotMoveSteps] = useState<BotMoveStep[]>([])
@@ -603,7 +604,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             )
 
             // Safety check: ensure player exists and has required data
-            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp) {
+            const playerIsBot = !!(player?.user?.bot || player?.bot)
+            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp && !playerIsBot) {
               const turnNumber = getYahtzeeTurnNumberFromScorecard(
                 newEngine instanceof YahtzeeGame ? newEngine.getScorecard(lastRoll.playerId) : null
               )
@@ -628,8 +630,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
                   held: normalizeHeldIndexes(lastRoll.held),
-                  isBot: !!(player.user?.bot || player.bot),
-                  botId: player.user?.bot ? player.userId : null,
+                  isBot: false,
+                  botId: null,
                   timestamp: lastRoll.timestamp,
                 }
 
@@ -1123,8 +1125,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       try {
         const scoredEngine = await scoreHandler(bestCategory, autoActionContext)
         if (!scoredEngine) {
-          clientLogger.log('⏰ Auto-score skipped by server guard')
-          return false
+          // Server returned 409 (TURN_ALREADY_ENDED) — turn already advanced server-side.
+          // Reconcile to pull fresh state so the client unsticks immediately.
+          clientLogger.log('⏰ Auto-score skipped by server guard, reconciling state')
+          try { await reconcileWithServerSnapshot() } catch {}
+          return true
         }
 
         const appliedEngine = scoredEngine instanceof YahtzeeGame ? scoredEngine : null
@@ -1484,6 +1489,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     (isGuest && p.userId === guestId)
   )
   const isGameStarted = game?.status === 'playing'
+  const isSpectator = isGameStarted && !isInGame
   const finishedYahtzeeEngine =
     lobby?.gameType === 'yahtzee' &&
     gameEngine instanceof YahtzeeGame &&
@@ -1845,18 +1851,70 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onLeave={handleLeaveLobby}
           />
 
-          {/* Scrollable player list */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <WaitingRoom
-              game={game}
-              lobby={lobby}
-              gameEngine={gameEngine}
-              minPlayers={minPlayersRequired}
-              getCurrentUserId={getCurrentUserId}
-              canManageBots={canStartGame}
-              onKickBot={kickBot}
-              onProfileClick={setProfileUserId}
-            />
+          {/* Tab selector (mobile only) */}
+          <div className="flex border-b sm:hidden" style={{ borderColor: 'var(--bd-line)' }}>
+            {(['players', 'chat'] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setWaitingRoomTab(tab)
+                  if (tab === 'chat') setUnreadMessageCount(0)
+                }}
+                className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  waitingRoomTab === tab
+                    ? 'border-b-2 border-bd-ink text-bd-ink'
+                    : 'text-bd-ink-soft'
+                }`}
+              >
+                {tab === 'players' ? '👥' : '💬'}
+                {tab === 'players' ? 'Players' : 'Chat'}
+                {tab === 'chat' && unreadMessageCount > 0 && (
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-bd-coral px-1 text-[11px] font-bold text-white">
+                    {unreadMessageCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Scrollable player list / chat */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {/* Players list - hidden on mobile when chat tab active */}
+            <div className={`h-full overflow-y-auto ${waitingRoomTab === 'chat' ? 'hidden sm:block' : ''}`}>
+              <WaitingRoom
+                game={game}
+                lobby={lobby}
+                gameEngine={gameEngine}
+                minPlayers={minPlayersRequired}
+                getCurrentUserId={getCurrentUserId}
+                canManageBots={canStartGame}
+                onKickBot={kickBot}
+                onProfileClick={setProfileUserId}
+              />
+            </div>
+            {/* Chat - mobile only, inside card */}
+            {waitingRoomTab === 'chat' && (
+              <div className="h-full sm:hidden">
+                <Chat
+                  messages={chatMessages}
+                  onSendMessage={(message) => {
+                    emitWhenConnected('send-chat-message', {
+                      lobbyCode: code,
+                      message,
+                      userId: getCurrentUserId(),
+                      username: getCurrentUserName(),
+                    })
+                  }}
+                  currentUserId={getCurrentUserId()}
+                  isMinimized={false}
+                  onToggleMinimize={() => {}}
+                  unreadCount={0}
+                  someoneTyping={someoneTyping}
+                  fullScreen={true}
+                />
+              </div>
+            )}
           </div>
 
           <WaitingRoomActions
@@ -1887,6 +1945,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             overscrollBehavior: 'none',
           }}
         >
+          {/* Spectator banner */}
+          {isSpectator && (
+            <div className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
+              <span>👁</span>
+              <span>{t('lobby.spectatingBanner')}</span>
+            </div>
+          )}
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
             <YahtzeeResults
               results={analyzeResults(
@@ -2045,7 +2110,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Desktop: Grid Layout */}
                 <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full overflow-hidden">
+                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
                     <GameBoard
                       gameEngine={gameEngine}
                       game={game}
@@ -2127,12 +2192,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       />
                     </div>
 
-                    {/* Roll History - 60% of space */}
-                    {rollHistory.length > 0 && (
-                      <div className="flex-1 min-h-0 overflow-hidden">
-                        <RollHistory entries={rollHistory} />
-                      </div>
-                    )}
+                    {/* Roll History - 60% of space. Always rendered to prevent layout jump on first roll. */}
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <RollHistory entries={rollHistory} />
+                    </div>
                   </div>
                 </div>
 
@@ -2227,12 +2290,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         selectedPlayerId={selectedPlayerId || undefined}
                       />
 
-                      {rollHistory.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Roll History</h3>
-                          <RollHistory entries={rollHistory} />
-                        </div>
-                      )}
+                      <div className="mt-4">
+                        <RollHistory entries={rollHistory} />
+                      </div>
                     </div>
                   </MobileTabPanel>
 
@@ -2268,29 +2328,27 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
               {/* Desktop Chat - Minimized Button */}
               <div className="hidden md:block">
-                {isInGame && (
-                  <Chat
-                    messages={chatMessages}
-                    onSendMessage={(message) => {
-                      emitWhenConnected('send-chat-message', {
-                        lobbyCode: code,
-                        message,
-                        userId: getCurrentUserId(),
-                        username: getCurrentUserName(),
-                      })
-                    }}
-                    currentUserId={getCurrentUserId()}
-                    isMinimized={chatMinimized}
-                    onToggleMinimize={() => {
-                      setChatMinimized(!chatMinimized)
-                      if (chatMinimized) {
-                        setUnreadMessageCount(0)
-                      }
-                    }}
-                    unreadCount={unreadMessageCount}
-                    someoneTyping={someoneTyping}
-                  />
-                )}
+                <Chat
+                  messages={chatMessages}
+                  onSendMessage={(message) => {
+                    emitWhenConnected('send-chat-message', {
+                      lobbyCode: code,
+                      message,
+                      userId: getCurrentUserId(),
+                      username: getCurrentUserName(),
+                    })
+                  }}
+                  currentUserId={getCurrentUserId()}
+                  isMinimized={chatMinimized}
+                  onToggleMinimize={() => {
+                    setChatMinimized(!chatMinimized)
+                    if (chatMinimized) {
+                      setUnreadMessageCount(0)
+                    }
+                  }}
+                  unreadCount={unreadMessageCount}
+                  someoneTyping={someoneTyping}
+                />
               </div>
 
               {/* Mobile Bottom Navigation */}
@@ -2369,6 +2427,33 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* Desktop Chat - waiting room (sm+) */}
+      {!isGameStarted && isInGame && (
+        <div className="hidden sm:block">
+          <Chat
+            messages={chatMessages}
+            onSendMessage={(message) => {
+              emitWhenConnected('send-chat-message', {
+                lobbyCode: code,
+                message,
+                userId: getCurrentUserId(),
+                username: getCurrentUserName(),
+              })
+            }}
+            currentUserId={getCurrentUserId()}
+            isMinimized={chatMinimized}
+            onToggleMinimize={() => {
+              setChatMinimized(!chatMinimized)
+              if (chatMinimized) {
+                setUnreadMessageCount(0)
+              }
+            }}
+            unreadCount={unreadMessageCount}
+            someoneTyping={someoneTyping}
+          />
         </div>
       )}
 

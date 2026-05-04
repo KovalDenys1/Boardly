@@ -329,7 +329,7 @@ export default function Chat({
         className={`border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-[24px]'}`}
         style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,248,236,0.9)' }}
       >
-        <div className="flex gap-2.5">
+        <div className="flex items-stretch gap-2.5">
           <div className="relative flex-1">
             <input
               ref={inputRef}
@@ -339,7 +339,7 @@ export default function Chat({
               onKeyDown={handleKeyPress}
               placeholder={t('chat.placeholder')}
               aria-label={t('chat.placeholder')}
-              className="bd-input pr-14 text-sm hover:border-[var(--bd-ink)] focus:ring-2 focus:ring-blue-500"
+              className="bd-input h-full pr-14 text-sm hover:border-[var(--bd-ink)] focus:ring-2 focus:ring-blue-500"
               maxLength={200}
             />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-bd-ink-muted" aria-hidden="true">
@@ -350,7 +350,7 @@ export default function Chat({
             type="submit"
             disabled={!newMessage.trim()}
             aria-label={t('chat.send')}
-            className="bd-btn bd-btn-primary min-w-[64px] justify-center rounded-2xl px-4 py-3 text-sm focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+            className="bd-btn bd-btn-primary justify-center rounded-2xl px-4 text-xl focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
           >
             📤
           </button>
