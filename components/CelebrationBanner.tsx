@@ -15,13 +15,10 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
 
   useEffect(() => {
     if (event) {
-      // Show banner
       setVisible(true)
 
-      // Auto-hide after 2.5 seconds
       const timer = setTimeout(() => {
         setVisible(false)
-        // Wait for fade-out animation, then notify parent
         setTimeout(onComplete, 300)
       }, 2500)
 

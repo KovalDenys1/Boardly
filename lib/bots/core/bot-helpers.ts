@@ -51,8 +51,9 @@ export function botSupportsGame(botType: string | null, gameType: string): boole
         'yahtzee': ['yahtzee'],
         'tic_tac_toe': ['tic_tac_toe'],
         'rock_paper_scissors': ['rock_paper_scissors'],
+        'memory': ['memory'],
         'spy': ['guess_the_spy'],
-        'generic': ['yahtzee', 'tic_tac_toe', 'rock_paper_scissors', 'guess_the_spy'] // Generic bots support all games
+        'generic': ['yahtzee', 'tic_tac_toe', 'rock_paper_scissors', 'guess_the_spy', 'memory'] // Generic bots support all games
     }
 
     return supportMap[botType]?.includes(gameType) ?? false

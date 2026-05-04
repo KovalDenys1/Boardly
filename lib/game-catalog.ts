@@ -89,7 +89,7 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     icon: '🧠',
     minPlayers: 2,
     maxPlayers: 4,
-    supportsBots: false,
+    supportsBots: true,
     translationKey: 'memory',
   },
 }
@@ -204,30 +204,6 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'in-development',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
-  },
-  {
-    id: 'alias',
-    gameType: 'alias',
-    nameKey: 'games.alias.name',
-    emoji: '🗣️',
-    descriptionKey: 'games.alias.description',
-    players: '4-16',
-    difficultyKey: 'games.alias.difficulty',
-    availability: 'in-development',
-    route: '/games/alias/lobbies',
-    color: 'from-orange-400 to-red-500',
-  },
-  {
-    id: 'liars-party',
-    gameType: 'liars_party',
-    nameKey: 'games.liars_party.name',
-    emoji: '🎭',
-    descriptionKey: 'games.liars_party.description',
-    players: '4-12',
-    difficultyKey: 'games.liars_party.difficulty',
-    availability: 'in-development',
-    route: '/games/liars-party/lobbies',
-    color: 'from-rose-500 to-orange-500',
   },
   {
     id: 'guess-my-drawing',
@@ -407,8 +383,6 @@ export function getCatalogGames(options?: {
 
     const isEnabled =
       enabledExperimental.has(game.id) ||
-      (game.gameType === 'alias' && isAliasEnabled()) ||
-      (game.gameType === 'liars_party' && isLiarsPartyEnabled()) ||
       (game.gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())

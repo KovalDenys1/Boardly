@@ -1,0 +1,49 @@
+name: Migrate Database
+
+"on":
+  push:
+    branches:
+      - develop
+    paths:
+      - "prisma/migrations/**"
+      - "prisma/schema.prisma"
+
+concurrency:
+  group: migrate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Run Prisma Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Prepare Supabase roles
+        run: npm run db:prepare-roles
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Verify migration status
+        run: npm run db:migrate:status

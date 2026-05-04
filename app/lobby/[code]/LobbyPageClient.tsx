@@ -214,6 +214,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return []
   })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
+  const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
   const [yahtzeeResultsHold, setYahtzeeResultsHold] = useState<{ gameId: string; releaseAt: number } | null>(null)
 
   // Mobile tabs state
@@ -1248,6 +1249,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       })
   }, [isConnected, isReconnecting, status, isGuest, guestToken, guestId, username, code])
 
+  useEffect(() => {
+    if (lobby?.gameType === 'memory' && game?.status === 'playing') {
+      setUnreadMessageCount(0)
+    }
+  }, [chatMessages.length, game?.status, lobby?.gameType])
+
   // Handle bot overlay progression
   useEffect(() => {
     if (!showingBotOverlay || botMoveSteps.length === 0) return
@@ -2055,7 +2062,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       onRollDice={handleRollDice}
                       onToggleHold={handleToggleHold}
                       onScore={handleScore}
-                      onCelebrationComplete={() => setCelebrationEvent(null)}
+                      onCelebrationComplete={handleCelebrationComplete}
                     />
                   </div>
 
@@ -2158,7 +2165,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         onRollDice={handleRollDice}
                         onToggleHold={handleToggleHold}
                         onScore={handleScore}
-                        onCelebrationComplete={() => setCelebrationEvent(null)}
+                        onCelebrationComplete={handleCelebrationComplete}
                         onReviewScorecard={() => setMobileActiveTab('scorecard')}
                         showReviewScorecardButton={true}
                       />
@@ -2333,8 +2340,21 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               players={Array.isArray(game.players) ? game.players : []}
               state={gameEngine.getState()}
               currentUserId={getCurrentUserId()}
+              turnTimerLimit={turnTimerLimit}
               canStartGame={!!canStartGame}
               onPlayAgain={handleStartGame}
+              onLeave={() => setShowLeaveConfirmModal(true)}
+              chatMessages={chatMessages}
+              onSendChatMessage={(message) => {
+                emitWhenConnected('send-chat-message', {
+                  lobbyCode: code,
+                  message,
+                  userId: getCurrentUserId(),
+                  username: getCurrentUserName(),
+                })
+              }}
+              chatUnreadCount={unreadMessageCount}
+              someoneTyping={someoneTyping}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">

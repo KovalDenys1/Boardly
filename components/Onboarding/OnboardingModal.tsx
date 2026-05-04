@@ -6,7 +6,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { getPublicRegisteredGameTypes } from '@/lib/public-game-access'
+import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-game-access'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
 
 export function OnboardingModal() {
@@ -16,11 +16,8 @@ export function OnboardingModal() {
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const botGames = useMemo(
-    () =>
-      getPublicRegisteredGameTypes()
-        .filter(hasBotSupport)
-        .map((type) => ({ type, meta: getGameMetadata(type)! })),
+  const games = useMemo(
+    () => getPublicRegisteredGameTypes().map((type) => ({ type, meta: getGameMetadata(type)! })),
     []
   )
 
@@ -30,19 +27,25 @@ export function OnboardingModal() {
     if (!selectedGame || loading) return
     setLoading(true)
     try {
-      const lobbyRes = await fetchWithGuest('/api/lobby', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameType: selectedGame, maxPlayers: 2 }),
-      })
-      if (!lobbyRes.ok) throw new Error('Failed to create lobby')
-      const { lobby } = (await lobbyRes.json()) as { lobby: { code: string } }
+      if (hasBotSupport(selectedGame)) {
+        const lobbyRes = await fetchWithGuest('/api/lobby', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ gameType: selectedGame, maxPlayers: 2 }),
+        })
+        if (!lobbyRes.ok) throw new Error('Failed to create lobby')
+        const { lobby } = (await lobbyRes.json()) as { lobby: { code: string } }
 
-      const botRes = await fetchWithGuest(`/api/lobby/${lobby.code}/add-bot`, { method: 'POST' })
-      if (!botRes.ok) throw new Error('Failed to add bot')
+        const botRes = await fetchWithGuest(`/api/lobby/${lobby.code}/add-bot`, { method: 'POST' })
+        if (!botRes.ok) throw new Error('Failed to add bot')
 
-      await completeOnboarding()
-      router.push(`/lobby/${lobby.code}`)
+        await completeOnboarding()
+        router.push(`/lobby/${lobby.code}`)
+      } else {
+        const route = getGameLobbiesRoute(selectedGame)
+        await completeOnboarding()
+        router.push(route ?? '/games')
+      }
     } catch {
       showToast.error('common.error')
       setLoading(false)
@@ -51,45 +54,55 @@ export function OnboardingModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6">
-        <div className="text-center mb-6">
-          <span className="text-5xl">🎲</span>
-          <h2 className="mt-3 text-2xl font-extrabold text-slate-900 dark:text-white">
+      <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 shadow-2xl px-7 py-8">
+
+        {/* Header */}
+        <div className="mb-7 text-center">
+          <div className="mb-3 text-5xl">🎲</div>
+          <h2
+            className="text-[22px] font-extrabold text-bd-ink dark:text-white"
+            style={{ fontFamily: 'var(--bd-font-display)' }}
+          >
             {t('onboarding.title')}
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-1.5 text-[13px] text-bd-ink-muted dark:text-slate-400">
             {t('onboarding.subtitle')}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 mb-6">
-          {botGames.map(({ type, meta }) => (
+        {/* Game list */}
+        <div className="mb-6 flex flex-col gap-2.5">
+          {games.map(({ type, meta }) => (
             <button
               key={type}
               onClick={() => setSelectedGame(type)}
-              className={`flex items-center gap-4 rounded-2xl border-2 px-5 py-4 text-left transition-colors ${
+              className={`flex items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3.5 text-left transition-all ${
                 selectedGame === type
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
-                  : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50'
+                  ? 'border-[var(--bd-lav)] bg-[rgba(155,140,255,0.08)]'
+                  : 'border-[var(--bd-line)] bg-white dark:bg-slate-800/60 dark:border-slate-700 hover:border-[var(--bd-lav-mid)] dark:hover:border-slate-500'
               }`}
             >
-              <span className="text-3xl">{meta.icon}</span>
-              <span className="font-semibold text-slate-900 dark:text-white">{meta.name}</span>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--bd-bg2)] dark:bg-slate-700 text-2xl">
+                {meta.icon}
+              </span>
+              <span className="text-[15px] font-semibold text-bd-ink dark:text-white">{meta.name}</span>
             </button>
           ))}
         </div>
 
+        {/* CTA */}
         <button
           onClick={handleStart}
           disabled={!selectedGame || loading}
-          className="w-full rounded-2xl bg-blue-600 px-6 py-3 font-bold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-2xl py-3.5 text-[15px] font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ background: 'var(--bd-lav)' }}
         >
           {loading ? t('onboarding.starting') : t('onboarding.startPlaying')}
         </button>
 
         <button
           onClick={skipOnboarding}
-          className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          className="mt-4 w-full text-center text-[13px] text-bd-ink-muted hover:text-bd-ink-soft dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
         >
           {t('onboarding.skip')}
         </button>

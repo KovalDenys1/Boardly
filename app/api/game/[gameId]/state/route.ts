@@ -696,7 +696,8 @@ export async function POST(
         }
       } else if (
         game.lobby.gameType === 'tic_tac_toe' ||
-        game.lobby.gameType === 'yahtzee'
+        game.lobby.gameType === 'yahtzee' ||
+        game.lobby.gameType === 'memory'
       ) {
         const currentPlayerId = enginePlayers[authoritativeState.currentPlayerIndex]?.id
         const currentBotPlayer = botPlayers.find((player) => player.userId === currentPlayerId)

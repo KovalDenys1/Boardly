@@ -153,6 +153,24 @@ export default function SpyGameBoard({
     data.currentQuestionerId ? playersById.get(data.currentQuestionerId) : null
   const currentTarget =
     data.currentTargetId ? playersById.get(data.currentTargetId) : null
+  const phaseLabel =
+    phase === SpyGamePhase.WAITING
+      ? t('spy.phases.waiting')
+      : phase === SpyGamePhase.ROLE_REVEAL
+        ? t('spy.phases.roleReveal')
+        : phase === SpyGamePhase.QUESTIONING
+          ? t('spy.phases.questioning')
+          : phase === SpyGamePhase.VOTING
+            ? t('spy.phases.voting')
+            : t('spy.phases.results')
+  const formattedTime = `${Math.floor(timeRemaining / 60)}:${String(timeRemaining % 60).padStart(2, '0')}`
+  const phaseLimit =
+    phase === SpyGamePhase.QUESTIONING
+      ? Number(data.questionTimeLimit || 0)
+      : phase === SpyGamePhase.VOTING
+        ? Number(data.votingTimeLimit || 0)
+        : 0
+  const timerProgress = phaseLimit > 0 ? Math.max(0, Math.min(100, (timeRemaining / phaseLimit) * 100)) : 0
 
   const isMyQuestionTurn =
     !!currentUserId && data.currentQuestionerId === currentUserId
@@ -333,35 +351,55 @@ export default function SpyGameBoard({
   }, [data.phaseStartTime, data.questionTimeLimit, data.votingTimeLimit, phase])
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 p-4 text-white sm:p-6">
-      <div className="mx-auto w-full max-w-6xl space-y-4">
-        <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-bold">{t('spy.gameTitle')}</h2>
-              <p className="text-sm text-indigo-100">
-                Lobby {lobbyCode.toUpperCase()} · {t('spy.round', { current: data.currentRound || 1, total: data.totalRounds || 3 })}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
-                {phase.replace('_', ' ')}
-              </span>
+    <div className="spy-screen">
+      <div className="spy-shell">
+        <header className="spy-header">
+          <div className="min-w-0">
+            <p className="bd-kicker">{t('spy.round', { current: data.currentRound || 1, total: data.totalRounds || 3 })}</p>
+            <h2 className="mt-1 truncate text-2xl font-black text-[var(--bd-ink)]">{t('spy.gameTitle')}</h2>
+            <p className="mt-1 text-sm font-semibold text-[var(--bd-ink-muted)]">Lobby {lobbyCode.toUpperCase()}</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="bd-chip bd-chip-lav">{phaseLabel}</span>
               <button
                 type="button"
                 onClick={() => void refreshAfterAction()}
-                className="rounded-lg bg-white/20 px-3 py-1 text-sm font-medium hover:bg-white/30"
+                className="bd-btn bd-btn-soft px-3 py-2 text-sm"
               >
                 {t('spy.refresh')}
               </button>
             </div>
+            {(phase === SpyGamePhase.QUESTIONING || phase === SpyGamePhase.VOTING) && (
+              <div className="spy-header-timer">
+                <span>{t('spy.timeRemaining', { time: formattedTime })}</span>
+                <span className="spy-header-timer-track">
+                  <span style={{ width: `${timerProgress}%` }} />
+                </span>
+              </div>
+            )}
           </div>
+        </header>
+
+        <div className="spy-phase-rail" aria-hidden="true">
+          {[
+            SpyGamePhase.ROLE_REVEAL,
+            SpyGamePhase.QUESTIONING,
+            SpyGamePhase.VOTING,
+            SpyGamePhase.RESULTS,
+          ].map((entry) => (
+            <span
+              key={entry}
+              className={`spy-phase-dot ${phase === entry ? 'spy-phase-dot-active' : ''}`}
+            />
+          ))}
         </div>
 
         {phase === SpyGamePhase.WAITING && (
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-6 text-center">
-            <h3 className="text-2xl font-bold">{t('spy.phases.waiting')}</h3>
-            <p className="mt-2 text-indigo-100">
+          <div className="spy-panel p-6 text-center">
+            <p className="bd-kicker">{t('spy.phases.waiting')}</p>
+            <h3 className="mt-2 text-2xl font-black text-[var(--bd-ink)]">{t('spy.gameTitle')}</h3>
+            <p className="mt-2 text-sm font-semibold text-[var(--bd-ink-muted)]">
               {isCreator
                 ? t('spy.initializingRound')
                 : t('spy.waitingForCreator')}
@@ -371,7 +409,7 @@ export default function SpyGameBoard({
                 type="button"
                 disabled={isActionLoading}
                 onClick={() => void initializeRound()}
-                className="mt-4 rounded-xl bg-indigo-500 px-4 py-2 font-semibold hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="bd-btn bd-btn-primary mx-auto mt-4 justify-center disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {t('spy.initializeRound')}
               </button>
@@ -393,128 +431,176 @@ export default function SpyGameBoard({
         )}
 
         {phase === SpyGamePhase.ROLE_REVEAL && !roleInfo && (
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-6 text-center">
-            <p className="text-indigo-100">{isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}</p>
+          <div className="spy-panel p-6 text-center">
+            <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">{isRoleLoading ? t('spy.loadingRole') : t('spy.roleUnavailable')}</p>
           </div>
         )}
 
         {phase === SpyGamePhase.QUESTIONING && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <h3 className="text-lg font-semibold">{t('spy.phases.questioning')}</h3>
-              <p className="mt-1 text-sm text-indigo-100">
-                {t('spy.timeRemaining', { time: `${Math.floor(timeRemaining / 60)}:${String(timeRemaining % 60).padStart(2, '0')}` })}
-              </p>
-
-              {isMyQuestionTurn && !data.currentTargetId && (
-                <div className="mt-4 space-y-3">
-                  <label className="block text-sm font-medium">{t('spy.targetPlayer')}</label>
-                  <select
-                    value={questionTargetId}
-                    onChange={(event) => setQuestionTargetId(event.target.value)}
-                    className="w-full rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm"
-                  >
-                    {availableTargets.map((player) => (
-                      <option key={player.id} value={player.id}>
-                        {player.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <label className="block text-sm font-medium">{t('spy.questionLabel')}</label>
-                  <textarea
-                    value={questionText}
-                    onChange={(event) => setQuestionText(event.target.value)}
-                    placeholder={t('spy.askQuestion')}
-                    className="min-h-24 w-full rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm"
-                  />
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={!questionTargetId || !questionText.trim() || isActionLoading}
-                      onClick={() => {
-                        const question = questionText.trim()
-                        if (!question || !questionTargetId) return
-                        setQuestionText('')
-                        void submitAction('ask-question', { targetId: questionTargetId, question })
-                      }}
-                      className="flex-1 rounded-lg bg-indigo-500 px-4 py-2 font-semibold hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {t('spy.askButton')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isActionLoading}
-                      onClick={() => void submitAction('skip-turn')}
-                      className="flex-1 rounded-lg bg-slate-600 px-4 py-2 font-semibold hover:bg-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {t('spy.skipTurn')}
-                    </button>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-4">
+              <section className="spy-panel p-5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="bd-kicker">{t('spy.phases.questioning')}</p>
+                    <h3 className="mt-1 text-xl font-black text-[var(--bd-ink)]">
+                      {currentQuestioner
+                        ? t('spy.currentTurn', { player: currentQuestioner.name })
+                        : t('spy.waitingForQuestioner')}
+                    </h3>
                   </div>
+                  <span className="spy-timer-pill">{t('spy.timeRemaining', { time: formattedTime })}</span>
                 </div>
-              )}
 
-              {shouldAnswerNow && (
-                <div className="mt-4 space-y-3">
-                  <div className="rounded-lg bg-slate-900/60 p-3 text-sm text-indigo-100">
-                    <strong>{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
+                {isMyQuestionTurn && !data.currentTargetId && (
+                  <div className="mt-5 space-y-3">
+                    <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.targetPlayer')}</label>
+                    <select
+                      value={questionTargetId}
+                      onChange={(event) => setQuestionTargetId(event.target.value)}
+                      className="bd-input"
+                    >
+                      {availableTargets.map((player) => (
+                        <option key={player.id} value={player.id}>
+                          {player.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <label className="block text-sm font-bold text-[var(--bd-ink)]">{t('spy.questionLabel')}</label>
+                    <textarea
+                      value={questionText}
+                      onChange={(event) => setQuestionText(event.target.value)}
+                      placeholder={t('spy.askQuestion')}
+                      className="bd-input min-h-28 resize-none"
+                    />
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        disabled={!questionTargetId || !questionText.trim() || isActionLoading}
+                        onClick={() => {
+                          const question = questionText.trim()
+                          if (!question || !questionTargetId) return
+                          setQuestionText('')
+                          void submitAction('ask-question', { targetId: questionTargetId, question })
+                        }}
+                        className="bd-btn bd-btn-primary flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {t('spy.askButton')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isActionLoading}
+                        onClick={() => void submitAction('skip-turn')}
+                        className="bd-btn bd-btn-soft flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {t('spy.skipTurn')}
+                      </button>
+                    </div>
                   </div>
-                  <textarea
-                    value={answerText}
-                    onChange={(event) => setAnswerText(event.target.value)}
-                    placeholder={t('spy.answerQuestion')}
-                    className="min-h-24 w-full rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    disabled={!answerText.trim() || isActionLoading}
-                    onClick={() => {
-                      const answer = answerText.trim()
-                      if (!answer) return
-                      setAnswerText('')
-                      void submitAction('answer-question', { answer })
-                    }}
-                    className="w-full rounded-lg bg-emerald-500 px-4 py-2 font-semibold hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {t('spy.submitAnswer')}
-                  </button>
-                </div>
-              )}
-
-              {!isMyQuestionTurn && !shouldAnswerNow && (
-                <div className="mt-4 rounded-lg bg-slate-900/60 p-3 text-sm text-indigo-100">
-                  {currentQuestioner
-                    ? t('spy.decidingQuestion', { player: currentQuestioner.name })
-                    : t('spy.waitingForQuestioner')}
-                  {currentTarget ? ` ${t('spy.targetLabel', { player: currentTarget.name })}` : ''}
-                </div>
-              )}
-
-              {isMyQuestionTurn && data.currentTargetId && (
-                <div className="mt-4 rounded-lg bg-slate-900/60 p-3 text-sm text-indigo-100">
-                  {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-5">
-              <h3 className="text-lg font-semibold">{t('spy.conversation')}</h3>
-              <div className="mt-3 max-h-96 space-y-2 overflow-y-auto pr-1">
-                {questionHistory.length === 0 && (
-                  <p className="text-sm text-indigo-100">{t('spy.noQuestionsYet')}</p>
                 )}
-                {questionHistory.map((entry) => (
-                  <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-lg bg-slate-900/60 p-3 text-sm">
-                    <p className="font-semibold text-indigo-200">
-                      {entry.askerName} → {entry.targetName}
-                    </p>
-                    <p className="mt-1 text-indigo-100">{t('spy.questionPrefix')} {entry.question}</p>
-                    <p className="mt-1 text-indigo-100">{t('spy.answerPrefix')} {entry.answer}</p>
+
+                {shouldAnswerNow && (
+                  <div className="mt-5 space-y-3">
+                    <div className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-soft)]">
+                      <strong className="text-[var(--bd-ink)]">{t('spy.questionPrompt')}</strong> {data.pendingQuestion}
+                    </div>
+                    <textarea
+                      value={answerText}
+                      onChange={(event) => setAnswerText(event.target.value)}
+                      placeholder={t('spy.answerQuestion')}
+                      className="bd-input min-h-28 resize-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={!answerText.trim() || isActionLoading}
+                      onClick={() => {
+                        const answer = answerText.trim()
+                        if (!answer) return
+                        setAnswerText('')
+                        void submitAction('answer-question', { answer })
+                      }}
+                      className="bd-btn bd-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {t('spy.submitAnswer')}
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+
+                {!isMyQuestionTurn && !shouldAnswerNow && (
+                  <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
+                    {currentQuestioner
+                      ? t('spy.decidingQuestion', { player: currentQuestioner.name })
+                      : t('spy.waitingForQuestioner')}
+                    {currentTarget ? ` ${t('spy.targetLabel', { player: currentTarget.name })}` : ''}
+                  </div>
+                )}
+
+                {isMyQuestionTurn && data.currentTargetId && (
+                  <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">
+                    {t('spy.waitingForAnswer', { player: currentTarget?.name || t('spy.targetPlayer') })}
+                  </div>
+                )}
+              </section>
+
+              <section className="spy-panel p-5">
+                <h3 className="spy-section-title">{t('spy.conversation')}</h3>
+                <div className="mt-3 max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                  {questionHistory.length === 0 && (
+                    <p className="rounded-xl bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">{t('spy.noQuestionsYet')}</p>
+                  )}
+                  {questionHistory.map((entry) => (
+                    <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-xl border border-[var(--bd-line)] bg-white p-3 text-sm">
+                      <p className="font-black text-[var(--bd-ink)]">
+                        {entry.askerName} - {entry.targetName}
+                      </p>
+                      <p className="mt-2 text-[var(--bd-ink-soft)]"><strong>{t('spy.questionPrefix')}</strong> {entry.question}</p>
+                      <p className="mt-1 text-[var(--bd-ink-soft)]"><strong>{t('spy.answerPrefix')}</strong> {entry.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
+
+            <aside className="space-y-4">
+              {roleInfo && (
+                <section className="spy-panel p-4">
+                  <p className="bd-kicker">{t('spy.yourRole')}</p>
+                  <h3 className={`mt-1 text-2xl font-black ${roleInfo.role === 'Spy' ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
+                    {t(roleInfo.role === 'Spy' ? 'spy.roles.spy' : 'spy.roles.regular')}
+                  </h3>
+                  {roleInfo.role === 'Spy' ? (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {roleInfo.possibleCategories?.map((category) => (
+                        <span key={category} className="bd-chip bd-chip-coral py-1 text-[11px]">{category}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2 text-sm font-semibold text-[var(--bd-ink-soft)]">
+                      <p><span className="text-[var(--bd-ink-muted)]">{t('spy.location')}:</span> {roleInfo.location}</p>
+                      <p><span className="text-[var(--bd-ink-muted)]">{t('spy.roleAtLocation')}:</span> {roleInfo.locationRole}</p>
+                    </div>
+                  )}
+                </section>
+              )}
+
+              <section className="spy-panel p-4">
+                <h3 className="spy-section-title">{t('spy.scores')}</h3>
+                <div className="mt-3 space-y-2">
+                  {normalizedPlayers.map((player) => {
+                    const isCurrent = player.id === data.currentQuestionerId
+                    return (
+                      <div key={player.id} className={`spy-player-row ${isCurrent ? 'spy-player-row-active' : ''}`}>
+                        <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
+                        <span className="min-w-0 flex-1 truncate font-bold">{player.name}</span>
+                        <span className="font-black">{scores[player.id] || 0}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            </aside>
           </div>
         )}
 

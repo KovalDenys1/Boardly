@@ -96,6 +96,11 @@ export class MemoryGame extends GameEngine {
       return data.pendingMismatchCardIds.length === 2
     }
 
+    if (move.type === 'timeout-pass') {
+      const currentPlayer = this.state.players[this.state.currentPlayerIndex]
+      return !!currentPlayer && currentPlayer.id === move.playerId
+    }
+
     if (move.type !== 'flip') {
       return false
     }
@@ -132,6 +137,25 @@ export class MemoryGame extends GameEngine {
           card.isFlipped = false
         }
       }
+      data.pendingMismatchCardIds = []
+      data.flippedCardIds = []
+      data.advanceTurnAfterMove = true
+      return
+    }
+
+    if (move.type === 'timeout-pass') {
+      const cardIdsToHide =
+        data.pendingMismatchCardIds.length > 0
+          ? data.pendingMismatchCardIds
+          : data.flippedCardIds
+
+      for (const cardId of cardIdsToHide) {
+        const card = data.cards.find((entry) => entry.id === cardId)
+        if (card && !card.isMatched) {
+          card.isFlipped = false
+        }
+      }
+
       data.pendingMismatchCardIds = []
       data.flippedCardIds = []
       data.advanceTurnAfterMove = true
@@ -205,7 +229,7 @@ export class MemoryGame extends GameEngine {
       return false
     }
 
-    if (move.type === 'resolve-mismatch' && data.advanceTurnAfterMove) {
+    if ((move.type === 'resolve-mismatch' || move.type === 'timeout-pass') && data.advanceTurnAfterMove) {
       data.advanceTurnAfterMove = false
       return true
     }

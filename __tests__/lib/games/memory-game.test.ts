@@ -117,6 +117,29 @@ describe('MemoryGame', () => {
     expect(game.getState().currentPlayerIndex).toBe(1)
   })
 
+  it('passes the turn and hides an unmatched flipped card when the active player times out', () => {
+    const game = new MemoryGame('memory-timeout')
+    game.addPlayer(PLAYER_ONE)
+    game.addPlayer(PLAYER_TWO)
+    expect(game.startGame()).toBe(true)
+
+    restoreWithCards(game, [
+      { id: 'a1', value: 'A', isMatched: false, isFlipped: false },
+      { id: 'a2', value: 'A', isMatched: false, isFlipped: false },
+      { id: 'b1', value: 'B', isMatched: false, isFlipped: false },
+      { id: 'b2', value: 'B', isMatched: false, isFlipped: false },
+    ])
+
+    expect(game.makeMove(buildMove(PLAYER_ONE.id, 'flip', { cardId: 'a1' }))).toBe(true)
+    expect(game.makeMove(buildMove(PLAYER_ONE.id, 'timeout-pass'))).toBe(true)
+
+    const data = getData(game)
+    expect(data.cards.find((card) => card.id === 'a1')?.isFlipped).toBe(false)
+    expect(data.flippedCardIds).toEqual([])
+    expect(data.pendingMismatchCardIds).toEqual([])
+    expect(game.getState().currentPlayerIndex).toBe(1)
+  })
+
   it('finishes game and leaves winner empty for a tie', () => {
     const game = new MemoryGame('memory-tie')
     game.addPlayer(PLAYER_ONE)
