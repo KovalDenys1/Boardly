@@ -10,6 +10,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { useGameTimer } from '../hooks/useGameTimer'
+import { sounds } from '@/lib/sounds'
 
 interface LobbyPlayer {
   id: string
@@ -269,6 +270,7 @@ export default function MemoryGameBoard({
         return
       }
 
+      sounds.play('cardFlip', { force: true })
       void submitMove({
         type: 'flip',
         data: { cardId },
