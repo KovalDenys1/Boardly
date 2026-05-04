@@ -1899,7 +1899,7 @@ const ru = {
   },
   onboarding: {
     title: 'Добро пожаловать в Boardly!',
-    subtitle: 'Выбери игру и сыграй против бота',
+    subtitle: 'Выбери игру и начни играть',
     chooseGame: 'Выбери игру',
     startPlaying: 'Начать играть →',
     starting: 'Запускаем...',

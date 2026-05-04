@@ -1913,7 +1913,7 @@ const uk: Translation = {
   },
   onboarding: {
     title: 'Ласкаво просимо до Boardly!',
-    subtitle: 'Обери гру та зіграй проти бота',
+    subtitle: 'Обери гру та почни грати',
     chooseGame: 'Обери гру',
     startPlaying: 'Почати грати →',
     starting: 'Запускаємо...',

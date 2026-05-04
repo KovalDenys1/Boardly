@@ -1911,7 +1911,7 @@ const en = {
   },
   onboarding: {
     title: 'Welcome to Boardly!',
-    subtitle: 'Pick a game and start playing against a bot',
+    subtitle: 'Pick a game and start playing',
     chooseGame: 'Choose a game',
     startPlaying: 'Start playing →',
     starting: 'Starting...',
