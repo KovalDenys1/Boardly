@@ -60,121 +60,88 @@ export default function SpyResults({
   const isGameOver = currentRound >= totalRounds
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] p-4 sm:p-8">
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-xl border border-white/20">
-        {/* Winner Banner */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4 animate-bounce-in">
-            {spyWon ? '🕵️' : '🎉'}
-          </div>
-          <h2
-            className={`text-4xl font-bold mb-2 ${
-              spyWon ? 'text-red-300' : 'text-green-300'
-            }`}
-          >
+    <div className="spy-stage">
+      <div className="spy-results-card">
+        <div className="text-center">
+          <p className="bd-kicker">{t('spy.phases.results')}</p>
+          <h2 className={`mt-1 text-3xl font-black sm:text-4xl ${spyWon ? 'text-[var(--bd-coral-deep)]' : 'text-[var(--bd-mint-deep)]'}`}>
             {spyWon ? t('spy.spyWins') : t('spy.regularsWin')}
           </h2>
           {!noElimination ? (
-            <p className="text-white text-xl">
+            <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">
               {spyWon
                 ? t('spy.wasInnocent', { player: eliminatedPlayer?.name })
                 : t('spy.wasSpy', { player: spyPlayer?.name })}
             </p>
           ) : (
-            <p className="text-white text-xl">Tie vote: no player was eliminated.</p>
+            <p className="mt-2 text-base font-semibold text-[var(--bd-ink-soft)]">{t('spy.tieNoElimination')}</p>
           )}
-          <p className="text-purple-200 text-lg mt-2">
+          <div className="mx-auto mt-4 inline-flex rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-[var(--bd-ink)]">
             {t('spy.locationRevealed', { location })}
-          </p>
+          </div>
         </div>
 
-        {/* Voting Results */}
-        <div className="mb-6">
-          <h3 className="text-white text-xl font-semibold mb-3 text-center">
-            {t('spy.votes')}
-          </h3>
-          <div className="space-y-2">
-            {sortedByVotes.map((player) => {
-              const voteCount = voteCounts[player.id] || 0
-              const wasEliminated = player.id === eliminatedId
-              const wasSpy = player.id === spyId
+        <div className="mt-7 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+          <section className="spy-subpanel">
+            <h3 className="spy-section-title">{t('spy.votes')}</h3>
+            <div className="mt-3 space-y-2">
+              {sortedByVotes.map((player) => {
+                const voteCount = voteCounts[player.id] || 0
+                const wasEliminated = player.id === eliminatedId
+                const wasSpy = player.id === spyId
 
-              return (
-                <div
-                  key={player.id}
-                  className={`p-3 rounded-lg ${
-                    wasEliminated
-                      ? 'bg-red-500/30 border-2 border-red-500'
-                      : 'bg-white/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-semibold">
-                        {player.name}
+                return (
+                  <div key={player.id} className={`spy-result-row ${wasEliminated ? 'spy-result-row-danger' : ''}`}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`bd-avatar h-9 w-9 ${wasSpy ? 'bd-avatar-coral' : 'bd-avatar-lav'}`}>
+                        {player.name.charAt(0).toUpperCase()}
                       </span>
-                      {wasSpy && (
-                        <span className="text-xs bg-red-500 text-white px-2 py-1 rounded">
-                          {t('spy.roles.spy')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="bg-purple-500/50 px-3 py-1 rounded text-white">
-                        {voteCount} {voteCount === 1 ? t('spy.voteLabel') : t('spy.votesLabel')}
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-[var(--bd-ink)]">{player.name}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {wasSpy && <span className="bd-chip bd-chip-coral py-1 text-[11px]">{t('spy.roles.spy')}</span>}
+                          {wasEliminated && <span className="bd-chip bd-chip-sun py-1 text-[11px]">{t('spy.votedOutShort')}</span>}
+                        </div>
                       </div>
-                      {wasEliminated && (
-                        <span className="text-red-300">← {t('spy.votedOutShort')}</span>
-                      )}
                     </div>
+                    <span className="rounded-lg bg-[var(--bd-bg2)] px-2.5 py-1 text-sm font-black text-[var(--bd-ink)]">
+                      {voteCount} {voteCount === 1 ? t('spy.voteLabel') : t('spy.votesLabel')}
+                    </span>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+                )
+              })}
+            </div>
+          </section>
 
-        {/* Scores */}
-        <div className="mb-6">
-          <h3 className="text-white text-xl font-semibold mb-3 text-center">
-            {t('spy.scores')}
-          </h3>
-          <div className="space-y-2">
-            {sortedByScore.map((player, index) => (
-              <div
-                key={player.id}
-                className="p-3 rounded-lg bg-white/10 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-purple-300">
-                    #{index + 1}
-                  </span>
-                  <span className="text-white font-semibold">
-                    {player.name}
+          <section className="spy-subpanel">
+            <h3 className="spy-section-title">{t('spy.scores')}</h3>
+            <div className="mt-3 space-y-2">
+              {sortedByScore.map((player, index) => (
+                <div key={player.id} className="spy-score-row">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--bd-ink)] text-xs font-black text-[var(--bd-bg)]">
+                      {index + 1}
+                    </span>
+                    <span className="truncate font-bold text-[var(--bd-ink)]">{player.name}</span>
+                  </div>
+                  <span className="text-lg font-black text-[var(--bd-mint-deep)]">
+                    {scores[player.id] || 0} {t('profile.gameResults.points')}
                   </span>
                 </div>
-                <span className="text-2xl font-bold text-green-300">
-                  {scores[player.id] || 0} {t('profile.gameResults.points')}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </section>
         </div>
 
-        {/* Round Info */}
         {!isGameOver && (
-          <div className="text-center text-purple-200 mb-6">
+          <p className="mt-5 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
             {t('spy.round', { current: currentRound, total: totalRounds })}
-          </div>
+          </p>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           {!isGameOver && onNextRound && (
-            <button
-              onClick={onNextRound}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all shadow-lg"
-            >
+            <button onClick={onNextRound} className="bd-btn bd-btn-primary flex-1 justify-center">
               {t('spy.nextRound')}
             </button>
           )}
@@ -182,10 +149,7 @@ export default function SpyResults({
           {isGameOver && (
             <>
               {onPlayAgain && (
-                <button
-                  onClick={onPlayAgain}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg"
-                >
+                <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
                   {t('spy.playAgain')}
                 </button>
               )}
@@ -193,16 +157,13 @@ export default function SpyResults({
                 <button
                   onClick={onRequestRematch}
                   disabled={isRequestRematchPending}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-600 transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:from-blue-500 disabled:hover:to-indigo-500"
+                  className="bd-btn bd-btn-coral flex-1 justify-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isRequestRematchPending ? t('common.loading') : t('spy.requestRematch')}
                 </button>
               )}
               {onBackToLobby && (
-                <button
-                  onClick={onBackToLobby}
-                  className="flex-1 bg-white/20 text-white py-3 px-6 rounded-xl font-semibold hover:bg-white/30 transition-all"
-                >
+                <button onClick={onBackToLobby} className="bd-btn bd-btn-soft flex-1 justify-center">
                   {t('spy.backToLobby')}
                 </button>
               )}

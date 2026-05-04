@@ -5,9 +5,43 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n-helpers'
 import {
   buildNotificationDisplayItem,
+  type NotificationTone,
   type InAppNotificationItem,
   type InAppNotificationResponse,
 } from '@/lib/notification-ui'
+
+function BellIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M15 17.5h5l-1.45-1.45a2.2 2.2 0 0 1-.64-1.55V11a5.9 5.9 0 1 0-11.82 0v3.5c0 .58-.23 1.14-.64 1.55L4 17.5h5"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.8}
+        d="M9.5 17.5a2.5 2.5 0 0 0 5 0"
+      />
+    </svg>
+  )
+}
+
+function getNotificationToneClass(tone: NotificationTone) {
+  switch (tone) {
+    case 'emerald':
+      return 'border-[rgba(47,167,135,0.28)] bg-[rgba(79,201,166,0.12)]'
+    case 'violet':
+      return 'border-[rgba(120,103,232,0.28)] bg-[rgba(155,140,255,0.12)]'
+    case 'amber':
+      return 'border-[rgba(229,168,46,0.32)] bg-[rgba(255,196,77,0.16)]'
+    case 'blue':
+    default:
+      return 'border-[rgba(107,193,240,0.35)] bg-[rgba(107,193,240,0.13)]'
+  }
+}
 
 export function NotificationsMenu() {
   const NOTIFICATIONS_BACKGROUND_REFRESH_INTERVAL_MS = 60_000
@@ -111,10 +145,17 @@ export function NotificationsMenu() {
         setOpen(false)
       }
     }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
 
     document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
     return () => {
       document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [open])
 
@@ -189,20 +230,17 @@ export function NotificationsMenu() {
       <button
         type="button"
         onClick={() => setOpen((previousValue) => !previousValue)}
-        className="relative rounded-full p-2 text-white/90 transition-colors hover:bg-white/10 hover:text-white"
+        className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all hover:-translate-y-px ${
+          unreadCount > 0
+            ? 'border-[var(--bd-ink)] bg-white text-[var(--bd-ink)] shadow-[0_3px_0_rgba(31,27,22,0.14)]'
+            : 'border-[var(--bd-line)] bg-[var(--bd-card-warm)] text-[var(--bd-ink-muted)] hover:text-[var(--bd-ink)]'
+        }`}
         aria-label={t('header.openNotifications')}
         title={badgeLabel}
       >
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.75}
-            d="M15 17h5l-1.405-1.405A2.03 2.03 0 0 1 18 14.159V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 1 1-6 0m6 0H9"
-          />
-        </svg>
+        <BellIcon />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 inline-flex min-w-[1.2rem] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow">
+          <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full border-2 border-[var(--bd-bg)] bg-[var(--bd-coral)] px-1.5 py-0.5 text-[10px] font-black text-white shadow">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -217,13 +255,13 @@ export function NotificationsMenu() {
             aria-label={t('common.close')}
           />
 
-          <div className="fixed left-3 right-3 top-[5.75rem] z-50 rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-[21.75rem] dark:border-slate-700/70 dark:bg-slate-900/95">
-            <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-4 dark:border-slate-700/70">
+          <div className="fixed left-3 right-3 top-[4.75rem] z-50 overflow-hidden rounded-3xl border border-[var(--bd-line)] bg-white shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-[22.5rem]">
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-4">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                <p className="bd-kicker">
                   {t('header.notifications')}
-                </h3>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                </p>
+                <p className="mt-1 text-sm font-bold text-[var(--bd-ink)]">
                   {badgeLabel}
                 </p>
               </div>
@@ -231,61 +269,68 @@ export function NotificationsMenu() {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                  className="rounded-full border border-[var(--bd-line)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--bd-ink-soft)] transition-colors hover:bg-[var(--bd-card-warm)] hover:text-[var(--bd-ink)]"
                 >
                   {t('header.markAllRead')}
                 </button>
               )}
             </div>
 
-            <div className="max-h-[32rem] overflow-y-auto px-2 py-2 overscroll-contain">
+            <div className="max-h-[32rem] overflow-y-auto bg-white px-2 py-2 overscroll-contain">
               {loading && notifications.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                <div className="px-4 py-8 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
                   {t('common.loading')}
                 </div>
               ) : notificationEntries.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                  {t('header.notificationsEmpty')}
+                <div className="px-4 py-8 text-center">
+                  <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] text-[var(--bd-ink-muted)]">
+                    <BellIcon />
+                  </div>
+                  <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">{t('header.notificationsEmpty')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {notificationEntries.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={async () => {
-                        if (!item.readAt) {
-                          await markNotificationsRead([item.id])
-                        }
-                        setOpen(false)
-                        router.push(item.href)
-                      }}
-                      className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
-                        item.readAt
-                          ? 'border-slate-200/70 bg-white hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-900/50 dark:hover:bg-slate-800/80'
-                          : 'border-blue-200 bg-blue-50/90 hover:bg-blue-100/80 dark:border-blue-500/30 dark:bg-blue-500/10 dark:hover:bg-blue-500/15'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {item.title}
-                          </p>
-                          {item.subtitle && (
-                            <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                              {item.subtitle}
+                  {notificationEntries.map((item) => {
+                    const toneClass = getNotificationToneClass(item.tone)
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={async () => {
+                          if (!item.readAt) {
+                            await markNotificationsRead([item.id])
+                          }
+                          setOpen(false)
+                          router.push(item.href)
+                        }}
+                        className={`w-full rounded-2xl border px-4 py-3 text-left transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
+                          item.readAt
+                            ? 'border-[var(--bd-line)] bg-white'
+                            : toneClass
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-black leading-snug text-[var(--bd-ink)]">
+                              {item.title}
                             </p>
+                            {item.subtitle && (
+                              <p className="mt-1 truncate text-xs font-semibold text-[var(--bd-ink-muted)]">
+                                {item.subtitle}
+                              </p>
+                            )}
+                          </div>
+                          {!item.readAt && (
+                            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--bd-coral)]" />
                           )}
                         </div>
-                        {!item.readAt && (
-                          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500" />
-                        )}
-                      </div>
-                      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                        {item.timestamp}
-                      </p>
-                    </button>
-                  ))}
+                        <p className="mt-2 text-xs font-semibold text-[var(--bd-ink-muted)]">
+                          {item.timestamp}
+                        </p>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>

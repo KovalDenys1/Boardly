@@ -37,76 +37,64 @@ export default function SpyVoting({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] p-4 sm:p-8">
-      <div className="bg-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-xl border border-white/20">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="text-6xl mb-4">🗳️</div>
-          <h2 className="text-3xl font-bold text-white mb-2">
-            {t('spy.phases.voting')}
-          </h2>
-          <div className="text-xl text-purple-200">
+    <div className="spy-stage">
+      <div className="spy-vote-card">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="bd-kicker">{t('spy.phases.voting')}</p>
+            <h2 className="mt-1 text-2xl font-black text-[var(--bd-ink)]">{t('spy.voteFor')}</h2>
+          </div>
+          <div className="spy-timer-pill">
             {t('spy.timeRemaining', { time: formatTime(timeRemaining) })}
           </div>
         </div>
 
-        {/* Question */}
-        <div className="text-center mb-6">
-          <p className="text-white text-lg font-semibold">
-            {t('spy.voteFor')}
-          </p>
-        </div>
-
-        {/* Player Selection */}
-        <div className="space-y-3 mb-6">
+        <div className="mt-5 grid gap-2">
           {players
-            .filter((p) => p.id !== currentUserId) // Can't vote for yourself
-            .map((player) => (
-              <button
-                key={player.id}
-                onClick={() => !hasVoted && setSelectedPlayer(player.id)}
-                disabled={hasVoted}
-                className={`w-full p-4 rounded-xl font-semibold transition-all ${
-                  selectedPlayer === player.id
-                    ? 'bg-purple-500 text-white shadow-lg scale-105'
-                    : hasVoted
-                    ? 'bg-gray-500/30 text-gray-400 cursor-not-allowed'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span>{player.name}</span>
-                  {selectedPlayer === player.id && (
-                    <span className="text-2xl">✓</span>
-                  )}
-                </div>
-              </button>
-            ))}
+            .filter((p) => p.id !== currentUserId)
+            .map((player) => {
+              const selected = selectedPlayer === player.id
+              return (
+                <button
+                  key={player.id}
+                  onClick={() => !hasVoted && setSelectedPlayer(player.id)}
+                  disabled={hasVoted}
+                  className={`spy-vote-option ${selected ? 'spy-vote-option-selected' : ''} ${hasVoted ? 'opacity-60' : ''}`}
+                >
+                  <span className="bd-avatar bd-avatar-lav h-10 w-10">
+                    {player.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-left font-bold">{player.name}</span>
+                  <span className={`spy-check ${selected ? 'spy-check-selected' : ''}`} />
+                </button>
+              )
+            })}
         </div>
 
-        {/* Vote Count */}
-        <div className="text-center mb-4 text-purple-200">
-          {t('spy.messages.playerVoted', { player: '' })}: {votesSubmitted}/{players.length}
+        <div className="mt-5">
+          <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase text-[var(--bd-ink-muted)]">
+            <span>{t('spy.votes')}</span>
+            <span>{votesSubmitted}/{players.length}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--bd-bg2)]">
+            <div
+              className="h-full rounded-full bg-[var(--bd-lav)] transition-all"
+              style={{ width: `${players.length > 0 ? (votesSubmitted / players.length) * 100 : 0}%` }}
+            />
+          </div>
         </div>
 
-        {/* Confirm Button */}
-        {!hasVoted && (
+        {!hasVoted ? (
           <button
             onClick={handleVote}
             disabled={!selectedPlayer}
-            className={`w-full py-3 px-6 rounded-xl font-semibold text-white transition-all ${
-              selectedPlayer
-                ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg'
-                : 'bg-gray-500 cursor-not-allowed'
-            }`}
+            className={`bd-btn mt-5 w-full justify-center ${selectedPlayer ? 'bd-btn-primary' : 'bd-btn-soft cursor-not-allowed opacity-60'}`}
           >
             {t('spy.confirmVote')}
           </button>
-        )}
-
-        {hasVoted && (
-          <div className="w-full py-3 px-6 rounded-xl bg-green-500/30 text-white text-center font-semibold">
-            ✓ {t('spy.messages.playerVoted', { player: 'You' })}
+        ) : (
+          <div className="mt-5 rounded-xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-4 py-3 text-center text-sm font-bold text-[var(--bd-mint-deep)]">
+            {t('spy.confirmVote')}
           </div>
         )}
       </div>

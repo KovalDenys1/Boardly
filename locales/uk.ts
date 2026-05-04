@@ -1588,6 +1588,7 @@ const uk: Translation = {
     votes: 'Голоси',
     votedOut: '{{player}} було виключено голосуванням!',
     votedOutShort: 'Виключено голосуванням',
+    tieNoElimination: 'Нічия в голосуванні: нікого не виключено.',
     voteLabel: 'голос',
     votesLabel: 'голоси',
     scores: 'Рахунок',

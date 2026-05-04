@@ -1574,6 +1574,7 @@ const ru = {
     votes: 'Голоса',
     votedOut: '{{player}} был исключён голосованием!',
     votedOutShort: 'Исключён голосованием',
+    tieNoElimination: 'Ничья в голосовании: никто не исключён.',
     voteLabel: 'голос',
     votesLabel: 'голоса',
     scores: 'Счёт',

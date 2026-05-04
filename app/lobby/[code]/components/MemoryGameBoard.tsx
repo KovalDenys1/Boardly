@@ -225,25 +225,45 @@ export default function MemoryGameBoard({
       : null
 
   const symbolSizeClass = gridColumns >= 6 ? 'text-lg sm:text-xl' : gridColumns === 5 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'
+  const matchedPairs = cards.filter((card) => card.isMatched).length / 2
+  const totalPairs = Math.max(1, cards.length / 2)
+  const progressPercent = Math.min(100, Math.max(0, (matchedPairs / totalPairs) * 100))
+  const currentPlayerName =
+    (currentPlayerId && displayNameByUserId.get(currentPlayerId)) ||
+    t('games.memory.game.unknownPlayer')
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-3 py-4 sm:px-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <section className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
+    <div className="memory-screen">
+      <div className="memory-shell">
+        <header className="memory-header">
+          <div className="min-w-0">
+            <p className="bd-kicker">{t('games.memory.game.lobbyLabel', { code: lobbyCode.toUpperCase() })}</p>
+            <h2 className="mt-1 truncate text-2xl font-black text-[var(--bd-ink)]">{t('games.memory.name')}</h2>
+            <p className="mt-1 text-sm font-semibold text-[var(--bd-ink-muted)]">{difficultyLabel}</p>
+          </div>
+          <div className="memory-status">
+            <span className={`bd-live-dot ${parsedState.status === 'finished' ? 'opacity-0' : ''}`} />
+            <span>{statusMessage}</span>
+          </div>
+        </header>
+
+        <section className="memory-progress-panel">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-extrabold text-white">🧠 {t('games.memory.name')}</h2>
-              <p className="text-sm text-white/70">
-                {t('games.memory.game.lobbyLabel', { code: lobbyCode.toUpperCase() })} · {difficultyLabel}
-              </p>
+              <p className="text-sm font-bold text-[var(--bd-ink)]">{currentPlayerName}</p>
+              <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{t('games.memory.game.pairsLabel', { count: matchedPairs })}</p>
             </div>
-            <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white/90">
-              {statusMessage}
+            <div className="text-left sm:text-right">
+              <p className="text-sm font-black text-[var(--bd-ink)]">{matchedPairs}/{totalPairs}</p>
+              <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{t('games.memory.game.scoreboardTitle')}</p>
             </div>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--bd-bg2)]">
+            <div className="h-full rounded-full bg-[var(--bd-mint)] transition-all" style={{ width: `${progressPercent}%` }} />
           </div>
 
           {winnerMessage && (
-            <div className="mt-3 rounded-xl border border-emerald-300/30 bg-emerald-500/15 px-3 py-2 text-sm font-semibold text-emerald-100">
+            <div className="mt-3 rounded-xl border border-[rgba(47,167,135,0.25)] bg-[rgba(79,201,166,0.16)] px-3 py-2 text-sm font-bold text-[var(--bd-mint-deep)]">
               {t('games.memory.game.finishedPrefix')} {winnerMessage}
             </div>
           )}
@@ -251,89 +271,77 @@ export default function MemoryGameBoard({
           {parsedState.status === 'finished' && onPlayAgain && (
             <div className="mt-3">
               {canStartGame ? (
-                <button
-                  onClick={onPlayAgain}
-                  className="w-full rounded-xl bg-white/20 px-4 py-2.5 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/30"
-                >
+                <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
                   {t('lobby.game.playAgain')}
                 </button>
               ) : (
-                <p className="text-center text-sm text-white/50">{t('game.ui.waitingForHost')}</p>
+                <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">{t('game.ui.waitingForHost')}</p>
               )}
             </div>
           )}
         </section>
 
-        <section className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white/75">{t('games.memory.game.scoreboardTitle')}</h3>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {(parsedState.players || []).map((player) => {
-              const score = scoreByPlayerId[player.id] ?? player.score ?? 0
-              const isCurrent = player.id === currentPlayerId
-              return (
-                <div
-                  key={player.id}
-                  className={`rounded-xl border px-3 py-2 text-sm ${
-                    isCurrent ? 'border-cyan-300/45 bg-cyan-500/15 text-cyan-100' : 'border-white/15 bg-white/5 text-white/85'
-                  }`}
-                >
-                  <p className="truncate font-semibold">{displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}</p>
-                  <p className="text-xs opacity-80">{t('games.memory.game.pairsLabel', { count: score })}</p>
-                </div>
-              )
-            })}
-          </div>
-        </section>
+        <main className="memory-layout">
+          <section className="memory-board-panel">
+            <div
+              className="memory-grid"
+              style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+            >
+              {cards.map((card) => {
+                const isFaceUp = card.isFlipped || card.isMatched
+                const isDisabled =
+                  !isMyTurn ||
+                  isSubmitting ||
+                  parsedState.status !== 'playing' ||
+                  pendingMismatchCardIds.length > 0 ||
+                  flippedCardIds.length >= 2 ||
+                  card.isMatched ||
+                  card.isFlipped
 
-        <section className="rounded-2xl border border-white/20 bg-white/10 p-3 sm:p-4 backdrop-blur-md">
-          <div
-            className="grid gap-2 sm:gap-3"
-            style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-          >
-            {cards.map((card) => {
-              const isFaceUp = card.isFlipped || card.isMatched
-              const isDisabled =
-                !isMyTurn ||
-                isSubmitting ||
-                parsedState.status !== 'playing' ||
-                pendingMismatchCardIds.length > 0 ||
-                flippedCardIds.length >= 2 ||
-                card.isMatched ||
-                card.isFlipped
-
-              return (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={() => handleCardClick(card.id)}
-                  disabled={isDisabled}
-                  className={`relative aspect-square [perspective:1000px] focus:outline-none ${
-                    isDisabled ? 'cursor-default' : 'cursor-pointer'
-                  }`}
-                >
-                  <span
-                    className={`absolute inset-0 transition-transform duration-500 [transform-style:preserve-3d] ${
-                      isFaceUp ? '[transform:rotateY(180deg)]' : ''
-                    }`}
+                return (
+                  <button
+                    key={card.id}
+                    type="button"
+                    onClick={() => handleCardClick(card.id)}
+                    disabled={isDisabled}
+                    className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}`}
                   >
-                    <span className="absolute inset-0 flex items-center justify-center rounded-xl border border-white/20 bg-slate-800/70 text-xl font-black text-white/70 [backface-visibility:hidden]">
-                      ?
+                    <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
+                      <span className="memory-tile-back">
+                        <span className="memory-tile-back-mark">B</span>
+                      </span>
+                      <span className={`memory-tile-face ${symbolSizeClass}`}>
+                        {card.value}
+                      </span>
                     </span>
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center rounded-xl border [backface-visibility:hidden] [transform:rotateY(180deg)] ${symbolSizeClass} ${
-                        card.isMatched
-                          ? 'border-emerald-300/50 bg-emerald-500/25 text-emerald-100'
-                          : 'border-cyan-300/45 bg-cyan-500/20 text-white'
-                      }`}
-                    >
-                      {card.value}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+
+          <aside className="memory-score-panel">
+            <h3 className="spy-section-title">{t('games.memory.game.scoreboardTitle')}</h3>
+            <div className="mt-3 space-y-2">
+              {(parsedState.players || []).map((player) => {
+                const score = scoreByPlayerId[player.id] ?? player.score ?? 0
+                const isCurrent = player.id === currentPlayerId
+                return (
+                  <div key={player.id} className={`memory-score-row ${isCurrent ? 'memory-score-row-active' : ''}`}>
+                    <span className="bd-avatar bd-avatar-sun h-9 w-9">
+                      {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
                     </span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </section>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold">{displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}</p>
+                      <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>
+                    </div>
+                    <span className="text-lg font-black">{score}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </aside>
+        </main>
       </div>
     </div>
   )

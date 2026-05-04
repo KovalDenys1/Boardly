@@ -1574,6 +1574,7 @@ const no = {
     votes: 'Stemmer',
     votedOut: '{{player}} ble stemt ut!',
     votedOutShort: 'Stemt ut',
+    tieNoElimination: 'Uavgjort avstemning: ingen ble stemt ut.',
     voteLabel: 'stemme',
     votesLabel: 'stemmer',
     scores: 'Poengsum',
