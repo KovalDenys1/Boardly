@@ -1638,6 +1638,7 @@ const uk: Translation = {
     waitingForQuestioner: 'Очікування наступного гравця...',
     targetLabel: 'Ціль: {{player}}.',
     waitingForAnswer: 'Очікування відповіді від {{player}}.',
+    startVoting: 'Завершити раунд і почати голосування',
     rules: {
       title: 'Як грати',
       setup: 'Налаштування',

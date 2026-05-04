@@ -1624,6 +1624,7 @@ const ru = {
     waitingForQuestioner: 'Ожидание следующего игрока...',
     targetLabel: 'Цель: {{player}}.',
     waitingForAnswer: 'Ожидание ответа от {{player}}.',
+    startVoting: 'Завершить раунд и начать голосование',
     rules: {
       title: 'Как играть',
       setup: 'Настройка',

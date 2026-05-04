@@ -176,6 +176,12 @@ export class SpyGame extends GameEngine {
           data.currentQuestionerId === move.playerId
         )
 
+      case 'start-voting':
+        return (
+          data.phase === SpyGamePhase.QUESTIONING &&
+          move.data.creatorId === move.playerId
+        )
+
       case 'vote':
         return (
           data.phase === SpyGamePhase.VOTING &&
@@ -211,6 +217,10 @@ export class SpyGame extends GameEngine {
 
       case 'skip-turn':
         this.processSkipTurn(move.playerId)
+        break
+
+      case 'start-voting':
+        this.startVotingPhase()
         break
 
       case 'vote':

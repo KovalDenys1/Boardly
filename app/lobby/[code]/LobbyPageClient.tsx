@@ -603,7 +603,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             )
 
             // Safety check: ensure player exists and has required data
-            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp) {
+            const playerIsBot = !!(player?.user?.bot || player?.bot)
+            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp && !playerIsBot) {
               const turnNumber = getYahtzeeTurnNumberFromScorecard(
                 newEngine instanceof YahtzeeGame ? newEngine.getScorecard(lastRoll.playerId) : null
               )
@@ -628,8 +629,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
                   held: normalizeHeldIndexes(lastRoll.held),
-                  isBot: !!(player.user?.bot || player.bot),
-                  botId: player.user?.bot ? player.userId : null,
+                  isBot: false,
+                  botId: null,
                   timestamp: lastRoll.timestamp,
                 }
 
@@ -2048,7 +2049,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Desktop: Grid Layout */}
                 <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
-                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full overflow-hidden">
+                  <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
                     <GameBoard
                       gameEngine={gameEngine}
                       game={game}

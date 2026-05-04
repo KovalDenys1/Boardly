@@ -1636,6 +1636,7 @@ const en = {
     waitingForQuestioner: 'Waiting for the current questioner...',
     targetLabel: 'Target: {{player}}.',
     waitingForAnswer: 'Waiting for {{player}} to answer.',
+    startVoting: 'End Round & Start Voting',
     rules: {
       title: 'How to Play',
       setup: 'Setup',

@@ -1624,6 +1624,7 @@ const no = {
     waitingForQuestioner: 'Venter på neste spiller...',
     targetLabel: 'Mål: {{player}}.',
     waitingForAnswer: 'Venter på svar fra {{player}}.',
+    startVoting: 'Avslutt runden og start avstemning',
     rules: {
       title: 'Hvordan spille',
       setup: 'Oppsett',
