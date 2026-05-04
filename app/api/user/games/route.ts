@@ -75,49 +75,56 @@ export async function GET(request: NextRequest) {
       where.gameType = gameTypeParam as GameType
     }
 
-    // Fetch games with player data
-    const games = await prisma.games.findMany({
-      where,
-      include: {
-        lobby: {
-          select: {
-            code: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            snapshots: true,
-          },
-        },
-        players: {
-          select: {
-            id: true,
-            userId: true,
-            score: true,
-            finalScore: true,
-            placement: true,
-            isWinner: true,
-            user: {
-              select: {
-                id: true,
-                username: true,
-                bot: true,  // Bot relation
-              },
+    const [games, totalCount] = await Promise.all([
+      prisma.games.findMany({
+        where,
+        select: {
+          id: true,
+          gameType: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          abandonedAt: true,
+          lobby: {
+            select: {
+              code: true,
+              name: true,
             },
           },
-          orderBy: {
-            placement: 'asc',
+          _count: {
+            select: {
+              snapshots: true,
+            },
+          },
+          players: {
+            select: {
+              id: true,
+              userId: true,
+              score: true,
+              finalScore: true,
+              placement: true,
+              isWinner: true,
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  bot: true,
+                },
+              },
+            },
+            orderBy: {
+              placement: 'asc',
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: limit,
-      skip: offset,
-    })
-    const totalCount = await prisma.games.count({ where })
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.games.count({ where }),
+    ])
 
     logger.info('User game history fetched successfully', {
       userId,

@@ -125,10 +125,20 @@ export async function POST(req: NextRequest) {
         },
       },
     },
-    include: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      maxPlayers: true,
+      gameType: true,
+      creatorId: true,
+      createdAt: true,
       games: {
         where: { status: 'waiting' },
-        include: {
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
           _count: { select: { players: true } },
         },
         orderBy: { createdAt: 'desc' },
