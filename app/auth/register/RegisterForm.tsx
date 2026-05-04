@@ -60,30 +60,30 @@ export default function RegisterForm() {
     3
   )
   const passwordStrengthLevels = [
-    { label: t('auth.password.weak', 'Weak'), color: 'bg-red-500', textColor: 'text-red-600 dark:text-red-400' },
-    { label: t('auth.password.fair', 'Fair'), color: 'bg-yellow-500', textColor: 'text-yellow-600 dark:text-yellow-400' },
-    { label: t('auth.password.good', 'Good'), color: 'bg-blue-500', textColor: 'text-blue-600 dark:text-blue-400' },
-    { label: t('auth.password.strong', 'Strong'), color: 'bg-green-500', textColor: 'text-green-600 dark:text-green-400' },
+    { label: t('auth.password.weak', 'Weak'), color: 'bg-[#FF6B5B]', textColor: 'text-[#FF6B5B]' },
+    { label: t('auth.password.fair', 'Fair'), color: 'bg-[#FFC44D]', textColor: 'text-[#D97706]' },
+    { label: t('auth.password.good', 'Good'), color: 'bg-[#1F1B16]', textColor: 'text-[#1F1B16]' },
+    { label: t('auth.password.strong', 'Strong'), color: 'bg-green-500', textColor: 'text-green-600' },
   ] as const
   const passwordStrength = passwordStrengthLevels[passwordScore]
   const passwordTooltip = (
     <div className="space-y-2">
-      <p className="font-semibold text-slate-700 dark:text-slate-100">
+      <p className="font-semibold" style={{ color: 'var(--bd-ink)' }}>
         {t('auth.password.requirements', 'Password requirements')}
       </p>
       <div className="space-y-1.5">
         {passwordChecks.map((check) => (
           <div key={check.text} className="flex items-center gap-2">
             {check.met ? (
-              <svg className="h-4 w-4 shrink-0 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             ) : (
-              <svg className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 shrink-0" style={{ color: 'var(--bd-ink-muted)' }} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             )}
-            <span className={check.met ? 'text-slate-700 dark:text-slate-200' : undefined}>{check.text}</span>
+            <span style={{ color: check.met ? 'var(--bd-ink)' : 'var(--bd-ink-muted)' }}>{check.text}</span>
           </div>
         ))}
       </div>
@@ -181,16 +181,16 @@ export default function RegisterForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl border border-emerald-300/90 bg-gradient-to-r from-emerald-50 via-white to-sky-50 p-4 shadow-sm dark:border-emerald-600/70 dark:from-emerald-900/20 dark:via-slate-900/60 dark:to-sky-900/20">
+    <div className="rounded-2xl p-4 shadow-sm" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-2xl shadow-sm dark:bg-slate-900/60">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
           🎮
         </span>
         <div className="min-w-0">
-          <p className="font-semibold text-green-700 dark:text-green-300">
+          <p className="font-semibold" style={{ color: '#16A34A' }}>
             {t('auth.register.inviteBanner')}
           </p>
-          <p className="mt-1 text-sm leading-6 text-green-600 dark:text-green-400">
+          <p className="mt-1 text-sm leading-6" style={{ color: '#15803D' }}>
             {t('auth.register.inviteSubtitle')}
           </p>
         </div>

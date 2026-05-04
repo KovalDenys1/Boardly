@@ -127,7 +127,7 @@ export default function UsernameInput({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label htmlFor={inputId} className="!mb-0 text-sm font-semibold text-bd-ink dark:text-slate-200">
+        <label htmlFor={inputId} className="!mb-0 text-sm font-semibold text-bd-ink">
           {t('auth.register.username')}
         </label>
         <HelpTooltip
@@ -141,12 +141,12 @@ export default function UsernameInput({
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-2xl border bg-white px-4 py-3 pr-10 text-base text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500 sm:text-sm ${
+          className={`w-full rounded-2xl border bg-white px-4 py-3 pr-10 text-base text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted sm:text-sm ${
             status === 'available'
-              ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 dark:border-emerald-500'
+              ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-500/20'
               : status === 'taken' || status === 'invalid'
-                ? 'border-red-400 focus:ring-2 focus:ring-red-500/20 dark:border-red-500'
-                : 'border-bd-line focus:border-bd-lav-deep focus:ring-4 focus:ring-bd-lav/20 dark:border-slate-700'
+                ? 'border-red-400 focus:ring-2 focus:ring-red-500/20'
+                : 'border-bd-line focus:border-bd-lav-deep focus:ring-4 focus:ring-bd-lav/20'
           }`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -162,12 +162,12 @@ export default function UsernameInput({
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-bd-lav border-t-transparent" />
           )}
           {status === 'available' && (
-            <svg className="w-5 h-5 text-green-500 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
           )}
           {(status === 'taken' || status === 'invalid') && (
-            <svg className="w-5 h-5 text-red-500 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
           )}
@@ -177,12 +177,12 @@ export default function UsernameInput({
       {/* Status Messages */}
       <div className="mt-1">
         {status === 'taken' && (
-          <p className="text-xs text-red-600 dark:text-red-400">
+          <p className="text-xs text-red-600">
             ✗ {t('auth.username.taken', 'Username is already taken')}
           </p>
         )}
         {status === 'invalid' && validationError && (
-          <p className="text-xs text-red-600 dark:text-red-400">
+          <p className="text-xs text-red-600">
             ✗ {validationError}
           </p>
         )}
@@ -190,8 +190,8 @@ export default function UsernameInput({
 
       {/* Suggestions */}
       {status === 'taken' && suggestions.length > 0 && (
-        <div className="mt-2 rounded-2xl border border-bd-line bg-bd-card-warm/90 p-3 dark:border-slate-700 dark:bg-slate-800/70">
-          <p className="mb-2 text-xs font-semibold text-bd-lav-deep dark:text-bd-lav">
+        <div className="mt-2 rounded-2xl border border-bd-line bg-bd-card-warm/90 p-3">
+          <p className="mb-2 text-xs font-semibold text-bd-lav-deep">
             {t('auth.username.suggestions', 'Try these available usernames')}:
           </p>
           <div className="flex flex-wrap gap-2">
@@ -200,7 +200,7 @@ export default function UsernameInput({
                 key={suggestion}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="rounded-xl border border-bd-line bg-white px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2 dark:border-slate-700 dark:bg-slate-900 dark:text-bd-lav dark:hover:bg-slate-800"
+                className="rounded-xl border border-bd-line bg-white px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2"
               >
                 {suggestion}
               </button>
@@ -210,7 +210,7 @@ export default function UsernameInput({
       )}
 
       {error && (
-        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="mt-1 text-sm text-red-600">{error}</p>
       )}
     </div>
   )

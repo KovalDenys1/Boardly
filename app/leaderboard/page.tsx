@@ -6,7 +6,31 @@ import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import { GAME_FILTERS, getCompactGameIcon, useLeaderboard, type LeaderboardEntry } from './use-leaderboard'
 import { getGameMetadata } from '@/lib/game-catalog'
+import { GAME_SVG_PATHS } from '@/components/GameIcon'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
+
+const GAME_ICON_MAP: Record<string, { gameId: string; color: string }> = {
+  yahtzee:            { gameId: 'yahtzee',    color: 'var(--bd-sky)' },
+  guess_the_spy:      { gameId: 'spy',        color: 'var(--bd-coral)' },
+  tic_tac_toe:        { gameId: 'tic-tac-toe',color: 'var(--bd-coral)' },
+  rock_paper_scissors:{ gameId: 'rps',        color: 'var(--bd-lav)' },
+  memory:             { gameId: 'memory',     color: 'var(--bd-mint)' },
+}
+
+function FilterGameIcon({ gameType, selected }: { gameType: string; selected: boolean }) {
+  const entry = GAME_ICON_MAP[gameType]
+  if (!entry || !GAME_SVG_PATHS[entry.gameId]) return null
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 512 512"
+      width={20}
+      height={20}
+      style={{ color: selected ? 'white' : entry.color, flexShrink: 0 }}
+      dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[entry.gameId] }}
+    />
+  )
+}
 
 const MEDAL: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
@@ -167,7 +191,9 @@ function LeaderboardPageContent() {
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-bd-bg2 text-lg leading-none">
-                        {selectedFilter.displayIcon}
+                        {selectedFilter.value && GAME_ICON_MAP[selectedFilter.value]
+                          ? <FilterGameIcon gameType={selectedFilter.value} selected={false} />
+                          : selectedFilter.displayIcon}
                       </span>
                       <span className="min-w-0">
                         <span className="bd-kicker block text-[10px]">{t('leaderboard.gameFilter')}</span>
@@ -212,7 +238,9 @@ function LeaderboardPageContent() {
                             >
                               <span className="flex min-w-0 items-center gap-3">
                                 <span className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl text-lg leading-none ${selected ? 'bg-white/20' : 'bg-bd-bg2'}`}>
-                                  {icon}
+                                  {f.value && GAME_ICON_MAP[f.value]
+                                    ? <FilterGameIcon gameType={f.value} selected={selected} />
+                                    : icon}
                                 </span>
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>

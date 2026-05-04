@@ -79,14 +79,14 @@ function DeleteAccountContent() {
 
   if (loading) {
     return (
-      <div className="page-shell-full bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 flex items-center justify-center overflow-y-auto">
+      <div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center overflow-y-auto">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   return (
-    <div className="page-shell-full bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-800 flex items-center justify-center overflow-y-auto p-4">
+    <div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center overflow-y-auto p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
         {error ? (
           <>
@@ -99,7 +99,7 @@ function DeleteAccountContent() {
             </div>
             <button
               onClick={() => router.push('/')}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+              className="w-full text-white py-3 rounded-xl font-semibold transition-colors" style={{ background: 'var(--bd-ink)' }}
             >
               {t('common.goHome')}
             </button>
@@ -171,7 +171,7 @@ function DeleteAccountContent() {
               <button
                 onClick={() => router.push('/profile')}
                 disabled={deleting}
-                className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                className="w-full py-3 rounded-xl font-semibold transition-colors disabled:opacity-50" style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink)', border: '1.5px solid var(--bd-line)' }}
               >
                 {t('common.cancel')}
               </button>

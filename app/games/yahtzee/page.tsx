@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import GameDetailPage from '../components/GameDetailPage'
+import YahtzeeDetailContent from './YahtzeeDetailContent'
 
 export const metadata: Metadata = {
   title: 'Play Yahtzee Online Free - Multiplayer Dice Game',
@@ -47,7 +47,7 @@ const jsonLd = {
   '@type': 'VideoGame',
   name: 'Yahtzee',
   description:
-    'Classic dice-rolling game where players compete to score the highest by filling 13 scoring categories across five dice rolls.',
+    'Classic dice-rolling game where players compete to score the highest by filling 15 scoring categories across five dice rolls.',
   url: 'https://boardly.online/games/yahtzee',
   image: 'https://boardly.online/opengraph-image',
   genre: ['Dice Game', 'Strategy', 'Multiplayer'],
@@ -82,39 +82,7 @@ export default function YahtzeePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <GameDetailPage
-        gameName="Yahtzee"
-        title="Play Yahtzee Online"
-        description="Roll five dice, choose your best scoring categories, and play a full game with friends or bots right in the browser."
-        icon="🎲"
-        iconLabel="Dice"
-        accent="var(--bd-lav)"
-        lobbiesHref="/games/yahtzee/lobbies"
-        facts={[
-          { label: 'Players', value: '1–4' },
-          { label: 'Price', value: 'Free' },
-          { label: 'Download', value: 'None' },
-          { label: 'Bot support', value: 'Yes' },
-        ]}
-        introTitle="What is Yahtzee?"
-        intro={[
-          'Yahtzee is a classic dice game where players roll five dice and try to score in 13 different categories, from three-of-a-kind and full house to the big five-of-a-kind Yahtzee.',
-          'On Boardly, you can play online with friends, add bots when you need extra players, or practice solo. Everything runs in the browser, so a shared link is enough to start.',
-        ]}
-        steps={[
-          { title: 'Create or join a lobby', desc: 'Start a room from the lobby page or enter a code your friend shared.' },
-          { title: 'Roll the dice', desc: 'Roll up to three times on your turn. Keep the dice you like and re-roll the rest.' },
-          { title: 'Pick a score', desc: 'Choose one open scoring category after your roll. Each category can be used once.' },
-          { title: 'Finish the scorecard', desc: 'When every category is filled, the player with the highest total wins.' },
-        ]}
-        benefitsTitle="Why play Yahtzee on Boardly?"
-        benefits={[
-          'Live multiplayer with turns updating for everyone.',
-          'Bots are available when friends are offline.',
-          'Works on phone, tablet, and desktop.',
-          'Free to play as a guest.',
-        ]}
-      />
+      <YahtzeeDetailContent />
     </>
   )
 }

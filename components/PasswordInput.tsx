@@ -45,30 +45,25 @@ export default function PasswordInput({
   const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
 
-  // Calculate password strength
   const strength = useMemo((): PasswordStrength => {
     if (!value) {
-      return { score: 0, label: '', color: 'bg-gray-300', percentage: 0 }
+      return { score: 0, label: '', color: 'var(--bd-line)', percentage: 0 }
     }
 
     let score = 0
-    
-    // Length check
+
     if (value.length >= 8) score++
     if (value.length >= 12) score++
-    
-    // Character variety checks
-    if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++ // Mixed case
-    if (/\d/.test(value)) score++ // Numbers
+    if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++
+    if (/\d/.test(value)) score++
 
-    // Cap at 3 (removed special character requirement)
     score = Math.min(score, 3)
 
     const strengthLevels = [
-      { key: 'weak', label: t('auth.password.weak', 'Weak'), color: 'bg-red-500' },
-      { key: 'fair', label: t('auth.password.fair', 'Fair'), color: 'bg-yellow-500' },
-      { key: 'good', label: t('auth.password.good', 'Good'), color: 'bg-blue-500' },
-      { key: 'strong', label: t('auth.password.strong', 'Strong'), color: 'bg-green-500' },
+      { key: 'weak', label: t('auth.password.weak', 'Weak'), color: 'var(--bd-coral)' },
+      { key: 'fair', label: t('auth.password.fair', 'Fair'), color: 'var(--bd-sun)' },
+      { key: 'good', label: t('auth.password.good', 'Good'), color: 'var(--bd-ink)' },
+      { key: 'strong', label: t('auth.password.strong', 'Strong'), color: '#22C55E' },
     ]
 
     return {
@@ -79,13 +74,19 @@ export default function PasswordInput({
     }
   }, [value, t])
 
+  const strengthLabelColor =
+    strength.score === 0 ? 'var(--bd-coral)' :
+    strength.score === 1 ? '#D97706' :
+    strength.score === 2 ? 'var(--bd-ink)' :
+    '#16A34A'
+
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
         <label className="label !mb-0">{label}</label>
         <div className="flex items-center gap-2">
           {statusText ? (
-            <span className={`text-xs font-semibold ${statusClassName ?? 'text-slate-500 dark:text-slate-400'}`}>
+            <span className={`text-xs font-semibold ${statusClassName ?? ''}`} style={!statusClassName ? { color: 'var(--bd-ink-muted)' } : undefined}>
               {statusText}
             </span>
           ) : null}
@@ -105,7 +106,8 @@ export default function PasswordInput({
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+          style={{ color: 'var(--bd-ink-muted)' }}
           aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
           {showPassword ? (
@@ -121,34 +123,30 @@ export default function PasswordInput({
         </button>
       </div>
 
-      {/* Password Strength Meter */}
       {showStrength && value && (
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            <span className="text-xs font-medium" style={{ color: 'var(--bd-ink-soft)' }}>
               {t('auth.password.strength', 'Password strength')}:
             </span>
-            <span className={`text-xs font-bold ${
-              strength.score === 0 ? 'text-red-600 dark:text-red-400' :
-              strength.score === 1 ? 'text-yellow-600 dark:text-yellow-400' :
-              strength.score === 2 ? 'text-blue-600 dark:text-blue-400' :
-              'text-green-600 dark:text-green-400'
-            }`}>
+            <span className="text-xs font-bold" style={{ color: strengthLabelColor }}>
               {strength.label}
             </span>
           </div>
-          
-          {/* Progress bar */}
-          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+
+          <div className="h-2 rounded-full overflow-hidden shadow-inner" style={{ background: 'var(--bd-line)' }}>
             <div
-              className={`h-full ${strength.color} transition-all duration-500 ease-out shadow-sm`}
-              style={{ width: `${strength.percentage}%` }}
+              className="h-full transition-all duration-500 ease-out"
+              style={{ width: `${strength.percentage}%`, background: strength.color }}
             />
           </div>
-          
+
           {showRequirements && (
-            <div className="mt-3 space-y-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <div
+              className="mt-3 space-y-1.5 rounded-xl p-3"
+              style={{ background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)' }}
+            >
+              <p className="text-xs font-semibold mb-2" style={{ color: 'var(--bd-ink)' }}>
                 {t('auth.password.requirements', 'Password requirements')}:
               </p>
               <PasswordRequirement
@@ -169,7 +167,7 @@ export default function PasswordInput({
       )}
 
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--bd-coral)' }}>{error}</p>
       )}
     </div>
   )
@@ -179,15 +177,15 @@ function PasswordRequirement({ met, text }: { met: boolean; text: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
       {met ? (
-        <svg className="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#22C55E' }} fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
       ) : (
-        <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--bd-ink-muted)' }} fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
         </svg>
       )}
-      <span className={met ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}>
+      <span style={{ color: met ? 'var(--bd-ink)' : 'var(--bd-ink-muted)', fontWeight: met ? 500 : 400 }}>
         {text}
       </span>
     </div>

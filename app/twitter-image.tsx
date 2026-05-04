@@ -1,23 +1,20 @@
 import { ImageResponse } from 'next/og'
 
-// Route segment config
 export const runtime = 'edge'
 
-// Image metadata (Twitter summary_large_image format)
-export const alt = 'Boardly - Play Board Games Online with Friends'
+export const alt = 'Boardly — Play Board Games Online with Friends'
 export const size = {
   width: 1200,
   height: 630,
 }
 export const contentType = 'image/png'
 
-// Image generation (same as OG image for consistency)
 export default async function Image() {
   return new ImageResponse(
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: '#FBF6EE',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -26,21 +23,22 @@ export default async function Image() {
           justifyContent: 'center',
           fontFamily: 'system-ui, sans-serif',
           position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        {/* Background pattern */}
+        {/* Dot grid background */}
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2%, transparent 0%), radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.1) 2%, transparent 0%)',
-            backgroundSize: '100px 100px',
-            opacity: 0.3,
+            inset: 0,
+            backgroundImage: 'radial-gradient(circle, #1F1B1618 1.5px, transparent 1.5px)',
+            backgroundSize: '32px 32px',
           }}
         />
+
+        {/* Decorative blobs */}
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 360, height: 360, borderRadius: '50%', background: '#FF6B5B22', display: 'flex' }} />
+        <div style={{ position: 'absolute', bottom: -60, left: -60, width: 280, height: 280, borderRadius: '50%', background: '#FFC44D22', display: 'flex' }} />
 
         {/* Main content */}
         <div
@@ -48,98 +46,90 @@ export default async function Image() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: '32px',
+            gap: 0,
             zIndex: 1,
           }}
         >
-          {/* Emoji/Icon */}
+          {/* Logo mark */}
           <div
             style={{
-              fontSize: '120px',
+              width: 100,
+              height: 100,
+              borderRadius: 24,
+              background: '#1F1B16',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(255, 255, 255, 0.15)',
-              borderRadius: '50%',
-              width: '200px',
-              height: '200px',
-              backdropFilter: 'blur(10px)',
+              boxShadow: '6px 6px 0 #FF6B5B',
+              marginBottom: 36,
             }}
           >
-            🎲
+            <span style={{ fontSize: 60, fontWeight: 900, color: '#FFC44D', lineHeight: 1 }}>B</span>
           </div>
 
-          {/* Title */}
+          {/* Wordmark */}
           <div
             style={{
-              fontSize: '72px',
-              fontWeight: 'bold',
-              color: 'white',
-              textAlign: 'center',
-              letterSpacing: '-2px',
-              textShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+              fontSize: 88,
+              fontWeight: 900,
+              color: '#1F1B16',
+              letterSpacing: '-4px',
+              lineHeight: 1,
+              marginBottom: 20,
             }}
           >
-            Boardly
+            boardly
           </div>
 
-          {/* Subtitle */}
+          {/* Tagline */}
           <div
             style={{
-              fontSize: '36px',
-              color: 'rgba(255, 255, 255, 0.95)',
+              fontSize: 32,
+              color: '#4A3F33',
               textAlign: 'center',
-              maxWidth: '900px',
+              maxWidth: 700,
               lineHeight: 1.4,
-              textShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+              marginBottom: 48,
             }}
           >
-            Play Board Games Online with Friends
+            Play board games online with friends — free, no download needed.
           </div>
 
-          {/* Features */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '40px',
-              marginTop: '24px',
-            }}
-          >
-            {['🎯 Real-time', '🤖 AI Opponents', '🎮 Free to Play'].map((feature) => (
+          {/* Chips */}
+          <div style={{ display: 'flex', gap: 16 }}>
+            {['Yahtzee', 'Guess the Spy', 'Memory', 'Tic-Tac-Toe'].map((name) => (
               <div
-                key={feature}
+                key={name}
                 style={{
-                  fontSize: '24px',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '12px 24px',
-                  borderRadius: '50px',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: '#1F1B16',
+                  background: '#F2E9D8',
+                  padding: '10px 22px',
+                  borderRadius: 999,
+                  border: '1.5px solid #1F1B1620',
                 }}
               >
-                {feature}
+                {name}
               </div>
             ))}
           </div>
+        </div>
 
-          {/* URL */}
-          <div
-            style={{
-              fontSize: '28px',
-              color: 'rgba(255, 255, 255, 0.85)',
-              marginTop: '32px',
-              fontWeight: '500',
-            }}
-          >
-            boardly.online
-          </div>
+        {/* Bottom URL */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 36,
+            fontSize: 22,
+            fontWeight: 600,
+            color: '#8A7A66',
+          }}
+        >
+          boardly.online
         </div>
       </div>
     ),
-    {
-      ...size,
-    }
+    { ...size }
   )
 }

@@ -95,7 +95,7 @@ export default async function AdminGamesPage({
               <option value="abandoned">abandoned</option>
               <option value="cancelled">cancelled</option>
             </select>
-            <button className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            <button className="rounded-xl px-3 py-2 text-sm font-semibold text-white" style={{ background: "var(--bd-sun)", color: "var(--bd-ink)" }}>
               Filter
             </button>
           </form>

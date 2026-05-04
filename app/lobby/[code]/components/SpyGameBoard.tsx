@@ -17,6 +17,7 @@ interface SpyRoleInfo {
   location?: string
   locationRole?: string
   possibleCategories?: string[]
+  possibleLocations?: string[]
 }
 
 interface SpyQuestionHistoryEntry {
@@ -45,6 +46,8 @@ interface SpyGameData {
   currentTargetId?: string | null
   pendingQuestion?: string | null
   questionHistory?: SpyQuestionHistoryEntry[]
+  allLocationNames?: string[]
+  spyGuessedLocation?: string
 }
 
 interface SpyGameBoardProps {
@@ -116,6 +119,8 @@ export default function SpyGameBoard({
   const [answerText, setAnswerText] = React.useState('')
   const [timeRemaining, setTimeRemaining] = React.useState(0)
   const [isRoleLoading, setIsRoleLoading] = React.useState(false)
+  const [guessLocation, setGuessLocation] = React.useState('')
+  const [showGuessConfirm, setShowGuessConfirm] = React.useState(false)
   const autoInitKeyRef = React.useRef<string | null>(null)
 
   const data = (state.data || {}) as SpyGameData
@@ -306,6 +311,14 @@ export default function SpyGameBoard({
 
     setQuestionTargetId(availableTargets[0].id)
   }, [availableTargets, phase, questionTargetId])
+
+  React.useEffect(() => {
+    if (guessLocation) return
+    const locations = roleInfo?.possibleLocations
+    if (locations && locations.length > 0) {
+      setGuessLocation(locations[0])
+    }
+  }, [guessLocation, roleInfo])
 
   React.useEffect(() => {
     if (!currentUserId) return
@@ -592,11 +605,65 @@ export default function SpyGameBoard({
                     {t(roleInfo.role === 'Spy' ? 'spy.roles.spy' : 'spy.roles.regular')}
                   </h3>
                   {roleInfo.role === 'Spy' ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {roleInfo.possibleCategories?.map((category) => (
-                        <span key={category} className="bd-chip bd-chip-coral py-1 text-[11px]">{category}</span>
-                      ))}
-                    </div>
+                    <>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {roleInfo.possibleCategories?.map((category) => (
+                          <span key={category} className="bd-chip bd-chip-coral py-1 text-[11px]">{category}</span>
+                        ))}
+                      </div>
+                      {roleInfo.possibleLocations && roleInfo.possibleLocations.length > 0 && (
+                        <div className="mt-4 border-t border-[var(--bd-line)] pt-4">
+                          {!showGuessConfirm ? (
+                            <button
+                              type="button"
+                              onClick={() => setShowGuessConfirm(true)}
+                              className="bd-btn bd-btn-coral w-full justify-center text-sm"
+                            >
+                              {t('spy.guessLocation')}
+                            </button>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">
+                                {t('spy.guessLocationWarning')}
+                              </p>
+                              <div className="relative">
+                                <select
+                                  value={guessLocation}
+                                  onChange={(e) => setGuessLocation(e.target.value)}
+                                  className="bd-input w-full appearance-none pr-10 cursor-pointer text-sm"
+                                >
+                                  {roleInfo.possibleLocations.map((loc) => (
+                                    <option key={loc} value={loc}>{loc}</option>
+                                  ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                                  <svg className="h-4 w-4 text-bd-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  disabled={!guessLocation || isActionLoading}
+                                  onClick={() => void submitAction('spy-guess-location', { location: guessLocation })}
+                                  className="bd-btn bd-btn-coral flex-1 justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {t('spy.guessLocationConfirm')}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowGuessConfirm(false)}
+                                  className="bd-btn bd-btn-soft px-3 text-sm"
+                                >
+                                  {t('common.cancel')}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="mt-3 space-y-2 text-sm font-semibold text-[var(--bd-ink-soft)]">
                       <p><span className="text-[var(--bd-ink-muted)]">{t('spy.location')}:</span> {roleInfo.location}</p>
@@ -643,6 +710,7 @@ export default function SpyGameBoard({
             eliminatedId={eliminatedId}
             spyId={spyId}
             location={data.location || 'Unknown'}
+            spyGuessedLocation={data.spyGuessedLocation}
             scores={scores}
             currentRound={data.currentRound || 1}
             totalRounds={data.totalRounds || 3}

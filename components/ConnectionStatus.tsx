@@ -16,7 +16,6 @@ export function ConnectionStatus({
   const [hasConnectedBefore, setHasConnectedBefore] = useState(false)
   const [showDisconnected, setShowDisconnected] = useState(false)
 
-  // Track if we've successfully connected at least once
   useEffect(() => {
     if (isConnected) {
       setHasConnectedBefore(true)
@@ -24,11 +23,8 @@ export function ConnectionStatus({
     }
   }, [isConnected])
 
-  // Only show disconnected message if we've connected before
-  // and we're not currently trying to reconnect
   useEffect(() => {
     if (!isConnected && !isReconnecting && hasConnectedBefore) {
-      // Add a small delay to avoid flashing the error on page load
       const timer = setTimeout(() => {
         setShowDisconnected(true)
       }, 2000)
@@ -38,51 +34,44 @@ export function ConnectionStatus({
     }
   }, [isConnected, isReconnecting, hasConnectedBefore])
 
-  if (isConnected) {
-    return null // Don't show anything when connected
-  }
+  if (isConnected) return null
 
   if (isReconnecting) {
-    // Show helpful message for slow connections (likely cold start)
     const isSlowConnection = reconnectAttempt >= 3
-    
+
     return (
       <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-4 py-3 shadow-lg max-w-sm">
+        <div
+          className="rounded-xl px-4 py-3 shadow-lg max-w-sm"
+          style={{
+            background: '#FFFBEB',
+            border: '1.5px solid #FDE68A',
+          }}
+        >
           <div className="flex items-center space-x-3">
             <div className="flex-shrink-0">
               <svg
-                className="animate-spin h-5 w-5 text-yellow-600 dark:text-yellow-400"
+                className="animate-spin h-5 w-5"
+                style={{ color: '#D97706' }}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+              <p className="text-sm font-medium" style={{ color: '#92400E' }}>
                 {t('connection.reconnecting', 'Reconnecting...')}
               </p>
               {reconnectAttempt > 0 && (
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
+                <p className="text-xs mt-0.5" style={{ color: '#B45309' }}>
                   {t('connection.attempt', `Attempt ${reconnectAttempt}`)}
                 </p>
               )}
               {isSlowConnection && (
-                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 border-t border-yellow-200 dark:border-yellow-700 pt-1">
+                <p className="text-xs mt-1 pt-1" style={{ color: '#B45309', borderTop: '1px solid #FDE68A' }}>
                   ⏳ {t('connection.coldStart', 'Server is waking up... This may take up to a minute.')}
                 </p>
               )}
@@ -93,20 +82,22 @@ export function ConnectionStatus({
     )
   }
 
-  // Only show disconnected message if we've been connected before
-  // This prevents showing the error on initial page load
-  if (!showDisconnected) {
-    return null
-  }
+  if (!showDisconnected) return null
 
-  // Disconnected (not trying to reconnect)
   return (
     <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 shadow-lg">
+      <div
+        className="rounded-xl px-4 py-3 shadow-lg"
+        style={{
+          background: '#FFF1F0',
+          border: '1.5px solid #FFCCC7',
+        }}
+      >
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
             <svg
-              className="h-5 w-5 text-red-600 dark:text-red-400"
+              className="h-5 w-5"
+              style={{ color: 'var(--bd-coral)' }}
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -119,10 +110,10 @@ export function ConnectionStatus({
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-red-800 dark:text-red-200">
+            <p className="text-sm font-medium" style={{ color: '#7F1D1D' }}>
               {t('connection.disconnected', 'Connection lost')}
             </p>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: '#991B1B' }}>
               {t('connection.checkNetwork', 'Please check your network connection')}
             </p>
           </div>

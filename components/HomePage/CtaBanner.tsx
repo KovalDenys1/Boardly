@@ -4,41 +4,43 @@ import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useGuest } from '@/contexts/GuestContext'
 import BoardlyAvatar from '@/components/ui/BoardlyAvatar'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function CtaBanner() {
   const { data: session, status } = useSession()
   const { isGuest, guestName } = useGuest()
+  const { t } = useTranslation()
   const isLoggedIn = status === 'authenticated'
   const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'friend'
 
   const content = isLoggedIn
     ? {
-        title: `Welcome back, ${displayName}.`,
-        accent: 'Pick a game and start a room.',
-        body: 'Your profile, friends, stats, and game history are ready when you are.',
+        title: t('home.ctaLoggedInTitle', { name: displayName }),
+        accent: t('home.ctaLoggedInAccent'),
+        body: t('home.ctaLoggedInBody'),
         primaryHref: '/games',
-        primaryLabel: 'Browse games',
+        primaryLabel: t('home.browseGames'),
         secondaryHref: '/profile',
-        secondaryLabel: 'Open profile',
+        secondaryLabel: t('home.openProfile'),
       }
     : isGuest && guestName
       ? {
-          title: `Ready for another round, ${guestName}?`,
-          accent: 'Keep playing as a guest.',
-          body: 'You can jump into games right away. Create an account later if you want to keep your profile, stats, and history.',
-          primaryHref: '/games',
-          primaryLabel: 'Browse games',
-          secondaryHref: '/auth/register',
-          secondaryLabel: 'Save my progress',
+          title: t('home.ctaGuestTitle'),
+          accent: t('home.ctaGuestAccent'),
+          body: t('home.ctaGuestBody'),
+          primaryHref: '/auth/register',
+          primaryLabel: t('home.createFreeAccount'),
+          secondaryHref: '/games',
+          secondaryLabel: t('home.keepPlaying'),
         }
       : {
-          title: 'Make a room.',
-          accent: 'Send a link. Play.',
-          body: 'Start as a guest when you just want to play. Create an account when you want to keep your profile, stats, and game history.',
+          title: t('home.ctaVisitorTitle'),
+          accent: t('home.ctaVisitorAccent'),
+          body: t('home.ctaVisitorBody'),
           primaryHref: '/games',
-          primaryLabel: 'Browse games',
+          primaryLabel: t('home.browseGames'),
           secondaryHref: '/auth/register',
-          secondaryLabel: 'Create account',
+          secondaryLabel: t('home.createFreeAccount'),
         }
 
   const avatarNames = isLoggedIn

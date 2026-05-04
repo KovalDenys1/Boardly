@@ -70,7 +70,7 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
           className={navBtn(!!pathname?.startsWith('/friends'))}
           style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
         >
-          Friends
+          {t('header.friends')}
         </button>
       )}
     </div>

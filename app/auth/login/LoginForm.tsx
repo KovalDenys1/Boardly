@@ -172,16 +172,16 @@ export default function LoginForm() {
   }
 
   const renderInviteBanner = () => (
-    <div className="rounded-2xl border border-emerald-300/90 bg-gradient-to-r from-emerald-50 via-white to-sky-50 p-4 shadow-sm dark:border-emerald-600/70 dark:from-emerald-900/20 dark:via-slate-900/60 dark:to-sky-900/20">
+    <div className="rounded-2xl p-4 shadow-sm" style={{ border: '1.5px solid #22C55E60', background: '#22C55E10' }}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-2xl shadow-sm dark:bg-slate-900/60">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-sm" style={{ background: 'var(--bd-bg2)' }}>
           🎮
         </span>
         <div className="min-w-0">
-          <p className="font-semibold text-green-700 dark:text-green-300">
+          <p className="font-semibold" style={{ color: '#16A34A' }}>
             {t('auth.login.invited', "You've been invited to a game!")}
           </p>
-          <p className="mt-1 text-sm leading-6 text-green-600 dark:text-green-400">
+          <p className="mt-1 text-sm leading-6" style={{ color: '#15803D' }}>
             {t('auth.login.loginToJoin', 'Login to join the lobby')}
           </p>
         </div>
@@ -240,23 +240,31 @@ export default function LoginForm() {
 
     const chipClassName = tone === 'dark'
       ? 'border-white/15 bg-white/8 hover:border-white/25 hover:bg-white/12'
-      : 'border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 hover:border-blue-200 hover:bg-blue-50/70 dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/90 dark:hover:border-blue-500/40 dark:hover:bg-slate-800/90'
+      : ''
+
+    const chipStyle = tone === 'light'
+      ? { border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }
+      : undefined
 
     const primaryTextClassName = tone === 'dark'
       ? 'text-white'
-      : 'text-slate-900 dark:text-white'
+      : ''
+    const primaryTextStyle = tone === 'light' ? { color: 'var(--bd-ink)' } : undefined
 
     const secondaryTextClassName = tone === 'dark'
       ? 'text-white/70'
-      : 'text-slate-600 dark:text-slate-300'
+      : ''
+    const secondaryTextStyle = tone === 'light' ? { color: 'var(--bd-ink-soft)' } : undefined
 
     const dismissClassName = tone === 'dark'
       ? 'text-white/65 hover:text-white'
-      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+      : ''
+    const dismissStyle = tone === 'light' ? { color: 'var(--bd-ink-muted)' } : undefined
 
     const avatarClassName = tone === 'dark'
       ? 'h-10 w-10 shrink-0 bg-white/15 text-white'
-      : 'h-10 w-10 shrink-0 bg-blue-600 text-white'
+      : 'h-10 w-10 shrink-0 text-white'
+    const avatarStyle = tone === 'light' ? { background: 'var(--bd-ink)', color: 'var(--bd-sun)' } : undefined
 
     return (
       <div>
@@ -268,21 +276,23 @@ export default function LoginForm() {
             setTimeout(() => passwordRef.current?.focus(), 0)
           }}
           className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left shadow-sm transition-colors ${chipClassName}`}
+          style={chipStyle}
         >
           <UserAvatar
             image={lastAccount.image}
             userName={lastAccount.name}
             userEmail={lastAccount.email}
             className={avatarClassName}
+            style={avatarStyle}
             textClassName="text-sm font-bold"
           />
           <div className="min-w-0 flex-1">
             {lastAccount.name && (
-              <p className={`truncate text-sm font-semibold ${primaryTextClassName}`}>{lastAccount.name}</p>
+              <p className={`truncate text-sm font-semibold ${primaryTextClassName}`} style={primaryTextStyle}>{lastAccount.name}</p>
             )}
-            <p className={`truncate text-sm ${secondaryTextClassName}`}>{lastAccount.email}</p>
+            <p className={`truncate text-sm ${secondaryTextClassName}`} style={secondaryTextStyle}>{lastAccount.email}</p>
           </div>
-          <span className={`shrink-0 ${secondaryTextClassName}`}>→</span>
+          <span className={`shrink-0 ${secondaryTextClassName}`} style={secondaryTextStyle}>→</span>
         </button>
         <button
           type="button"
@@ -291,6 +301,7 @@ export default function LoginForm() {
             setFormData((prev) => ({ ...prev, email: '' }))
           }}
           className={`mt-2 w-full text-center text-xs transition-colors ${dismissClassName}`}
+          style={dismissStyle}
         >
           Sign in with a different account
         </button>

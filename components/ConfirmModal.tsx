@@ -33,15 +33,18 @@ export default function ConfirmModal({
 
   const variantStyles = {
     danger: {
-      button: 'bg-red-500 hover:bg-red-600 focus:ring-red-500',
+      buttonBg: 'var(--bd-coral)',
+      buttonHoverBg: '#e85a4b',
       icon: '⚠️'
     },
     warning: {
-      button: 'bg-orange-500 hover:bg-orange-600 focus:ring-orange-500',
+      buttonBg: 'var(--bd-sun)',
+      buttonHoverBg: '#e6b040',
       icon: '⚡'
     },
     info: {
-      button: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-500',
+      buttonBg: 'var(--bd-ink)',
+      buttonHoverBg: '#352F26',
       icon: 'ℹ️'
     }
   }
@@ -52,38 +55,43 @@ export default function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
       <div className="text-center py-4">
-        {/* Icon */}
         {displayIcon && (
           <div className="mb-4 flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-4xl animate-scale-in">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center text-4xl animate-scale-in"
+              style={{ background: 'var(--bd-bg2)' }}
+            >
               {displayIcon}
             </div>
           </div>
         )}
 
-        {/* Title */}
         {title && (
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+          <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--bd-ink)' }}>
             {title}
           </h3>
         )}
 
-        {/* Message */}
-        <p className="text-gray-600 dark:text-gray-300 mb-6 px-2">
+        <p className="mb-6 px-2" style={{ color: 'var(--bd-ink-soft)' }}>
           {message}
         </p>
 
-        {/* Actions */}
         <div className="flex gap-3 justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            className="px-6 py-2.5 rounded-xl font-medium transition-all"
+            style={{
+              background: 'var(--bd-bg2)',
+              color: 'var(--bd-ink)',
+              border: '1.5px solid var(--bd-line)',
+            }}
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
-            className={`px-6 py-2.5 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${style.button}`}
+            className="px-6 py-2.5 rounded-xl font-medium transition-all text-white"
+            style={{ background: style.buttonBg }}
             autoFocus
           >
             {confirmText}

@@ -317,7 +317,18 @@ export class TicTacToeGame extends GameEngine {
 
   checkWinCondition(): Player | null {
     const gameData = this.state.data as TicTacToeGameData
+    const match = this.ensureMatchState(gameData)
 
+    if (this.isMatchComplete(match)) {
+      // Final state: pick by total round wins, not last-round winner
+      const xWins = match.winsBySymbol.X
+      const oWins = match.winsBySymbol.O
+      if (xWins > oWins) return this.state.players[0] || null
+      if (oWins > xWins) return this.state.players[1] || null
+      return null // tied match — no single winner
+    }
+
+    // Intermediate round or single-round game
     if (gameData.winner === null || gameData.winner === 'draw') {
       return null
     }

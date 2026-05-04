@@ -284,7 +284,7 @@ const Scorecard = React.memo(function Scorecard({
                 onBackToMyCards()
               }}
               className="ml-auto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
-              style={{ borderColor: 'var(--bd-line)', background: 'white', color: 'var(--bd-lav-deep)' }}
+              style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-lav-deep)' }}
             >
               ← {t('yahtzee.actions.myCards')}
             </button>
@@ -296,7 +296,7 @@ const Scorecard = React.memo(function Scorecard({
                 onGoToCurrentTurn()
               }}
               className="ml-auto shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
-              style={{ borderColor: 'var(--bd-line)', background: 'white', color: 'var(--bd-sky)' }}
+              style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-sky)' }}
             >
               {t('yahtzee.actions.currentTurn')} →
             </button>

@@ -131,7 +131,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
           <span className="text-lg">👥</span>
           <span className="truncate">{t('lobby.players.title', 'Players')}</span>
           {onPlayerClick && (
-            <span className="text-xs font-normal text-bd-ink-muted dark:text-gray-300 ml-auto shrink-0">
+            <span className="text-xs font-normal text-bd-ink-muted ml-auto shrink-0">
               {t('lobby.players.clickToView', 'Click')}
             </span>
           )}
@@ -172,8 +172,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     : ''
                   }
                 ${isCurrentUser ? '!border-green-500' : ''}
-                ${isSelected ? '!border-purple-400' : ''}
-                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400' : ''}
+                ${isSelected ? '!border-[#FFC44D]' : ''}
+                ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC44D]' : ''}
               `}
                 style={{
                   background: isBot
@@ -204,7 +204,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Player Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center flex-wrap" style={{ gap: 'clamp(3px, 0.3vw, 6px)', marginBottom: 'clamp(1px, 0.1vh, 3px)' }}>
-                        <span className="font-semibold truncate text-bd-ink dark:text-white" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
+                        <span className="font-semibold truncate text-bd-ink" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {playerName}
                         </span>
                         {isBot && (
@@ -229,10 +229,10 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         )}
                       </div>
                       <div className="flex items-center" style={{ gap: 'clamp(3px, 0.3vw, 6px)' }}>
-                        <span className="text-bd-ink-muted dark:text-gray-400" style={{ fontSize: 'clamp(10px, 0.78vw, 12px)' }}>{t('game.ui.score')}:</span>
+                        <span className="text-bd-ink-muted" style={{ fontSize: 'clamp(10px, 0.78vw, 12px)' }}>{t('game.ui.score')}:</span>
                         <span className={`font-bold ${animatingScores[player.id]
-                            ? 'text-green-600 dark:text-green-400 animate-pulse'
-                            : 'text-bd-ink dark:text-white'
+                            ? 'text-green-600 animate-pulse'
+                            : 'text-bd-ink'
                           }`} style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {player.score}
                           {animatingScores[player.id] && (
@@ -259,7 +259,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         sounds.play('click', { force: true })
                         onProfileClick(player.userId)
                       }}
-                      className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-bd-ink-muted hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 transition-all"
+                      className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-bd-ink-muted hover:bg-[#FFC44D30] hover:text-bd-ink transition-all"
                       title="View profile"
                       aria-label="View player profile"
                     >
@@ -295,16 +295,21 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             return (
               <div
                 key={`player-modal-${player.id}-${player.userId}`}
-                className={`
-                p-4 rounded-xl transition-all shadow-md border-2
-                ${isCurrentTurn
-                    ? 'bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border-blue-400 dark:border-blue-500'
-                    : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
-                  }
-                ${isCurrentUser ? '!border-green-500 dark:!border-green-400' : ''}
-                ${isSelected ? '!border-purple-500 dark:!border-purple-400' : ''}
-                ${isBot ? 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30' : ''}
-              `}
+                className="p-4 rounded-xl transition-all shadow-md"
+                style={{
+                  border: isCurrentUser
+                    ? '2px solid #22C55E'
+                    : isSelected
+                    ? '2px solid var(--bd-sun)'
+                    : isCurrentTurn
+                    ? '2px solid var(--bd-sun)'
+                    : '1.5px solid var(--bd-line)',
+                  background: isBot
+                    ? 'var(--bd-bg2)'
+                    : isCurrentTurn
+                    ? '#FFC44D18'
+                    : 'var(--bd-bg)',
+                }}
               >
                 <div className="flex items-center justify-between gap-4">
                   {/* Left: Position & Player Info */}
@@ -327,17 +332,17 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           {playerName}
                         </span>
                         {isBot && (
-                          <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
                             AI
                           </span>
                         )}
                         {isBot && botDifficultyLabel && (
-                          <span className="text-xs bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          <span className="bd-chip text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
                             {botDifficultyLabel}
                           </span>
                         )}
                         {isCurrentUser && !isBot && (
-                          <span className="text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
+                          <span className="bd-chip bd-chip-mint text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
                             {t('game.ui.you')}
                           </span>
                         )}
@@ -347,13 +352,13 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                         <div className="flex items-center gap-1.5">
                           <span>{t('lobby.players.position')}:</span>
                           <span className="font-semibold">{player.position + 1}</span>
                         </div>
                         {player.isReady && (
-                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                          <div className="flex items-center gap-1 text-green-600">
                             <span>✓</span>
                             <span className="font-semibold">{t('lobby.players.ready')}</span>
                           </div>
@@ -366,8 +371,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                   <div className="flex items-center gap-4">
                     {/* Score Display */}
                     <div className="text-right">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('game.ui.score')}</div>
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      <div className="text-xs mb-0.5" style={{ color: 'var(--bd-ink-muted)' }}>{t('game.ui.score')}</div>
+                      <div className="text-2xl font-bold" style={{ color: 'var(--bd-ink)' }}>
                         {player.score}
                       </div>
                     </div>
@@ -379,7 +384,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           onProfileClick(player.userId)
                           setIsModalOpen(false)
                         }}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                        className="px-4 py-2 rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
+                        style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink)', border: '1.5px solid var(--bd-line)' }}
                       >
                         👤 Profile
                       </button>
@@ -392,7 +398,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                           onPlayerClick(player.userId)
                           setIsModalOpen(false)
                         }}
-                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors shadow-md hover:shadow-lg"
+                        className="px-4 py-2 text-white rounded-xl font-semibold transition-all"
+                        style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
                       >
                         {t('lobby.players.viewCards')}
                       </button>

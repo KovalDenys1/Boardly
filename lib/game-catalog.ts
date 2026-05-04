@@ -179,7 +179,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     difficultyKey: 'games.tictactoe.difficulty',
     availability: 'available',
     route: '/games/tic-tac-toe/lobbies',
-    color: 'from-yellow-400 to-orange-500',
+    color: 'from-red-500 to-coral-500',
   },
   {
     id: 'memory',

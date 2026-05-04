@@ -188,7 +188,7 @@ export default function Chat({
                 onClick={onClearChat}
                 aria-label={t('chat.clear')}
                 className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-                style={{ borderColor: 'var(--bd-line)', background: 'white', color: 'var(--bd-ink-soft)' }}
+                style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
                 title={t('chat.clear')}
               >
                 <span className="text-base" aria-hidden="true">🗑️</span>
@@ -198,7 +198,7 @@ export default function Chat({
               onClick={onToggleMinimize}
               aria-label={t('chat.minimize')}
               className="flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none"
-              style={{ borderColor: 'var(--bd-line)', background: 'white', color: 'var(--bd-ink-soft)' }}
+              style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
               title={t('chat.minimize')}
             >
               <span className="text-base" aria-hidden="true">−</span>

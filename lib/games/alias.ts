@@ -246,14 +246,19 @@ export class AliasGame extends GameEngine {
 
   private _finishGame(data: AliasGameData): void {
     const [team1, team2] = data.teams
+    let winningTeam: (typeof data.teams)[number] | null = null
     if (team1.score > team2.score) {
       data.winnerId = team1.id
+      winningTeam = team1
     } else if (team2.score > team1.score) {
       data.winnerId = team2.id
+      winningTeam = team2
     } else {
       data.winnerId = 'tie'
     }
     data.phase = 'game_over'
     this.state.status = 'finished'
+    // state.winner tracks the first player of the winning team (team games can't have one winner)
+    this.state.winner = winningTeam?.playerIds[0] ?? undefined
   }
 }

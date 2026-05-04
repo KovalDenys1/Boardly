@@ -5,6 +5,7 @@ export default function TicTacToeLobbiesPage() {
     <GameLobbiesPage
       gameType="tic_tac_toe"
       iconVariant="tic-tac-toe"
+      accentColor="var(--bd-coral)"
       pagePath="/games/tic-tac-toe/lobbies"
       titleEmoji="❌"
       gameNameKey="games.tictactoe.name"

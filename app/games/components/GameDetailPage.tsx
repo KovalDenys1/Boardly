@@ -1,6 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import Footer from '@/components/Footer'
-import TicTacToeGameIcon from '@/components/ui/TicTacToeGameIcon'
+import GameIcon from '@/components/GameIcon'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 type DetailStep = {
   title: string
@@ -19,6 +22,8 @@ type GameDetailPageProps = {
   icon: string
   iconLabel: string
   iconVariant?: 'tic-tac-toe'
+  gameId?: string
+  accentColor?: string
   accent: string
   lobbiesHref: string
   primaryCtaLabel?: string
@@ -35,13 +40,21 @@ function GameDetailIcon({
   icon,
   iconLabel,
   iconVariant,
+  gameId,
+  accentColor,
 }: {
   icon: string
   iconLabel: string
   iconVariant?: GameDetailPageProps['iconVariant']
+  gameId?: string
+  accentColor?: string
 }) {
+  if (gameId) {
+    return <GameIcon gameId={gameId} accentColor={accentColor ?? 'var(--bd-coral)'} size={94} />
+  }
+
   if (iconVariant === 'tic-tac-toe') {
-    return <TicTacToeGameIcon size={94} />
+    return <GameIcon gameId="tic-tac-toe" accentColor="var(--bd-coral)" size={94} />
   }
 
   return (
@@ -62,6 +75,8 @@ export default function GameDetailPage({
   icon,
   iconLabel,
   iconVariant,
+  gameId,
+  accentColor,
   accent,
   lobbiesHref,
   primaryCtaLabel = 'Play now',
@@ -73,13 +88,14 @@ export default function GameDetailPage({
   benefitsTitle,
   benefits,
 }: GameDetailPageProps) {
+  const { t } = useTranslation()
   return (
     <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto text-bd-ink">
       <main className="mx-auto w-full max-w-6xl grow px-4 py-8 sm:px-6 lg:px-8">
         <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm font-semibold text-bd-ink-muted" aria-label="Breadcrumb">
-          <Link href="/" className="transition-colors hover:text-bd-ink">Home</Link>
+          <Link href="/" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.home')}</Link>
           <span>/</span>
-          <Link href="/games" className="transition-colors hover:text-bd-ink">Games</Link>
+          <Link href="/games" className="transition-colors hover:text-bd-ink">{t('breadcrumbs.games')}</Link>
           <span>/</span>
           <span className="text-bd-ink">{gameName}</span>
         </nav>
@@ -91,15 +107,15 @@ export default function GameDetailPage({
             style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
           />
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-            <div>
-              <span className="bd-kicker mb-3 block">Game guide</span>
+            <div className="text-center lg:text-left">
+              <span className="bd-kicker mb-3 block">{t('games.gameGuide')}</span>
               <h1 className="font-display text-[clamp(40px,6vw,70px)] font-black leading-[0.95] text-bd-ink">
                 {title}
               </h1>
               <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg">
                 {description}
               </p>
-              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:items-start lg:justify-start">
                 {primaryCtaDisabled ? (
                   <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70" aria-disabled="true">
                     {primaryCtaLabel}
@@ -110,13 +126,13 @@ export default function GameDetailPage({
                   </Link>
                 )}
                 <Link href="/games" className="bd-btn bd-btn-soft bd-btn-lg justify-center">
-                  Browse games
+                  {t('home.browseGames')}
                 </Link>
               </div>
             </div>
 
             <div className="flex justify-center lg:justify-end">
-              <GameDetailIcon icon={icon} iconLabel={iconLabel} iconVariant={iconVariant} />
+              <GameDetailIcon icon={icon} iconLabel={iconLabel} iconVariant={iconVariant} gameId={gameId} accentColor={accentColor} />
             </div>
           </div>
         </section>
@@ -141,7 +157,7 @@ export default function GameDetailPage({
           </section>
 
           <section className="bd-card p-6 sm:p-8">
-            <h2 className="font-display text-3xl font-black text-bd-ink">How to play</h2>
+            <h2 className="font-display text-3xl font-black text-bd-ink">{t('games.howToPlay')}</h2>
             <ol className="mt-5 space-y-4">
               {steps.map(({ title: stepTitle, desc }, index) => (
                 <li key={stepTitle} className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3">
@@ -181,11 +197,11 @@ export default function GameDetailPage({
             </span>
           ) : (
             <Link href={lobbiesHref} className="bd-btn bd-btn-coral bd-btn-lg justify-center">
-              Start playing
+              {t('games.startPlaying')}
             </Link>
           )}
           <p className="mt-4 text-sm font-medium text-bd-ink-muted">
-            {primaryCtaDisabled ? 'This game is still being polished.' : 'You can play as a guest. No app download needed.'}
+            {primaryCtaDisabled ? t('games.stillBeingPolished') : t('games.noDownloadNeeded')}
           </p>
         </div>
       </main>

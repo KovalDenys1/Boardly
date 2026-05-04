@@ -1,8 +1,10 @@
+'use client'
+
 import Link from 'next/link'
-import Die from '@/components/ui/Die'
-import TicTacToeGameIcon from '@/components/ui/TicTacToeGameIcon'
+import GameIcon from '@/components/GameIcon'
 import { getCatalogGames, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 type CardStatus = GameCatalogEntry['availability']
 
@@ -14,22 +16,24 @@ interface GameCardProps {
   diff: string
   desc: string
   href: string | null
+  detailHref?: string
   status: CardStatus
   accentBg: string
   illustration: React.ReactNode
 }
 
-function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg, illustration }: GameCardProps) {
+function GameCard({ name, tag, players, time, diff, desc, href, detailHref, status, accentBg, illustration }: GameCardProps) {
+  const { t } = useTranslation()
   const badge = {
-    available: { txt: 'Play now', bg: 'rgba(79,201,166,0.18)', color: 'var(--bd-mint-deep)' },
-    'in-development': { txt: 'Coming later', bg: 'rgba(255,196,77,0.22)', color: 'var(--bd-ink-soft)' },
-    planned: { txt: 'On the list', bg: 'rgba(155,140,255,0.18)', color: 'var(--bd-lav-deep)' },
+    available: { txt: t('games.playNow'), bg: 'rgba(79,201,166,0.18)', color: 'var(--bd-mint-deep)' },
+    'in-development': { txt: t('home.ribbonBadgeLater'), bg: 'rgba(255,196,77,0.22)', color: 'var(--bd-ink-soft)' },
+    planned: { txt: t('home.ribbonBadgePlanned'), bg: 'rgba(155,140,255,0.18)', color: 'var(--bd-lav-deep)' },
   }[status]
 
   return (
     <div
       style={{
-        background: 'white',
+        background: 'var(--bd-card-warm)',
         borderRadius: 24,
         border: '1.5px solid var(--bd-line)',
         boxShadow: '0 6px 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)',
@@ -90,9 +94,9 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
           ))}
         </div>
 
-        {status === 'available' && href ? (
+        {status === 'available' && (detailHref ?? href) ? (
           <Link
-            href={href}
+            href={detailHref ?? href!}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -108,7 +112,7 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
               marginTop: 4,
             }}
           >
-            Find a room →
+            {t('games.seeGame')}
           </Link>
         ) : (
           <div
@@ -125,7 +129,7 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
               marginTop: 4,
             }}
           >
-            {status === 'in-development' ? 'Coming later' : 'On the list'}
+            {status === 'in-development' ? t('home.ribbonBadgeLater') : t('home.ribbonBadgePlanned')}
           </div>
         )}
       </div>
@@ -133,43 +137,18 @@ function GameCard({ name, tag, players, time, diff, desc, href, status, accentBg
   )
 }
 
-const GAME_DETAILS: Record<string, Omit<GameCardProps, 'href' | 'status' | 'illustration'>> = {
-  yahtzee: {
-    name: 'Yahtzee',
-    tag: 'Dice',
-    players: '2-4',
-    time: '15 min',
-    diff: 'Easy',
-    desc: 'Roll five dice, fill the scorecard, and chase the best combinations. You can play with friends or start a quick solo-friendly match.',
-    accentBg: 'rgba(255,107,91,0.10)',
-  },
-  spy: {
-    name: 'Guess the Spy',
-    tag: 'Deduction',
-    players: '3-8',
-    time: '10 min',
-    diff: 'Medium',
-    desc: 'Everyone gets the same location except the spy. Ask questions, listen closely, and vote.',
-    accentBg: 'rgba(155,140,255,0.12)',
-  },
-  'tic-tac-toe': {
-    name: 'Tic Tac Toe',
-    tag: 'Strategy',
-    players: '2',
-    time: '5 min',
-    diff: 'Easy',
-    desc: 'A fast two-player classic. Play with a friend or start a quick game when you only have a minute.',
-    accentBg: 'rgba(79,201,166,0.12)',
-  },
-  memory: {
-    name: 'Memory',
-    tag: 'Cards',
-    players: '2-4',
-    time: '10 min',
-    diff: 'Easy',
-    desc: 'Flip cards, remember positions, and match pairs across easy, medium, or hard boards.',
-    accentBg: 'rgba(255,196,77,0.14)',
-  },
+const GAME_ACCENT_BG: Record<string, string> = {
+  yahtzee: 'rgba(125,211,252,0.15)',
+  spy: 'rgba(155,140,255,0.12)',
+  'tic-tac-toe': 'rgba(255,107,91,0.10)',
+  memory: 'rgba(79,201,166,0.12)',
+}
+
+const GAME_DETAIL_HREF: Record<string, string> = {
+  yahtzee: '/games/yahtzee',
+  spy: '/games/spy',
+  'tic-tac-toe': '/games/tic-tac-toe',
+  memory: '/games/memory',
 }
 
 function fallbackName(id: string) {
@@ -183,58 +162,26 @@ function getIllustration(gameId: string, emoji: string) {
   switch (gameId) {
     case 'yahtzee':
       return (
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}>
-        <div className="bd-float" style={{ animationDelay: '0s' }}><Die value={5} size={48} rotate="-8deg" /></div>
-        <div className="bd-float" style={{ animationDelay: '0.4s' }}><Die value={6} size={56} /></div>
-        <div className="bd-float" style={{ animationDelay: '0.8s' }}><Die value={3} size={48} rotate="-2deg" /></div>
-      </div>
+        <div className="bd-float" style={{ animationDelay: '0s' }}>
+          <GameIcon gameId="yahtzee" accentColor="var(--bd-sky)" size={72} />
+        </div>
       )
     case 'spy':
       return (
-      <div className="bd-float" style={{ animationDelay: '0s', position: 'relative' }}>
-        <div
-          style={{
-            width: 78,
-            height: 78,
-            borderRadius: '50%',
-            background: 'var(--bd-lav)',
-            border: '3px solid var(--bd-ink)',
-            boxShadow: '4px 4px 0 var(--bd-ink)',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 38,
-          }}
-        >
-          🕵
+        <div className="bd-float" style={{ animationDelay: '0.4s' }}>
+          <GameIcon gameId="spy" accentColor="var(--bd-lav)" size={72} />
         </div>
-      </div>
       )
     case 'tic-tac-toe':
-      return <TicTacToeGameIcon floating />
+      return (
+        <div className="bd-float" style={{ animationDelay: '0.8s' }}>
+          <GameIcon gameId="tic-tac-toe" accentColor="var(--bd-coral)" size={72} />
+        </div>
+      )
     case 'memory':
       return (
-        <div
-          className="bd-float"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 34px)', gridTemplateRows: 'repeat(2, 42px)', gap: 6 }}
-        >
-          {['?', '★', '?', '●', '●', '?', '★', '?'].map((symbol, index) => (
-            <span
-              key={`${symbol}-${index}`}
-              style={{
-                display: 'grid',
-                placeItems: 'center',
-                borderRadius: 8,
-                border: '2px solid var(--bd-ink)',
-                background: symbol === '?' ? 'var(--bd-sun)' : 'white',
-                boxShadow: '2px 2px 0 var(--bd-ink)',
-                fontFamily: 'var(--bd-font-display)',
-                fontWeight: 800,
-                color: 'var(--bd-ink)',
-              }}
-            >
-              {symbol}
-            </span>
-          ))}
+        <div className="bd-float" style={{ animationDelay: '1.2s' }}>
+          <GameIcon gameId="memory" accentColor="var(--bd-mint)" size={72} />
         </div>
       )
     default:
@@ -243,18 +190,63 @@ function getIllustration(gameId: string, emoji: string) {
 }
 
 export default function GameRibbon() {
+  const { t } = useTranslation()
   const catalogGames = getCatalogGames()
   const availableGames = catalogGames.filter((game) => game.availability === 'available')
   const inDevelopmentCount = catalogGames.filter((game) => game.availability === 'in-development').length
   const plannedCount = catalogGames.filter((game) => game.availability === 'planned').length
+
+  const translatedDetails: Record<string, Omit<GameCardProps, 'href' | 'status' | 'illustration'>> = {
+    yahtzee: {
+      name: t('games.yahtzee.name'),
+      tag: t('games.yahtzee.ribbon.tag'),
+      players: '2-4',
+      time: t('games.yahtzee.ribbon.time'),
+      diff: t('games.yahtzee.difficulty'),
+      desc: t('games.yahtzee.ribbon.desc'),
+      accentBg: GAME_ACCENT_BG.yahtzee,
+      detailHref: GAME_DETAIL_HREF.yahtzee,
+    },
+    spy: {
+      name: t('games.spy.name'),
+      tag: t('games.spy.ribbon.tag'),
+      players: '3-8',
+      time: t('games.spy.ribbon.time'),
+      diff: t('games.spy.difficulty'),
+      desc: t('games.spy.ribbon.desc'),
+      accentBg: GAME_ACCENT_BG.spy,
+      detailHref: GAME_DETAIL_HREF.spy,
+    },
+    'tic-tac-toe': {
+      name: t('games.tictactoe.name'),
+      tag: t('games.tictactoe.ribbon.tag'),
+      players: '2',
+      time: t('games.tictactoe.ribbon.time'),
+      diff: t('games.tictactoe.difficulty'),
+      desc: t('games.tictactoe.ribbon.desc'),
+      accentBg: GAME_ACCENT_BG['tic-tac-toe'],
+      detailHref: GAME_DETAIL_HREF['tic-tac-toe'],
+    },
+    memory: {
+      name: t('games.memory.name'),
+      tag: t('games.memory.ribbon.tag'),
+      players: '2-4',
+      time: t('games.memory.ribbon.time'),
+      diff: t('games.memory.difficulty'),
+      desc: t('games.memory.ribbon.desc'),
+      accentBg: GAME_ACCENT_BG.memory,
+      detailHref: GAME_DETAIL_HREF.memory,
+    },
+  }
+
   const cards: GameCardProps[] = availableGames.map((game) => {
-    const details = GAME_DETAILS[game.id] ?? {
+    const details = translatedDetails[game.id] ?? {
       name: fallbackName(game.id),
-      tag: 'Catalog',
+      tag: '',
       players: game.players,
-      time: 'Varies',
-      diff: 'Varies',
-      desc: 'Pick the game, create a room, and invite people with a link.',
+      time: '',
+      diff: '',
+      desc: '',
       accentBg: 'rgba(155,140,255,0.12)',
     }
     const href = game.route ?? getGameLobbiesRoute(game.gameType)
@@ -289,7 +281,7 @@ export default function GameRibbon() {
               color: 'var(--bd-ink-muted)',
             }}
           >
-            Games
+            {t('header.games')}
           </span>
           <h2
             style={{
@@ -301,10 +293,10 @@ export default function GameRibbon() {
               letterSpacing: 0,
             }}
           >
-            Choose what to play
+            {t('home.chooseWhatToPlay')}
           </h2>
           <p style={{ marginTop: 10, color: 'var(--bd-ink-soft)', fontSize: 15, maxWidth: 560, lineHeight: 1.5 }}>
-            {availableGames.length} games are ready today. {inDevelopmentCount + plannedCount} more are being explored for future game nights.
+            {t('home.ribbonDescription', { available: availableGames.length, more: inDevelopmentCount + plannedCount })}
           </p>
         </div>
         <Link
@@ -321,7 +313,7 @@ export default function GameRibbon() {
             flexShrink: 0,
           }}
         >
-          See all games →
+          {t('home.seeAllGames')}
         </Link>
       </div>
 

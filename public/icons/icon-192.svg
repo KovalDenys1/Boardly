@@ -1,21 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2563eb" />
-      <stop offset="100%" stop-color="#06b6d4" />
-    </linearGradient>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#dbeafe" />
-    </linearGradient>
-  </defs>
-  <rect width="192" height="192" fill="url(#bg)" />
-  <g transform="translate(48 46)">
-    <rect width="96" height="100" rx="20" fill="url(#tile)" />
-    <circle cx="27" cy="28" r="7" fill="#1d4ed8" />
-    <circle cx="69" cy="28" r="7" fill="#1d4ed8" />
-    <circle cx="48" cy="50" r="7" fill="#1d4ed8" />
-    <circle cx="27" cy="72" r="7" fill="#1d4ed8" />
-    <circle cx="69" cy="72" r="7" fill="#1d4ed8" />
-  </g>
+  <rect width="192" height="192" rx="40" fill="#1F1B16"/>
+  <!-- coral shadow offset -->
+  <rect x="46" y="46" width="104" height="104" rx="22" fill="#FF6B5B"/>
+  <!-- main sun square -->
+  <rect x="40" y="40" width="104" height="104" rx="22" fill="#FFC44D"/>
+  <!-- B letter -->
+  <text x="92" y="120" font-family="system-ui, Arial, sans-serif" font-size="88" font-weight="900" fill="#1F1B16" text-anchor="middle">B</text>
 </svg>

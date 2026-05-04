@@ -56,7 +56,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
   return (
     <article
       style={{
-        background: 'white', borderRadius: 18, border: '1.5px solid var(--bd-line)',
+        background: 'var(--bd-card-warm)', borderRadius: 18, border: '1.5px solid var(--bd-line)',
         boxShadow: '0 4px 14px rgba(31,27,22,0.07)', padding: '16px 20px',
         display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap',
         transition: 'transform 0.15s, box-shadow 0.15s', animationDelay: `${index * 0.05}s`,
