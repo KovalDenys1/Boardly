@@ -147,7 +147,7 @@ function DeleteAccountContent() {
                 type="text"
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
-                placeholder="DELETE"
+                placeholder={t('deleteAccount.confirmPlaceholder')}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-center font-mono text-lg"
                 disabled={deleting}
               />

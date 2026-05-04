@@ -13,7 +13,7 @@ import {
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
 import { useGameSocket } from '@/hooks/use-game-socket'
-import { useTranslation } from '@/lib/i18n-helpers'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -99,8 +99,8 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     )
 }
 
-function TttPlayerCard({ name, symbol, isActive, isWinner, side }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'
+function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
+    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; t: (key: TranslationKeys) => string
 }) {
     const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -136,7 +136,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side }: {
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
                             background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
                             boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
-                        }}>WIN</span>
+                        }}>{t('games.tictactoe.game.winBadge')}</span>
                     )}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>{symbol}</div>
@@ -147,7 +147,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side }: {
                         justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
                     }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
-                        Their turn
+                        {t('games.tictactoe.game.theirTurn')}
                     </div>
                 )}
             </div>
@@ -155,9 +155,9 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side }: {
     )
 }
 
-function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit }: {
+function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit, t }: {
     isFinished: boolean; winnerName: string | null; isDraw: boolean;
-    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number;
+    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number; t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
     if (isFinished && !isDraw && winnerName) {
         return (
@@ -169,8 +169,8 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
                     display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
                     background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
                     boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>VICTORY</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{winnerName} wins!</span>
+                }}>{t('games.tictactoe.game.victoryBadge')}</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.tictactoe.game.playerWins', { player: winnerName })}</span>
             </div>
         )
     }
@@ -184,8 +184,8 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
                     display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
                     background: 'var(--bd-lav)', color: 'white', border: '2px solid var(--bd-ink)',
                     boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
-                }}>DRAW</span>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>{"Cat's game — board is full."}</span>
+                }}>{t('games.tictactoe.game.drawBadge')}</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.tictactoe.game.catsGameFull')}</span>
             </div>
         )
     }
@@ -200,9 +200,9 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
             <TttMark mark={currentSymbol} size={22} />
             <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>
-                    {currentPlayerName}&apos;s turn
+                    {t('games.tictactoe.game.playerTurn', { player: currentPlayerName })}
                     <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>
-                        · move {moveNum}
+                        {t('games.tictactoe.game.moveNum', { num: moveNum })}
                     </span>
                 </div>
                 <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
@@ -223,9 +223,9 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     )
 }
 
-function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave, isLoading }: {
+function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave, isLoading, t }: {
     winnerName: string | null; winnerSymbol: string | null; isDraw: boolean;
-    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean;
+    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean; t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
     const color = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -243,12 +243,12 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
                         {winnerSymbol && <TttMark mark={winnerSymbol as 'X' | 'O'} size={36} />}
                     </div>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        Round over
+                        {t('games.tictactoe.game.roundOver')}
                     </div>
                     <h2 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1.05, marginBottom: 4, color: 'var(--bd-ink)' }}>
-                        {winnerName} wins!
+                        {t('games.tictactoe.game.playerWins', { player: winnerName })}
                     </h2>
-                    <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>Clean run.</p>
+                    <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>{t('games.tictactoe.game.cleanRun')}</p>
                 </>
             ) : (
                 <>
@@ -257,25 +257,25 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
                         display: 'grid', placeItems: 'center', fontSize: 30, boxShadow: '0 5px 0 var(--bd-ink)', border: '2px solid var(--bd-ink)',
                     }}>🤝</div>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        Round over
+                        {t('games.tictactoe.game.roundOver')}
                     </div>
                     <h2 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1.05, marginBottom: 4, color: 'var(--bd-ink)' }}>
-                        {"It's a draw"}
+                        {t('games.tictactoe.game.itsADraw')}
                     </h2>
-                    <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>{"Cat's game — no one breaks through."}</p>
+                    <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>{t('games.tictactoe.game.catsGameResult')}</p>
                 </>
             )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                 <button onClick={onLeave} style={{
                     padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
                     background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
-                }}>Leave</button>
+                }}>{t('games.tictactoe.game.leave')}</button>
                 <button onClick={onPlayAgain} disabled={isLoading} style={{
                     padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
                     background: 'var(--bd-coral)', color: 'white', border: 'none',
                     boxShadow: '0 4px 0 var(--bd-coral-deep)', cursor: isLoading ? 'not-allowed' : 'pointer',
                     opacity: isLoading ? 0.7 : 1, fontFamily: 'inherit',
-                }}>{isLoading ? '…' : 'Play again ↻'}</button>
+                }}>{isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}</button>
             </div>
         </div>
     )
@@ -953,7 +953,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 <TttBgGrid />
             </div>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" />
+                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                         Round {roundNum}
@@ -965,7 +965,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
                     </div>
                 </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" />
+                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" t={t} />
             </div>
         </div>
     )
@@ -980,6 +980,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             secs={timeLeft}
             moveNum={gameData.moveCount + 1}
             turnTimerLimit={turnTimerLimit}
+            t={t}
         />
     )
 
@@ -1066,6 +1067,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         onPlayAgain={handlePlayAgain}
                         onLeave={() => setShowLeaveConfirmModal(true)}
                         isLoading={isRematchSubmitting || (isMatchComplete && !isLobbyCreator)}
+                        t={t}
                     />
                 </div>
             )}

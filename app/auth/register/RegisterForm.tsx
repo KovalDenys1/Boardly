@@ -247,12 +247,12 @@ export default function RegisterForm() {
 
         {/* LEFT: form */}
         <div style={{ maxWidth: 460, justifySelf: 'center', width: '100%' }}>
-          <span className="bd-kicker">Create account</span>
+          <span className="bd-kicker">{t('auth.register.kicker')}</span>
           <h1 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 52, lineHeight: 1, marginTop: 8, marginBottom: 12, letterSpacing: '-0.02em', color: 'var(--bd-ink)' }}>
             {t('auth.register.title')} 👋
           </h1>
           <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, marginBottom: 28 }}>
-            20 seconds — and you&apos;re in the game.{' '}
+            {t('auth.register.catchphrase')}{' '}
             {t('auth.register.haveAccount')}{' '}
             <Link href={buildAuthUrl('login', returnUrl)} style={{ color: 'var(--bd-coral)', fontWeight: 600, textDecoration: 'underline' }}>
               {t('auth.login.submit')}
@@ -380,10 +380,12 @@ export default function RegisterForm() {
           <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 40, color: 'white', lineHeight: 0.95, marginBottom: 12 }}>
-                Play.<br />Connect.<br />Win.
+                {t('auth.register.heroTagline').split('\n').map((line, i) => (
+                  <span key={i}>{line}{i < 2 && <br />}</span>
+                ))}
               </div>
               <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', maxWidth: 200, lineHeight: 1.5 }}>
-                Join thousands of players for epic board game nights.
+                {t('auth.register.heroDesc')}
               </div>
             </div>
             {/* floating dice */}
@@ -402,7 +404,7 @@ export default function RegisterForm() {
                   <div key={l} className={`bd-avatar ${cls}`} style={{ width: 36, height: 36, marginLeft: i > 0 ? -10 : 0 }}>{l}</div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: 'white', fontWeight: 500 }}>180,000+ players already here</div>
+              <div style={{ fontSize: 13, color: 'white', fontWeight: 500 }}>{t('auth.register.heroPlayers')}</div>
             </div>
           </div>
         </div>

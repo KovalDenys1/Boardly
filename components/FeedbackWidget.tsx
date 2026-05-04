@@ -2,14 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 type FeedbackType = 'bug' | 'feature' | 'other'
-
-const TYPE_LABELS: Record<FeedbackType, { label: string; shortLabel: string }> = {
-  bug: { label: 'Bug Report', shortLabel: 'Bug' },
-  feature: { label: 'Feature Request', shortLabel: 'Idea' },
-  other: { label: 'Other', shortLabel: 'Note' },
-}
 
 export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false)
@@ -22,6 +17,13 @@ export default function FeedbackWidget() {
   const [error, setError] = useState<string | null>(null)
   const pathname = usePathname()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { t } = useTranslation()
+
+  const TYPE_OPTIONS: { type: FeedbackType; label: string; shortLabel: string }[] = [
+    { type: 'bug', label: t('feedback.typeBugFull'), shortLabel: t('feedback.typeBug') },
+    { type: 'feature', label: t('feedback.typeFeatureFull'), shortLabel: t('feedback.typeFeature') },
+    { type: 'other', label: t('feedback.typeOtherFull'), shortLabel: t('feedback.typeOther') },
+  ]
 
   useEffect(() => {
     const footerFeedbackButton = document.getElementById('footer-feedback-trigger')
@@ -110,7 +112,7 @@ export default function FeedbackWidget() {
         type="button"
         onClick={() => setIsOpen(true)}
         aria-hidden={shouldHideFloatingButton}
-        aria-label="Send feedback"
+        aria-label={t('feedback.buttonAriaLabel')}
         tabIndex={shouldHideFloatingButton ? -1 : 0}
         className={`fixed bottom-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] right-5 z-40 inline-flex items-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] ${
           shouldHideFloatingButton ? 'pointer-events-none translate-y-2 opacity-0' : 'opacity-100'
@@ -122,7 +124,7 @@ export default function FeedbackWidget() {
         >
           !
         </span>
-        <span className="hidden sm:inline">Feedback</span>
+        <span className="hidden sm:inline">{t('feedback.buttonLabel')}</span>
       </button>
 
       {isOpen && (
@@ -143,16 +145,16 @@ export default function FeedbackWidget() {
                   Boardly
                 </p>
                 <h2 className="font-display text-2xl font-bold text-bd-ink dark:text-white">
-                  Send Feedback
+                  {t('feedback.title')}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="grid h-10 w-10 place-items-center rounded-xl border border-bd-line bg-bd-card-warm text-xl font-bold leading-none text-bd-ink-soft transition-colors hover:bg-bd-bg2 hover:text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                aria-label="Close"
+                aria-label={t('feedback.closeAriaLabel')}
               >
-                x
+                ×
               </button>
             </div>
 
@@ -162,39 +164,39 @@ export default function FeedbackWidget() {
                   OK
                 </div>
                 <p className="mb-1 font-display text-2xl font-bold text-bd-ink dark:text-white">
-                  Thanks for the feedback!
+                  {t('feedback.successTitle')}
                 </p>
                 <p className="text-sm leading-6 text-bd-ink-muted dark:text-slate-400">
-                  We read every submission and use it to improve Boardly.
+                  {t('feedback.successBody')}
                 </p>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
                   className="mt-6 inline-flex items-center justify-center rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-6 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
                 >
-                  Close
+                  {t('feedback.close')}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="relative space-y-4 px-5 py-4">
                 <div>
                   <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
-                    Type
+                    {t('feedback.typeLabel')}
                   </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {(Object.keys(TYPE_LABELS) as FeedbackType[]).map((feedbackType) => (
+                    {TYPE_OPTIONS.map((opt) => (
                       <button
-                        key={feedbackType}
+                        key={opt.type}
                         type="button"
-                        onClick={() => setType(feedbackType)}
-                        aria-label={TYPE_LABELS[feedbackType].label}
+                        onClick={() => setType(opt.type)}
+                        aria-label={opt.label}
                         className={`rounded-xl border px-3 py-2 text-sm font-bold transition-all ${
-                          type === feedbackType
+                          type === opt.type
                             ? 'border-bd-lav-deep bg-bd-lav text-white shadow-[0_3px_0_var(--bd-lav-deep)]'
                             : 'border-bd-line bg-bd-card-warm text-bd-ink-soft hover:bg-white hover:text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                         }`}
                       >
-                        {TYPE_LABELS[feedbackType].shortLabel}
+                        {opt.shortLabel}
                       </button>
                     ))}
                   </div>
@@ -202,13 +204,13 @@ export default function FeedbackWidget() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
-                    Message <span className="text-bd-coral-deep">*</span>
+                    {t('feedback.messageLabel')} <span className="text-bd-coral-deep">*</span>
                   </label>
                   <textarea
                     ref={textareaRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Describe the issue or suggestion..."
+                    placeholder={t('feedback.messagePlaceholder')}
                     required
                     maxLength={2000}
                     rows={4}
@@ -221,16 +223,16 @@ export default function FeedbackWidget() {
 
                 <div>
                   <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
-                    Email{' '}
+                    {t('feedback.emailLabel')}{' '}
                     <span className="normal-case tracking-normal text-bd-ink-muted/70">
-                      (optional, for follow-up)
+                      ({t('feedback.emailOptional')})
                     </span>
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t('feedback.emailPlaceholder')}
                     className="w-full rounded-2xl border border-bd-line bg-bd-card-warm px-3 py-2.5 text-sm text-bd-ink placeholder-bd-ink-muted/70 transition-colors focus:border-bd-lav-deep focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
                   />
                 </div>
@@ -246,7 +248,7 @@ export default function FeedbackWidget() {
                   disabled={submitting || !message.trim()}
                   className="w-full rounded-2xl border-2 border-bd-lav-deep bg-bd-lav py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-[0_4px_0_var(--bd-lav-deep)]"
                 >
-                  {submitting ? 'Sending...' : 'Send Feedback'}
+                  {submitting ? t('feedback.submitting') : t('feedback.submit')}
                 </button>
               </form>
             )}
