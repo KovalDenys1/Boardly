@@ -1,6 +1,5 @@
-'use client'
-
 import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
 import { LobbyPageLoadingFallback } from './components/LobbyPageFallbacks'
 
 const LobbyPageClient = dynamic(() => import('./LobbyPageClient'), {
@@ -9,5 +8,9 @@ const LobbyPageClient = dynamic(() => import('./LobbyPageClient'), {
 })
 
 export default function LobbyPage() {
-  return <LobbyPageClient />
+  return (
+    <Suspense fallback={<LobbyPageLoadingFallback />}>
+      <LobbyPageClient />
+    </Suspense>
+  )
 }

@@ -21,7 +21,7 @@
   --bd-lav-deep: #7867E8;
   --bd-sky: #6BC1F0;
   --bd-card-warm: #FFF8EC;
-  --bd-font-display: 'Bricolage Grotesque', Georgia, serif;
+  --bd-font-display: Georgia, serif;
 }
 
 @keyframes bd-float {
