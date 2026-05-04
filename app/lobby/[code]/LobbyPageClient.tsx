@@ -214,6 +214,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return []
   })
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEvent | null>(null)
+  const handleCelebrationComplete = useCallback(() => setCelebrationEvent(null), [])
   const [yahtzeeResultsHold, setYahtzeeResultsHold] = useState<{ gameId: string; releaseAt: number } | null>(null)
 
   // Mobile tabs state
@@ -2055,7 +2056,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       onRollDice={handleRollDice}
                       onToggleHold={handleToggleHold}
                       onScore={handleScore}
-                      onCelebrationComplete={() => setCelebrationEvent(null)}
+                      onCelebrationComplete={handleCelebrationComplete}
                     />
                   </div>
 
@@ -2158,7 +2159,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         onRollDice={handleRollDice}
                         onToggleHold={handleToggleHold}
                         onScore={handleScore}
-                        onCelebrationComplete={() => setCelebrationEvent(null)}
+                        onCelebrationComplete={handleCelebrationComplete}
                         onReviewScorecard={() => setMobileActiveTab('scorecard')}
                         showReviewScorecardButton={true}
                       />

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { CelebrationEvent, getCategoryDisplayName } from '@/lib/celebrations'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -12,8 +12,6 @@ interface CelebrationBannerProps {
 export default function CelebrationBanner({ event, onComplete }: CelebrationBannerProps) {
   const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
-  const onCompleteRef = useRef(onComplete)
-  onCompleteRef.current = onComplete
 
   useEffect(() => {
     if (event) {
@@ -21,12 +19,12 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
 
       const timer = setTimeout(() => {
         setVisible(false)
-        setTimeout(() => onCompleteRef.current(), 300)
+        setTimeout(onComplete, 300)
       }, 2500)
 
       return () => clearTimeout(timer)
     }
-  }, [event])
+  }, [event, onComplete])
 
   if (!event || !visible) return null
 
