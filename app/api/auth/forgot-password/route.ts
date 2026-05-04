@@ -4,12 +4,18 @@ import { prisma } from '@/lib/db'
 import { sendPasswordResetEmail } from '@/lib/email'
 import crypto from 'crypto'
 import { apiLogger } from '@/lib/logger'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.auth)
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email('Invalid email address').transform((value) => value.toLowerCase()),
 })
 
 export async function POST(request: NextRequest) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   try {
     const body = await request.json()
     const { email } = forgotPasswordSchema.parse(body)

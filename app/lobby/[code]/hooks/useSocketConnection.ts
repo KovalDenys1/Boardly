@@ -681,7 +681,8 @@ export function useSocketConnection({
         const activeToken = latestAuthTokenRef.current
         const currentAttempt = reconnectAttemptRef.current
 
-        clientLogger.error('🔴 Socket connection error:', errorMsg, {
+        const logConnectError = currentAttempt <= 1 ? clientLogger.warn : clientLogger.error
+        logConnectError('🔴 Socket connection error:', errorMsg, {
           isGuest,
           hasToken: !!activeToken,
           tokenPreview: activeToken ? String(activeToken).substring(0, 10) + '...' : 'none',
@@ -787,6 +788,14 @@ export function useSocketConnection({
 
         if (normalizedError.code === 'LOBBY_ACCESS_DENIED') {
           if (!hasJoinedLobbyRef.current && newSocket.connected) {
+            if (joinAttemptRef.current >= MAX_JOIN_ATTEMPTS) {
+              clientLogger.error('❌ Lobby access denied after max join attempts - stopping retries', {
+                lobbyCode: code,
+                attempts: joinAttemptRef.current,
+              })
+              showToast.error('errors.lobbyAccessDenied')
+              return
+            }
             clientLogger.warn('⚠️ Lobby access denied before join confirmation - retrying join', {
               lobbyCode: code,
               isGuest,

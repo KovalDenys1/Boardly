@@ -15,6 +15,7 @@ import { TelephoneDoodleGame } from '@/lib/games/telephone-doodle-game'
 import { LiarsPartyGame } from '@/lib/games/liars-party-game'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { AliasGame } from '@/lib/games/alias'
+import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import {
   hashLobbyPassword,
@@ -50,6 +51,92 @@ function resolveLastMoveAtDate(lastMoveAt: unknown): Date | undefined {
     return new Date(lastMoveAt)
   }
   return undefined
+}
+
+type TimeoutActiveGame = {
+  id: string
+  updatedAt: Date
+  state: unknown
+  status: string
+  lastMoveAt?: Date | null
+  players: unknown
+}
+
+async function commitTimeoutFallback(params: {
+  activeGame: TimeoutActiveGame
+  nextState: { status: string; lastMoveAt?: unknown; players?: unknown[] }
+  actionType: string
+  actionPayload: Record<string, unknown>
+  lobbyCode: string
+  gameSocketEvent?: string
+  gameSocketData?: Record<string, unknown>
+}): Promise<void> {
+  const { activeGame, nextState, actionType, actionPayload, lobbyCode, gameSocketEvent, gameSocketData } = params
+  const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
+
+  const updateResult = await prisma.games.updateMany({
+    where: { id: activeGame.id, updatedAt: activeGame.updatedAt },
+    data: {
+      state: toPersistedGameStateInput(nextState),
+      status: nextState.status as 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled',
+      ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
+      updatedAt: new Date(),
+    },
+  })
+
+  if (updateResult.count === 0) return
+
+  type ActiveScorePlayer = { id: string; userId: string; score: number }
+  const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
+  const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players as Record<string, unknown>[] : [])
+    .map((entry) => ({
+      id: typeof entry?.id === 'string' ? entry.id : '',
+      userId: typeof entry?.userId === 'string' ? entry.userId : '',
+      score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
+    }))
+    .filter((entry) => entry.id.length > 0 && entry.userId.length > 0)
+  const activePlayersByUserId = new Map(activePlayers.map((p) => [p.userId, p]))
+
+  const scoreUpdates: Array<Promise<unknown>> = []
+  for (const statePlayer of statePlayers) {
+    if (!statePlayer || typeof statePlayer !== 'object') continue
+    const statePlayerId = (statePlayer as { id?: unknown }).id
+    if (typeof statePlayerId !== 'string') continue
+    const dbPlayer = activePlayersByUserId.get(statePlayerId)
+    if (!dbPlayer) continue
+    const rawScore = (statePlayer as { score?: unknown }).score
+    const nextScore = typeof rawScore === 'number' && Number.isFinite(rawScore) ? Math.floor(rawScore) : 0
+    if (dbPlayer.score === nextScore) continue
+    scoreUpdates.push(prisma.players.update({ where: { id: dbPlayer.id }, data: { score: nextScore } }))
+    dbPlayer.score = nextScore
+  }
+  if (scoreUpdates.length > 0) await Promise.all(scoreUpdates)
+
+  activeGame.state = JSON.stringify(nextState)
+  activeGame.status = nextState.status
+  if (lastMoveAtDate) activeGame.lastMoveAt = lastMoveAtDate
+
+  await appendGameReplaySnapshot({
+    gameId: activeGame.id,
+    playerId: null,
+    actionType,
+    actionPayload: { source: 'lobby-get', ...actionPayload },
+    state: nextState,
+  })
+
+  if (gameSocketEvent && gameSocketData) {
+    await notifySocket(`lobby:${lobbyCode}`, gameSocketEvent, {
+      action: 'timeout-fallback',
+      playerId: null,
+      data: gameSocketData,
+      state: nextState,
+    })
+  }
+
+  await notifySocket(`lobby:${lobbyCode}`, 'game-update', {
+    action: 'state-change',
+    payload: { state: nextState },
+  })
 }
 
 const updateLobbySettingsSchema = z
@@ -148,112 +235,25 @@ export async function GET(
           const parsedState = parsePersistedGameState<RestorableGameState>(activeGame.state)
           const telephoneGame = new TelephoneDoodleGame(activeGame.id)
           telephoneGame.restoreState(parsedState)
-
-          const timeoutResolution = telephoneGame.applyTimeoutFallback(turnTimerSeconds)
-          if (timeoutResolution.changed) {
-            const nextState = telephoneGame.getState()
-            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
-
-            const updateResult = await prisma.games.updateMany({
-              where: {
-                id: activeGame.id,
-                updatedAt: activeGame.updatedAt,
+          const r = telephoneGame.applyTimeoutFallback(turnTimerSeconds)
+          if (r.changed) {
+            await commitTimeoutFallback({
+              activeGame,
+              nextState: telephoneGame.getState(),
+              actionType: 'telephone_doodle:timeout-fallback',
+              actionPayload: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedSteps: r.autoSubmittedSteps,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
-              data: {
-                state: toPersistedGameStateInput(nextState),
-                status: nextState.status,
-                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-                updatedAt: new Date(),
+              lobbyCode: safeLobby.code,
+              gameSocketEvent: 'telephone-doodle-action',
+              gameSocketData: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedSteps: r.autoSubmittedSteps,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
             })
-
-            if (updateResult.count > 0) {
-              const scoreUpdates: Array<Promise<unknown>> = []
-              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-              type ActiveScorePlayer = {
-                id: string
-                userId: string
-                score: number
-              }
-
-              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: Record<string, unknown>) => ({
-                  id: typeof entry?.id === 'string' ? entry.id : '',
-                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
-                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
-                }))
-                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
-              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
-                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
-              )
-
-              for (const statePlayer of statePlayers) {
-                if (!statePlayer || typeof statePlayer !== 'object') continue
-
-                const statePlayerId = (statePlayer as { id?: unknown }).id
-                if (typeof statePlayerId !== 'string') continue
-
-                const dbPlayer = activePlayersByUserId.get(statePlayerId)
-                if (!dbPlayer) continue
-
-                const rawScore = (statePlayer as { score?: unknown }).score
-                const nextScore =
-                  typeof rawScore === 'number' && Number.isFinite(rawScore)
-                    ? Math.floor(rawScore)
-                    : 0
-
-                if (dbPlayer.score === nextScore) continue
-
-                scoreUpdates.push(
-                  prisma.players.update({
-                    where: { id: dbPlayer.id },
-                    data: {
-                      score: nextScore,
-                    },
-                  })
-                )
-                dbPlayer.score = nextScore
-              }
-
-              if (scoreUpdates.length > 0) {
-                await Promise.all(scoreUpdates)
-              }
-
-              activeGame.state = JSON.stringify(nextState)
-              activeGame.status = nextState.status
-              if (lastMoveAtDate) {
-                activeGame.lastMoveAt = lastMoveAtDate
-              }
-
-              await appendGameReplaySnapshot({
-                gameId: activeGame.id,
-                playerId: null,
-                actionType: 'telephone_doodle:timeout-fallback',
-                actionPayload: {
-                  source: 'lobby-get',
-                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
-                  autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
-                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
-                },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'telephone-doodle-action', {
-                action: 'timeout-fallback',
-                playerId: null,
-                data: {
-                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
-                  autoSubmittedSteps: timeoutResolution.autoSubmittedSteps,
-                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
-                },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
-                action: 'state-change',
-                payload: { state: nextState },
-              })
-            }
           }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
@@ -278,113 +278,27 @@ export async function GET(
           const liarsPartyGame = new LiarsPartyGame(activeGame.id)
           liarsPartyGame.restoreState(parsedState)
 
-          const timeoutResolution = liarsPartyGame.applyTimeoutFallback(turnTimerSeconds)
-          if (timeoutResolution.changed) {
-            const nextState = liarsPartyGame.getState()
-            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
-
-            const updateResult = await prisma.games.updateMany({
-              where: {
-                id: activeGame.id,
-                updatedAt: activeGame.updatedAt,
+          const r = liarsPartyGame.applyTimeoutFallback(turnTimerSeconds)
+          if (r.changed) {
+            await commitTimeoutFallback({
+              activeGame,
+              nextState: liarsPartyGame.getState(),
+              actionType: 'liars_party:timeout-fallback',
+              actionPayload: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedClaims: r.autoSubmittedClaims,
+                autoSubmittedChallenges: r.autoSubmittedChallenges,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
-              data: {
-                state: toPersistedGameStateInput(nextState),
-                status: nextState.status,
-                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-                updatedAt: new Date(),
+              lobbyCode: safeLobby.code,
+              gameSocketEvent: 'liars-party-action',
+              gameSocketData: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedClaims: r.autoSubmittedClaims,
+                autoSubmittedChallenges: r.autoSubmittedChallenges,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
             })
-
-            if (updateResult.count > 0) {
-              const scoreUpdates: Array<Promise<unknown>> = []
-              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-              type ActiveScorePlayer = {
-                id: string
-                userId: string
-                score: number
-              }
-
-              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: Record<string, unknown>) => ({
-                  id: typeof entry?.id === 'string' ? entry.id : '',
-                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
-                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
-                }))
-                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
-              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
-                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
-              )
-
-              for (const statePlayer of statePlayers) {
-                if (!statePlayer || typeof statePlayer !== 'object') continue
-
-                const statePlayerId = (statePlayer as { id?: unknown }).id
-                if (typeof statePlayerId !== 'string') continue
-
-                const dbPlayer = activePlayersByUserId.get(statePlayerId)
-                if (!dbPlayer) continue
-
-                const rawScore = (statePlayer as { score?: unknown }).score
-                const nextScore =
-                  typeof rawScore === 'number' && Number.isFinite(rawScore)
-                    ? Math.floor(rawScore)
-                    : 0
-
-                if (dbPlayer.score === nextScore) continue
-
-                scoreUpdates.push(
-                  prisma.players.update({
-                    where: { id: dbPlayer.id },
-                    data: {
-                      score: nextScore,
-                    },
-                  })
-                )
-                dbPlayer.score = nextScore
-              }
-
-              if (scoreUpdates.length > 0) {
-                await Promise.all(scoreUpdates)
-              }
-
-              activeGame.state = JSON.stringify(nextState)
-              activeGame.status = nextState.status
-              if (lastMoveAtDate) {
-                activeGame.lastMoveAt = lastMoveAtDate
-              }
-
-              await appendGameReplaySnapshot({
-                gameId: activeGame.id,
-                playerId: null,
-                actionType: 'liars_party:timeout-fallback',
-                actionPayload: {
-                  source: 'lobby-get',
-                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
-                  autoSubmittedClaims: timeoutResolution.autoSubmittedClaims,
-                  autoSubmittedChallenges: timeoutResolution.autoSubmittedChallenges,
-                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
-                },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'liars-party-action', {
-                action: 'timeout-fallback',
-                playerId: null,
-                data: {
-                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
-                  autoSubmittedClaims: timeoutResolution.autoSubmittedClaims,
-                  autoSubmittedChallenges: timeoutResolution.autoSubmittedChallenges,
-                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
-                },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
-                action: 'state-change',
-                payload: { state: nextState },
-              })
-            }
           }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
@@ -409,113 +323,27 @@ export async function GET(
           const fakeArtistGame = new FakeArtistGame(activeGame.id)
           fakeArtistGame.restoreState(parsedState)
 
-          const timeoutResolution = fakeArtistGame.applyTimeoutFallback(turnTimerSeconds)
-          if (timeoutResolution.changed) {
-            const nextState = fakeArtistGame.getState()
-            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
-
-            const updateResult = await prisma.games.updateMany({
-              where: {
-                id: activeGame.id,
-                updatedAt: activeGame.updatedAt,
+          const r = fakeArtistGame.applyTimeoutFallback(turnTimerSeconds)
+          if (r.changed) {
+            await commitTimeoutFallback({
+              activeGame,
+              nextState: fakeArtistGame.getState(),
+              actionType: 'fake_artist:timeout-fallback',
+              actionPayload: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedStrokes: r.autoSubmittedStrokes,
+                autoSubmittedVotes: r.autoSubmittedVotes,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
-              data: {
-                state: toPersistedGameStateInput(nextState),
-                status: nextState.status,
-                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-                updatedAt: new Date(),
+              lobbyCode: safeLobby.code,
+              gameSocketEvent: 'fake-artist-action',
+              gameSocketData: {
+                timeoutWindowsConsumed: r.timeoutWindowsConsumed,
+                autoSubmittedStrokes: r.autoSubmittedStrokes,
+                autoSubmittedVotes: r.autoSubmittedVotes,
+                autoSubmittedPlayerIds: r.autoSubmittedPlayerIds,
               },
             })
-
-            if (updateResult.count > 0) {
-              const scoreUpdates: Array<Promise<unknown>> = []
-              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-              type ActiveScorePlayer = {
-                id: string
-                userId: string
-                score: number
-              }
-
-              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: Record<string, unknown>) => ({
-                  id: typeof entry?.id === 'string' ? entry.id : '',
-                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
-                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
-                }))
-                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
-              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
-                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
-              )
-
-              for (const statePlayer of statePlayers) {
-                if (!statePlayer || typeof statePlayer !== 'object') continue
-
-                const statePlayerId = (statePlayer as { id?: unknown }).id
-                if (typeof statePlayerId !== 'string') continue
-
-                const dbPlayer = activePlayersByUserId.get(statePlayerId)
-                if (!dbPlayer) continue
-
-                const rawScore = (statePlayer as { score?: unknown }).score
-                const nextScore =
-                  typeof rawScore === 'number' && Number.isFinite(rawScore)
-                    ? Math.floor(rawScore)
-                    : 0
-
-                if (dbPlayer.score === nextScore) continue
-
-                scoreUpdates.push(
-                  prisma.players.update({
-                    where: { id: dbPlayer.id },
-                    data: {
-                      score: nextScore,
-                    },
-                  })
-                )
-                dbPlayer.score = nextScore
-              }
-
-              if (scoreUpdates.length > 0) {
-                await Promise.all(scoreUpdates)
-              }
-
-              activeGame.state = JSON.stringify(nextState)
-              activeGame.status = nextState.status
-              if (lastMoveAtDate) {
-                activeGame.lastMoveAt = lastMoveAtDate
-              }
-
-              await appendGameReplaySnapshot({
-                gameId: activeGame.id,
-                playerId: null,
-                actionType: 'fake_artist:timeout-fallback',
-                actionPayload: {
-                  source: 'lobby-get',
-                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
-                  autoSubmittedStrokes: timeoutResolution.autoSubmittedStrokes,
-                  autoSubmittedVotes: timeoutResolution.autoSubmittedVotes,
-                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
-                },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'fake-artist-action', {
-                action: 'timeout-fallback',
-                playerId: null,
-                data: {
-                  timeoutWindowsConsumed: timeoutResolution.timeoutWindowsConsumed,
-                  autoSubmittedStrokes: timeoutResolution.autoSubmittedStrokes,
-                  autoSubmittedVotes: timeoutResolution.autoSubmittedVotes,
-                  autoSubmittedPlayerIds: timeoutResolution.autoSubmittedPlayerIds,
-                },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
-                action: 'state-change',
-                payload: { state: nextState },
-              })
-            }
           }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
@@ -540,79 +368,15 @@ export async function GET(
           const aliasGame = new AliasGame(activeGame.id)
           aliasGame.restoreState(parsedState)
 
-          const timeoutResult = aliasGame.applyTimeoutFallback(turnTimerSeconds)
-          if (timeoutResult.changed) {
-            const nextState = aliasGame.getState()
-            const lastMoveAtDate = resolveLastMoveAtDate(nextState.lastMoveAt)
-
-            const updateResult = await prisma.games.updateMany({
-              where: {
-                id: activeGame.id,
-                updatedAt: activeGame.updatedAt,
-              },
-              data: {
-                state: toPersistedGameStateInput(nextState),
-                status: nextState.status,
-                ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-                updatedAt: new Date(),
-              },
+          const r = aliasGame.applyTimeoutFallback(turnTimerSeconds)
+          if (r.changed) {
+            await commitTimeoutFallback({
+              activeGame,
+              nextState: aliasGame.getState(),
+              actionType: 'alias:timeout-fallback',
+              actionPayload: {},
+              lobbyCode: safeLobby.code,
             })
-
-            if (updateResult.count > 0) {
-              const scoreUpdates: Array<Promise<unknown>> = []
-              const statePlayers = Array.isArray(nextState.players) ? nextState.players : []
-              type ActiveScorePlayer = { id: string; userId: string; score: number }
-
-              const activePlayers: ActiveScorePlayer[] = (Array.isArray(activeGame.players) ? activeGame.players : [])
-                .map((entry: Record<string, unknown>) => ({
-                  id: typeof entry?.id === 'string' ? entry.id : '',
-                  userId: typeof entry?.userId === 'string' ? entry.userId : '',
-                  score: typeof entry?.score === 'number' && Number.isFinite(entry.score) ? entry.score : 0,
-                }))
-                .filter((entry: ActiveScorePlayer) => entry.id.length > 0 && entry.userId.length > 0)
-              const activePlayersByUserId = new Map<string, ActiveScorePlayer>(
-                activePlayers.map((entry: ActiveScorePlayer): [string, ActiveScorePlayer] => [entry.userId, entry])
-              )
-
-              for (const statePlayer of statePlayers) {
-                if (!statePlayer || typeof statePlayer !== 'object') continue
-                const statePlayerId = (statePlayer as { id?: unknown }).id
-                if (typeof statePlayerId !== 'string') continue
-                const dbPlayer = activePlayersByUserId.get(statePlayerId)
-                if (!dbPlayer) continue
-                const rawScore = (statePlayer as { score?: unknown }).score
-                const nextScore =
-                  typeof rawScore === 'number' && Number.isFinite(rawScore) ? Math.floor(rawScore) : 0
-                if (dbPlayer.score === nextScore) continue
-                scoreUpdates.push(
-                  prisma.players.update({ where: { id: dbPlayer.id }, data: { score: nextScore } })
-                )
-                dbPlayer.score = nextScore
-              }
-
-              if (scoreUpdates.length > 0) {
-                await Promise.all(scoreUpdates)
-              }
-
-              activeGame.state = JSON.stringify(nextState)
-              activeGame.status = nextState.status
-              if (lastMoveAtDate) {
-                activeGame.lastMoveAt = lastMoveAtDate
-              }
-
-              await appendGameReplaySnapshot({
-                gameId: activeGame.id,
-                playerId: null,
-                actionType: 'alias:timeout-fallback',
-                actionPayload: { source: 'lobby-get' },
-                state: nextState,
-              })
-
-              await notifySocket(`lobby:${safeLobby.code}`, 'game-update', {
-                action: 'state-change',
-                payload: { state: nextState },
-              })
-            }
           }
         } catch (error) {
           const log = apiLogger('GET /api/lobby/[code]')
@@ -625,10 +389,17 @@ export async function GET(
       }
     }
 
+    const activeGameType = safeLobby.gameType || activeGame?.gameType
     const sanitizedActiveGame = activeGame
       ? {
           ...activeGame,
-          state: stringifyPersistedGameState(activeGame.state),
+          state: (() => {
+            const parsed = parsePersistedGameState<{ data?: unknown; status?: string }>(activeGame.state)
+            const safe = activeGameType === 'guess_the_spy'
+              ? sanitizeSpyStateForBroadcast(parsed)
+              : parsed
+            return stringifyPersistedGameState(safe as Parameters<typeof stringifyPersistedGameState>[0])
+          })(),
           players: Array.isArray(activeGame.players)
             ? activeGame.players.map((player) => {
                 const safeUser = sanitizeLobbyUserIdentity(player?.user)

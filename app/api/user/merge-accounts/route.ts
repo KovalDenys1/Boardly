@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
@@ -9,7 +10,10 @@ import {
   ValidationError,
   withErrorHandler,
 } from '@/lib/error-handler'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { verifyCsrfToken } from '@/lib/csrf'
 
+const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('Merge Accounts')
 
 /**
@@ -17,6 +21,13 @@ const log = apiLogger('Merge Accounts')
  * Merges OAuth account from one user to another (current logged-in user)
  */
 async function mergeAccountsHandler(request: NextRequest) {
+  if (!verifyCsrfToken(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   const session = await getServerSession(authOptions)
 
   if (!session?.user?.id) {

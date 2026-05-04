@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { verifyCsrfToken } from '@/lib/csrf'
 
+const limiter = rateLimit(rateLimitPresets.auth)
 const log = apiLogger('/api/user/delete-account')
 
 export async function POST(req: NextRequest) {
+  if (!verifyCsrfToken(req)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const rateLimitResult = await limiter(req)
+  if (rateLimitResult) return rateLimitResult
+
   try {
     const { token } = await req.json()
 
@@ -22,6 +34,12 @@ export async function POST(req: NextRequest) {
         { error: 'Invalid or expired deletion token' },
         { status: 400 }
       )
+    }
+
+    // If the caller is authenticated, they must own the account being deleted.
+    const session = await getServerSession(authOptions)
+    if (session?.user?.id && session.user.id !== deletionToken.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     if (deletionToken.expires < new Date()) {

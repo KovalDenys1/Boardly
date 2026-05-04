@@ -211,6 +211,7 @@ model Games {
   snapshots   GameStateSnapshots[]
 
   @@index([lobbyId])
+  @@index([lobbyId, status])
   @@index([status])
   @@index([gameType, status])
   @@index([createdAt])

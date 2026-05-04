@@ -13,6 +13,9 @@ import {
   ValidationError,
   withErrorHandler,
 } from '@/lib/error-handler'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.api)
 
 const log = apiLogger('/api/user/profile')
 const EMAIL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000
@@ -340,5 +343,14 @@ async function patchProfileHandler(req: NextRequest) {
   })
 }
 
-export const GET = withErrorHandler(getProfileHandler)
-export const PATCH = withErrorHandler(patchProfileHandler)
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const rl = await limiter(req)
+  if (rl) return rl
+  return getProfileHandler()
+})
+
+export const PATCH = withErrorHandler(async (req: NextRequest) => {
+  const rl = await limiter(req)
+  if (rl) return rl
+  return patchProfileHandler(req)
+})

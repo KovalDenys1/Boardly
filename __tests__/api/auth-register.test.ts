@@ -16,7 +16,6 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     users: {
       findFirst: jest.fn(),
-      findUnique: jest.fn(),
       create: jest.fn(),
     },
     emailVerificationTokens: {
@@ -27,7 +26,6 @@ jest.mock('@/lib/db', () => ({
 
 jest.mock('@/lib/auth', () => ({
   hashPassword: jest.fn(),
-  createToken: jest.fn(),
 }))
 
 jest.mock('@/lib/email', () => ({
@@ -76,7 +74,6 @@ describe('POST /api/auth/register', () => {
     mockSendVerificationEmail.mockResolvedValue({ success: true })
     mockNanoid.mockReturnValue('verification-token')
     mockPrisma.users.findFirst.mockResolvedValue(null)
-    mockPrisma.users.findUnique.mockResolvedValue(null)
     mockPrisma.users.create.mockResolvedValue({
       id: 'user-1',
       email: 'new@example.com',
@@ -119,8 +116,8 @@ describe('POST /api/auth/register', () => {
     expect(mockPrisma.users.create).not.toHaveBeenCalled()
   })
 
-  it('rejects a username collision found before user creation', async () => {
-    mockPrisma.users.findUnique.mockResolvedValue({ id: 'taken-user' } as any)
+  it('rejects a username collision found during initial lookup', async () => {
+    mockPrisma.users.findFirst.mockResolvedValue({ id: 'taken-user' } as any)
 
     const response = await POST(
       buildRequest({
@@ -132,7 +129,7 @@ describe('POST /api/auth/register', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(400)
-    expect(payload.error).toBe('Username already taken')
+    expect(payload.error).toBe('Email or username already exists')
     expect(mockPrisma.users.create).not.toHaveBeenCalled()
   })
 

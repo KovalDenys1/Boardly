@@ -2,18 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
-/**
- * POST /api/game/[gameId]/abandon
- * 
- * Manually abandon a game (mark as abandoned).
- * Useful for stuck games where all human players have left.
- * Only the creator of the lobby or participants can abandon.
- */
+const limiter = rateLimit(rateLimitPresets.game)
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ gameId: string }> }
 ) {
+  const rateLimitResult = await limiter(req)
+  if (rateLimitResult) return rateLimitResult
+
   const log = apiLogger('POST /api/game/[gameId]/abandon')
 
   try {

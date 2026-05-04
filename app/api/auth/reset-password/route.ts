@@ -3,6 +3,9 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcrypt'
 import { apiLogger } from '@/lib/logger'
+import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const limiter = rateLimit(rateLimitPresets.auth)
 
 // Use strong password validation from auth validation
 const resetPasswordSchema = z.object({
@@ -16,6 +19,9 @@ const resetPasswordSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
   try {
     const body = await request.json()
     const { token, password } = resetPasswordSchema.parse(body)

@@ -57,6 +57,11 @@ async function getUpstashRedisClient(): Promise<SharedRateLimitStoreClient | nul
   const token = process.env.UPSTASH_REDIS_REST_TOKEN
 
   if (!url || !token) {
+    logger?.warn(
+      'UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are not set. ' +
+      'Rate limiting falls back to in-memory store which is per-instance and ineffective on Vercel. ' +
+      'Configure Upstash Redis to enable shared rate limiting.'
+    )
     upstashRedisClient = null
     return upstashRedisClient
   }
@@ -178,9 +183,13 @@ export function rateLimit(config: RateLimitConfig) {
   } = config
 
   return async (request: NextRequest): Promise<NextResponse | null> => {
-    // Get client identifier (IP address)
-    const forwarded = request.headers.get('x-forwarded-for')
-    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown'
+    // Prefer x-real-ip (set by Vercel/proxy, not client-controllable).
+    // Fall back to the rightmost value in x-forwarded-for (appended by Vercel).
+    // Never use the leftmost value — clients can spoof it to bypass rate limits.
+    const ip =
+      request.headers.get('x-real-ip') ||
+      (request.headers.get('x-forwarded-for') ?? '').split(',').at(-1)?.trim() ||
+      'unknown'
     
     // Create unique key for this IP and endpoint
     const pathname = new URL(request.url).pathname

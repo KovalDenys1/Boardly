@@ -1561,6 +1561,7 @@ const en = {
     connectionError: 'Connection error. Retrying...',
     connectionFailed: 'Failed to connect to server. Please check your internet connection.',
     authenticationFailed: 'Authentication failed. Please refresh the page.',
+    lobbyAccessDenied: 'Access denied. You cannot join this lobby.',
     rateLimitExceeded: 'Too many requests. Please slow down.',
     invalidLobbyCode: 'Invalid lobby code format',
     lobbyNotFound: 'Lobby not found',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { comparePassword, createToken } from '@/lib/auth'
+import { comparePassword } from '@/lib/auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { withErrorHandler, AuthenticationError, assertExists } from '@/lib/error-handler'
 import { apiLogger } from '@/lib/logger'
@@ -48,9 +48,6 @@ async function loginHandler(request: NextRequest) {
     throw new AuthenticationError('Account suspended')
   }
 
-  // Create JWT token
-  const token = createToken({ userId: user.id, email: user.email ?? email })
-
   log.info('Login successful', { userId: user.id, email })
 
   return NextResponse.json({
@@ -59,7 +56,6 @@ async function loginHandler(request: NextRequest) {
       email: user.email ?? email,
       username: user.username,
     },
-    token,
   })
 }
 

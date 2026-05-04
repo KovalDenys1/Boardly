@@ -478,3 +478,18 @@ export class SpyGame extends GameEngine {
     this.restoreState(state)
   }
 }
+
+/**
+ * Strip spyPlayerId and playerRoles from a state object before broadcasting to all clients.
+ * These fields are only safe to expose once the round reaches the RESULTS phase.
+ */
+export function sanitizeSpyStateForBroadcast<T extends { data?: unknown; status?: string }>(state: T): T {
+  const data = state.data as SpyGameData | undefined
+  if (!data) return state
+
+  const isRevealed = data.phase === SpyGamePhase.RESULTS || state.status === 'finished'
+  if (isRevealed) return state
+
+  const { spyPlayerId: _s, playerRoles: _r, ...safeData } = data
+  return { ...state, data: safeData }
+}

@@ -10,6 +10,7 @@ import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
+import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -720,12 +721,16 @@ export async function POST(
       })
     }
 
+    const broadcastState = game.lobby.gameType === 'guess_the_spy'
+      ? sanitizeSpyStateForBroadcast(authoritativeState)
+      : authoritativeState
+
     const serverBroadcasted = await notifySocket(
       `lobby:${game.lobby.code}`,
       'game-update',
       {
         action: 'state-change',
-        payload: authoritativeState,
+        payload: broadcastState,
       },
       0,
       resolveStateChangeNotifyTimeoutMs(game.lobby.gameType)
@@ -744,7 +749,7 @@ export async function POST(
       game: {
         id: game.id,
         status: authoritativeState.status,
-        state: authoritativeState,
+        state: broadcastState,
         players: enginePlayers.map((player: Player) => {
           const dbPlayer = dbPlayersByUserId.get(player.id)
           return {

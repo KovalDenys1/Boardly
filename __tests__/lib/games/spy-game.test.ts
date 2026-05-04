@@ -206,6 +206,179 @@ describe('SpyGame', () => {
     })
   })
 
+  describe('Questioning Phase', () => {
+    beforeEach(() => {
+      game.addPlayer({ id: 'p1', name: 'Player 1' })
+      game.addPlayer({ id: 'p2', name: 'Player 2' })
+      game.addPlayer({ id: 'p3', name: 'Player 3' })
+      game.startGame()
+      game.initializeRound(mockLocations)
+      // Advance all players to ready so questioning phase starts
+      game.makeMove({ playerId: 'p1', type: 'player-ready', data: {}, timestamp: new Date() })
+      game.makeMove({ playerId: 'p2', type: 'player-ready', data: {}, timestamp: new Date() })
+      game.makeMove({ playerId: 'p3', type: 'player-ready', data: {}, timestamp: new Date() })
+    })
+
+    it('enters questioning phase once all players are ready', () => {
+      const data = game.getState().data as any
+      expect(data.phase).toBe(SpyGamePhase.QUESTIONING)
+      expect(data.currentQuestionerId).toBe('p1')
+      expect(data.currentTargetId).toBeNull()
+    })
+
+    it('questioner can ask a question to another player', () => {
+      const data = game.getState().data as any
+      const questionerId = data.currentQuestionerId as string
+      const targetId = ['p1', 'p2', 'p3'].find((id) => id !== questionerId)!
+
+      expect(
+        game.makeMove({
+          playerId: questionerId,
+          type: 'ask-question',
+          data: { targetId, question: 'What do you do here?' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      const after = game.getState().data as any
+      expect(after.currentTargetId).toBe(targetId)
+      expect(after.pendingQuestion).toBe('What do you do here?')
+    })
+
+    it('rejects ask-question when player tries to ask themselves', () => {
+      const data = game.getState().data as any
+      const questionerId = data.currentQuestionerId as string
+
+      expect(
+        game.validateMove({
+          playerId: questionerId,
+          type: 'ask-question',
+          data: { targetId: questionerId, question: 'Can I ask myself?' },
+          timestamp: new Date(),
+        })
+      ).toBe(false)
+    })
+
+    it('target answers the question and move goes to question history', () => {
+      const data = game.getState().data as any
+      const questionerId = data.currentQuestionerId as string
+      const targetId = ['p1', 'p2', 'p3'].find((id) => id !== questionerId)!
+
+      game.makeMove({
+        playerId: questionerId,
+        type: 'ask-question',
+        data: { targetId, question: 'What is your role?' },
+        timestamp: new Date(),
+      })
+
+      expect(
+        game.makeMove({
+          playerId: targetId,
+          type: 'answer-question',
+          data: { answer: 'I work here every day.' },
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      const after = game.getState().data as any
+      expect(after.questionHistory).toHaveLength(1)
+      expect(after.questionHistory[0].question).toBe('What is your role?')
+      expect(after.questionHistory[0].answer).toBe('I work here every day.')
+      expect(after.pendingQuestion).toBeNull()
+    })
+
+    it('non-target cannot answer the question', () => {
+      const data = game.getState().data as any
+      const questionerId = data.currentQuestionerId as string
+      const players = ['p1', 'p2', 'p3']
+      const targetId = players.find((id) => id !== questionerId)!
+      const thirdId = players.find((id) => id !== questionerId && id !== targetId)!
+
+      game.makeMove({
+        playerId: questionerId,
+        type: 'ask-question',
+        data: { targetId, question: 'What do you do?' },
+        timestamp: new Date(),
+      })
+
+      expect(
+        game.validateMove({
+          playerId: thirdId,
+          type: 'answer-question',
+          data: { answer: 'I am not the target.' },
+          timestamp: new Date(),
+        })
+      ).toBe(false)
+    })
+
+    it('skip-turn advances to the next questioner without adding to history', () => {
+      const dataBefore = game.getState().data as any
+      const firstQuestioner = dataBefore.currentQuestionerId as string
+
+      expect(
+        game.makeMove({
+          playerId: firstQuestioner,
+          type: 'skip-turn',
+          data: {},
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      const after = game.getState().data as any
+      expect(after.currentQuestionerId).not.toBe(firstQuestioner)
+      expect(after.questionHistory).toHaveLength(0)
+    })
+
+    it('non-questioner cannot skip their turn', () => {
+      const data = game.getState().data as any
+      const questionerId = data.currentQuestionerId as string
+      const nonQuestioner = ['p1', 'p2', 'p3'].find((id) => id !== questionerId)!
+
+      expect(
+        game.validateMove({
+          playerId: nonQuestioner,
+          type: 'skip-turn',
+          data: {},
+          timestamp: new Date(),
+        })
+      ).toBe(false)
+    })
+
+    it('start-voting transitions immediately to VOTING phase', () => {
+      expect(
+        game.makeMove({
+          playerId: 'p1',
+          type: 'start-voting',
+          data: {},
+          timestamp: new Date(),
+        })
+      ).toBe(true)
+
+      const data = game.getState().data as any
+      expect(data.phase).toBe(SpyGamePhase.VOTING)
+      expect(data.votes).toEqual({})
+    })
+
+    it('start-voting is rejected outside QUESTIONING phase', () => {
+      // Still in ROLE_REVEAL (fresh game, players not yet ready)
+      const freshGame = new SpyGame('fresh')
+      freshGame.addPlayer({ id: 'p1', name: 'Player 1' })
+      freshGame.addPlayer({ id: 'p2', name: 'Player 2' })
+      freshGame.addPlayer({ id: 'p3', name: 'Player 3' })
+      freshGame.startGame()
+      freshGame.initializeRound(mockLocations)
+
+      expect(
+        freshGame.validateMove({
+          playerId: 'p1',
+          type: 'start-voting',
+          data: {},
+          timestamp: new Date(),
+        })
+      ).toBe(false)
+    })
+  })
+
   describe('Role Information', () => {
     beforeEach(() => {
       game.addPlayer({ id: 'p1', name: 'Player 1' })

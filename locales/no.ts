@@ -1549,6 +1549,7 @@ const no = {
     connectionError: 'Tilkoblingsfeil. Prøver igjen...',
     connectionFailed: 'Kunne ikke koble til serveren. Sjekk internettforbindelsen.',
     authenticationFailed: 'Autentisering mislyktes. Oppdater siden.',
+    lobbyAccessDenied: 'Tilgang nektet. Du kan ikke bli med i denne lobbyen.',
     rateLimitExceeded: 'For mange forespørsler. Vennligst senk farten.',
     invalidLobbyCode: 'Ugyldig lobbykodeformat',
     lobbyNotFound: 'Fant ikke lobbyen',
