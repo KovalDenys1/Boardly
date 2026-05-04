@@ -19,8 +19,8 @@ function main() {
 
   printHeader('Boardly pre-commit hook')
 
-  printStep('Git staged diff sanity', 'git diff --cached --check')
-  runChecked('git', ['diff', '--cached', '--check'])
+  printStep('Git staged diff sanity', 'git --no-pager diff --cached --check')
+  runChecked('git', ['--no-pager', 'diff', '--cached', '--check'])
 
   const stagedFiles = getStagedFiles()
   if (stagedFiles.length === 0) {
