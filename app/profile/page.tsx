@@ -1591,7 +1591,7 @@ export default function ProfilePage() {
                           >
                             <span>{t('profile.publicProfile.viewOwn')}</span>
                             <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
-                              {'->'}
+                              →
                             </span>
                           </button>
                         )}

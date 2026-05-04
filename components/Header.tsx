@@ -23,6 +23,7 @@ const AudioSettingsButton = dynamic(
 )
 const LanguageSwitcher = dynamic(() => import('./LanguageSwitcher'), {
   loading: () => null,
+  ssr: false,
 })
 
 export default function Header() {
