@@ -71,6 +71,7 @@ const ru = {
     ownerFallback: 'Аноним',
     gameUnknown: 'Неизвестная игра',
     spectators: 'Зрители {{count}}',
+    spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
     copyInviteLink: 'Скопировать ссылку',

@@ -80,6 +80,7 @@ const uk: Translation = {
     ownerFallback: 'Анонім',
     gameUnknown: 'Невідома гра',
     spectators: 'Глядачі {{count}}',
+    spectatingBanner: 'Ви спостерігаєте за цією грою',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',
     copyInviteLink: 'Скопіювати посилання',

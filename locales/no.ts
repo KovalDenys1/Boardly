@@ -71,6 +71,7 @@ const no = {
     ownerFallback: 'Anonym',
     gameUnknown: 'Ukjent spill',
     spectators: 'Tilskuere {{count}}',
+    spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
     copyInviteLink: 'Kopier invitasjonslenke',
