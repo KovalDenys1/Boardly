@@ -45,7 +45,7 @@ export default function HeroBoard() {
 
   return (
     <div className="home-hero-board">
-      <div className="home-hero-board-surface">
+      <div className="home-hero-board-surface" style={{ transform: 'none' }}>
         <Demo />
       </div>
 

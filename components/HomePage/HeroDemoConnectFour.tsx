@@ -110,7 +110,7 @@ export default function HeroDemoConnectFour() {
 
       {/* Column click targets */}
       <div style={{ position: 'relative' }}>
-        <div style={{ display: 'flex', gap: GAP, marginBottom: 4 }}>
+        <div style={{ display: 'flex', gap: GAP, marginBottom: 4, paddingLeft: 7, paddingRight: 7 }}>
           {Array.from({ length: COLS }, (_, c) => (
             <div
               key={c}
