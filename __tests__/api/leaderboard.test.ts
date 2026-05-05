@@ -42,6 +42,7 @@ describe('GET /api/leaderboard', () => {
         publicProfileId: 'public-1',
         gamesPlayed: BigInt(12),
         wins: BigInt(5),
+        losses: BigInt(7),
         winRate: 41.7,
       },
     ] as any)
@@ -62,6 +63,7 @@ describe('GET /api/leaderboard', () => {
           publicProfileId: 'public-1',
           gamesPlayed: 12,
           wins: 5,
+          losses: 7,
           winRate: 41.7,
         },
       ],

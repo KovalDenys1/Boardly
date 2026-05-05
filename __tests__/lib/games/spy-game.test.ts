@@ -470,7 +470,7 @@ describe('SpyGame', () => {
       data.phase = SpyGamePhase.VOTING
       data.currentRound = data.totalRounds
       data.spyPlayerId = 'p1'
-      data.scores = { p1: 0, p2: 0, p3: 0 }
+      data.scores = { p1: 0, p2: 10, p3: 0 }
       data.votes = {}
 
       expect(

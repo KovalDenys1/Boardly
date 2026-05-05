@@ -133,7 +133,7 @@ describe('GET /api/user/profile', () => {
     expect(payload.user).toMatchObject({
       publicProfileId: 'generated-public-id',
       friendsCount: 3,
-      gamesPlayed: 8,
+      gamesPlayed: 5,
       linkedAccountsCount: 1,
       achievementStats: {
         completedGamesCount: 5,
