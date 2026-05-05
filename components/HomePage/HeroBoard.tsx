@@ -8,7 +8,6 @@ import HeroDemoConnectFour from './HeroDemoConnectFour'
 type Demo = {
   component: React.ComponentType
   badge: string
-  badgeRotate: string
   badgeColor: string
   badgeTextColor: string
   boardColor: string
@@ -19,7 +18,6 @@ const DEMOS: Demo[] = [
   {
     component: HeroDemoTicTacToe,
     badge: 'TIC-TAC-TOE',
-    badgeRotate: '10deg',
     badgeColor: 'var(--bd-coral)',
     badgeTextColor: 'white',
     boardColor: 'var(--bd-card-warm)',
@@ -49,7 +47,6 @@ const DEMOS: Demo[] = [
   {
     component: HeroDemoMemory,
     badge: 'MEMORY',
-    badgeRotate: '-8deg',
     badgeColor: 'var(--bd-sun)',
     badgeTextColor: 'var(--bd-ink)',
     boardColor: 'var(--bd-sky)',
@@ -81,7 +78,6 @@ const DEMOS: Demo[] = [
   {
     component: HeroDemoConnectFour,
     badge: 'CONNECT FOUR',
-    badgeRotate: '12deg',
     badgeColor: 'var(--bd-lav)',
     badgeTextColor: 'white',
     boardColor: 'var(--bd-mint)',
@@ -143,7 +139,6 @@ export default function HeroBoard() {
             position: 'absolute',
             top: '-9%',
             right: '-9%',
-            transform: `rotate(${demo.badgeRotate})`,
             background: demo.badgeColor,
             color: demo.badgeTextColor,
             border: '2px solid var(--bd-ink)',
