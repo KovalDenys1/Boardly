@@ -32,12 +32,24 @@
   100% { transform: translateY(7px)  rotate(0deg);  }
 }
 
+@keyframes bd-float-board {
+  0%   { transform: translateY(0px)   rotate(-1.1deg); }
+  30%  { transform: translateY(-5px)  rotate(-0.4deg); }
+  60%  { transform: translateY(3px)   rotate(-1.8deg); }
+  100% { transform: translateY(0px)   rotate(-1.1deg); }
+}
+
 .bd-float {
   animation: bd-float 5s ease-in-out infinite;
 }
 
+.bd-float-board {
+  animation: bd-float-board 7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .bd-float { animation: none; }
+  .bd-float      { animation: none; }
+  .bd-float-board { animation: none; transform: rotate(-1.1deg); }
 }
 
 /* ============ END BOARDLY DESIGN SYSTEM ============ */
@@ -252,6 +264,11 @@
   width: min(100%, clamp(360px, 38vw, 480px));
 }
 
+.home-hero-board-inner {
+  inset: 8%;
+  position: absolute;
+}
+
 .home-hero-board-surface {
   background: var(--bd-mint);
   background-image: radial-gradient(rgba(31,27,22,0.12) 1px, transparent 1px);
@@ -263,6 +280,11 @@
   overflow: hidden;
   position: absolute;
   transform: rotate(-3deg);
+}
+
+.home-hero-board-inner > .home-hero-board-surface {
+  inset: 0;
+  transform: none;
 }
 
 .home-section {
@@ -416,12 +438,20 @@
     width: min(82vw, 280px);
   }
 
+  .home-hero-board-inner {
+    inset: 10%;
+  }
+
   .home-hero-board-surface {
     background-size: 14px 14px;
     border-width: 3px;
     border-radius: 24px;
     box-shadow: 6px 6px 0 var(--bd-ink);
     inset: 10%;
+  }
+
+  .home-hero-board-inner > .home-hero-board-surface {
+    inset: 0;
   }
 
   .home-section-games {

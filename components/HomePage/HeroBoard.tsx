@@ -1,107 +1,166 @@
-import Die from '@/components/ui/Die'
+'use client'
+
+import { useState, useEffect } from 'react'
+import HeroDemoTicTacToe from './HeroDemoTicTacToe'
+import HeroDemoMemory from './HeroDemoMemory'
+import HeroDemoConnectFour from './HeroDemoConnectFour'
+
+type Demo = {
+  component: React.ComponentType
+  badge: string
+  badgeColor: string
+  badgeTextColor: string
+  boardColor: string
+  extra: React.ReactNode
+}
+
+const DEMOS: Demo[] = [
+  {
+    component: HeroDemoTicTacToe,
+    badge: 'TIC-TAC-TOE',
+    badgeColor: 'var(--bd-coral)',
+    badgeTextColor: 'white',
+    boardColor: 'var(--bd-card-warm)',
+    extra: (
+      <>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', top: '35%', left: '2%',
+            fontSize: 48, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
+            color: 'var(--bd-coral)', transform: 'rotate(-14deg)',
+            animationDelay: '0.4s', lineHeight: 1, userSelect: 'none',
+          }}
+        >✕</div>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', bottom: '18%', right: '1%',
+            fontSize: 38, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
+            color: 'var(--bd-ink)', transform: 'rotate(9deg)',
+            animationDelay: '1.2s', lineHeight: 1, userSelect: 'none',
+          }}
+        >○</div>
+      </>
+    ),
+  },
+  {
+    component: HeroDemoMemory,
+    badge: 'MEMORY',
+    badgeColor: 'var(--bd-sun)',
+    badgeTextColor: 'var(--bd-ink)',
+    boardColor: 'var(--bd-sky)',
+    extra: (
+      <>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', top: '38%', left: '2%',
+            width: 30, height: 40,
+            background: 'var(--bd-lav)', border: '2px solid var(--bd-ink)',
+            borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
+            transform: 'rotate(-13deg)', animationDelay: '0.6s',
+          }}
+        />
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', bottom: '18%', right: '1%',
+            width: 26, height: 36,
+            background: 'var(--bd-coral)', border: '2px solid var(--bd-ink)',
+            borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
+            transform: 'rotate(7deg)', animationDelay: '1.4s',
+          }}
+        />
+      </>
+    ),
+  },
+  {
+    component: HeroDemoConnectFour,
+    badge: 'CONNECT FOUR',
+    badgeColor: 'var(--bd-lav)',
+    badgeTextColor: 'white',
+    boardColor: 'var(--bd-mint)',
+    extra: (
+      <>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', top: '36%', left: '2%',
+            width: 38, height: 38,
+            background: 'var(--bd-coral)', border: '3px solid var(--bd-ink)',
+            borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
+            animationDelay: '0.5s',
+          }}
+        />
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', bottom: '18%', right: '1%',
+            width: 32, height: 32,
+            background: 'var(--bd-sun)', border: '3px solid var(--bd-ink)',
+            borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
+            animationDelay: '1.3s',
+          }}
+        />
+      </>
+    ),
+  },
+]
 
 export default function HeroBoard() {
+  const [demoIndex, setDemoIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    setDemoIndex(Math.floor(Math.random() * DEMOS.length))
+  }, [])
+
+  if (demoIndex === null) {
+    return <StaticFallback />
+  }
+
+  const demo = DEMOS[demoIndex]
+  const Demo = demo.component
+
   return (
     <div className="home-hero-board">
-      {/* main playing surface */}
-      <div className="home-hero-board-surface">
+      {/* inner wrapper animates — surface + badge move together */}
+      <div className="home-hero-board-inner bd-float-board">
+        <div
+          className="home-hero-board-surface"
+          style={{ background: demo.boardColor }}
+        >
+          <Demo />
+        </div>
+
+        {/* badge attached to the board */}
         <div
           style={{
             position: 'absolute',
-            inset: 24,
-            background: 'rgba(255,255,255,0.18)',
-            borderRadius: 18,
-            border: '2px dashed rgba(31,27,22,0.3)',
+            top: '-5%',
+            right: '-9%',
+            background: demo.badgeColor,
+            color: demo.badgeTextColor,
+            border: '2px solid var(--bd-ink)',
+            boxShadow: '2px 2px 0 var(--bd-ink)',
+            borderRadius: 999,
+            padding: '6px 14px',
+            fontFamily: 'var(--bd-font-display)',
+            fontWeight: 700,
+            fontSize: 13,
+            whiteSpace: 'nowrap',
           }}
-        />
+        >
+          {demo.badge}
+        </div>
       </div>
 
-      {/* dice cluster */}
-      <div
-        className="bd-float"
-        style={{ position: 'absolute', top: '12%', left: '28%', animationDelay: '0s' }}
-      >
-        <Die value={6} size={70} rotate="-12deg" />
-      </div>
-      <div
-        className="bd-float"
-        style={{ position: 'absolute', top: '24%', left: '52%', animationDelay: '0.6s' }}
-      >
-        <Die value={4} size={56} rotate="8deg" />
-      </div>
-      <div
-        className="bd-float"
-        style={{ position: 'absolute', top: '44%', left: '18%', animationDelay: '1.2s' }}
-      >
-        <Die value={2} size={62} rotate="4deg" />
-      </div>
-
-      {/* card */}
-      <div
-        className="bd-float"
-        style={{
-          position: 'absolute',
-          bottom: '14%',
-          right: '14%',
-          width: 90,
-          height: 130,
-          background: 'var(--bd-coral)',
-          border: '3px solid var(--bd-ink)',
-          borderRadius: 14,
-          boxShadow: '4px 4px 0 var(--bd-ink)',
-          transform: 'rotate(8deg)',
-          display: 'grid',
-          placeItems: 'center',
-          color: 'white',
-          fontFamily: 'var(--bd-font-display)',
-          fontSize: 40,
-          animationDelay: '0.8s',
-        }}
-      >
-        ♠
-      </div>
-
-      {/* chess piece */}
-      <div
-        className="bd-float"
-        style={{
-          position: 'absolute',
-          bottom: '18%',
-          left: '18%',
-          width: 50,
-          height: 90,
-          background: 'var(--bd-ink)',
-          borderRadius: '24px 24px 4px 4px',
-          animationDelay: '1.4s',
-        }}
-      />
-
-      {/* YAHTZEE! sticker */}
-      <div
-        className="bd-float"
-        style={{
-          position: 'absolute',
-          top: '4%',
-          right: '4%',
-          transform: 'rotate(12deg)',
-          background: 'var(--bd-sun)',
-          color: 'var(--bd-ink)',
-          border: '2px solid var(--bd-ink)',
-          boxShadow: '2px 2px 0 var(--bd-ink)',
-          borderRadius: 999,
-          padding: '6px 14px',
-          fontFamily: 'var(--bd-font-display)',
-          fontWeight: 700,
-          fontSize: 14,
-          animationDelay: '0.3s',
-        }}
-      >
-        YAHTZEE!
-      </div>
+      {/* per-game floating decorations */}
+      {demo.extra}
 
       {/* squiggle */}
       <svg
-        style={{ position: 'absolute', bottom: '2%', left: '40%', width: 80, height: 40 }}
+        style={{ position: 'absolute', bottom: '1%', left: '38%', width: 80, height: 40 }}
         viewBox="0 0 80 40"
       >
         <path
@@ -112,6 +171,16 @@ export default function HeroBoard() {
           strokeLinecap="round"
         />
       </svg>
+    </div>
+  )
+}
+
+function StaticFallback() {
+  return (
+    <div className="home-hero-board">
+      <div className="home-hero-board-inner bd-float-board">
+        <div className="home-hero-board-surface" />
+      </div>
     </div>
   )
 }
