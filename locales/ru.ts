@@ -301,6 +301,8 @@ const ru = {
     settings: 'Настройки',
     analytics: 'Аналитика',
     signUp: 'Регистрация',
+    authGateTitle: 'Войдите в игру',
+    authGateDesc: 'Выберите имя и играйте как гость, или войдите чтобы сохранить прогресс.',
     exitGuest: 'Выйти из гостевого режима',
     guestSession: 'Гостевой режим',
     language: 'Язык',
@@ -1168,6 +1170,17 @@ const ru = {
     loading: 'Загрузка профиля...',
     playerFallback: 'Игрок',
     verified: 'Подтверждено',
+    chips: {
+      games: '{{count}} игр',
+      friends: '{{count}} друзей',
+    },
+    achievements: {
+      title: 'Достижения',
+      firstFinish: 'Первое завершение',
+      firstFriend: 'Первый друг',
+      firstWin: 'Первая победа',
+      verified: 'Подтверждено',
+    },
     saving: 'Сохранение...',
     sending: 'Отправка...',
     memberSince: 'Участник с',
@@ -1519,6 +1532,8 @@ const ru = {
     },
     friends: {
       title: 'Друзья',
+      pageKicker: 'Социальное',
+      pageSubtitle: 'и команда',
       tabs: {
         friends: 'Друзья',
         requests: 'Запросы',

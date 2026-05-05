@@ -17,6 +17,7 @@ interface MobileMenuProps {
   userName?: string | null
   userEmail?: string | null
   userImage?: string | null
+  onUnauthClick?: (dest: string) => void
 }
 
 export function MobileMenu({
@@ -25,6 +26,7 @@ export function MobileMenu({
   userName,
   userEmail,
   userImage,
+  onUnauthClick,
 }: MobileMenuProps) {
   const { t } = useTranslation()
   const router = useRouter()
@@ -35,7 +37,15 @@ export function MobileMenu({
   const previousPathnameRef = useRef(pathname)
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
-  const canAccessGames = isAuthenticated || isGuestSession
+
+  const navigateMobile = (dest: string) => {
+    if (!isAuthenticated && !isGuestSession) {
+      closeMenuImmediately()
+      onUnauthClick?.(dest)
+    } else {
+      router.push(dest)
+    }
+  }
 
   const isActive = (path: string) => pathname === path
   const isActiveStart = (path: string) => !!pathname?.startsWith(path)
@@ -316,28 +326,24 @@ export function MobileMenu({
                 {t('header.home')}
               </button>
 
-              {canAccessGames && (
-                <>
-                  <button onClick={() => router.push('/games')} style={navBtn(isActiveStart('/games'))}>
-                    {t('header.games')}
-                  </button>
-                  <button onClick={() => router.push('/lobby')} style={navBtn(isActiveStart('/lobby'))}>
-                    {t('header.lobbies')}
-                  </button>
-                  <button onClick={() => router.push('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
-                    {t('header.leaderboard')}
-                  </button>
-                  {isAuthenticated && (
-                    <button onClick={() => router.push('/friends')} style={navBtn(isActiveStart('/friends'))}>
-                      {t('header.friends')}
-                    </button>
-                  )}
-                  {isAuthenticated && isAdmin && (
-                    <button onClick={() => router.push('/analytics')} style={navBtn(isActiveStart('/analytics'))}>
-                      {t('header.analytics')}
-                    </button>
-                  )}
-                </>
+              <button onClick={() => navigateMobile('/games')} style={navBtn(isActiveStart('/games'))}>
+                {t('header.games')}
+              </button>
+              <button onClick={() => navigateMobile('/lobby')} style={navBtn(isActiveStart('/lobby'))}>
+                {t('header.lobbies')}
+              </button>
+              <button onClick={() => navigateMobile('/leaderboard')} style={navBtn(isActiveStart('/leaderboard'))}>
+                {t('header.leaderboard')}
+              </button>
+              {isAuthenticated && (
+                <button onClick={() => router.push('/friends')} style={navBtn(isActiveStart('/friends'))}>
+                  {t('header.friends')}
+                </button>
+              )}
+              {isAuthenticated && isAdmin && (
+                <button onClick={() => router.push('/analytics')} style={navBtn(isActiveStart('/analytics'))}>
+                  {t('header.analytics')}
+                </button>
               )}
 
               <div style={{ height: 1, background: 'var(--bd-line)', margin: '8px 0' }} />

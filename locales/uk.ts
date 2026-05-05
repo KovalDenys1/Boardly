@@ -303,6 +303,8 @@ const uk: Translation = {
     settings: 'Налаштування',
     analytics: 'Аналітика',
     signUp: 'Реєстрація',
+    authGateTitle: 'Приєднайтесь до гри',
+    authGateDesc: 'Оберіть імʼя і грайте як гість, або увійдіть щоб зберегти прогрес.',
     exitGuest: 'Вийти з гостьового режиму',
     guestSession: 'Гостьовий режим',
     language: 'Мова',
@@ -1170,6 +1172,17 @@ const uk: Translation = {
     loading: 'Завантаження профілю...',
     playerFallback: 'Гравець',
     verified: 'Підтверджено',
+    chips: {
+      games: '{{count}} ігор',
+      friends: '{{count}} друзів',
+    },
+    achievements: {
+      title: 'Досягнення',
+      firstFinish: 'Перше завершення',
+      firstFriend: 'Перший друг',
+      firstWin: 'Перша перемога',
+      verified: 'Підтверджено',
+    },
     saving: 'Збереження...',
     sending: 'Надсилання...',
     memberSince: 'Учасник з',
@@ -1532,6 +1545,8 @@ const uk: Translation = {
     },
     friends: {
       title: 'Друзі',
+      pageKicker: 'Соціальне',
+      pageSubtitle: 'і команда',
       tabs: {
         friends: 'Друзі',
         requests: 'Запити',

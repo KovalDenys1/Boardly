@@ -54,6 +54,11 @@ export default function HeroDemoConnectFour() {
   const [board, setBoard] = useState<Board>(makeBoard)
   const [winner, setWinner] = useState<'red' | 'yellow' | 'draw' | null>(null)
   const [hoverCol, setHoverCol] = useState<number | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 767)
+  }, [])
 
   const reset = useCallback(() => {
     setBoard(makeBoard())
@@ -87,16 +92,16 @@ export default function HeroDemoConnectFour() {
     : winner === 'draw' ? "Draw!"
     : 'Drop a piece'
 
-  const CELL = 28
-  const GAP = 4
-  const PADDING = 7
+  const CELL = isMobile ? 22 : 28
+  const GAP = isMobile ? 3 : 4
+  const PADDING = isMobile ? 5 : 7
 
   return (
     <div style={{
       width: '100%', height: '100%',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      gap: 8, padding: '10px 8px',
+      gap: isMobile ? 6 : 8, padding: isMobile ? '6px 8px' : '10px 8px',
     }}>
       {/* coming soon badge */}
       <div style={{
@@ -111,33 +116,35 @@ export default function HeroDemoConnectFour() {
 
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 600, fontSize: 11,
-        color: 'rgba(31,27,22,0.55)', minHeight: 16, textAlign: 'center', width: '100%',
+        color: 'rgba(31,27,22,0.55)', minHeight: isMobile ? 0 : 16, textAlign: 'center', width: '100%',
       }}>
         {statusText}
       </div>
 
       <div style={{ position: 'relative' }}>
-        {/* drop indicators */}
-        <div style={{ display: 'flex', gap: GAP, marginBottom: 4, paddingLeft: PADDING, paddingRight: PADDING }}>
-          {Array.from({ length: COLS }, (_, c) => (
-            <div
-              key={c}
-              onClick={() => handleColClick(c)}
-              onMouseEnter={() => setHoverCol(c)}
-              onMouseLeave={() => setHoverCol(null)}
-              style={{
-                width: CELL, height: 16,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: winner || board[0][c] ? 'default' : 'pointer',
-                fontSize: 13, fontWeight: 900,
-                color: hoverCol === c && !board[0][c] && !winner ? 'var(--bd-coral)' : 'transparent',
-                transition: 'color 0.1s',
-              }}
-            >
-              ▼
-            </div>
-          ))}
-        </div>
+        {/* drop indicators — hidden on mobile (no hover on touch) */}
+        {!isMobile && (
+          <div style={{ display: 'flex', gap: GAP, marginBottom: 4, paddingLeft: PADDING, paddingRight: PADDING }}>
+            {Array.from({ length: COLS }, (_, c) => (
+              <div
+                key={c}
+                onClick={() => handleColClick(c)}
+                onMouseEnter={() => setHoverCol(c)}
+                onMouseLeave={() => setHoverCol(null)}
+                style={{
+                  width: CELL, height: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: winner || board[0][c] ? 'default' : 'pointer',
+                  fontSize: 13, fontWeight: 900,
+                  color: hoverCol === c && !board[0][c] && !winner ? 'var(--bd-coral)' : 'transparent',
+                  transition: 'color 0.1s',
+                }}
+              >
+                ▼
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* grid */}
         <div style={{

@@ -19,6 +19,11 @@ export default function HeroDemoMemory() {
   const [cards, setCards] = useState<Card[]>(makeCards)
   const [flipped, setFlipped] = useState<number[]>([])
   const [locked, setLocked] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 767)
+  }, [])
 
   const reset = useCallback(() => {
     setCards(makeCards())
@@ -53,21 +58,25 @@ export default function HeroDemoMemory() {
     }
   }
 
+  const CARD_W = isMobile ? 38 : 48
+  const CARD_H = isMobile ? 44 : 54
+  const GRID_GAP = isMobile ? 5 : 7
+
   return (
     <div style={{
       width: '100%', height: '100%',
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      gap: 12, padding: '16px 8px',
+      gap: isMobile ? 8 : 12, padding: '10px 8px',
     }}>
       <div style={{
-        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
-        color: 'rgba(31,27,22,0.8)', minHeight: 22,
+        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: isMobile ? 12 : 14,
+        color: 'rgba(31,27,22,0.8)', minHeight: isMobile ? 18 : 22,
       }}>
         {allMatched ? '🎉 All matched!' : `${matchedCount} / ${PAIRS.length} pairs`}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gridTemplateRows: 'repeat(3, 54px)', gap: 7 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(4, ${CARD_W}px)`, gridTemplateRows: `repeat(3, ${CARD_H}px)`, gap: GRID_GAP }}>
         {cards.map((card, i) => {
           const isFlipped = flipped.includes(i) || card.matched
           return (
@@ -75,7 +84,7 @@ export default function HeroDemoMemory() {
               key={card.id + '-' + i}
               onClick={() => handleFlip(i)}
               style={{
-                width: 48, height: 54,
+                width: CARD_W, height: CARD_H,
                 background: card.matched
                   ? 'rgba(255,255,255,0.85)'
                   : isFlipped

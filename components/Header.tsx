@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { useGuest } from '@/contexts/GuestContext'
 import { HeaderNavigation } from './Header/HeaderNavigation'
 import { HeaderActions } from './Header/HeaderActions'
+import { AuthGateModal } from './AuthGateModal'
 import { useProfileNavigationTracking } from '@/lib/profile-navigation'
 
 const MobileMenu = dynamic(
@@ -32,6 +33,7 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
   const [isGuestUiReady, setIsGuestUiReady] = useState(false)
+  const [authGateDest, setAuthGateDest] = useState<string | null>(null)
   useProfileNavigationTracking(pathname)
 
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function Header() {
   const isGuestSession = isAuthUiReady && isGuest && !isAuthenticated
 
   return (
+    <>
     <header
       className="site-header sticky top-0 z-50"
       style={{
@@ -96,6 +99,7 @@ export default function Header() {
               isAuthenticated={effectiveIsAuthenticated}
               isAdmin={effectiveIsAdmin}
               isGuest={isGuestSession}
+              onUnauthClick={setAuthGateDest}
             />
           </div>
 
@@ -138,10 +142,19 @@ export default function Header() {
               userName={session?.user?.name}
               userEmail={session?.user?.email}
               userImage={session?.user?.image}
+              onUnauthClick={setAuthGateDest}
             />
           </div>
         </div>
       </nav>
     </header>
+
+    {authGateDest && (
+      <AuthGateModal
+        dest={authGateDest}
+        onClose={() => setAuthGateDest(null)}
+      />
+    )}
+  </>
   )
 }

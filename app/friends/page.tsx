@@ -5,10 +5,12 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Friends from '@/components/Friends'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { useTranslation } from '@/lib/i18n-helpers'
 
 function FriendsPageContent() {
   const { status } = useSession()
   const router = useRouter()
+  const { t } = useTranslation()
 
   if (status === 'loading') {
     return (
@@ -30,13 +32,13 @@ function FriendsPageContent() {
           {/* Header */}
           <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
             <div>
-              <span className="bd-kicker">Social</span>
+              <span className="bd-kicker">{t('profile.friends.pageKicker')}</span>
               <h1
                 className="mt-3 text-[clamp(2.5rem,7vw,4rem)] font-extrabold leading-[0.95] text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
-                Friends{' '}
-                <span style={{ color: 'var(--bd-coral)' }}>and crew</span>
+                {t('profile.friends.title')}{' '}
+                <span style={{ color: 'var(--bd-coral)' }}>{t('profile.friends.pageSubtitle')}</span>
               </h1>
             </div>
           </div>
