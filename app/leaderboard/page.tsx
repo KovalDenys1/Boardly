@@ -50,20 +50,20 @@ const winRateColor = (winRate: number) => {
 function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
   const medal = MEDAL[entry.rank]
   const isTop3 = entry.rank <= 3
-  const rowClass = `grid gap-3 px-4 py-4 transition-colors sm:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] sm:items-center sm:px-5 ${
+  const rowClass = `grid gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
   } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-white' : 'bg-white/75'}`
 
   const content = (
     <>
-      <div className="flex items-center gap-3 sm:block">
+      <div className="flex items-center gap-3 md:block">
         <span
           className="inline-grid h-11 w-11 place-items-center rounded-2xl border-2 border-bd-ink text-sm font-extrabold text-bd-ink shadow-[2px_2px_0_#1F1B16]"
           style={{ background: rankAccent(entry.rank), fontFamily: 'var(--bd-font-display)' }}
         >
           {medal ?? entry.rank}
         </span>
-        <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.rank')}</span>
+        <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.rank')}</span>
       </div>
       <div className="min-w-0">
         <span className="block truncate text-base font-bold text-bd-ink">{entry.username}</span>
@@ -71,24 +71,24 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
           <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-2 sm:contents">
-        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.gamesPlayed')}</span>
+      <div className="grid grid-cols-2 gap-2 md:contents">
+        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.gamesPlayed')}</span>
           {entry.gamesPlayed}
         </span>
-        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.wins')}</span>
+        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.wins')}</span>
           {entry.wins}
         </span>
-        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.losses')}</span>
+        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.losses')}</span>
           {entry.losses}
         </span>
         <span
-          className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-extrabold sm:bg-transparent sm:p-0 sm:text-right"
+          className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-extrabold md:bg-transparent md:p-0 md:text-right"
           style={{ color: winRateColor(entry.winRate) }}
         >
-          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.winRate')}</span>
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.winRate')}</span>
           {entry.winRate}%
         </span>
       </div>
@@ -285,7 +285,7 @@ function LeaderboardPageContent() {
 
             {/* Table */}
             <div className="bd-card overflow-hidden">
-              <div className="hidden grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem] gap-3 border-b border-bd-line bg-bd-card-warm px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted sm:grid">
+              <div className="hidden grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] gap-3 border-b border-bd-line bg-bd-card-warm px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted md:grid">
                 <span>{t('leaderboard.rank')}</span>
                 <span>{t('leaderboard.player', 'Player')}</span>
                 <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>
