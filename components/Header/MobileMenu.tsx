@@ -152,7 +152,7 @@ export function MobileMenu({
               borderRadius: 99,
               background: 'var(--bd-ink)',
               transition: 'all 0.3s',
-              top: mobileMenuOpen ? '50%' : '25%',
+              top: mobileMenuOpen ? '50%' : 4,
               transform: mobileMenuOpen ? 'translateY(-50%) rotate(45deg)' : 'none',
             }}
           />
@@ -179,7 +179,7 @@ export function MobileMenu({
               borderRadius: 99,
               background: 'var(--bd-ink)',
               transition: 'all 0.3s',
-              top: mobileMenuOpen ? '50%' : '75%',
+              top: mobileMenuOpen ? '50%' : 17,
               transform: mobileMenuOpen ? 'translateY(-50%) rotate(-45deg)' : 'none',
             }}
           />
