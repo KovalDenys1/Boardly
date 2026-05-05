@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
                 AND result->>'isWinner' = 'true'
             )
           ) AS "isWinner",
-          (gwc.winner_count = 0) AS "isDraw"
+          (gwc.winner_count = 0 OR (p."isWinner" = true AND gwc.winner_count > 1)) AS "isDraw"
         FROM "Players" p
         JOIN "Games" g   ON g.id = p."gameId"
         JOIN "Users" u   ON u.id = p."userId"
@@ -107,12 +107,12 @@ export async function GET(req: NextRequest) {
         username,
         "publicProfileId",
         COUNT("playerId")                                                        AS "gamesPlayed",
-        COUNT("playerId") FILTER (WHERE "isWinner" = true)                      AS wins,
+        COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")      AS wins,
         COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw")        AS losses,
         ROUND(
-          COUNT("playerId") FILTER (WHERE "isWinner" = true)::numeric
+          COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")::numeric
           / NULLIF(
-              COUNT("playerId") FILTER (WHERE "isWinner" = true)
+              COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")
               + COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw"),
               0
             ) * 100,
@@ -122,13 +122,13 @@ export async function GET(req: NextRequest) {
       GROUP BY "userId", username, "publicProfileId"
       HAVING COUNT("playerId") >= ${MIN_GAMES}
       ORDER BY
-        COUNT("playerId") FILTER (WHERE "isWinner" = true)::numeric
+        COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")::numeric
         / NULLIF(
-            COUNT("playerId") FILTER (WHERE "isWinner" = true)
+            COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")
             + COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw"),
             0
           ) DESC NULLS LAST,
-        COUNT("playerId") FILTER (WHERE "isWinner" = true) DESC
+        COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw") DESC
       LIMIT ${PAGE_SIZE}
       OFFSET ${offset}
     `)
