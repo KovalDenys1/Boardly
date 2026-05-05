@@ -110,8 +110,8 @@ export default function HeroDemoConnectFour() {
       </div>
 
       <div style={{
-        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
-        color: 'rgba(31,27,22,0.7)', minHeight: 20,
+        fontFamily: 'var(--bd-font-display)', fontWeight: 600, fontSize: 11,
+        color: 'rgba(31,27,22,0.55)', minHeight: 16, textAlign: 'center', width: '100%',
       }}>
         {statusText}
       </div>

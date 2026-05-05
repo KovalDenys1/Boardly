@@ -37,7 +37,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', bottom: '5%', right: '8%',
+            position: 'absolute', bottom: '18%', right: '1%',
             fontSize: 38, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
             color: 'var(--bd-ink)', transform: 'rotate(9deg)',
             animationDelay: '1.2s', lineHeight: 1, userSelect: 'none',
@@ -68,7 +68,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', bottom: '6%', right: '10%',
+            position: 'absolute', bottom: '18%', right: '1%',
             width: 26, height: 36,
             background: 'var(--bd-coral)', border: '2px solid var(--bd-ink)',
             borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
@@ -100,7 +100,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', bottom: '7%', right: '9%',
+            position: 'absolute', bottom: '18%', right: '1%',
             width: 32, height: 32,
             background: 'var(--bd-sun)', border: '3px solid var(--bd-ink)',
             borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
