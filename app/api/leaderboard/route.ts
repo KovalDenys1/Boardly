@@ -52,6 +52,8 @@ export async function GET(req: NextRequest) {
   const offset = page * PAGE_SIZE
 
   try {
+    // Win rate formula: wins / (wins + losses) — mirrors computeWinRate() in lib/stats-core.ts.
+    // Outcome logic mirrors resolveOutcome() in lib/stats-core.ts.
     type LeaderboardRow = {
       userId: string
       username: string | null

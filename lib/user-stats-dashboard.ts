@@ -1,5 +1,6 @@
 import { Prisma } from '@/prisma/client'
 import type { PrismaClient } from '@/prisma/client'
+import { roundToOneDecimal, computeWinRate } from '@/lib/stats-core'
 import type {
   UserByGameStats,
   UserStatsDashboard,
@@ -41,10 +42,6 @@ interface TrendRow {
 interface StreakRow {
   currentWinStreak: number
   longestWinStreak: number
-}
-
-function roundToOneDecimal(value: number): number {
-  return Math.round(value * 10) / 10
 }
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
@@ -141,7 +138,7 @@ function normalizeByGameRows(rows: ByGameRow[]): UserByGameStats[] {
       wins,
       losses,
       draws,
-      winRate: (wins + losses) > 0 ? roundToOneDecimal((wins / (wins + losses)) * 100) : 0,
+      winRate: computeWinRate(wins, losses),
       avgScore:
         row.avgScore === null || row.avgScore === undefined
           ? null
@@ -276,10 +273,7 @@ export async function getUserStatsDashboard(
       wins: normalizedOverall.wins,
       losses: normalizedOverall.losses,
       draws: normalizedOverall.draws,
-      winRate:
-        (normalizedOverall.wins + normalizedOverall.losses) > 0
-          ? roundToOneDecimal((normalizedOverall.wins / (normalizedOverall.wins + normalizedOverall.losses)) * 100)
-          : 0,
+      winRate: computeWinRate(normalizedOverall.wins, normalizedOverall.losses),
       avgGameDurationMinutes: normalizedOverall.avgGameDurationMinutes,
       favoriteGame: byGame[0]?.gameType ?? null,
       currentWinStreak: toFiniteNumber(streaks.currentWinStreak),

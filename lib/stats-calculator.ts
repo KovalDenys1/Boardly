@@ -1,4 +1,6 @@
-export type GameOutcome = 'win' | 'loss' | 'draw'
+export type { GameOutcome } from '@/lib/stats-core'
+import type { GameOutcome } from '@/lib/stats-core'
+import { roundToOneDecimal, computeWinRate, resolveOutcome } from '@/lib/stats-core'
 
 export interface StatsPlayerInput {
   userId: string
@@ -67,30 +69,14 @@ function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value)
 }
 
-function roundToOneDecimal(value: number): number {
-  return Math.round(value * 10) / 10
-}
-
 function toIsoDay(value: Date): string {
   return value.toISOString().slice(0, 10)
 }
 
-function normalizeOutcome(game: StatsGameInput, player: StatsPlayerInput | undefined): GameOutcome | null {
-  if (!player || game.status !== 'finished') {
-    return null
-  }
-
+function normalizeOutcome(game: StatsGameInput, player: StatsPlayerInput | undefined): ReturnType<typeof resolveOutcome> {
+  if (!player) return null
   const winnerCount = game.players.filter((entry) => entry.isWinner).length
-  if (winnerCount === 0) {
-    return 'draw'
-  }
-  if (player.isWinner && winnerCount > 1) {
-    return 'draw'
-  }
-  if (player.isWinner) {
-    return 'win'
-  }
-  return 'loss'
+  return resolveOutcome(game.status, player.isWinner, winnerCount)
 }
 
 export function calculateUserStats(
@@ -196,9 +182,7 @@ export function calculateUserStats(
 
   const byGame = Array.from(byGameMap.entries())
     .map(([gameType, entry]) => {
-      const winRate = (entry.wins + entry.losses) > 0
-        ? roundToOneDecimal((entry.wins / (entry.wins + entry.losses)) * 100)
-        : 0
+      const winRate = computeWinRate(entry.wins, entry.losses)
 
       return {
         gameType,
@@ -254,7 +238,7 @@ export function calculateUserStats(
     wins,
     losses,
     draws,
-    winRate: (wins + losses) > 0 ? roundToOneDecimal((wins / (wins + losses)) * 100) : 0,
+    winRate: computeWinRate(wins, losses),
     avgGameDurationMinutes: durationCount > 0 ? roundToOneDecimal(durationSumMs / durationCount / 60000) : 0,
     favoriteGame,
     currentWinStreak,
