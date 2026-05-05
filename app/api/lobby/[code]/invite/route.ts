@@ -7,6 +7,7 @@ import { apiLogger } from '@/lib/logger'
 import { getNotificationPreferences } from '@/lib/notification-preferences'
 import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { createInAppNotification } from '@/lib/in-app-notifications'
+import { sendGameInviteEmail } from '@/lib/email'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
@@ -229,11 +230,31 @@ export async function POST(
           return { success: false, error: 'Recipient disabled game invite emails' }
         }
 
+        const emailResult = await sendGameInviteEmail(
+          recipientEmail,
+          friend.username || 'Player',
+          requestUser.username || 'A friend',
+          lobby.name || '',
+          lobby.gameType,
+          inviteUrl
+        )
+
+        if (!emailResult.success) {
+          await recordNotificationDelivery({
+            userId: friend.id,
+            type: 'game_invite',
+            status: 'failed',
+            reason: emailResult.error || 'send_failed',
+            dedupeKey,
+            payload: { ...payload, recipientEmail },
+          })
+          return { success: false, error: emailResult.error }
+        }
+
         await recordNotificationDelivery({
           userId: friend.id,
           type: 'game_invite',
-          status: 'skipped',
-          reason: 'email_notifications_disabled',
+          status: 'sent',
           dedupeKey,
           payload: { ...payload, recipientEmail },
         })
