@@ -301,6 +301,8 @@ const no = {
     settings: 'Innstillinger',
     analytics: 'Analyse',
     signUp: 'Registrer deg',
+    authGateTitle: 'Bli med i spillet',
+    authGateDesc: 'Velg et navn og spill som gjest, eller logg inn for å lagre fremgangen din.',
     exitGuest: 'Avslutt gjest',
     guestSession: 'Gjesteøkt',
     language: 'Språk',
@@ -1168,6 +1170,17 @@ const no = {
     loading: 'Laster profil...',
     playerFallback: 'Spiller',
     verified: 'Bekreftet',
+    chips: {
+      games: '{{count}} spill',
+      friends: '{{count}} venner',
+    },
+    achievements: {
+      title: 'Prestasjoner',
+      firstFinish: 'Første mål',
+      firstFriend: 'Første venn',
+      firstWin: 'Første seier',
+      verified: 'Bekreftet',
+    },
     saving: 'Lagrer...',
     sending: 'Sender...',
     memberSince: 'Medlem siden',
@@ -1519,6 +1532,8 @@ const no = {
     },
     friends: {
       title: 'Venner',
+      pageKicker: 'Sosialt',
+      pageSubtitle: 'og venner',
       tabs: {
         friends: 'Venner',
         requests: 'Forespørsler',

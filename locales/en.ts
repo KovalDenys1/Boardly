@@ -301,6 +301,8 @@ const en = {
     settings: 'Settings',
     analytics: 'Analytics',
     signUp: 'Sign Up',
+    authGateTitle: 'Join the game',
+    authGateDesc: 'Pick a name and play as a guest, or sign in to save your progress.',
     exitGuest: 'Exit Guest',
     guestSession: 'Guest session',
     language: 'Language',
@@ -1168,6 +1170,17 @@ const en = {
     loading: 'Loading profile...',
     playerFallback: 'Player',
     verified: 'Verified',
+    chips: {
+      games: '{{count}} games',
+      friends: '{{count}} friends',
+    },
+    achievements: {
+      title: 'Achievements',
+      firstFinish: 'First finish',
+      firstFriend: 'First friend',
+      firstWin: 'First win',
+      verified: 'Verified',
+    },
     saving: 'Saving...',
     sending: 'Sending...',
     memberSince: 'Member Since',
@@ -1530,6 +1543,8 @@ const en = {
     },
     friends: {
       title: 'Friends',
+      pageKicker: 'Social',
+      pageSubtitle: 'and crew',
       tabs: {
         friends: 'Friends',
         requests: 'Requests',

@@ -1235,28 +1235,28 @@ export default function ProfilePage() {
   const achievementItems = [
     {
       id: 'first-game',
-      label: 'First finish',
+      label: t('profile.achievements.firstFinish'),
       mark: '1',
       className: 'bg-bd-coral text-white',
       earned: completedGamesCount > 0,
     },
     {
       id: 'social',
-      label: 'First friend',
+      label: t('profile.achievements.firstFriend'),
       mark: String(Math.min(profileSummary?.friendsCount ?? 0, 9)),
       className: 'bg-bd-mint text-bd-ink',
       earned: (profileSummary?.friendsCount ?? 0) > 0,
     },
     {
       id: 'first-win',
-      label: 'First win',
+      label: t('profile.achievements.firstWin'),
       mark: String(Math.min(winsCount, 9)),
       className: 'bg-bd-lav text-white',
       earned: winsCount > 0,
     },
     {
       id: 'verified',
-      label: 'Verified',
+      label: t('profile.achievements.verified'),
       mark: 'V',
       className: 'bg-bd-sun text-bd-ink',
       earned: effectiveEmailVerified,
@@ -1545,10 +1545,10 @@ export default function ProfilePage() {
 
                         <div className="flex flex-wrap justify-center gap-2 pt-2 sm:justify-start">
                           <span className="inline-flex items-center rounded-full bg-bd-mint/20 px-3 py-1.5 text-xs font-bold text-bd-mint-deep">
-                            {profileSummary?.gamesPlayed ?? 0} games
+                            {t('profile.chips.games', { count: profileSummary?.gamesPlayed ?? 0 })}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-bd-sun/25 px-3 py-1.5 text-xs font-bold text-[#9b6b00]">
-                            {profileSummary?.friendsCount ?? 0} friends
+                            {t('profile.chips.friends', { count: profileSummary?.friendsCount ?? 0 })}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-bd-coral/15 px-3 py-1.5 text-xs font-bold text-bd-coral-deep">
                             {effectiveEmailVerified ? t('profile.verified') : t('profile.verificationBanner.title')}
@@ -1618,7 +1618,7 @@ export default function ProfilePage() {
                     <div className="rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-800">
                       <div className="flex items-center justify-between gap-3">
                         <h2 className="font-display text-2xl font-bold text-bd-ink dark:text-white">
-                          Achievements
+                          {t('profile.achievements.title')}
                         </h2>
                         <span className="rounded-full bg-bd-bg2 px-3 py-1 text-xs font-bold text-bd-ink-soft dark:bg-slate-700 dark:text-slate-200">
                           {achievementItems.filter((item) => item.earned).length} / {achievementItems.length}

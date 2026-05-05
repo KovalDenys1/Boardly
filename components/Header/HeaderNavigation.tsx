@@ -7,9 +7,10 @@ interface HeaderNavigationProps {
   isAuthenticated: boolean
   isAdmin?: boolean
   isGuest?: boolean
+  onUnauthClick?: (dest: string) => void
 }
 
-export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: HeaderNavigationProps) {
+export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest, onUnauthClick }: HeaderNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
@@ -23,6 +24,14 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
         : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
     }`
 
+  const navigate = (dest: string) => {
+    if (!isAuthenticated && !isGuest) {
+      onUnauthClick?.(dest)
+    } else {
+      router.push(dest)
+    }
+  }
+
   return (
     <div className="hidden lg:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(4px, 0.5vw, 8px)' }}>
       <button
@@ -32,15 +41,13 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
       >
         {t('header.home', 'Home')}
       </button>
-      {(isAuthenticated || isGuest) && (
-        <button
-          onClick={() => router.push('/games')}
-          className={navBtn(!!pathname?.startsWith('/games'))}
-          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
-        >
-          {t('header.games', 'Games')}
-        </button>
-      )}
+      <button
+        onClick={() => navigate('/games')}
+        className={navBtn(!!pathname?.startsWith('/games'))}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+      >
+        {t('header.games', 'Games')}
+      </button>
       {isAuthenticated && isAdmin && (
         <button
           onClick={() => router.push('/analytics')}
@@ -51,14 +58,14 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest }: 
         </button>
       )}
       <button
-        onClick={() => router.push('/lobby')}
+        onClick={() => navigate('/lobby')}
         className={navBtn(!!pathname?.startsWith('/lobby'))}
         style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
       >
         {t('header.lobbies', 'Lobbies')}
       </button>
       <button
-        onClick={() => router.push('/leaderboard')}
+        onClick={() => navigate('/leaderboard')}
         className={navBtn(!!pathname?.startsWith('/leaderboard'))}
         style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
       >
