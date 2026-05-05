@@ -1218,6 +1218,7 @@ const no = {
           winRate: 'Vinnrate',
           avgDuration: 'Snittvarighet',
           minutesSuffix: 'm',
+          secondsSuffix: 's',
           favoriteGame: 'Favorittspill',
           wld: 'Seire / Tap / Uavgjort',
           wins: 'Seire',

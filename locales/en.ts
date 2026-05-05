@@ -1218,6 +1218,7 @@ const en = {
           winRate: 'Win rate',
           avgDuration: 'Avg duration',
           minutesSuffix: 'm',
+          secondsSuffix: 's',
           favoriteGame: 'Favorite game',
           wld: 'Wins / Losses / Draws',
           wins: 'Wins',

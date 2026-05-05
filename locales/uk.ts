@@ -1220,6 +1220,7 @@ const uk: Translation = {
           winRate: 'Відсоток перемог',
           avgDuration: 'Сер. тривалість',
           minutesSuffix: 'хв',
+          secondsSuffix: 'с',
           favoriteGame: 'Улюблена гра',
           wld: 'Перемоги / Поразки / Нічиї',
           wins: 'Перемоги',

@@ -390,8 +390,8 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       {
         id: 'avgDuration',
         label: t('profile.stats.dashboard.summary.avgDuration'),
-        value: `${Math.round(stats.overall.avgGameDurationMinutes)}${t(
-          'profile.stats.dashboard.summary.minutesSuffix'
+        value: `${Math.round(stats.overall.avgGameDurationMinutes * 60)}${t(
+          'profile.stats.dashboard.summary.secondsSuffix'
         )}`,
         accentClassName: 'bg-bd-sun text-[#9b6b00]',
       },
@@ -451,24 +451,24 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       )
     : null
 
-  const overallInsightItems = useMemo(() => {
-    if (!stats) return []
+  const gameInsightItems = useMemo(() => {
+    if (!selectedGameStats || !stats) return []
 
     return [
       {
         id: 'wins',
         label: t('profile.stats.dashboard.summary.wins'),
-        value: stats.overall.wins,
+        value: selectedGameStats.wins,
       },
       {
         id: 'losses',
         label: t('profile.stats.dashboard.summary.losses'),
-        value: stats.overall.losses,
+        value: selectedGameStats.losses,
       },
       {
         id: 'draws',
         label: t('profile.stats.dashboard.summary.draws'),
-        value: stats.overall.draws,
+        value: selectedGameStats.draws,
       },
       {
         id: 'currentStreak',
@@ -481,7 +481,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         value: stats.overall.longestWinStreak,
       },
     ]
-  }, [stats, t])
+  }, [selectedGameStats, stats, t])
 
   if (loading && !stats) {
     return (
@@ -624,7 +624,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
                         {t(selectedAnalyticsProfile.titleKey)}
                       </h4>
                       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
-                        {overallInsightItems.map((item) => (
+                        {gameInsightItems.map((item) => (
                           <div
                             key={item.id}
                             className={`${tileClassName} flex min-h-[112px] flex-col justify-center px-3 py-4 text-center sm:px-4`}

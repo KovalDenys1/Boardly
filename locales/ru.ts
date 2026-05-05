@@ -1218,6 +1218,7 @@ const ru = {
           winRate: 'Процент побед',
           avgDuration: 'Средняя длительность',
           minutesSuffix: 'м',
+          secondsSuffix: 'с',
           favoriteGame: 'Любимая игра',
           wld: 'Победы / Поражения / Ничьи',
           wins: 'Победы',
