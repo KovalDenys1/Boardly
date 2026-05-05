@@ -22,7 +22,7 @@ const COMPACT_GAME_ICONS: Record<string, string> = {
 export const getCompactGameIcon = (type: string, icon: string) => COMPACT_GAME_ICONS[type] ?? icon
 
 export const GAME_FILTERS = [
-  { value: '', label: 'All Games', icon: '🎮', displayIcon: '🎮' },
+  { value: '', label: '', icon: '🎮', displayIcon: '🎮' },
   ...getAvailableGameTypes().map((type) => {
     const meta = getGameMetadata(type)
     const icon = meta?.icon ?? '🎮'

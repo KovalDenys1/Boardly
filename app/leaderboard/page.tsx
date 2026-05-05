@@ -138,7 +138,7 @@ function LeaderboardPageContent() {
                 >
                   {t('leaderboard.title', 'Leaderboard')}
                   <span className="block text-bd-coral">
-                    {selectedFilter.value ? selectedFilter.label : t('leaderboard.allGames')}
+                    {selectedFilter.value ? selectedFilter.label : t('leaderboard.allGames', 'All Games')}
                   </span>
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-bd-ink-soft sm:text-lg">
@@ -204,7 +204,7 @@ function LeaderboardPageContent() {
                       <span className="min-w-0">
                         <span className="bd-kicker block text-[10px]">{t('leaderboard.gameFilter')}</span>
                         <span className="block truncate text-sm font-bold text-bd-ink">
-                          {selectedFilter.value ? selectedFilter.label : t('leaderboard.allGames')}
+                          {selectedFilter.value ? selectedFilter.label : t('leaderboard.allGames', 'All Games')}
                         </span>
                       </span>
                     </span>
@@ -231,7 +231,7 @@ function LeaderboardPageContent() {
                         {GAME_FILTERS.map((f) => {
                           const meta = f.value ? getGameMetadata(f.value) : null
                           const icon = f.value ? getCompactGameIcon(f.value, meta?.icon ?? f.icon) : f.displayIcon
-                          const label = f.value ? (meta?.name ?? f.label) : t('leaderboard.allGames')
+                          const label = f.value ? (meta?.name ?? f.label) : t('leaderboard.allGames', 'All Games')
                           const selected = selectedFilter.value === f.value
                           return (
                             <button
