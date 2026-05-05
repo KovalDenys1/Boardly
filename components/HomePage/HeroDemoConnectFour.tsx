@@ -87,9 +87,9 @@ export default function HeroDemoConnectFour() {
     : winner === 'draw' ? "Draw!"
     : 'Drop a piece'
 
-  const CELL = 34
-  const GAP = 5
-  const PADDING = 8
+  const CELL = 28
+  const GAP = 4
+  const PADDING = 7
 
   return (
     <div style={{

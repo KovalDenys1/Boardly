@@ -128,35 +128,36 @@ export default function HeroBoard() {
 
   return (
     <div className="home-hero-board">
-      <div
-        className="home-hero-board-surface bd-float-board"
-        style={{ background: demo.boardColor }}
-      >
-        <Demo />
-      </div>
+      {/* inner wrapper animates — surface + badge move together */}
+      <div className="home-hero-board-inner bd-float-board">
+        <div
+          className="home-hero-board-surface"
+          style={{ background: demo.boardColor }}
+        >
+          <Demo />
+        </div>
 
-      {/* game badge sticker */}
-      <div
-        className="bd-float"
-        style={{
-          position: 'absolute',
-          top: '3%',
-          right: '3%',
-          transform: `rotate(${demo.badgeRotate})`,
-          background: demo.badgeColor,
-          color: demo.badgeTextColor,
-          border: '2px solid var(--bd-ink)',
-          boxShadow: '2px 2px 0 var(--bd-ink)',
-          borderRadius: 999,
-          padding: '6px 14px',
-          fontFamily: 'var(--bd-font-display)',
-          fontWeight: 700,
-          fontSize: 13,
-          animationDelay: '0.3s',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {demo.badge}
+        {/* badge attached to the board */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-9%',
+            right: '-9%',
+            transform: `rotate(${demo.badgeRotate})`,
+            background: demo.badgeColor,
+            color: demo.badgeTextColor,
+            border: '2px solid var(--bd-ink)',
+            boxShadow: '2px 2px 0 var(--bd-ink)',
+            borderRadius: 999,
+            padding: '6px 14px',
+            fontFamily: 'var(--bd-font-display)',
+            fontWeight: 700,
+            fontSize: 13,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {demo.badge}
+        </div>
       </div>
 
       {/* per-game floating decorations */}
@@ -182,19 +183,8 @@ export default function HeroBoard() {
 function StaticFallback() {
   return (
     <div className="home-hero-board">
-      <div className="home-hero-board-surface bd-float-board" />
-      <div
-        className="bd-float"
-        style={{
-          position: 'absolute', top: '4%', right: '4%',
-          transform: 'rotate(12deg)',
-          background: 'var(--bd-sun)', color: 'var(--bd-ink)',
-          border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)',
-          borderRadius: 999, padding: '6px 14px',
-          fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 13,
-        }}
-      >
-        BOARDLY
+      <div className="home-hero-board-inner bd-float-board">
+        <div className="home-hero-board-surface" />
       </div>
     </div>
   )
