@@ -1643,6 +1643,7 @@ const uk: Translation = {
     player: 'Гравець',
     players: 'Гравці',
     rank: 'Ранг',
+    allGames: 'Всі ігри',
     gamesPlayed: 'Ігри',
     wins: 'Перемоги',
     losses: 'Поразки',

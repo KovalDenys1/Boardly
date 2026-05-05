@@ -1630,6 +1630,7 @@ const no = {
     player: 'Spiller',
     players: 'Spillere',
     rank: 'Rang',
+    allGames: 'Alle spill',
     gamesPlayed: 'Spilt',
     wins: 'Seire',
     losses: 'Tap',
