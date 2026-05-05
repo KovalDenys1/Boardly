@@ -1632,6 +1632,7 @@ const no = {
     rank: 'Rang',
     gamesPlayed: 'Spilt',
     wins: 'Seire',
+    losses: 'Tap',
     winRate: 'Seier %',
     gameFilter: 'Spillfilter',
     chooseGame: 'Velg spill',

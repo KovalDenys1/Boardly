@@ -50,7 +50,7 @@ const winRateColor = (winRate: number) => {
 function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast: boolean; t: (key: TranslationKeys) => string }) {
   const medal = MEDAL[entry.rank]
   const isTop3 = entry.rank <= 3
-  const rowClass = `grid gap-3 px-4 py-4 transition-colors sm:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem] sm:items-center sm:px-5 ${
+  const rowClass = `grid gap-3 px-4 py-4 transition-colors sm:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] sm:items-center sm:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
   } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-white' : 'bg-white/75'}`
 
@@ -71,7 +71,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
           <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:contents">
+      <div className="grid grid-cols-4 gap-2 sm:contents">
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
           <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.gamesPlayed')}</span>
           {entry.gamesPlayed}
@@ -79,6 +79,10 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
           <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.wins')}</span>
           {entry.wins}
+        </span>
+        <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft sm:bg-transparent sm:p-0 sm:text-right">
+          <span className="block text-[10px] uppercase tracking-[0.1em] text-bd-ink-muted sm:hidden">{t('leaderboard.losses')}</span>
+          {entry.losses}
         </span>
         <span
           className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-extrabold sm:bg-transparent sm:p-0 sm:text-right"
@@ -286,6 +290,7 @@ function LeaderboardPageContent() {
                 <span>{t('leaderboard.player', 'Player')}</span>
                 <span className="text-right">{t('leaderboard.gamesPlayed', 'Played')}</span>
                 <span className="text-right">{t('leaderboard.wins', 'Wins')}</span>
+                <span className="text-right">{t('leaderboard.losses', 'Losses')}</span>
                 <span className="text-right">{t('leaderboard.winRate', 'Win %')}</span>
               </div>
 

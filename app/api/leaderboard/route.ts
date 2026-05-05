@@ -140,6 +140,7 @@ export async function GET(req: NextRequest) {
       publicProfileId: r.publicProfileId ?? null,
       gamesPlayed: Number(r.gamesPlayed),
       wins: Number(r.wins),
+      losses: Number(r.losses),
       winRate: r.winRate ?? 0,
     }))
 

@@ -1645,6 +1645,7 @@ const uk: Translation = {
     rank: 'Ранг',
     gamesPlayed: 'Ігри',
     wins: 'Перемоги',
+    losses: 'Поразки',
     winRate: 'Перемоги %',
     gameFilter: 'Фільтр ігор',
     chooseGame: 'Вибрати гру',

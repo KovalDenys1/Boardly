@@ -1632,6 +1632,7 @@ const ru = {
     rank: 'Ранг',
     gamesPlayed: 'Игры',
     wins: 'Победы',
+    losses: 'Поражения',
     winRate: 'Победы %',
     gameFilter: 'Фильтр игр',
     chooseGame: 'Выбрать игру',

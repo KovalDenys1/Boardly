@@ -1643,6 +1643,7 @@ const en = {
     rank: 'Rank',
     gamesPlayed: 'Played',
     wins: 'Wins',
+    losses: 'Losses',
     winRate: 'Win %',
     gameFilter: 'Game filter',
     chooseGame: 'Choose game',
