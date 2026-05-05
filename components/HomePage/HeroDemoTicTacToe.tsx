@@ -68,32 +68,40 @@ export default function HeroDemoTicTacToe() {
   const statusText =
     winner === 'X' ? '🎉 You win!'
     : winner === 'O' ? 'Bot wins!'
-    : winner === 'draw' ? "It's a draw!"
+    : winner === 'draw' ? "Draw!"
     : 'Your turn (X)'
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '12px 8px' }}>
-      <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 13, color: 'rgba(31,27,22,0.65)', minHeight: 20 }}>
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 12, padding: '16px 8px',
+    }}>
+      <div style={{
+        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
+        color: 'rgba(31,27,22,0.7)', minHeight: 22,
+      }}>
         {statusText}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 60px)', gridTemplateRows: 'repeat(3, 60px)', gap: 7 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 64px)', gridTemplateRows: 'repeat(3, 64px)', gap: 8 }}>
         {board.map((cell, i) => (
           <button
             key={i}
             onClick={() => handleClick(i)}
             style={{
-              width: 60, height: 60,
-              background: cell ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.45)',
+              width: 64, height: 64,
+              background: '#fff',
               border: '2.5px solid var(--bd-ink)',
-              borderRadius: 12,
-              fontSize: 24,
+              borderRadius: 14,
+              fontSize: 28,
               fontWeight: 900,
               fontFamily: 'var(--bd-font-display)',
               color: cell === 'X' ? 'var(--bd-coral)' : 'var(--bd-ink)',
               cursor: cell || winner ? 'default' : 'pointer',
-              boxShadow: cell ? 'none' : '0 3px 0 rgba(31,27,22,0.18)',
-              transition: 'transform 0.08s, box-shadow 0.08s',
+              boxShadow: cell ? 'none' : '0 4px 0 rgba(31,27,22,0.2)',
+              transition: 'box-shadow 0.08s, transform 0.08s',
               lineHeight: 1,
               padding: 0,
             }}
@@ -105,7 +113,10 @@ export default function HeroDemoTicTacToe() {
 
       <Link
         href="/games/tic-tac-toe"
-        style={{ fontSize: 11, fontWeight: 600, color: 'rgba(31,27,22,0.5)', textDecoration: 'underline', marginTop: 4 }}
+        style={{
+          fontSize: 12, fontWeight: 600,
+          color: 'rgba(31,27,22,0.5)', textDecoration: 'underline', marginTop: 2,
+        }}
       >
         Play full game →
       </Link>

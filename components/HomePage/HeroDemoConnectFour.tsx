@@ -71,8 +71,7 @@ export default function HeroDemoConnectFour() {
     let next = dropPiece(board, col, 'red')
     if (!next) return
     if (checkWin(next, 'red')) { setBoard(next); setWinner('red'); return }
-    const full = next.every((row) => row.every(Boolean))
-    if (full) { setBoard(next); setWinner('draw'); return }
+    if (next.every((row) => row.every(Boolean))) { setBoard(next); setWinner('draw'); return }
 
     const bot = botMove(next)
     if (bot >= 0) {
@@ -85,32 +84,41 @@ export default function HeroDemoConnectFour() {
   const statusText =
     winner === 'red' ? '🎉 You win!'
     : winner === 'yellow' ? 'Bot wins!'
-    : winner === 'draw' ? "It's a draw!"
-    : 'Drop a piece ↓'
+    : winner === 'draw' ? "Draw!"
+    : 'Drop a piece'
 
-  const CELL = 33
+  const CELL = 34
   const GAP = 5
+  const PADDING = 8
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 8px' }}>
-      {/* Coming soon badge */}
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 8, padding: '10px 8px',
+    }}>
+      {/* coming soon badge */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        background: 'var(--bd-sun)', border: '2px solid var(--bd-ink)',
-        borderRadius: 999, padding: '3px 10px',
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        background: 'rgba(255,255,255,0.9)', border: '2px solid var(--bd-ink)',
+        borderRadius: 999, padding: '4px 12px',
         fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 11, color: 'var(--bd-ink)',
         boxShadow: '2px 2px 0 var(--bd-ink)',
       }}>
-        🚧 Connect Four — coming soon
+        🚧 Coming soon
       </div>
 
-      <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 13, color: 'rgba(31,27,22,0.65)', minHeight: 18 }}>
+      <div style={{
+        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
+        color: 'rgba(31,27,22,0.7)', minHeight: 20,
+      }}>
         {statusText}
       </div>
 
-      {/* Column click targets */}
       <div style={{ position: 'relative' }}>
-        <div style={{ display: 'flex', gap: GAP, marginBottom: 4, paddingLeft: 7, paddingRight: 7 }}>
+        {/* drop indicators */}
+        <div style={{ display: 'flex', gap: GAP, marginBottom: 4, paddingLeft: PADDING, paddingRight: PADDING }}>
           {Array.from({ length: COLS }, (_, c) => (
             <div
               key={c}
@@ -121,10 +129,9 @@ export default function HeroDemoConnectFour() {
                 width: CELL, height: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: winner || board[0][c] ? 'default' : 'pointer',
-                fontSize: 12,
+                fontSize: 13, fontWeight: 900,
                 color: hoverCol === c && !board[0][c] && !winner ? 'var(--bd-coral)' : 'transparent',
                 transition: 'color 0.1s',
-                fontWeight: 900,
               }}
             >
               ▼
@@ -132,17 +139,17 @@ export default function HeroDemoConnectFour() {
           ))}
         </div>
 
-        {/* Grid */}
+        {/* grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${COLS}, ${CELL}px)`,
           gridTemplateRows: `repeat(${ROWS}, ${CELL}px)`,
           gap: GAP,
-          background: 'rgba(255,255,255,0.3)',
+          background: 'rgba(31,27,22,0.15)',
           border: '2.5px solid var(--bd-ink)',
           borderRadius: 14,
-          padding: 7,
-          boxShadow: '0 3px 0 rgba(31,27,22,0.15)',
+          padding: PADDING,
+          boxShadow: '0 4px 0 rgba(31,27,22,0.2)',
         }}>
           {board.map((row, r) =>
             row.map((cell, c) => (
@@ -157,12 +164,14 @@ export default function HeroDemoConnectFour() {
                     : cell === 'yellow'
                       ? 'var(--bd-sun)'
                       : hoverCol === c && !board[0][c] && !winner
-                        ? 'rgba(255,107,91,0.2)'
-                        : 'rgba(255,255,255,0.5)',
-                  border: `2px solid ${cell ? 'var(--bd-ink)' : 'rgba(31,27,22,0.2)'}`,
+                        ? 'rgba(255,255,255,0.55)'
+                        : 'rgba(255,255,255,0.35)',
+                  border: cell
+                    ? '2.5px solid var(--bd-ink)'
+                    : '2px solid rgba(31,27,22,0.2)',
                   cursor: winner || board[0][c] ? 'default' : 'pointer',
-                  transition: 'background 0.1s',
-                  boxShadow: cell ? '0 2px 0 rgba(31,27,22,0.2)' : 'none',
+                  transition: 'background 0.12s',
+                  boxShadow: cell ? '0 2px 0 rgba(31,27,22,0.25)' : 'inset 0 2px 4px rgba(31,27,22,0.1)',
                 }}
               />
             ))

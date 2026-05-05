@@ -4,28 +4,30 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 
 const PAIRS = ['🎲', '🃏', '🏆', '⭐', '🎮', '🎯']
-const INITIAL_CARDS = [...PAIRS, ...PAIRS]
-  .map((emoji, i) => ({ id: i, emoji, matched: false }))
-  .sort(() => Math.random() - 0.5)
+
+function shuffle<T>(arr: T[]): T[] {
+  return [...arr].sort(() => Math.random() - 0.5)
+}
 
 type Card = { id: number; emoji: string; matched: boolean }
 
+function makeCards(): Card[] {
+  return shuffle([...PAIRS, ...PAIRS]).map((emoji, i) => ({ id: i, emoji, matched: false }))
+}
+
 export default function HeroDemoMemory() {
-  const [cards, setCards] = useState<Card[]>(INITIAL_CARDS)
+  const [cards, setCards] = useState<Card[]>(makeCards)
   const [flipped, setFlipped] = useState<number[]>([])
   const [locked, setLocked] = useState(false)
 
   const reset = useCallback(() => {
-    setCards(
-      [...PAIRS, ...PAIRS]
-        .map((emoji, i) => ({ id: i, emoji, matched: false }))
-        .sort(() => Math.random() - 0.5)
-    )
+    setCards(makeCards())
     setFlipped([])
     setLocked(false)
   }, [])
 
   const allMatched = cards.every((c) => c.matched)
+  const matchedCount = cards.filter((c) => c.matched).length / 2
 
   useEffect(() => {
     if (!allMatched) return
@@ -46,23 +48,26 @@ export default function HeroDemoMemory() {
         setFlipped([])
         setLocked(false)
       } else {
-        setTimeout(() => {
-          setFlipped([])
-          setLocked(false)
-        }, 900)
+        setTimeout(() => { setFlipped([]); setLocked(false) }, 900)
       }
     }
   }
 
-  const matchedCount = cards.filter((c) => c.matched).length / 2
-
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '12px 8px' }}>
-      <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 13, color: 'rgba(31,27,22,0.65)', minHeight: 20 }}>
-        {allMatched ? '🎉 All matched!' : `${matchedCount} / ${PAIRS.length} pairs found`}
+    <div style={{
+      width: '100%', height: '100%',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      gap: 12, padding: '16px 8px',
+    }}>
+      <div style={{
+        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
+        color: 'rgba(31,27,22,0.8)', minHeight: 22,
+      }}>
+        {allMatched ? '🎉 All matched!' : `${matchedCount} / ${PAIRS.length} pairs`}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 46px)', gridTemplateRows: 'repeat(3, 52px)', gap: 7 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 48px)', gridTemplateRows: 'repeat(3, 54px)', gap: 7 }}>
         {cards.map((card, i) => {
           const isFlipped = flipped.includes(i) || card.matched
           return (
@@ -70,24 +75,24 @@ export default function HeroDemoMemory() {
               key={card.id + '-' + i}
               onClick={() => handleFlip(i)}
               style={{
-                width: 46, height: 52,
+                width: 48, height: 54,
                 background: card.matched
-                  ? 'rgba(255,255,255,0.8)'
+                  ? 'rgba(255,255,255,0.85)'
                   : isFlipped
-                    ? 'rgba(255,255,255,0.7)'
+                    ? '#fff'
                     : 'var(--bd-ink)',
-                border: '2.5px solid var(--bd-ink)',
+                border: `2.5px solid ${card.matched ? 'rgba(31,27,22,0.2)' : 'var(--bd-ink)'}`,
                 borderRadius: 10,
-                fontSize: isFlipped ? 22 : 0,
+                fontSize: isFlipped ? 24 : 16,
+                color: isFlipped ? 'var(--bd-ink)' : 'rgba(255,255,255,0.35)',
                 cursor: card.matched || locked ? 'default' : 'pointer',
-                boxShadow: isFlipped ? 'none' : '0 3px 0 rgba(31,27,22,0.3)',
-                transition: 'background 0.2s, font-size 0.15s',
+                boxShadow: isFlipped ? 'none' : '0 4px 0 rgba(31,27,22,0.35)',
+                transition: 'background 0.18s, box-shadow 0.18s, font-size 0.12s',
                 lineHeight: 1,
                 padding: 0,
-                opacity: card.matched ? 0.55 : 1,
               }}
             >
-              {isFlipped ? card.emoji : ''}
+              {isFlipped ? card.emoji : '?'}
             </button>
           )
         })}
@@ -95,7 +100,10 @@ export default function HeroDemoMemory() {
 
       <Link
         href="/games/memory"
-        style={{ fontSize: 11, fontWeight: 600, color: 'rgba(31,27,22,0.5)', textDecoration: 'underline', marginTop: 4 }}
+        style={{
+          fontSize: 12, fontWeight: 600,
+          color: 'rgba(31,27,22,0.6)', textDecoration: 'underline', marginTop: 2,
+        }}
       >
         Play full game →
       </Link>

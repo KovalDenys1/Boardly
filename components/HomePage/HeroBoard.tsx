@@ -5,27 +5,110 @@ import HeroDemoTicTacToe from './HeroDemoTicTacToe'
 import HeroDemoMemory from './HeroDemoMemory'
 import HeroDemoConnectFour from './HeroDemoConnectFour'
 
-const DEMOS = [
+type Demo = {
+  component: React.ComponentType
+  badge: string
+  badgeRotate: string
+  badgeColor: string
+  badgeTextColor: string
+  boardColor: string
+  extra: React.ReactNode
+}
+
+const DEMOS: Demo[] = [
   {
     component: HeroDemoTicTacToe,
     badge: 'TIC-TAC-TOE',
-    rotate: '10deg',
-    color: 'var(--bd-coral)',
-    textColor: 'white',
+    badgeRotate: '10deg',
+    badgeColor: 'var(--bd-coral)',
+    badgeTextColor: 'white',
+    boardColor: 'var(--bd-card-warm)',
+    extra: (
+      <>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', top: '5%', left: '2%',
+            fontSize: 48, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
+            color: 'var(--bd-coral)', transform: 'rotate(-14deg)',
+            animationDelay: '0.4s', lineHeight: 1, userSelect: 'none',
+          }}
+        >✕</div>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', bottom: '8%', left: '3%',
+            fontSize: 38, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
+            color: 'var(--bd-ink)', transform: 'rotate(9deg)',
+            animationDelay: '1.2s', lineHeight: 1, userSelect: 'none',
+          }}
+        >○</div>
+      </>
+    ),
   },
   {
     component: HeroDemoMemory,
     badge: 'MEMORY',
-    rotate: '-8deg',
-    color: 'var(--bd-sun)',
-    textColor: 'var(--bd-ink)',
+    badgeRotate: '-8deg',
+    badgeColor: 'var(--bd-sun)',
+    badgeTextColor: 'var(--bd-ink)',
+    boardColor: 'var(--bd-sky)',
+    extra: (
+      <>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', top: '7%', left: '2%',
+            width: 30, height: 40,
+            background: 'var(--bd-lav)', border: '2px solid var(--bd-ink)',
+            borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
+            transform: 'rotate(-13deg)', animationDelay: '0.6s',
+          }}
+        />
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', bottom: '10%', left: '3%',
+            width: 26, height: 36,
+            background: 'var(--bd-coral)', border: '2px solid var(--bd-ink)',
+            borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
+            transform: 'rotate(7deg)', animationDelay: '1.4s',
+          }}
+        />
+      </>
+    ),
   },
   {
     component: HeroDemoConnectFour,
     badge: 'CONNECT FOUR',
-    rotate: '12deg',
-    color: 'var(--bd-lav)',
-    textColor: 'var(--bd-ink)',
+    badgeRotate: '12deg',
+    badgeColor: 'var(--bd-lav)',
+    badgeTextColor: 'white',
+    boardColor: 'var(--bd-mint)',
+    extra: (
+      <>
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', top: '7%', left: '2%',
+            width: 38, height: 38,
+            background: 'var(--bd-coral)', border: '3px solid var(--bd-ink)',
+            borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
+            animationDelay: '0.5s',
+          }}
+        />
+        <div
+          className="bd-float"
+          style={{
+            position: 'absolute', bottom: '12%', left: '3%',
+            width: 32, height: 32,
+            background: 'var(--bd-sun)', border: '3px solid var(--bd-ink)',
+            borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
+            animationDelay: '1.3s',
+          }}
+        />
+      </>
+    ),
   },
 ]
 
@@ -45,7 +128,10 @@ export default function HeroBoard() {
 
   return (
     <div className="home-hero-board">
-      <div className="home-hero-board-surface" style={{ transform: 'none' }}>
+      <div
+        className="home-hero-board-surface"
+        style={{ transform: 'rotate(-1.1deg)', background: demo.boardColor }}
+      >
         <Demo />
       </div>
 
@@ -56,9 +142,9 @@ export default function HeroBoard() {
           position: 'absolute',
           top: '3%',
           right: '3%',
-          transform: `rotate(${demo.rotate})`,
-          background: demo.color,
-          color: demo.textColor,
+          transform: `rotate(${demo.badgeRotate})`,
+          background: demo.badgeColor,
+          color: demo.badgeTextColor,
           border: '2px solid var(--bd-ink)',
           boxShadow: '2px 2px 0 var(--bd-ink)',
           borderRadius: 999,
@@ -73,7 +159,10 @@ export default function HeroBoard() {
         {demo.badge}
       </div>
 
-      {/* squiggle decoration */}
+      {/* per-game floating decorations */}
+      {demo.extra}
+
+      {/* squiggle */}
       <svg
         style={{ position: 'absolute', bottom: '1%', left: '38%', width: 80, height: 40 }}
         viewBox="0 0 80 40"
@@ -93,23 +182,16 @@ export default function HeroBoard() {
 function StaticFallback() {
   return (
     <div className="home-hero-board">
-      <div className="home-hero-board-surface" />
+      <div className="home-hero-board-surface" style={{ transform: 'rotate(-1.1deg)' }} />
       <div
         className="bd-float"
         style={{
-          position: 'absolute',
-          top: '4%',
-          right: '4%',
+          position: 'absolute', top: '4%', right: '4%',
           transform: 'rotate(12deg)',
-          background: 'var(--bd-sun)',
-          color: 'var(--bd-ink)',
-          border: '2px solid var(--bd-ink)',
-          boxShadow: '2px 2px 0 var(--bd-ink)',
-          borderRadius: 999,
-          padding: '6px 14px',
-          fontFamily: 'var(--bd-font-display)',
-          fontWeight: 700,
-          fontSize: 13,
+          background: 'var(--bd-sun)', color: 'var(--bd-ink)',
+          border: '2px solid var(--bd-ink)', boxShadow: '2px 2px 0 var(--bd-ink)',
+          borderRadius: 999, padding: '6px 14px',
+          fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 13,
         }}
       >
         BOARDLY
