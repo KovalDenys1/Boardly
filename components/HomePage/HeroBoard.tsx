@@ -28,7 +28,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', top: '5%', left: '2%',
+            position: 'absolute', top: '35%', left: '2%',
             fontSize: 48, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
             color: 'var(--bd-coral)', transform: 'rotate(-14deg)',
             animationDelay: '0.4s', lineHeight: 1, userSelect: 'none',
@@ -37,7 +37,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', bottom: '8%', left: '3%',
+            position: 'absolute', bottom: '5%', right: '8%',
             fontSize: 38, fontFamily: 'var(--bd-font-display)', fontWeight: 900,
             color: 'var(--bd-ink)', transform: 'rotate(9deg)',
             animationDelay: '1.2s', lineHeight: 1, userSelect: 'none',
@@ -58,7 +58,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', top: '7%', left: '2%',
+            position: 'absolute', top: '38%', left: '2%',
             width: 30, height: 40,
             background: 'var(--bd-lav)', border: '2px solid var(--bd-ink)',
             borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
@@ -68,7 +68,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', bottom: '10%', left: '3%',
+            position: 'absolute', bottom: '6%', right: '10%',
             width: 26, height: 36,
             background: 'var(--bd-coral)', border: '2px solid var(--bd-ink)',
             borderRadius: 6, boxShadow: '2px 2px 0 var(--bd-ink)',
@@ -90,7 +90,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', top: '7%', left: '2%',
+            position: 'absolute', top: '36%', left: '2%',
             width: 38, height: 38,
             background: 'var(--bd-coral)', border: '3px solid var(--bd-ink)',
             borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
@@ -100,7 +100,7 @@ const DEMOS: Demo[] = [
         <div
           className="bd-float"
           style={{
-            position: 'absolute', bottom: '12%', left: '3%',
+            position: 'absolute', bottom: '7%', right: '9%',
             width: 32, height: 32,
             background: 'var(--bd-sun)', border: '3px solid var(--bd-ink)',
             borderRadius: '50%', boxShadow: '2px 2px 0 var(--bd-ink)',
@@ -129,8 +129,8 @@ export default function HeroBoard() {
   return (
     <div className="home-hero-board">
       <div
-        className="home-hero-board-surface"
-        style={{ transform: 'rotate(-1.1deg)', background: demo.boardColor }}
+        className="home-hero-board-surface bd-float-board"
+        style={{ background: demo.boardColor }}
       >
         <Demo />
       </div>
@@ -182,7 +182,7 @@ export default function HeroBoard() {
 function StaticFallback() {
   return (
     <div className="home-hero-board">
-      <div className="home-hero-board-surface" style={{ transform: 'rotate(-1.1deg)' }} />
+      <div className="home-hero-board-surface bd-float-board" />
       <div
         className="bd-float"
         style={{

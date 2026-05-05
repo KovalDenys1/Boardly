@@ -32,12 +32,24 @@
   100% { transform: translateY(7px)  rotate(0deg);  }
 }
 
+@keyframes bd-float-board {
+  0%   { transform: translateY(0px)   rotate(-1.1deg); }
+  30%  { transform: translateY(-5px)  rotate(-0.4deg); }
+  60%  { transform: translateY(3px)   rotate(-1.8deg); }
+  100% { transform: translateY(0px)   rotate(-1.1deg); }
+}
+
 .bd-float {
   animation: bd-float 5s ease-in-out infinite;
 }
 
+.bd-float-board {
+  animation: bd-float-board 7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .bd-float { animation: none; }
+  .bd-float      { animation: none; }
+  .bd-float-board { animation: none; transform: rotate(-1.1deg); }
 }
 
 /* ============ END BOARDLY DESIGN SYSTEM ============ */
