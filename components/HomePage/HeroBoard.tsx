@@ -137,7 +137,7 @@ export default function HeroBoard() {
         <div
           style={{
             position: 'absolute',
-            top: '-9%',
+            top: '-5%',
             right: '-9%',
             background: demo.badgeColor,
             color: demo.badgeTextColor,
