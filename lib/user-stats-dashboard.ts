@@ -135,15 +135,13 @@ function normalizeByGameRows(rows: ByGameRow[]): UserByGameStats[] {
     const wins = toFiniteNumber(row.wins)
     const losses = toFiniteNumber(row.losses)
     const draws = toFiniteNumber(row.draws)
-    const denominator = wins + losses + draws
-
     return {
       gameType: row.gameType,
       gamesPlayed,
       wins,
       losses,
       draws,
-      winRate: denominator > 0 ? roundToOneDecimal((wins / denominator) * 100) : 0,
+      winRate: (wins + losses) > 0 ? roundToOneDecimal((wins / (wins + losses)) * 100) : 0,
       avgScore:
         row.avgScore === null || row.avgScore === undefined
           ? null
@@ -272,9 +270,6 @@ export async function getUserStatsDashboard(
   const byGame = normalizeByGameRows(byGameRows)
   const trends = normalizeTrendRows(trendRows)
   const streaks = streakRows[0] ?? { currentWinStreak: 0, longestWinStreak: 0 }
-  const outcomeDenominator =
-    normalizedOverall.wins + normalizedOverall.losses + normalizedOverall.draws
-
   return {
     overall: {
       totalGames: normalizedOverall.totalGames,
@@ -282,8 +277,8 @@ export async function getUserStatsDashboard(
       losses: normalizedOverall.losses,
       draws: normalizedOverall.draws,
       winRate:
-        outcomeDenominator > 0
-          ? roundToOneDecimal((normalizedOverall.wins / outcomeDenominator) * 100)
+        (normalizedOverall.wins + normalizedOverall.losses) > 0
+          ? roundToOneDecimal((normalizedOverall.wins / (normalizedOverall.wins + normalizedOverall.losses)) * 100)
           : 0,
       avgGameDurationMinutes: normalizedOverall.avgGameDurationMinutes,
       favoriteGame: byGame[0]?.gameType ?? null,

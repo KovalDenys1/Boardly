@@ -87,7 +87,7 @@ describe('calculateUserStats', () => {
       wins: 1,
       losses: 1,
       draws: 1,
-      winRate: 33.3,
+      winRate: 50,
       avgGameDurationMinutes: 15,
       favoriteGame: 'yahtzee',
       currentWinStreak: 0,

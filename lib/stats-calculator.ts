@@ -196,8 +196,9 @@ export function calculateUserStats(
 
   const byGame = Array.from(byGameMap.entries())
     .map(([gameType, entry]) => {
-      const denominator = entry.wins + entry.losses + entry.draws
-      const winRate = denominator > 0 ? roundToOneDecimal((entry.wins / denominator) * 100) : 0
+      const winRate = (entry.wins + entry.losses) > 0
+        ? roundToOneDecimal((entry.wins / (entry.wins + entry.losses)) * 100)
+        : 0
 
       return {
         gameType,
@@ -248,13 +249,12 @@ export function calculateUserStats(
     break
   }
 
-  const outcomeDenominator = wins + losses + draws
   const overall: UserOverallStats = {
     totalGames: completedGames.length,
     wins,
     losses,
     draws,
-    winRate: outcomeDenominator > 0 ? roundToOneDecimal((wins / outcomeDenominator) * 100) : 0,
+    winRate: (wins + losses) > 0 ? roundToOneDecimal((wins / (wins + losses)) * 100) : 0,
     avgGameDurationMinutes: durationCount > 0 ? roundToOneDecimal(durationSumMs / durationCount / 60000) : 0,
     favoriteGame,
     currentWinStreak,

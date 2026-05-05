@@ -58,13 +58,21 @@ export async function GET(req: NextRequest) {
       publicProfileId: string | null
       gamesPlayed: bigint
       wins: bigint
+      losses: bigint
       winRate: number
     }
 
     // Raw SQL needed for FILTER aggregates and conditional clauses —
     // Prisma groupBy cannot express this query.
     const rows = await prisma.$queryRaw<LeaderboardRow[]>(Prisma.sql`
-      WITH leaderboard_rows AS (
+      WITH game_winner_counts AS (
+        SELECT
+          p."gameId",
+          COUNT(*) FILTER (WHERE p."isWinner" = true) AS winner_count
+        FROM "Players" p
+        GROUP BY p."gameId"
+      ),
+      leaderboard_rows AS (
         SELECT
           u.id AS "userId",
           u.username,
@@ -78,10 +86,12 @@ export async function GET(req: NextRequest) {
               WHERE result->>'userId' = p."userId"
                 AND result->>'isWinner' = 'true'
             )
-          ) AS "isWinner"
+          ) AS "isWinner",
+          (gwc.winner_count = 0) AS "isDraw"
         FROM "Players" p
         JOIN "Games" g   ON g.id = p."gameId"
         JOIN "Users" u   ON u.id = p."userId"
+        JOIN game_winner_counts gwc ON gwc."gameId" = g.id
         LEFT JOIN "Bots" b ON b."userId" = u.id
         LEFT JOIN "AccountPreferences" ap ON ap."userId" = u.id
         WHERE g.status = 'finished'
@@ -94,19 +104,28 @@ export async function GET(req: NextRequest) {
         "userId",
         username,
         "publicProfileId",
-        COUNT("playerId")                       AS "gamesPlayed",
-        COUNT("playerId") FILTER (WHERE "isWinner" = true) AS wins,
+        COUNT("playerId")                                                        AS "gamesPlayed",
+        COUNT("playerId") FILTER (WHERE "isWinner" = true)                      AS wins,
+        COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw")        AS losses,
         ROUND(
           COUNT("playerId") FILTER (WHERE "isWinner" = true)::numeric
-          / NULLIF(COUNT("playerId"), 0) * 100,
+          / NULLIF(
+              COUNT("playerId") FILTER (WHERE "isWinner" = true)
+              + COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw"),
+              0
+            ) * 100,
           1
-        )::float                         AS "winRate"
+        )::float                                                                 AS "winRate"
       FROM leaderboard_rows
       GROUP BY "userId", username, "publicProfileId"
       HAVING COUNT("playerId") >= ${MIN_GAMES}
       ORDER BY
         COUNT("playerId") FILTER (WHERE "isWinner" = true)::numeric
-        / NULLIF(COUNT("playerId"), 0) DESC NULLS LAST,
+        / NULLIF(
+            COUNT("playerId") FILTER (WHERE "isWinner" = true)
+            + COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw"),
+            0
+          ) DESC NULLS LAST,
         COUNT("playerId") FILTER (WHERE "isWinner" = true) DESC
       LIMIT ${PAGE_SIZE}
       OFFSET ${offset}
