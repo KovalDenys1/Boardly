@@ -1641,6 +1641,7 @@ const en = {
     player: 'Player',
     players: 'Players',
     rank: 'Rank',
+    allGames: 'All Games',
     gamesPlayed: 'Played',
     wins: 'Wins',
     losses: 'Losses',

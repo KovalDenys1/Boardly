@@ -1630,6 +1630,7 @@ const ru = {
     player: 'Игрок',
     players: 'Игроки',
     rank: 'Ранг',
+    allGames: 'Все игры',
     gamesPlayed: 'Игры',
     wins: 'Победы',
     losses: 'Поражения',
