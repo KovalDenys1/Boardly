@@ -1,5 +1,6 @@
 import { Prisma } from '@/prisma/client'
 import type { PrismaClient } from '@/prisma/client'
+import { roundToOneDecimal, computeWinRate } from '@/lib/stats-core'
 import type {
   UserByGameStats,
   UserStatsDashboard,
@@ -41,10 +42,6 @@ interface TrendRow {
 interface StreakRow {
   currentWinStreak: number
   longestWinStreak: number
-}
-
-function roundToOneDecimal(value: number): number {
-  return Math.round(value * 10) / 10
 }
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
@@ -135,15 +132,13 @@ function normalizeByGameRows(rows: ByGameRow[]): UserByGameStats[] {
     const wins = toFiniteNumber(row.wins)
     const losses = toFiniteNumber(row.losses)
     const draws = toFiniteNumber(row.draws)
-    const denominator = wins + losses + draws
-
     return {
       gameType: row.gameType,
       gamesPlayed,
       wins,
       losses,
       draws,
-      winRate: denominator > 0 ? roundToOneDecimal((wins / denominator) * 100) : 0,
+      winRate: computeWinRate(wins, losses),
       avgScore:
         row.avgScore === null || row.avgScore === undefined
           ? null
@@ -193,16 +188,16 @@ export async function getUserStatsDashboard(
       ${userGamesCte}
       SELECT
         "gameType",
-        COUNT(*)::int AS "gamesPlayed",
+        COUNT(*) FILTER (WHERE outcome IS NOT NULL)::int AS "gamesPlayed",
         COUNT(*) FILTER (WHERE outcome = 'win')::int AS wins,
         COUNT(*) FILTER (WHERE outcome = 'loss')::int AS losses,
         COUNT(*) FILTER (WHERE outcome = 'draw')::int AS draws,
-        ROUND(AVG(COALESCE("finalScore", score))::numeric, 1)::double precision AS "avgScore",
-        MAX(COALESCE("finalScore", score))::int AS "bestScore",
-        MAX("updatedAt") AS "lastPlayed"
+        ROUND((AVG(COALESCE("finalScore", score)) FILTER (WHERE outcome IS NOT NULL))::numeric, 1)::double precision AS "avgScore",
+        (MAX(COALESCE("finalScore", score)) FILTER (WHERE outcome IS NOT NULL))::int AS "bestScore",
+        MAX("updatedAt") FILTER (WHERE outcome IS NOT NULL) AS "lastPlayed"
       FROM user_games
       GROUP BY "gameType"
-      ORDER BY COUNT(*) DESC, "gameType" ASC
+      ORDER BY COUNT(*) FILTER (WHERE outcome IS NOT NULL) DESC, "gameType" ASC
     `),
     client.$queryRaw<TrendRow[]>(Prisma.sql`
       ${userGamesCte}
@@ -272,19 +267,13 @@ export async function getUserStatsDashboard(
   const byGame = normalizeByGameRows(byGameRows)
   const trends = normalizeTrendRows(trendRows)
   const streaks = streakRows[0] ?? { currentWinStreak: 0, longestWinStreak: 0 }
-  const outcomeDenominator =
-    normalizedOverall.wins + normalizedOverall.losses + normalizedOverall.draws
-
   return {
     overall: {
       totalGames: normalizedOverall.totalGames,
       wins: normalizedOverall.wins,
       losses: normalizedOverall.losses,
       draws: normalizedOverall.draws,
-      winRate:
-        outcomeDenominator > 0
-          ? roundToOneDecimal((normalizedOverall.wins / outcomeDenominator) * 100)
-          : 0,
+      winRate: computeWinRate(normalizedOverall.wins, normalizedOverall.losses),
       avgGameDurationMinutes: normalizedOverall.avgGameDurationMinutes,
       favoriteGame: byGame[0]?.gameType ?? null,
       currentWinStreak: toFiniteNumber(streaks.currentWinStreak),

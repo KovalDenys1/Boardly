@@ -1,4 +1,6 @@
-export type GameOutcome = 'win' | 'loss' | 'draw'
+export type { GameOutcome } from '@/lib/stats-core'
+import type { GameOutcome } from '@/lib/stats-core'
+import { roundToOneDecimal, computeWinRate, resolveOutcome } from '@/lib/stats-core'
 
 export interface StatsPlayerInput {
   userId: string
@@ -67,30 +69,14 @@ function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value)
 }
 
-function roundToOneDecimal(value: number): number {
-  return Math.round(value * 10) / 10
-}
-
 function toIsoDay(value: Date): string {
   return value.toISOString().slice(0, 10)
 }
 
-function normalizeOutcome(game: StatsGameInput, player: StatsPlayerInput | undefined): GameOutcome | null {
-  if (!player || game.status !== 'finished') {
-    return null
-  }
-
+function normalizeOutcome(game: StatsGameInput, player: StatsPlayerInput | undefined): ReturnType<typeof resolveOutcome> {
+  if (!player) return null
   const winnerCount = game.players.filter((entry) => entry.isWinner).length
-  if (winnerCount === 0) {
-    return 'draw'
-  }
-  if (player.isWinner && winnerCount > 1) {
-    return 'draw'
-  }
-  if (player.isWinner) {
-    return 'win'
-  }
-  return 'loss'
+  return resolveOutcome(game.status, player.isWinner, winnerCount)
 }
 
 export function calculateUserStats(
@@ -164,21 +150,23 @@ export function calculateUserStats(
         lastPlayedAt: null as Date | null,
       }
 
-    byGameEntry.gamesPlayed += 1
-    if (outcome === 'win') byGameEntry.wins += 1
-    if (outcome === 'loss') byGameEntry.losses += 1
-    if (outcome === 'draw') byGameEntry.draws += 1
+    if (outcome !== null) {
+      byGameEntry.gamesPlayed += 1
+      if (outcome === 'win') byGameEntry.wins += 1
+      if (outcome === 'loss') byGameEntry.losses += 1
+      if (outcome === 'draw') byGameEntry.draws += 1
 
-    const normalizedScore = player.finalScore ?? player.score
-    if (Number.isFinite(normalizedScore)) {
-      byGameEntry.scoreSum += normalizedScore
-      byGameEntry.scoreCount += 1
-      byGameEntry.bestScore =
-        byGameEntry.bestScore === null ? normalizedScore : Math.max(byGameEntry.bestScore, normalizedScore)
-    }
+      const normalizedScore = player.finalScore ?? player.score
+      if (Number.isFinite(normalizedScore)) {
+        byGameEntry.scoreSum += normalizedScore
+        byGameEntry.scoreCount += 1
+        byGameEntry.bestScore =
+          byGameEntry.bestScore === null ? normalizedScore : Math.max(byGameEntry.bestScore, normalizedScore)
+      }
 
-    if (!byGameEntry.lastPlayedAt || updatedAt > byGameEntry.lastPlayedAt) {
-      byGameEntry.lastPlayedAt = updatedAt
+      if (!byGameEntry.lastPlayedAt || updatedAt > byGameEntry.lastPlayedAt) {
+        byGameEntry.lastPlayedAt = updatedAt
+      }
     }
 
     byGameMap.set(game.gameType, byGameEntry)
@@ -194,8 +182,7 @@ export function calculateUserStats(
 
   const byGame = Array.from(byGameMap.entries())
     .map(([gameType, entry]) => {
-      const denominator = entry.wins + entry.losses + entry.draws
-      const winRate = denominator > 0 ? roundToOneDecimal((entry.wins / denominator) * 100) : 0
+      const winRate = computeWinRate(entry.wins, entry.losses)
 
       return {
         gameType,
@@ -246,13 +233,12 @@ export function calculateUserStats(
     break
   }
 
-  const outcomeDenominator = wins + losses + draws
   const overall: UserOverallStats = {
     totalGames: completedGames.length,
     wins,
     losses,
     draws,
-    winRate: outcomeDenominator > 0 ? roundToOneDecimal((wins / outcomeDenominator) * 100) : 0,
+    winRate: computeWinRate(wins, losses),
     avgGameDurationMinutes: durationCount > 0 ? roundToOneDecimal(durationSumMs / durationCount / 60000) : 0,
     favoriteGame,
     currentWinStreak,

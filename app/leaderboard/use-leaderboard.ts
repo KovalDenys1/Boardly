@@ -10,6 +10,7 @@ export interface LeaderboardEntry {
   publicProfileId: string | null
   gamesPlayed: number
   wins: number
+  losses: number
   winRate: number
 }
 

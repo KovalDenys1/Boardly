@@ -427,17 +427,21 @@ export class SpyGame extends GameEngine {
 
     // Game ends after all rounds are completed
     if (data.currentRound >= data.totalRounds && data.phase === SpyGamePhase.RESULTS) {
-      // Find player with highest score
-      let maxScore = 0
+      let maxScore = -Infinity
       let winnerId = ''
+      let tie = false
 
       for (const [playerId, score] of Object.entries(data.scores)) {
         if (score > maxScore) {
           maxScore = score
           winnerId = playerId
+          tie = false
+        } else if (score === maxScore) {
+          tie = true
         }
       }
 
+      if (tie) return null
       return this.state.players.find((p) => p.id === winnerId) || null
     }
 

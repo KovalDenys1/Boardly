@@ -6,6 +6,15 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Boardly <onboarding@resend.dev>'
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 export async function sendVerificationEmail(email: string, token: string, username?: string) {
   if (!resend) {
     logger.warn('RESEND_API_KEY not configured. Skipping email send.')
@@ -230,6 +239,70 @@ export async function sendWelcomeEmail(email: string, name: string) {
     return { success: true }
   } catch (error) {
     logger.error('Failed to send welcome email:', error as Error)
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+}
+
+export async function sendGameInviteEmail(
+  recipientEmail: string,
+  recipientName: string,
+  senderName: string,
+  lobbyName: string,
+  gameType: string,
+  inviteUrl: string
+) {
+  if (!resend) {
+    logger.warn('RESEND_API_KEY not configured. Skipping email send.')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  const displayGameType = escapeHtml(gameType.replace(/_/g, ' '))
+  const safeRecipient = escapeHtml(recipientName)
+  const safeSender = escapeHtml(senderName)
+  const safeLobby = lobbyName ? escapeHtml(lobbyName) : ''
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: recipientEmail,
+      subject: `${senderName} invited you to play ${gameType.replace(/_/g, ' ')} on Boardly`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #1F1B16; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: #FFC44D; margin: 0; font-size: 28px; font-weight: 900;">boardly</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2 style="color: #333; margin-top: 0;">Hey ${safeRecipient}! 🎲</h2>
+              <p><strong>${safeSender}</strong> has invited you to join a game of <strong>${displayGameType}</strong>.</p>
+              ${safeLobby ? `<p style="color: #666;">Lobby: <strong>${safeLobby}</strong></p>` : ''}
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${inviteUrl}" target="_blank" rel="noopener noreferrer" style="background: #FF6B5B; color: white; padding: 14px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                  Join Game
+                </a>
+              </div>
+              <p style="color: #666; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="color: #FF6B5B; word-break: break-all; font-size: 12px;">${inviteUrl}</p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+              <p style="color: #999; font-size: 12px; margin: 0;">
+                You received this email because ${safeSender} invited you to a game. To stop receiving game invite emails, update your notification preferences in your Boardly profile.
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+    })
+    if (error) {
+      throw new Error((error as { message?: string }).message || 'Unknown error')
+    }
+    return { success: true }
+  } catch (error) {
+    logger.error('Failed to send game invite email:', error as Error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
   }
 }

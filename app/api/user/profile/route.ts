@@ -45,7 +45,7 @@ type ProfileAchievementStats = {
 function buildProfilePayload(
   user: SelectedProfileUser,
   achievementStats: ProfileAchievementStats = {
-    completedGamesCount: user._count.players,
+    completedGamesCount: 0,
     winsCount: 0,
   }
 ) {
@@ -59,7 +59,7 @@ function buildProfilePayload(
     createdAt: user.createdAt.toISOString(),
     publicProfileId: user.publicProfileId,
     friendsCount: user._count.friendshipsInitiated + user._count.friendshipsReceived,
-    gamesPlayed: user._count.players,
+    gamesPlayed: achievementStats.completedGamesCount,
     linkedAccountsCount: user._count.accounts,
     achievementStats,
   }
