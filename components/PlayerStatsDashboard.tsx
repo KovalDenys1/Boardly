@@ -395,6 +395,12 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         )}`,
         accentClassName: 'bg-bd-sun text-[#9b6b00]',
       },
+      {
+        id: 'bestStreak',
+        label: t('profile.stats.dashboard.summary.bestStreak'),
+        value: String(stats.overall.longestWinStreak),
+        accentClassName: 'bg-bd-mint text-bd-mint-deep',
+      },
     ]
   }, [stats, t])
 
@@ -452,7 +458,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
     : null
 
   const gameInsightItems = useMemo(() => {
-    if (!selectedGameStats || !stats) return []
+    if (!selectedGameStats) return []
 
     return [
       {
@@ -470,18 +476,8 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         label: t('profile.stats.dashboard.summary.draws'),
         value: selectedGameStats.draws,
       },
-      {
-        id: 'currentStreak',
-        label: t('profile.stats.dashboard.summary.currentStreak'),
-        value: stats.overall.currentWinStreak,
-      },
-      {
-        id: 'bestStreak',
-        label: t('profile.stats.dashboard.summary.bestStreak'),
-        value: stats.overall.longestWinStreak,
-      },
     ]
-  }, [selectedGameStats, stats, t])
+  }, [selectedGameStats, t])
 
   if (loading && !stats) {
     return (

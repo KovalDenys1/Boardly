@@ -193,16 +193,16 @@ export async function getUserStatsDashboard(
       ${userGamesCte}
       SELECT
         "gameType",
-        COUNT(*)::int AS "gamesPlayed",
+        COUNT(*) FILTER (WHERE outcome IS NOT NULL)::int AS "gamesPlayed",
         COUNT(*) FILTER (WHERE outcome = 'win')::int AS wins,
         COUNT(*) FILTER (WHERE outcome = 'loss')::int AS losses,
         COUNT(*) FILTER (WHERE outcome = 'draw')::int AS draws,
-        ROUND(AVG(COALESCE("finalScore", score))::numeric, 1)::double precision AS "avgScore",
-        MAX(COALESCE("finalScore", score))::int AS "bestScore",
-        MAX("updatedAt") AS "lastPlayed"
+        ROUND((AVG(COALESCE("finalScore", score)) FILTER (WHERE outcome IS NOT NULL))::numeric, 1)::double precision AS "avgScore",
+        (MAX(COALESCE("finalScore", score)) FILTER (WHERE outcome IS NOT NULL))::int AS "bestScore",
+        MAX("updatedAt") FILTER (WHERE outcome IS NOT NULL) AS "lastPlayed"
       FROM user_games
       GROUP BY "gameType"
-      ORDER BY COUNT(*) DESC, "gameType" ASC
+      ORDER BY COUNT(*) FILTER (WHERE outcome IS NOT NULL) DESC, "gameType" ASC
     `),
     client.$queryRaw<TrendRow[]>(Prisma.sql`
       ${userGamesCte}

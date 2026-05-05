@@ -164,21 +164,23 @@ export function calculateUserStats(
         lastPlayedAt: null as Date | null,
       }
 
-    byGameEntry.gamesPlayed += 1
-    if (outcome === 'win') byGameEntry.wins += 1
-    if (outcome === 'loss') byGameEntry.losses += 1
-    if (outcome === 'draw') byGameEntry.draws += 1
+    if (outcome !== null) {
+      byGameEntry.gamesPlayed += 1
+      if (outcome === 'win') byGameEntry.wins += 1
+      if (outcome === 'loss') byGameEntry.losses += 1
+      if (outcome === 'draw') byGameEntry.draws += 1
 
-    const normalizedScore = player.finalScore ?? player.score
-    if (Number.isFinite(normalizedScore)) {
-      byGameEntry.scoreSum += normalizedScore
-      byGameEntry.scoreCount += 1
-      byGameEntry.bestScore =
-        byGameEntry.bestScore === null ? normalizedScore : Math.max(byGameEntry.bestScore, normalizedScore)
-    }
+      const normalizedScore = player.finalScore ?? player.score
+      if (Number.isFinite(normalizedScore)) {
+        byGameEntry.scoreSum += normalizedScore
+        byGameEntry.scoreCount += 1
+        byGameEntry.bestScore =
+          byGameEntry.bestScore === null ? normalizedScore : Math.max(byGameEntry.bestScore, normalizedScore)
+      }
 
-    if (!byGameEntry.lastPlayedAt || updatedAt > byGameEntry.lastPlayedAt) {
-      byGameEntry.lastPlayedAt = updatedAt
+      if (!byGameEntry.lastPlayedAt || updatedAt > byGameEntry.lastPlayedAt) {
+        byGameEntry.lastPlayedAt = updatedAt
+      }
     }
 
     byGameMap.set(game.gameType, byGameEntry)
