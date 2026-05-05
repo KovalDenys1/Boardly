@@ -26,6 +26,17 @@ const allowedDevOrigins = Array.from(new Set([
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.boardly.online' }],
+        destination: 'https://boardly.online/:path*',
+        permanent: true,
+      },
+    ]
+  },
   // Allow local host variants in development to prevent HMR/CORS failures
   // when opening the app via localhost, 127.0.0.1, or LAN IP.
   allowedDevOrigins,
@@ -83,43 +94,21 @@ const nextConfig = {
 }
 
 const sentryWebpackOptions = {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-  // Organization and project (from Sentry dashboard)
   org: process.env.SENTRY_ORG || "boardly-v6",
   project: process.env.SENTRY_PROJECT || "javascript-nextjs",
-
-  // Auth token for uploading source maps (optional - set SENTRY_AUTH_TOKEN in .env.local)
   authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js proxy, otherwise reporting of client-
-  // side errors will fail.
   tunnelRoute: "/monitoring",
-
-  // Hides source maps from generated client bundles
-  hideSourceMaps: true,
-
-  webpack: {
-    // Automatically tree-shake Sentry logger statements to reduce bundle size.
-    treeshake: {
-      removeDebugLogging: true,
-    },
-
-    automaticVercelMonitors: true,
-  },
-  
-  // Disable telemetry to reduce noise in logs
   telemetry: false,
+
+  // Strip sourceMappingURL comments from client bundles and delete .map files
+  // after uploading to Sentry (v10 API — replaces hideSourceMaps + widenClientFileUpload)
+  hideSourceMaps: true,
+  sourcemaps: {
+    deleteFilesAfterUpload: ['**/*.js.map', '**/*.css.map'],
+  },
+
+  automaticVercelMonitors: true,
 }
 
 // Sentry webpack plugin is only needed for production builds.
