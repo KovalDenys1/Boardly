@@ -36,7 +36,7 @@ export function MobileMenu({
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
 
-  const PUBLIC_ROUTES = ['/games', '/lobby']
+  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard']
 
   const navigateMobile = (dest: string) => {
     if (!isAuthenticated && !isGuestSession && !PUBLIC_ROUTES.includes(dest)) {
