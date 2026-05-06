@@ -16,6 +16,7 @@ jest.mock('@/lib/db', () => ({
     games: {
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     players: {
       update: jest.fn(),
@@ -87,6 +88,7 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
     jest.clearAllMocks()
     process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
     ;(prisma.games.update as jest.Mock).mockResolvedValue({} as any)
+    ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 } as any)
     mockNotifySocket.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
   })
@@ -307,7 +309,7 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(prisma.games.update).toHaveBeenCalledTimes(1)
+    expect(prisma.games.updateMany).toHaveBeenCalledTimes(1)
     expect(prisma.players.update).not.toHaveBeenCalled()
     expect(mockAppendGameReplaySnapshot).toHaveBeenCalledWith(
       expect.objectContaining({
