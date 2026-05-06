@@ -20,6 +20,8 @@ model Users {
   isGuest         Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
+  banReason       String?
+  banExpiresAt    DateTime? @db.Timestamptz(3)
   lastActiveAt    DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
   createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
