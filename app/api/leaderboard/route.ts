@@ -10,7 +10,11 @@ export const dynamic = 'force-dynamic'
 const log = apiLogger('/api/leaderboard')
 
 const VALID_GAME_TYPES = Object.values(GameType) as string[]
-const MIN_GAMES = 10
+// Require 10+ games on the combined leaderboard, but 1+ when filtering by
+// a specific game type — otherwise players with mixed portfolios appear in
+// the total but vanish when drilling down by type.
+const MIN_GAMES_ALL = 10
+const MIN_GAMES_FILTERED = 1
 const PAGE_SIZE = 50
 
 const querySchema = z.object({
@@ -41,6 +45,7 @@ export async function GET(req: NextRequest) {
 
   const { gameType, period, page } = parsed.data
   const since = period === '30d' ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : null
+  const minGames = gameType ? MIN_GAMES_FILTERED : MIN_GAMES_ALL
 
   // Build optional SQL clauses with proper parameterization
   const gameTypeClause = gameType != null
@@ -120,7 +125,7 @@ export async function GET(req: NextRequest) {
         )::float                                                                 AS "winRate"
       FROM leaderboard_rows
       GROUP BY "userId", username, "publicProfileId"
-      HAVING COUNT("playerId") >= ${MIN_GAMES}
+      HAVING COUNT("playerId") >= ${minGames}
       ORDER BY
         COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")::numeric
         / NULLIF(
