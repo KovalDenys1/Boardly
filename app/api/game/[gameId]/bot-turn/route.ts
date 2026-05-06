@@ -37,7 +37,7 @@ export async function POST(
   try {
     const paramsData = await params
     gameId = paramsData.gameId
-    const configuredInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+    const configuredInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET?.trim()
     const providedInternalSecret = request.headers.get('X-Internal-Secret')
     const hasConfiguredInternalSecret =
       typeof configuredInternalSecret === 'string' && configuredInternalSecret.length > 0

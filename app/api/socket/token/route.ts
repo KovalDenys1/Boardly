@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import jwt from 'jsonwebtoken'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { apiLogger } from '@/lib/logger'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ token })
   } catch (error) {
-    console.error('Failed to generate socket token:', error)
+    apiLogger('GET /api/socket/token').error('Failed to generate socket token', { error })
     return NextResponse.json(
       { error: 'Failed to generate token' },
       { status: 500 }
