@@ -48,6 +48,7 @@ async function reassignLobbyCreatorIfNeeded(
   const nextCreator = await prisma.players.findFirst({
     where: {
       gameId,
+      leftAt: null,
       user: {
         bot: null,
       },
@@ -160,22 +161,30 @@ export async function POST(
       })
     }
 
-    // Remove player from the game
-    await prisma.players.delete({
-      where: { id: player.id }
-    })
+    // Remove player: hard-delete for pre-game (waiting), soft-leave for in-progress/terminal games
+    if (activeGame.status === 'waiting') {
+      await prisma.players.delete({ where: { id: player.id } })
+    } else {
+      await prisma.players.update({
+        where: { id: player.id },
+        data: { leftAt: new Date() },
+      })
+    }
 
+    // Always filter leftAt:null — waiting games hard-delete so all remaining have leftAt:null;
+    // playing/terminal games now use soft-leave so leftAt:null gives active count.
     const [remainingPlayers, remainingHumanPlayers] = await Promise.all([
       prisma.players.count({
-        where: { gameId: activeGame.id }
+        where: { gameId: activeGame.id, leftAt: null }
       }),
       prisma.players.count({
         where: {
           gameId: activeGame.id,
+          leftAt: null,
           user: {
-            bot: null  // Human players don't have bot relation
-          }
-        }
+            bot: null,
+          },
+        },
       }),
     ])
     const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
