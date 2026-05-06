@@ -169,7 +169,7 @@ export const authOptions: NextAuthOptions = {
                 userId: existingAccount.userId,
                 provider: account.provider,
               })
-              return false
+              return '/suspended'
             }
 
             // Account already exists - allow sign in
@@ -222,7 +222,7 @@ export const authOptions: NextAuthOptions = {
                 provider: account.provider,
                 email: normalizedOAuthEmail,
               })
-              return false
+              return '/suspended'
             }
 
             // A user with this email already exists — allow sign-in and let
