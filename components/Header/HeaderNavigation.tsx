@@ -33,7 +33,7 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest, on
   }
 
   return (
-    <div className="hidden lg:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(4px, 0.5vw, 8px)' }}>
+    <div className="hidden xl:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(4px, 0.5vw, 8px)' }}>
       <button
         onClick={() => router.push('/')}
         className={navBtn(isActive('/'))}

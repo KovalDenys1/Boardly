@@ -108,18 +108,18 @@ export default function Header() {
             {/* Guest indicator */}
             {isGuestSession && guestName && (
               <div
-                className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full"
+                className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full"
                 style={{ background: 'rgba(255,196,77,0.22)', border: '1px solid rgba(255,196,77,0.4)', color: 'var(--bd-ink-soft)', fontSize: 13, fontWeight: 600 }}
               >
                 👤 {guestName}
               </div>
             )}
 
-            <div className="hidden lg:block">
+            <div className="hidden xl:block">
               <LanguageSwitcher />
             </div>
 
-            <div className="hidden lg:block">
+            <div className="hidden xl:block">
               <AudioSettingsButton />
             </div>
 
