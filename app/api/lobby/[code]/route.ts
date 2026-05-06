@@ -497,88 +497,82 @@ export async function POST(
       }
     }
 
-    // Find or create active game
-    let game = lobby.games.find((g) => g.status === 'waiting')
-
-    if (!game) {
-      // Create a new game with initial state from the game registry
-      const requestedGameType = lobby.gameType || DEFAULT_GAME_TYPE
-      if (!isSupportedGameType(requestedGameType)) {
-        return NextResponse.json({ error: 'Unsupported lobby game type' }, { status: 400 })
-      }
-      const runtimeGameType = requestedGameType
-      const engine = createGameEngine(runtimeGameType, 'temp')
-      const initialState = engine.getState()
-
-      game = await prisma.games.create({
-        data: {
-          lobbyId: lobby.id,
-          gameType: toPersistedGameType(runtimeGameType),
-          state: toPersistedGameStateInput(initialState),
-          status: 'waiting',
-        },
-      })
+    // Pre-compute initial game state outside the transaction (pure computation, no DB)
+    const requestedGameType = lobby.gameType || DEFAULT_GAME_TYPE
+    if (!isSupportedGameType(requestedGameType)) {
+      return NextResponse.json({ error: 'Unsupported lobby game type' }, { status: 400 })
     }
+    const runtimeGameType = requestedGameType
+    const initialState = createGameEngine(runtimeGameType, 'temp').getState()
 
-    // Check if player already joined
-    const existingPlayer = await prisma.players.findUnique({
-      where: {
-        gameId_userId: {
-          gameId: game.id,
-          userId: userId,
-        },
-      },
-    })
-
-    if (existingPlayer) {
-      await prisma.lobbyInvites.updateMany({
-        where: {
-          lobbyId: lobby.id,
-          inviteeId: userId,
-          acceptedAt: null,
-        },
-        data: {
-          acceptedAt: new Date(),
-        },
-      })
-      return NextResponse.json({ game, player: existingPlayer })
-    }
-
+    let game: { id: string; status: string } | undefined = undefined
     let player: Prisma.PlayersGetPayload<{ include: { user: { select: { id: true; username: true; isGuest: true } } } }>
     let attempt = 0
 
     while (true) {
       try {
-        player = await prisma.$transaction(
+        const result = await prisma.$transaction(
           async (tx) => {
-            const playerCount = await tx.players.count({
-              where: { gameId: game.id },
+            // Find or create waiting game atomically inside the transaction
+            // to prevent concurrent requests from creating duplicate games.
+            let activeGame = await tx.games.findFirst({
+              where: { lobbyId: lobby.id, status: 'waiting' },
+              select: { id: true, status: true },
             })
 
+            if (!activeGame) {
+              activeGame = await tx.games.create({
+                data: {
+                  lobbyId: lobby.id,
+                  gameType: toPersistedGameType(runtimeGameType),
+                  state: toPersistedGameStateInput(initialState),
+                  status: 'waiting',
+                },
+                select: { id: true, status: true },
+              })
+            }
+
+            // Return early if player already joined
+            const existingPlayer = await tx.players.findUnique({
+              where: { gameId_userId: { gameId: activeGame.id, userId } },
+            })
+            if (existingPlayer) {
+              await tx.lobbyInvites.updateMany({
+                where: { lobbyId: lobby.id, inviteeId: userId, acceptedAt: null },
+                data: { acceptedAt: new Date() },
+              })
+              return { game: activeGame, player: existingPlayer, alreadyJoined: true }
+            }
+
+            const playerCount = await tx.players.count({ where: { gameId: activeGame.id } })
             if (playerCount >= lobby.maxPlayers) {
               throw new LobbyFullError()
             }
 
-            return tx.players.create({
+            const newPlayer = await tx.players.create({
               data: {
-                gameId: game.id,
+                gameId: activeGame.id,
                 userId: userId,
                 position: playerCount,
                 scorecard: JSON.stringify({}),
               },
               include: {
-                user: {
-                  select: {
-                    id: true,
-                    username: true,
-                    isGuest: true,
-                  },
-                },
+                user: { select: { id: true, username: true, isGuest: true } },
               },
             })
+
+            return { game: activeGame, player: newPlayer, alreadyJoined: false }
           },
           { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
         )
+
+        game = result.game
+        player = result.player as Prisma.PlayersGetPayload<{ include: { user: { select: { id: true; username: true; isGuest: true } } } }>
+
+        if (result.alreadyJoined) {
+          return NextResponse.json({ game, player })
+        }
+
         break
       } catch (error) {
         if (error instanceof LobbyFullError) {

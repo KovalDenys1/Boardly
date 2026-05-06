@@ -5,10 +5,11 @@ import { processNotificationEmailQueue } from '@/lib/notification-queue'
 import { runTurnReminderCycle } from '@/lib/turn-reminders'
 import { authorizeCronRequest } from '@/lib/cron-auth'
 import { cleanupStaleLobbiesAndGames } from '@/lib/lobby-health'
+import { prisma } from '@/lib/db'
 
 const log = apiLogger('GET /api/cron/game-ops')
 
-type GameOpsTaskName = 'cleanup' | 'notifications' | 'turnReminders'
+type GameOpsTaskName = 'cleanup' | 'expireBans' | 'notifications' | 'turnReminders'
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error'
@@ -108,6 +109,33 @@ async function handleCronRequest(request: NextRequest) {
       log.error('Game ops cleanup task failed', cleanupError as Error)
     }
 
+    let expireBans: unknown
+    try {
+      const result = await prisma.users.updateMany({
+        where: {
+          suspended: true,
+          banExpiresAt: { lte: new Date() },
+        },
+        data: {
+          suspended: false,
+          banReason: null,
+          banExpiresAt: null,
+        },
+      })
+      expireBans = { success: true, expired: result.count }
+      if (result.count > 0) {
+        log.info('Auto-expired temporary bans', { count: result.count })
+      }
+    } catch (expireError) {
+      warnings.push({
+        task: 'expireBans',
+        kind: 'execution_failed',
+        message: getErrorMessage(expireError),
+      })
+      expireBans = { success: false, reason: 'expire_bans_failed' }
+      log.error('Game ops expireBans task failed', expireError as Error)
+    }
+
     // Consolidated frequent cron to stay within Vercel limits.
     // Turn reminders are rate-limited per game and user.
     const [notificationsResult, turnRemindersResult] = await Promise.allSettled([
@@ -153,6 +181,7 @@ async function handleCronRequest(request: NextRequest) {
 
     return NextResponse.json({
       cleanup,
+      expireBans,
       notifications,
       turnReminders,
       degraded: warnings.length > 0,

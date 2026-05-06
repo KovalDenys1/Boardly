@@ -165,6 +165,7 @@ const socketRateLimiter = createSocketRateLimiter({
 })
 const RATE_LIMIT_CLEANUP_INTERVAL = 60000 // Clean up every 60 seconds
 const SPECTATOR_MEMBERS_SWEEP_INTERVAL = 120000 // Purge stale spectator cache every 2 minutes
+const SUSPENSION_CHECK_INTERVAL_MS = 60000 // Check for suspended users every 60 seconds
 
 function checkRateLimit(socketId: string): boolean {
   return socketRateLimiter.checkRateLimit(socketId)
@@ -648,6 +649,30 @@ setInterval(() => {
 setInterval(() => {
   void sweepStaleSpectatorLobbyMemberships()
 }, SPECTATOR_MEMBERS_SWEEP_INTERVAL)
+
+setInterval(() => {
+  const sockets = [...io.sockets.sockets.values()]
+  const userIds = sockets
+    .filter((s) => s.data.user?.id && !s.data.user.isGuest)
+    .map((s) => s.data.user!.id as string)
+
+  if (userIds.length === 0) return
+
+  void prisma.users
+    .findMany({ where: { id: { in: userIds }, suspended: true }, select: { id: true } })
+    .then((suspended) => {
+      if (suspended.length === 0) return
+      const suspendedSet = new Set(suspended.map((u) => u.id))
+      for (const socket of io.sockets.sockets.values()) {
+        if (socket.data.user?.id && suspendedSet.has(socket.data.user.id)) {
+          logger.warn('Disconnecting suspended user mid-session', { userId: socket.data.user.id })
+          socket.emit('account-suspended', { message: 'Your account has been suspended.' })
+          socket.disconnect(true)
+        }
+      }
+    })
+    .catch((err) => logger.error('Suspension check failed', err))
+}, SUSPENSION_CHECK_INTERVAL_MS)
 
 // Authentication middleware
 io.use(

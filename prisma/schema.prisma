@@ -20,6 +20,8 @@ model Users {
   isGuest         Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
+  banReason       String?
+  banExpiresAt    DateTime? @db.Timestamptz(3)
   lastActiveAt    DateTime  @default(now()) @db.Timestamptz(3) // Track last activity for all users
   createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
@@ -276,9 +278,10 @@ model Players {
   placement  Int? // Final placement (1st, 2nd, 3rd, 4th)
   scorecard  String?  @db.Text // JSON string with game-specific scorecard
   position   Int // Player position in game (0, 1, 2, 3)
-  isReady    Boolean  @default(false)
-  isWinner   Boolean  @default(false)
-  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  isReady    Boolean   @default(false)
+  isWinner   Boolean   @default(false)
+  leftAt     DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
 
   @@unique([gameId, userId])
   @@index([gameId])

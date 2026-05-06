@@ -144,6 +144,15 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next()
   const { pathname } = request.nextUrl
 
+  const SUSPENDED_EXEMPT = ['/suspended', '/auth/', '/api/', '/_next/', '/favicon']
+  const isSuspendedExempt = SUSPENDED_EXEMPT.some((p) => pathname.startsWith(p))
+  if (!isSuspendedExempt) {
+    const suspendedToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+    if (suspendedToken?.suspended) {
+      return NextResponse.redirect(new URL('/suspended', request.url))
+    }
+  }
+
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     if (request.method === 'OPTIONS' && pathname.startsWith('/api/admin')) {
       // Let CORS preflight pass; auth is enforced on actual request methods.

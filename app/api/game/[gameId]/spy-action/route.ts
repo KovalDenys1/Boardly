@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { SpyGame, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -7,6 +8,19 @@ import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+
+const spyActionSchema = z.object({
+  action: z.enum([
+    'player-ready',
+    'ask-question',
+    'answer-question',
+    'skip-turn',
+    'start-voting',
+    'vote',
+    'spy-guess-location',
+  ]),
+  data: z.record(z.unknown()).optional(),
+})
 
 const limiter = rateLimit(rateLimitPresets.game)
 
@@ -33,11 +47,12 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { action, data } = await request.json()
-
-    if (!action) {
-      return NextResponse.json({ error: 'Missing action' }, { status: 400 })
+    const body = await request.json()
+    const parsed = spyActionSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid action', details: parsed.error.flatten() }, { status: 400 })
     }
+    const { action, data } = parsed.data
 
     // Fetch game
     const game = await prisma.games.findUnique({

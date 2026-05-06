@@ -8,7 +8,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 const log = apiLogger('/api/feedback')
 
 const feedbackSchema = z.object({
-  type: z.enum(['bug', 'feature', 'other']),
+  type: z.enum(['bug', 'feature', 'other', 'appeal']),
   message: z.string().trim().min(1).max(2000),
   email: z.string().email().optional().or(z.literal('')),
   pageUrl: z.string().max(500).optional(),

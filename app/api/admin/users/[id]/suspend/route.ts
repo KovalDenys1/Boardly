@@ -9,10 +9,31 @@ async function postAdminSuspendUserHandler(
 ) {
   const admin = await requireAdminApiUser()
   const { id } = await params
-  const body = (await req.json().catch(() => ({}))) as { suspended?: unknown }
+  const body = (await req.json().catch(() => ({}))) as {
+    suspended?: unknown
+    banReason?: unknown
+    banExpiresAt?: unknown
+  }
 
   if (typeof body.suspended !== 'boolean') {
     throw new ValidationError('Body must include boolean "suspended"')
+  }
+
+  const banReason =
+    body.suspended && typeof body.banReason === 'string' && body.banReason.trim()
+      ? body.banReason.trim()
+      : null
+
+  let banExpiresAt: Date | null = null
+  if (body.suspended && typeof body.banExpiresAt === 'string' && body.banExpiresAt) {
+    const parsed = new Date(body.banExpiresAt)
+    if (isNaN(parsed.getTime())) {
+      throw new ValidationError('banExpiresAt must be a valid ISO date string')
+    }
+    if (parsed <= new Date()) {
+      throw new ValidationError('banExpiresAt must be in the future')
+    }
+    banExpiresAt = parsed
   }
 
   if (id === admin.id && body.suspended) {
@@ -24,6 +45,8 @@ async function postAdminSuspendUserHandler(
     select: {
       id: true,
       suspended: true,
+      banReason: true,
+      banExpiresAt: true,
       role: true,
       email: true,
       username: true,
@@ -35,13 +58,17 @@ async function postAdminSuspendUserHandler(
 
   const updated = await prisma.users.update({
     where: { id },
-    data: { suspended: body.suspended },
+    data: body.suspended
+      ? { suspended: true, banReason, banExpiresAt }
+      : { suspended: false, banReason: null, banExpiresAt: null },
     select: {
       id: true,
       email: true,
       username: true,
       role: true,
       suspended: true,
+      banReason: true,
+      banExpiresAt: true,
       updatedAt: true,
     },
   })
@@ -54,6 +81,8 @@ async function postAdminSuspendUserHandler(
     details: {
       previousSuspended: existing.suspended,
       nextSuspended: updated.suspended,
+      banReason: updated.banReason,
+      banExpiresAt: updated.banExpiresAt?.toISOString() ?? null,
       targetRole: updated.role,
     },
   })

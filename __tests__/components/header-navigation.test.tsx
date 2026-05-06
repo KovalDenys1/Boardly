@@ -36,6 +36,6 @@ describe('HeaderNavigation responsive split', () => {
 
     expect(screen.getByRole('button', { name: /home/i })).toBeTruthy()
     expect(navigationContainer?.className).toContain('hidden')
-    expect(navigationContainer?.className).toContain('lg:flex')
+    expect(navigationContainer?.className).toContain('xl:flex')
   })
 })

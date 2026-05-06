@@ -169,7 +169,7 @@ export const authOptions: NextAuthOptions = {
                 userId: existingAccount.userId,
                 provider: account.provider,
               })
-              return false
+              return '/suspended'
             }
 
             // Account already exists - allow sign in
@@ -222,7 +222,7 @@ export const authOptions: NextAuthOptions = {
                 provider: account.provider,
                 email: normalizedOAuthEmail,
               })
-              return false
+              return '/suspended'
             }
 
             // A user with this email already exists — allow sign-in and let
@@ -268,6 +268,8 @@ export const authOptions: NextAuthOptions = {
         token.emailVerified = user.emailVerified
         token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
         token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false
+        token.banReason = (user as { banReason?: string | null }).banReason ?? token.banReason ?? null
+        token.banExpiresAt = (user as { banExpiresAt?: string | null }).banExpiresAt ?? token.banExpiresAt ?? null
         token.rememberMe = (user as { rememberMe?: boolean }).rememberMe ?? token.rememberMe ?? true
         token.authenticatedAt = Date.now()
       }
@@ -292,6 +294,8 @@ export const authOptions: NextAuthOptions = {
             emailVerified: true,
             role: true,
             suspended: true,
+            banReason: true,
+            banExpiresAt: true,
           }
         })
         if (dbUser) {
@@ -300,6 +304,8 @@ export const authOptions: NextAuthOptions = {
           token.emailVerified = dbUser.emailVerified
           token.role = dbUser.role
           token.suspended = dbUser.suspended
+          token.banReason = dbUser.banReason
+          token.banExpiresAt = dbUser.banExpiresAt?.toISOString() ?? null
         }
       }
 
@@ -314,6 +320,8 @@ export const authOptions: NextAuthOptions = {
             emailVerified: true,
             role: true,
             suspended: true,
+            banReason: true,
+            banExpiresAt: true,
           },
         })
         if (dbUser) {
@@ -323,6 +331,8 @@ export const authOptions: NextAuthOptions = {
           token.emailVerified = dbUser.emailVerified
           token.role = dbUser.role
           token.suspended = dbUser.suspended
+          token.banReason = dbUser.banReason
+          token.banExpiresAt = dbUser.banExpiresAt?.toISOString() ?? null
         }
       }
 
@@ -356,6 +366,8 @@ export const authOptions: NextAuthOptions = {
         session.user.emailVerified = token.emailVerified as Date | null
         session.user.role = (token.role as 'user' | 'admin' | undefined) ?? 'user'
         session.user.suspended = Boolean(token.suspended)
+        session.user.banReason = (token.banReason as string | null | undefined) ?? null
+        session.user.banExpiresAt = (token.banExpiresAt as string | null | undefined) ?? null
       }
       return session
     },

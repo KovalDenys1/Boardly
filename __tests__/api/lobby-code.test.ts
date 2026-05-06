@@ -28,6 +28,7 @@ jest.mock('@/lib/db', () => ({
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       delete: jest.fn(),
+      update: jest.fn(),
       count: jest.fn(),
     },
     lobbyInvites: {
@@ -258,6 +259,7 @@ describe('POST /api/lobby/[code]', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -326,6 +328,7 @@ describe('POST /api/lobby/[code]', () => {
       ...lobbyWithPassword,
       games: [gameWithPlayers],
     } as any)
+    mockPrisma.games.findFirst.mockResolvedValue({ id: 'game-123', status: 'waiting' } as any)
     mockPrisma.players.findUnique.mockResolvedValue(null) // Player not already in game
     mockPrisma.players.count.mockResolvedValue(0) // No players yet
     mockPrisma.players.create.mockResolvedValue({
@@ -373,6 +376,7 @@ describe('POST /api/lobby/[code]', () => {
       maxPlayers: 2,
       games: [gameWithPlayers],
     } as any)
+    mockPrisma.games.findFirst.mockResolvedValue({ id: 'game-123', status: 'waiting' } as any)
     mockPrisma.players.findUnique.mockResolvedValue(null)
     mockPrisma.players.count.mockResolvedValue(2)
 
@@ -669,6 +673,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     expect(mockPrisma.players.findFirst).toHaveBeenCalledWith({
       where: {
         gameId: 'game-123',
+        leftAt: null,
         user: {
           bot: null,
         },
@@ -783,7 +788,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       suspended: false,
     } as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(lobbyWithMultipleGames as any)
-    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.update.mockResolvedValue({ id: 'player-123' } as any)
     mockPrisma.players.count.mockResolvedValue(1)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
@@ -792,9 +797,10 @@ describe('POST /api/lobby/[code]/leave', () => {
     const response = await LEAVE(request, { params: { code: 'ABC123' } })
 
     expect(response.status).toBe(200)
-    expect(mockPrisma.players.delete).toHaveBeenCalledWith({
-      where: { id: 'player-123' },
-    })
+    expect(mockPrisma.players.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'player-123' } })
+    )
+    expect(mockPrisma.players.delete).not.toHaveBeenCalled()
   })
 
   it('removes player from a finished game and reassigns the lobby creator after post-game leave', async () => {
@@ -845,7 +851,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       suspended: false,
     } as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(finishedLobby as any)
-    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.update.mockResolvedValue({ id: 'player-123' } as any)
     mockPrisma.players.count
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(1)
@@ -875,9 +881,10 @@ describe('POST /api/lobby/[code]/leave', () => {
         lobbyDeactivated: false,
       })
     )
-    expect(mockPrisma.players.delete).toHaveBeenCalledWith({
-      where: { id: 'player-123' },
-    })
+    expect(mockPrisma.players.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'player-123' } })
+    )
+    expect(mockPrisma.players.delete).not.toHaveBeenCalled()
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
     expect(mockPrisma.lobbies.update).toHaveBeenCalledWith({
       where: { id: 'lobby-123' },
@@ -950,7 +957,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       suspended: false,
     } as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(playingLobby as any)
-    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.update.mockResolvedValue({ id: 'player-123' } as any)
     mockPrisma.players.count
       .mockResolvedValueOnce(2) // remaining players
       .mockResolvedValueOnce(2) // remaining human players
@@ -1025,7 +1032,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       suspended: false,
     } as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(playingLobbyWithBotLeft as any)
-    mockPrisma.players.delete.mockResolvedValue({ id: 'player-human' } as any)
+    mockPrisma.players.update.mockResolvedValue({ id: 'player-human' } as any)
     mockPrisma.players.count
       .mockResolvedValueOnce(1) // remaining players
       .mockResolvedValueOnce(0) // remaining human players
@@ -1111,7 +1118,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       suspended: false,
     } as any)
     mockPrisma.lobbies.findUnique.mockResolvedValue(multiplayerLobby as any)
-    mockPrisma.players.delete.mockResolvedValue({ id: 'player-123' } as any)
+    mockPrisma.players.update.mockResolvedValue({ id: 'player-123' } as any)
     mockPrisma.players.count
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(2)

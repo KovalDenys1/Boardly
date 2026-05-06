@@ -16,6 +16,7 @@ interface SocketUserRecord {
   username: string | null
   email: string | null
   isGuest?: boolean
+  suspended?: boolean
   bot: unknown
 }
 
@@ -39,6 +40,7 @@ interface PrismaLike {
         username: true
         email: true
         isGuest?: true
+        suspended?: true
         bot: true
       }
     }) => Promise<SocketUserRecord | null>
@@ -196,6 +198,7 @@ export function createSocketAuthMiddleware({
           id: true,
           username: true,
           email: true,
+          suspended: true,
           bot: true, // Include bot relation instead of isBot
         },
       })
@@ -206,6 +209,11 @@ export function createSocketAuthMiddleware({
           isGuest,
         })
         return next(new Error('User not found'))
+      }
+
+      if (user.suspended) {
+        logger.warn('Socket connection rejected: User account is suspended', { userId })
+        return next(new Error('Account suspended'))
       }
 
       socket.data.user = user

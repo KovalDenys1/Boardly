@@ -24,12 +24,14 @@ jest.mock('@/lib/db', () => ({
       create: jest.fn(),
       update: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     players: {
       findUnique: jest.fn(),
       create: jest.fn(),
       count: jest.fn(),
       delete: jest.fn(),
+      update: jest.fn(),
     },
     lobbyInvites: {
       updateMany: jest.fn(),
@@ -216,6 +218,10 @@ describe('Guest mode API endpoints', () => {
           state: JSON.stringify({ scores: [] }),
         },
       ],
+    } as any)
+    mockPrisma.games.findFirst.mockResolvedValue({
+      id: 'game_1',
+      status: 'waiting',
     } as any)
     mockPrisma.players.findUnique.mockResolvedValue(null as any)
     mockPrisma.players.count.mockResolvedValue(1 as any)

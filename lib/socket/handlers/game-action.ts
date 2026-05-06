@@ -80,6 +80,7 @@ export function createGameActionHandler({
       const validActions = ['state-change']
       if (!validActions.includes(data.action)) {
         logger.warn('Invalid action type', { action: data.action, socketId: socket.id })
+        emitError(socket, 'INVALID_ACTION_TYPE', 'Unknown action type', 'errors.invalidActionData')
         return
       }
 

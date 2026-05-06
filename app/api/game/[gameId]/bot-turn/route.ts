@@ -14,7 +14,11 @@ import { type BaseBotActionEvent } from '@/lib/bots/core/bot-types'
 
 export const maxDuration = 60 // Allow up to 60 seconds for bot execution
 
-// In-memory lock to prevent concurrent bot turns for the same game
+class ConcurrentBotTurnError extends Error {
+  constructor() { super('Concurrent bot turn detected') }
+}
+
+// In-memory lock to prevent concurrent bot turns for the same game (best-effort within one instance)
 const botTurnLocks = new Map<string, boolean>()
 const DEFAULT_BOT_STATE_NOTIFY_TIMEOUT_MS = 2000
 const FAST_BOT_STATE_NOTIFY_TIMEOUT_MS = 250
@@ -37,7 +41,7 @@ export async function POST(
   try {
     const paramsData = await params
     gameId = paramsData.gameId
-    const configuredInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+    const configuredInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET?.trim()
     const providedInternalSecret = request.headers.get('X-Internal-Secret')
     const hasConfiguredInternalSecret =
       typeof configuredInternalSecret === 'string' && configuredInternalSecret.length > 0
@@ -355,8 +359,10 @@ export async function POST(
           })
 
           try {
-            await prisma.games.update({
-              where: { id: gameId },
+            // Optimistic lock: only commit if the game row hasn't changed since we loaded it.
+            // This prevents duplicate bot turn commits across concurrent serverless invocations.
+            const botUpdateResult = await prisma.games.updateMany({
+              where: { id: gameId, currentTurn: game.currentTurn, updatedAt: game.updatedAt },
               data: {
                 state: toPersistedGameStateInput(newState),
                 status: newState.status,
@@ -365,22 +371,12 @@ export async function POST(
                 ...terminalFields,
                 updatedAt: new Date(),
               },
-            }).catch(async (dbError) => {
-              // Retry once on connection error (common on serverless cold starts)
-              log.warn('Database update failed, retrying...', { error: dbError.message })
-              await new Promise(resolve => setTimeout(resolve, 200))
-              return prisma.games.update({
-                where: { id: gameId },
-                data: {
-                  state: toPersistedGameStateInput(newState),
-                  status: newState.status,
-                  currentTurn: newState.currentPlayerIndex,
-                  ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
-                  ...terminalFields,
-                  updatedAt: new Date(),
-                },
-              })
             })
+
+            if (botUpdateResult.count === 0) {
+              log.warn('Bot turn skipped: game state already changed (concurrent execution)', { gameId })
+              throw new ConcurrentBotTurnError()
+            }
 
             // Log state transitions
             if (statusChanged) {
@@ -547,6 +543,10 @@ export async function POST(
     })
 
   } catch (error) {
+    if (error instanceof ConcurrentBotTurnError) {
+      return NextResponse.json({ message: 'Turn already processed by another instance' }, { status: 409 })
+    }
+
     log.error('Bot turn execution failed', error as Error, {
       gameId: gameId,
       lockKey,
