@@ -47,10 +47,8 @@ export default function Header() {
 
   const isAuthenticated = status === 'authenticated'
   const isLoading = status === 'loading'
-  const isAdmin = session?.user?.role === 'admin'
   const isAuthUiReady = isGuestUiReady && !isLoading
   const effectiveIsAuthenticated = isAuthUiReady && isAuthenticated
-  const effectiveIsAdmin = isAuthUiReady && isAdmin
   const isGuestSession = isAuthUiReady && isGuest && !isAuthenticated
 
   return (
@@ -97,7 +95,6 @@ export default function Header() {
 
             <HeaderNavigation
               isAuthenticated={effectiveIsAuthenticated}
-              isAdmin={effectiveIsAdmin}
               isGuest={isGuestSession}
               onUnauthClick={setAuthGateDest}
             />
@@ -138,7 +135,6 @@ export default function Header() {
 
             <MobileMenu
               isAuthenticated={effectiveIsAuthenticated}
-              isAdmin={effectiveIsAdmin}
               userName={session?.user?.name}
               userEmail={session?.user?.email}
               userImage={session?.user?.image}

@@ -301,7 +301,6 @@ const uk: Translation = {
       turnReminder: 'Зараз ваш хід у {{game}}',
     },
     settings: 'Налаштування',
-    analytics: 'Аналітика',
     signUp: 'Реєстрація',
     authGateTitle: 'Приєднайтесь до гри',
     authGateDesc: 'Оберіть імʼя і грайте як гість, або увійдіть щоб зберегти прогрес.',

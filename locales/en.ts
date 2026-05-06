@@ -299,7 +299,6 @@ const en = {
       turnReminder: 'It is your turn in {{game}}',
     },
     settings: 'Settings',
-    analytics: 'Analytics',
     signUp: 'Sign Up',
     authGateTitle: 'Join the game',
     authGateDesc: 'Pick a name and play as a guest, or sign in to save your progress.',

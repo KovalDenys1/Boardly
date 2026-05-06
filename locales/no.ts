@@ -299,7 +299,6 @@ const no = {
       turnReminder: 'Det er din tur i {{game}}',
     },
     settings: 'Innstillinger',
-    analytics: 'Analyse',
     signUp: 'Registrer deg',
     authGateTitle: 'Bli med i spillet',
     authGateDesc: 'Velg et navn og spill som gjest, eller logg inn for å lagre fremgangen din.',

@@ -299,7 +299,6 @@ const ru = {
       turnReminder: 'Сейчас ваш ход в {{game}}',
     },
     settings: 'Настройки',
-    analytics: 'Аналитика',
     signUp: 'Регистрация',
     authGateTitle: 'Войдите в игру',
     authGateDesc: 'Выберите имя и играйте как гость, или войдите чтобы сохранить прогресс.',

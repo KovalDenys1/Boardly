@@ -45,7 +45,7 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'header.games': 'Games',
         'header.lobbies': 'Lobbies',
         'header.leaderboard': 'Leaderboard',
-        'header.analytics': 'Analytics',
+
         'header.profile': 'Open profile',
         'header.settings': 'Settings',
         'header.logout': 'Logout',
@@ -80,7 +80,6 @@ describe('MobileMenu', () => {
     render(
       <MobileMenu
         isAuthenticated
-        isAdmin={false}
         userName="Tester"
         userEmail="tester@example.com"
       />
@@ -99,7 +98,6 @@ describe('MobileMenu', () => {
     const { rerender } = render(
       <MobileMenu
         isAuthenticated
-        isAdmin={false}
         userName="Tester"
         userEmail="tester@example.com"
       />
@@ -112,7 +110,6 @@ describe('MobileMenu', () => {
     rerender(
       <MobileMenu
         isAuthenticated
-        isAdmin={false}
         userName="Tester"
         userEmail="tester@example.com"
       />
@@ -131,7 +128,6 @@ describe('MobileMenu', () => {
     const { unmount } = render(
       <MobileMenu
         isAuthenticated
-        isAdmin={false}
         userName="Tester"
         userEmail="tester@example.com"
       />
@@ -150,7 +146,6 @@ describe('MobileMenu', () => {
     render(
       <MobileMenu
         isAuthenticated
-        isAdmin={false}
         userName="Tester"
         userEmail="tester@example.com"
       />
@@ -170,7 +165,6 @@ describe('MobileMenu', () => {
     render(
       <MobileMenu
         isAuthenticated
-        isAdmin={false}
         userName="Tester"
         userEmail="tester@example.com"
       />
@@ -190,7 +184,6 @@ describe('MobileMenu', () => {
     render(
       <MobileMenu
         isAuthenticated={false}
-        isAdmin={false}
       />
     )
 
@@ -201,7 +194,6 @@ describe('MobileMenu', () => {
     render(
       <MobileMenu
         isAuthenticated={false}
-        isAdmin={false}
       />
     )
 
