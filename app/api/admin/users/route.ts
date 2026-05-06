@@ -56,6 +56,8 @@ async function getAdminUsersHandler(req: NextRequest) {
         username: true,
         role: true,
         suspended: true,
+        banReason: true,
+        banExpiresAt: true,
         isGuest: true,
         createdAt: true,
         lastActiveAt: true,

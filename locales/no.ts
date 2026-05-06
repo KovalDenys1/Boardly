@@ -2064,6 +2064,7 @@ const no = {
     title: 'Konto suspendert',
     description: 'Kontoen din er blitt suspendert av en moderator. Du kan ikke logge inn eller bruke Boardly nå.',
     reason: 'Hvis du ikke fikk noen forklaring — bruk appell-skjemaet nedenfor. Teamet vårt vil gjennomgå saken din.',
+    expiresAt: 'Suspensjonen utløper:',
     backToLogin: '← Tilbake til innlogging',
     appeal: {
       title: 'Mener du dette er en feil?',

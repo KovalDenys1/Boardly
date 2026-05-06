@@ -2076,6 +2076,7 @@ const en = {
     title: 'Account Suspended',
     description: 'Your account has been suspended by a moderator. You cannot log in or access Boardly at this time.',
     reason: 'If you received no explanation, use the appeal form below — our team will review your case.',
+    expiresAt: 'Suspension expires:',
     backToLogin: '← Back to login',
     appeal: {
       title: 'Think this is a mistake?',

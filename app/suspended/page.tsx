@@ -2,11 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 export default function SuspendedPage() {
   const { t } = useTranslation()
   const router = useRouter()
+  const { data: session } = useSession()
+  const banReason = session?.user?.banReason ?? null
+  const banExpiresAt = session?.user?.banExpiresAt ?? null
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -112,6 +116,19 @@ export default function SuspendedPage() {
               <p className="text-sm font-semibold text-bd-coral-deep">
                 {t('suspended.reason')}
               </p>
+              {banReason && (
+                <p className="mt-1 text-sm text-bd-ink-soft">{banReason}</p>
+              )}
+              {banExpiresAt && (
+                <p className="mt-2 text-xs text-bd-ink-muted">
+                  {t('suspended.expiresAt')}{' '}
+                  {new Date(banExpiresAt).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              )}
             </div>
 
             <div className="mb-5">

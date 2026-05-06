@@ -10,6 +10,8 @@ declare module 'next-auth' {
       emailVerified?: Date | null
       role?: 'user' | 'admin'
       suspended?: boolean
+      banReason?: string | null
+      banExpiresAt?: string | null
     }
   }
 
@@ -21,6 +23,8 @@ declare module 'next-auth' {
     emailVerified?: Date | null
     role?: 'user' | 'admin'
     suspended?: boolean
+    banReason?: string | null
+    banExpiresAt?: string | null
     rememberMe?: boolean
   }
 }
@@ -31,6 +35,8 @@ declare module 'next-auth/jwt' {
     emailVerified?: Date | null
     role?: 'user' | 'admin'
     suspended?: boolean
+    banReason?: string | null
+    banExpiresAt?: string | null
     rememberMe?: boolean
     authenticatedAt?: number
     lastActiveUpdate?: number // Timestamp of last lastActiveAt update
