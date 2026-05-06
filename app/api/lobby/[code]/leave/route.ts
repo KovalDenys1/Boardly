@@ -39,6 +39,10 @@ function emitLobbyEvent(
     })
 }
 
+function notifyLobbyListUpdate() {
+  void notifySocket('lobby-list', 'lobby-list-update', {}, SOCKET_NOTIFY_DEBOUNCE_MS)
+}
+
 async function reassignLobbyCreatorIfNeeded(
   log: ReturnType<typeof apiLogger>,
   lobbyId: string,
@@ -224,6 +228,8 @@ export async function POST(
           data: { isActive: false }
         })
 
+        notifyLobbyListUpdate()
+
         return NextResponse.json({
           message: 'You left the lobby',
           gameEnded: false,
@@ -263,6 +269,8 @@ export async function POST(
           where: { id: lobby.id },
           data: { isActive: false }
         })
+
+        notifyLobbyListUpdate()
 
         return NextResponse.json({
           message: 'You left the lobby',
@@ -310,6 +318,7 @@ export async function POST(
       })
 
       emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
+      notifyLobbyListUpdate()
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -336,6 +345,7 @@ export async function POST(
       })
 
       emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      notifyLobbyListUpdate()
 
       return NextResponse.json({
         message: 'You left the lobby',
