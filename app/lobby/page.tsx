@@ -40,7 +40,7 @@ function LobbyListPageContent() {
           style={{ background: 'linear-gradient(120deg, white 0%, rgba(155,140,255,0.08) 100%)' }}
         >
           <div className="bd-dot-grid absolute inset-0 opacity-35" />
-          <div className="relative flex items-stretch gap-6">
+          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-stretch">
 
             {/* Left: nav + title + stats */}
             <div className="flex flex-1 flex-col">
@@ -78,7 +78,7 @@ function LobbyListPageContent() {
             <button
               type="button"
               onClick={() => router.push('/lobby/create')}
-              className="flex w-[220px] shrink-0 flex-col items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)]"
+              className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
             >
               <span className="text-4xl">✨</span>
               <span
