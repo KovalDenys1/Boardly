@@ -36,8 +36,10 @@ export function MobileMenu({
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
 
+  const PUBLIC_ROUTES = ['/games', '/lobby']
+
   const navigateMobile = (dest: string) => {
-    if (!isAuthenticated && !isGuestSession) {
+    if (!isAuthenticated && !isGuestSession && !PUBLIC_ROUTES.includes(dest)) {
       closeMenuImmediately()
       onUnauthClick?.(dest)
     } else {

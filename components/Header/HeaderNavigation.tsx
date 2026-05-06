@@ -23,8 +23,10 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
         : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
     }`
 
+  const PUBLIC_ROUTES = ['/games', '/lobby']
+
   const navigate = (dest: string) => {
-    if (!isAuthenticated && !isGuest) {
+    if (!isAuthenticated && !isGuest && !PUBLIC_ROUTES.includes(dest)) {
       onUnauthClick?.(dest)
     } else {
       router.push(dest)
