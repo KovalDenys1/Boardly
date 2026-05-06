@@ -252,8 +252,9 @@ export class SpyGame extends GameEngine {
       data.playersReady.push(playerId)
     }
 
-    // If all players are ready, start questioning phase
-    if (data.playersReady.length === this.state.players.length) {
+    // Only wait for active (connected) players — disconnected players are skipped
+    const activePlayers = this.state.players.filter((p) => p.isActive !== false)
+    if (data.playersReady.length >= activePlayers.length) {
       this.startQuestioningPhase()
     }
   }
@@ -343,8 +344,9 @@ export class SpyGame extends GameEngine {
     const data = this.state.data as SpyGameData
     data.votes[voterId] = targetId
 
-    // If all players have voted, calculate results
-    if (Object.keys(data.votes).length === this.state.players.length) {
+    // Only count active (connected) players — disconnected players skip voting
+    const activePlayers = this.state.players.filter((p) => p.isActive !== false)
+    if (Object.keys(data.votes).length >= activePlayers.length) {
       this.calculateResults()
     }
   }
