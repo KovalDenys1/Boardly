@@ -34,6 +34,8 @@ type GameDetailPageProps = {
   steps: DetailStep[]
   benefitsTitle: string
   benefits: string[]
+  guideHref?: string
+  guideLabel?: string
 }
 
 function GameDetailIcon({
@@ -87,6 +89,8 @@ export default function GameDetailPage({
   steps,
   benefitsTitle,
   benefits,
+  guideHref,
+  guideLabel,
 }: GameDetailPageProps) {
   const { t } = useTranslation()
   return (
@@ -189,6 +193,17 @@ export default function GameDetailPage({
             </ul>
           </div>
         </section>
+
+        {guideHref && (
+          <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-bd-line bg-bd-bg2 px-6 py-4">
+            <p className="text-sm font-semibold text-bd-ink-soft">
+              {guideLabel ?? `Want to learn the rules and strategy for ${gameName}?`}
+            </p>
+            <Link href={guideHref} className="bd-btn bd-btn-soft shrink-0 text-sm">
+              Read the guide →
+            </Link>
+          </div>
+        )}
 
         <div className="py-10 text-center">
           {primaryCtaDisabled ? (

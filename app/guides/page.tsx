@@ -55,6 +55,20 @@ const guides = [
     emoji: '🕵️',
     readTime: '4 min read',
   },
+  {
+    slug: 'how-to-play-memory-card-game-online',
+    title: 'How to Play Memory Card Game Online',
+    description: 'Rules, difficulty levels, and strategy tips for the classic card-matching game. Free multiplayer in your browser.',
+    emoji: '🧠',
+    readTime: '4 min read',
+  },
+  {
+    slug: 'how-to-play-tic-tac-toe-online',
+    title: 'How to Play Tic Tac Toe Online',
+    description: 'Complete Tic Tac Toe guide — rules, all 8 winning lines, and strategies to never lose. Free vs AI or 2 players.',
+    emoji: '⭕',
+    readTime: '4 min read',
+  },
 ]
 
 const collectionJsonLd = {

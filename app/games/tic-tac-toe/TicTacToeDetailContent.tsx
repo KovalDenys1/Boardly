@@ -42,6 +42,8 @@ export default function TicTacToeDetailContent() {
         t('games.tictactoe.detail.benefit3'),
         t('games.tictactoe.detail.benefit4'),
       ]}
+      guideHref="/guides/how-to-play-tic-tac-toe-online"
+      guideLabel="New to Tic Tac Toe? Learn the rules, winning lines, and strategies."
     />
   )
 }
