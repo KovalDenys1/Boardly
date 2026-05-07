@@ -25,8 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/games/tic-tac-toe', { changeFrequency: 'monthly', priority: 0.9 }),
     page('/games/memory', { changeFrequency: 'monthly', priority: 0.85 }),
     page('/games/spy', { changeFrequency: 'monthly', priority: 0.85 }),
-    page('/games/alias', { changeFrequency: 'monthly', priority: 0.8 }),
-    page('/games/liars-party', { changeFrequency: 'monthly', priority: 0.8 }),
+    // alias and liars-party are coming soon — excluded until live
 
     // Discovery pages
     page('/leaderboard', { changeFrequency: 'daily', priority: 0.7 }),

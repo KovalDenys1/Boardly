@@ -30,6 +30,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://boardly.online/games/alias',
   },
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 const breadcrumbJsonLd = {

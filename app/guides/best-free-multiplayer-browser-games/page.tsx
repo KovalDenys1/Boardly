@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Best Free Multiplayer Browser Games 2025 - No Download',
+  title: 'Best Free Multiplayer Browser Games 2026 - No Download',
   description:
     'The best free multiplayer browser games you can play right now — no download, no account needed. Yahtzee, Tic Tac Toe, Memory, spy games and more. Play with friends instantly.',
   keywords: [
@@ -10,13 +10,13 @@ export const metadata: Metadata = {
     'best online games no download',
     'free online games with friends',
     'multiplayer games no download',
-    'browser games 2025',
+    'browser games 2026',
     'free online board games',
     'play games online with friends free',
     'instant play browser games',
   ],
   openGraph: {
-    title: 'Best Free Multiplayer Browser Games 2025 | Boardly',
+    title: 'Best Free Multiplayer Browser Games 2026 | Boardly',
     description: 'Top free browser games you can play with friends right now — no download, no account required.',
     url: 'https://boardly.online/guides/best-free-multiplayer-browser-games',
     type: 'article',
@@ -29,12 +29,12 @@ export const metadata: Metadata = {
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'Best Free Multiplayer Browser Games in 2025 — No Download Required',
+  headline: 'Best Free Multiplayer Browser Games in 2026 — No Download Required',
   description: 'A curated list of the best free multiplayer games you can play in any browser with friends instantly.',
   url: 'https://boardly.online/guides/best-free-multiplayer-browser-games',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2025-01-01',
-  dateModified: '2026-04-22',
+  dateModified: '2026-05-07',
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }
@@ -45,7 +45,7 @@ const breadcrumbJsonLd = {
   itemListElement: [
     { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
     { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
-    { '@type': 'ListItem', position: 3, name: 'Best Free Multiplayer Browser Games 2025', item: 'https://boardly.online/guides/best-free-multiplayer-browser-games' },
+    { '@type': 'ListItem', position: 3, name: 'Best Free Multiplayer Browser Games 2026', item: 'https://boardly.online/guides/best-free-multiplayer-browser-games' },
   ],
 }
 
@@ -110,7 +110,7 @@ export default function BestBrowserGamesGuide() {
           <header className="mb-8 sm:mb-12">
             <div className="text-5xl sm:text-6xl mb-4">🎮</div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 drop-shadow-lg leading-tight break-words">
-              Best Free Multiplayer Browser Games in 2025
+              Best Free Multiplayer Browser Games in 2026
             </h1>
             <p className="text-white/70 text-sm">4 min read · All games free on Boardly · No download required</p>
           </header>
