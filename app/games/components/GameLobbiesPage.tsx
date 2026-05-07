@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { io, type Socket } from 'socket.io-client'
 import GameIcon, { GAME_SVG_PATHS } from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { AuthGateModal } from '@/components/AuthGateModal'
 import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -146,6 +147,7 @@ export default function GameLobbiesPage({
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
+  const [authGateDest, setAuthGateDest] = useState<string | null>(null)
   const isAuthenticated = status === 'authenticated' || isGuest
   const createLobbyPath = getLobbyCreateRoute(gameType) ?? '/lobby/create'
   const canCreateLobby = !isTemporarilyUnavailableGameType(gameType)
@@ -178,16 +180,11 @@ export default function GameLobbiesPage({
   }, [gameType])
 
   useEffect(() => {
-    if (status === 'unauthenticated' && !isGuest) {
-      setLoading(false)
+    if (status === 'loading') {
       return
     }
 
     if (isGuest && !guestToken) {
-      return
-    }
-
-    if (status !== 'authenticated' && !isGuest) {
       return
     }
 
@@ -199,9 +196,8 @@ export default function GameLobbiesPage({
     }, 5000)
 
     const initSocket = async () => {
-      if (socketRef.current) {
-        return
-      }
+      if (!isAuthenticated) return
+      if (socketRef.current) return
 
       const socketAuth = await resolveSocketClientAuth({
         isGuest: isGuest && status !== 'authenticated',
@@ -250,17 +246,15 @@ export default function GameLobbiesPage({
 
       socketRef.current = null
     }
-  }, [gameType, guestToken, isGuest, loadLobbies, status])
+  }, [gameType, guestToken, isAuthenticated, isGuest, loadLobbies, status])
 
   const handleJoinByCode = () => {
+    if (joinCode.length !== 4) return
     if (!isAuthenticated) {
-      router.push('/')
+      setAuthGateDest(`/lobby/${joinCode.toUpperCase()}`)
       return
     }
-
-    if (joinCode.length === 4) {
-      router.push(`/lobby/${joinCode.toUpperCase()}`)
-    }
+    router.push(`/lobby/${joinCode.toUpperCase()}`)
   }
 
   if (status === 'loading' || loading) {
@@ -272,6 +266,13 @@ export default function GameLobbiesPage({
   }
 
   return (
+    <>
+    {authGateDest && (
+      <AuthGateModal
+        dest={authGateDest}
+        onClose={() => setAuthGateDest(null)}
+      />
+    )}
     <div className="bd-page bd-screen page-shell">
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
@@ -316,28 +317,6 @@ export default function GameLobbiesPage({
             </button>
           </div>
 
-          {/* Guest / unauthenticated CTA */}
-          {!isAuthenticated && (
-            <div className="mb-6 rounded-2xl border border-bd-sun/40 bg-bd-sun/10 p-5">
-              <p className="font-bold text-bd-ink">{tx('wantToPlay')}</p>
-              <p className="mt-1 text-sm text-bd-ink-soft">{tx('wantToPlayDesc')}</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  onClick={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(pagePath)}`)}
-                  className="bd-btn bd-btn-primary"
-                >
-                  {tx('signIn')}
-                </button>
-                <button
-                  onClick={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(pagePath)}`)}
-                  className="bd-btn bd-btn-ghost"
-                >
-                  {tx('createAccount')}
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Create + Quick Join */}
           <div className="mb-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Create lobby card */}
@@ -352,7 +331,7 @@ export default function GameLobbiesPage({
               onClick={() => {
                 if (!canCreateLobby) return
                 if (!isAuthenticated) {
-                  router.push(`/auth/login?returnUrl=${encodeURIComponent(createLobbyPath)}`)
+                  setAuthGateDest(createLobbyPath)
                   return
                 }
                 router.push(createLobbyPath)
@@ -412,15 +391,12 @@ export default function GameLobbiesPage({
                 />
                 <button
                   onClick={handleJoinByCode}
-                  disabled={joinCode.length !== 4 || !isAuthenticated}
+                  disabled={joinCode.length !== 4}
                   className="bd-btn bd-btn-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t('lobby.join')}
                 </button>
               </div>
-              {!isAuthenticated && (
-                <p className="mt-3 text-xs text-bd-ink-muted">{tx('signInToJoin')}</p>
-              )}
             </div>
           </div>
 
@@ -435,15 +411,20 @@ export default function GameLobbiesPage({
               <div className="py-16 text-center">
                 <GameLobbyIcon titleEmoji={titleEmoji} usage="empty" variant={iconVariant} gameId={gameId} accentColor={accentColor} />
                 <p className="font-bold text-bd-ink">{tx('noLobbiesTitle')}</p>
-                {isAuthenticated && (
-                  <button
-                    onClick={() => router.push(createLobbyPath)}
-                    disabled={!canCreateLobby}
-                    className="bd-btn bd-btn-primary mx-auto mt-5 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {canCreateLobby ? tx('createFirstLobby') : 'Creation unavailable'}
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    if (!canCreateLobby) return
+                    if (!isAuthenticated) {
+                      setAuthGateDest(createLobbyPath)
+                      return
+                    }
+                    router.push(createLobbyPath)
+                  }}
+                  disabled={!canCreateLobby}
+                  className="bd-btn bd-btn-primary mx-auto mt-5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {canCreateLobby ? tx('createFirstLobby') : 'Creation unavailable'}
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-0 md:grid-cols-2 lg:grid-cols-3">
@@ -461,7 +442,13 @@ export default function GameLobbiesPage({
                       className={`cursor-pointer p-5 transition-colors hover:bg-bd-card-warm ${
                         idx % 3 !== 2 ? 'md:border-r md:border-bd-line' : ''
                       } ${idx < lobbies.length - (lobbies.length % 3 || 3) ? 'border-b border-bd-line' : ''}`}
-                      onClick={() => router.push(`/lobby/${lobby.code}`)}
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          setAuthGateDest(`/lobby/${lobby.code}`)
+                          return
+                        }
+                        router.push(`/lobby/${lobby.code}`)
+                      }}
                     >
                       <div className="mb-3 flex items-start justify-between gap-2">
                         <h3 className="truncate font-bold text-bd-ink">{lobby.name}</h3>
@@ -507,5 +494,6 @@ export default function GameLobbiesPage({
         </div>
       </div>
     </div>
+    </>
   )
 }

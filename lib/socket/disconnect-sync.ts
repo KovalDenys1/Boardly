@@ -257,6 +257,13 @@ export function createDisconnectSyncManager({
       })
 
       if (updateResult.count > 0) {
+        if (shouldAbandon) {
+          await prisma.lobbies.updateMany({
+            where: { code: lobbyCode, isActive: true },
+            data: { isActive: false, spectatorCount: 0 },
+          })
+        }
+
         return {
           updated: true,
           abandoned: shouldAbandon,

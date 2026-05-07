@@ -13,7 +13,6 @@ import { useTranslation } from '@/lib/i18n-helpers'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
-  isAdmin?: boolean
   userName?: string | null
   userEmail?: string | null
   userImage?: string | null
@@ -22,7 +21,6 @@ interface MobileMenuProps {
 
 export function MobileMenu({
   isAuthenticated,
-  isAdmin = false,
   userName,
   userEmail,
   userImage,
@@ -38,8 +36,10 @@ export function MobileMenu({
   const { isGuest, guestName, clearGuestMode } = useGuest()
   const isGuestSession = isGuest && !isAuthenticated
 
+  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard']
+
   const navigateMobile = (dest: string) => {
-    if (!isAuthenticated && !isGuestSession) {
+    if (!isAuthenticated && !isGuestSession && !PUBLIC_ROUTES.includes(dest)) {
       closeMenuImmediately()
       onUnauthClick?.(dest)
     } else {
@@ -338,11 +338,6 @@ export function MobileMenu({
               {isAuthenticated && (
                 <button onClick={() => router.push('/friends')} style={navBtn(isActiveStart('/friends'))}>
                   {t('header.friends')}
-                </button>
-              )}
-              {isAuthenticated && isAdmin && (
-                <button onClick={() => router.push('/analytics')} style={navBtn(isActiveStart('/analytics'))}>
-                  {t('header.analytics')}
                 </button>
               )}
 

@@ -8,6 +8,9 @@ import { NextRequest } from 'next/server'
 jest.mock('@/lib/db', () => ({
   prisma: {
     $queryRaw: jest.fn(),
+    users: {
+      findUnique: jest.fn(),
+    },
   },
 }))
 
@@ -19,9 +22,6 @@ jest.mock('@/lib/next-auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/admin-auth', () => ({
-  isAdminUser: jest.fn(),
-}))
 
 jest.mock('@/lib/rate-limit', () => ({
   rateLimit: jest.fn(() => jest.fn(async () => null)),
@@ -41,16 +41,14 @@ jest.mock('@/lib/logger', () => ({
 import { GET } from '@/app/api/user/[id]/stats/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
-import { isAdminUser } from '@/lib/admin-auth'
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockIsAdminUser = isAdminUser as jest.MockedFunction<typeof isAdminUser>
 
 describe('GET /api/user/[id]/stats', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockIsAdminUser.mockResolvedValue(false)
+    ;(mockPrisma.users.findUnique as jest.Mock).mockResolvedValue({ role: 'user', suspended: false })
   })
 
   it('returns 401 when the requester is not authenticated', async () => {
@@ -71,8 +69,6 @@ describe('GET /api/user/[id]/stats', () => {
     mockGetServerSession.mockResolvedValue({
       user: { id: 'requester-1' },
     } as any)
-    mockIsAdminUser.mockResolvedValue(false)
-
     const response = await GET(
       new NextRequest('http://localhost:3000/api/user/user-2/stats'),
       { params: Promise.resolve({ id: 'user-2' }) }

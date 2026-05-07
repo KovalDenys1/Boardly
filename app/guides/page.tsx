@@ -5,6 +5,14 @@ export const metadata: Metadata = {
   title: 'Board Game Guides & Tips - How to Play Online',
   description:
     'Learn how to play popular board games online. Step-by-step guides for Yahtzee, Spy, Memory, Tic Tac Toe and more. Free multiplayer games in your browser.',
+  keywords: [
+    'board game guides',
+    'how to play board games online',
+    'online board game rules',
+    'board game strategy tips',
+    'free multiplayer game guides',
+    'boardly guides',
+  ],
   openGraph: {
     title: 'Board Game Guides & Tips | Boardly',
     description: 'Step-by-step guides for playing board games online with friends.',
@@ -14,6 +22,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://boardly.online/guides',
   },
+}
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://boardly.online' },
+    { '@type': 'ListItem', position: 2, name: 'Guides', item: 'https://boardly.online/guides' },
+  ],
 }
 
 const guides = [
@@ -26,7 +43,7 @@ const guides = [
   },
   {
     slug: 'best-free-multiplayer-browser-games',
-    title: 'Best Free Multiplayer Browser Games in 2025',
+    title: 'Best Free Multiplayer Browser Games in 2026',
     description: 'No download, no payment. The best multiplayer games you can play right now in any browser with friends.',
     emoji: '🎮',
     readTime: '4 min read',
@@ -40,8 +57,25 @@ const guides = [
   },
 ]
 
+const collectionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Board Game Guides & Tips',
+  description: 'Step-by-step guides for playing board games online with friends.',
+  url: 'https://boardly.online/guides',
+  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
+  hasPart: guides.map(({ slug, title }) => ({
+    '@type': 'Article',
+    name: title,
+    url: `https://boardly.online/guides/${slug}`,
+  })),
+}
+
 export default function GuidesPage() {
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }} />
     <div className="bd-page bd-screen flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
 
@@ -102,5 +136,6 @@ export default function GuidesPage() {
 
       </div>
     </div>
+    </>
   )
 }

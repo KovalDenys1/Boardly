@@ -5,12 +5,11 @@ import { useTranslation } from '@/lib/i18n-helpers'
 
 interface HeaderNavigationProps {
   isAuthenticated: boolean
-  isAdmin?: boolean
   isGuest?: boolean
   onUnauthClick?: (dest: string) => void
 }
 
-export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest, onUnauthClick }: HeaderNavigationProps) {
+export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: HeaderNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { t } = useTranslation()
@@ -24,8 +23,10 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest, on
         : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
     }`
 
+  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard']
+
   const navigate = (dest: string) => {
-    if (!isAuthenticated && !isGuest) {
+    if (!isAuthenticated && !isGuest && !PUBLIC_ROUTES.includes(dest)) {
       onUnauthClick?.(dest)
     } else {
       router.push(dest)
@@ -48,15 +49,7 @@ export function HeaderNavigation({ isAuthenticated, isAdmin = false, isGuest, on
       >
         {t('header.games', 'Games')}
       </button>
-      {isAuthenticated && isAdmin && (
-        <button
-          onClick={() => router.push('/analytics')}
-          className={navBtn(!!pathname?.startsWith('/analytics'))}
-          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
-        >
-          Analytics
-        </button>
-      )}
+
       <button
         onClick={() => navigate('/lobby')}
         className={navBtn(!!pathname?.startsWith('/lobby'))}

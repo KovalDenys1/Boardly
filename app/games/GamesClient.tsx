@@ -2,12 +2,10 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import Footer from '@/components/Footer'
-import { useGuest } from '@/contexts/GuestContext'
-import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import type { GameCatalogEntry } from '@/lib/game-catalog'
 import GameIcon from '@/components/GameIcon'
 
@@ -38,8 +36,7 @@ function accentColor(color: string): string {
 
 export default function GamesClient({ games: catalogGames }: GamesClientProps) {
   const router = useRouter()
-  const { data: session, status } = useSession()
-  const { isGuest } = useGuest()
+  const { status } = useSession()
   const { t } = useTranslation()
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'available' | 'coming-soon'>('all')
 
@@ -51,24 +48,10 @@ export default function GamesClient({ games: catalogGames }: GamesClientProps) {
     status: game.availability === 'available' ? 'available' : 'coming-soon',
   }))
 
-  useEffect(() => {
-    if (status === 'unauthenticated' && !isGuest) {
-      router.push(buildCurrentAuthUrl('login'))
-    }
-  }, [status, isGuest, router])
-
   if (status === 'loading') {
     return (
       <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
         <div className="text-[18px] text-bd-ink-muted">{t('games.loading')}</div>
-      </div>
-    )
-  }
-
-  if (status === 'unauthenticated' && !isGuest) {
-    return (
-      <div className="bd-page flex min-h-full flex-1 items-center justify-center overflow-y-auto">
-        <div className="text-[18px] text-bd-ink-muted">{t('games.redirecting')}</div>
       </div>
     )
   }

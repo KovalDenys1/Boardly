@@ -16,7 +16,6 @@ const ignoredDirectories = new Set(['node_modules', '.next', '.git', 'coverage',
 const serverOnlyImportPatterns = [
   /^@\/lib\/server(?:\/|$)/,
   /^@\/lib\/db$/,
-  /^@\/lib\/admin-auth$/,
   /^@\/lib\/auth$/,
   /^@\/lib\/cron-auth$/,
   /^@\/lib\/custom-prisma-adapter$/,

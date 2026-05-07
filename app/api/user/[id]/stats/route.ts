@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
-import { isAdminUser } from '@/lib/admin-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { getUserStatsDashboard } from '@/lib/user-stats-dashboard'
@@ -47,7 +46,10 @@ export async function GET(
     }
 
     const requesterUserId = session.user.id
-    const requesterIsAdmin = await isAdminUser(requesterUserId)
+    const requesterDbUser = requesterUserId !== targetUserId
+      ? await prisma.users.findUnique({ where: { id: requesterUserId }, select: { role: true, suspended: true } })
+      : null
+    const requesterIsAdmin = requesterDbUser?.role === 'admin' && !requesterDbUser?.suspended
 
     if (requesterUserId !== targetUserId && !requesterIsAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

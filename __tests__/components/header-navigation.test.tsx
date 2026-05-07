@@ -27,7 +27,6 @@ describe('HeaderNavigation responsive split', () => {
     const { container } = render(
       <HeaderNavigation
         isAuthenticated={false}
-        isAdmin={false}
         isGuest={false}
       />
     )

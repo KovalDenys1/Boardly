@@ -29,6 +29,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://boardly.online/games/liars-party',
   },
+  robots: {
+    index: false,
+    follow: true,
+  },
 }
 
 const breadcrumbJsonLd = {

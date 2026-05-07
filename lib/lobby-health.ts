@@ -32,17 +32,22 @@ type CleanupLobbyGame = {
   }>
 }
 
+function parsePositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseFloat(value || '')
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(value || '', 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
 function getWaitingStaleHours(options: CleanupStaleLobbyGamesOptions): number {
-  return options.waitingStaleHours ?? parsePositiveInt(process.env.LOBBY_CLEANUP_WAITING_STALE_HOURS, 1)
+  return options.waitingStaleHours ?? parsePositiveNumber(process.env.LOBBY_CLEANUP_WAITING_STALE_HOURS, 0.5)
 }
 
 function getPlayingStaleHours(options: CleanupStaleLobbyGamesOptions): number {
-  return options.playingStaleHours ?? parsePositiveInt(process.env.LOBBY_CLEANUP_PLAYING_STALE_HOURS, 2)
+  return options.playingStaleHours ?? parsePositiveNumber(process.env.LOBBY_CLEANUP_PLAYING_STALE_HOURS, 2)
 }
 
 function getBatchLimit(options: CleanupStaleLobbyGamesOptions): number {

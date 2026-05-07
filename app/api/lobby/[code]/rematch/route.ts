@@ -3,8 +3,6 @@ import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { notifySocket } from '@/lib/socket-url'
 import { apiLogger } from '@/lib/logger'
-import { getNotificationPreferences } from '@/lib/notification-preferences'
-import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { SocketEvents, SocketRooms } from '@/types/socket-events'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
@@ -46,13 +44,6 @@ export async function POST(
             players: {
               select: {
                 userId: true,
-                user: {
-                  select: {
-                    id: true,
-                    username: true,
-                    email: true,
-                  },
-                },
               },
             },
           },
@@ -83,19 +74,9 @@ export async function POST(
       )
     }
 
-    const participants = Array.from(
-      new Map(
-        latestGame.players.map((player) => [
-          player.userId,
-          {
-            id: player.userId,
-            username: player.user?.username || null,
-            email: player.user?.email || null,
-          },
-        ])
-      ).values()
+    const participantIds = Array.from(
+      new Set(latestGame.players.map((player) => player.userId))
     )
-    const participantIds = participants.map((participant) => participant.id)
 
     if (!participantIds.includes(requestUser.id)) {
       return NextResponse.json(
@@ -165,60 +146,6 @@ export async function POST(
           },
         })
       )
-    )
-
-    const participantById = new Map(participants.map((participant) => [participant.id, participant]))
-    await Promise.allSettled(
-      dedupedTargetUserIds.map(async (userId) => {
-        const recipient = participantById.get(userId)
-        const dedupeKey = `game_invite:rematch:game:${latestGame.id}:recipient:${userId}`
-        const payload = {
-          lobbyId: lobby.id,
-          lobbyCode: lobby.code,
-          lobbyName: lobby.name,
-          gameType: lobby.gameType,
-          gameId: latestGame.id,
-          senderId: requestUser.id,
-          senderName: requestUser.username || 'Player',
-          emailType: 'rematch',
-        }
-
-        if (!recipient?.email) {
-          await recordNotificationDelivery({
-            userId,
-            type: 'game_invite',
-            status: 'skipped',
-            reason: 'missing_recipient_email',
-            dedupeKey,
-            payload,
-          })
-          return { success: false, error: 'Missing recipient email' }
-        }
-
-        const prefs = await getNotificationPreferences(userId)
-        if (prefs.unsubscribedAll || !prefs.gameInvites) {
-          await recordNotificationDelivery({
-            userId,
-            type: 'game_invite',
-            status: 'skipped',
-            reason: prefs.unsubscribedAll ? 'unsubscribed_all' : 'game_invites_disabled',
-            dedupeKey,
-            payload,
-          })
-          return { success: false, error: 'Recipient disabled game invite emails' }
-        }
-
-        await recordNotificationDelivery({
-          userId,
-          type: 'game_invite',
-          status: 'skipped',
-          reason: 'email_notifications_disabled',
-          dedupeKey,
-          payload: { ...payload, recipientEmail: recipient.email },
-        })
-
-        return { success: true }
-      })
     )
 
     log.info('Rematch request sent', {

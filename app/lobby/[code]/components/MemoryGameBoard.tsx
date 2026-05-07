@@ -94,6 +94,7 @@ export default function MemoryGameBoard({
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [optimisticFlippedIds, setOptimisticFlippedIds] = useState<string[]>([])
   const resolveKeyRef = useRef<string | null>(null)
 
   const parsedState = (state || {}) as MemoryState
@@ -133,6 +134,16 @@ export default function MemoryGameBoard({
     }
     return result
   }, [players, parsedState.players])
+
+  // Remove optimistic IDs once server state catches up (card appears in flippedCardIds or isFlipped)
+  useEffect(() => {
+    if (optimisticFlippedIds.length === 0) return
+    const confirmedIds = new Set([
+      ...flippedCardIds,
+      ...cards.filter((c) => c.isFlipped || c.isMatched).map((c) => c.id),
+    ])
+    setOptimisticFlippedIds((prev) => prev.filter((id) => !confirmedIds.has(id)))
+  }, [flippedCardIds, cards]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const submitMoveRef = useRef<typeof submitMove | null>(null)
 
@@ -270,10 +281,13 @@ export default function MemoryGameBoard({
         return
       }
 
+      setOptimisticFlippedIds((prev) => [...prev, cardId])
       sounds.play('cardFlip', { force: true })
-      void submitMove({
-        type: 'flip',
-        data: { cardId },
+
+      void submitMove({ type: 'flip', data: { cardId } }).then((success) => {
+        if (!success) {
+          setOptimisticFlippedIds((prev) => prev.filter((id) => id !== cardId))
+        }
       })
     },
     [isMyTurn, isSubmitting, pendingMismatchCardIds.length, submitMove]
@@ -397,7 +411,8 @@ export default function MemoryGameBoard({
               style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
             >
               {cards.map((card) => {
-                const isFaceUp = card.isFlipped || card.isMatched
+                const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
+                const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
                 const isDisabled =
                   !isMyTurn ||
                   isSubmitting ||
@@ -405,7 +420,8 @@ export default function MemoryGameBoard({
                   pendingMismatchCardIds.length > 0 ||
                   flippedCardIds.length >= 2 ||
                   card.isMatched ||
-                  card.isFlipped
+                  card.isFlipped ||
+                  isOptimisticallyFlipped
 
                 return (
                   <button

@@ -712,6 +712,9 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
   }, [game, lobby, code, addBotToLobby, announceBotJoined, fetchLobbySnapshot, setGame, setGameEngine, setTimerActive, setTimeLeft, setRollHistory, setCelebrationEvent, setChatMessages, setStartingGame, isGuest, guestId, guestName, guestToken, selectedBotDifficulty])
 
   const updateLobbySettings = useCallback(async (updates: LobbySettingsUpdatePayload) => {
+    // Apply immediately — rollback on failure
+    if (lobby) setLobby({ ...lobby, ...updates })
+
     const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
     const res = await fetch(`/api/lobby/${code}`, {
       method: 'PATCH',
@@ -721,15 +724,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
 
     const data = await res.json()
     if (!res.ok) {
+      if (loadLobbyRef.current) await loadLobbyRef.current()
       throw new Error(data?.error || 'Failed to update lobby settings')
     }
 
-    if (loadLobbyRef.current) {
-      await loadLobbyRef.current()
-    }
-
     return data
-  }, [code, isGuest, guestId, guestName, guestToken])
+  }, [code, isGuest, guestId, guestName, guestToken, setLobby, lobby])
 
   const kickBot = useCallback(async (botPlayerId: string) => {
     try {
