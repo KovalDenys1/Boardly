@@ -33,32 +33,6 @@ const breadcrumbJsonLd = {
   ],
 }
 
-const collectionJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'CollectionPage',
-  name: 'Board Game Guides & Tips',
-  description: 'Step-by-step guides for playing board games online with friends.',
-  url: 'https://boardly.online/guides',
-  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  hasPart: [
-    {
-      '@type': 'Article',
-      name: 'How to Play Yahtzee Online with Friends',
-      url: 'https://boardly.online/guides/how-to-play-yahtzee-online',
-    },
-    {
-      '@type': 'Article',
-      name: 'Best Free Multiplayer Browser Games in 2026',
-      url: 'https://boardly.online/guides/best-free-multiplayer-browser-games',
-    },
-    {
-      '@type': 'Article',
-      name: 'How to Play Guess the Spy Online',
-      url: 'https://boardly.online/guides/how-to-play-spy-game-online',
-    },
-  ],
-}
-
 const guides = [
   {
     slug: 'how-to-play-yahtzee-online',
@@ -82,6 +56,20 @@ const guides = [
     readTime: '4 min read',
   },
 ]
+
+const collectionJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Board Game Guides & Tips',
+  description: 'Step-by-step guides for playing board games online with friends.',
+  url: 'https://boardly.online/guides',
+  publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
+  hasPart: guides.map(({ slug, title }) => ({
+    '@type': 'Article',
+    name: title,
+    url: `https://boardly.online/guides/${slug}`,
+  })),
+}
 
 export default function GuidesPage() {
   return (
