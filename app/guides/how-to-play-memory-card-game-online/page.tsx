@@ -49,11 +49,44 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What is the Memory card game?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Memory (also called Concentration) is a card-matching game where all cards start face-down. Players take turns flipping two cards — if they match, the player keeps the pair and goes again. The player with the most pairs at the end wins.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How many players can play Memory?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Memory on Boardly supports 2–4 players in real-time multiplayer. All players share the same board and take turns flipping cards.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What are the difficulty levels in Memory?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Boardly Memory has three difficulty levels: Easy (4×4 grid, 8 pairs), Medium (4×6 grid, 12 pairs), and Hard (5×6 grid, 15 pairs). Medium is the standard competitive level for most groups.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What happens when you find a matching pair in Memory?',
+      acceptedAnswer: { '@type': 'Answer', text: 'When two flipped cards match, the active player scores the pair and immediately gets another turn. Consecutive matches let you keep going until you flip a non-matching pair.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is the best strategy for Memory?',
+      acceptedAnswer: { '@type': 'Answer', text: 'The key strategy in Memory is paying attention when other players flip cards — their misses reveal card positions you can use on your turn. Scan the board systematically section by section rather than clicking randomly.' },
+    },
+  ],
+}
+
 export default function HowToPlayMemoryGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="min-h-[100dvh] bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">

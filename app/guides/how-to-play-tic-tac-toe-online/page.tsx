@@ -49,11 +49,44 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What is Tic Tac Toe?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Tic Tac Toe (also called Noughts and Crosses) is a two-player game played on a 3×3 grid. Players take turns placing their mark (X or O) and the first to get three in a row — horizontally, vertically, or diagonally — wins.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How do you win at Tic Tac Toe?',
+      acceptedAnswer: { '@type': 'Answer', text: 'You win Tic Tac Toe by placing three of your marks in a row — horizontally across any of the 3 rows, vertically down any of the 3 columns, or diagonally across the board. There are 8 total winning lines.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is the best first move in Tic Tac Toe?',
+      acceptedAnswer: { '@type': 'Answer', text: 'The best first move is the center square (position 5). It is part of 4 winning lines — more than any other cell — giving you the most attacking options and forcing your opponent to play defensively.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can Tic Tac Toe always end in a draw?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Yes. With perfect play from both sides, every game of Tic Tac Toe ends in a draw. The game is mathematically solved — neither player can force a win if the opponent plays optimally.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is a fork in Tic Tac Toe?',
+      acceptedAnswer: { '@type': 'Answer', text: 'A fork is when you create two different ways to win at the same time. Your opponent can only block one threat, so you win with the other. Forks are the key technique for winning against players who are not using perfect strategy.' },
+    },
+  ],
+}
+
 export default function HowToPlayTicTacToeGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="min-h-[100dvh] bg-gradient-to-br from-orange-500 via-red-500 to-pink-600">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
