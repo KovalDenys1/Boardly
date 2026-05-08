@@ -523,7 +523,7 @@ export async function POST(
     const terminalFields = statusChanged && isTerminal
       ? (() => {
           const now = new Date()
-          const startedAt = (game as unknown as { startedAt?: Date | null }).startedAt
+          const startedAt = game.startedAt
           const durationSeconds =
             startedAt instanceof Date
               ? Math.floor((now.getTime() - startedAt.getTime()) / 1000)

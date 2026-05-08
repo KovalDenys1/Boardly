@@ -76,7 +76,7 @@ export async function POST(
 
     // Mark game as abandoned
     const now = new Date()
-    const startedAt = (game as unknown as { startedAt?: Date | null }).startedAt
+    const startedAt = game.startedAt
     const durationSeconds =
       startedAt instanceof Date ? Math.floor((now.getTime() - startedAt.getTime()) / 1000) : null
     await prisma.games.update({
