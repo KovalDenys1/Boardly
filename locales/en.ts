@@ -378,6 +378,8 @@ const en = {
     startPlaying: 'Start playing',
     noDownloadNeeded: 'You can play as a guest. No app download needed.',
     stillBeingPolished: 'This game is still being polished.',
+    guideCallout: 'New to {{gameName}}? Read the full rules and strategy guide.',
+    readGuide: 'Read the guide →',
     detail: {
       labels: {
         players: 'Players',

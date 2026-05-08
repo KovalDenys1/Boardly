@@ -380,6 +380,8 @@ const uk: Translation = {
     startPlaying: 'Почати грати',
     noDownloadNeeded: 'Грай як гість. Завантажувати нічого не потрібно.',
     stillBeingPolished: 'Ця гра ще розробляється.',
+    guideCallout: 'Вперше в {{gameName}}? Читай повні правила та поради.',
+    readGuide: 'Читати гайд →',
     detail: {
       labels: {
         players: 'Гравці',
