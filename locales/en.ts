@@ -811,6 +811,11 @@ const en = {
       name: 'Alias',
       description: 'Explain words to your team without using the word itself!',
       difficulty: 'Medium',
+      ribbon: {
+        desc: 'One player describes a secret word, the team races to guess it. Score more guesses than skips to win.',
+        tag: 'Team',
+        time: '20 min',
+      },
       lobbies: {
         title: 'Alias',
         subtitle: 'Join a game or create your own lobby!',

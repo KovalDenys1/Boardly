@@ -38,6 +38,11 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Column Tactician',
     hard: 'Gravity Grandmaster',
   },
+  alias: {
+    easy: 'Word Rookie',
+    medium: 'Word Tactician',
+    hard: 'Word Oracle',
+  },
 }
 
 const FALLBACK_NAMES: Record<BotDifficulty, string> = {
