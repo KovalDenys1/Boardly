@@ -217,10 +217,7 @@ export function createDisconnectSyncManager({
         }
       }
 
-      const nextCurrentTurn =
-        typeof parsedState.currentPlayerIndex === 'number' && Number.isFinite(parsedState.currentPlayerIndex)
-          ? parsedState.currentPlayerIndex
-          : activeGame.currentTurn
+      const nextCurrentTurn = turnAdvanced ? activeGame.currentTurn + 1 : activeGame.currentTurn
 
       const abandonNow = new Date(now)
       const startedAt = shouldAbandon
