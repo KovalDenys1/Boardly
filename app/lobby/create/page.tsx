@@ -121,6 +121,21 @@ const GAME_INFO: Record<string, GameInfo> = {
       defaultDifficulty: 'easy',
     },
   },
+  connect_four: {
+    name: 'Connect Four',
+    emoji: '🔴',
+    description: '',
+    gradient: 'from-red-500 via-orange-400 to-yellow-400',
+    translationKey: 'connect_four',
+    allowedPlayers: [2],
+    defaultMaxPlayers: 2,
+    settings: {
+      hasTurnTimer: true,
+      turnTimerOptions: [30, 60, 90, 120],
+      defaultTurnTimer: 60,
+      hasGameModes: false,
+    },
+  },
   alias: {
     name: 'Alias',
     emoji: '🗣️',
