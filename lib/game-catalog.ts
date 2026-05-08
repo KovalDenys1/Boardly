@@ -12,6 +12,7 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
+  | 'connect_four'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
@@ -91,6 +92,15 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 4,
     supportsBots: true,
     translationKey: 'memory',
+  },
+  connect_four: {
+    type: 'connect_four',
+    name: 'Connect Four',
+    icon: '🔴',
+    minPlayers: 2,
+    maxPlayers: 2,
+    supportsBots: true,
+    translationKey: 'connect_four',
   },
 }
 
@@ -192,6 +202,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'available',
     route: '/games/memory/lobbies',
     color: 'from-green-400 to-teal-500',
+  },
+  {
+    id: 'connect-four',
+    gameType: 'connect_four',
+    nameKey: 'games.connect_four.name',
+    emoji: '🔴',
+    descriptionKey: 'games.connect_four.description',
+    players: '2',
+    difficultyKey: 'games.connect_four.difficulty',
+    availability: 'available',
+    route: '/games/connect-four/lobbies',
+    color: 'from-red-500 to-yellow-400',
   },
   {
     id: 'rps',

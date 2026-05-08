@@ -12,6 +12,7 @@ import { TicTacToeGame } from './games/tic-tac-toe-game'
 import { RockPaperScissorsGame } from './games/rock-paper-scissors-game'
 import { SpyGame } from './games/spy-game'
 import { MemoryGame } from './games/memory-game'
+import { ConnectFourGame } from './games/connect-four-game'
 import { TelephoneDoodleGame } from './games/telephone-doodle-game'
 import { SketchAndGuessGame } from './games/sketch-and-guess-game'
 import { LiarsPartyGame } from './games/liars-party-game'
@@ -35,6 +36,7 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
+  | 'connect_four'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
@@ -135,6 +137,20 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     },
     create: (id, cfg) =>
       new MemoryGame(id, { maxPlayers: 4, minPlayers: 2, ...cfg }),
+  },
+
+  connect_four: {
+    metadata: {
+      type: 'connect_four',
+      name: 'Connect Four',
+      icon: '🔴',
+      minPlayers: 2,
+      maxPlayers: 2,
+      supportsBots: true,
+      translationKey: 'connect_four',
+    },
+    create: (id, cfg) =>
+      new ConnectFourGame(id, { maxPlayers: 2, minPlayers: 2, ...cfg }),
   },
 }
 

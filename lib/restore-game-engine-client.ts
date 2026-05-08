@@ -10,6 +10,7 @@ const CLIENT_RESTORABLE_GAME_TYPES = new Set<SupportedCatalogGameType>([
   'tic_tac_toe',
   'rock_paper_scissors',
   'memory',
+  'connect_four',
   'telephone_doodle',
   'sketch_and_guess',
   'liars_party',
@@ -65,6 +66,10 @@ async function createGameEngineClient(
     case 'fake_artist': {
       const { FakeArtistGame } = await import('./games/fake-artist-game')
       return new FakeArtistGame(gameId, { maxPlayers: 10, minPlayers: 4 })
+    }
+    case 'connect_four': {
+      const { ConnectFourGame } = await import('./games/connect-four-game')
+      return new ConnectFourGame(gameId, { maxPlayers: 2, minPlayers: 2 })
     }
     case 'alias': {
       const { AliasGame } = await import('./games/alias')

@@ -142,6 +142,7 @@ const GAME_ACCENT_BG: Record<string, string> = {
   spy: 'rgba(155,140,255,0.12)',
   'tic-tac-toe': 'rgba(255,107,91,0.10)',
   memory: 'rgba(79,201,166,0.12)',
+  'connect-four': 'rgba(255,107,91,0.10)',
 }
 
 const GAME_DETAIL_HREF: Record<string, string> = {
@@ -149,6 +150,7 @@ const GAME_DETAIL_HREF: Record<string, string> = {
   spy: '/games/spy',
   'tic-tac-toe': '/games/tic-tac-toe',
   memory: '/games/memory',
+  'connect-four': '/games/connect-four',
 }
 
 function fallbackName(id: string) {
@@ -182,6 +184,12 @@ function getIllustration(gameId: string, emoji: string) {
       return (
         <div className="bd-float" style={{ animationDelay: '1.2s' }}>
           <GameIcon gameId="memory" accentColor="var(--bd-mint)" size={72} />
+        </div>
+      )
+    case 'connect-four':
+      return (
+        <div className="bd-float" style={{ animationDelay: '0.6s' }}>
+          <GameIcon gameId="connect-four" accentColor="var(--bd-coral)" size={72} />
         </div>
       )
     default:
@@ -237,9 +245,20 @@ export default function GameRibbon() {
       accentBg: GAME_ACCENT_BG.memory,
       detailHref: GAME_DETAIL_HREF.memory,
     },
+    'connect-four': {
+      name: t('games.connect_four.name'),
+      tag: t('games.connect_four.ribbon.tag'),
+      players: '2',
+      time: t('games.connect_four.ribbon.time'),
+      diff: t('games.connect_four.difficulty'),
+      desc: t('games.connect_four.ribbon.desc'),
+      accentBg: GAME_ACCENT_BG['connect-four'],
+      detailHref: GAME_DETAIL_HREF['connect-four'],
+    },
   }
 
-  const cards: GameCardProps[] = availableGames.map((game) => {
+  const featuredGames = availableGames.slice(0, 4)
+  const cards: GameCardProps[] = featuredGames.map((game) => {
     const details = translatedDetails[game.id] ?? {
       name: fallbackName(game.id),
       tag: '',
