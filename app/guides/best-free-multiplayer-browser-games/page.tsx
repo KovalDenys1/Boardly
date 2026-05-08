@@ -49,6 +49,38 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What are the best free multiplayer browser games?',
+      acceptedAnswer: { '@type': 'Answer', text: 'The best free multiplayer browser games in 2026 include Yahtzee (1–4 players), Guess the Spy (3–10 players), Memory Card Game (2–4 players), and Tic Tac Toe (2 players). All are available on Boardly with no download or account required.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'Do I need an account to play multiplayer browser games?',
+      acceptedAnswer: { '@type': 'Answer', text: 'No. All games on Boardly support guest play — just open the game, share the lobby link with friends, and start playing immediately. No account, no email, no download required.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'Can I play these browser games on mobile?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Yes. All Boardly games work on desktop, tablet, and mobile browsers. No app download is needed — just open the link on any device.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is the best browser game for large groups?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Guess the Spy is the best browser game for large groups — it supports 3–10 players and works best with 5–8. Yahtzee supports up to 4 players and is great for smaller groups.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'Why play browser games instead of downloading an app?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Browser games require zero setup. You share one link and everyone is in the same game within seconds — no installs, no updates, no storage used. This makes them ideal for spontaneous group play with friends on any device.' },
+    },
+  ],
+}
+
 const games = [
   {
     rank: 1,
@@ -93,6 +125,7 @@ export default function BestBrowserGamesGuide() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
@@ -191,6 +224,8 @@ export default function BestBrowserGamesGuide() {
             <div className="flex flex-col gap-3">
               <Link href="/guides/how-to-play-yahtzee-online" className="text-white hover:underline text-sm">→ How to Play Yahtzee Online with Friends</Link>
               <Link href="/guides/how-to-play-spy-game-online" className="text-white hover:underline text-sm">→ How to Play Guess the Spy Online</Link>
+              <Link href="/guides/how-to-play-memory-card-game-online" className="text-white hover:underline text-sm">→ How to Play Memory Card Game Online</Link>
+              <Link href="/guides/how-to-play-tic-tac-toe-online" className="text-white hover:underline text-sm">→ How to Play Tic Tac Toe Online</Link>
             </div>
           </div>
         </div>

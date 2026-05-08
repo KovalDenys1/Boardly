@@ -378,6 +378,8 @@ const no = {
     startPlaying: 'Begynn å spille',
     noDownloadNeeded: 'Spill som gjest. Ingen nedlasting nødvendig.',
     stillBeingPolished: 'Dette spillet er fortsatt under utvikling.',
+    guideCallout: 'Ny i {{gameName}}? Les de fullstendige reglene og tipsene.',
+    readGuide: 'Les guiden →',
     detail: {
       labels: {
         players: 'Spillere',

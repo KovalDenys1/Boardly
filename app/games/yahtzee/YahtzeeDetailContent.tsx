@@ -41,6 +41,7 @@ export default function YahtzeeDetailContent() {
         t('games.yahtzee.detail.benefit3'),
         t('games.yahtzee.detail.benefit4'),
       ]}
+      guideHref="/guides/how-to-play-yahtzee-online"
     />
   )
 }

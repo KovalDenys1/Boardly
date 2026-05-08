@@ -48,11 +48,44 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What is Yahtzee?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee is a classic dice-rolling game where players roll five dice up to three times per turn and try to score the highest by filling 15 scoring categories. The player with the highest total score wins.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How many players can play Yahtzee online?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee on Boardly supports 1–4 players. You can play solo against an AI or in real-time multiplayer with up to 3 friends.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is the upper section bonus in Yahtzee?',
+      acceptedAnswer: { '@type': 'Answer', text: 'If your combined score in the upper section (Aces through Sixes) totals 63 or more, you earn a 35-point bonus. The easiest way to reach 63 is to score at least 3 of each number.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is a Yahtzee?',
+      acceptedAnswer: { '@type': 'Answer', text: 'A Yahtzee is when all five dice show the same number. It scores 50 points. Each additional Yahtzee after the first scores a 100-point bonus.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How many scoring categories are in Yahtzee?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Boardly Yahtzee has 15 scoring categories: 6 in the upper section (Ones through Sixes) and 9 in the lower section (One Pair, Two Pairs, Three of a Kind, Four of a Kind, Full House, Small Straight, Large Straight, Yahtzee, and Chance).' },
+    },
+  ],
+}
+
 export default function HowToPlayYahtzeeGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
@@ -78,7 +111,7 @@ export default function HowToPlayYahtzeeGuide() {
           {/* Intro */}
           <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
             <p className="text-white/90 leading-relaxed text-lg">
-              Yahtzee is one of the most popular dice games in the world — and on Boardly, you can play it online with friends in real-time, completely free. This guide covers everything you need to know: the rules, all 13 scoring categories, and tips to improve your strategy.
+              Yahtzee is one of the most popular dice games in the world — and on Boardly, you can play it online with friends in real-time, completely free. This guide covers everything you need to know: the rules, all 15 scoring categories, and tips to improve your strategy.
             </p>
           </div>
 
@@ -97,7 +130,7 @@ export default function HowToPlayYahtzeeGuide() {
           <section className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
             <h2 className="text-2xl font-bold mb-4">The Basic Rules</h2>
             <p className="text-white/85 leading-relaxed mb-4">
-              Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 13 scoring categories. Once a category is filled, it cannot be changed. The game ends when all 13 categories are filled by every player.
+              Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed. The game ends when all 15 categories are filled by every player.
             </p>
             <p className="text-white/85 leading-relaxed">
               The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score (Aces through Sixes) totals 63 or more.
@@ -106,7 +139,7 @@ export default function HowToPlayYahtzeeGuide() {
 
           {/* Scoring categories */}
           <section className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
-            <h2 className="text-2xl font-bold mb-6">All 13 Scoring Categories</h2>
+            <h2 className="text-2xl font-bold mb-6">All 15 Scoring Categories</h2>
 
             <h3 className="text-lg font-semibold mb-3 text-white/90">Upper Section</h3>
             <div className="space-y-3 mb-6">
@@ -131,6 +164,8 @@ export default function HowToPlayYahtzeeGuide() {
             <h3 className="text-lg font-semibold mb-3 text-white/90">Lower Section</h3>
             <div className="space-y-3">
               {[
+                { name: 'One Pair', desc: 'At least two identical dice — score is sum of the highest pair', example: 'e.g. 5+5+1+2+3 = 10 pts' },
+                { name: 'Two Pairs', desc: 'Two different pairs — score is sum of both pairs', example: 'e.g. 5+5+3+3+1 = 16 pts' },
                 { name: 'Three of a Kind', desc: 'At least 3 identical dice — score is sum of all 5 dice', example: 'e.g. 3+3+3+5+6 = 20 pts' },
                 { name: 'Four of a Kind', desc: 'At least 4 identical dice — score is sum of all 5 dice', example: 'e.g. 4+4+4+4+2 = 18 pts' },
                 { name: 'Full House', desc: 'Three of one number + two of another', example: '25 pts fixed' },
@@ -186,7 +221,9 @@ export default function HowToPlayYahtzeeGuide() {
             <h3 className="text-white/70 text-sm font-semibold mb-4 uppercase tracking-wide">More guides</h3>
             <div className="flex flex-col gap-3">
               <Link href="/guides/how-to-play-spy-game-online" className="text-white hover:underline text-sm">→ How to Play Guess the Spy Online</Link>
-              <Link href="/guides/best-free-multiplayer-browser-games" className="text-white hover:underline text-sm">→ Best Free Multiplayer Browser Games in 2025</Link>
+              <Link href="/guides/how-to-play-memory-card-game-online" className="text-white hover:underline text-sm">→ How to Play Memory Card Game Online</Link>
+              <Link href="/guides/how-to-play-tic-tac-toe-online" className="text-white hover:underline text-sm">→ How to Play Tic Tac Toe Online</Link>
+              <Link href="/guides/best-free-multiplayer-browser-games" className="text-white hover:underline text-sm">→ Best Free Multiplayer Browser Games in 2026</Link>
             </div>
           </div>
         </div>

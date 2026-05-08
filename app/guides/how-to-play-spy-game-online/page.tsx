@@ -49,11 +49,44 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What is Guess the Spy?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Guess the Spy is a social deduction party game where all players except one are told a secret location. The spy has no idea where everyone is and must bluff through questioning to survive — while the others try to identify and vote out the spy.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How many players do you need for Guess the Spy?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Guess the Spy works with 3–10 players. It plays best with 5–8 players, giving enough voices to make questioning interesting without becoming too chaotic.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How does the spy win in Guess the Spy?',
+      acceptedAnswer: { '@type': 'Answer', text: 'The spy can win in two ways: either survive the entire round without being voted out, or correctly guess the secret location before being eliminated. A correct location guess wins the round for the spy even if they were about to be caught.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'What happens if players vote out the wrong person?',
+      acceptedAnswer: { '@type': 'Answer', text: 'If the majority votes to accuse someone who is not the spy, the group loses the round. The spy is immediately revealed and wins. This is why rushing the vote is risky.' },
+    },
+    {
+      '@type': 'Question',
+      name: 'How long is a round of Guess the Spy?',
+      acceptedAnswer: { '@type': 'Answer', text: 'A typical round lasts 5–8 minutes. Rounds are short enough that you can easily play multiple in one session.' },
+    },
+  ],
+}
+
 export default function HowToPlaySpyGuide() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="min-h-[100dvh] bg-gradient-to-br from-red-500 via-pink-600 to-purple-700">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
@@ -184,7 +217,9 @@ export default function HowToPlaySpyGuide() {
             <h3 className="text-white/70 text-sm font-semibold mb-4 uppercase tracking-wide">More guides</h3>
             <div className="flex flex-col gap-3">
               <Link href="/guides/how-to-play-yahtzee-online" className="text-white hover:underline text-sm">→ How to Play Yahtzee Online with Friends</Link>
-              <Link href="/guides/best-free-multiplayer-browser-games" className="text-white hover:underline text-sm">→ Best Free Multiplayer Browser Games in 2025</Link>
+              <Link href="/guides/how-to-play-memory-card-game-online" className="text-white hover:underline text-sm">→ How to Play Memory Card Game Online</Link>
+              <Link href="/guides/how-to-play-tic-tac-toe-online" className="text-white hover:underline text-sm">→ How to Play Tic Tac Toe Online</Link>
+              <Link href="/guides/best-free-multiplayer-browser-games" className="text-white hover:underline text-sm">→ Best Free Multiplayer Browser Games in 2026</Link>
             </div>
           </div>
         </div>

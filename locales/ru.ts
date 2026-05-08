@@ -378,6 +378,8 @@ const ru = {
     startPlaying: 'Начать играть',
     noDownloadNeeded: 'Играй как гость. Ничего скачивать не нужно.',
     stillBeingPolished: 'Эта игра ещё разрабатывается.',
+    guideCallout: 'Впервые в {{gameName}}? Читай полные правила и советы.',
+    readGuide: 'Читать гайд →',
     detail: {
       labels: {
         players: 'Игроки',

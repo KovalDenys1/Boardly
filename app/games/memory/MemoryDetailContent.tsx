@@ -41,6 +41,7 @@ export default function MemoryDetailContent() {
         t('games.memory.detail.benefit3'),
         t('games.memory.detail.benefit4'),
       ]}
+      guideHref="/guides/how-to-play-memory-card-game-online"
     />
   )
 }

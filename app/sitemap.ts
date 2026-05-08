@@ -34,6 +34,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page('/guides', { changeFrequency: 'weekly', priority: 0.8 }),
     page('/guides/how-to-play-yahtzee-online', { changeFrequency: 'monthly', priority: 0.8 }),
     page('/guides/how-to-play-spy-game-online', { changeFrequency: 'monthly', priority: 0.75 }),
+    page('/guides/how-to-play-memory-card-game-online', { changeFrequency: 'monthly', priority: 0.75 }),
+    page('/guides/how-to-play-tic-tac-toe-online', { changeFrequency: 'monthly', priority: 0.75 }),
     page('/guides/best-free-multiplayer-browser-games', { changeFrequency: 'monthly', priority: 0.75 }),
 
     // Legal
