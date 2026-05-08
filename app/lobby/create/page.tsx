@@ -7,8 +7,8 @@ import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
-import { useTranslation } from '@/lib/i18n-helpers'
-import type { SupportedCatalogGameType } from '@/lib/game-catalog'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
+import { getCatalogGames, type SupportedCatalogGameType, type LobbyCreateConfig, type GameCatalogEntry } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
 import {
@@ -35,134 +35,46 @@ type GameSettings = {
 }
 
 type GameInfo = {
-  name: string
+  nameKey: string
   emoji: string
-  description: string
   gradient: string
-  translationKey: string
   allowedPlayers: number[]
   defaultMaxPlayers: number
   settings: GameSettings
 }
 
-const GAME_INFO: Record<string, GameInfo> = {
-  yahtzee: {
-    name: 'Yahtzee',
-    emoji: '🎲',
-    description: '',
-    gradient: 'from-purple-600 via-pink-500 to-orange-400',
-    translationKey: 'yahtzee',
-    allowedPlayers: [2, 3, 4],
-    defaultMaxPlayers: 4,
-    settings: {
-      hasTurnTimer: true,
-      hasGameModes: true,
-      turnTimerOptions: [30, 60, 90, 120],
-      defaultTurnTimer: 60,
-    },
-  },
-  guess_the_spy: {
-    name: 'Guess the Spy',
-    emoji: '🕵️‍♂️',
-    description: '',
-    gradient: 'from-blue-600 via-cyan-500 to-green-400',
-    translationKey: 'guess_the_spy',
-    allowedPlayers: [3, 4, 5, 6, 7, 8],
-    defaultMaxPlayers: 6,
-    settings: {
-      hasTurnTimer: false,
-      hasGameModes: false,
-    },
-  },
-  tic_tac_toe: {
-    name: 'Tic-Tac-Toe',
-    emoji: '❌',
-    description: '',
-    gradient: 'from-indigo-600 via-blue-500 to-sky-400',
-    translationKey: 'tictactoe',
-    allowedPlayers: [2],
-    defaultMaxPlayers: 2,
-    settings: {
-      hasTurnTimer: false,
-      hasGameModes: false,
-      hasRoundSelection: true,
-      roundOptions: [3, 5, 10],
-      defaultRounds: null,
-    },
-  },
-  rock_paper_scissors: {
-    name: 'Rock Paper Scissors',
-    emoji: '🍂',
-    description: '',
-    gradient: 'from-indigo-500 via-purple-500 to-pink-400',
-    translationKey: 'rock_paper_scissors',
-    allowedPlayers: [2],
-    defaultMaxPlayers: 2,
-    settings: {
-      hasTurnTimer: false,
-      hasGameModes: false,
-    },
-  },
-  memory: {
-    name: 'Memory',
-    emoji: '🧠',
-    description: '',
-    gradient: 'from-emerald-500 via-teal-500 to-cyan-400',
-    translationKey: 'memory',
-    allowedPlayers: [2, 3, 4],
-    defaultMaxPlayers: 4,
-    settings: {
-      hasTurnTimer: true,
-      turnTimerOptions: [30, 60, 90, 120],
-      defaultTurnTimer: 60,
-      hasGameModes: false,
-      hasDifficultySelection: true,
-      difficultyOptions: ['easy', 'medium', 'hard'],
-      defaultDifficulty: 'easy',
-    },
-  },
-  connect_four: {
-    name: 'Connect Four',
-    emoji: '🔴',
-    description: '',
-    gradient: 'from-red-500 via-orange-400 to-yellow-400',
-    translationKey: 'connect_four',
-    allowedPlayers: [2],
-    defaultMaxPlayers: 2,
-    settings: {
-      hasTurnTimer: true,
-      turnTimerOptions: [30, 60, 90, 120],
-      defaultTurnTimer: 60,
-      hasGameModes: false,
-    },
-  },
-  alias: {
-    name: 'Alias',
-    emoji: '🗣️',
-    description: '',
-    gradient: 'from-violet-600 via-fuchsia-500 to-pink-400',
-    translationKey: 'alias',
-    allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
-    defaultMaxPlayers: 8,
-    settings: {
-      hasTurnTimer: false,
-      hasGameModes: false,
-    },
-  },
-  liars_party: {
-    name: "Liar's Party",
-    emoji: '🎭',
-    description: '',
-    gradient: 'from-rose-600 via-pink-500 to-orange-400',
-    translationKey: 'liars_party',
-    allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
-    defaultMaxPlayers: 8,
-    settings: {
-      hasTurnTimer: false,
-      hasGameModes: false,
-    },
-  },
+function buildGameInfoFromCatalog(): Record<string, GameInfo> {
+  return Object.fromEntries(
+    getCatalogGames()
+      .filter((g): g is GameCatalogEntry & { gameType: SupportedCatalogGameType; lobbyCreateConfig: LobbyCreateConfig } =>
+        g.gameType !== undefined && g.lobbyCreateConfig !== undefined
+      )
+      .map((g) => [
+        g.gameType,
+        {
+          nameKey: g.nameKey,
+          emoji: g.emoji,
+          gradient: g.lobbyCreateConfig.gradient,
+          allowedPlayers: g.lobbyCreateConfig.allowedPlayers,
+          defaultMaxPlayers: g.lobbyCreateConfig.defaultMaxPlayers,
+          settings: {
+            hasTurnTimer: !!g.lobbyCreateConfig.turnTimer,
+            turnTimerOptions: g.lobbyCreateConfig.turnTimer?.options,
+            defaultTurnTimer: g.lobbyCreateConfig.turnTimer?.default,
+            hasGameModes: false,
+            hasRoundSelection: !!g.lobbyCreateConfig.rounds,
+            roundOptions: g.lobbyCreateConfig.rounds?.options,
+            defaultRounds: g.lobbyCreateConfig.rounds?.default ?? null,
+            hasDifficultySelection: !!g.lobbyCreateConfig.difficulty,
+            difficultyOptions: g.lobbyCreateConfig.difficulty?.options as MemoryDifficulty[] | undefined,
+            defaultDifficulty: g.lobbyCreateConfig.difficulty?.default as MemoryDifficulty | undefined,
+          },
+        } satisfies GameInfo,
+      ])
+  )
 }
+
+const GAME_INFO = buildGameInfoFromCatalog()
 
 function isSelectableGameType(value: string | null | undefined): value is GameType {
   if (typeof value !== 'string' || !(value in GAME_INFO)) {
@@ -636,7 +548,7 @@ function CreateLobbyPage() {
     return (
       <div className="text-center">
         <div style={{ fontSize: 60, marginBottom: 12 }}>{gameInfo.emoji}</div>
-        <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{gameInfo.name}</p>
+        <p className="text-lg font-extrabold text-bd-ink" style={{ fontFamily: 'var(--bd-font-display)' }}>{t(gameInfo.nameKey as TranslationKeys)}</p>
       </div>
     )
   }
@@ -662,20 +574,20 @@ function CreateLobbyPage() {
         <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {Object.entries(GAME_INFO)
             .filter(([key]) => !isTemporarilyUnavailableGameType(key))
-            .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+            .sort(([, a], [, b]) => t(a.nameKey as TranslationKeys).localeCompare(t(b.nameKey as TranslationKeys), undefined, { sensitivity: 'base' }))
             .map(([key, info]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setSelectedGameType(key as GameType)}
-                aria-label={t('lobby.create.selectGame', { name: info.name })}
+                aria-label={t('lobby.create.selectGame', { name: t(info.nameKey as TranslationKeys) })}
                 className={`bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all ${
                   selectedGameType === key
                     ? 'border-bd-ink bg-bd-ink text-bd-bg'
                     : 'hover:border-bd-ink hover:bg-white'
                 }`}
               >
-                {info.emoji} {info.name}
+                {info.emoji} {t(info.nameKey as TranslationKeys)}
               </button>
             ))}
         </div>
@@ -724,7 +636,7 @@ function CreateLobbyPage() {
                 className="text-[clamp(22px,3vw,30px)] font-extrabold leading-tight text-bd-ink"
                 style={{ fontFamily: 'var(--bd-font-display)' }}
               >
-                Set up your <span style={{ color: 'var(--bd-coral)' }}>{gameInfo.name}</span> room
+                Set up your <span style={{ color: 'var(--bd-coral)' }}>{t(gameInfo.nameKey as TranslationKeys)}</span> room
               </h1>
             </div>
 

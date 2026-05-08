@@ -1,26 +1,7 @@
-import type { GameType as PrismaGameType } from '@/prisma/client'
+import { GameType as PrismaGameTypeEnum, type GameType as PrismaGameType } from '@/prisma/client'
 
-const PERSISTED_GAME_TYPES = new Set<PrismaGameType>([
-  'yahtzee',
-  'tic_tac_toe',
-  'rock_paper_scissors',
-  'memory',
-  'guess_the_spy',
-  'connect_four',
-  'telephone_doodle',
-  'sketch_and_guess',
-  'liars_party',
-  'fake_artist',
-  'other',
-])
+const VALID_GAME_TYPES = new Set<string>(Object.values(PrismaGameTypeEnum))
 
-/**
- * Maps runtime game type values to the current Prisma GameType enum.
- */
 export function toPersistedGameType(gameType: string): PrismaGameType {
-  if (PERSISTED_GAME_TYPES.has(gameType as PrismaGameType)) {
-    return gameType as PrismaGameType
-  }
-
-  return 'other'
+  return VALID_GAME_TYPES.has(gameType) ? (gameType as PrismaGameType) : 'other'
 }
