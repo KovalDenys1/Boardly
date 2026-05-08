@@ -1,5 +1,4 @@
 import {
-  isAliasEnabled,
   isFakeArtistEnabled,
   isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
@@ -13,12 +12,12 @@ export type RegisteredGameType =
   | 'rock_paper_scissors'
   | 'memory'
   | 'connect_four'
+  | 'alias'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
   | 'liars_party'
   | 'fake_artist'
-  | 'alias'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
 
@@ -112,6 +111,16 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     supportsBots: true,
     translationKey: 'connect_four',
   },
+
+  alias: {
+    type: 'alias',
+    name: 'Alias',
+    icon: '🗣️',
+    minPlayers: 4,
+    maxPlayers: 16,
+    supportsBots: false,
+    translationKey: 'alias',
+  },
 }
 
 const TELEPHONE_DOODLE_METADATA: GameMetadata = {
@@ -152,16 +161,6 @@ const FAKE_ARTIST_METADATA: GameMetadata = {
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'fake_artist',
-}
-
-const ALIAS_METADATA: GameMetadata = {
-  type: 'alias',
-  name: 'Alias',
-  icon: '🗣️',
-  minPlayers: 4,
-  maxPlayers: 16,
-  supportsBots: false,
-  translationKey: 'alias',
 }
 
 const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
@@ -254,6 +253,18 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       defaultMaxPlayers: 2,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
     },
+  },
+  {
+    id: 'alias',
+    gameType: 'alias',
+    nameKey: 'games.alias.name',
+    emoji: '🗣️',
+    descriptionKey: 'games.alias.description',
+    players: '4-16',
+    difficultyKey: 'games.alias.difficulty',
+    availability: 'available',
+    route: '/games/alias/lobbies',
+    color: 'from-coral-400 to-red-500',
   },
   {
     id: 'rps',
@@ -360,8 +371,7 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'liars_party' && isLiarsPartyEnabled()) ||
-    (value === 'fake_artist' && isFakeArtistEnabled()) ||
-    (value === 'alias' && isAliasEnabled())
+    (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
 
@@ -380,9 +390,6 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
-  }
-  if (gameType === 'alias' && isAliasEnabled()) {
-    return ALIAS_METADATA
   }
   return null
 }
@@ -410,7 +417,6 @@ export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
   if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
   if (isLiarsPartyEnabled()) types.push('liars_party')
   if (isFakeArtistEnabled()) types.push('fake_artist')
-  if (isAliasEnabled()) types.push('alias')
   return types
 }
 

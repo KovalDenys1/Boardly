@@ -43,6 +43,7 @@ describe('game catalog availability', () => {
       'tic_tac_toe',
       'memory',
       'connect_four',
+      'alias',
     ])
     expect(isAvailableGameType('yahtzee')).toBe(true)
     expect(isAvailableGameType('rock_paper_scissors')).toBe(false)
