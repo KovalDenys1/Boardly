@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation } from 'react-i18next'
@@ -41,6 +41,13 @@ interface Game {
   status: string
   state: unknown
   players: GamePlayer[]
+}
+
+interface GuessMessage {
+  id: number
+  userId: string
+  username: string
+  text: string
 }
 
 function computePreviewTeams(players: GamePlayer[]): { team1: GamePlayer[]; team2: GamePlayer[] } {
@@ -116,16 +123,16 @@ const BdLabel: React.FC<{ children: React.ReactNode; style?: React.CSSProperties
   </span>
 )
 
-const BdAvatar: React.FC<{ name?: string; color?: string }> = ({ name, color }) => (
+const BdAvatar: React.FC<{ name?: string; color?: string; size?: number }> = ({ name, color, size = 40 }) => (
   <span style={{
-    width: 40,
-    height: 40,
+    width: size,
+    height: size,
     borderRadius: 999,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 700,
-    fontSize: 14,
+    fontSize: size * 0.35,
     color: 'var(--bd-ink)',
     background: color ?? 'var(--bd-bg2)',
     border: `1.5px solid ${color ?? 'var(--bd-line)'}`,
@@ -143,7 +150,7 @@ const CountdownRing: React.FC<{ remaining: number; total: number; size?: number 
   const danger = remaining <= 10 && remaining > 0
   const mins = Math.floor(remaining / 60)
   const secs = remaining % 60
-  const label = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : String(secs)
+  const label = mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : String(remaining)
   return (
     <div
       role="timer"
@@ -203,7 +210,7 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
 const GameContextBar: React.FC<{ code: string; right?: React.ReactNode }> = ({ code, right }) => (
   <header style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '4px 4px 24px', maxWidth: 1100, margin: '0 auto',
+    padding: '4px 4px 24px', maxWidth: 1200, margin: '0 auto',
   }}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <BdLabel>word game · lobby</BdLabel>
@@ -225,6 +232,91 @@ const GameContextBar: React.FC<{ code: string; right?: React.ReactNode }> = ({ c
   </header>
 )
 
+// Guess chat panel — shown on describer + guesser screens
+const GuessChatPanel: React.FC<{
+  guesses: GuessMessage[]
+  guessInput: string
+  onInputChange: (v: string) => void
+  onSend: () => void
+  onKeyDown: (e: React.KeyboardEvent) => void
+  canType: boolean
+  endRef: React.RefObject<HTMLDivElement | null>
+  currentUserId: string | null | undefined
+}> = ({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId }) => (
+  <div style={{
+    ...cardBase,
+    display: 'flex', flexDirection: 'column',
+    width: 280, minWidth: 280, maxWidth: 280,
+    height: '100%', maxHeight: 560,
+    overflow: 'hidden', flexShrink: 0,
+  }}>
+    <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--bd-line)' }}>
+      <BdLabel>Guesses</BdLabel>
+    </div>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {guesses.length === 0 && (
+        <p style={{ color: 'var(--bd-ink-muted)', fontSize: 13, fontStyle: 'italic', textAlign: 'center', margin: '20px 0' }}>
+          No guesses yet…
+        </p>
+      )}
+      {guesses.map((g) => {
+        const isMe = g.userId === currentUserId
+        return (
+          <div key={g.id} style={{
+            display: 'flex', flexDirection: 'column', gap: 2,
+            alignItems: isMe ? 'flex-end' : 'flex-start',
+          }}>
+            {!isMe && (
+              <BdLabel style={{ fontSize: 9, marginLeft: 4 }}>{g.username}</BdLabel>
+            )}
+            <span style={{
+              padding: '7px 12px',
+              borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+              background: isMe ? 'var(--bd-ink)' : 'var(--bd-bg2)',
+              color: isMe ? 'var(--bd-bg)' : 'var(--bd-ink)',
+              fontSize: 14, fontWeight: 500, maxWidth: 220,
+              wordBreak: 'break-word',
+            }}>
+              {g.text}
+            </span>
+          </div>
+        )
+      })}
+      <div ref={endRef} />
+    </div>
+    {canType && (
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
+        <input
+          type="text"
+          value={guessInput}
+          onChange={e => onInputChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Type your guess…"
+          maxLength={80}
+          style={{
+            flex: 1, background: 'var(--bd-bg2)',
+            border: '1.5px solid var(--bd-line)', borderRadius: 10,
+            padding: '8px 12px', fontSize: 14, color: 'var(--bd-ink)',
+            outline: 'none',
+            fontFamily: 'inherit',
+          }}
+        />
+        <button
+          onClick={onSend}
+          disabled={!guessInput.trim()}
+          style={{
+            background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+            border: 'none', borderRadius: 10,
+            padding: '8px 14px', fontWeight: 600, fontSize: 14,
+            cursor: 'pointer',
+            opacity: guessInput.trim() ? 1 : 0.4,
+          }}
+        >→</button>
+      </div>
+    )}
+  </div>
+)
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AliasPage({ code }: AliasPageProps) {
@@ -239,6 +331,14 @@ export default function AliasPage({ code }: AliasPageProps) {
   const [gameEngine, setGameEngine] = useState<AliasGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+
+  // Live timer
+  const [remaining, setRemaining] = useState(0)
+
+  // Guess chat
+  const [guesses, setGuesses] = useState<GuessMessage[]>([])
+  const [guessInput, setGuessInput] = useState('')
+  const guessesEndRef = useRef<HTMLDivElement | null>(null)
 
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
@@ -426,6 +526,89 @@ export default function AliasPage({ code }: AliasPageProps) {
     }
   }, [lobby?.id, isStarting])
 
+  // ─── Live timer ────────────────────────────────────────────────────────────
+
+  const turnStartedAt = gameEngine?.getState()?.data
+    ? (gameEngine.getState().data as AliasGameData).turnStartedAt
+    : null
+  const gamePhase = gameEngine?.getState()?.data
+    ? (gameEngine.getState().data as AliasGameData).phase
+    : null
+  const turnTimerSeconds = typeof lobby?.turnTimer === 'number' ? lobby.turnTimer : 60
+
+  useEffect(() => {
+    if (gamePhase !== 'turn_active' || turnStartedAt === null) {
+      setRemaining(0)
+      return
+    }
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - turnStartedAt) / 1000)
+      const r = Math.max(0, turnTimerSeconds - elapsed)
+      setRemaining(r)
+      if (r === 0) {
+        clearInterval(id)
+        void loadLobby()
+      }
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [gamePhase, turnStartedAt, turnTimerSeconds, loadLobby])
+
+  // ─── Guess chat ────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!socket) return
+    const handler = (msg: Record<string, unknown>) => {
+      if (msg.type !== 'alias-guess') return
+      const uid = getCurrentUserId()
+      if (msg.userId === uid) return
+      setGuesses(prev => [...prev.slice(-99), {
+        id: typeof msg.id === 'number' ? msg.id : Date.now(),
+        userId: String(msg.userId ?? ''),
+        username: String(msg.username ?? 'Player'),
+        text: String(msg.message ?? ''),
+      }])
+    }
+    socket.on('chat-message', handler)
+    return () => { socket.off('chat-message', handler) }
+  }, [socket, getCurrentUserId])
+
+  useEffect(() => {
+    guessesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [guesses])
+
+  const sendGuess = useCallback(() => {
+    if (!socket || !guessInput.trim()) return
+    const uid = getCurrentUserId()
+    const username = isGuest
+      ? 'Guest'
+      : (session?.user as any)?.username ?? session?.user?.name ?? 'Player'
+    const id = Date.now()
+    socket.emit('chat-message', {
+      userId: uid,
+      username,
+      message: guessInput.trim(),
+      type: 'alias-guess',
+      id,
+      lobbyCode: code,
+    })
+    setGuesses(prev => [...prev.slice(-99), {
+      id,
+      userId: uid ?? '',
+      username,
+      text: guessInput.trim(),
+    }])
+    setGuessInput('')
+  }, [socket, guessInput, getCurrentUserId, isGuest, session, code])
+
+  const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendGuess()
+    }
+  }, [sendGuess])
+
   // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
@@ -441,10 +624,9 @@ export default function AliasPage({ code }: AliasPageProps) {
   const isHost = lobby?.creatorId === getCurrentUserId()
   const players = game?.players ?? []
   const currentUserId = getCurrentUserId()
-  const turnTimerSeconds = typeof lobby?.turnTimer === 'number' ? lobby.turnTimer : 60
 
-  // ── PHASE 1 — Waiting room ─────────────────────────────────────────────────
-  if (resolvedStatus === 'waiting' || !data || data.phase === 'team_assignment') {
+  // ── PHASE 0 — Lobby (pre-game) ─────────────────────────────────────────────
+  if (resolvedStatus === 'waiting' || !data) {
     const { team1, team2 } = computePreviewTeams(players)
     const ready = players.length >= 4
 
@@ -474,30 +656,23 @@ export default function AliasPage({ code }: AliasPageProps) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {list.length === 0 && (
             <div style={{
-              padding: '20px 16px',
-              border: `1.5px dashed ${accent}`,
-              borderRadius: 14,
-              color: 'var(--bd-ink-muted)',
-              fontSize: 13, textAlign: 'center',
+              padding: '20px 16px', border: `1.5px dashed ${accent}`, borderRadius: 14,
+              color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
               background: 'rgba(255,255,255,0.4)',
-            }}>
-              Waiting for players…
-            </div>
+            }}>Waiting for players…</div>
           )}
           {list.map((p, i) => (
             <div key={p.id} style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '8px 12px 8px 8px', borderRadius: 999,
-              background: 'rgba(255,255,255,0.55)',
-              border: '1.5px solid var(--bd-line)',
+              background: 'rgba(255,255,255,0.55)', border: '1.5px solid var(--bd-line)',
             }}>
               <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
               <span style={{ fontWeight: 600, fontSize: 15 }}>
                 {p.name}
                 {p.userId === currentUserId && (
                   <span style={{
-                    marginLeft: 8, fontSize: 11,
-                    fontFamily: FONT_MONO,
+                    marginLeft: 8, fontSize: 11, fontFamily: FONT_MONO,
                     color: accentDeep, background: 'rgba(255,255,255,0.7)',
                     padding: '2px 8px', borderRadius: 999,
                     border: `1px solid ${accent}`, letterSpacing: '0.08em',
@@ -505,7 +680,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                 )}
               </span>
               <span style={{ flex: 1 }} />
-              {p.userId === lobby?.creatorId && <span title="Host" aria-label="host" style={{ fontSize: 16 }}>★</span>}
+              {p.userId === lobby?.creatorId && <span style={{ fontSize: 16 }}>★</span>}
             </div>
           ))}
         </div>
@@ -537,8 +712,7 @@ export default function AliasPage({ code }: AliasPageProps) {
             <div style={{
               ...cardBase, padding: '18px 22px',
               display: 'flex', alignItems: 'center', gap: 18,
-              background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)',
-              color: 'var(--bd-bg)',
+              background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)',
               boxShadow: '0 6px 0 var(--bd-coral), 0 14px 28px -10px rgba(31,27,22,0.4)',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -583,8 +757,184 @@ export default function AliasPage({ code }: AliasPageProps) {
                 onClick={handleStartGame}
                 disabled={isStarting || !ready}
               >
-                {isStarting ? 'Starting…' : 'Start Game'}
+                {isStarting ? 'Starting…' : 'Pick Teams'}
                 <span aria-hidden style={{ fontSize: 18 }}>→</span>
+              </button>
+            ) : (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
+                borderRadius: 999, padding: '10px 16px',
+                fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
+              }}>
+                <span className="bd-float" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--bd-ink-muted)' }} />
+                Waiting for host to start…
+              </span>
+            )}
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // ── PHASE 1 — Team assignment ──────────────────────────────────────────────
+  if (data.phase === 'team_assignment') {
+    const TEAM_ACCENTS = ['var(--bd-coral)', 'var(--bd-lav)']
+    const TEAM_ACCENTS_DEEP = ['var(--bd-coral-deep)', '#7A6AE8']
+
+    const myTeamId = data.teams.find(t => t.playerIds.includes(currentUserId ?? ''))?.id
+
+    const getPlayerName = (userId: string) =>
+      players.find(p => p.userId === userId)?.name ?? userId.slice(0, 8)
+
+    const teamsValid = data.teams.every(t => t.playerIds.length >= 1)
+
+    return (
+      <div style={pageBg} data-testid="alias-team-assignment">
+        <GameContextBar code={code} />
+        <main style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
+            <BdLabel>Team selection</BdLabel>
+            <h1 style={{
+              fontFamily: FONT_DISPLAY, fontWeight: 700,
+              fontSize: 'clamp(32px, 5vw, 48px)', lineHeight: 1.05, margin: 0,
+            }}>
+              Choose your side.
+            </h1>
+            <p style={{ color: 'var(--bd-ink-soft)', fontSize: 15, margin: 0 }}>
+              Pick a team — then host starts when everyone's ready.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 20, alignItems: 'start' }}>
+            {data.teams.map((team, i) => {
+              const accent = TEAM_ACCENTS[i] ?? 'var(--bd-lav)'
+              const accentDeep = TEAM_ACCENTS_DEEP[i] ?? '#7A6AE8'
+              const isMyTeam = myTeamId === team.id
+
+              return (
+                <div key={team.id} style={{
+                  ...cardBase, padding: 24,
+                  borderTop: `6px solid ${accent}`,
+                  position: 'relative', overflow: 'hidden',
+                  outline: isMyTeam ? `2px solid ${accent}` : 'none',
+                  outlineOffset: 2,
+                }}>
+                  <div aria-hidden style={{
+                    position: 'absolute', top: -40, right: -40,
+                    width: 140, height: 140, borderRadius: '50%',
+                    background: accent, opacity: 0.07,
+                  }} />
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div>
+                      <BdLabel style={{ color: accentDeep }}>{`Team 0${i + 1}`}</BdLabel>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, marginTop: 4 }}>
+                        {team.name}
+                      </div>
+                    </div>
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 600, color: 'var(--bd-ink-muted)' }}>
+                      {team.playerIds.length} {team.playerIds.length === 1 ? 'player' : 'players'}
+                    </span>
+                  </div>
+
+                  {/* Player list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, minHeight: 60 }}>
+                    {team.playerIds.length === 0 && (
+                      <div style={{
+                        padding: '16px', border: `1.5px dashed ${accent}`, borderRadius: 12,
+                        color: 'var(--bd-ink-muted)', fontSize: 13, textAlign: 'center',
+                      }}>Empty — be the first</div>
+                    )}
+                    {team.playerIds.map(pid => {
+                      const name = getPlayerName(pid)
+                      const isYou = pid === currentUserId
+                      return (
+                        <div key={pid} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '8px 12px', borderRadius: 999,
+                          background: 'rgba(255,255,255,0.6)',
+                          border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
+                        }}>
+                          <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
+                          <span style={{ fontWeight: 600, fontSize: 14 }}>{name}</span>
+                          {isYou && (
+                            <span style={{
+                              marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,
+                              color: accentDeep, background: 'rgba(255,255,255,0.8)',
+                              padding: '2px 7px', borderRadius: 999, border: `1px solid ${accent}`,
+                            }}>YOU</span>
+                          )}
+                          {players.find(p => p.userId === pid)?.userId === lobby?.creatorId && (
+                            <span style={{ marginLeft: isMyTeam ? 0 : 'auto', fontSize: 14 }}>★</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Join button */}
+                  {myTeamId !== team.id ? (
+                    <button
+                      onClick={() => handleMove('assign_team', { teamId: team.id })}
+                      disabled={isMoveSubmitting}
+                      style={{
+                        width: '100%',
+                        background: accent, color: 'var(--bd-ink)',
+                        border: 'none', borderRadius: 12,
+                        padding: '12px 16px', fontWeight: 700, fontSize: 15,
+                        cursor: 'pointer',
+                        boxShadow: `0 3px 0 ${accentDeep}`,
+                        opacity: isMoveSubmitting ? 0.5 : 1,
+                      }}
+                    >
+                      Join {team.name}
+                    </button>
+                  ) : (
+                    <div style={{
+                      width: '100%', textAlign: 'center',
+                      padding: '12px 16px', borderRadius: 12,
+                      background: 'rgba(255,255,255,0.5)',
+                      border: `1.5px solid ${accent}`,
+                      fontWeight: 600, fontSize: 14,
+                      color: accentDeep,
+                    }}>
+                      ✓ You're on this team
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* "vs" divider */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
+              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginTop: 32, gap: 16, flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                width: 10, height: 10, borderRadius: 999,
+                background: teamsValid ? 'var(--bd-mint)' : 'var(--bd-sun)',
+                boxShadow: `0 0 0 4px ${teamsValid ? 'rgba(79,201,166,0.18)' : 'rgba(255,196,77,0.18)'}`,
+              }} />
+              <span style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}>
+                {teamsValid
+                  ? 'Teams ready — host can start.'
+                  : 'Each team needs at least 1 player.'}
+              </span>
+            </div>
+            {isHost ? (
+              <button
+                style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }}
+                onClick={() => handleMove('start_round', {})}
+                disabled={isMoveSubmitting || !teamsValid}
+              >
+                Start Rounds
+                <span aria-hidden>→</span>
               </button>
             ) : (
               <span style={{
@@ -607,8 +957,6 @@ export default function AliasPage({ code }: AliasPageProps) {
   const currentTeam = data.teams[data.currentTeamIndex]
   const describerId = currentTeam?.playerIds[currentTeam?.describerIndex ?? 0]
   const isDescriber = describerId === currentUserId
-  const elapsed = data.turnStartedAt ? Math.floor((Date.now() - data.turnStartedAt) / 1000) : 0
-  const remaining = Math.max(0, turnTimerSeconds - elapsed)
   const danger = remaining <= 10 && remaining > 0
   const guessed = data.currentCardResults.filter(r => r.result === 'guessed').length
   const skipped = data.currentCardResults.filter(r => r.result === 'skipped').length
@@ -616,6 +964,16 @@ export default function AliasPage({ code }: AliasPageProps) {
   const teamAccent = teamIndex === 0 ? 'var(--bd-coral)' : 'var(--bd-lav)'
   const teamAccentDeep = teamIndex === 0 ? 'var(--bd-coral-deep)' : '#7A6AE8'
   const describerPlayer = players.find(p => p.userId === describerId)
+
+  const chatProps = {
+    guesses,
+    guessInput,
+    onInputChange: setGuessInput,
+    onSend: sendGuess,
+    onKeyDown: handleGuessKeyDown,
+    endRef: guessesEndRef,
+    currentUserId,
+  }
 
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
   if (data.phase === 'turn_active' && isDescriber) {
@@ -629,131 +987,124 @@ export default function AliasPage({ code }: AliasPageProps) {
             right={
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'rgba(255,255,255,0.7)',
-                border: `1.5px solid ${teamAccent}`,
-                borderRadius: 999, padding: '6px 12px',
-                fontSize: 13, fontWeight: 600,
+                background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${teamAccent}`,
+                borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600,
               }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: teamAccent }} />
                 {currentTeam?.name}
               </span>
             }
           />
-          <main style={{ maxWidth: 920, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '10px 18px',
-              background: 'rgba(255,107,91,0.10)',
-              border: '1.5px solid rgba(255,107,91,0.35)',
-              borderRadius: 999,
-            }}>
-              <BdLabel style={{ color: teamAccentDeep }}>You're describing</BdLabel>
-              <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
-                Card #{data.currentCardIndex + 1}
-              </span>
-            </div>
-
-            {/* Hero word card */}
-            <div style={{
-              ...cardBase, width: '100%',
-              padding: '56px 40px 48px', minHeight: 280,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: 24, position: 'relative', overflow: 'hidden',
-            }}>
-              <div aria-hidden style={{
-                position: 'absolute', top: -120, left: -120,
-                width: 280, height: 280, borderRadius: '50%',
-                background: 'rgba(255,107,91,0.10)',
-              }} />
-              <div aria-hidden style={{
-                position: 'absolute', bottom: -120, right: -120,
-                width: 280, height: 280, borderRadius: '50%',
-                background: 'rgba(155,140,255,0.08)',
-              }} />
-              <BdLabel>The secret word</BdLabel>
-              <span style={{
-                fontFamily: FONT_DISPLAY, fontWeight: 700,
-                fontSize: 'clamp(48px, 9vw, 84px)',
-                lineHeight: 1.02, textAlign: 'center',
-                color: 'var(--bd-ink)', letterSpacing: '-0.02em',
-                zIndex: 1, wordBreak: 'break-word',
-              }}>{word}</span>
-              <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)', fontStyle: 'italic', zIndex: 1 }}>
-                Don't say it. Don't spell it. Don't rhyme with it.
-              </span>
-            </div>
-
-            {/* Timer + tally */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 36, alignItems: 'center', width: '100%' }}>
-              <CountdownRing remaining={remaining} total={turnTimerSeconds} size={148} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <BdLabel>This turn so far</BdLabel>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <ScorePill kind="guessed" count={guessed} />
-                  <ScorePill kind="skipped" count={skipped} />
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-                    borderRadius: 999, padding: '6px 12px',
-                    fontFamily: FONT_MONO, fontWeight: 600, fontSize: 13,
-                  }}>
-                    <span style={{ opacity: 0.6, fontSize: 11 }}>NET</span>
-                    <span style={{ fontSize: 14 }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</span>
-                  </span>
-                </div>
-                {danger && (
-                  <span style={{
-                    fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)',
-                    fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  }}>⚡ Time's running out!</span>
-                )}
+          <main style={{
+            maxWidth: 1200, margin: '0 auto',
+            display: 'flex', gap: 24, alignItems: 'flex-start',
+          }}>
+            {/* Game content */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 18px',
+                background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
+                borderRadius: 999,
+              }}>
+                <BdLabel style={{ color: teamAccentDeep }}>You're describing</BdLabel>
+                <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
+                  Card #{data.currentCardIndex + 1}
+                </span>
               </div>
+
+              {/* Hero word card */}
+              <div style={{
+                ...cardBase, width: '100%',
+                padding: '56px 40px 48px', minHeight: 240,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 20, position: 'relative', overflow: 'hidden',
+              }}>
+                <div aria-hidden style={{ position: 'absolute', top: -120, left: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(255,107,91,0.10)' }} />
+                <div aria-hidden style={{ position: 'absolute', bottom: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(155,140,255,0.08)' }} />
+                <BdLabel>The secret word</BdLabel>
+                <span style={{
+                  fontFamily: FONT_DISPLAY, fontWeight: 700,
+                  fontSize: 'clamp(48px, 9vw, 84px)',
+                  lineHeight: 1.02, textAlign: 'center',
+                  color: 'var(--bd-ink)', letterSpacing: '-0.02em',
+                  zIndex: 1, wordBreak: 'break-word',
+                }}>{word}</span>
+                <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)', fontStyle: 'italic', zIndex: 1 }}>
+                  Don't say it. Don't spell it. Don't rhyme with it.
+                </span>
+              </div>
+
+              {/* Timer + tally */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
+                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <BdLabel>This turn so far</BdLabel>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <ScorePill kind="guessed" count={guessed} />
+                    <ScorePill kind="skipped" count={skipped} />
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+                      borderRadius: 999, padding: '6px 12px',
+                      fontFamily: FONT_MONO, fontWeight: 600, fontSize: 13,
+                    }}>
+                      <span style={{ opacity: 0.6, fontSize: 11 }}>NET</span>
+                      <span style={{ fontSize: 14 }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</span>
+                    </span>
+                  </div>
+                  {danger && (
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      ⚡ Time's running out!
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
+                <button
+                  aria-label="Guessed correctly"
+                  onClick={() => handleMove('word_action', { action: 'guess' })}
+                  disabled={isMoveSubmitting}
+                  style={{
+                    background: 'var(--bd-mint)', color: '#06322a',
+                    border: 'none', borderRadius: 18, padding: '22px 16px', fontSize: 20, fontWeight: 700,
+                    cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-mint-deep)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    opacity: isMoveSubmitting ? 0.5 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
+                  {t('alias.guessed')}
+                  <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
+                </button>
+                <button
+                  aria-label="Skip word"
+                  onClick={() => handleMove('word_action', { action: 'skip' })}
+                  disabled={isMoveSubmitting}
+                  style={{
+                    background: 'var(--bd-sun)', color: '#4a3a09',
+                    border: 'none', borderRadius: 18, padding: '22px 16px', fontSize: 20, fontWeight: 700,
+                    cursor: 'pointer', boxShadow: '0 5px 0 var(--bd-sun-deep)',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    opacity: isMoveSubmitting ? 0.5 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: 24, lineHeight: 1 }}>✗</span>
+                  {t('alias.skip')}
+                  <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
+                </button>
+              </div>
+
+              <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
+                {t('alias.endTurn')}
+              </button>
             </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%' }}>
-              <button
-                aria-label="Guessed correctly"
-                onClick={() => handleMove('word_action', { action: 'guess' })}
-                disabled={isMoveSubmitting}
-                style={{
-                  background: 'var(--bd-mint)', color: '#06322a',
-                  border: 'none', borderRadius: 18,
-                  padding: '22px 16px', fontSize: 20, fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 5px 0 var(--bd-mint-deep)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  opacity: isMoveSubmitting ? 0.5 : 1,
-                }}
-              >
-                <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
-                {t('alias.guessed')}
-                <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>+1</span>
-              </button>
-              <button
-                aria-label="Skip word"
-                onClick={() => handleMove('word_action', { action: 'skip' })}
-                disabled={isMoveSubmitting}
-                style={{
-                  background: 'var(--bd-sun)', color: '#4a3a09',
-                  border: 'none', borderRadius: 18,
-                  padding: '22px 16px', fontSize: 20, fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 5px 0 var(--bd-sun-deep)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  opacity: isMoveSubmitting ? 0.5 : 1,
-                }}
-              >
-                <span style={{ fontSize: 24, lineHeight: 1 }}>✗</span>
-                {t('alias.skip')}
-                <span style={{ fontSize: 11, opacity: 0.7, fontFamily: FONT_MONO }}>−1</span>
-              </button>
-            </div>
-
-            <button style={linkBtn} onClick={() => handleMove('end_turn', {})}>
-              {t('alias.endTurn')}
-            </button>
+            {/* Chat panel — describer sees guesses (read-only) */}
+            <GuessChatPanel {...chatProps} canType={false} />
           </main>
         </div>
       </>
@@ -772,87 +1123,81 @@ export default function AliasPage({ code }: AliasPageProps) {
             right={
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                background: 'rgba(255,255,255,0.7)',
-                border: `1.5px solid ${teamAccent}`,
-                borderRadius: 999, padding: '6px 12px',
-                fontSize: 13, fontWeight: 600,
+                background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${teamAccent}`,
+                borderRadius: 999, padding: '6px 12px', fontSize: 13, fontWeight: 600,
               }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: teamAccent }} />
                 {currentTeam?.name}
               </span>
             }
           />
-          <main style={{ maxWidth: 920, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '10px 18px',
-              background: 'rgba(31,27,22,0.06)',
-              border: '1.5px solid var(--bd-line)',
-              borderRadius: 999,
-            }}>
-              <BdLabel>Listen up · shout the answer</BdLabel>
-            </div>
-
-            <div style={{
-              ...cardBase, width: '100%',
-              padding: '40px 32px 44px', minHeight: 360,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: 22, position: 'relative', overflow: 'hidden',
-            }}>
-              <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
-                {[0, 0.6, 1.2].map((d, i) => (
-                  <span key={i} style={{
-                    position: 'absolute',
-                    width: 220, height: 220, borderRadius: '50%',
-                    border: '2px solid rgba(255,107,91,0.35)',
-                    animation: 'bd-listening 2.4s ease-out infinite',
-                    animationDelay: `${d}s`,
-                  }} />
-                ))}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }}>
-                <BdLabel>Describer</BdLabel>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <BdAvatar name={describerName} color={teamAccent} />
-                  <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 26 }}>{describerName}</span>
-                </div>
-              </div>
-
-              <span className="bd-float" style={{
-                fontFamily: FONT_DISPLAY, fontWeight: 700,
-                fontSize: 'clamp(120px, 18vw, 180px)', lineHeight: 1,
-                color: 'var(--bd-coral)',
-                textShadow: '0 6px 0 rgba(31,27,22,0.08)',
-                zIndex: 1,
-              }}>?</span>
-
-              <span style={{
-                fontSize: 14, color: 'var(--bd-ink-soft)',
-                fontStyle: 'italic', textAlign: 'center',
-                maxWidth: 380, zIndex: 1,
+          <main style={{
+            maxWidth: 1200, margin: '0 auto',
+            display: 'flex', gap: 24, alignItems: 'flex-start',
+          }}>
+            {/* Game content */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '10px 18px', background: 'rgba(31,27,22,0.06)',
+                border: '1.5px solid var(--bd-line)', borderRadius: 999,
               }}>
-                Shout your guesses out loud. {describerName.split(' ')[0]} will mark them as you go.
-              </span>
-            </div>
+                <BdLabel>Listen up · type your guess in the chat</BdLabel>
+              </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 36, alignItems: 'center', width: '100%' }}>
-              <CountdownRing remaining={remaining} total={turnTimerSeconds} size={148} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <BdLabel>Live tally</BdLabel>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <ScorePill kind="guessed" count={guessed} />
-                  <ScorePill kind="skipped" count={skipped} />
+              <div style={{
+                ...cardBase, width: '100%',
+                padding: '36px 32px 40px', minHeight: 320,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 20, position: 'relative', overflow: 'hidden',
+              }}>
+                <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', pointerEvents: 'none' }}>
+                  {[0, 0.6, 1.2].map((d, i) => (
+                    <span key={i} style={{
+                      position: 'absolute', width: 220, height: 220, borderRadius: '50%',
+                      border: '2px solid rgba(255,107,91,0.35)',
+                      animation: 'bd-listening 2.4s ease-out infinite',
+                      animationDelay: `${d}s`,
+                    }} />
+                  ))}
                 </div>
-                {danger && (
-                  <span style={{
-                    fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)',
-                    fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  }}>⚡ Final seconds — go go go!</span>
-                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }}>
+                  <BdLabel>Describer</BdLabel>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <BdAvatar name={describerName} color={teamAccent} />
+                    <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 26 }}>{describerName}</span>
+                  </div>
+                </div>
+
+                <span className="bd-float" style={{
+                  fontFamily: FONT_DISPLAY, fontWeight: 700,
+                  fontSize: 'clamp(100px, 16vw, 160px)', lineHeight: 1,
+                  color: 'var(--bd-coral)', textShadow: '0 6px 0 rgba(31,27,22,0.08)', zIndex: 1,
+                }}>?</span>
+              </div>
+
+              {/* Timer + tally */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
+                <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <BdLabel>Live tally</BdLabel>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <ScorePill kind="guessed" count={guessed} />
+                    <ScorePill kind="skipped" count={skipped} />
+                  </div>
+                  {danger && (
+                    <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      ⚡ Final seconds — go go go!
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Chat panel — guessers type here */}
+            <GuessChatPanel {...chatProps} canType={true} />
           </main>
         </div>
       </>
@@ -874,11 +1219,7 @@ export default function AliasPage({ code }: AliasPageProps) {
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={pageBg} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} right={<BdLabel>{t('alias.turnResults')}</BdLabel>} />
-          <main style={{
-            maxWidth: 980, margin: '0 auto',
-            display: 'grid', gridTemplateColumns: '1.3fr 1fr',
-            gap: 22, alignItems: 'start',
-          }}>
+          <main style={{ maxWidth: 980, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'start' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, minHeight: 420 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -893,20 +1234,15 @@ export default function AliasPage({ code }: AliasPageProps) {
                   <ScorePill kind="skipped" count={skippedCount} />
                 </div>
               </div>
-
               <div style={{ maxHeight: 380, overflowY: 'auto', marginRight: -4, paddingRight: 4 }}>
                 {wordResults.length === 0 && (
-                  <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>
-                    No words played this turn.
-                  </div>
+                  <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>No words played this turn.</div>
                 )}
                 {wordResults.map((w, i) => {
                   const ok = w.result === 'guessed'
                   return (
                     <div key={i} style={{
-                      display: 'grid',
-                      gridTemplateColumns: '28px 1fr auto',
-                      alignItems: 'center', gap: 12,
+                      display: 'grid', gridTemplateColumns: '28px 1fr auto', alignItems: 'center', gap: 12,
                       padding: '12px 16px', borderRadius: 12,
                       background: ok ? 'rgba(79,201,166,0.12)' : 'rgba(255,196,77,0.12)',
                       border: `1px solid ${ok ? 'rgba(79,201,166,0.35)' : 'rgba(229,168,46,0.35)'}`,
@@ -919,19 +1255,11 @@ export default function AliasPage({ code }: AliasPageProps) {
                         fontSize: 14, fontWeight: 800,
                         color: ok ? '#06322a' : '#4a3a09',
                         boxShadow: `0 2px 0 ${ok ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)'}`,
-                      }}>
-                        {ok ? '✓' : '✗'}
+                      }}>{ok ? '✓' : '✗'}</span>
+                      <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20, color: 'var(--bd-ink)', textDecoration: ok ? 'none' : 'line-through', textDecorationColor: 'rgba(31,27,22,0.4)' }}>
+                        {w.word}
                       </span>
-                      <span style={{
-                        fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 20,
-                        color: 'var(--bd-ink)',
-                        textDecoration: ok ? 'none' : 'line-through',
-                        textDecorationColor: 'rgba(31,27,22,0.4)',
-                      }}>{w.word}</span>
-                      <span style={{
-                        fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700,
-                        color: ok ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)',
-                      }}>
+                      <span style={{ fontFamily: FONT_MONO, fontSize: 13, fontWeight: 700, color: ok ? 'var(--bd-mint-deep)' : 'var(--bd-sun-deep)' }}>
                         {ok ? '+1' : '−1'}
                       </span>
                     </div>
@@ -947,9 +1275,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                 background: positive ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
                 borderColor: positive ? 'var(--bd-ink)' : 'var(--bd-line)',
                 color: positive ? 'var(--bd-bg)' : 'var(--bd-ink)',
-                boxShadow: positive
-                  ? '0 6px 0 var(--bd-mint), 0 14px 28px -10px rgba(31,27,22,0.3)'
-                  : '0 6px 0 var(--bd-sun), 0 14px 28px -10px rgba(31,27,22,0.18)',
+                boxShadow: positive ? '0 6px 0 var(--bd-mint), 0 14px 28px -10px rgba(31,27,22,0.3)' : '0 6px 0 var(--bd-sun), 0 14px 28px -10px rgba(31,27,22,0.18)',
                 display: 'flex', alignItems: 'center', gap: 18,
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -971,38 +1297,22 @@ export default function AliasPage({ code }: AliasPageProps) {
                     const isActive = team.id === justPlayedTeamId
                     return (
                       <div key={team.id} style={{
-                        display: 'grid',
-                        gridTemplateColumns: '14px 1fr auto',
-                        alignItems: 'center', gap: 14,
+                        display: 'grid', gridTemplateColumns: '14px 1fr auto', alignItems: 'center', gap: 14,
                         padding: '12px 14px', borderRadius: 14,
                         background: isActive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)',
                         border: `1.5px solid ${isActive ? accent : 'var(--bd-line)'}`,
                       }}>
-                        <span style={{
-                          width: 14, height: 14, borderRadius: 999,
-                          background: accent,
-                          boxShadow: isActive
-                            ? `0 0 0 4px ${i === 0 ? 'rgba(255,107,91,0.2)' : 'rgba(155,140,255,0.2)'}`
-                            : 'none',
-                        }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        <span style={{ width: 14, height: 14, borderRadius: 999, background: accent, boxShadow: isActive ? `0 0 0 4px ${i === 0 ? 'rgba(255,107,91,0.2)' : 'rgba(155,140,255,0.2)'}` : 'none' }} />
+                        <div>
                           <span style={{ fontWeight: 700, fontSize: 16 }}>{team.name}</span>
-                          {isActive && <BdLabel style={{ fontSize: 10 }}>Just played</BdLabel>}
+                          {isActive && <BdLabel style={{ display: 'block', fontSize: 10 }}>Just played</BdLabel>}
                         </div>
-                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>
-                          {team.score}
-                        </span>
+                        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 32, fontVariantNumeric: 'tabular-nums' }}>{team.score}</span>
                       </div>
                     )
                   })}
                 </div>
-                <div style={{
-                  marginTop: 12, paddingTop: 12,
-                  borderTop: '1px dashed var(--bd-line)',
-                  fontFamily: FONT_MONO, fontSize: 11, color: 'var(--bd-ink-muted)',
-                  letterSpacing: '0.08em', textTransform: 'uppercase',
-                  textAlign: 'center',
-                }}>
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--bd-line)', fontFamily: FONT_MONO, fontSize: 11, color: 'var(--bd-ink-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center' }}>
                   3 turns per team · most points wins
                 </div>
               </div>
@@ -1018,8 +1328,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                 </button>
               ) : (
                 <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  justifyContent: 'center',
+                  display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center',
                   background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
                   borderRadius: 999, padding: '14px 18px',
                   fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
@@ -1046,26 +1355,17 @@ export default function AliasPage({ code }: AliasPageProps) {
       const rand = (n: number) => ((seed * (n + 1)) % 233280) / 233280
       const colors = ['var(--bd-coral)', 'var(--bd-mint)', 'var(--bd-sun)', 'var(--bd-lav)', 'var(--bd-coral-deep)']
       return {
-        left: rand(1) * 100,
-        delay: rand(2) * 4,
-        duration: 4 + rand(3) * 4,
+        left: rand(1) * 100, delay: rand(2) * 4, duration: 4 + rand(3) * 4,
         color: colors[i % colors.length],
-        w: 8 + Math.floor(rand(4) * 8),
-        h: 12 + Math.floor(rand(5) * 8),
-        rounded: rand(6) > 0.5,
+        w: 8 + Math.floor(rand(4) * 8), h: 12 + Math.floor(rand(5) * 8), rounded: rand(6) > 0.5,
       }
     })
 
     return (
-      <div
-        data-testid="alias-game-over-screen"
-        style={{
-          ...pageBg,
-          background: 'linear-gradient(135deg, #FFE9DD 0%, #FBF6EE 50%, #EFE6FF 100%)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
+      <div data-testid="alias-game-over-screen" style={{
+        ...pageBg, background: 'linear-gradient(135deg, #FFE9DD 0%, #FBF6EE 50%, #EFE6FF 100%)',
+        position: 'relative', overflow: 'hidden',
+      }}>
         <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           {confetti.map((p, i) => (
             <span key={i} style={{
@@ -1074,48 +1374,31 @@ export default function AliasPage({ code }: AliasPageProps) {
               borderRadius: p.rounded ? '50%' : 2,
               animation: `bd-confetti-fall ${p.duration}s linear infinite`,
               animationDelay: `${p.delay}s`,
-              boxShadow: '0 1px 0 rgba(0,0,0,0.06)',
             }} />
           ))}
         </div>
 
         <GameContextBar code={code} />
-        <main style={{
-          maxWidth: 880, margin: '40px auto 0',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: 32, position: 'relative', zIndex: 2,
-        }}>
+        <main style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? 'No winner' : 'Champions'}</BdLabel>
             <h1 style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
               fontSize: 'clamp(56px, 10vw, 96px)',
-              lineHeight: 0.98, textAlign: 'center',
-              letterSpacing: '-0.025em', margin: 0,
+              lineHeight: 0.98, textAlign: 'center', letterSpacing: '-0.025em', margin: 0,
             }}>
               {isTie ? (
                 <>It's a <span style={{ color: 'var(--bd-sun-deep)' }}>tie</span>.</>
               ) : (
-                <>
-                  <span style={{ color: 'var(--bd-coral-deep)' }}>{winner?.name}</span>
-                  <br />
-                  <span style={{ fontStyle: 'italic', fontWeight: 400 }}>wins.</span>
-                </>
+                <><span style={{ color: 'var(--bd-coral-deep)' }}>{winner?.name}</span><br /><span style={{ fontStyle: 'italic', fontWeight: 400 }}>wins.</span></>
               )}
             </h1>
             <p style={{ fontSize: 16, color: 'var(--bd-ink-soft)', textAlign: 'center', maxWidth: 460, margin: 0 }}>
-              {isTie
-                ? 'Both teams locked in at the same score. Run it back?'
-                : `Sharp tongues, sharper guesses. ${(winner?.name ?? '').split(' ')[0]} took it home.`}
+              {isTie ? 'Both teams locked in at the same score. Run it back?' : `Sharp tongues, sharper guesses. ${(winner?.name ?? '').split(' ')[0]} took it home.`}
             </p>
           </div>
 
-          <div style={{
-            ...cardBase, width: '100%', padding: 28,
-            background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)',
-            color: 'var(--bd-bg)',
-            boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)',
-          }}>
+          <div style={{ ...cardBase, width: '100%', padding: 28, background: 'var(--bd-ink)', borderColor: 'var(--bd-ink)', color: 'var(--bd-bg)', boxShadow: '0 8px 0 var(--bd-coral), 0 18px 36px -12px rgba(31,27,22,0.5)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 24, alignItems: 'center' }}>
               {sorted.map((team, i) => {
                 const isWinner = !isTie && team.id === data.winnerId
@@ -1127,16 +1410,10 @@ export default function AliasPage({ code }: AliasPageProps) {
                       <BdLabel style={{ color: 'rgba(251,246,238,0.6)', display: 'block', marginBottom: 6 }}>
                         {isWinner ? '★ Winner' : (isTie ? 'Team' : 'Runner-up')}
                       </BdLabel>
-                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: accent, lineHeight: 1.1, marginBottom: 4 }}>
-                        {team.name}
-                      </div>
-                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-bg)' }}>
-                        {team.score}
-                      </div>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 30, color: accent, lineHeight: 1.1, marginBottom: 4 }}>{team.name}</div>
+                      <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 72, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--bd-bg)' }}>{team.score}</div>
                     </div>
-                    {i === 0 && (
-                      <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontStyle: 'italic', color: 'rgba(251,246,238,0.5)' }}>vs</span>
-                    )}
+                    {i === 0 && <span style={{ fontFamily: FONT_DISPLAY, fontSize: 28, fontStyle: 'italic', color: 'rgba(251,246,238,0.5)' }}>vs</span>}
                   </React.Fragment>
                 )
               })}
@@ -1145,18 +1422,12 @@ export default function AliasPage({ code }: AliasPageProps) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             {isHost && (
-              <button
-                style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }}
-                onClick={handleStartGame}
-                disabled={isStarting}
-              >
+              <button style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }} onClick={handleStartGame} disabled={isStarting}>
                 {isStarting ? 'Starting…' : t('alias.playAgain')}
                 <span aria-hidden style={{ fontSize: 18 }}>↻</span>
               </button>
             )}
-            <button style={linkBtn} onClick={() => router.push('/games')}>
-              Leave game
-            </button>
+            <button style={linkBtn} onClick={() => router.push('/games')}>Leave game</button>
           </div>
         </main>
       </div>
