@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import GameIcon from '@/components/GameIcon'
-import { getCatalogGames, type GameCatalogEntry } from '@/lib/game-catalog'
+import { getCatalogGames, isAvailableCatalogEntry, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -77,9 +77,9 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
         <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', lineHeight: 1.5, flex: 1 }}>{desc}</p>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[`👥 ${players}`, `⏱ ${time}`, diff, tag].map((chip) => (
+          {[`👥 ${players}`, `⏱ ${time}`, diff, tag].filter(Boolean).map((chip, i) => (
             <span
-              key={chip}
+              key={`${i}-${chip}`}
               style={{
                 padding: '5px 10px',
                 borderRadius: 999,
@@ -143,6 +143,7 @@ const GAME_ACCENT_BG: Record<string, string> = {
   'tic-tac-toe': 'rgba(255,107,91,0.10)',
   memory: 'rgba(79,201,166,0.12)',
   'connect-four': 'rgba(255,107,91,0.10)',
+  alias: 'rgba(255,107,91,0.10)',
 }
 
 const GAME_DETAIL_HREF: Record<string, string> = {
@@ -151,6 +152,7 @@ const GAME_DETAIL_HREF: Record<string, string> = {
   'tic-tac-toe': '/games/tic-tac-toe',
   memory: '/games/memory',
   'connect-four': '/games/connect-four',
+  alias: '/games/alias',
 }
 
 function fallbackName(id: string) {
@@ -200,7 +202,7 @@ function getIllustration(gameId: string, emoji: string) {
 export default function GameRibbon() {
   const { t } = useTranslation()
   const catalogGames = getCatalogGames()
-  const availableGames = catalogGames.filter((game) => game.availability === 'available')
+  const availableGames = catalogGames.filter(isAvailableCatalogEntry)
   const inDevelopmentCount = catalogGames.filter((game) => game.availability === 'in-development').length
   const plannedCount = catalogGames.filter((game) => game.availability === 'planned').length
 
@@ -254,6 +256,16 @@ export default function GameRibbon() {
       desc: t('games.connect_four.ribbon.desc'),
       accentBg: GAME_ACCENT_BG['connect-four'],
       detailHref: GAME_DETAIL_HREF['connect-four'],
+    },
+    alias: {
+      name: t('games.alias.name'),
+      tag: t('games.alias.ribbon.tag'),
+      players: '4-16',
+      time: t('games.alias.ribbon.time'),
+      diff: t('games.alias.difficulty'),
+      desc: t('games.alias.ribbon.desc'),
+      accentBg: GAME_ACCENT_BG.alias,
+      detailHref: GAME_DETAIL_HREF.alias,
     },
   }
 

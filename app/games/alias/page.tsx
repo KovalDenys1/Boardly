@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import GameDetailPage from '../components/GameDetailPage'
 
 export const metadata: Metadata = {
-  title: 'Alias Coming Soon - Word Description Team Game',
+  title: 'Play Alias Online - Team Word Description Game',
   description:
     'Play Alias online with friends for free! 4–16 players, real-time word guessing. Describe words to your team against the clock — no download needed. Start on Boardly now!',
   keywords: [
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     'alias browser game',
   ],
   openGraph: {
-    title: 'Alias Coming Soon - Team Word Game | Boardly',
+    title: 'Play Alias Online - Team Word Game | Boardly',
     description:
       'Describe words to your team without saying the word itself. Race against the clock, earn points, and outlast the other team. Free, 4–16 players.',
     url: 'https://boardly.online/games/alias',
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Alias Coming Soon | Boardly',
+    title: 'Play Alias Online | Boardly',
     description: 'Real-time team word game in your browser. Describe, guess, and score. Free, no download.',
   },
   alternates: {
     canonical: 'https://boardly.online/games/alias',
   },
   robots: {
-    index: false,
+    index: true,
     follow: true,
   },
 }
@@ -70,14 +70,15 @@ export default function AliasGamePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <GameDetailPage
         gameName="Alias"
-        title="Alias Is Coming Soon"
+        title="Play Alias Online"
         description="A team word game where one player describes secret words and the team races to guess as many as possible."
         icon="🗣️"
         iconLabel="Alias"
+        gameId="alias"
+        accentColor="var(--bd-coral)"
         accent="var(--bd-coral)"
         lobbiesHref="/games/alias/lobbies"
-        primaryCtaLabel="Coming soon"
-        primaryCtaDisabled
+        primaryCtaLabel="Play now"
         facts={[
           { label: 'Players', value: '4–16' },
           { label: 'Price', value: 'Free' },

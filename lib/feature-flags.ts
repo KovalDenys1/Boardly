@@ -31,10 +31,3 @@ export function isFakeArtistEnabled(): boolean {
     parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_FAKE_ARTIST)
   )
 }
-
-export function isAliasEnabled(): boolean {
-  return (
-    parseBooleanFlag(process.env.ENABLE_ALIAS) ||
-    parseBooleanFlag(process.env.NEXT_PUBLIC_ENABLE_ALIAS)
-  )
-}

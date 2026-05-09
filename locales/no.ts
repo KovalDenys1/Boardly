@@ -811,6 +811,11 @@ const no = {
       name: 'Alias-spill',
       description: 'Forklar ord til laget ditt uten å bruke ordet selv!',
       difficulty: 'Middels',
+      ribbon: {
+        desc: 'Én spiller beskriver et hemmelig ord, laget kapper om å gjette det. Gjettede ord gir poeng.',
+        tag: 'Lag',
+        time: '20 min',
+      },
       lobbies: {
         title: 'Alias-spill',
         subtitle: 'Bli med i et spill eller opprett ditt eget lobbyrom!',

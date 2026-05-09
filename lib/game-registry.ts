@@ -19,7 +19,6 @@ import { LiarsPartyGame } from './games/liars-party-game'
 import { FakeArtistGame } from './games/fake-artist-game'
 import { AliasGame } from './games/alias'
 import {
-  isAliasEnabled,
   isFakeArtistEnabled,
   isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
@@ -37,12 +36,12 @@ export type RegisteredGameType =
   | 'rock_paper_scissors'
   | 'memory'
   | 'connect_four'
+  | 'alias'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
   | 'liars_party'
   | 'fake_artist'
-  | 'alias'
 export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
@@ -152,6 +151,20 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     create: (id, cfg) =>
       new ConnectFourGame(id, { maxPlayers: 2, minPlayers: 2, ...cfg }),
   },
+
+  alias: {
+    metadata: {
+      type: 'alias',
+      name: 'Alias',
+      icon: '🗣️',
+      minPlayers: 4,
+      maxPlayers: 16,
+      supportsBots: false,
+      translationKey: 'alias',
+    },
+    create: (id, _cfg) =>
+      new AliasGame(id),
+  },
 }
 
 const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
@@ -210,20 +223,6 @@ const FAKE_ARTIST_ENTRY: GameRegistryEntry = {
     new FakeArtistGame(id, { maxPlayers: 10, minPlayers: 4, ...cfg }),
 }
 
-const ALIAS_ENTRY: GameRegistryEntry = {
-  metadata: {
-    type: 'alias',
-    name: 'Alias',
-    icon: '🗣️',
-    minPlayers: 4,
-    maxPlayers: 16,
-    supportsBots: false,
-    translationKey: 'alias',
-  },
-  create: (id, _cfg) =>
-    new AliasGame(id),
-}
-
 function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
   const stableEntry = REGISTRY[gameType as RegisteredGameType]
   if (stableEntry) {
@@ -244,10 +243,6 @@ function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_ENTRY
   }
-  if (gameType === 'alias' && isAliasEnabled()) {
-    return ALIAS_ENTRY
-  }
-
   return undefined
 }
 
@@ -315,9 +310,6 @@ export function getSupportedGameTypes(): SupportedGameType[] {
   if (isFakeArtistEnabled()) {
     experimentalTypes.push('fake_artist')
   }
-  if (isAliasEnabled()) {
-    experimentalTypes.push('alias')
-  }
 
   return [...stableTypes, ...experimentalTypes]
 }
@@ -343,8 +335,7 @@ export function isSupportedGameType(value: string): value is SupportedGameType {
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'liars_party' && isLiarsPartyEnabled()) ||
-    (value === 'fake_artist' && isFakeArtistEnabled()) ||
-    (value === 'alias' && isAliasEnabled())
+    (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
 

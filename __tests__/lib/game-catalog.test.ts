@@ -5,6 +5,7 @@ import {
   getCatalogGames,
   hasBotSupport,
   isAvailableGameType,
+  isAvailableCatalogEntry,
 } from '@/lib/game-catalog'
 
 const FEATURE_ENV_KEYS = [
@@ -43,6 +44,7 @@ describe('game catalog availability', () => {
       'tic_tac_toe',
       'memory',
       'connect_four',
+      'alias',
     ])
     expect(isAvailableGameType('yahtzee')).toBe(true)
     expect(isAvailableGameType('rock_paper_scissors')).toBe(false)
@@ -51,6 +53,18 @@ describe('game catalog availability', () => {
   it('exposes memory as a bot-supported game type', () => {
     expect(hasBotSupport('memory')).toBe(true)
     expect(getBotSupportedGameTypes()).toContain('memory')
+  })
+
+  it('every available game has gameType, route, and lobbyCreateConfig', () => {
+    const available = getCatalogGames().filter(isAvailableCatalogEntry)
+
+    expect(available.length).toBeGreaterThan(0)
+    for (const game of available) {
+      expect(game.gameType).toBeDefined()
+      expect(game.route).toBeDefined()
+      expect(game.lobbyCreateConfig).toBeDefined()
+      expect(game.lobbyCreateConfig.allowedPlayers.length).toBeGreaterThan(0)
+    }
   })
 
   it('can promote experimental catalog entries through the shared availability path', () => {

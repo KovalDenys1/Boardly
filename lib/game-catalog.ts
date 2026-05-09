@@ -1,5 +1,4 @@
 import {
-  isAliasEnabled,
   isFakeArtistEnabled,
   isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
@@ -13,12 +12,12 @@ export type RegisteredGameType =
   | 'rock_paper_scissors'
   | 'memory'
   | 'connect_four'
+  | 'alias'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
   | 'liars_party'
   | 'fake_artist'
-  | 'alias'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
 
@@ -31,18 +30,37 @@ export type LobbyCreateConfig = {
   difficulty?: { options: string[]; default: string }
 }
 
-export type GameCatalogEntry = {
+type GameCatalogEntryBase = {
   id: string
-  gameType?: SupportedCatalogGameType
   nameKey: string
   emoji: string
   descriptionKey: string
   players: string
   difficultyKey: string
-  availability: GameCatalogAvailability
-  route?: string
   color: string
+}
+
+/** A game that is live and playable — gameType, route, and lobbyCreateConfig are all required. */
+export type AvailableGameCatalogEntry = GameCatalogEntryBase & {
+  availability: 'available'
+  gameType: SupportedCatalogGameType
+  route: string
+  lobbyCreateConfig: LobbyCreateConfig
+}
+
+/** A game that is not yet available — all fields beyond the base are optional. */
+export type NonAvailableGameCatalogEntry = GameCatalogEntryBase & {
+  availability: 'in-development' | 'planned'
+  gameType?: SupportedCatalogGameType
+  route?: string
   lobbyCreateConfig?: LobbyCreateConfig
+}
+
+export type GameCatalogEntry = AvailableGameCatalogEntry | NonAvailableGameCatalogEntry
+
+/** Type guard — narrows to AvailableGameCatalogEntry (static available + has lobbyCreateConfig). */
+export function isAvailableCatalogEntry(game: GameCatalogEntry): game is AvailableGameCatalogEntry {
+  return game.availability === 'available' && game.lobbyCreateConfig !== undefined
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -112,6 +130,16 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     supportsBots: true,
     translationKey: 'connect_four',
   },
+
+  alias: {
+    type: 'alias',
+    name: 'Alias',
+    icon: '🗣️',
+    minPlayers: 4,
+    maxPlayers: 16,
+    supportsBots: false,
+    translationKey: 'alias',
+  },
 }
 
 const TELEPHONE_DOODLE_METADATA: GameMetadata = {
@@ -152,16 +180,6 @@ const FAKE_ARTIST_METADATA: GameMetadata = {
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'fake_artist',
-}
-
-const ALIAS_METADATA: GameMetadata = {
-  type: 'alias',
-  name: 'Alias',
-  icon: '🗣️',
-  minPlayers: 4,
-  maxPlayers: 16,
-  supportsBots: false,
-  translationKey: 'alias',
 }
 
 const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
@@ -252,6 +270,24 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
       gradient: 'from-red-500 via-orange-400 to-yellow-400',
       allowedPlayers: [2],
       defaultMaxPlayers: 2,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
+    },
+  },
+  {
+    id: 'alias',
+    gameType: 'alias',
+    nameKey: 'games.alias.name',
+    emoji: '🗣️',
+    descriptionKey: 'games.alias.description',
+    players: '4-16',
+    difficultyKey: 'games.alias.difficulty',
+    availability: 'available',
+    route: '/games/alias/lobbies',
+    color: 'from-coral-400 to-red-500',
+    lobbyCreateConfig: {
+      gradient: 'from-coral-500 via-red-500 to-pink-500',
+      allowedPlayers: [4, 6, 8, 10, 12, 16],
+      defaultMaxPlayers: 8,
       turnTimer: { options: [30, 60, 90, 120], default: 60 },
     },
   },
@@ -360,8 +396,7 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
     (value === 'liars_party' && isLiarsPartyEnabled()) ||
-    (value === 'fake_artist' && isFakeArtistEnabled()) ||
-    (value === 'alias' && isAliasEnabled())
+    (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
 
@@ -380,9 +415,6 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
-  }
-  if (gameType === 'alias' && isAliasEnabled()) {
-    return ALIAS_METADATA
   }
   return null
 }
@@ -410,7 +442,6 @@ export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
   if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
   if (isLiarsPartyEnabled()) types.push('liars_party')
   if (isFakeArtistEnabled()) types.push('fake_artist')
-  if (isAliasEnabled()) types.push('alias')
   return types
 }
 
@@ -434,7 +465,7 @@ export function getAvailableGameTypes(options?: {
   enabledExperimental?: readonly string[]
 }): SupportedCatalogGameType[] {
   return getCatalogAvailableGames(options).flatMap((game) =>
-    game.gameType ? [game.gameType] : []
+    game.gameType !== undefined ? [game.gameType] : []
   )
 }
 
@@ -454,10 +485,11 @@ export function getCatalogGames(options?: {
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())
 
+    // Promoted experimental games may lack lobbyCreateConfig — isAvailableCatalogEntry guards this.
     return {
       ...game,
       availability: isEnabled ? 'available' : game.availability,
-    }
+    } as GameCatalogEntry
   })
 }
 
