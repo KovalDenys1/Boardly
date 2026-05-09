@@ -1831,6 +1831,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onJoinAsGuest={handleGuestJoinLobby}
               onLogin={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
               onRegister={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+              onWatchAsSpectator={lobby?.allowSpectators ? () => router.push(`/lobby/${code}/spectate`) : undefined}
             />
           )}
         </div>

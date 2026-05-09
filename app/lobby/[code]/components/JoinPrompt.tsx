@@ -12,6 +12,7 @@ interface JoinPromptProps {
     name?: string
     isPrivate?: boolean
     gameType?: string
+    allowSpectators?: boolean
     [key: string]: unknown
   }
   viewerMode: JoinViewerMode
@@ -25,6 +26,7 @@ interface JoinPromptProps {
   onJoinAsGuest: () => void
   onLogin: () => void
   onRegister: () => void
+  onWatchAsSpectator?: () => void
 }
 
 export default function JoinPrompt({
@@ -40,6 +42,7 @@ export default function JoinPrompt({
   onJoinAsGuest,
   onLogin,
   onRegister,
+  onWatchAsSpectator,
 }: JoinPromptProps) {
   const router = useRouter()
   const { t } = useTranslation()
@@ -146,6 +149,15 @@ export default function JoinPrompt({
               <span className="text-lg">⚠️</span>
               <p className="font-semibold text-sm">{error}</p>
             </div>
+            {error === 'Lobby is full' && lobby.allowSpectators && onWatchAsSpectator && (
+              <button
+                type="button"
+                onClick={onWatchAsSpectator}
+                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-white px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10"
+              >
+                👁 Watch as spectator instead →
+              </button>
+            )}
           </div>
         )}
 
