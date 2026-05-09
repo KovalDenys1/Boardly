@@ -193,7 +193,7 @@ describe('Guest mode API endpoints', () => {
       body: JSON.stringify({
         name: 'Guest Lobby',
         maxPlayers: 8,
-        gameType: 'alias',
+        gameType: 'liars_party',
       }),
     })
 
