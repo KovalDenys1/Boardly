@@ -378,10 +378,16 @@ export default function AliasPage({ code }: AliasPageProps) {
     })
   }, [])
 
-  const loadLobby = useCallback(async () => {
+  const loadLobby = useCallback(async (attempt = 1) => {
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}?includeFinished=true`)
       const data = await res.json()
+
+      if (res.status === 429 && attempt <= 3) {
+        const retryAfterMs = ((data.retryAfter as number | undefined) ?? 2) * 1000
+        await new Promise((resolve) => setTimeout(resolve, retryAfterMs))
+        return loadLobby(attempt + 1)
+      }
 
       if (!res.ok) {
         clientLogger.error('AliasPage: failed to load lobby', data.error)
