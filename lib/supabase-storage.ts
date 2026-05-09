@@ -6,11 +6,12 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) {
+  // Prefer service role key (bypasses RLS); fall back to anon key for server-side uploads
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) {
     throw new Error('Supabase storage not configured: missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
   }
-  return createClient(url, serviceKey, { auth: { persistSession: false } })
+  return createClient(url, key, { auth: { persistSession: false } })
 }
 
 export function validateAvatarFile(file: File): string | null {
