@@ -2100,11 +2100,11 @@ const no = {
     },
     q3: {
       question: 'Hvilke spill er tilgjengelige på Boardly?',
-      answer: 'Boardly tilbyr for øyeblikket Yahtzee, Tic Tac Toe, Memory-kortspill og Gjett spionen. Flere spill er under utvikling, inkludert Alias, Sketch & Guess og andre.',
+      answer: 'Boardly tilbyr for øyeblikket Yahtzee, Tic Tac Toe, Fire på rad, Memory-kortspill og Gjett spionen. Flere spill er under utvikling, inkludert Alias, Sketch & Guess og andre.',
     },
     q4: {
       question: 'Kan jeg spille alene?',
-      answer: 'Ja. Yahtzee og Tic Tac Toe kan legge til dataspillere, så du kan starte selv når venner er offline.',
+      answer: 'Ja. Yahtzee, Tic Tac Toe og Fire på rad kan legge til dataspillere, så du kan starte selv når venner er offline.',
     },
     q5: {
       question: 'Hvordan spiller jeg med venner online?',
@@ -2116,7 +2116,7 @@ const no = {
     },
     q7: {
       question: 'Hvor mange spillere kan spille samtidig?',
-      answer: 'Det avhenger av spillet. Tic Tac Toe støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i ett rom.',
+      answer: 'Det avhenger av spillet. Tic Tac Toe og Fire på rad støtter 2 spillere, Yahtzee og Memory støtter opptil 4, og Gjett spionen støtter opptil 10 spillere i ett rom.',
     },
     q8: {
       question: 'Er det noe å laste ned eller installere?',

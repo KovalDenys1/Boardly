@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 
 const COLS = 6
 const ROWS = 5
@@ -103,17 +104,6 @@ export default function HeroDemoConnectFour() {
       alignItems: 'center', justifyContent: 'center',
       gap: isMobile ? 6 : 8, padding: isMobile ? '6px 8px' : '10px 8px',
     }}>
-      {/* coming soon badge */}
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        background: 'rgba(255,255,255,0.9)', border: '2px solid var(--bd-ink)',
-        borderRadius: 999, padding: '4px 12px',
-        fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 11, color: 'var(--bd-ink)',
-        boxShadow: '2px 2px 0 var(--bd-ink)',
-      }}>
-        🚧 Coming soon
-      </div>
-
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 600, fontSize: 11,
         color: 'rgba(31,27,22,0.55)', minHeight: isMobile ? 0 : 16, textAlign: 'center', width: '100%',
@@ -185,6 +175,16 @@ export default function HeroDemoConnectFour() {
           )}
         </div>
       </div>
+
+      <Link
+        href="/games/connect-four"
+        style={{
+          fontSize: 12, fontWeight: 600,
+          color: 'rgba(31,27,22,0.5)', textDecoration: 'underline', marginTop: 2,
+        }}
+      >
+        Play full game →
+      </Link>
     </div>
   )
 }

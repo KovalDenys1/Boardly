@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import {
     ConnectFourGame,
     ConnectFourGameData,
+    ConnectFourMoveRecord,
     ConnectFourPendingRequest,
     PlayerDisc,
     ROWS,
@@ -23,6 +24,7 @@ import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
+import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
@@ -155,25 +157,133 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
     name: string; disc: PlayerDisc; isActive: boolean; isWinner: boolean; wins: number; side: 'left' | 'right';
     t: (k: TranslationKeys) => string
 }) {
-    const color = disc === 1 ? DISC_RED : DISC_YELLOW
-    const align = side === 'left' ? 'left' : 'right'
+    const discColor = disc === 1 ? DISC_RED : DISC_YELLOW
     return (
-        <div style={{ textAlign: align }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: side === 'left' ? 'flex-start' : 'flex-end' }}>
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
+            background: isActive ? 'white' : 'transparent',
+            border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
+            boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
+            flexDirection: side === 'right' ? 'row-reverse' : 'row',
+            transition: 'all 0.2s', minWidth: 0,
+        }}>
+            {/* Avatar + disc badge — mirrors TttPlayerCard's avatar + symbol badge */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div style={{
-                    width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0,
-                    boxShadow: isActive ? `0 0 8px ${color}` : 'none',
-                    transition: 'box-shadow 0.2s',
+                    width: 42, height: 42, borderRadius: '50%', background: discColor,
+                    display: 'grid', placeItems: 'center', border: '2px solid white',
+                    boxShadow: '0 0 0 2px var(--bd-ink)',
+                    fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
+                }}>
+                    {name.charAt(0).toUpperCase()}
+                </div>
+                {/* Disc icon badge */}
+                <div style={{
+                    position: 'absolute', bottom: -3, right: -3, width: 20, height: 20,
+                    borderRadius: '50%', background: discColor,
+                    border: '2px solid var(--bd-ink)', boxShadow: '1px 1px 0 var(--bd-ink)',
                 }} />
-                <div style={{
-                    fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
-                    color: isWinner ? 'var(--bd-mint-deep)' : 'var(--bd-ink)',
-                    maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>{name}</div>
-                {isWinner && <span style={{ fontSize: 13 }}>🏆</span>}
             </div>
-            <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 2, fontFamily: 'ui-monospace,monospace' }}>
-                {wins}W
+            <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {name}
+                    </span>
+                    {isWinner && (
+                        <span style={{
+                            display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
+                            background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
+                            boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)', whiteSpace: 'nowrap',
+                        }}>WIN</span>
+                    )}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginTop: 1 }}>
+                    {wins}W
+                </div>
+                {isActive && (
+                    <div style={{
+                        marginTop: 2, fontSize: 10, color: 'var(--bd-ink)', fontWeight: 600,
+                        display: 'flex', gap: 4, alignItems: 'center',
+                        justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
+                    }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: discColor, display: 'inline-block' }} />
+                        {t('games.connect_four.game.theirTurn')}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, t }: {
+    isFinished: boolean; winnerName: string | null; isDraw: boolean;
+    currentDisc: PlayerDisc; currentPlayerName: string; secs: number; moveCount: number; turnTimerLimit: number;
+    t: (k: TranslationKeys, opts?: Record<string, unknown>) => string;
+}) {
+    if (isFinished && !isDraw && winnerName) {
+        return (
+            <div style={{
+                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-coral)',
+            }}>
+                <span style={{
+                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                    background: 'var(--bd-sun)', color: 'var(--bd-ink)', border: '2px solid var(--bd-ink)',
+                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
+                }}>🏆</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.connect_four.game.playerWins', { player: winnerName })}</span>
+            </div>
+        )
+    }
+    if (isFinished && isDraw) {
+        return (
+            <div style={{
+                padding: '10px 16px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+                display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 4px 0 var(--bd-lav)',
+            }}>
+                <span style={{
+                    display: 'inline-flex', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700,
+                    background: 'var(--bd-lav)', color: 'white', border: '2px solid var(--bd-ink)',
+                    boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
+                }}>🤝</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.connect_four.game.draw')}</span>
+            </div>
+        )
+    }
+    const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
+    const danger = secs <= 5
+    const barColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
+    return (
+        <div style={{
+            padding: '10px 14px', borderRadius: 14, background: 'white',
+            border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
+            display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+            <div style={{
+                width: 28, height: 28, borderRadius: '50%', background: barColor, flexShrink: 0,
+                boxShadow: `0 0 0 2px var(--bd-ink)`,
+                transition: 'background 0.2s',
+            }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {currentPlayerName}
+                    <span style={{ color: 'var(--bd-ink-muted)', fontWeight: 500, marginLeft: 6, fontSize: 11 }}>
+                        #{moveCount + 1}
+                    </span>
+                </div>
+                <div style={{ marginTop: 6, height: 5, background: 'var(--bd-bg2)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{
+                        height: '100%', width: pct + '%',
+                        background: danger ? 'var(--bd-coral)' : barColor,
+                        transition: 'width 1s linear, background 0.2s',
+                    }} />
+                </div>
+            </div>
+            <div style={{
+                fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, minWidth: 44, textAlign: 'right',
+                color: danger ? 'var(--bd-coral-deep)' : 'var(--bd-ink)',
+            }}>
+                :{String(secs).padStart(2, '0')}
             </div>
         </div>
     )
@@ -302,7 +412,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const leaveApiStatusCodeRef = React.useRef<number | null>(null)
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
-    const [mobileTab, setMobileTab] = useState<'board' | 'chat'>('board')
+    const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -780,7 +890,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const isPendingResponder = !!pendingRequest && pendingRequest.responderId === currentUserId
     const canRequestUndo = !isMoveSubmitting && !pendingRequest && (gameData.undoSnapshots?.length ?? 0) > 0 && !isFinished
     const currentPlayerName = gameData.currentDisc === 1 ? p1Name : p2Name
-    const turnInfo = isFinished ? null : (isMyTurn() ? t('games.connect_four.game.yourTurn') : `${currentPlayerName}: ${t('games.connect_four.game.theirTurn')}`)
+    const moveHistory = Array.isArray(gameData.moveHistory) ? gameData.moveHistory : []
 
     const handleColClick = async (col: number) => {
         if (gameEngine.getState().status === 'finished') return
@@ -827,11 +937,11 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
 
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
+            <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
                 <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" t={t} />
                 <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        Connect Four
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+                        <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
                     </div>
                     <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1, color: 'var(--bd-ink)' }}>
                         {p1Wins}<span style={{ color: 'var(--bd-ink-muted)', margin: '0 6px' }}>:</span>{p2Wins}
@@ -846,21 +956,48 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     )
 
     const statusSection = (
-        <div style={{
-            padding: '8px 14px', borderRadius: 14, fontSize: 13, fontWeight: 600, textAlign: 'center',
-            background: isFinished ? (isDraw ? 'rgba(255,196,77,0.15)' : 'rgba(79,201,166,0.15)') : 'var(--bd-card-warm)',
-            border: '1.5px solid var(--bd-line)',
-            color: isFinished ? (isDraw ? 'var(--bd-sun-deep, #b07d00)' : 'var(--bd-mint-deep)') : 'var(--bd-ink)',
-        }}>
-            {isFinished
-                ? (isDraw ? t('games.connect_four.game.itsADraw') : `${winnerName} ${t('games.connect_four.game.winBadge')}!`)
-                : turnInfo
-            }
-            {!isFinished && typeof timeLeft === 'number' && timeLeft <= 10 && (
-                <span style={{ marginLeft: 8, color: 'var(--bd-coral)', fontFamily: 'ui-monospace,monospace' }}>
-                    {timeLeft}s
+        <C4StatusBanner
+            isFinished={isFinished}
+            winnerName={winnerName}
+            isDraw={isDraw}
+            currentDisc={gameData.currentDisc}
+            currentPlayerName={currentPlayerName}
+            secs={timeLeft}
+            moveCount={gameData.moveCount}
+            turnTimerLimit={turnTimerLimit}
+            t={t}
+        />
+    )
+
+    const COLUMN_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+    const historySection = (
+        <div className="ttt-history-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
+                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Moves</h3>
+                <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
+                    {moveHistory.length}/42
                 </span>
-            )}
+            </div>
+            <div className="ttt-history-list">
+                {moveHistory.length === 0
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — Red starts.</div>
+                    : moveHistory.slice().reverse().map((m: ConnectFourMoveRecord, index) => (
+                        <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
+                            <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
+                                #{String(moveHistory.length - index).padStart(2, '0')}
+                            </span>
+                            <div style={{ width: 16, height: 16, borderRadius: '50%', background: m.disc === 1 ? DISC_RED : DISC_YELLOW, flexShrink: 0, boxShadow: '0 0 0 1.5px var(--bd-ink)' }} />
+                            <span style={{ color: 'var(--bd-ink-soft)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                {m.disc === 1 ? p1Name : p2Name}
+                            </span>
+                            <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'ui-monospace,monospace', fontWeight: 700, flexShrink: 0, color: 'var(--bd-ink)' }}>
+                                col {COLUMN_LABELS[m.col]}
+                            </span>
+                        </div>
+                    ))
+                }
+            </div>
         </div>
     )
 
@@ -999,6 +1136,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                         {actionsSection}
                     </div>
                     <div className="ttt-right-col">
+                        {historySection}
                         {chatSection}
                     </div>
                 </div>
@@ -1012,6 +1150,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 <div className="ttt-tabs">
                     {([
                         { id: 'board', label: 'Board' },
+                        { id: 'history', label: `Moves (${moveHistory.length})` },
                         { id: 'chat', label: 'Chat' },
                     ] as const).map(tab => (
                         <button
@@ -1025,6 +1164,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {mobileTab === 'board' && <>{renderBoardSection()}{actionsSection}</>}
+                    {mobileTab === 'history' && historySection}
                     {mobileTab === 'chat' && chatSection}
                 </div>
             </div>

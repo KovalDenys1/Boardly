@@ -6,6 +6,13 @@ export type PlayerDisc = 1 | 2
 export const ROWS = 6
 export const COLS = 7
 
+export interface ConnectFourMoveRecord {
+  disc: PlayerDisc
+  col: number
+  row: number
+  timestamp: number
+}
+
 export interface ConnectFourUndoSnapshot {
   board: CellValue[][]
   currentDisc: PlayerDisc
@@ -35,6 +42,7 @@ export interface ConnectFourGameData {
   lastDroppedCol: number | null
   undoSnapshots?: ConnectFourUndoSnapshot[]
   pendingRequest?: ConnectFourPendingRequest | null
+  moveHistory?: ConnectFourMoveRecord[]
 }
 
 export class ConnectFourGame extends GameEngine {
@@ -53,6 +61,7 @@ export class ConnectFourGame extends GameEngine {
       lastDroppedCol: null,
       undoSnapshots: [],
       pendingRequest: null,
+      moveHistory: [],
     }
   }
 
@@ -114,6 +123,7 @@ export class ConnectFourGame extends GameEngine {
       gameData.lastDroppedCol = null
       gameData.undoSnapshots = []
       gameData.pendingRequest = null
+      gameData.moveHistory = []
       this.state.currentPlayerIndex = 0
       this.state.status = 'playing'
       this.state.winner = undefined
@@ -136,6 +146,7 @@ export class ConnectFourGame extends GameEngine {
     if (move.type === 'respond-undo') {
       if (move.data.accept === true) {
         this.undoLastMove(gameData)
+        gameData.moveHistory?.pop()
       }
       gameData.pendingRequest = null
       return
@@ -171,6 +182,8 @@ export class ConnectFourGame extends GameEngine {
     gameData.moveCount += 1
     gameData.lastDroppedRow = landRow
     gameData.lastDroppedCol = col
+    if (!Array.isArray(gameData.moveHistory)) gameData.moveHistory = []
+    gameData.moveHistory.push({ disc: gameData.currentDisc, col, row: landRow, timestamp: move.timestamp.getTime() })
 
     const winningLine = this.checkForWinner(gameData.board, landRow, col)
     if (winningLine) {
@@ -251,6 +264,7 @@ export class ConnectFourGame extends GameEngine {
 
   private ensureGameData(gameData: ConnectFourGameData): ConnectFourGameData {
     gameData.undoSnapshots = Array.isArray(gameData.undoSnapshots) ? gameData.undoSnapshots : []
+    gameData.moveHistory = Array.isArray(gameData.moveHistory) ? gameData.moveHistory : []
     gameData.pendingRequest =
       gameData.pendingRequest?.type === 'undo' ? gameData.pendingRequest : null
     return gameData

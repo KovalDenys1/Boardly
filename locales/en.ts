@@ -2112,11 +2112,11 @@ const en = {
     },
     q3: {
       question: 'What games are available on Boardly?',
-      answer: 'Boardly currently offers Yahtzee, Tic Tac Toe, Memory card game, and Guess the Spy. More games are in development, including Alias, Sketch & Guess, Telephone Doodle, and others.',
+      answer: 'Boardly currently offers Yahtzee, Tic Tac Toe, Connect Four, Memory card game, and Guess the Spy. More games are in development, including Alias, Sketch & Guess, Telephone Doodle, and others.',
     },
     q4: {
       question: 'Can I play solo?',
-      answer: 'Yes. Yahtzee and Tic Tac Toe can add computer players, so you can start even when friends are offline.',
+      answer: 'Yes. Yahtzee, Tic Tac Toe, and Connect Four can add computer players, so you can start even when friends are offline.',
     },
     q5: {
       question: 'How do I play with friends online?',
@@ -2128,7 +2128,7 @@ const en = {
     },
     q7: {
       question: 'How many players can play at once?',
-      answer: 'It depends on the game. Tic Tac Toe supports 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one room.',
+      answer: 'It depends on the game. Tic Tac Toe and Connect Four support 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one room.',
     },
     q8: {
       question: 'Is there anything to download or install?',
