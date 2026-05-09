@@ -26,6 +26,7 @@ type SelectedProfileUser = {
   email: string | null
   pendingEmail: string | null
   image: string | null
+  avatarUrl: string | null
   emailVerified: Date | null
   createdAt: Date
   publicProfileId: string | null
@@ -55,6 +56,7 @@ function buildProfilePayload(
     email: user.email,
     pendingEmail: user.pendingEmail,
     image: user.image,
+    avatarUrl: user.avatarUrl,
     emailVerified: user.emailVerified?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
     publicProfileId: user.publicProfileId,
@@ -101,6 +103,7 @@ async function getCurrentProfileUser(userId: string) {
       email: true,
       pendingEmail: true,
       image: true,
+      avatarUrl: true,
       emailVerified: true,
       createdAt: true,
       publicProfileId: true,
@@ -280,6 +283,7 @@ async function patchProfileHandler(req: NextRequest) {
         email: true,
         pendingEmail: true,
         image: true,
+        avatarUrl: true,
         emailVerified: true,
         createdAt: true,
         publicProfileId: true,

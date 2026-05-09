@@ -17,6 +17,7 @@ model Users {
   publicProfileId String?   @unique // Stable public ID used in shareable profile links
   passwordHash    String?
   image           String?
+  avatarUrl       String?
   isGuest         Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)

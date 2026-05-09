@@ -15,6 +15,7 @@ import BoardlySelect from '@/components/ui/BoardlySelect'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import AvatarPicker from '@/components/AvatarPicker'
 import PublicProfileView from '@/components/PublicProfileView'
 import {
   getStoredAppearancePreferences,
@@ -66,6 +67,7 @@ type ProfileSummary = {
   email: string | null
   pendingEmail: string | null
   image: string | null
+  avatarUrl: string | null
   emailVerified: string | null
   createdAt: string
   publicProfileId: string | null
@@ -1488,7 +1490,7 @@ export default function ProfilePage() {
                     <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:items-center">
                       <div className="relative mx-auto shrink-0 sm:mx-0">
                         <UserAvatar
-                          image={profileSummary?.image || session?.user?.image || null}
+                          image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
                           className="h-28 w-28 border-4 border-white bg-bd-lav text-white shadow-[0_0_0_3px_#1F1B16] sm:h-32 sm:w-32"
@@ -1730,6 +1732,22 @@ export default function ProfilePage() {
               )}
 
               <div className="space-y-5">
+                {/* Avatar picker */}
+                <div className={profileSurfaceClassName}>
+                  <div className="mb-5">
+                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">Avatar</h3>
+                  </div>
+                  <AvatarPicker
+                    currentAvatarUrl={profileSummary?.avatarUrl ?? null}
+                    currentImage={profileSummary?.image ?? null}
+                    username={profileSummary?.username ?? null}
+                    email={profileSummary?.email ?? null}
+                    onSaved={(avatarUrl) =>
+                      setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
+                    }
+                  />
+                </div>
+
                 <form onSubmit={handleUpdateProfile} className={profileSurfaceClassName}>
                   <div className="mb-5">
                     <h3 className="text-lg font-bold text-bd-ink dark:text-white">Profile details</h3>
