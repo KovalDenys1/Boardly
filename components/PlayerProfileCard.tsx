@@ -9,6 +9,7 @@ interface PlayerCardData {
   userId: string
   username: string | null
   image: string | null
+  avatarUrl?: string | null
   publicProfileId: string | null
   isGuest: boolean
   gamesPlayed: number
@@ -105,9 +106,9 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
           <>
             {/* Avatar + name */}
             <div className="flex items-center gap-3">
-              {data.image ? (
+              {(data.avatarUrl || data.image) ? (
                 <img
-                  src={data.image}
+                  src={data.avatarUrl ?? data.image!}
                   alt=""
                   className="w-14 h-14 rounded-full object-cover shrink-0"
                   style={{ outline: '2px solid var(--bd-line)' }}

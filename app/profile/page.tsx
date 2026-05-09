@@ -1467,6 +1467,7 @@ export default function ProfilePage() {
                   publicProfileId: profileSummary.publicProfileId,
                   username: profileSummary.username,
                   image: profileSummary.image,
+                  avatarUrl: profileSummary.avatarUrl,
                   createdAt: profileSummary.createdAt,
                   friendsCount: profileSummary.friendsCount,
                   gamesPlayed: profileSummary.gamesPlayed,

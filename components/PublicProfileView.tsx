@@ -21,6 +21,7 @@ export type PublicProfileViewData = {
   publicProfileId: string
   username: string | null
   image: string | null
+  avatarUrl?: string | null
   createdAt: string
   friendsCount: number
   gamesPlayed: number
@@ -225,9 +226,9 @@ export default function PublicProfileView({
       <div
         className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-[2rem] border-[3px] border-bd-ink bg-bd-lav text-white shadow-[6px_6px_0_var(--bd-ink)]`}
       >
-        {profile.image ? (
+        {(profile.avatarUrl || profile.image) ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.image} alt={displayName} className="h-full w-full object-cover" />
+          <img src={profile.avatarUrl ?? profile.image!} alt={displayName} className="h-full w-full object-cover" />
         ) : (
           <span className="font-display text-7xl font-black uppercase sm:text-8xl">
             {displayName.charAt(0)}
