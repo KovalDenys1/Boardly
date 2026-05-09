@@ -1218,11 +1218,11 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-        <div style={pageBg} data-testid="alias-turn-results-screen">
+        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} right={<BdLabel>{t('alias.turnResults')}</BdLabel>} />
-          <main style={{ maxWidth: 980, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'start' }}>
+          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
-            <section style={{ ...cardBase, padding: 28, minHeight: 420 }}>
+            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <BdLabel>{describerPlayer?.name ? `${describerPlayer.name} described` : 'Words this turn'}</BdLabel>
@@ -1235,7 +1235,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                   <ScorePill kind="skipped" count={skippedCount} />
                 </div>
               </div>
-              <div style={{ maxHeight: 380, overflowY: 'auto', marginRight: -4, paddingRight: 4 }}>
+              <div style={{ flex: 1, overflowY: 'auto', marginRight: -4, paddingRight: 4 }}>
                 {wordResults.length === 0 && (
                   <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>No words played this turn.</div>
                 )}
@@ -1320,7 +1320,7 @@ export default function AliasPage({ code }: AliasPageProps) {
 
               {isHost ? (
                 <button
-                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
+                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center', marginTop: 'auto' }}
                   onClick={() => handleMove('next_turn', {})}
                   disabled={isMoveSubmitting}
                 >
@@ -1333,6 +1333,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                   background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
                   borderRadius: 999, padding: '14px 18px',
                   fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
+                  marginTop: 'auto',
                 }}>
                   <span className="bd-float" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--bd-ink-muted)' }} />
                   Waiting for host…
