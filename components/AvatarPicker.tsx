@@ -5,8 +5,7 @@ import { useSession } from 'next-auth/react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { showToast } from '@/lib/i18n-toast'
 
-const DEFAULT_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8] as const
-const PREMIUM_AVATARS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const
+const ALL_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8, 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const
 export const PREMIUM_PACK_ID = 'premium-pack-1'
 export const PREMIUM_PACK_PRICE = '$2.99'
 
@@ -15,9 +14,9 @@ type AvatarPickerProps = {
   currentImage: string | null
   username: string | null
   email: string | null
-  hasPremiumPack: boolean
+  hasUploadPack: boolean
   onSaved: (avatarUrl: string | null) => void
-  onUnlockPremium?: () => void
+  onUnlockUpload?: () => void
 }
 
 export default function AvatarPicker({
@@ -25,9 +24,9 @@ export default function AvatarPicker({
   currentImage,
   username,
   email,
-  hasPremiumPack,
+  hasUploadPack,
   onSaved,
-  onUnlockPremium,
+  onUnlockUpload,
 }: AvatarPickerProps) {
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -35,13 +34,18 @@ export default function AvatarPicker({
 
   const displayAvatar = currentAvatarUrl || currentImage
 
-  async function selectAvatar(avatarId: number | string) {
+  function avatarUrl(id: number | string): string {
+    if (typeof id === 'number') return `/avatars/defaults/avatar-${id}.svg`
+    return `/avatars/premium/avatar-${id}.svg`
+  }
+
+  async function selectAvatar(id: number | string) {
     setSaving(true)
     try {
       const res = await fetch('/api/user/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatarId }),
+        body: JSON.stringify({ avatarId: id }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -119,19 +123,19 @@ export default function AvatarPicker({
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {currentImage && !currentAvatarUrl
               ? 'Using your connected account photo — pick one below to override'
-              : 'Pick a default or upload your own (max 2 MB)'}
+              : 'Pick an avatar below or upload your own photo'}
           </p>
         </div>
       </div>
 
-      {/* Default avatar grid */}
+      {/* Avatar grid — all free */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Free avatars
+          Choose an avatar
         </p>
         <div className="flex flex-wrap gap-2">
-          {DEFAULT_AVATARS.map((id) => {
-            const url = `/avatars/defaults/avatar-${id}.svg`
+          {ALL_AVATARS.map((id) => {
+            const url = avatarUrl(id)
             const isSelected = currentAvatarUrl === url
             return (
               <button
@@ -143,7 +147,7 @@ export default function AvatarPicker({
                     ? 'border-indigo-500 shadow-[0_0_0_2px_#6366f1]'
                     : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
-                aria-label={`Default avatar ${id}`}
+                aria-label={`Avatar ${id}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Avatar ${id}`} className="h-full w-full" />
@@ -153,13 +157,13 @@ export default function AvatarPicker({
         </div>
       </div>
 
-      {/* Premium avatar grid */}
+      {/* Upload — premium */}
       <div>
         <div className="mb-2 flex items-center gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Premium avatars
+            Custom photo
           </p>
-          {hasPremiumPack ? (
+          {hasUploadPack ? (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
               UNLOCKED
             </span>
@@ -170,78 +174,46 @@ export default function AvatarPicker({
           )}
         </div>
 
-        <div className="relative">
-          <div className={`flex flex-wrap gap-2 ${!hasPremiumPack ? 'pointer-events-none' : ''}`}>
-            {PREMIUM_AVATARS.map((id) => {
-              const url = `/avatars/premium/avatar-${id}.svg`
-              const isSelected = currentAvatarUrl === url
-              return (
-                <button
-                  key={id}
-                  onClick={() => selectAvatar(id)}
-                  disabled={saving || !hasPremiumPack}
-                  className={`relative h-12 w-12 overflow-hidden rounded-full border-2 transition-all ${
-                    hasPremiumPack
-                      ? `hover:scale-105 disabled:opacity-50 ${
-                          isSelected
-                            ? 'border-amber-500 shadow-[0_0_0_2px_#f59e0b]'
-                            : 'border-transparent hover:border-amber-300'
-                        }`
-                      : 'border-transparent opacity-50'
-                  }`}
-                  aria-label={`Premium avatar ${id}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Premium avatar ${id}`} className="h-full w-full" />
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Locked overlay */}
-          {!hasPremiumPack && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-              <span className="text-xl">🔒</span>
-              <p className="mt-1 text-xs font-semibold text-bd-ink dark:text-white">Premium Pack</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {hasUploadPack ? (
+            <>
               <button
                 type="button"
-                onClick={onUnlockPremium}
-                className="mt-2 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={saving}
+                className="rounded-xl border border-bd-line bg-white px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-card-warm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
               >
-                Unlock for {PREMIUM_PACK_PRICE}
+                {saving ? 'Saving…' : 'Upload photo'}
               </button>
-            </div>
+              {currentAvatarUrl && (
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  disabled={saving}
+                  className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
+                >
+                  Remove
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onUnlockUpload}
+              className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+            >
+              <span>🔒</span>
+              <span>Unlock photo upload for {PREMIUM_PACK_PRICE}</span>
+            </button>
           )}
         </div>
-      </div>
-
-      {/* Upload + remove actions */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={saving}
-          className="rounded-xl border border-bd-line bg-white px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-card-warm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
-        >
-          {saving ? 'Saving…' : 'Upload photo'}
-        </button>
-        {currentAvatarUrl && (
-          <button
-            type="button"
-            onClick={removeAvatar}
-            disabled={saving}
-            className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
-          >
-            Remove
-          </button>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          className="hidden"
-          onChange={handleFileChange}
-        />
       </div>
     </div>
   )
