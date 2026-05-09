@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import { showToast } from '@/lib/i18n-toast'
 
 const DEFAULT_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8] as const
 
@@ -21,28 +22,27 @@ export default function AvatarPicker({
   onSaved,
 }: AvatarPickerProps) {
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const displayAvatar = currentAvatarUrl || currentImage
 
   async function selectDefault(avatarId: number) {
     setSaving(true)
-    setError(null)
     try {
       const res = await fetch('/api/user/avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ avatarId }),
       })
+      const data = await res.json()
       if (!res.ok) {
-        const data = await res.json()
-        setError(data.error ?? 'Failed to save avatar')
+        showToast.error('errors.generic', data.error ?? 'Failed to save avatar')
         return
       }
-      const { avatarUrl } = await res.json()
-      onSaved(avatarUrl)
+      onSaved(data.avatarUrl)
+      showToast.success('toast.success', 'Avatar updated')
+    } catch {
+      showToast.error('errors.generic', 'Failed to save avatar')
     } finally {
       setSaving(false)
     }
@@ -52,22 +52,20 @@ export default function AvatarPicker({
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploadError(null)
     setSaving(true)
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const res = await fetch('/api/user/avatar', {
-        method: 'POST',
-        body: formData,
-      })
+      const res = await fetch('/api/user/avatar', { method: 'POST', body: formData })
+      const data = await res.json()
       if (!res.ok) {
-        const data = await res.json()
-        setUploadError(data.error ?? 'Upload failed')
+        showToast.error('errors.generic', data.error ?? 'Upload failed')
         return
       }
-      const { avatarUrl } = await res.json()
-      onSaved(avatarUrl)
+      onSaved(data.avatarUrl)
+      showToast.success('toast.success', 'Avatar uploaded')
+    } catch {
+      showToast.error('errors.generic', 'Upload failed. Check your connection.')
     } finally {
       setSaving(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -76,35 +74,43 @@ export default function AvatarPicker({
 
   async function removeAvatar() {
     setSaving(true)
-    setError(null)
     try {
       await fetch('/api/user/avatar', { method: 'DELETE' })
       onSaved(null)
+      showToast.success('toast.success', 'Avatar removed')
+    } catch {
+      showToast.error('errors.generic', 'Failed to remove avatar')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Current avatar preview */}
       <div className="flex items-center gap-4">
         <UserAvatar
           image={displayAvatar}
           userName={username}
           userEmail={email}
-          className="h-16 w-16 bg-white/10 text-2xl font-bold text-white"
+          className="h-16 w-16 shrink-0 bg-bd-lav text-white"
           textClassName="text-2xl font-bold"
         />
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-white">Profile photo</p>
-          <p className="text-xs text-slate-400">Pick a default or upload your own (max 2MB)</p>
+        <div>
+          <p className="text-sm font-semibold text-bd-ink dark:text-white">Profile photo</p>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            {currentImage && !currentAvatarUrl
+              ? 'Using your connected account photo — pick one below to override'
+              : 'Pick a default or upload your own (max 2 MB)'}
+          </p>
         </div>
       </div>
 
       {/* Default avatar grid */}
       <div>
-        <p className="mb-2 text-xs uppercase tracking-wide text-slate-400">Default avatars</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Default avatars
+        </p>
         <div className="flex flex-wrap gap-2">
           {DEFAULT_AVATARS.map((id) => {
             const url = `/avatars/defaults/avatar-${id}.svg`
@@ -114,8 +120,10 @@ export default function AvatarPicker({
                 key={id}
                 onClick={() => selectDefault(id)}
                 disabled={saving}
-                className={`h-12 w-12 overflow-hidden rounded-full ring-2 ring-offset-2 ring-offset-slate-900 transition-all hover:scale-105 disabled:opacity-50 ${
-                  isSelected ? 'ring-indigo-400' : 'ring-transparent hover:ring-white/30'
+                className={`h-12 w-12 overflow-hidden rounded-full border-2 transition-all hover:scale-105 disabled:opacity-50 ${
+                  isSelected
+                    ? 'border-indigo-500 shadow-[0_0_0_2px_#6366f1]'
+                    : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
                 aria-label={`Default avatar ${id}`}
               >
@@ -127,20 +135,22 @@ export default function AvatarPicker({
         </div>
       </div>
 
-      {/* Upload + remove */}
+      {/* Upload + remove actions */}
       <div className="flex flex-wrap items-center gap-2">
         <button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={saving}
-          className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white transition hover:bg-white/10 disabled:opacity-50"
+          className="rounded-xl border border-bd-line bg-white px-4 py-2 text-sm font-medium text-bd-ink shadow-sm transition hover:bg-bd-card-warm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600"
         >
-          Upload photo
+          {saving ? 'Saving…' : 'Upload photo'}
         </button>
         {currentAvatarUrl && (
           <button
+            type="button"
             onClick={removeAvatar}
             disabled={saving}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-400 transition hover:text-white disabled:opacity-50"
+            className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
           >
             Remove
           </button>
@@ -153,10 +163,6 @@ export default function AvatarPicker({
           onChange={handleFileChange}
         />
       </div>
-
-      {(error || uploadError) && (
-        <p className="text-sm text-red-400">{error || uploadError}</p>
-      )}
     </div>
   )
 }

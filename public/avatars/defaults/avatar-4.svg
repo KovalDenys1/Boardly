@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="50" fill="#ef4444"/>
-  <circle cx="50" cy="38" r="16" fill="white" opacity="0.9"/>
-  <ellipse cx="50" cy="80" rx="26" ry="20" fill="white" opacity="0.9"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Shield -->
+  <path d="M50 20 L76 32 L76 54 Q76 72 50 82 Q24 72 24 54 L24 32 Z" fill="white" opacity="0.95"/>
+  <!-- Checkmark inside -->
+  <path d="M36 52 L46 62 L64 40" fill="none" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
