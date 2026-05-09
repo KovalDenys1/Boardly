@@ -100,9 +100,10 @@ const linkBtn: React.CSSProperties = {
 }
 
 const pageBg: React.CSSProperties = {
-  minHeight: 'calc(100dvh - 4rem)',
+  height: 'calc(100dvh - 4rem)',
+  overflowY: 'auto',
   background: 'linear-gradient(135deg, #FFF3EE 0%, #FBF6EE 60%, #FFF0F0 100%)',
-  padding: 24,
+  padding: '14px 24px',
   fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
   color: 'var(--bd-ink)',
 }
@@ -210,7 +211,7 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
 const GameContextBar: React.FC<{ code: string; right?: React.ReactNode }> = ({ code, right }) => (
   <header style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '4px 4px 24px', maxWidth: 1200, margin: '0 auto',
+    padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto',
   }}>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <BdLabel>word game · lobby</BdLabel>
@@ -560,7 +561,6 @@ export default function AliasPage({ code }: AliasPageProps) {
   useEffect(() => {
     if (!socket) return
     const handler = (msg: Record<string, unknown>) => {
-      if (msg.type !== 'alias-guess') return
       const uid = getCurrentUserId()
       if (msg.userId === uid) return
       setGuesses(prev => [...prev.slice(-99), {
@@ -693,7 +693,7 @@ export default function AliasPage({ code }: AliasPageProps) {
         <main style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{
             display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-            gap: 24, marginBottom: 28, flexWrap: 'wrap',
+            gap: 24, marginBottom: 16, flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 540 }}>
               <BdLabel>Lobby · Pre-game</BdLabel>
@@ -737,7 +737,7 @@ export default function AliasPage({ code }: AliasPageProps) {
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: 36, gap: 16, flexWrap: 'wrap',
+            marginTop: 20, gap: 16, flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{
@@ -793,7 +793,7 @@ export default function AliasPage({ code }: AliasPageProps) {
       <div style={pageBg} data-testid="alias-team-assignment">
         <GameContextBar code={code} />
         <main style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <BdLabel>Team selection</BdLabel>
             <h1 style={{
               fontFamily: FONT_DISPLAY, fontWeight: 700,
@@ -819,6 +819,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                   position: 'relative', overflow: 'hidden',
                   outline: isMyTeam ? `2px solid ${accent}` : 'none',
                   outlineOffset: 2,
+                  gridColumn: i === 0 ? 1 : 3,
                 }}>
                   <div aria-hidden style={{
                     position: 'absolute', top: -40, right: -40,
@@ -906,14 +907,14 @@ export default function AliasPage({ code }: AliasPageProps) {
             })}
 
             {/* "vs" divider */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 80, gridColumn: 2 }}>
               <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
             </div>
           </div>
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: 32, gap: 16, flexWrap: 'wrap',
+            marginTop: 20, gap: 16, flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{
@@ -981,7 +982,7 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-        <div style={pageBg} data-testid="alias-describer-screen">
+        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
           <GameContextBar
             code={code}
             right={
@@ -996,11 +997,11 @@ export default function AliasPage({ code }: AliasPageProps) {
             }
           />
           <main style={{
-            maxWidth: 1200, margin: '0 auto',
+            maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
             display: 'flex', gap: 24, alignItems: 'flex-start',
           }}>
             {/* Game content */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 18px',
@@ -1016,7 +1017,7 @@ export default function AliasPage({ code }: AliasPageProps) {
               {/* Hero word card */}
               <div style={{
                 ...cardBase, width: '100%',
-                padding: '56px 40px 48px', minHeight: 240,
+                padding: '32px 40px 28px', minHeight: 180,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
@@ -1117,7 +1118,7 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-        <div style={pageBg} data-testid="alias-guesser-screen">
+        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
           <GameContextBar
             code={code}
             right={
@@ -1132,11 +1133,11 @@ export default function AliasPage({ code }: AliasPageProps) {
             }
           />
           <main style={{
-            maxWidth: 1200, margin: '0 auto',
+            maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
             display: 'flex', gap: 24, alignItems: 'flex-start',
           }}>
             {/* Game content */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 18px', background: 'rgba(31,27,22,0.06)',
@@ -1147,7 +1148,7 @@ export default function AliasPage({ code }: AliasPageProps) {
 
               <div style={{
                 ...cardBase, width: '100%',
-                padding: '36px 32px 40px', minHeight: 320,
+                padding: '24px 32px 28px', minHeight: 220,
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center',
                 gap: 20, position: 'relative', overflow: 'hidden',
