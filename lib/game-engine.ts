@@ -250,7 +250,6 @@ export abstract class GameEngine {
 
   // Method to restore state from saved data
   restoreState(savedState: RestorableGameState): void {
-    // Ensure players is an array when restoring state
     if (savedState && typeof savedState === 'object') {
       const { config, ...stateWithoutConfig } = savedState;
       this.state = {
@@ -263,6 +262,11 @@ export abstract class GameEngine {
       if (config && typeof config === 'object') {
         this.config = cloneDeep(config);
       }
+
+      this.normalizeRestoredData();
     }
   }
+
+  // Override in subclasses that need to normalize deserialized game data (e.g. ensure arrays exist).
+  protected normalizeRestoredData(): void {}
 }
