@@ -15,6 +15,7 @@ export async function GET(
       id: true,
       username: true,
       image: true,
+      avatarUrl: true,
       publicProfileId: true,
       isGuest: true,
       bot: { select: { id: true } },
@@ -86,7 +87,7 @@ export async function GET(
   return NextResponse.json({
     userId: user.id,
     username: user.username,
-    image: user.image,
+    image: user.avatarUrl ?? user.image,
     publicProfileId: user.publicProfileId,
     isGuest: user.isGuest,
     gamesPlayed,

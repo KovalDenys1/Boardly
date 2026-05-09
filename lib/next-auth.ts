@@ -317,6 +317,7 @@ export const authOptions: NextAuthOptions = {
             email: true,
             username: true,
             image: true,
+            avatarUrl: true,
             emailVerified: true,
             role: true,
             suspended: true,
@@ -327,7 +328,7 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.email = dbUser.email
           token.name = dbUser.username
-          token.picture = dbUser.image
+          token.picture = dbUser.avatarUrl ?? dbUser.image
           token.emailVerified = dbUser.emailVerified
           token.role = dbUser.role
           token.suspended = dbUser.suspended

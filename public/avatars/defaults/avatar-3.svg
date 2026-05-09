@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- 5-point star: outer r=30 inner r=13 -->
+  <polygon points="50,20 57.6,39.5 78.5,40.7 62.4,54 67.6,74.3 50,63 32.4,74.3 37.6,54 21.5,40.7 42.4,39.5" fill="white" opacity="0.95"/>
+</svg>

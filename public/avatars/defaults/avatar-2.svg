@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Flame outer -->
+  <path d="M50 78 C36 68 22 54 28 38 C32 26 42 22 46 32 C46 20 52 16 54 26 C58 18 66 22 64 36 C70 28 74 36 70 46 C68 38 62 38 60 46 C62 36 54 30 52 42 C48 32 40 36 38 48 C34 58 40 70 50 78 Z" fill="white" opacity="0.95"/>
+  <!-- Flame inner glow -->
+  <path d="M50 68 C44 62 38 54 42 44 C44 38 50 36 50 44 C50 36 56 38 56 46 C60 40 62 48 58 56 C56 50 52 50 50 56 Z" fill="#ea580c" opacity="0.5"/>
+</svg>
