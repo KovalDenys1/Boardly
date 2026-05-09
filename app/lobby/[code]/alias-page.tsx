@@ -1218,12 +1218,12 @@ export default function AliasPage({ code }: AliasPageProps) {
     return (
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
-        <div style={pageBg} data-testid="alias-turn-results-screen">
+        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} />
-          <main style={{ maxWidth: 980, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
+          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
-            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 320 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
+            <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <BdLabel>{describerPlayer?.name ? `${describerPlayer.name} described` : 'Words this turn'}</BdLabel>
                   <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, margin: 0 }}>
@@ -1235,7 +1235,7 @@ export default function AliasPage({ code }: AliasPageProps) {
                   <ScorePill kind="skipped" count={skippedCount} />
                 </div>
               </div>
-              <div style={{ maxHeight: 340, overflowY: 'auto', marginRight: -4, paddingRight: 4 }}>
+              <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, marginRight: -4, paddingRight: 4 }}>
                 {wordResults.length === 0 && (
                   <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>No words played this turn.</div>
                 )}
