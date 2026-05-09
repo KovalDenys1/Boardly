@@ -42,6 +42,7 @@ model Users {
   receivedLobbyInvites    LobbyInvites[]           @relation("LobbyInvitesReceived")
   adminAuditLogs          AdminAuditLogs[]         @relation("AdminAuditLogsActor")
   accountPreferences      AccountPreferences?
+  purchases               UserPurchases[]
   notificationPreferences NotificationPreferences?
   notifications           Notifications[]
   feedback                Feedback[]
@@ -461,5 +462,19 @@ model Feedback {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([type, createdAt])
+  @@index([userId])
+}
+
+model UserPurchases {
+  id               String   @id @default(cuid())
+  userId           String
+  packId           String   // e.g. "premium-pack-1"
+  price            Int      // in cents
+  stripePaymentId  String?  @unique
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, packId])
   @@index([userId])
 }
