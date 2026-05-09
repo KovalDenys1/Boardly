@@ -12,6 +12,7 @@ export type RegisteredGameType =
   | 'tic_tac_toe'
   | 'rock_paper_scissors'
   | 'memory'
+  | 'connect_four'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
@@ -20,6 +21,15 @@ export type ExperimentalGameType =
   | 'alias'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
+
+export type LobbyCreateConfig = {
+  gradient: string
+  allowedPlayers: number[]
+  defaultMaxPlayers: number
+  turnTimer?: { options: number[]; default: number }
+  rounds?: { options: number[]; default: number | null }
+  difficulty?: { options: string[]; default: string }
+}
 
 export type GameCatalogEntry = {
   id: string
@@ -32,6 +42,7 @@ export type GameCatalogEntry = {
   availability: GameCatalogAvailability
   route?: string
   color: string
+  lobbyCreateConfig?: LobbyCreateConfig
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -91,6 +102,15 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 4,
     supportsBots: true,
     translationKey: 'memory',
+  },
+  connect_four: {
+    type: 'connect_four',
+    name: 'Connect Four',
+    icon: '🔴',
+    minPlayers: 2,
+    maxPlayers: 2,
+    supportsBots: true,
+    translationKey: 'connect_four',
   },
 }
 
@@ -156,6 +176,12 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'available',
     route: '/games/yahtzee/lobbies',
     color: 'from-blue-500 to-purple-600',
+    lobbyCreateConfig: {
+      gradient: 'from-purple-600 via-pink-500 to-orange-400',
+      allowedPlayers: [2, 3, 4],
+      defaultMaxPlayers: 4,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
+    },
   },
   {
     id: 'spy',
@@ -168,6 +194,11 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'available',
     route: '/games/spy/lobbies',
     color: 'from-red-500 to-pink-600',
+    lobbyCreateConfig: {
+      gradient: 'from-blue-600 via-cyan-500 to-green-400',
+      allowedPlayers: [3, 4, 5, 6, 7, 8],
+      defaultMaxPlayers: 6,
+    },
   },
   {
     id: 'tic-tac-toe',
@@ -180,6 +211,12 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'available',
     route: '/games/tic-tac-toe/lobbies',
     color: 'from-red-500 to-coral-500',
+    lobbyCreateConfig: {
+      gradient: 'from-indigo-600 via-blue-500 to-sky-400',
+      allowedPlayers: [2],
+      defaultMaxPlayers: 2,
+      rounds: { options: [3, 5, 10], default: null },
+    },
   },
   {
     id: 'memory',
@@ -192,6 +229,31 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'available',
     route: '/games/memory/lobbies',
     color: 'from-green-400 to-teal-500',
+    lobbyCreateConfig: {
+      gradient: 'from-emerald-500 via-teal-500 to-cyan-400',
+      allowedPlayers: [2, 3, 4],
+      defaultMaxPlayers: 4,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
+      difficulty: { options: ['easy', 'medium', 'hard'], default: 'easy' },
+    },
+  },
+  {
+    id: 'connect-four',
+    gameType: 'connect_four',
+    nameKey: 'games.connect_four.name',
+    emoji: '🔴',
+    descriptionKey: 'games.connect_four.description',
+    players: '2',
+    difficultyKey: 'games.connect_four.difficulty',
+    availability: 'available',
+    route: '/games/connect-four/lobbies',
+    color: 'from-red-500 to-yellow-400',
+    lobbyCreateConfig: {
+      gradient: 'from-red-500 via-orange-400 to-yellow-400',
+      allowedPlayers: [2],
+      defaultMaxPlayers: 2,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
+    },
   },
   {
     id: 'rps',
@@ -204,6 +266,11 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'in-development',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
+    lobbyCreateConfig: {
+      gradient: 'from-indigo-500 via-purple-500 to-pink-400',
+      allowedPlayers: [2],
+      defaultMaxPlayers: 2,
+    },
   },
   {
     id: 'guess-my-drawing',

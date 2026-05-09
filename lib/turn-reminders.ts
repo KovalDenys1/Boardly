@@ -6,6 +6,7 @@ import {
   recordNotificationDelivery,
 } from './notifications-log'
 import { createInAppNotification } from './in-app-notifications'
+import { parsePersistedGameState } from './persisted-game-state'
 
 type TurnReminderCycleOptions = {
   now?: Date
@@ -121,7 +122,7 @@ export async function runTurnReminderCycle(
     take: batchLimit,
     select: {
       id: true,
-      currentTurn: true,
+      state: true,
       lastMoveAt: true,
       lobby: {
         select: {
@@ -157,13 +158,17 @@ export async function runTurnReminderCycle(
   result.scannedGames = games.length
 
   for (const game of games) {
-    const currentPlayer = game.players.find((player) => player.position === game.currentTurn)
+    const parsedState = parsePersistedGameState<{ currentPlayerIndex?: number }>(game.state)
+    const currentPlayerIndex = parsedState?.currentPlayerIndex
+    const currentPlayer = typeof currentPlayerIndex === 'number'
+      ? game.players.find((player) => player.position === currentPlayerIndex)
+      : undefined
 
     if (!currentPlayer?.user) {
       result.skipped += 1
       logger.warn('Turn reminder skipped: current player not found', {
         gameId: game.id,
-        currentTurn: game.currentTurn,
+        currentPlayerIndex,
       })
       continue
     }
@@ -182,7 +187,7 @@ export async function runTurnReminderCycle(
       lobbyCode: game.lobby.code,
       lobbyName: game.lobby.name,
       gameType: String(game.lobby.gameType),
-      currentTurn: game.currentTurn,
+      currentPlayerIndex,
       idleMinutes: Math.floor(idleDurationMs / 60000),
       lastMoveAt: game.lastMoveAt.toISOString(),
     }

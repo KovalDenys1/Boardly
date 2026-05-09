@@ -17,6 +17,7 @@ const ANALYTICS_GAME_TYPES = new Set<AnalyticsGameType>([
   'rock_paper_scissors',
   'guess_the_spy',
   'memory',
+  'connect_four',
   'alias',
   'liars_party',
 ])

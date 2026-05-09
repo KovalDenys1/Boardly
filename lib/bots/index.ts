@@ -38,3 +38,7 @@ export {
 // Memory exports
 export { MemoryBot, type MemoryBotDecision } from './memory/memory-bot'
 export { MemoryBotExecutor, type MemoryBotActionEvent } from './memory/memory-bot-executor'
+
+// Connect Four exports
+export { ConnectFourBot, type ConnectFourBotDecision } from './connect-four/connect-four-bot'
+export { ConnectFourBotExecutor, type ConnectFourBotActionEvent } from './connect-four/connect-four-bot-executor'

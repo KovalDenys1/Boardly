@@ -54,7 +54,7 @@ const mockRecordNotificationDelivery =
 function buildGame(overrides: Record<string, unknown> = {}) {
   return {
     id: 'game-1',
-    currentTurn: 1,
+    state: { currentPlayerIndex: 1 },
     lastMoveAt: new Date('2026-02-25T10:00:00.000Z'),
     lobby: {
       id: 'lobby-1',

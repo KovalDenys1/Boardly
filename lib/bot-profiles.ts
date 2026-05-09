@@ -33,6 +33,11 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Pattern Seeker',
     hard: 'Recall Master',
   },
+  connect_four: {
+    easy: 'Drop Rookie',
+    medium: 'Column Tactician',
+    hard: 'Gravity Grandmaster',
+  },
 }
 
 const FALLBACK_NAMES: Record<BotDifficulty, string> = {

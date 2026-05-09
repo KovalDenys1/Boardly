@@ -11,6 +11,7 @@ const GAME_LOBBIES_ROUTES: Record<LobbyRouteGameType, string> = {
   tic_tac_toe: '/games/tic-tac-toe/lobbies',
   rock_paper_scissors: '/games/rock-paper-scissors/lobbies',
   memory: '/games/memory/lobbies',
+  connect_four: '/games/connect-four/lobbies',
   alias: '/games/alias/lobbies',
   liars_party: '/games/liars-party/lobbies',
 }

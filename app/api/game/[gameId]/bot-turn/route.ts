@@ -366,7 +366,7 @@ export async function POST(
               data: {
                 state: toPersistedGameStateInput(newState),
                 status: newState.status,
-                currentTurn: newState.currentPlayerIndex,
+                currentTurn: game.currentTurn + 1,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 ...terminalFields,
                 updatedAt: new Date(),
