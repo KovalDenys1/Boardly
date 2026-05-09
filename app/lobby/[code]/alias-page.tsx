@@ -1270,7 +1270,7 @@ export default function AliasPage({ code }: AliasPageProps) {
             </section>
 
             {/* Right column */}
-            <section style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <section style={{ display: 'flex', flexDirection: 'column', gap: 18, alignSelf: 'start' }}>
               <div style={{
                 ...cardBase, padding: 24,
                 background: positive ? 'var(--bd-ink)' : 'var(--bd-card-warm)',
@@ -1320,7 +1320,7 @@ export default function AliasPage({ code }: AliasPageProps) {
 
               {isHost ? (
                 <button
-                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center', marginTop: 'auto' }}
+                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
                   onClick={() => handleMove('next_turn', {})}
                   disabled={isMoveSubmitting}
                 >
@@ -1333,7 +1333,6 @@ export default function AliasPage({ code }: AliasPageProps) {
                   background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
                   borderRadius: 999, padding: '14px 18px',
                   fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
-                  marginTop: 'auto',
                 }}>
                   <span className="bd-float" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--bd-ink-muted)' }} />
                   Waiting for host…
