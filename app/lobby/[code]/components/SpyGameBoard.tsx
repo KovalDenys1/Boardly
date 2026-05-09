@@ -133,12 +133,13 @@ export default function SpyGameBoard({
         id: player.userId,
         name: player.user?.username || player.name || 'Player',
         score: player.score || 0,
+        avatarSrc: player.user?.avatarUrl ?? player.user?.image ?? null,
       })),
     [players]
   )
 
   const playersById = React.useMemo(() => {
-    const map = new Map<string, { id: string; name: string; score: number }>()
+    const map = new Map<string, { id: string; name: string; score: number; avatarSrc: string | null }>()
     for (const player of normalizedPlayers) {
       map.set(player.id, player)
     }
@@ -680,7 +681,11 @@ export default function SpyGameBoard({
                     const isCurrent = player.id === data.currentQuestionerId
                     return (
                       <div key={player.id} className={`spy-player-row ${isCurrent ? 'spy-player-row-active' : ''}`}>
-                        <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
+                        {player.avatarSrc ? (
+                          <img src={player.avatarSrc} alt={player.name} className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover" />
+                        ) : (
+                          <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
+                        )}
                         <span className="min-w-0 flex-1 truncate font-bold">{player.name}</span>
                         <span className="font-black">{scores[player.id] || 0}</span>
                       </div>

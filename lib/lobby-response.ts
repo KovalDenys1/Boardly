@@ -3,6 +3,8 @@ interface RawLobbyUserLike {
   username?: unknown
   isGuest?: unknown
   isBot?: unknown
+  image?: unknown
+  avatarUrl?: unknown
   bot?: {
     difficulty?: unknown
   } | null
@@ -18,6 +20,8 @@ export interface LobbyApiUserIdentity {
   username: string
   isGuest: boolean
   isBot: boolean
+  image: string | null
+  avatarUrl: string | null
   bot: { difficulty?: string } | null
 }
 
@@ -42,7 +46,8 @@ export function sanitizeLobbyUserIdentity(user: unknown): LobbyApiUserIdentity |
     username: typeof rawUser.username === 'string' && rawUser.username.trim().length > 0 ? rawUser.username : 'Player',
     isGuest: rawUser.isGuest === true,
     isBot,
-    // Keep compact legacy-compatible bot shape for existing client checks.
+    image: typeof rawUser.image === 'string' ? rawUser.image : null,
+    avatarUrl: typeof rawUser.avatarUrl === 'string' ? rawUser.avatarUrl : null,
     bot: isBot ? (botDifficulty ? { difficulty: botDifficulty } : {}) : null,
   }
 }

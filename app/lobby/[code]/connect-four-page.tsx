@@ -155,9 +155,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     )
 }
 
-function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, t }: {
+function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, avatarSrc, t }: {
     name: string; disc: PlayerDisc; isActive: boolean; isWinner: boolean; wins: number; side: 'left' | 'right';
-    isLocalPlayer: boolean; t: (k: TranslationKeys) => string
+    isLocalPlayer: boolean; avatarSrc?: string | null; t: (k: TranslationKeys) => string
 }) {
     const discColor = disc === 1 ? DISC_RED : DISC_YELLOW
     return (
@@ -169,8 +169,14 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
             flexDirection: side === 'right' ? 'row-reverse' : 'row',
             transition: 'all 0.2s', minWidth: 0,
         }}>
-            {/* Avatar + disc badge — mirrors TttPlayerCard's avatar + symbol badge */}
+            {/* Avatar + disc badge */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
+                {avatarSrc ? (
+                    <img src={avatarSrc} alt={name} style={{
+                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
+                        border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
+                    }} />
+                ) : (
                 <div style={{
                     width: 42, height: 42, borderRadius: '50%', background: discColor,
                     display: 'grid', placeItems: 'center', border: '2px solid white',
@@ -179,6 +185,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
                 }}>
                     {name.charAt(0).toUpperCase()}
                 </div>
+                )}
                 {/* Disc icon badge */}
                 <div style={{
                     position: 'absolute', bottom: -3, right: -3, width: 20, height: 20,
@@ -878,6 +885,12 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
 
     const p1Name = state.players[0] ? getDisplayName(state.players[0].id) : 'Player 1'
     const p2Name = state.players[1] ? getDisplayName(state.players[1].id) : 'Player 2'
+    const getPlayerAvatar = (userId: string): string | null => {
+        const p = players.find(lp => lp.userId === userId)
+        return p?.user?.avatarUrl ?? p?.user?.image ?? null
+    }
+    const p1Avatar = state.players[0] ? getPlayerAvatar(state.players[0].id) : null
+    const p2Avatar = state.players[1] ? getPlayerAvatar(state.players[1].id) : null
 
     const p1Wins = state.players[0]?.score ?? 0
     const p2Wins = state.players[1]?.score ?? 0
@@ -940,7 +953,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
-                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} t={t} />
+                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                         <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
@@ -952,7 +965,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                         wins
                     </div>
                 </div>
-                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} t={t} />
+                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} t={t} />
             </div>
         </div>
     )

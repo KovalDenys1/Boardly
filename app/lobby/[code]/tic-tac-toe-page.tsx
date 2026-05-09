@@ -99,8 +99,8 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     )
 }
 
-function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; t: (key: TranslationKeys) => string
+function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, t }: {
+    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; t: (key: TranslationKeys) => string
 }) {
     const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -113,6 +113,12 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
             transition: 'all 0.2s', minWidth: 0,
         }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
+                {avatarSrc ? (
+                    <img src={avatarSrc} alt={name} style={{
+                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
+                        border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
+                    }} />
+                ) : (
                 <div style={{
                     width: 42, height: 42, borderRadius: '50%', background: bg,
                     display: 'grid', placeItems: 'center', border: '2px solid white',
@@ -121,6 +127,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
                 }}>
                     {name.charAt(0).toUpperCase()}
                 </div>
+                )}
                 <div style={{
                     position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
                     background: 'white', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
@@ -900,6 +907,12 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     }
     const xName = state.players[0] ? getDisplayName(state.players[0].id) : 'Player X'
     const oName = state.players[1] ? getDisplayName(state.players[1].id) : 'Player O'
+    const getPlayerAvatar = (userId: string): string | null => {
+        const p = players.find(lp => lp.userId === userId)
+        return p?.user?.avatarUrl ?? p?.user?.image ?? null
+    }
+    const xAvatar = state.players[0] ? getPlayerAvatar(state.players[0].id) : null
+    const oAvatar = state.players[1] ? getPlayerAvatar(state.players[1].id) : null
 
     const winnerSymbol = gameData.winner
     const isDraw = winnerSymbol === 'draw'
@@ -975,7 +988,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 <TttBgGrid />
             </div>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" t={t} />
+                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                         Round {roundNum}
@@ -987,7 +1000,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
                     </div>
                 </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" t={t} />
+                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} t={t} />
             </div>
         </div>
     )
