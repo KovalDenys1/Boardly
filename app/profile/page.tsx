@@ -264,7 +264,7 @@ export default function ProfilePage() {
     setProfileSummary(data.user)
     if (purchasesRes.ok) {
       const purchasesData = await purchasesRes.json()
-      setHasUploadPack((purchasesData.purchases as string[]).includes('premium-pack-1'))
+      setHasUploadPack(purchasesData.isPremium === true)
     }
     return data.user as ProfileSummary
   }, [t])
@@ -334,6 +334,12 @@ export default function ProfilePage() {
         '',
         `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
       )
+    }
+
+    if (currentUrl.searchParams.get('premium') === 'success') {
+      showToast.success('toast.success', '🎉 Welcome to Boardly Premium!')
+      currentUrl.searchParams.delete('premium')
+      window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
     }
   }, [])
 
@@ -1755,8 +1761,15 @@ export default function ProfilePage() {
                     onSaved={(avatarUrl) =>
                       setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
                     }
-                    onUnlockUpload={() => {
-                      showToast.error('errors.generic', 'Stripe checkout coming soon!')
+                    onUnlockUpload={async () => {
+                      try {
+                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                        else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+                      } catch {
+                        showToast.error('errors.generic', 'Failed to start checkout')
+                      }
                     }}
                   />
                 </div>

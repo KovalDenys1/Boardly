@@ -9,8 +9,6 @@ import { validateAvatarFile, uploadAvatar } from '@/lib/supabase-storage'
 const log = apiLogger('/api/user/avatar')
 const limiter = rateLimit(rateLimitPresets.api)
 
-const UPLOAD_PACK_ID = 'premium-pack-1'
-
 const DEFAULT_AVATAR_IDS = [1, 2, 3, 4, 5, 6, 7, 8] as const
 type DefaultAvatarId = (typeof DEFAULT_AVATAR_IDS)[number]
 
@@ -59,12 +57,13 @@ export async function POST(request: NextRequest) {
 
   // --- Custom photo upload (requires purchase) ---
   if (contentType.includes('multipart/form-data')) {
-    const purchase = await prisma.userPurchases.findUnique({
-      where: { userId_packId: { userId: session.user.id, packId: UPLOAD_PACK_ID } },
-      select: { id: true },
+    const dbUser = await prisma.users.findUnique({
+      where: { id: session.user.id },
+      select: { premiumUntil: true },
     })
-    if (!purchase) {
-      return NextResponse.json({ error: 'Photo upload requires the custom avatar upgrade' }, { status: 403 })
+    const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+    if (!isPremium) {
+      return NextResponse.json({ error: 'Photo upload requires Boardly Premium' }, { status: 403 })
     }
 
     const formData = await request.formData()
