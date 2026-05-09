@@ -52,6 +52,12 @@ export default function AvatarPicker({
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (file.size > 2 * 1024 * 1024) {
+      showToast.error('errors.generic', 'File too large (max 2 MB)')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
     setSaving(true)
     try {
       const formData = new FormData()
