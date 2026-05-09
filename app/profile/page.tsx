@@ -160,6 +160,7 @@ export default function ProfilePage() {
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
+  const [hasPremiumPack, setHasPremiumPack] = useState(false)
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
     useState<PublicProfilePreviewTransitionPhase>('idle')
@@ -250,14 +251,21 @@ export default function ProfilePage() {
   )
 
   const fetchProfileSummary = useCallback(async () => {
-    const res = await fetch('/api/user/profile', { cache: 'no-store' })
-    const data = await res.json()
+    const [profileRes, purchasesRes] = await Promise.all([
+      fetch('/api/user/profile', { cache: 'no-store' }),
+      fetch('/api/user/purchases', { cache: 'no-store' }),
+    ])
+    const data = await profileRes.json()
 
-    if (!res.ok) {
+    if (!profileRes.ok) {
       throw new Error(data.error || t('profile.errors.loadFailed'))
     }
 
     setProfileSummary(data.user)
+    if (purchasesRes.ok) {
+      const purchasesData = await purchasesRes.json()
+      setHasPremiumPack((purchasesData.purchases as string[]).includes('premium-pack-1'))
+    }
     return data.user as ProfileSummary
   }, [t])
 
@@ -1743,9 +1751,13 @@ export default function ProfilePage() {
                     currentImage={profileSummary?.image ?? null}
                     username={profileSummary?.username ?? null}
                     email={profileSummary?.email ?? null}
+                    hasPremiumPack={hasPremiumPack}
                     onSaved={(avatarUrl) =>
                       setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
                     }
+                    onUnlockPremium={() => {
+                      showToast.error('errors.generic', 'Stripe checkout coming soon!')
+                    }}
                   />
                 </div>
 

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Viking helmet -->
+  <!-- Helmet dome -->
+  <path d="M22 50 Q22 24 50 24 Q78 24 78 50 L74 54 L26 54 Z" fill="white" opacity="0.95"/>
+  <!-- Nose guard -->
+  <rect x="47" y="48" width="6" height="18" rx="3" fill="white" opacity="0.9"/>
+  <!-- Left horn -->
+  <path d="M26 38 Q10 24 14 14 Q20 28 28 34 Z" fill="white" opacity="0.9"/>
+  <!-- Right horn -->
+  <path d="M74 38 Q90 24 86 14 Q80 28 72 34 Z" fill="white" opacity="0.9"/>
+  <!-- Visor band -->
+  <rect x="22" y="48" width="56" height="8" rx="4" fill="white" opacity="0.7"/>
+  <!-- Eyes visible through visor -->
+  <circle cx="39" cy="52" r="3" fill="#dc2626" opacity="0.5"/>
+  <circle cx="61" cy="52" r="3" fill="#dc2626" opacity="0.5"/>
+  <!-- Cheek guards -->
+  <path d="M22 54 L22 72 Q26 76 34 74 L34 54 Z" fill="white" opacity="0.8"/>
+  <path d="M78 54 L78 72 Q74 76 66 74 L66 54 Z" fill="white" opacity="0.8"/>
+</svg>

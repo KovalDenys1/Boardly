@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Robot -->
+  <!-- Head box -->
+  <rect x="30" y="24" width="40" height="36" rx="6" fill="white" opacity="0.95"/>
+  <!-- Antenna -->
+  <rect x="48" y="16" width="4" height="10" rx="2" fill="white" opacity="0.9"/>
+  <circle cx="50" cy="15" r="4" fill="white" opacity="0.9"/>
+  <!-- Eyes (screens) -->
+  <rect x="35" y="32" width="12" height="10" rx="3" fill="#f59e0b" opacity="0.4"/>
+  <rect x="53" y="32" width="12" height="10" rx="3" fill="#f59e0b" opacity="0.4"/>
+  <circle cx="41" cy="37" r="3" fill="#d97706" opacity="0.8"/>
+  <circle cx="59" cy="37" r="3" fill="#d97706" opacity="0.8"/>
+  <!-- Mouth panel -->
+  <rect x="36" y="48" width="28" height="6" rx="3" fill="#f59e0b" opacity="0.3"/>
+  <rect x="38" y="50" width="4" height="2" rx="1" fill="#d97706" opacity="0.7"/>
+  <rect x="44" y="50" width="4" height="2" rx="1" fill="#d97706" opacity="0.7"/>
+  <rect x="50" y="50" width="4" height="2" rx="1" fill="#d97706" opacity="0.7"/>
+  <rect x="56" y="50" width="4" height="2" rx="1" fill="#d97706" opacity="0.7"/>
+  <!-- Body -->
+  <rect x="34" y="62" width="32" height="20" rx="6" fill="white" opacity="0.9"/>
+  <!-- Chest button -->
+  <circle cx="50" cy="72" r="5" fill="#f59e0b" opacity="0.5"/>
+</svg>

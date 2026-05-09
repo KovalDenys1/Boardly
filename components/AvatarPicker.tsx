@@ -6,13 +6,18 @@ import { UserAvatar } from '@/components/Header/UserAvatar'
 import { showToast } from '@/lib/i18n-toast'
 
 const DEFAULT_AVATARS = [1, 2, 3, 4, 5, 6, 7, 8] as const
+const PREMIUM_AVATARS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const
+export const PREMIUM_PACK_ID = 'premium-pack-1'
+export const PREMIUM_PACK_PRICE = '$2.99'
 
 type AvatarPickerProps = {
   currentAvatarUrl: string | null
   currentImage: string | null
   username: string | null
   email: string | null
+  hasPremiumPack: boolean
   onSaved: (avatarUrl: string | null) => void
+  onUnlockPremium?: () => void
 }
 
 export default function AvatarPicker({
@@ -20,7 +25,9 @@ export default function AvatarPicker({
   currentImage,
   username,
   email,
+  hasPremiumPack,
   onSaved,
+  onUnlockPremium,
 }: AvatarPickerProps) {
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -28,7 +35,7 @@ export default function AvatarPicker({
 
   const displayAvatar = currentAvatarUrl || currentImage
 
-  async function selectDefault(avatarId: number) {
+  async function selectAvatar(avatarId: number | string) {
     setSaving(true)
     try {
       const res = await fetch('/api/user/avatar', {
@@ -120,7 +127,7 @@ export default function AvatarPicker({
       {/* Default avatar grid */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Default avatars
+          Free avatars
         </p>
         <div className="flex flex-wrap gap-2">
           {DEFAULT_AVATARS.map((id) => {
@@ -129,7 +136,7 @@ export default function AvatarPicker({
             return (
               <button
                 key={id}
-                onClick={() => selectDefault(id)}
+                onClick={() => selectAvatar(id)}
                 disabled={saving}
                 className={`h-12 w-12 overflow-hidden rounded-full border-2 transition-all hover:scale-105 disabled:opacity-50 ${
                   isSelected
@@ -143,6 +150,68 @@ export default function AvatarPicker({
               </button>
             )
           })}
+        </div>
+      </div>
+
+      {/* Premium avatar grid */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Premium avatars
+          </p>
+          {hasPremiumPack ? (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              UNLOCKED
+            </span>
+          ) : (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+              {PREMIUM_PACK_PRICE}
+            </span>
+          )}
+        </div>
+
+        <div className="relative">
+          <div className={`flex flex-wrap gap-2 ${!hasPremiumPack ? 'pointer-events-none' : ''}`}>
+            {PREMIUM_AVATARS.map((id) => {
+              const url = `/avatars/premium/avatar-${id}.svg`
+              const isSelected = currentAvatarUrl === url
+              return (
+                <button
+                  key={id}
+                  onClick={() => selectAvatar(id)}
+                  disabled={saving || !hasPremiumPack}
+                  className={`relative h-12 w-12 overflow-hidden rounded-full border-2 transition-all ${
+                    hasPremiumPack
+                      ? `hover:scale-105 disabled:opacity-50 ${
+                          isSelected
+                            ? 'border-amber-500 shadow-[0_0_0_2px_#f59e0b]'
+                            : 'border-transparent hover:border-amber-300'
+                        }`
+                      : 'border-transparent opacity-50'
+                  }`}
+                  aria-label={`Premium avatar ${id}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Premium avatar ${id}`} className="h-full w-full" />
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Locked overlay */}
+          {!hasPremiumPack && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+              <span className="text-xl">🔒</span>
+              <p className="mt-1 text-xs font-semibold text-bd-ink dark:text-white">Premium Pack</p>
+              <button
+                type="button"
+                onClick={onUnlockPremium}
+                className="mt-2 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+              >
+                Unlock for {PREMIUM_PACK_PRICE}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
