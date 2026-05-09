@@ -772,6 +772,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     clientLogger.log(`🤖 ${event.message}`)
   }, [playAmbientSound])
 
+  const onSpectatorCountChange = useCallback((count: number) => {
+    setLobby((prev) => (prev ? { ...prev, spectatorCount: count } : prev))
+  }, [])
+
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
 
@@ -877,6 +881,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onGameAbandoned,
     onPlayerLeft,
     onBotAction,
+    onSpectatorCountChange,
     // State sync callback - automatically refreshes lobby data after reconnection
     onStateSync: async () => {
       if (loadLobbyRef.current) {
@@ -1826,6 +1831,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onJoinAsGuest={handleGuestJoinLobby}
               onLogin={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
               onRegister={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+              onWatchAsSpectator={lobby?.allowSpectators ? () => router.push(`/lobby/${code}/spectate`) : undefined}
             />
           )}
         </div>
@@ -1963,9 +1969,20 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         >
           {/* Spectator banner */}
           {isSpectator && (
-            <div className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
-              <span>👁</span>
-              <span>{t('lobby.spectatingBanner')}</span>
+            <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
+              <div className="flex items-center gap-2">
+                <span>👁</span>
+                <span>{t('lobby.spectatingBanner')}</span>
+              </div>
+              {lobby?.allowSpectators && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/lobby/${code}/spectate`)}
+                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-white px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
+                >
+                  Open spectator view →
+                </button>
+              )}
             </div>
           )}
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
