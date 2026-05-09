@@ -16,6 +16,7 @@ export type AnalyticsGameType =
   | 'memory'
   | 'alias'
   | 'liars_party'
+  | 'connect_four'
 type GameType = AnalyticsGameType
 type ReconnectFailureReason = 'reconnect_failed' | 'authentication_failed' | 'rejoin_timeout'
 type ReliabilityAlertEvent = 'rejoin_timeout' | 'auth_refresh_failed' | 'move_apply_timeout'
@@ -79,7 +80,7 @@ interface MoveSubmitAppliedEvent {
   applied: boolean
   statusCode?: number
   isAutoAction?: boolean
-  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'memory_board' | 'alias_page' | 'liars_party_page'
+  source?: 'yahtzee_hook' | 'tic_tac_toe_page' | 'rock_paper_scissors_page' | 'memory_board' | 'alias_page' | 'liars_party_page' | 'connect_four_page'
 }
 
 interface LobbyCreateLatencyEvent {
@@ -106,7 +107,7 @@ interface StartAloneAutoBotResultEvent {
 interface LobbyLeaveRedirectEvent {
   durationMs: number
   isGuest: boolean
-  source: 'lobby_page' | 'tic_tac_toe_page'
+  source: 'lobby_page' | 'tic_tac_toe_page' | 'connect_four_page'
   navigation: 'router_replace' | 'window_assign_fallback'
   apiOutcome: 'pending' | 'ok' | 'non_ok' | 'timeout' | 'error'
   statusCode?: number
