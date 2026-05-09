@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import { showToast } from '@/lib/i18n-toast'
 
@@ -23,6 +24,7 @@ export default function AvatarPicker({
 }: AvatarPickerProps) {
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { update: updateSession } = useSession()
 
   const displayAvatar = currentAvatarUrl || currentImage
 
@@ -40,6 +42,7 @@ export default function AvatarPicker({
         return
       }
       onSaved(data.avatarUrl)
+      await updateSession()
       showToast.success('toast.success', 'Avatar updated')
     } catch {
       showToast.error('errors.generic', 'Failed to save avatar')
@@ -69,6 +72,7 @@ export default function AvatarPicker({
         return
       }
       onSaved(data.avatarUrl)
+      await updateSession()
       showToast.success('toast.success', 'Avatar uploaded')
     } catch {
       showToast.error('errors.generic', 'Upload failed. Check your connection.')
@@ -83,6 +87,7 @@ export default function AvatarPicker({
     try {
       await fetch('/api/user/avatar', { method: 'DELETE' })
       onSaved(null)
+      await updateSession()
       showToast.success('toast.success', 'Avatar removed')
     } catch {
       showToast.error('errors.generic', 'Failed to remove avatar')
