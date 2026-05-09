@@ -34,7 +34,7 @@ const articleJsonLd = {
   url: 'https://boardly.online/guides/how-to-play-spy-game-online',
   image: 'https://boardly.online/opengraph-image',
   datePublished: '2025-01-01',
-  dateModified: '2026-04-22',
+  dateModified: '2026-05-08',
   author: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
 }

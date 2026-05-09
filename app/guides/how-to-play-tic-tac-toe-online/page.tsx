@@ -231,6 +231,7 @@ export default function HowToPlayTicTacToeGuide() {
               <Link href="/guides/how-to-play-yahtzee-online" className="text-white hover:underline text-sm">→ How to Play Yahtzee Online with Friends</Link>
               <Link href="/guides/how-to-play-memory-card-game-online" className="text-white hover:underline text-sm">→ How to Play Memory Card Game Online</Link>
               <Link href="/guides/how-to-play-spy-game-online" className="text-white hover:underline text-sm">→ How to Play Guess the Spy Online</Link>
+              <Link href="/guides/best-2-player-games-online" className="text-white hover:underline text-sm">→ Best 2 Player Games Online — Free, No Download</Link>
               <Link href="/guides/best-free-multiplayer-browser-games" className="text-white hover:underline text-sm">→ Best Free Multiplayer Browser Games in 2026</Link>
             </div>
           </div>

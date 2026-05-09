@@ -145,6 +145,10 @@ const LiarsPartyLobbyPage = dynamic(
   () => import('./liars-party-page'),
   { loading: () => <CenteredLoadingFallback /> }
 )
+const ConnectFourLobbyPage = dynamic(
+  () => import('./connect-four-page'),
+  { loading: () => <CenteredLoadingFallback /> }
+)
 
 const LEAVE_REQUEST_TIMEOUT_MS = 2500
 const LEAVE_REDIRECT_FALLBACK_MS = 1500
@@ -2554,6 +2558,10 @@ export default function LobbyPage() {
 
   if (dedicatedGameType === 'liars_party') {
     return <LiarsPartyLobbyPage code={code} />
+  }
+
+  if (dedicatedGameType === 'connect_four') {
+    return <ConnectFourLobbyPage code={code} />
   }
 
   // For all other cases, including all waiting rooms, use the shared lobby shell.

@@ -591,7 +591,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       data: { isActive: false },
     })
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
-    expect(mockNotifySocket).not.toHaveBeenCalled()
+    expect(mockNotifySocket).toHaveBeenCalledWith('lobby-list', 'lobby-list-update', {}, 0)
   })
 
   it('reassigns waiting lobby creator when host leaves and human players remain', async () => {

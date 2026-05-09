@@ -523,7 +523,7 @@ export async function POST(
     const terminalFields = statusChanged && isTerminal
       ? (() => {
           const now = new Date()
-          const startedAt = (game as unknown as { startedAt?: Date | null }).startedAt
+          const startedAt = game.startedAt
           const durationSeconds =
             startedAt instanceof Date
               ? Math.floor((now.getTime() - startedAt.getTime()) / 1000)
@@ -619,7 +619,7 @@ export async function POST(
         data: {
           state: toPersistedGameStateInput(newState),
           status: newState.status,
-          currentTurn: newState.currentPlayerIndex,
+          currentTurn: game.currentTurn + 1,
           ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
           ...terminalFields,
           updatedAt: new Date(),
@@ -698,7 +698,8 @@ export async function POST(
       } else if (
         game.lobby.gameType === 'tic_tac_toe' ||
         game.lobby.gameType === 'yahtzee' ||
-        game.lobby.gameType === 'memory'
+        game.lobby.gameType === 'memory' ||
+        game.lobby.gameType === 'connect_four'
       ) {
         const currentPlayerId = enginePlayers[authoritativeState.currentPlayerIndex]?.id
         const currentBotPlayer = botPlayers.find((player) => player.userId === currentPlayerId)

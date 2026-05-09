@@ -9,11 +9,11 @@ const faqJsonLd = {
   mainEntity: [
     { '@type': 'Question', name: 'Is Boardly free to play?', acceptedAnswer: { '@type': 'Answer', text: 'Yes, Boardly is completely free. There are no subscriptions, no ads, and no paywalls. All games are available at no cost.' } },
     { '@type': 'Question', name: 'Do I need an account to play?', acceptedAnswer: { '@type': 'Answer', text: 'No account is required. You can jump in as a guest instantly. Creating an account lets you save your stats and history across sessions.' } },
-    { '@type': 'Question', name: 'What games are available on Boardly?', acceptedAnswer: { '@type': 'Answer', text: 'Boardly currently offers Yahtzee, Tic Tac Toe, Memory card game, and Guess the Spy. More games are in development, including Alias, Sketch & Guess, Telephone Doodle, and others.' } },
-    { '@type': 'Question', name: 'Can I play solo?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Yahtzee and Tic Tac Toe can add computer players, so you can start even when friends are offline.' } },
+    { '@type': 'Question', name: 'What games are available on Boardly?', acceptedAnswer: { '@type': 'Answer', text: 'Boardly currently offers Yahtzee, Tic Tac Toe, Connect Four, Memory card game, and Guess the Spy. More games are in development, including Alias, Sketch & Guess, Telephone Doodle, and others.' } },
+    { '@type': 'Question', name: 'Can I play solo?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Yahtzee, Tic Tac Toe, and Connect Four can add computer players, so you can start even when friends are offline.' } },
     { '@type': 'Question', name: 'How do I play with friends online?', acceptedAnswer: { '@type': 'Answer', text: 'Create a room, then share the room code or link with your friends. They join instantly — no account or download needed on their end either.' } },
     { '@type': 'Question', name: 'Does Boardly work on mobile?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Boardly runs in any modern browser on desktop, tablet, and mobile. You can also install it from your browser if you want an app-like shortcut.' } },
-    { '@type': 'Question', name: 'How many players can play at once?', acceptedAnswer: { '@type': 'Answer', text: 'It depends on the game. Tic Tac Toe supports 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one room.' } },
+    { '@type': 'Question', name: 'How many players can play at once?', acceptedAnswer: { '@type': 'Answer', text: 'It depends on the game. Tic Tac Toe and Connect Four support 2 players, Yahtzee and Memory support up to 4, and Guess the Spy supports up to 10 players in one room.' } },
     { '@type': 'Question', name: 'Is there anything to download or install?', acceptedAnswer: { '@type': 'Answer', text: 'Nothing to download. Boardly runs entirely in your browser. Just open the site and start playing.' } },
   ],
 }

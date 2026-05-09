@@ -18,9 +18,10 @@ import { RockPaperScissorsBot } from '../rock-paper-scissors/rock-paper-scissors
 import { RockPaperScissorsBotExecutor } from '../rock-paper-scissors/rock-paper-scissors-bot-executor'
 import { MemoryBot } from '../memory/memory-bot'
 import { MemoryBotExecutor } from '../memory/memory-bot-executor'
+import { ConnectFourGame } from '@/lib/games/connect-four-game'
+import { ConnectFourBot } from '../connect-four/connect-four-bot'
+import { ConnectFourBotExecutor } from '../connect-four/connect-four-bot-executor'
 import type { RegisteredGameType } from '@/lib/game-registry'
-// Future imports:
-// import { SpyBot } from '../spy/spy-bot'
 
 /**
  * Create a bot instance for the specified game type
@@ -43,9 +44,8 @@ export function createBot<T extends GameEngine>(
         case 'memory':
             return new MemoryBot(gameEngine as unknown as MemoryGame, difficulty) as unknown as BaseBot<T, unknown>
 
-        // Future game bots:
-        // case 'guess_the_spy':
-        //   return new SpyBot(gameEngine as any, difficulty) as any
+        case 'connect_four':
+            return new ConnectFourBot(gameEngine as unknown as ConnectFourGame, difficulty) as unknown as BaseBot<T, unknown>
 
         default:
             throw new Error(`Bot not implemented for game type: ${gameType}`)
@@ -112,6 +112,20 @@ export async function executeBotTurn(
                 throw new Error('Expected MemoryGame engine for memory bot turn')
             }
             await MemoryBotExecutor.executeBotTurn(
+                gameEngine,
+                botUserId,
+                difficulty,
+                onMove,
+                onBotAction,
+            )
+            return
+        }
+
+        case 'connect_four': {
+            if (!(gameEngine instanceof ConnectFourGame)) {
+                throw new Error('Expected ConnectFourGame engine for connect_four bot turn')
+            }
+            await ConnectFourBotExecutor.executeBotTurn(
                 gameEngine,
                 botUserId,
                 difficulty,

@@ -303,11 +303,18 @@ export async function POST(
     // If game is playing and no human players remain (only bots or empty), end the game
     if (remainingHumanPlayers === 0) {
       // Mark game as abandoned since all human players left
+      const abandonNow = new Date()
+      const abandonDuration = activeGame.startedAt instanceof Date
+        ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
+        : null
       await prisma.games.update({
         where: { id: activeGame.id },
         data: {
           status: 'abandoned',
-          abandonedAt: new Date() // TypeScript cache issue - field exists in schema
+          abandonedAt: abandonNow,
+          endedAt: abandonNow,
+          ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
+          terminalMetadata: { outcome: 'abandoned', reason: 'no_human_players' },
         }
       })
 
@@ -330,11 +337,18 @@ export async function POST(
 
     // End the game when the remaining roster can no longer satisfy this game's minimum player count.
     if (remainingPlayers < minPlayersRequired) {
+      const abandonNow = new Date()
+      const abandonDuration = activeGame.startedAt instanceof Date
+        ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
+        : null
       await prisma.games.update({
         where: { id: activeGame.id },
         data: {
           status: 'abandoned',
-          abandonedAt: new Date()
+          abandonedAt: abandonNow,
+          endedAt: abandonNow,
+          ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
+          terminalMetadata: { outcome: 'abandoned', reason: 'insufficient_players' },
         }
       })
 

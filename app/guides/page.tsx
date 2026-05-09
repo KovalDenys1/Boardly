@@ -69,6 +69,13 @@ const guides = [
     emoji: '⭕',
     readTime: '4 min read',
   },
+  {
+    slug: 'best-2-player-games-online',
+    title: 'Best 2 Player Games Online — Free, No Download',
+    description: 'Tic Tac Toe, Memory, Yahtzee and more — the best free 2 player games you can play in any browser right now.',
+    emoji: '🎮',
+    readTime: '4 min read',
+  },
 ]
 
 const collectionJsonLd = {

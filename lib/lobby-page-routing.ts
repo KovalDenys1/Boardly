@@ -3,12 +3,14 @@ export type DedicatedLobbyPageGameType =
   | 'rock_paper_scissors'
   | 'alias'
   | 'liars_party'
+  | 'connect_four'
 
 const DEDICATED_LOBBY_PAGE_GAME_TYPES = new Set<string>([
   'tic_tac_toe',
   'rock_paper_scissors',
   'alias',
   'liars_party',
+  'connect_four',
 ])
 
 const DEDICATED_LOBBY_PAGE_STATUSES = new Set<string>(['playing', 'finished'])
