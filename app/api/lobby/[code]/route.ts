@@ -203,6 +203,8 @@ export async function GET(
                     id: true,
                     username: true,
                     isGuest: true,
+                    image: true,
+                    avatarUrl: true,
                     bot: {
                       select: {
                         difficulty: true,

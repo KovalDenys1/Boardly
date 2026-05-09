@@ -20,6 +20,8 @@ interface LobbyPlayer {
     username?: string | null
     name?: string | null
     email?: string | null
+    image?: string | null
+    avatarUrl?: string | null
     bot?: unknown
   } | null
   name?: string | null
@@ -134,6 +136,14 @@ export default function MemoryGameBoard({
     }
     return result
   }, [players, parsedState.players])
+
+  const avatarByUserId = useMemo(() => {
+    const result = new Map<string, string | null>()
+    for (const player of players) {
+      result.set(player.userId, player.user?.avatarUrl ?? player.user?.image ?? null)
+    }
+    return result
+  }, [players])
 
   // Remove optimistic IDs once server state catches up (card appears in flippedCardIds or isFlipped)
   useEffect(() => {
@@ -454,9 +464,17 @@ export default function MemoryGameBoard({
                   const isCurrent = player.id === currentPlayerId
                   return (
                     <div key={player.id} className={`memory-score-row ${isCurrent ? 'memory-score-row-active' : ''}`}>
-                      <span className="bd-avatar bd-avatar-sun h-9 w-9">
-                        {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
-                      </span>
+                      {avatarByUserId.get(player.id) ? (
+                        <img
+                          src={avatarByUserId.get(player.id)!}
+                          alt={displayNameByUserId.get(player.id) || '?'}
+                          className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover"
+                        />
+                      ) : (
+                        <span className="bd-avatar bd-avatar-sun h-9 w-9">
+                          {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
+                        </span>
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-bold">{displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}</p>
                         <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>

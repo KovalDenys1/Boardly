@@ -39,6 +39,7 @@ export default function WaitingRoom({
         const isCurrentUser = p.userId === getCurrentUserId()
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined
         const difficultyLabel = botDifficulty ? t(`game.ui.botDifficulty${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)}` as Parameters<typeof t>[0]) : null
+        const avatarSrc = p.user?.avatarUrl ?? p.user?.image ?? null
 
         const canClickProfile = onProfileClick && !isBot
 
@@ -55,9 +56,17 @@ export default function WaitingRoom({
                   : 'border-bd-line bg-white'
             } ${canClickProfile ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-card-warm' : ''}`}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xs font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
-              {index + 1}
-            </div>
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={playerName}
+                className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[2px_2px_0_var(--bd-ink)]"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xs font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+                {index + 1}
+              </div>
+            )}
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
               <span className="truncate text-sm font-bold text-bd-ink">{playerName}</span>
               {isCurrentUser && !isBot && (

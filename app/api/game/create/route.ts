@@ -529,7 +529,9 @@ export async function POST(request: NextRequest) {
           user: {
             id: p.user.id,
             username: p.user.username,
-            bot: p.user.bot, // Include bot relation for bot detection
+            image: p.user.image,
+            avatarUrl: p.user.avatarUrl,
+            bot: p.user.bot,
           },
         })),
       }
