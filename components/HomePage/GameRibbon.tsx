@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import GameIcon from '@/components/GameIcon'
-import { getCatalogGames, type GameCatalogEntry } from '@/lib/game-catalog'
+import { getCatalogGames, isAvailableCatalogEntry, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -202,7 +202,7 @@ function getIllustration(gameId: string, emoji: string) {
 export default function GameRibbon() {
   const { t } = useTranslation()
   const catalogGames = getCatalogGames()
-  const availableGames = catalogGames.filter((game) => game.availability === 'available')
+  const availableGames = catalogGames.filter(isAvailableCatalogEntry)
   const inDevelopmentCount = catalogGames.filter((game) => game.availability === 'in-development').length
   const plannedCount = catalogGames.filter((game) => game.availability === 'planned').length
 

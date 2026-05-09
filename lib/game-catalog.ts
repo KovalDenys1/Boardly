@@ -30,18 +30,37 @@ export type LobbyCreateConfig = {
   difficulty?: { options: string[]; default: string }
 }
 
-export type GameCatalogEntry = {
+type GameCatalogEntryBase = {
   id: string
-  gameType?: SupportedCatalogGameType
   nameKey: string
   emoji: string
   descriptionKey: string
   players: string
   difficultyKey: string
-  availability: GameCatalogAvailability
-  route?: string
   color: string
+}
+
+/** A game that is live and playable — gameType, route, and lobbyCreateConfig are all required. */
+export type AvailableGameCatalogEntry = GameCatalogEntryBase & {
+  availability: 'available'
+  gameType: SupportedCatalogGameType
+  route: string
+  lobbyCreateConfig: LobbyCreateConfig
+}
+
+/** A game that is not yet available — all fields beyond the base are optional. */
+export type NonAvailableGameCatalogEntry = GameCatalogEntryBase & {
+  availability: 'in-development' | 'planned'
+  gameType?: SupportedCatalogGameType
+  route?: string
   lobbyCreateConfig?: LobbyCreateConfig
+}
+
+export type GameCatalogEntry = AvailableGameCatalogEntry | NonAvailableGameCatalogEntry
+
+/** Type guard — narrows to AvailableGameCatalogEntry (static available + has lobbyCreateConfig). */
+export function isAvailableCatalogEntry(game: GameCatalogEntry): game is AvailableGameCatalogEntry {
+  return game.availability === 'available' && game.lobbyCreateConfig !== undefined
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -446,7 +465,7 @@ export function getAvailableGameTypes(options?: {
   enabledExperimental?: readonly string[]
 }): SupportedCatalogGameType[] {
   return getCatalogAvailableGames(options).flatMap((game) =>
-    game.gameType ? [game.gameType] : []
+    game.gameType !== undefined ? [game.gameType] : []
   )
 }
 
@@ -466,10 +485,11 @@ export function getCatalogGames(options?: {
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())
 
+    // Promoted experimental games may lack lobbyCreateConfig — isAvailableCatalogEntry guards this.
     return {
       ...game,
       availability: isEnabled ? 'available' : game.availability,
-    }
+    } as GameCatalogEntry
   })
 }
 
