@@ -99,8 +99,11 @@ function getUserDisplayName(user: DisconnectSyncUser | undefined): string {
   return user?.username || user?.email || 'Player'
 }
 
+// Grace window after game start — players may still be navigating to the game page
+const GAME_START_GRACE_MS = 30_000
+
 function shouldAbandonDisconnectedMatch(
-  activeGame: Pick<ActiveLobbyGameRecord, 'gameType'>,
+  activeGame: Pick<ActiveLobbyGameRecord, 'gameType' | 'startedAt'>,
   parsedState: TurnState,
   isActive: boolean
 ): boolean {
@@ -109,6 +112,10 @@ function shouldAbandonDisconnectedMatch(
   }
 
   if (!Array.isArray(parsedState.players) || parsedState.players.length === 0) {
+    return false
+  }
+
+  if (activeGame.startedAt && Date.now() - activeGame.startedAt.getTime() < GAME_START_GRACE_MS) {
     return false
   }
 
