@@ -1,7 +1,7 @@
 import { MemoryGame, MemoryGameData } from '@/lib/games/memory-game'
 import { clientLogger } from '@/lib/client-logger'
 import { BotDifficulty, MoveCallback } from '../core/bot-types'
-import { resolveBotUxDelayMs } from '../core/bot-ux-timing'
+import { botDelay } from '../core/bot-ux-timing'
 import { MemoryBot, MemoryBotDecision } from './memory-bot'
 
 export interface MemoryBotActionEvent {
@@ -52,7 +52,7 @@ export class MemoryBotExecutor {
         message: `${botPlayer.name} is thinking...`,
       })
 
-      await this.delay(difficulty, 260)
+      await botDelay(difficulty, 260)
 
       const decision = await bot.makeDecision()
       await this.executeDecision(decision, bot, botPlayer.name, difficulty, onMove, onBotAction)
@@ -75,7 +75,7 @@ export class MemoryBotExecutor {
           },
           message: `${botPlayer.name} missed a pair`,
         })
-        await this.delay(difficulty, 1200)
+        await botDelay(difficulty, 1200)
         await this.resolveMismatch(bot, botPlayer.name, difficulty, onMove, onBotAction)
         return
       }
@@ -91,7 +91,7 @@ export class MemoryBotExecutor {
         message: `${botPlayer.name} found a pair`,
       })
 
-      await this.delay(difficulty, 420)
+      await botDelay(difficulty, 420)
     }
 
     if (attempts >= MAX_PAIR_ATTEMPTS_PER_TURN) {
@@ -124,7 +124,7 @@ export class MemoryBotExecutor {
         message: `${botName} flipped a card`,
       })
 
-      await this.delay(difficulty, 360)
+      await botDelay(difficulty, 360)
     }
 
     const secondMove = bot.decisionToSecondMove(decision)
@@ -150,7 +150,7 @@ export class MemoryBotExecutor {
     onMove: MoveCallback,
     onBotAction?: (event: MemoryBotActionEvent) => void,
   ): Promise<void> {
-    await this.delay(difficulty, 180)
+    await botDelay(difficulty, 180)
     await onMove(bot.createResolveMismatchMove())
 
     onBotAction?.({
@@ -184,8 +184,4 @@ export class MemoryBotExecutor {
     return gameEngine.getState().data as MemoryGameData
   }
 
-  private static delay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
-    const delayMs = resolveBotUxDelayMs(difficulty, baseMs)
-    return new Promise((resolve) => setTimeout(resolve, delayMs))
-  }
 }

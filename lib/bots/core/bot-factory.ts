@@ -3,7 +3,7 @@
  * and dispatches bot turn execution to the correct executor.
  */
 
-import { GameEngine, Move } from '@/lib/game-engine'
+import { GameEngine } from '@/lib/game-engine'
 import { BaseBot } from './base-bot'
 import { BotDifficulty, BotActionCallback, MoveCallback } from './bot-types'
 import { YahtzeeBot } from '../yahtzee/yahtzee-bot'
@@ -23,29 +23,37 @@ import { ConnectFourBot } from '../connect-four/connect-four-bot'
 import { ConnectFourBotExecutor } from '../connect-four/connect-four-bot-executor'
 import type { RegisteredGameType } from '@/lib/game-registry'
 
-/**
- * Create a bot instance for the specified game type
- */
-export function createBot<T extends GameEngine>(
+export function createBot(gameType: 'yahtzee', gameEngine: YahtzeeGame, difficulty?: BotDifficulty): YahtzeeBot
+export function createBot(gameType: 'tic_tac_toe', gameEngine: TicTacToeGame, difficulty?: BotDifficulty): TicTacToeBot
+export function createBot(gameType: 'rock_paper_scissors', gameEngine: RockPaperScissorsGame, difficulty?: BotDifficulty): RockPaperScissorsBot
+export function createBot(gameType: 'memory', gameEngine: MemoryGame, difficulty?: BotDifficulty): MemoryBot
+export function createBot(gameType: 'connect_four', gameEngine: ConnectFourGame, difficulty?: BotDifficulty): ConnectFourBot
+export function createBot(gameType: RegisteredGameType, gameEngine: GameEngine, difficulty?: BotDifficulty): BaseBot<GameEngine, unknown>
+export function createBot(
     gameType: RegisteredGameType,
-    gameEngine: T,
+    gameEngine: GameEngine,
     difficulty: BotDifficulty = 'medium'
-): BaseBot<T, unknown> {
+): BaseBot<GameEngine, unknown> {
     switch (gameType) {
         case 'yahtzee':
-            return new YahtzeeBot(gameEngine as unknown as YahtzeeGame, difficulty) as unknown as BaseBot<T, unknown>
+            if (!(gameEngine instanceof YahtzeeGame)) throw new Error('Expected YahtzeeGame for yahtzee bot')
+            return new YahtzeeBot(gameEngine, difficulty)
 
         case 'tic_tac_toe':
-            return new TicTacToeBot(gameEngine as unknown as TicTacToeGame, difficulty) as unknown as BaseBot<T, unknown>
+            if (!(gameEngine instanceof TicTacToeGame)) throw new Error('Expected TicTacToeGame for tic_tac_toe bot')
+            return new TicTacToeBot(gameEngine, difficulty)
 
         case 'rock_paper_scissors':
-            return new RockPaperScissorsBot(gameEngine as unknown as RockPaperScissorsGame, difficulty) as unknown as BaseBot<T, unknown>
+            if (!(gameEngine instanceof RockPaperScissorsGame)) throw new Error('Expected RockPaperScissorsGame for rock_paper_scissors bot')
+            return new RockPaperScissorsBot(gameEngine, difficulty)
 
         case 'memory':
-            return new MemoryBot(gameEngine as unknown as MemoryGame, difficulty) as unknown as BaseBot<T, unknown>
+            if (!(gameEngine instanceof MemoryGame)) throw new Error('Expected MemoryGame for memory bot')
+            return new MemoryBot(gameEngine, difficulty)
 
         case 'connect_four':
-            return new ConnectFourBot(gameEngine as unknown as ConnectFourGame, difficulty) as unknown as BaseBot<T, unknown>
+            if (!(gameEngine instanceof ConnectFourGame)) throw new Error('Expected ConnectFourGame for connect_four bot')
+            return new ConnectFourBot(gameEngine, difficulty)
 
         default:
             throw new Error(`Bot not implemented for game type: ${gameType}`)

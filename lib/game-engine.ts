@@ -34,7 +34,7 @@ export interface GameConfig {
   maxPlayers: number;
   minPlayers: number;
   timeLimit?: number; // in minutes
-  rules?: Record<string, any>;
+  rules?: Record<string, unknown>;
 }
 
 function cloneDeep<T>(value: T): T {
@@ -203,11 +203,10 @@ export abstract class GameEngine {
   }
 
   getPlayers(): Player[] {
-    // Ensure players is always an array
     if (!Array.isArray(this.state.players)) {
       this.state.players = [];
     }
-    return [...this.state.players];
+    return this.state.players.map((p) => ({ ...p }));
   }
 
   isGameFinished(): boolean {
