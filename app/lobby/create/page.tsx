@@ -8,7 +8,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
-import { getCatalogGames, isAvailableCatalogEntry } from '@/lib/game-catalog'
+import { getCatalogGames, isAvailableCatalogEntry, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
 import {
