@@ -1219,7 +1219,7 @@ export default function AliasPage({ code }: AliasPageProps) {
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
-          <GameContextBar code={code} right={<BdLabel>{t('alias.turnResults')}</BdLabel>} />
+          <GameContextBar code={code} />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column' }}>
