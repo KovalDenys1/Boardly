@@ -208,14 +208,25 @@ const ScorePill: React.FC<{ kind: 'guessed' | 'skipped'; count: number }> = ({ k
   )
 }
 
-const GameContextBar: React.FC<{ code: string; right?: React.ReactNode }> = ({ code, right }) => (
+const GameContextBar: React.FC<{ code: string; title?: string; right?: React.ReactNode }> = ({ code, title = 'Alias', right }) => (
   <header style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '4px 4px 12px', maxWidth: 1200, margin: '0 auto',
   }}>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <BdLabel>word game · lobby</BdLabel>
-      <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>Alias</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 12,
+        background: 'var(--bd-ink)',
+        display: 'grid', placeItems: 'center',
+        boxShadow: '0 3px 0 var(--bd-coral)',
+        flexShrink: 0,
+      }}>
+        <span style={{ fontFamily: FONT_DISPLAY, color: 'var(--bd-bg)', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>B</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <BdLabel>Boardly · word game</BdLabel>
+        <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1 }}>{title}</span>
+      </div>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       {right}
@@ -1219,7 +1230,7 @@ export default function AliasPage({ code }: AliasPageProps) {
       <>
         {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
-          <GameContextBar code={code} />
+          <GameContextBar code={code} title="Alias · Turn complete" />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -1379,7 +1390,7 @@ export default function AliasPage({ code }: AliasPageProps) {
           ))}
         </div>
 
-        <GameContextBar code={code} />
+        <GameContextBar code={code} title="Alias · Final" />
         <main style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? 'No winner' : 'Champions'}</BdLabel>
