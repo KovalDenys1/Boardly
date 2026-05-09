@@ -74,6 +74,8 @@ export default function AliasGamePage() {
         description="A team word game where one player describes secret words and the team races to guess as many as possible."
         icon="🗣️"
         iconLabel="Alias"
+        gameId="alias"
+        accentColor="var(--bd-coral)"
         accent="var(--bd-coral)"
         lobbiesHref="/games/alias/lobbies"
         primaryCtaLabel="Play now"
