@@ -1,0 +1,39 @@
+name-template: 'Boardly v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+version-resolver:
+  major:
+    labels: ['type:breaking']
+  minor:
+    labels: ['type:feature', 'type:game']
+  patch:
+    labels: ['type:bug', 'type:refactor', 'type:documentation']
+  default: patch
+
+categories:
+  - title: '🎮 New Games'
+    labels: ['type:game']
+  - title: '✨ New Features'
+    labels: ['type:feature']
+  - title: '💰 Monetization'
+    labels: ['area:monetization']
+  - title: '🐛 Bug Fixes'
+    labels: ['type:bug']
+  - title: '♻️ Refactoring'
+    labels: ['type:refactor']
+  - title: '🔒 Security'
+    labels: ['type:security', 'area:security']
+  - title: '🔧 Infrastructure'
+    labels: ['area:infra']
+  - title: '📝 Documentation'
+    labels: ['type:documentation']
+
+change-template: '- $TITLE (#$NUMBER)'
+change-title-escapes: '\<*_&'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/KovalDenys1/Boardly/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
