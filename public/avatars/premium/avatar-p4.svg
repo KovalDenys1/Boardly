@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Wizard hat + face -->
+  <!-- Hat brim -->
+  <ellipse cx="50" cy="46" rx="24" ry="6" fill="white" opacity="0.95"/>
+  <!-- Hat body -->
+  <path d="M36 46 Q40 20 50 14 Q60 20 64 46 Z" fill="white" opacity="0.95"/>
+  <!-- Hat star -->
+  <polygon points="50,22 51.5,27 56.5,27 52.5,30 54,35 50,32 46,35 47.5,30 43.5,27 48.5,27" fill="#ec4899" opacity="0.6"/>
+  <!-- Face -->
+  <circle cx="50" cy="60" r="16" fill="white" opacity="0.95"/>
+  <!-- Eyes -->
+  <circle cx="44" cy="58" r="3" fill="#8b5cf6" opacity="0.7"/>
+  <circle cx="56" cy="58" r="3" fill="#8b5cf6" opacity="0.7"/>
+  <!-- Smile -->
+  <path d="M43 65 Q50 71 57 65" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <!-- Beard -->
+  <path d="M38 70 Q42 78 50 76 Q58 78 62 70" fill="white" opacity="0.8"/>
+</svg>

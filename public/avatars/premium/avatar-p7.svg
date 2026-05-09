@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Alien -->
+  <!-- Head (large oval) -->
+  <ellipse cx="50" cy="42" rx="26" ry="30" fill="white" opacity="0.95"/>
+  <!-- Large eyes -->
+  <ellipse cx="40" cy="38" rx="9" ry="11" fill="#0d9488" opacity="0.5"/>
+  <ellipse cx="60" cy="38" rx="9" ry="11" fill="#0d9488" opacity="0.5"/>
+  <ellipse cx="40" cy="38" rx="6" ry="8" fill="#065f46" opacity="0.7"/>
+  <ellipse cx="60" cy="38" rx="6" ry="8" fill="#065f46" opacity="0.7"/>
+  <circle cx="40" cy="36" r="2" fill="white" opacity="0.6"/>
+  <circle cx="60" cy="36" r="2" fill="white" opacity="0.6"/>
+  <!-- Small mouth -->
+  <path d="M44 56 Q50 60 56 56" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+  <!-- Antenna left -->
+  <line x1="38" y1="14" x2="34" y2="6" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="33" cy="5" r="3" fill="white" opacity="0.9"/>
+  <!-- Antenna right -->
+  <line x1="62" y1="14" x2="66" y2="6" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="67" cy="5" r="3" fill="white" opacity="0.9"/>
+</svg>
