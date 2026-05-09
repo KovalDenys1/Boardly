@@ -310,7 +310,7 @@ export default function SpectatorLobbyPage() {
             <div className="mb-4">
               <ReadOnlySpectatorBoard
                 gameType={String(data.lobby.gameType || '')}
-                parsedState={isRecord(parsedState) ? parsedState : null}
+                parsedState={parsedState}
                 players={players}
               />
             </div>

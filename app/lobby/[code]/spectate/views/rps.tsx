@@ -2,7 +2,7 @@ import type { SpectatorViewProps } from '.'
 
 export default function RpsView({ state, players }: SpectatorViewProps) {
   const data = (state.data as Record<string, any>) ?? {}
-  const scores = (typeof data.scores === 'object' && data.scores !== null ? data.scores : {}) as Record<string, unknown>
+  const scores = (typeof data.scores === 'object' && data.scores !== null ? data.scores : {}) as Record<string, number>
   const rounds = Array.isArray(data.rounds) ? data.rounds : []
 
   return (
