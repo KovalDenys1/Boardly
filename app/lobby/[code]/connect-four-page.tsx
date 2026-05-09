@@ -56,7 +56,7 @@ function C4Disc({ disc, isWin, pop }: { disc: PlayerDisc | null; isWin?: boolean
     )
 }
 
-function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc }: {
+function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol }: {
     board: (PlayerDisc | null)[][]
     winningLine: [number, number][] | null
     hoverCol: number | null
@@ -64,6 +64,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     onColClick: (col: number) => void
     disabled: boolean
     currentDisc: PlayerDisc
+    lastDroppedRow: number | null
+    lastDroppedCol: number | null
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
 
@@ -122,7 +124,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     overflow: 'hidden',
                                 }}
                             >
-                                <C4Disc disc={cell} isWin={win} pop={!!cell && r === ROWS - 1} />
+                                <C4Disc disc={cell} isWin={win} pop={!!cell && r === lastDroppedRow && c === lastDroppedCol} />
                             </button>
                         )
                     })
@@ -153,9 +155,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     )
 }
 
-function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
+function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, t }: {
     name: string; disc: PlayerDisc; isActive: boolean; isWinner: boolean; wins: number; side: 'left' | 'right';
-    t: (k: TranslationKeys) => string
+    isLocalPlayer: boolean; t: (k: TranslationKeys) => string
 }) {
     const discColor = disc === 1 ? DISC_RED : DISC_YELLOW
     return (
@@ -207,7 +209,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
                         justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
                     }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: discColor, display: 'inline-block' }} />
-                        {t('games.connect_four.game.theirTurn')}
+                        {isLocalPlayer ? t('games.connect_four.game.yourTurn') : t('games.connect_four.game.theirTurn')}
                     </div>
                 )}
             </div>
@@ -938,7 +940,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
-                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" t={t} />
+                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                         <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
@@ -950,7 +952,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                         wins
                     </div>
                 </div>
-                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" t={t} />
+                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} t={t} />
             </div>
         </div>
     )
@@ -1039,6 +1041,8 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 onColClick={handleColClick}
                 disabled={boardDisabled}
                 currentDisc={gameData.currentDisc}
+                lastDroppedRow={gameData.lastDroppedRow}
+                lastDroppedCol={gameData.lastDroppedCol}
             />
             {isFinished && (
                 <div className="ttt-board-overlay" style={{ borderRadius: 16 }}>

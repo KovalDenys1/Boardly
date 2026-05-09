@@ -92,15 +92,14 @@ export class ConnectFourBot extends BaseBot<ConnectFourGame, ConnectFourBotDecis
   private negamax(board: CellValue[][], currentDisc: PlayerDisc, botDisc: PlayerDisc, depth: number, alpha: number, beta: number): number {
     const available = this.getAvailableCols(board)
 
-    // Terminal: check if previous move won (the disc that just played)
+    // Terminal: previous disc won → currentDisc lost → negative from currentDisc's perspective
     const prevDisc: PlayerDisc = currentDisc === 1 ? 2 : 1
     if (this.boardHasWinner(board, prevDisc)) {
-      const score = 100 + depth
-      return prevDisc === botDisc ? score : -score
+      return -(100 + depth)
     }
 
     if (available.length === 0 || depth === 0) {
-      return this.evaluateBoard(board, botDisc)
+      return this.evaluateBoard(board, currentDisc)
     }
 
     let best = Number.NEGATIVE_INFINITY
