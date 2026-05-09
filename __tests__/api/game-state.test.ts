@@ -80,9 +80,11 @@ describe('POST /api/game/[gameId]/state', () => {
   }
 
   const persistedState = {
+    id: 'game-123',
+    gameType: 'yahtzee',
     players: [
-      { id: 'player-1', isActive: true },
-      { id: 'player-2', isActive: true },
+      { id: 'player-1', name: 'Player 1', isActive: true },
+      { id: 'player-2', name: 'Player 2', isActive: true },
     ],
     currentPlayerIndex: 0,
     status: 'playing',
@@ -90,6 +92,7 @@ describe('POST /api/game/[gameId]/state', () => {
       rollsLeft: 3,
       held: [false, false, false, false, false],
     },
+    createdAt: new Date('2026-02-15T10:00:00.000Z').toISOString(),
     updatedAt: new Date().toISOString(),
   }
 
@@ -254,7 +257,15 @@ describe('POST /api/game/[gameId]/state', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(200)
-    expect(mockRestoreGameEngine).toHaveBeenCalledWith('yahtzee', 'game-123', persistedState)
+    expect(mockRestoreGameEngine).toHaveBeenCalledWith(
+      'yahtzee',
+      'game-123',
+      expect.objectContaining({
+        ...persistedState,
+        createdAt: new Date(persistedState.createdAt),
+        updatedAt: expect.any(Date),
+      })
+    )
     expect(mockPrisma.games.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: 'game-123', currentTurn: 0 }),
@@ -739,12 +750,15 @@ describe('POST /api/game/[gameId]/state', () => {
 
   it('auto-accepts Tic-Tac-Toe draw offers from a bot when the position is a theoretical draw', async () => {
     const ticTacToeState = {
+      id: 'game-123',
+      gameType: 'tic_tac_toe',
       players: [
-        { id: 'player-1', isActive: true },
-        { id: 'bot-1', isActive: true },
+        { id: 'player-1', name: 'Player 1', isActive: true },
+        { id: 'bot-1', name: 'Bot 1', isActive: true },
       ],
       currentPlayerIndex: 0,
       status: 'finished',
+      createdAt: new Date('2026-02-15T10:00:00.000Z').toISOString(),
       updatedAt: new Date().toISOString(),
       lastMoveAt: Date.now(),
       data: {

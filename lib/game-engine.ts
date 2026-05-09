@@ -37,6 +37,37 @@ export interface GameConfig {
   rules?: Record<string, unknown>;
 }
 
+export interface HasRollsLeft {
+  getRollsLeft(): number
+}
+
+export interface HasScorecard {
+  getScorecard(playerId: string): unknown
+}
+
+export interface PendingRequest {
+  type: 'undo' | 'draw'
+  requesterId: string
+  responderId: string
+}
+
+export interface HasPendingRequest {
+  getPendingRequest(): PendingRequest | null
+  isTheoreticalDraw(): boolean
+}
+
+export function hasRollsLeft(engine: GameEngine): engine is GameEngine & HasRollsLeft {
+  return typeof (engine as { getRollsLeft?: unknown }).getRollsLeft === 'function'
+}
+
+export function hasScorecard(engine: GameEngine): engine is GameEngine & HasScorecard {
+  return typeof (engine as { getScorecard?: unknown }).getScorecard === 'function'
+}
+
+export function hasPendingRequest(engine: GameEngine): engine is GameEngine & HasPendingRequest {
+  return typeof (engine as { getPendingRequest?: unknown }).getPendingRequest === 'function'
+}
+
 function cloneDeep<T>(value: T): T {
   if (value === null || value === undefined || typeof value !== 'object') {
     return value;
