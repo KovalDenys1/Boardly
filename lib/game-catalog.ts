@@ -265,6 +265,12 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     availability: 'available',
     route: '/games/alias/lobbies',
     color: 'from-coral-400 to-red-500',
+    lobbyCreateConfig: {
+      gradient: 'from-coral-500 via-red-500 to-pink-500',
+      allowedPlayers: [4, 6, 8, 10, 12, 16],
+      defaultMaxPlayers: 8,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
+    },
   },
   {
     id: 'rps',
