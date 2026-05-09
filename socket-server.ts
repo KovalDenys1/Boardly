@@ -510,6 +510,10 @@ async function handleSpectatorJoin(socket: SpectatorMembershipSocket, lobbyCode:
       username,
       count: snapshot.count,
     })
+    io.to(SocketRooms.lobby(normalizedLobbyCode)).emit(SocketEvents.SPECTATOR_JOINED, {
+      lobbyCode: normalizedLobbyCode,
+      count: snapshot.count,
+    })
   } catch (error) {
     logger.error('Error joining spectator room', error as Error, { lobbyCode })
     emitError(socket, 'JOIN_SPECTATORS_ERROR', 'Failed to join spectator room')
@@ -546,6 +550,10 @@ async function removeSpectatorFromLobby(socket: SpectatorMembershipSocket, lobby
     userId,
     count: snapshot.count,
     reason,
+  })
+  io.to(SocketRooms.lobby(normalizedLobbyCode)).emit(SocketEvents.SPECTATOR_LEFT, {
+    lobbyCode: normalizedLobbyCode,
+    count: snapshot.count,
   })
 }
 

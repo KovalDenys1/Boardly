@@ -772,6 +772,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     clientLogger.log(`🤖 ${event.message}`)
   }, [playAmbientSound])
 
+  const onSpectatorCountChange = useCallback((count: number) => {
+    setLobby((prev) => (prev ? { ...prev, spectatorCount: count } : prev))
+  }, [])
+
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
 
@@ -877,6 +881,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onGameAbandoned,
     onPlayerLeft,
     onBotAction,
+    onSpectatorCountChange,
     // State sync callback - automatically refreshes lobby data after reconnection
     onStateSync: async () => {
       if (loadLobbyRef.current) {

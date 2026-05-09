@@ -52,6 +52,8 @@ interface UseSocketConnectionProps {
   onGameAbandoned?: (data: GameAbandonedPayload) => void
   onPlayerLeft?: (data: PlayerLeftPayload) => void
   onBotAction?: (event: BaseBotActionEvent) => void
+  /** Called when spectator count changes — patches lobby.spectatorCount without a full refetch */
+  onSpectatorCountChange?: (count: number) => void
   /** Callback to sync state after reconnection */
   onStateSync?: () => Promise<void>
 }
@@ -73,6 +75,7 @@ export function useSocketConnection({
   onGameAbandoned,
   onPlayerLeft,
   onBotAction,
+  onSpectatorCountChange,
   onStateSync,
 }: UseSocketConnectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null)
@@ -128,6 +131,7 @@ export function useSocketConnection({
   const onGameAbandonedRef = useRef(onGameAbandoned)
   const onPlayerLeftRef = useRef(onPlayerLeft)
   const onBotActionRef = useRef(onBotAction)
+  const onSpectatorCountChangeRef = useRef(onSpectatorCountChange)
   const onStateSyncRef = useRef(onStateSync)
 
   const normalizeServerError = useCallback((data: unknown): ServerErrorPayload | null => {
@@ -167,6 +171,7 @@ export function useSocketConnection({
     onGameAbandonedRef.current = onGameAbandoned
     onPlayerLeftRef.current = onPlayerLeft
     onBotActionRef.current = onBotAction
+    onSpectatorCountChangeRef.current = onSpectatorCountChange
     onStateSyncRef.current = onStateSync
   }, [
     onGameUpdate,
@@ -178,6 +183,7 @@ export function useSocketConnection({
     onGameAbandoned,
     onPlayerLeft,
     onBotAction,
+    onSpectatorCountChange,
     onStateSync,
   ])
 
@@ -891,6 +897,13 @@ export function useSocketConnection({
         )
       }
 
+      newSocket.on(SocketEvents.SPECTATOR_JOINED, (data: { count?: number }) => {
+        if (typeof data?.count === 'number') onSpectatorCountChangeRef.current?.(data.count)
+      })
+      newSocket.on(SocketEvents.SPECTATOR_LEFT, (data: { count?: number }) => {
+        if (typeof data?.count === 'number') onSpectatorCountChangeRef.current?.(data.count)
+      })
+
       if (isMounted) {
         socketRef.current = newSocket
         setSocket(newSocket)
@@ -929,6 +942,8 @@ export function useSocketConnection({
         socketToCleanup.off(SocketEvents.GAME_ABANDONED)
         socketToCleanup.off(SocketEvents.PLAYER_LEFT)
         socketToCleanup.off(SocketEvents.BOT_ACTION)
+        socketToCleanup.off(SocketEvents.SPECTATOR_JOINED)
+        socketToCleanup.off(SocketEvents.SPECTATOR_LEFT)
 
         if (socketToCleanup.connected) {
           socketToCleanup.disconnect()
