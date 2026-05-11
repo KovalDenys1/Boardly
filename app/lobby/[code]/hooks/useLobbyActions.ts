@@ -6,7 +6,6 @@ import { clientLogger } from '@/lib/client-logger'
 import { getAuthHeaders } from '@/lib/socket-url'
 import {
   trackAuth,
-  trackError,
   trackFunnelStep,
   trackLobbyJoined,
   trackGameStarted,
@@ -466,16 +465,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const data = await response.json()
 
       if (!response.ok) {
-        if (data.error === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
-          onLobbyFull()
-          return
-        }
-        trackError({
-          errorType: 'auth',
-          errorMessage: data.error || 'Guest join failed',
-          component: 'LobbyPageClient',
-          severity: 'medium',
-        })
         throw new Error(data.error || 'Failed to join lobby')
       }
 
@@ -502,7 +491,12 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
       trackFunnelStep('guest-join')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      if (message === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+        onLobbyFull()
+      } else {
+        setError(message)
+      }
     } finally {
       setIsJoiningLobby(false)
     }
