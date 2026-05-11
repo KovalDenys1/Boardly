@@ -161,6 +161,10 @@ export default function ProfilePage() {
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
   const [hasUploadPack, setHasUploadPack] = useState(false)
+  const [premiumCancelAtPeriodEnd, setPremiumCancelAtPeriodEnd] = useState(false)
+  const [premiumUntilDate, setPremiumUntilDate] = useState<Date | null>(null)
+  const [hasSubscriptionId, setHasSubscriptionId] = useState(false)
+  const [premiumActionLoading, setPremiumActionLoading] = useState(false)
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
     useState<PublicProfilePreviewTransitionPhase>('idle')
@@ -220,6 +224,14 @@ export default function ProfilePage() {
     })
   }, [i18n.language, profileSummary?.createdAt])
 
+  const formatPremiumDate = useCallback(
+    (d: Date | null) =>
+      d
+        ? d.toLocaleDateString(i18n.language || undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : '',
+    [i18n.language]
+  )
+
   const summaryCards = useMemo(
     () => [
       {
@@ -243,12 +255,12 @@ export default function ProfilePage() {
       {
         id: 'premium',
         label: t('profile.premiumAccount'),
-        value: hasUploadPack ? '⭐ Active' : 'Free',
+        value: hasUploadPack ? (premiumCancelAtPeriodEnd ? '⭐ Cancels soon' : '⭐ Active') : 'Free',
         accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-[#7867e8]',
         onClick: () => setActiveTab('premium'),
       },
     ],
-    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t, hasUploadPack]
+    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t, hasUploadPack, premiumCancelAtPeriodEnd]
   )
 
   const fetchProfileSummary = useCallback(async () => {
@@ -266,9 +278,62 @@ export default function ProfilePage() {
     if (purchasesRes.ok) {
       const purchasesData = await purchasesRes.json()
       setHasUploadPack(purchasesData.isPremium === true)
+      setPremiumCancelAtPeriodEnd(purchasesData.cancelAtPeriodEnd === true)
+      setPremiumUntilDate(purchasesData.premiumUntil ? new Date(purchasesData.premiumUntil) : null)
+      setHasSubscriptionId(purchasesData.hasSubscriptionId === true)
     }
     return data.user as ProfileSummary
   }, [t])
+
+  const handleCancelSubscription = useCallback(async () => {
+    setPremiumActionLoading(true)
+    try {
+      const res = await fetch('/api/stripe/cancel', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      await fetchProfileSummary()
+      showToast.success('toast.success', 'Subscription cancelled. Access continues until the end of the billing period.')
+    } catch {
+      showToast.error('errors.generic', 'Failed to cancel subscription')
+    } finally {
+      setPremiumActionLoading(false)
+    }
+  }, [fetchProfileSummary])
+
+  const handleReactivate = useCallback(async () => {
+    setPremiumActionLoading(true)
+    try {
+      const res = await fetch('/api/stripe/reactivate', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      await fetchProfileSummary()
+      showToast.success('toast.success', 'Subscription reactivated!')
+    } catch {
+      showToast.error('errors.generic', 'Failed to reactivate subscription')
+    } finally {
+      setPremiumActionLoading(false)
+    }
+  }, [fetchProfileSummary])
+
+  const handleManageBilling = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else showToast.error('errors.generic', 'Failed to open billing portal')
+    } catch {
+      showToast.error('errors.generic', 'Failed to open billing portal')
+    }
+  }, [])
+
+  const handleCheckout = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+    } catch {
+      showToast.error('errors.generic', 'Failed to start checkout')
+    }
+  }, [])
 
   useEffect(() => {
     if (!sessionUserName) return
@@ -2386,7 +2451,11 @@ export default function ProfilePage() {
               <div className="max-w-2xl">
                 <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
                 <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
-                  {hasUploadPack ? 'Your premium subscription is active.' : 'Unlock exclusive features for $2.99/month.'}
+                  {!hasUploadPack
+                    ? 'Unlock exclusive features for $2.99/month.'
+                    : premiumCancelAtPeriodEnd
+                      ? `Your subscription ends on ${formatPremiumDate(premiumUntilDate)} and will not renew.`
+                      : `Renews on ${formatPremiumDate(premiumUntilDate)}.`}
                 </p>
               </div>
 
@@ -2394,11 +2463,17 @@ export default function ProfilePage() {
                 {hasUploadPack && (
                   <div className="mb-5 flex items-center gap-3">
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/30">
-                      ⭐
+                      {premiumCancelAtPeriodEnd ? '⌛' : '⭐'}
                     </span>
                     <div>
-                      <p className="font-semibold text-bd-ink dark:text-white">Premium is active</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Thank you for supporting Boardly!</p>
+                      <p className={`font-semibold ${premiumCancelAtPeriodEnd ? 'text-amber-600 dark:text-amber-400' : 'text-bd-ink dark:text-white'}`}>
+                        {premiumCancelAtPeriodEnd ? `Cancels on ${formatPremiumDate(premiumUntilDate)}` : 'Premium is active'}
+                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {premiumCancelAtPeriodEnd
+                          ? 'You will lose access to premium features after this date.'
+                          : `Renews on ${formatPremiumDate(premiumUntilDate)}`}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -2439,35 +2514,65 @@ export default function ProfilePage() {
                   </table>
                 </div>
 
-                {hasUploadPack ? (
+                {/* Active premium — will renew */}
+                {hasUploadPack && !premiumCancelAtPeriodEnd && hasSubscriptionId && (
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleCancelSubscription()}
+                      disabled={premiumActionLoading}
+                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-red-500 dark:hover:text-red-400"
+                    >
+                      {premiumActionLoading ? '...' : 'Cancel subscription'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleManageBilling()}
+                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
+                    >
+                      Manage billing
+                    </button>
+                  </div>
+                )}
+
+                {/* Cancelled — will not renew */}
+                {hasUploadPack && premiumCancelAtPeriodEnd && hasSubscriptionId && (
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleReactivate()}
+                      disabled={premiumActionLoading}
+                      className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                    >
+                      <span>⭐</span>
+                      <span>{premiumActionLoading ? '...' : 'Reactivate subscription'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleManageBilling()}
+                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
+                    >
+                      Manage billing
+                    </button>
+                  </div>
+                )}
+
+                {/* Premium but no subscriptionId stored — fallback to portal */}
+                {hasUploadPack && !hasSubscriptionId && (
                   <button
                     type="button"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
-                        const data = await res.json()
-                        if (data.url) window.location.href = data.url
-                      } catch {
-                        showToast.error('errors.generic', 'Failed to open billing portal')
-                      }
-                    }}
+                    onClick={() => void handleManageBilling()}
                     className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
                   >
                     Manage subscription
                   </button>
-                ) : (
+                )}
+
+                {/* Free user */}
+                {!hasUploadPack && (
                   <button
                     type="button"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
-                        const data = await res.json()
-                        if (data.url) window.location.href = data.url
-                        else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
-                      } catch {
-                        showToast.error('errors.generic', 'Failed to start checkout')
-                      }
-                    }}
+                    onClick={() => void handleCheckout()}
                     className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
                   >
                     <span>⭐</span>

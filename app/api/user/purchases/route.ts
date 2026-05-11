@@ -9,10 +9,19 @@ export async function GET(req: NextRequest) {
 
   const dbUser = await prisma.users.findUnique({
     where: { id: user.id },
-    select: { premiumUntil: true },
+    select: {
+      premiumUntil: true,
+      stripeSubscriptionId: true,
+      premiumCancelAtPeriod: true,
+    },
   })
 
   const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
 
-  return NextResponse.json({ isPremium, premiumUntil: dbUser?.premiumUntil ?? null })
+  return NextResponse.json({
+    isPremium,
+    premiumUntil: dbUser?.premiumUntil ?? null,
+    cancelAtPeriodEnd: dbUser?.premiumCancelAtPeriod ?? false,
+    hasSubscriptionId: !!dbUser?.stripeSubscriptionId,
+  })
 }

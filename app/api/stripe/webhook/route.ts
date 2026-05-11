@@ -8,10 +8,19 @@ const log = apiLogger('/api/stripe/webhook')
 
 export const config = { api: { bodyParser: false } }
 
-async function setPremiumUntil(customerId: string, until: Date | null) {
+async function updateSubscriptionState(
+  customerId: string,
+  subscriptionId: string | null,
+  until: Date | null,
+  cancelAtPeriodEnd: boolean
+) {
   await prisma.users.updateMany({
     where: { stripeCustomerId: customerId },
-    data: { premiumUntil: until },
+    data: {
+      premiumUntil: until,
+      stripeSubscriptionId: subscriptionId,
+      premiumCancelAtPeriod: cancelAtPeriodEnd,
+    },
   })
 }
 
@@ -37,14 +46,14 @@ export async function POST(req: NextRequest) {
         const isActive = sub.status === 'active' || sub.status === 'trialing'
         const periodEnd = sub.items.data[0]?.current_period_end
         const until = isActive && periodEnd ? new Date(periodEnd * 1000) : null
-        await setPremiumUntil(sub.customer as string, until)
-        log.info(`Subscription ${event.type}`, { customerId: sub.customer, status: sub.status })
+        await updateSubscriptionState(sub.customer as string, sub.id, until, sub.cancel_at_period_end)
+        log.info(`Subscription ${event.type}`, { customerId: sub.customer, status: sub.status, cancelAtPeriodEnd: sub.cancel_at_period_end })
         break
       }
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
-        await setPremiumUntil(sub.customer as string, null)
-        log.info('Subscription cancelled', { customerId: sub.customer })
+        await updateSubscriptionState(sub.customer as string, null, null, false)
+        log.info('Subscription deleted', { customerId: sub.customer })
         break
       }
     }

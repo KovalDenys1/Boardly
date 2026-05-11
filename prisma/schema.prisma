@@ -18,8 +18,10 @@ model Users {
   passwordHash    String?
   image           String?
   avatarUrl         String?
-  stripeCustomerId  String?   @unique
-  premiumUntil      DateTime? @db.Timestamptz(3)
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  premiumUntil          DateTime? @db.Timestamptz(3)
+  premiumCancelAtPeriod Boolean   @default(false)
   isGuest           Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
