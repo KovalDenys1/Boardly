@@ -307,17 +307,13 @@ export default function SpectatorLobbyPage() {
                 {data.lobby.gameType}
               </span>
             </div>
-            <div className="mb-4">
+            <div>
               <ReadOnlySpectatorBoard
                 gameType={String(data.lobby.gameType || '')}
                 parsedState={parsedState}
                 players={players}
               />
             </div>
-            <details className="rounded-xl bg-gray-950 p-4 text-xs text-gray-100 overflow-auto">
-              <summary className="cursor-pointer font-semibold text-gray-200">Raw Snapshot JSON</summary>
-              <pre className="mt-3 max-h-[420px] overflow-auto">{JSON.stringify(parsedState ?? data.activeGame ?? {}, null, 2)}</pre>
-            </details>
           </section>
 
           <div className="space-y-4">
@@ -333,11 +329,9 @@ export default function SpectatorLobbyPage() {
               </div>
             </section>
 
-            <details className="bd-card p-4" open>
-              <summary className="cursor-pointer font-display text-lg font-black">
-                Spectators ({spectatorCount})
-              </summary>
-              <div className="mt-3 space-y-2">
+            <section className="bd-card p-4">
+              <h2 className="mb-3 font-display text-lg font-black">Spectators ({spectatorCount})</h2>
+              <div className="space-y-2">
                 {spectators.map((spectator) => (
                   <div key={spectator.userId} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm font-semibold text-bd-ink-soft">
                     {spectator.username}
@@ -347,7 +341,7 @@ export default function SpectatorLobbyPage() {
                   <div className="text-sm text-bd-ink-muted">No spectators connected</div>
                 )}
               </div>
-            </details>
+            </section>
 
             <section className="rounded-[1.5rem] border border-bd-line bg-bd-card-warm p-4 text-sm">
               <h3 className="mb-2 font-display text-lg font-black">Good to know</h3>
