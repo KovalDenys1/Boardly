@@ -99,8 +99,8 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     )
 }
 
-function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, t }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; t: (key: TranslationKeys) => string
+function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, isPremium, t }: {
+    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; isPremium?: boolean; t: (key: TranslationKeys) => string
 }) {
     const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -138,6 +138,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, t }:
             <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
                     <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
                     {isWinner && (
                         <span style={{
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
@@ -913,6 +914,12 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     }
     const xAvatar = state.players[0] ? getPlayerAvatar(state.players[0].id) : null
     const oAvatar = state.players[1] ? getPlayerAvatar(state.players[1].id) : null
+    const getIsPremium = (playerId: string) => {
+        const lp = players.find(p => p.userId === playerId)
+        return !!(lp?.user as { isPremium?: boolean } | undefined)?.isPremium
+    }
+    const xIsPremium = state.players[0] ? getIsPremium(state.players[0].id) : false
+    const oIsPremium = state.players[1] ? getIsPremium(state.players[1].id) : false
 
     const winnerSymbol = gameData.winner
     const isDraw = winnerSymbol === 'draw'
@@ -988,7 +995,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 <TttBgGrid />
             </div>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} t={t} />
+                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                         Round {roundNum}
@@ -1000,7 +1007,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
                     </div>
                 </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} t={t} />
+                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} t={t} />
             </div>
         </div>
     )

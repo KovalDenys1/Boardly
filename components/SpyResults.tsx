@@ -3,8 +3,10 @@
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Player } from '@/lib/game-engine'
 
+type SpyPlayer = Player & { isPremium?: boolean }
+
 interface SpyResultsProps {
-  players: Player[]
+  players: SpyPlayer[]
   votes: Record<string, string>
   eliminatedId: string
   spyId: string
@@ -107,7 +109,10 @@ export default function SpyResults({
                         {player.name.charAt(0).toUpperCase()}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-bold text-[var(--bd-ink)]">{player.name}</p>
+                        <p className="flex items-center gap-1 truncate font-bold text-[var(--bd-ink)]">
+                          {player.name}
+                          {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                        </p>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {wasSpy && <span className="bd-chip bd-chip-coral py-1 text-[11px]">{t('spy.roles.spy')}</span>}
                           {wasEliminated && <span className="bd-chip bd-chip-sun py-1 text-[11px]">{t('spy.votedOutShort')}</span>}
@@ -132,7 +137,10 @@ export default function SpyResults({
                     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--bd-ink)] text-xs font-black text-[var(--bd-bg)]">
                       {index + 1}
                     </span>
-                    <span className="truncate font-bold text-[var(--bd-ink)]">{player.name}</span>
+                    <span className="flex items-center gap-1 truncate font-bold text-[var(--bd-ink)]">
+                      {player.name}
+                      {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                    </span>
                   </div>
                   <span className="text-lg font-black text-[var(--bd-mint-deep)]">
                     {scores[player.id] || 0} {t('profile.gameResults.points')}

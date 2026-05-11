@@ -134,6 +134,7 @@ export default function SpyGameBoard({
         name: player.user?.username || player.name || 'Player',
         score: player.score || 0,
         avatarSrc: player.user?.avatarUrl ?? player.user?.image ?? null,
+        isPremium: !!(player.user as { isPremium?: boolean } | undefined)?.isPremium,
       })),
     [players]
   )
@@ -686,7 +687,10 @@ export default function SpyGameBoard({
                         ) : (
                           <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
                         )}
-                        <span className="min-w-0 flex-1 truncate font-bold">{player.name}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-1 truncate font-bold">
+                          {player.name}
+                          {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                        </span>
                         <span className="font-black">{scores[player.id] || 0}</span>
                       </div>
                     )

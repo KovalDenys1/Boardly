@@ -46,6 +46,7 @@ interface Player {
   username: string | null
   avatar: string | null
   isBot: boolean
+  isPremium?: boolean
   score: number
   finalScore: number | null
   placement: number | null
@@ -211,7 +212,10 @@ export default function GameResultsModal({
                       className="px-3 py-2 text-center font-semibold"
                       style={{ border: '1px solid var(--bd-line)', color: 'var(--bd-ink)' }}
                     >
-                      {getPlayerLabel(player, index)}
+                      <span className="flex items-center justify-center gap-1">
+                        {getPlayerLabel(player, index)}
+                        {player.isPremium && !player.isBot && <span title="Premium">👑</span>}
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -515,8 +519,9 @@ export default function GameResultsModal({
                       #{index + 1}
                     </span>
                     <div className="min-w-0">
-                      <div className="truncate text-base font-semibold" title={getPlayerLabel(player, index)}>
-                        {getPlayerLabel(player, index)}
+                      <div className="flex items-center gap-1 text-base font-semibold" title={getPlayerLabel(player, index)}>
+                        <span className="truncate">{getPlayerLabel(player, index)}</span>
+                        {player.isPremium && !player.isBot && <span className="shrink-0" title="Premium">👑</span>}
                       </div>
                       <p className="mt-1 text-xs opacity-70">
                         {player.isWinner

@@ -17,6 +17,7 @@ interface Friend {
   publicProfileId: string | null
   friendshipId: string
   friendsSince: string
+  isPremium?: boolean
   presence?: 'offline' | 'online' | 'in_lobby' | 'in_game'
   statistics?: {
     totalGames: number
@@ -816,8 +817,9 @@ export default function Friends() {
 
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="truncate text-lg font-bold text-bd-ink dark:text-white">
+                              <h4 className="flex items-center gap-1.5 truncate text-lg font-bold text-bd-ink dark:text-white">
                                 {friend.username || friend.email}
+                                {friend.isPremium && <span className="shrink-0 text-sm" title="Premium">👑</span>}
                               </h4>
                               {presenceBadge && (
                                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${presenceBadge.className}`}>

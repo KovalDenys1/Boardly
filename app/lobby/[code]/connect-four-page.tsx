@@ -155,9 +155,9 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     )
 }
 
-function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, avatarSrc, t }: {
+function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, avatarSrc, isPremium, t }: {
     name: string; disc: PlayerDisc; isActive: boolean; isWinner: boolean; wins: number; side: 'left' | 'right';
-    isLocalPlayer: boolean; avatarSrc?: string | null; t: (k: TranslationKeys) => string
+    isLocalPlayer: boolean; avatarSrc?: string | null; isPremium?: boolean; t: (k: TranslationKeys) => string
 }) {
     const discColor = disc === 1 ? DISC_RED : DISC_YELLOW
     return (
@@ -198,6 +198,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
                     <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {name}
                     </span>
+                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
                     {isWinner && (
                         <span style={{
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
@@ -893,6 +894,12 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     }
     const p1Avatar = state.players[0] ? getPlayerAvatar(state.players[0].id) : null
     const p2Avatar = state.players[1] ? getPlayerAvatar(state.players[1].id) : null
+    const getIsPremium = (playerId: string) => {
+        const lp = players.find(p => p.userId === playerId)
+        return !!(lp?.user as { isPremium?: boolean } | undefined)?.isPremium
+    }
+    const p1IsPremium = state.players[0] ? getIsPremium(state.players[0].id) : false
+    const p2IsPremium = state.players[1] ? getIsPremium(state.players[1].id) : false
 
     const p1Wins = state.players[0]?.score ?? 0
     const p2Wins = state.players[1]?.score ?? 0
@@ -955,7 +962,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
-                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} t={t} />
+                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} isPremium={p1IsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                         <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
@@ -967,7 +974,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                         wins
                     </div>
                 </div>
-                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} t={t} />
+                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} isPremium={p2IsPremium} t={t} />
             </div>
         </div>
     )

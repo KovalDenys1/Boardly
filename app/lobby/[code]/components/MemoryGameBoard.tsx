@@ -22,6 +22,7 @@ interface LobbyPlayer {
     email?: string | null
     image?: string | null
     avatarUrl?: string | null
+    isPremium?: boolean
     bot?: unknown
   } | null
   name?: string | null
@@ -136,6 +137,14 @@ export default function MemoryGameBoard({
     }
     return result
   }, [players, parsedState.players])
+
+  const premiumByUserId = useMemo(() => {
+    const result = new Map<string, boolean>()
+    for (const player of players) {
+      result.set(player.userId, !!player.user?.isPremium)
+    }
+    return result
+  }, [players])
 
   const avatarByUserId = useMemo(() => {
     const result = new Map<string, string | null>()
@@ -476,7 +485,10 @@ export default function MemoryGameBoard({
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold">{displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}</p>
+                        <p className="flex items-center gap-1 truncate font-bold">
+                          {displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}
+                          {premiumByUserId.get(player.id) && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                        </p>
                         <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>
                       </div>
                       <span className="text-lg font-black">{score}</span>
