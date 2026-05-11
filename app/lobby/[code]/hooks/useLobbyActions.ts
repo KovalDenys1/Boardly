@@ -65,6 +65,7 @@ interface UseLobbyActionsProps {
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
   selectedBotDifficulty: BotDifficulty
+  onLobbyFull?: () => void
 }
 
 interface AddBotOptions {
@@ -164,6 +165,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    onLobbyFull,
   } = props
 
   const [password, setPassword] = useState('')
@@ -421,11 +423,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       setChatMessages(prev => [...prev, joinMessage])
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      if (message === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+        onLobbyFull()
+      } else {
+        setError(message)
+      }
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
+  }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate, lobby?.allowSpectators, onLobbyFull])
 
   const handleGuestJoinLobby = useCallback(async () => {
     const normalizedGuestName = guestNameInput.trim()
@@ -459,6 +466,10 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.error === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+          onLobbyFull()
+          return
+        }
         trackError({
           errorType: 'auth',
           errorMessage: data.error || 'Guest join failed',
@@ -495,7 +506,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode])
+  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode, lobby?.allowSpectators, onLobbyFull])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id) return
