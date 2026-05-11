@@ -29,7 +29,6 @@ import {
   toPersistedGameStateInput,
 } from '@/lib/persisted-game-state'
 
-const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const UNLIMITED_SPECTATORS_VALUE = 0
 const MAX_JOIN_SERIALIZABLE_RETRIES = 2
@@ -154,8 +153,7 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    // Rate limit GET requests
-    const rateLimitResult = await apiLimiter(request)
+    const rateLimitResult = await gameLimiter(request)
     if (rateLimitResult) return rateLimitResult
 
     const { searchParams } = new URL(request.url)
