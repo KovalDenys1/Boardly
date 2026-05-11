@@ -725,6 +725,8 @@ const handleGameAction = createGameActionHandler({
       SocketEvents.GAME_UPDATE,
       payload
     )
+    // Also notify spectators watching this lobby
+    io.to(SocketRooms.spectators(lobbyCode)).emit(SocketEvents.GAME_UPDATE, payload)
   },
   notifyLobbyListUpdate: () => {
     io.to(SocketRooms.lobbyList()).emit(SocketEvents.LOBBY_LIST_UPDATE)
