@@ -243,8 +243,8 @@ export default function ProfilePage() {
       {
         id: 'premium',
         label: t('profile.premiumAccount'),
-        value: t('profile.comingSoon'),
-        accent: 'bg-bd-lav text-[#7867e8]',
+        value: hasUploadPack ? 'Active' : 'Free',
+        accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-[#7867e8]',
       },
     ],
     [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t]
@@ -1772,6 +1772,96 @@ export default function ProfilePage() {
                       }
                     }}
                   />
+                </div>
+
+                {/* Premium section */}
+                <div className={profileSurfaceClassName}>
+                  <div className="mb-5 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-bd-ink dark:text-white">Boardly Premium</h3>
+                      <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                        {hasUploadPack ? 'Your premium subscription is active.' : 'Unlock exclusive features for $2.99/month.'}
+                      </p>
+                    </div>
+                    {hasUploadPack && (
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Comparison table */}
+                  <div className="mb-5 overflow-hidden rounded-xl border border-bd-line dark:border-slate-700">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-bd-line dark:border-slate-700">
+                          <th className="px-4 py-3 text-left font-semibold text-bd-ink dark:text-white">Feature</th>
+                          <th className="px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400">Free</th>
+                          <th className="px-4 py-3 text-center font-semibold text-amber-600 dark:text-amber-400">Premium</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-bd-line dark:divide-slate-700">
+                        {[
+                          { feature: 'Play all games', free: true, premium: true },
+                          { feature: '16 avatar styles', free: true, premium: true },
+                          { feature: 'Custom photo upload', free: false, premium: true },
+                          { feature: 'Premium badge in lobby', free: false, premium: true },
+                          { feature: 'Gold username color', free: false, premium: true },
+                          { feature: 'More features coming...', free: false, premium: true },
+                        ].map(({ feature, free, premium }) => (
+                          <tr key={feature} className="bg-white dark:bg-slate-800/50">
+                            <td className="px-4 py-3 text-bd-ink dark:text-slate-200">{feature}</td>
+                            <td className="px-4 py-3 text-center">
+                              {free
+                                ? <span className="text-bd-mint-deep dark:text-bd-mint">✓</span>
+                                : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {premium
+                                ? <span className="text-amber-500">✓</span>
+                                : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {hasUploadPack ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                          const data = await res.json()
+                          if (data.url) window.location.href = data.url
+                        } catch {
+                          showToast.error('errors.generic', 'Failed to open billing portal')
+                        }
+                      }}
+                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
+                    >
+                      Manage subscription
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                          const data = await res.json()
+                          if (data.url) window.location.href = data.url
+                          else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+                        } catch {
+                          showToast.error('errors.generic', 'Failed to start checkout')
+                        }
+                      }}
+                      className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+                    >
+                      <span>⭐</span>
+                      <span>Get Premium — $2.99/mo</span>
+                    </button>
+                  )}
                 </div>
 
                 <form onSubmit={handleUpdateProfile} className={profileSurfaceClassName}>

@@ -209,8 +209,8 @@ export default function AvatarPicker({
               onClick={onUnlockUpload}
               className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
             >
-              <span>🔒</span>
-              <span>Unlock photo upload for {PREMIUM_PACK_PRICE}</span>
+              <span>⭐</span>
+              <span>Get Premium — {PREMIUM_PACK_PRICE}/mo</span>
             </button>
           )}
         </div>
