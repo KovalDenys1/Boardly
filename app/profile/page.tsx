@@ -257,7 +257,10 @@ export default function ProfilePage() {
         label: t('profile.premiumAccount'),
         value: hasUploadPack ? (premiumCancelAtPeriodEnd ? '⭐ Cancels soon' : '⭐ Active') : 'Free',
         accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-[#7867e8]',
-        onClick: () => setActiveTab('premium'),
+        onClick: () => {
+          setActiveTab('premium')
+          setTimeout(() => tabListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+        },
       },
     ],
     [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t, hasUploadPack, premiumCancelAtPeriodEnd]

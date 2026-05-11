@@ -17,6 +17,10 @@ async function fetchAuthenticatedSocketToken(): Promise<string | null> {
     })
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        clientLogger.warn(`Socket token fetch: session expired or unauthorized (${response.status})`)
+        return null
+      }
       throw new Error(`HTTP ${response.status}`)
     }
 

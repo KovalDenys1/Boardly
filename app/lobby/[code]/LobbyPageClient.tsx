@@ -933,6 +933,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    onLobbyFull: () => router.push(`/lobby/${code}/spectate`),
   })
 
   // Update ref with loadLobby function
