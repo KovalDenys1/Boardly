@@ -26,6 +26,7 @@ export type PublicProfileViewData = {
   friendsCount: number
   gamesPlayed: number
   completedGamesCount?: number
+  isPremium?: boolean
 }
 
 type PublicProfileViewProps = {
@@ -349,8 +350,9 @@ export default function PublicProfileView({
                   <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
                     {t('profile.publicProfile.eyebrow')}
                   </p>
-                  <h1 className="mt-3 font-display text-4xl font-black leading-none text-bd-ink dark:text-white sm:text-5xl">
+                  <h1 className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${profile.isPremium ? 'text-amber-500' : 'text-bd-ink dark:text-white'}`}>
                     {displayName}
+                    {profile.isPremium && <span className="ml-2 text-3xl sm:text-4xl" title="Premium">👑</span>}
                   </h1>
                   <p className="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     @{handle}

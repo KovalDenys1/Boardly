@@ -29,6 +29,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
       createdAt: true,
       publicProfileId: true,
       isGuest: true,
+      premiumUntil: true,
       bot: {
         select: {
           id: true,
@@ -129,6 +130,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         friendsCount: profile._count.friendshipsInitiated + profile._count.friendshipsReceived,
         gamesPlayed: profile._count.players,
         completedGamesCount,
+        isPremium: profile.premiumUntil ? profile.premiumUntil > new Date() : false,
       }}
       initialRelation={relation}
       accessState={accessState}
