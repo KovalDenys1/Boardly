@@ -182,3 +182,8 @@ setup-*.*
 .env.sentry-build-plugin
 .superpowers/
 .vercel
+
+# Claude Code
+.agents/
+.claude/
+skills-lock.json
