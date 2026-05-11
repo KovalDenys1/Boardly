@@ -14,6 +14,7 @@ interface Player {
     username: string | null
     email: string | null
     isBot?: boolean
+    isPremium?: boolean
     bot?: {
       id: string
       userId: string
@@ -143,6 +144,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
+            const isPremium = !isBot && !!player.user.isPremium
             const isClickable = !!onPlayerClick
             const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
@@ -204,9 +206,12 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Player Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center flex-wrap" style={{ gap: 'clamp(3px, 0.3vw, 6px)', marginBottom: 'clamp(1px, 0.1vh, 3px)' }}>
-                        <span className="font-semibold truncate text-bd-ink" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
+                        <span className={`font-semibold truncate ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`} style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {playerName}
                         </span>
+                        {isPremium && (
+                          <span className="shrink-0" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }} title="Premium">👑</span>
+                        )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             AI
@@ -288,6 +293,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
+            const isPremium = !isBot && !!player.user.isPremium
             const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
@@ -328,9 +334,12 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Player Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-base truncate">
+                        <span className={`font-bold text-base truncate ${isPremium ? 'text-amber-500' : ''}`}>
                           {playerName}
                         </span>
+                        {isPremium && (
+                          <span className="shrink-0 text-sm" title="Premium">👑</span>
+                        )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
                             AI

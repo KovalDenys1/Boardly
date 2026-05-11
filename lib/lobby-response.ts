@@ -5,6 +5,7 @@ interface RawLobbyUserLike {
   isBot?: unknown
   image?: unknown
   avatarUrl?: unknown
+  premiumUntil?: unknown
   bot?: {
     difficulty?: unknown
   } | null
@@ -20,6 +21,7 @@ export interface LobbyApiUserIdentity {
   username: string
   isGuest: boolean
   isBot: boolean
+  isPremium: boolean
   image: string | null
   avatarUrl: string | null
   bot: { difficulty?: string } | null
@@ -41,11 +43,19 @@ export function sanitizeLobbyUserIdentity(user: unknown): LobbyApiUserIdentity |
   const botDifficulty =
     rawUser.bot && typeof rawUser.bot.difficulty === 'string' ? rawUser.bot.difficulty : undefined
 
+  const isPremium =
+    rawUser.premiumUntil instanceof Date
+      ? rawUser.premiumUntil > new Date()
+      : typeof rawUser.premiumUntil === 'string'
+        ? new Date(rawUser.premiumUntil) > new Date()
+        : false
+
   return {
     id: typeof rawUser.id === 'string' ? rawUser.id : '',
     username: typeof rawUser.username === 'string' && rawUser.username.trim().length > 0 ? rawUser.username : 'Player',
     isGuest: rawUser.isGuest === true,
     isBot,
+    isPremium,
     image: typeof rawUser.image === 'string' ? rawUser.image : null,
     avatarUrl: typeof rawUser.avatarUrl === 'string' ? rawUser.avatarUrl : null,
     bot: isBot ? (botDifficulty ? { difficulty: botDifficulty } : {}) : null,

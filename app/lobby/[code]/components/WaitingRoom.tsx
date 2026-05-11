@@ -37,6 +37,7 @@ export default function WaitingRoom({
         const isBot = !!p.user?.bot
         const playerName = p.user?.username || p.user?.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
         const isCurrentUser = p.userId === getCurrentUserId()
+        const isPremium = !isBot && !!(p.user as { isPremium?: boolean } | undefined)?.isPremium
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined
         const difficultyLabel = botDifficulty ? t(`game.ui.botDifficulty${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)}` as Parameters<typeof t>[0]) : null
         const avatarSrc = p.user?.avatarUrl ?? p.user?.image ?? null
@@ -68,7 +69,10 @@ export default function WaitingRoom({
               </div>
             )}
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-              <span className="truncate text-sm font-bold text-bd-ink">{playerName}</span>
+              <span className={`truncate text-sm font-bold ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{playerName}</span>
+              {isPremium && (
+                <span className="shrink-0 text-[11px]" title="Premium">👑</span>
+              )}
               {isCurrentUser && !isBot && (
                 <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
                   {t('game.ui.you')}

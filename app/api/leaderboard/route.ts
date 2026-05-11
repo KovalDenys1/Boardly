@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
       publicProfileId: string | null
       avatarUrl: string | null
       image: string | null
+      premiumUntil: Date | null
       gamesPlayed: bigint
       wins: bigint
       losses: bigint
@@ -88,6 +89,7 @@ export async function GET(req: NextRequest) {
           u."publicProfileId",
           u."avatarUrl",
           u.image,
+          u."premiumUntil",
           p.id AS "playerId",
           (
             p."isWinner" = true
@@ -130,7 +132,7 @@ export async function GET(req: NextRequest) {
           1
         )::float                                                                 AS "winRate"
       FROM leaderboard_rows
-      GROUP BY "userId", username, "publicProfileId", "avatarUrl", image
+      GROUP BY "userId", username, "publicProfileId", "avatarUrl", image, "premiumUntil"
       HAVING COUNT("playerId") >= ${minGames}
       ORDER BY
         COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")::numeric
@@ -144,12 +146,14 @@ export async function GET(req: NextRequest) {
       OFFSET ${offset}
     `)
 
+    const now = new Date()
     const entries = rows.map((r, i) => ({
       rank: page * PAGE_SIZE + i + 1,
       userId: r.userId,
       username: r.username ?? 'Player',
       publicProfileId: r.publicProfileId ?? null,
       avatarUrl: r.avatarUrl ?? r.image ?? null,
+      isPremium: !!r.premiumUntil && r.premiumUntil > now,
       gamesPlayed: Number(r.gamesPlayed),
       wins: Number(r.wins),
       losses: Number(r.losses),

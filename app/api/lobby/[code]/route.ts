@@ -205,6 +205,7 @@ export async function GET(
                     isGuest: true,
                     image: true,
                     avatarUrl: true,
+                    premiumUntil: true,
                     bot: {
                       select: {
                         difficulty: true,

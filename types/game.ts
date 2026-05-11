@@ -29,6 +29,7 @@ export interface GamePlayer {
     email?: string
     image?: string | null
     avatarUrl?: string | null
+    isPremium?: boolean
     bot?: {
       id: string
       userId: string

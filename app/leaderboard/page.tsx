@@ -78,7 +78,10 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
           </div>
         )}
         <div className="min-w-0">
-          <span className="block truncate text-base font-bold text-bd-ink">{entry.username}</span>
+          <div className="flex items-center gap-1.5">
+            <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{entry.username}</span>
+            {entry.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+          </div>
           {entry.publicProfileId && (
             <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
           )}
