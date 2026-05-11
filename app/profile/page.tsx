@@ -1687,7 +1687,7 @@ export default function ProfilePage() {
               ref={tabListRef}
               role="tablist"
               aria-label={t('profile.title')}
-              className="relative flex min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
+              className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
             >
               <div
                 aria-hidden="true"
@@ -1711,7 +1711,7 @@ export default function ProfilePage() {
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative z-10 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
+                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
                       ? 'text-white'
                       : 'text-bd-ink-soft hover:bg-white/70 hover:text-bd-ink dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
