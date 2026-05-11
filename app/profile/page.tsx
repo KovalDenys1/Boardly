@@ -35,8 +35,8 @@ interface LinkedAccounts {
   discord?: LinkedAccount
 }
 
-type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'settings'
-const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'settings']
+type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'premium' | 'settings'
+const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'premium', 'settings']
 const PROFILE_VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000
 
 function isTabType(value: string | null): value is TabType {
@@ -243,11 +243,12 @@ export default function ProfilePage() {
       {
         id: 'premium',
         label: t('profile.premiumAccount'),
-        value: hasUploadPack ? 'Active' : 'Free',
+        value: hasUploadPack ? '⭐ Active' : 'Free',
         accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-[#7867e8]',
+        onClick: () => setActiveTab('premium'),
       },
     ],
-    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t]
+    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t, hasUploadPack]
   )
 
   const fetchProfileSummary = useCallback(async () => {
@@ -1245,6 +1246,7 @@ export default function ProfilePage() {
     { id: 'friends', icon: '👥', label: t('profile.friends.title') },
     { id: 'history', icon: '🎮', label: t('profile.gameHistory.title') },
     { id: 'stats', icon: '📊', label: t('profile.stats.title') },
+    { id: 'premium', icon: '⭐', label: 'Premium' },
     { id: 'settings', icon: '⚙️', label: t('profile.settings.title') },
   ]
 
@@ -1615,20 +1617,34 @@ export default function ProfilePage() {
 
                   {/* Summary Cards */}
                   <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {summaryCards.map((card) => (
-                      <div
-                        key={card.id}
-                        className="group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800"
-                      >
-                        <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full opacity-20 ${card.accent.split(' ')[0]}`} />
-                        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
-                          {card.label}
-                        </p>
-                        <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
-                          {card.value}
-                        </p>
-                      </div>
-                    ))}
+                    {summaryCards.map((card) => {
+                      const inner = (
+                        <>
+                          <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full opacity-20 ${card.accent.split(' ')[0]}`} />
+                          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                            {card.label}
+                          </p>
+                          <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
+                            {card.value}
+                          </p>
+                        </>
+                      )
+                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800'
+                      return card.onClick ? (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={card.onClick}
+                          className={`${baseClass} w-full text-left cursor-pointer hover:shadow-[0_6px_18px_rgba(31,27,22,0.12)]`}
+                        >
+                          {inner}
+                        </button>
+                      ) : (
+                        <div key={card.id} className={baseClass}>
+                          {inner}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   <div className="mt-5 w-full">
@@ -1666,12 +1682,12 @@ export default function ProfilePage() {
           )}
 
           {/* ── Tab Navigation ── */}
-          <div className="mt-6">
+          <div className="mt-6 overflow-x-auto scrollbar-none">
             <nav
               ref={tabListRef}
               role="tablist"
               aria-label={t('profile.title')}
-              className="relative flex gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
+              className="relative flex min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
             >
               <div
                 aria-hidden="true"
@@ -1695,17 +1711,14 @@ export default function ProfilePage() {
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative z-10 flex-1 min-w-0 rounded-xl px-2 py-2.5 text-center text-sm font-semibold transition-colors duration-300 ${
+                  className={`relative z-10 flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
                       ? 'text-white'
                       : 'text-bd-ink-soft hover:bg-white/70 hover:text-bd-ink dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
                   }`}
                 >
-                  <span className="text-base sm:hidden">{tab.icon}</span>
-                  <span className="hidden items-center justify-center gap-1.5 sm:inline-flex">
-                    <span aria-hidden className="text-sm">{tab.icon}</span>
-                    <span className="truncate text-xs lg:text-sm">{tab.label}</span>
-                  </span>
+                  <span aria-hidden className="text-base sm:text-sm">{tab.icon}</span>
+                  <span className="hidden sm:inline truncate text-xs lg:text-sm">{tab.label}</span>
                 </button>
               ))}
             </nav>
@@ -1772,96 +1785,6 @@ export default function ProfilePage() {
                       }
                     }}
                   />
-                </div>
-
-                {/* Premium section */}
-                <div className={profileSurfaceClassName}>
-                  <div className="mb-5 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-bd-ink dark:text-white">Boardly Premium</h3>
-                      <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                        {hasUploadPack ? 'Your premium subscription is active.' : 'Unlock exclusive features for $2.99/month.'}
-                      </p>
-                    </div>
-                    {hasUploadPack && (
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        ACTIVE
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Comparison table */}
-                  <div className="mb-5 overflow-hidden rounded-xl border border-bd-line dark:border-slate-700">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-bd-line dark:border-slate-700">
-                          <th className="px-4 py-3 text-left font-semibold text-bd-ink dark:text-white">Feature</th>
-                          <th className="px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400">Free</th>
-                          <th className="px-4 py-3 text-center font-semibold text-amber-600 dark:text-amber-400">Premium</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-bd-line dark:divide-slate-700">
-                        {[
-                          { feature: 'Play all games', free: true, premium: true },
-                          { feature: '16 avatar styles', free: true, premium: true },
-                          { feature: 'Custom photo upload', free: false, premium: true },
-                          { feature: 'Premium badge in lobby', free: false, premium: true },
-                          { feature: 'Gold username color', free: false, premium: true },
-                          { feature: 'More features coming...', free: false, premium: true },
-                        ].map(({ feature, free, premium }) => (
-                          <tr key={feature} className="bg-white dark:bg-slate-800/50">
-                            <td className="px-4 py-3 text-bd-ink dark:text-slate-200">{feature}</td>
-                            <td className="px-4 py-3 text-center">
-                              {free
-                                ? <span className="text-bd-mint-deep dark:text-bd-mint">✓</span>
-                                : <span className="text-slate-300 dark:text-slate-600">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {premium
-                                ? <span className="text-amber-500">✓</span>
-                                : <span className="text-slate-300 dark:text-slate-600">—</span>}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {hasUploadPack ? (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/api/stripe/checkout', { method: 'POST' })
-                          const data = await res.json()
-                          if (data.url) window.location.href = data.url
-                        } catch {
-                          showToast.error('errors.generic', 'Failed to open billing portal')
-                        }
-                      }}
-                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
-                    >
-                      Manage subscription
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/api/stripe/checkout', { method: 'POST' })
-                          const data = await res.json()
-                          if (data.url) window.location.href = data.url
-                          else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
-                        } catch {
-                          showToast.error('errors.generic', 'Failed to start checkout')
-                        }
-                      }}
-                      className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
-                    >
-                      <span>⭐</span>
-                      <span>Get Premium — $2.99/mo</span>
-                    </button>
-                  )}
                 </div>
 
                 <form onSubmit={handleUpdateProfile} className={profileSurfaceClassName}>
@@ -2453,6 +2376,104 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </section>
+              </div>
+            </div>
+          )}
+
+          {/* Premium Tab */}
+          {activeTab === 'premium' && (
+            <div role="tabpanel" id="profile-tab-panel-premium" aria-labelledby="profile-tab-premium" className="space-y-5">
+              <div className="max-w-2xl">
+                <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
+                <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                  {hasUploadPack ? 'Your premium subscription is active.' : 'Unlock exclusive features for $2.99/month.'}
+                </p>
+              </div>
+
+              <div className={profileSurfaceClassName}>
+                {hasUploadPack && (
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/30">
+                      ⭐
+                    </span>
+                    <div>
+                      <p className="font-semibold text-bd-ink dark:text-white">Premium is active</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Thank you for supporting Boardly!</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mb-6 overflow-hidden rounded-xl border border-bd-line dark:border-slate-700">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-bd-line bg-bd-bg2 dark:border-slate-700 dark:bg-slate-800/60">
+                        <th className="px-4 py-3 text-left font-semibold text-bd-ink dark:text-white">Feature</th>
+                        <th className="px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400">Free</th>
+                        <th className="px-4 py-3 text-center font-semibold text-amber-600 dark:text-amber-400">Premium</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-bd-line dark:divide-slate-700">
+                      {[
+                        { feature: 'Play all games', free: true, premium: true },
+                        { feature: '16 built-in avatar styles', free: true, premium: true },
+                        { feature: 'Custom photo upload', free: false, premium: true },
+                        { feature: 'Premium badge in lobby', free: false, premium: true },
+                        { feature: 'Gold username color', free: false, premium: true },
+                        { feature: 'More features coming...', free: false, premium: true },
+                      ].map(({ feature, free, premium }) => (
+                        <tr key={feature} className="bg-white dark:bg-slate-800/50">
+                          <td className="px-4 py-3 text-bd-ink dark:text-slate-200">{feature}</td>
+                          <td className="px-4 py-3 text-center">
+                            {free
+                              ? <span className="text-bd-mint-deep dark:text-bd-mint">✓</span>
+                              : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {premium
+                              ? <span className="text-amber-500">✓</span>
+                              : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {hasUploadPack ? (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                      } catch {
+                        showToast.error('errors.generic', 'Failed to open billing portal')
+                      }
+                    }}
+                    className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
+                  >
+                    Manage subscription
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                        else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+                      } catch {
+                        showToast.error('errors.generic', 'Failed to start checkout')
+                      }
+                    }}
+                    className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+                  >
+                    <span>⭐</span>
+                    <span>Get Premium — $2.99/mo</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
