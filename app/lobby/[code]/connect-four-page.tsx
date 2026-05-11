@@ -872,7 +872,9 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const gameData = state.data as ConnectFourGameData
     const players = game?.players || []
     const currentUserId = getCurrentUserId()
+    // eslint-disable-next-line react-hooks/refs
     chatCurrentUserIdRef.current = currentUserId ?? null
+    // eslint-disable-next-line react-hooks/refs
     chatStatePlayersRef.current = state.players
 
     const myPlayerIndex = state.players.findIndex(p => p.id === currentUserId)

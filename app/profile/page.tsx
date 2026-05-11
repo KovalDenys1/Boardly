@@ -160,7 +160,7 @@ export default function ProfilePage() {
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
-  const [hasPremiumPack, setHasPremiumPack] = useState(false)
+  const [hasUploadPack, setHasUploadPack] = useState(false)
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
     useState<PublicProfilePreviewTransitionPhase>('idle')
@@ -264,7 +264,7 @@ export default function ProfilePage() {
     setProfileSummary(data.user)
     if (purchasesRes.ok) {
       const purchasesData = await purchasesRes.json()
-      setHasPremiumPack((purchasesData.purchases as string[]).includes('premium-pack-1'))
+      setHasUploadPack(purchasesData.isPremium === true)
     }
     return data.user as ProfileSummary
   }, [t])
@@ -334,6 +334,12 @@ export default function ProfilePage() {
         '',
         `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
       )
+    }
+
+    if (currentUrl.searchParams.get('premium') === 'success') {
+      showToast.success('toast.success', '🎉 Welcome to Boardly Premium!')
+      currentUrl.searchParams.delete('premium')
+      window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
     }
   }, [])
 
@@ -1751,12 +1757,19 @@ export default function ProfilePage() {
                     currentImage={profileSummary?.image ?? null}
                     username={profileSummary?.username ?? null}
                     email={profileSummary?.email ?? null}
-                    hasPremiumPack={hasPremiumPack}
+                    hasUploadPack={hasUploadPack}
                     onSaved={(avatarUrl) =>
                       setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
                     }
-                    onUnlockPremium={() => {
-                      showToast.error('errors.generic', 'Stripe checkout coming soon!')
+                    onUnlockUpload={async () => {
+                      try {
+                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                        else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+                      } catch {
+                        showToast.error('errors.generic', 'Failed to start checkout')
+                      }
                     }}
                   />
                 </div>
