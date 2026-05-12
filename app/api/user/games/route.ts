@@ -43,12 +43,20 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id
     const { searchParams } = new URL(request.url)
-    
+
+    const dbUser = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { premiumUntil: true },
+    })
+    const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+
     // Parse query params
     const statusParam = searchParams.get('status')
     const gameTypeParam = searchParams.get('gameType')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const FREE_GAME_HISTORY_LIMIT = 20
+    const rawLimit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
+    const limit = isPremium ? rawLimit : Math.min(rawLimit, FREE_GAME_HISTORY_LIMIT)
+    const offset = isPremium ? parseInt(searchParams.get('offset') || '0') : 0
 
     logger.info('Fetching user game history', {
       userId,
@@ -132,6 +140,8 @@ export async function GET(request: NextRequest) {
       totalCount,
     })
 
+    const visibleTotalCount = isPremium ? totalCount : Math.min(totalCount, FREE_GAME_HISTORY_LIMIT)
+
     return NextResponse.json({
       games: games.map((game) => ({
         id: game.id,
@@ -156,8 +166,8 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        totalCount,
-        hasMore: offset + limit < totalCount,
+        totalCount: visibleTotalCount,
+        hasMore: offset + limit < visibleTotalCount,
       },
     })
   } catch (error) {
