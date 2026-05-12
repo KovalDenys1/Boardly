@@ -3,15 +3,13 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, Socket } from 'socket.io-client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { useTranslation } from '@/lib/i18n-helpers'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
+import { getSupabaseClient } from '@/lib/supabase-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { SocketEvents, JoinedSpectatorsPayload, SpectatorJoinedPayload, SpectatorLeftPayload, SpectatorChatMessagePayload } from '@/types/socket-events'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 import { SPECTATOR_VIEWS } from './views'
 
@@ -135,7 +133,7 @@ export default function SpectatorLobbyPage() {
   const params = useParams()
   const router = useRouter()
   const { data: session } = useSession()
-  const { isGuest, guestToken } = useGuest()
+  const { isGuest, guestToken, guestName, guestId } = useGuest()
   const { t } = useTranslation()
   const code = String(params.code || '').toUpperCase()
 
@@ -147,7 +145,7 @@ export default function SpectatorLobbyPage() {
   const [joiningAsPlayer, setJoiningAsPlayer] = useState(false)
   const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
-  const socketRef = useRef<Socket | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -181,114 +179,81 @@ export default function SpectatorLobbyPage() {
     void loadSnapshot()
   }, [loadSnapshot])
 
-  // Polling fallback — ensures unauthenticated viewers and socket-less users get updates
+  // Polling fallback — ensures unauthenticated viewers get game state updates
   useEffect(() => {
     const id = setInterval(() => void loadSnapshot(), 5000)
     return () => clearInterval(id)
   }, [loadSnapshot])
 
+  // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat
   useEffect(() => {
     if (!code) return
-    if (isGuest && !guestToken) return
 
-    let socket: Socket | null = null
-    let disposed = false
+    const userId = session?.user?.id ?? (isGuest ? guestId : null)
+    const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : null)
 
-    const setup = async () => {
-      const socketAuth = await resolveSocketClientAuth({
-        isGuest: Boolean(isGuest),
-        guestToken: guestToken ?? null,
+    const supabase = getSupabaseClient()
+    const channel = supabase.channel(`spectators:${code}`, {
+      config: {
+        presence: { key: userId ?? 'anon' },
+        broadcast: { self: false },
+      },
+    })
+    channelRef.current = channel
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<{ userId: string; username: string }>()
+        const all = Object.values(state).flat()
+        setSpectators(all.map((s) => ({ userId: s.userId, username: s.username })))
+        setSpectatorCount(all.length)
       })
-      if (!socketAuth || disposed) return
-
-      socket = io(getBrowserSocketUrl(), {
-        transports: ['websocket', 'polling'],
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-      })
-      socketRef.current = socket
-
-      socket.on('connect', () => {
-        socket?.emit(SocketEvents.JOIN_SPECTATORS, code)
-      })
-
-      socket.on(SocketEvents.JOINED_SPECTATORS, (payload: JoinedSpectatorsPayload) => {
-        if (payload?.lobbyCode !== code) return
-        setSpectators(Array.isArray(payload?.spectators) ? payload.spectators : [])
-        setSpectatorCount(typeof payload?.count === 'number' ? payload.count : 0)
-      })
-
-      socket.on(SocketEvents.SPECTATOR_JOINED, (payload: SpectatorJoinedPayload) => {
-        if (payload?.lobbyCode !== code) return
-        if (typeof payload?.count === 'number') {
-          setSpectatorCount(payload.count)
-        }
-        if (typeof payload?.userId === 'string' && typeof payload?.username === 'string') {
-          setSpectators((prev) =>
-            prev.some((s) => s.userId === payload.userId)
-              ? prev
-              : [...prev, { userId: payload.userId, username: payload.username }]
-          )
-        }
-      })
-
-      socket.on(SocketEvents.SPECTATOR_LEFT, (payload: SpectatorLeftPayload) => {
-        if (payload?.lobbyCode !== code) return
-        if (typeof payload?.count === 'number') {
-          setSpectatorCount(payload.count)
-        }
-        if (typeof payload?.userId === 'string') {
-          setSpectators((prev) => prev.filter((s) => s.userId !== payload.userId))
-        }
-      })
-
-      socket.on(SocketEvents.SPECTATOR_CHAT_MESSAGE, (payload: SpectatorChatMessagePayload) => {
-        if (payload?.lobbyCode !== code) return
-        if (typeof payload?.id !== 'string' || typeof payload?.message !== 'string') return
+      .on('broadcast', { event: 'spectator-chat' }, ({ payload }: { payload: SpectatorChatMessage }) => {
+        if (!payload?.id || !payload?.message) return
         setChatMessages((prev) => {
           if (prev.some((m) => m.id === payload.id)) return prev
-          const next = [...prev, payload as SpectatorChatMessage]
-          return next.slice(-100)
+          return [...prev, payload].slice(-100)
         })
       })
-
-      const refetch = () => void loadSnapshot()
-      socket.on(SocketEvents.GAME_UPDATE, refetch)
-      socket.on(SocketEvents.LOBBY_UPDATE, refetch)
-      socket.on(SocketEvents.GAME_STARTED, refetch)
-      socket.on(SocketEvents.GAME_ABANDONED, refetch)
-      socket.on(SocketEvents.PLAYER_JOINED, refetch)
-      socket.on(SocketEvents.PLAYER_LEFT, refetch)
-    }
-
-    void setup()
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && userId && username) {
+          await channel.track({ userId, username })
+        }
+      })
 
     return () => {
-      disposed = true
-      if (socket) {
-        socket.emit(SocketEvents.LEAVE_SPECTATORS, code)
-        socket.disconnect()
-      }
-      socketRef.current = null
+      void supabase.removeChannel(channel)
+      channelRef.current = null
     }
-  }, [code, guestToken, isGuest, loadSnapshot, session?.user?.id])
+  }, [code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName])
 
   const sendSpectatorChatMessage = useCallback(
     (e: FormEvent) => {
       e.preventDefault()
       const message = chatInput.trim()
       if (!message) return
-      if (!socketRef.current || socketRef.current.disconnected) {
+      const channel = channelRef.current
+      if (!channel) {
         setError('Spectator chat is unavailable while disconnected')
         return
       }
-      socketRef.current.emit(SocketEvents.SEND_SPECTATOR_CHAT_MESSAGE, {
-        lobbyCode: code,
-        message,
+      const userId = session?.user?.id ?? (isGuest ? guestId : null) ?? 'anon'
+      const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : 'Viewer')
+      void channel.send({
+        type: 'broadcast',
+        event: 'spectator-chat',
+        payload: {
+          id: `spectator-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          userId,
+          username,
+          lobbyCode: code,
+          message,
+          timestamp: Date.now(),
+        } satisfies SpectatorChatMessage,
       })
       setChatInput('')
     },
-    [chatInput, code]
+    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName]
   )
 
   const joinAsPlayer = useCallback(async () => {
