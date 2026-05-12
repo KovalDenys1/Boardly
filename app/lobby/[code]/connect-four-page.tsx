@@ -273,7 +273,7 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
                 <div style={{ width: 22, height: 22, borderRadius: '50%', background: discColor, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)' }} />
                 <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
                 <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveCount + 1}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>Spectating</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
             </div>
         )
     }
@@ -1017,14 +1017,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
     const historySection = (
         <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
-                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Moves</h3>
+                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
                     {moveHistory.length}/42
                 </span>
             </div>
             <div className="ttt-history-list">
                 {moveHistory.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — Red starts.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.connect_four.game.noMovesYet')}</div>
                     : moveHistory.slice().reverse().map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
@@ -1064,7 +1064,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                 </div>
             ) : (
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>
-                    Waiting for response...
+                    {t('game.ui.waitingForResponse')}
                 </div>
             )}
         </div>
@@ -1104,7 +1104,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
     const actionsSection = isSpectator ? (
         <div style={{ display: 'flex', gap: 8 }}>
             <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                ← Back to lobby
+                {t('game.ui.backToLobby')}
             </a>
         </div>
     ) : (
@@ -1126,16 +1126,16 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         <div className="ttt-chat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--bd-line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Chat</h3>
+                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('chat.open')}</h3>
                     <span className="bd-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
                 </div>
                 <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                    {players.length} in match
+                    {t('game.ui.inMatch', { count: players.length })}
                 </span>
             </div>
             <div ref={chatRef} className="ttt-chat-feed">
                 {localChat.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>No messages yet.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>{t('chat.noMessages')}</div>
                     : localChat.map(msg => (
                         <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                             <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: msg.color === 'coral' ? 'var(--bd-coral)' : msg.color === 'sun' ? 'var(--bd-sun)' : 'var(--bd-sky)', display: 'grid', placeItems: 'center', fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 10, color: 'white' }}>
@@ -1163,7 +1163,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                 <div style={{ display: 'flex', gap: 6 }}>
                     <input
                         style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'white', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
-                        placeholder="Write…"
+                        placeholder={t('game.ui.chatPlaceholder')}
                         value={chatInput}
                         onChange={e => setChatInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && sendChat()}

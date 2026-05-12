@@ -7,6 +7,7 @@ import { io, Socket } from 'socket.io-client'
 import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
 import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -55,6 +56,7 @@ function SpectatorTopBar({
   onJoinAsPlayer: () => void
   lobbyCode: string
 }) {
+  const { t } = useTranslation()
   return (
     <div style={{
       position: 'sticky',
@@ -74,7 +76,7 @@ function SpectatorTopBar({
         color: 'white', fontSize: 13, fontWeight: 600,
         display: 'flex', alignItems: 'center', gap: 6,
       }}>
-        👁 Spectating · {spectatorCount} watching
+        {t('spectate.watchingCount', { count: spectatorCount })}
       </span>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {canJoinAsPlayer && (
@@ -90,7 +92,7 @@ function SpectatorTopBar({
               fontFamily: 'inherit',
             }}
           >
-            {joiningAsPlayer ? 'Joining...' : 'Join as Player'}
+            {joiningAsPlayer ? t('spectate.joining') : t('spectate.joinAsPlayer')}
           </button>
         )}
         <a
@@ -102,7 +104,7 @@ function SpectatorTopBar({
             fontFamily: 'inherit',
           }}
         >
-          ← Lobbies
+          {t('spectate.backToLobbies')}
         </a>
       </div>
     </div>
@@ -118,12 +120,13 @@ function ReadOnlySpectatorBoard({
   parsedState: Record<string, any> | null
   players: GamePlayer[]
 }) {
+  const { t } = useTranslation()
   if (!parsedState) {
-    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">Game state unavailable</div>
+    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.gameUnavailable')}</div>
   }
   const View = SPECTATOR_VIEWS[gameType]
   if (!View) {
-    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">No spectator view for this game yet.</div>
+    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.noViewForGame')}</div>
   }
   return <View state={parsedState} players={players} />
 }
@@ -133,6 +136,7 @@ export default function SpectatorLobbyPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const { isGuest, guestToken } = useGuest()
+  const { t } = useTranslation()
   const code = String(params.code || '').toUpperCase()
 
   const [data, setData] = useState<SpectatorLobbyResponse | null>(null)
@@ -314,8 +318,8 @@ export default function SpectatorLobbyPage() {
         <div className="bd-card flex w-full max-w-sm flex-col items-center gap-4 p-8 text-center">
           <LoadingSpinner size="lg" />
           <div>
-            <h1 className="font-display text-2xl font-black text-bd-ink">Opening spectator view</h1>
-            <p className="mt-2 text-sm text-bd-ink-muted">Loading the latest lobby snapshot.</p>
+            <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.loadingTitle')}</h1>
+            <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.loadingSubtitle')}</p>
           </div>
         </div>
       </div>
@@ -329,14 +333,14 @@ export default function SpectatorLobbyPage() {
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             👀
           </div>
-          <h1 className="font-display text-2xl font-black text-bd-ink">Spectator mode unavailable</h1>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.unavailableTitle')}</h1>
           <p className="mt-2 text-sm text-bd-ink-muted">{error || 'No data'}</p>
           <button
             type="button"
             onClick={() => router.push('/lobby')}
             className="bd-btn bd-btn-primary mx-auto mt-5"
           >
-            Back to lobbies
+            {t('spectate.backToLobbiesBtn')}
           </button>
         </div>
       </div>
@@ -375,7 +379,7 @@ export default function SpectatorLobbyPage() {
         {/* Header */}
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="bd-kicker mb-1">Spectator mode</p>
+            <p className="bd-kicker mb-1">{t('spectate.modeKicker')}</p>
             <h1 className="font-display text-2xl font-black leading-tight text-bd-ink sm:text-3xl">{data.lobby.name}</h1>
             <p className="mt-1 text-sm font-medium text-bd-ink-muted">
               Code <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
@@ -394,7 +398,7 @@ export default function SpectatorLobbyPage() {
                 disabled={joiningAsPlayer}
                 className="bd-btn bd-btn-coral justify-center disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {joiningAsPlayer ? 'Joining...' : 'Join as Player'}
+                {joiningAsPlayer ? t('spectate.joining') : t('spectate.joinAsPlayer')}
               </button>
             )}
             <button
@@ -402,7 +406,7 @@ export default function SpectatorLobbyPage() {
               onClick={() => router.push(`/lobby/${code}`)}
               className="bd-btn bd-btn-soft justify-center"
             >
-              Open Lobby
+              {t('spectate.openLobby')}
             </button>
           </div>
         </div>
@@ -444,7 +448,7 @@ export default function SpectatorLobbyPage() {
                     </span>
                   </div>
                 ))}
-                {players.length === 0 && <p className="text-sm text-bd-ink-muted">No players yet</p>}
+                {players.length === 0 && <p className="text-sm text-bd-ink-muted">{t('spectate.noPlayersYet')}</p>}
               </div>
             </section>
 
@@ -462,17 +466,17 @@ export default function SpectatorLobbyPage() {
                     <span className="truncate text-sm font-semibold text-bd-ink">{spectator.username}</span>
                   </div>
                 ))}
-                {spectators.length === 0 && <p className="text-sm text-bd-ink-muted">No spectators connected</p>}
+                {spectators.length === 0 && <p className="text-sm text-bd-ink-muted">{t('spectate.noSpectatorsConnected')}</p>}
               </div>
             </section>
 
             {/* Chat — only for authenticated / guest users */}
             {isAuthenticated && (
               <section className="bd-card flex flex-col p-4">
-                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">Spectator Chat</h2>
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
                 <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
                   {chatMessages.length === 0 && (
-                    <p className="text-sm text-bd-ink-muted">No messages yet</p>
+                    <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
                   )}
                   {chatMessages.map((message) => (
                     <div key={message.id} className="text-sm">
@@ -486,7 +490,7 @@ export default function SpectatorLobbyPage() {
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Message spectators..."
+                    placeholder={t('spectate.chatPlaceholder')}
                     maxLength={500}
                     className="bd-input min-w-0 flex-1 text-sm"
                   />
@@ -495,7 +499,7 @@ export default function SpectatorLobbyPage() {
                     disabled={!chatInput.trim()}
                     className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Send
+                    {t('chat.send')}
                   </button>
                 </form>
               </section>

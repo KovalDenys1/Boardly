@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
@@ -720,7 +720,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                 fontSize: 'clamp(36px, 6vw, 56px)', lineHeight: 1.02, margin: 0, letterSpacing: '-0.02em',
               }}>
                 Describe it.<br />
-                <span style={{ color: 'var(--bd-coral-deep)' }}>Don't say it.</span>
+                <span style={{ color: 'var(--bd-coral-deep)' }}>{t('alias.doNotSayItShort')}</span>
               </h1>
               <p style={{ color: 'var(--bd-ink-soft)', fontSize: 16, lineHeight: 1.55, margin: 0, maxWidth: 480 }}>
                 Two teams take turns. One player describes, the rest guess.{' '}
@@ -1026,9 +1026,9 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                 background: 'rgba(255,107,91,0.10)', border: '1.5px solid rgba(255,107,91,0.35)',
                 borderRadius: 999,
               }}>
-                <BdLabel style={{ color: teamAccentDeep }}>You're describing</BdLabel>
+                <BdLabel style={{ color: teamAccentDeep }}>{t('alias.youAreDescribing')}</BdLabel>
                 <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-ink-soft)' }}>
-                  Card #{data.currentCardIndex + 1}
+                  {t('alias.cardNum', { num: data.currentCardIndex + 1 })}
                 </span>
               </div>
 
@@ -1042,7 +1042,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
               }}>
                 <div aria-hidden style={{ position: 'absolute', top: -120, left: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(255,107,91,0.10)' }} />
                 <div aria-hidden style={{ position: 'absolute', bottom: -120, right: -120, width: 280, height: 280, borderRadius: '50%', background: 'rgba(155,140,255,0.08)' }} />
-                <BdLabel>The secret word</BdLabel>
+                <BdLabel>{t('alias.theSecretWord')}</BdLabel>
                 <span style={{
                   fontFamily: FONT_DISPLAY, fontWeight: 700,
                   fontSize: 'clamp(48px, 9vw, 84px)',
@@ -1051,7 +1051,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                   zIndex: 1, wordBreak: 'break-word',
                 }}>{word}</span>
                 <span style={{ fontSize: 13, color: 'var(--bd-ink-muted)', fontStyle: 'italic', zIndex: 1 }}>
-                  Don't say it. Don't spell it. Don't rhyme with it.
+                  {t('alias.doNotSayItFull')}
                 </span>
               </div>
 
@@ -1059,7 +1059,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, alignItems: 'center', width: '100%' }}>
                 <CountdownRing remaining={remaining} total={turnTimerSeconds} size={140} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <BdLabel>This turn so far</BdLabel>
+                  <BdLabel>{t('alias.thisTurnSoFar')}</BdLabel>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <ScorePill kind="guessed" count={guessed} />
                     <ScorePill kind="skipped" count={skipped} />
@@ -1069,13 +1069,13 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                       borderRadius: 999, padding: '6px 12px',
                       fontFamily: FONT_MONO, fontWeight: 600, fontSize: 13,
                     }}>
-                      <span style={{ opacity: 0.6, fontSize: 11 }}>NET</span>
+                      <span style={{ opacity: 0.6, fontSize: 11 }}>{t('alias.net')}</span>
                       <span style={{ fontSize: 14 }}>{guessed - skipped >= 0 ? '+' : ''}{guessed - skipped}</span>
                     </span>
                   </div>
                   {danger && (
                     <span style={{ fontFamily: FONT_MONO, fontSize: 12, color: 'var(--bd-coral-deep)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      ⚡ Time's running out!
+                      {t('alias.timesRunningOut')}
                     </span>
                   )}
                 </div>
@@ -1162,8 +1162,8 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                 border: '1.5px solid var(--bd-line)', borderRadius: 999,
               }}>
                 {isSpectator
-                  ? <BdLabel>👁 Spectating · watch the game</BdLabel>
-                  : <BdLabel>Listen up · type your guess in the chat</BdLabel>
+                  ? <BdLabel>{t('alias.spectatingWatch')}</BdLabel>
+                  : <BdLabel>{t('alias.listenUp')}</BdLabel>
                 }
               </div>
 
@@ -1186,7 +1186,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, zIndex: 1 }}>
-                  <BdLabel>Describer</BdLabel>
+                  <BdLabel>{t('alias.describer')}</BdLabel>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <BdAvatar name={describerName} color={teamAccent} />
                     <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 26 }}>{describerName}</span>
@@ -1240,7 +1240,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
       <>
         {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
-          <GameContextBar code={code} title="Alias · Turn complete" />
+          <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -1400,7 +1400,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
           ))}
         </div>
 
-        <GameContextBar code={code} title="Alias · Final" />
+        <GameContextBar code={code} title={t('alias.finalTitle')} />
         <main style={{ maxWidth: 880, margin: '40px auto 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
             <BdLabel>{isTie ? 'No winner' : 'Champions'}</BdLabel>

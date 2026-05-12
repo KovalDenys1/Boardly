@@ -210,7 +210,7 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
                 <TttMark mark={currentSymbol} size={20} />
                 <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
                 <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveNum}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>Spectating</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
             </div>
         )
     }
@@ -1081,7 +1081,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                             fontFamily: 'inherit',
                         }}
                     >
-                        Accept
+                        {t('games.tictactoe.game.undoAccept')}
                     </button>
                     <button
                         onClick={() => void handleRespondToRequest(pendingRequest.type, false)}
@@ -1099,12 +1099,12 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                             fontFamily: 'inherit',
                         }}
                     >
-                        Decline
+                        {t('games.tictactoe.game.undoDecline')}
                     </button>
                 </div>
             ) : isPendingRequester ? (
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>
-                    Waiting for response...
+                    {t('game.ui.waitingForResponse')}
                 </div>
             ) : null}
         </div>
@@ -1138,7 +1138,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     const actionsSection = isSpectator ? (
         <div style={{ display: 'flex', gap: 8 }}>
             <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
-                ← Back to lobby
+                {t('game.ui.backToLobby')}
             </a>
         </div>
     ) : (
@@ -1159,7 +1159,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                     opacity: canRequestUndo ? 1 : 0.5,
                 }}
             >
-                ↶ Undo
+                ↶ {t('games.tictactoe.game.undoBtn')}
             </button>
             <button
                 onClick={() => void handleRequestDraw()}
@@ -1177,10 +1177,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                     opacity: canRequestDraw ? 1 : 0.5,
                 }}
             >
-                🤝 Draw
+                🤝 {t('games.tictactoe.game.drawBtn')}
             </button>
             <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                Leave lobby
+                {t('games.tictactoe.game.leaveLobby')}
             </button>
         </div>
     )
@@ -1188,14 +1188,14 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     const historySection = (
         <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
-                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Moves</h3>
+                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
                     {moveHistory.length}/9
                 </span>
             </div>
             <div className="ttt-history-list">
                 {moveHistory.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — X starts.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
                     : moveHistory.slice().reverse().map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
@@ -1215,16 +1215,16 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         <div className="ttt-chat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--bd-line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Chat</h3>
+                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('chat.open')}</h3>
                     <span className="bd-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
                 </div>
                 <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                    {players.length} in match
+                    {t('game.ui.inMatch', { count: players.length })}
                 </span>
             </div>
             <div ref={chatRef} className="ttt-chat-feed">
                 {localChat.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>No messages yet.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>{t('chat.noMessages')}</div>
                     : localChat.map(msg => (
                         <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                             <div style={{
@@ -1265,7 +1265,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                             flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)',
                             borderRadius: 12, background: 'white', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
                         }}
-                        placeholder="Write…"
+                        placeholder={t('game.ui.chatPlaceholder')}
                         value={chatInput}
                         onChange={e => setChatInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && sendChat()}
