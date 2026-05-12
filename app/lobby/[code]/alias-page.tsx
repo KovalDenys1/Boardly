@@ -34,7 +34,7 @@ interface GamePlayer {
   id: string
   userId: string
   name: string
-  user?: { username?: string }
+  user?: { username?: string; isPremium?: boolean }
 }
 
 interface Game {
@@ -686,8 +686,9 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
               background: 'rgba(255,255,255,0.55)', border: '1.5px solid var(--bd-line)',
             }}>
               <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
-              <span style={{ fontWeight: 600, fontSize: 15 }}>
+              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? '#F59E0B' : undefined }}>
                 {p.name}
+                {p.user?.isPremium && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
                 {p.userId === currentUserId && (
                   <span style={{
                     marginLeft: 8, fontSize: 11, fontFamily: FONT_MONO,
@@ -867,6 +868,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                     {team.playerIds.map(pid => {
                       const name = getPlayerName(pid)
                       const isYou = pid === currentUserId
+                      const isPremiumPlayer = !!players.find(p => p.userId === pid)?.user?.isPremium
                       return (
                         <div key={pid} style={{
                           display: 'flex', alignItems: 'center', gap: 10,
@@ -875,7 +877,10 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                           border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
                         }}>
                           <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
-                          <span style={{ fontWeight: 600, fontSize: 14 }}>{name}</span>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? '#F59E0B' : undefined }}>
+                            {name}
+                            {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
+                          </span>
                           {isYou && (
                             <span style={{
                               marginLeft: 'auto', fontSize: 10, fontFamily: FONT_MONO,

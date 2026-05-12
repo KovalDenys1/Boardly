@@ -1670,6 +1670,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         name: player.user?.username || null,
         username: player.user?.username || null,
         email: null,
+        isPremium: !!player.user?.isPremium,
         bot: player.user?.bot || null,
       },
       score: enginePlayers.find((enginePlayer) => enginePlayer.id === player.userId)?.score || 0,
