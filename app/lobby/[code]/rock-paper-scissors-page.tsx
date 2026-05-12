@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/i18n-helpers'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -509,14 +509,14 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
                                 }`}
                             >
                                 <span className={`h-2 w-2 rounded-full ${socketConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                {socketConnected ? 'Live updates' : 'Reconnecting'}
+                                {socketConnected ? t('games.rock_paper_scissors.liveUpdates') : t('games.rock_paper_scissors.reconnecting')}
                             </span>
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                                {gameData.mode === 'best-of-3' ? 'First to 2' : 'First to 3'}
+                                {t('games.rock_paper_scissors.firstTo', { count: gameData.mode === 'best-of-3' ? 2 : 3 })}
                             </span>
                             {socket && (
                                 <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                                    {lobby.game.players.length} players
+                                    {t('games.rock_paper_scissors.playersCount', { count: lobby.game.players.length })}
                                 </span>
                             )}
                         </div>
@@ -528,7 +528,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
                         <RockPaperScissorsGameBoard
                             gameData={gameData}
                             playerId={isSpectator ? '' : currentPlayer!.id}
-                            playerName={isSpectator ? 'Spectator' : currentPlayer!.name}
+                            playerName={isSpectator ? t('game.ui.spectator') : currentPlayer!.name}
                             players={lobby.game.players}
                             onSubmitChoice={handleSubmitChoice}
                             isLoading={isSpectator || isSubmitting}
@@ -537,20 +537,20 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
                     <aside className="space-y-4">
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <p className="text-sm font-semibold text-slate-800">How this match works</p>
+                            <p className="text-sm font-semibold text-slate-800">{t('games.rock_paper_scissors.howItWorksTitle')}</p>
                             <ul className="mt-2 space-y-2 text-sm text-slate-600">
-                                <li>1. Pick one option each round.</li>
-                                <li>2. Both choices reveal at the same time.</li>
-                                <li>3. First to required wins takes the match.</li>
+                                <li>1. {t('games.rock_paper_scissors.howItWorks1')}</li>
+                                <li>2. {t('games.rock_paper_scissors.howItWorks2')}</li>
+                                <li>3. {t('games.rock_paper_scissors.howItWorks3')}</li>
                             </ul>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <p className="text-sm font-semibold text-slate-800 mb-2">Rules</p>
+                            <p className="text-sm font-semibold text-slate-800 mb-2">{t('games.rock_paper_scissors.rulesTitle')}</p>
                             <div className="space-y-2 text-sm text-slate-600">
-                                <p>🪨 Rock beats ✂️ Scissors</p>
-                                <p>✂️ Scissors beats 📄 Paper</p>
-                                <p>📄 Paper beats 🪨 Rock</p>
+                                <p>{t('games.rock_paper_scissors.rockBeatsScissors')}</p>
+                                <p>{t('games.rock_paper_scissors.scissorsBeatsPaper')}</p>
+                                <p>{t('games.rock_paper_scissors.paperBeatsRock')}</p>
                             </div>
                         </div>
 
