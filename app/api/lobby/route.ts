@@ -96,6 +96,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
     }
 
+    if (allowSpectators) {
+      if (requestUser.isGuest) {
+        return NextResponse.json({ error: 'Premium required to enable spectators' }, { status: 403 })
+      }
+      const dbUser = await prisma.users.findUnique({
+        where: { id: requestUser.id },
+        select: { premiumUntil: true },
+      })
+      const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+      if (!isPremium) {
+        return NextResponse.json({ error: 'Premium required to enable spectators' }, { status: 403 })
+      }
+    }
+
     const persistedGameType = toPersistedGameType(gameType)
     const normalizedLobbyName = name.trim()
     const hashedLobbyPassword = await hashLobbyPassword(password)
