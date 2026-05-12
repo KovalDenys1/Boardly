@@ -135,6 +135,133 @@ describe("LiarsPartyGame (MVP scaffold)", () => {
     expect(data.winnerId).toBe('player1')
   })
 
+  describe('additional coverage', () => {
+    it('getGameRules returns a non-empty array of strings', () => {
+      expect(game.startGame()).toBe(true)
+      const rules = game.getGameRules()
+      expect(Array.isArray(rules)).toBe(true)
+      expect(rules.length).toBeGreaterThan(0)
+      rules.forEach((r) => expect(typeof r).toBe('string'))
+    })
+
+    it('validateMove returns false for an unknown move type', () => {
+      expect(game.startGame()).toBe(true)
+      expect(
+        game.validateMove(createMove('player1', 'unknown-type', {}))
+      ).toBe(false)
+    })
+
+    it('validateMove returns false for a non-player ID submitting a claim', () => {
+      expect(game.startGame()).toBe(true)
+      expect(
+        game.validateMove(createMove('stranger', 'submit-claim', {
+          claim: 'I am not a player at all',
+          isBluff: false,
+        }))
+      ).toBe(false)
+    })
+
+    it('submit-challenge is rejected in the claim phase', () => {
+      expect(game.startGame()).toBe(true)
+      expect(getData(game).phase).toBe('claim')
+      expect(
+        game.validateMove(createMove('player2', 'submit-challenge', { decision: 'challenge' }))
+      ).toBe(false)
+    })
+
+    it('bluff is NOT caught when challengers equal believers (not a strict majority)', () => {
+      // 4 players: 1 claimant + 3 voters. We need exactly 1 challenger and 2 believers (not majority)
+      // Or 2 claimants... with 4 players: claimant + 3 voters → tie is impossible (odd)
+      // Use 5 players: claimant + 4 voters → 2 challenge + 2 believe = tie → bluff NOT caught
+      const game5 = new LiarsPartyGame('liars-majority', {
+        maxPlayers: 12,
+        minPlayers: 4,
+        rules: { maxRounds: 2, eliminationStrikes: 2 },
+      })
+      game5.addPlayer({ id: 'p1', name: 'P1' })
+      game5.addPlayer({ id: 'p2', name: 'P2' })
+      game5.addPlayer({ id: 'p3', name: 'P3' })
+      game5.addPlayer({ id: 'p4', name: 'P4' })
+      game5.addPlayer({ id: 'p5', name: 'P5' })
+      expect(game5.startGame()).toBe(true)
+      game5.makeMove(createMove('p1', 'submit-claim', { claim: 'I am bluffing here now', isBluff: true }))
+      game5.makeMove(createMove('p2', 'submit-challenge', { decision: 'challenge' }))
+      game5.makeMove(createMove('p3', 'submit-challenge', { decision: 'challenge' }))
+      game5.makeMove(createMove('p4', 'submit-challenge', { decision: 'believe' }))
+      game5.makeMove(createMove('p5', 'submit-challenge', { decision: 'believe' }))
+      game5.makeMove(createMove('p2', 'advance-round', {}))
+      const data = getData(game5)
+      // Bluff NOT caught: claimant should have positive score from successful bluff
+      expect(data.scores.p1).toBeGreaterThan(0)
+      expect(data.strikes.p1 ?? 0).toBe(0)
+    })
+
+    it('auto-submitted claim yields lower score than manual claim for truth-teller', () => {
+      // Manual truth + all believe → SCORE_TRUTH_BELIEVED_BONUS = 12
+      // Auto truth + all believe → 12 - SCORE_AUTO_SUBMISSION_PENALTY (4) = 8
+      const manualGame = new LiarsPartyGame('liars-manual', {
+        maxPlayers: 12,
+        minPlayers: 4,
+        rules: { maxRounds: 1, eliminationStrikes: 2 },
+      })
+      addDefaultPlayers(manualGame)
+      expect(manualGame.startGame()).toBe(true)
+      manualGame.makeMove(createMove('player1', 'submit-claim', { claim: 'This is the truth', isBluff: false }))
+      manualGame.makeMove(createMove('player2', 'submit-challenge', { decision: 'believe' }))
+      manualGame.makeMove(createMove('player3', 'submit-challenge', { decision: 'believe' }))
+      manualGame.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))
+      manualGame.makeMove(createMove('player2', 'advance-round', {}))
+      const manualScore = getData(manualGame).scores.player1
+
+      const autoGame = new LiarsPartyGame('liars-auto', {
+        maxPlayers: 12,
+        minPlayers: 4,
+        rules: { maxRounds: 1, eliminationStrikes: 2 },
+      })
+      addDefaultPlayers(autoGame)
+      expect(autoGame.startGame()).toBe(true)
+      const phaseStart = autoGame.getState().lastMoveAt as number
+      // Trigger full timeout to auto-submit claim and auto-believe for all voters
+      autoGame.applyTimeoutFallback(30, phaseStart + 90_000)
+      const autoScore = getData(autoGame).scores.player1
+
+      expect(autoScore).toBeLessThan(manualScore)
+    })
+
+    it('claimant rotates from player1 to player2 after round 1 advances', () => {
+      expect(game.startGame()).toBe(true)
+      expect(getData(game).currentClaimantId).toBe('player1')
+      game.makeMove(createMove('player1', 'submit-claim', { claim: 'First round claim text', isBluff: false }))
+      game.makeMove(createMove('player2', 'submit-challenge', { decision: 'believe' }))
+      game.makeMove(createMove('player3', 'submit-challenge', { decision: 'believe' }))
+      game.makeMove(createMove('player4', 'submit-challenge', { decision: 'believe' }))
+      game.makeMove(createMove('player2', 'advance-round', {}))
+      expect(getData(game).currentClaimantId).toBe('player2')
+    })
+
+    it('ranking after finish is in descending score order', () => {
+      const oneRound = new LiarsPartyGame('liars-rank', {
+        maxPlayers: 12,
+        minPlayers: 4,
+        rules: { maxRounds: 1, eliminationStrikes: 2 },
+      })
+      addDefaultPlayers(oneRound)
+      expect(oneRound.startGame()).toBe(true)
+      // player1 bluffs, everyone challenges → bluff caught → player1 loses points; challengers gain
+      oneRound.makeMove(createMove('player1', 'submit-claim', { claim: 'I am telling a lie here', isBluff: true }))
+      oneRound.makeMove(createMove('player2', 'submit-challenge', { decision: 'challenge' }))
+      oneRound.makeMove(createMove('player3', 'submit-challenge', { decision: 'challenge' }))
+      oneRound.makeMove(createMove('player4', 'submit-challenge', { decision: 'challenge' }))
+      oneRound.makeMove(createMove('player2', 'advance-round', {}))
+      const data = getData(oneRound)
+      const ranking = data.ranking
+      // Verify descending order
+      for (let i = 0; i < ranking.length - 1; i++) {
+        expect(data.scores[ranking[i]] ?? 0).toBeGreaterThanOrEqual(data.scores[ranking[i + 1]] ?? 0)
+      }
+    })
+  })
+
   it('applies bluff strike elimination and prevents eliminated players from voting', () => {
     const eliminationGame = new LiarsPartyGame('liars-elimination', {
       maxPlayers: 12,
