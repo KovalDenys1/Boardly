@@ -17,6 +17,7 @@ import {
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
+import { LOBBY_THEMES, LOBBY_THEME_IDS, type LobbyTheme } from '@/lib/lobby-themes'
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
@@ -119,6 +120,8 @@ function CreateLobbyPage() {
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
   const [tipsOpen, setTipsOpen] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
+  const [isPremiumUser, setIsPremiumUser] = useState(false)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -141,6 +144,15 @@ function CreateLobbyPage() {
       router.push('/')
     }
   }, [status, isGuest, router])
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetch('/api/user/customize', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((d) => { if (d.isPremium) setIsPremiumUser(true) })
+        .catch(() => {})
+    }
+  }, [status])
 
   const handlePartySelection = async (friendIds: string[]) => {
     setSelectedFriendIds(friendIds)
@@ -193,6 +205,7 @@ function CreateLobbyPage() {
         allowSpectators: formData.allowSpectators,
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
+        theme: selectedTheme,
         ...(formData.gameType === 'tic_tac_toe' ? {
           ticTacToeRounds: formData.ticTacToeRounds,
           boardSize,
@@ -782,6 +795,52 @@ function CreateLobbyPage() {
                 )}
               </>
             )}
+
+            {/* Lobby theme — premium */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-bd-ink">🎨 Lobby Theme</label>
+                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500">👑 Premium</span>}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {LOBBY_THEME_IDS.map((themeId) => {
+                  const t = LOBBY_THEMES[themeId]
+                  const isPremiumTheme = themeId !== 'default'
+                  const isLocked = isPremiumTheme && !isPremiumUser
+                  const isSelected = selectedTheme === themeId
+                  return (
+                    <button
+                      key={themeId}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && setSelectedTheme(themeId)}
+                      title={isLocked ? `${t.name} — Premium only` : t.name}
+                      style={{
+                        position: 'relative',
+                        width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                        background: t.bg,
+                        border: isSelected ? `3px solid ${t.accent}` : '2px solid var(--bd-line)',
+                        boxShadow: isSelected ? `0 0 0 2px ${t.accent}40` : undefined,
+                        cursor: isLocked ? 'not-allowed' : 'pointer',
+                        opacity: isLocked ? 0.5 : 1,
+                        overflow: 'hidden',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        height: 8, background: t.accent,
+                      }} />
+                      {isLocked && <span style={{ position: 'absolute', top: 1, right: 1, fontSize: 9 }}>👑</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[12px] text-bd-ink-muted">
+                {selectedTheme === 'default' ? 'Classic warm look' : `${LOBBY_THEMES[selectedTheme].name} theme selected`}
+                {!isPremiumUser && ' · Upgrade to unlock custom themes'}
+              </p>
+            </div>
 
             {/* Lobby options */}
             <div className="flex items-center gap-3 pt-1">

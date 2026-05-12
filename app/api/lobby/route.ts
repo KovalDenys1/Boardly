@@ -14,21 +14,24 @@ import { hashLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 
 const log = apiLogger('/api/lobby')
 
 const createLobbySchema = z.object({
   name: z.string().trim().max(50).optional().default(''),
   password: z.string().optional(),
-  maxPlayers: z.number().min(2).max(10).default(6),
+  maxPlayers: z.number().min(2).max(16).default(6),
   allowSpectators: z.boolean().default(false),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
   gameType: z.string().default('yahtzee'),
+  theme: z.enum(LOBBY_THEME_IDS as [LobbyTheme, ...LobbyTheme[]]).default(FREE_LOBBY_THEME),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
   memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
 })
 
 const createLimiter = rateLimit(rateLimitPresets.lobbyCreation)
+const createLimiterPremium = rateLimit(rateLimitPresets.lobbyCreationPremium)
 const WAITING_LOBBY_STALE_MS = 60 * 60 * 1000
 const NUMERIC_LOBBY_CODE_ATTEMPTS_BEFORE_FALLBACK = 10
 const MAX_LOBBY_CODE_ATTEMPTS = 20
@@ -52,15 +55,11 @@ function isLobbyCodeConflict(error: unknown): boolean {
   return false
 }
 
+const FREE_MAX_PLAYERS = 10
+
 export async function POST(request: NextRequest) {
   if (!verifyCsrfToken(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  // Apply rate limiting for lobby creation
-  const rateLimitResult = await createLimiter(request)
-  if (rateLimitResult) {
-    return rateLimitResult
   }
 
   try {
@@ -76,6 +75,22 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Single premium check — used for rate limit tier + all premium gates below
+    let isPremium = false
+    if (!requestUser.isGuest) {
+      const dbUser = await prisma.users.findUnique({
+        where: { id: requestUser.id },
+        select: { premiumUntil: true },
+      })
+      isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+    }
+
+    // Apply tier-appropriate rate limit
+    const rateLimitResult = await (isPremium ? createLimiterPremium : createLimiter)(request)
+    if (rateLimitResult) {
+      return rateLimitResult
+    }
+
     const body = await request.json()
     const {
       name,
@@ -86,6 +101,7 @@ export async function POST(request: NextRequest) {
       gameType,
       ticTacToeRounds,
       memoryDifficulty,
+      theme,
     } = createLobbySchema.parse(body)
 
     if (isTemporarilyUnavailableGameType(gameType)) {
@@ -94,6 +110,18 @@ export async function POST(request: NextRequest) {
 
     if (!isSupportedGameType(gameType)) {
       return NextResponse.json({ error: 'Unsupported game type' }, { status: 400 })
+    }
+
+    if (allowSpectators && !isPremium) {
+      return NextResponse.json({ error: 'Premium required to enable spectators' }, { status: 403 })
+    }
+
+    if (maxPlayers > FREE_MAX_PLAYERS && !isPremium) {
+      return NextResponse.json({ error: 'Premium required to increase player limit beyond 10' }, { status: 403 })
+    }
+
+    if ((PREMIUM_LOBBY_THEMES as string[]).includes(theme) && !isPremium) {
+      return NextResponse.json({ error: 'Premium required for custom lobby themes' }, { status: 403 })
     }
 
     const persistedGameType = toPersistedGameType(gameType)
@@ -147,6 +175,7 @@ export async function POST(request: NextRequest) {
           spectatorCount: number
           turnTimer: number
           gameType: string
+          theme: string
           creatorId: string | null
         }
       | null = null
@@ -170,6 +199,7 @@ export async function POST(request: NextRequest) {
             spectatorCount: 0,
             turnTimer,
             gameType,
+            theme,
             creatorId: requestUser.id,
             games: {
               create: {
@@ -196,6 +226,7 @@ export async function POST(request: NextRequest) {
             spectatorCount: true,
             turnTimer: true,
             gameType: true,
+            theme: true,
             creatorId: true,
           },
         })

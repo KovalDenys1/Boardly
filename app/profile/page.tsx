@@ -184,6 +184,12 @@ export default function ProfilePage() {
   const tabButtonRefs = useRef<Partial<Record<TabType, HTMLButtonElement | null>>>({})
   const sessionUserName = profileSummary?.username || session?.user?.name || ''
 
+  // Profile customization state
+  const [profileBio, setProfileBio] = useState('')
+  const [profileAccentColor, setProfileAccentColor] = useState<string | null>(null)
+  const [profileFeaturedGame, setProfileFeaturedGame] = useState<string | null>(null)
+  const [customizeSaving, setCustomizeSaving] = useState(false)
+
   // Settings state
   const [notificationsSaving, setNotificationsSaving] = useState(false)
   const [accountPreferencesSaving, setAccountPreferencesSaving] = useState(false)
@@ -267,9 +273,10 @@ export default function ProfilePage() {
   )
 
   const fetchProfileSummary = useCallback(async () => {
-    const [profileRes, purchasesRes] = await Promise.all([
+    const [profileRes, purchasesRes, customizeRes] = await Promise.all([
       fetch('/api/user/profile', { cache: 'no-store' }),
       fetch('/api/user/purchases', { cache: 'no-store' }),
+      fetch('/api/user/customize', { cache: 'no-store' }),
     ])
     const data = await profileRes.json()
 
@@ -284,6 +291,12 @@ export default function ProfilePage() {
       setPremiumCancelAtPeriodEnd(purchasesData.cancelAtPeriodEnd === true)
       setPremiumUntilDate(purchasesData.premiumUntil ? new Date(purchasesData.premiumUntil) : null)
       setHasSubscriptionId(purchasesData.hasSubscriptionId === true)
+    }
+    if (customizeRes.ok) {
+      const customizeData = await customizeRes.json()
+      setProfileBio(customizeData.bio ?? '')
+      setProfileAccentColor(customizeData.accentColor ?? null)
+      setProfileFeaturedGame(customizeData.featuredGame ?? null)
     }
     return data.user as ProfileSummary
   }, [t])
@@ -315,6 +328,26 @@ export default function ProfilePage() {
       setPremiumActionLoading(false)
     }
   }, [fetchProfileSummary])
+
+  const handleSaveCustomization = useCallback(async (fields: { bio?: string; accentColor?: string | null; featuredGame?: string | null }) => {
+    setCustomizeSaving(true)
+    try {
+      const res = await fetch('/api/user/customize', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed')
+      }
+      showToast.success('toast.saved')
+    } catch (err) {
+      showToast.error('errors.generic', err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setCustomizeSaving(false)
+    }
+  }, [])
 
   const handleManageBilling = useCallback(async () => {
     try {
@@ -2582,6 +2615,118 @@ export default function ProfilePage() {
                     <span>Get Premium — $2.99/mo</span>
                   </button>
                 )}
+              </div>
+
+              {/* Profile Customization */}
+              <div className={profileSurfaceClassName}>
+                <h3 className="mb-1 text-lg font-bold text-bd-ink dark:text-white">Profile Customization</h3>
+                <p className="mb-5 text-sm text-bd-ink-muted dark:text-slate-400">
+                  Personalize your public profile.
+                </p>
+
+                {/* Bio — free */}
+                <div className="mb-5">
+                  <label className="mb-1.5 block text-sm font-semibold text-bd-ink dark:text-white">
+                    Bio <span className="text-xs font-normal text-bd-ink-muted">(max 160 chars · free)</span>
+                  </label>
+                  <textarea
+                    value={profileBio}
+                    onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
+                    placeholder="Tell others about yourself..."
+                    rows={3}
+                    className="w-full rounded-xl border border-bd-line bg-white px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                  />
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-xs text-bd-ink-muted">{profileBio.length}/160</span>
+                    <button
+                      type="button"
+                      disabled={customizeSaving}
+                      onClick={() => void handleSaveCustomization({ bio: profileBio })}
+                      className="rounded-lg bg-bd-ink px-3 py-1.5 text-xs font-semibold text-bd-bg transition hover:opacity-80 disabled:opacity-50"
+                    >
+                      {customizeSaving ? '...' : 'Save bio'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Accent color — premium */}
+                <div className="mb-5">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Accent Color</label>
+                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {['#FF6B5B', '#4FA3E8', '#48BB78', '#F6AD55', '#9B8CFF', '#F687B3', '#FC8181', '#68D391'].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        disabled={!hasUploadPack}
+                        onClick={() => {
+                          const next = profileAccentColor === color ? null : color
+                          setProfileAccentColor(next)
+                          void handleSaveCustomization({ accentColor: next })
+                        }}
+                        title={hasUploadPack ? color : 'Premium required'}
+                        style={{
+                          width: 32, height: 32, borderRadius: 8, background: color, border: 'none',
+                          outline: profileAccentColor === color ? `3px solid ${color}` : '2px solid transparent',
+                          outlineOffset: 2, cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                          opacity: hasUploadPack ? 1 : 0.4,
+                          transition: 'all 0.15s',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {profileAccentColor && (
+                    <p className="mt-1.5 text-xs text-bd-ink-muted">
+                      Active: <span style={{ color: profileAccentColor, fontWeight: 700 }}>{profileAccentColor}</span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Featured game — premium */}
+                <div>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Featured Game</label>
+                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'yahtzee', label: '🎲 Yahtzee' },
+                      { id: 'connect_four', label: '🔴 Connect Four' },
+                      { id: 'tic_tac_toe', label: '✕ Tic-Tac-Toe' },
+                      { id: 'memory', label: '🃏 Memory' },
+                      { id: 'guess_the_spy', label: '🕵️ Spy' },
+                      { id: 'alias', label: '💬 Alias' },
+                      { id: 'rock_paper_scissors', label: '✊ RPS' },
+                      { id: 'liars_party', label: '🃏 Liar\'s Party' },
+                    ].map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={!hasUploadPack}
+                        onClick={() => {
+                          const next = profileFeaturedGame === id ? null : id
+                          setProfileFeaturedGame(next)
+                          void handleSaveCustomization({ featuredGame: next })
+                        }}
+                        className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                          profileFeaturedGame === id
+                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                            : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white'
+                        }`}
+                        style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: hasUploadPack ? 'pointer' : 'not-allowed' }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {profileFeaturedGame && (
+                    <p className="mt-1.5 text-xs text-bd-ink-muted">
+                      Shown on your public profile
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
