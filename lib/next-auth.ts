@@ -264,7 +264,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = typeof user.email === 'string' ? user.email.trim().toLowerCase() : user.email
         token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
-        token.picture = user.image
+        token.picture = null
         token.emailVerified = user.emailVerified
         token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
         token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false
@@ -328,7 +328,7 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.email = dbUser.email
           token.name = dbUser.username
-          token.picture = dbUser.avatarUrl ?? dbUser.image
+          token.picture = dbUser.avatarUrl ?? null
           token.emailVerified = dbUser.emailVerified
           token.role = dbUser.role
           token.suspended = dbUser.suspended
@@ -390,6 +390,7 @@ export const authOptions: NextAuthOptions = {
         where: { id: user.id },
         data: {
           emailVerified: new Date(),
+          image: null,
           // Only set username if user doesn't have one yet
           username: (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         }
