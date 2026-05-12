@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { getSecurityHeaders, verifyCsrfToken } from '@/lib/csrf'
-import { getServerSocketUrl } from '@/lib/socket-url'
 
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
-const SOCKET_URL = getServerSocketUrl()
 const SECURITY_HEADERS = getSecurityHeaders()
 const DEFAULT_CORS_ORIGINS = [
   'http://localhost:3000',
@@ -85,35 +83,16 @@ function isTrustedServerRequest(request: NextRequest): boolean {
 function buildCspHeaderValue() {
   const connectSrcCandidates = new Set<string>([
     "'self'",
-    SOCKET_URL,
-    'wss://*.onrender.com',
     'ws://localhost:*',
     'ws://127.0.0.1:*',
     'http://localhost:*',
     'http://127.0.0.1:*',
+    'https://*.supabase.co',
+    'wss://*.supabase.co',
     'https://vercel.live',
     'https://*.ingest.sentry.io',
     'https://*.ingest.de.sentry.io',
   ])
-
-  const addSocketVariant = (origin: string) => {
-    try {
-      const parsed = new URL(origin)
-      connectSrcCandidates.add(parsed.origin)
-      if (parsed.protocol === 'http:') {
-        connectSrcCandidates.add(`ws://${parsed.host}`)
-      } else if (parsed.protocol === 'https:') {
-        connectSrcCandidates.add(`wss://${parsed.host}`)
-      }
-    } catch {
-      // Ignore invalid origin values
-    }
-  }
-
-  addSocketVariant(SOCKET_URL)
-  for (const origin of ALLOWED_ORIGINS_FROM_ENV) {
-    addSocketVariant(origin)
-  }
 
   const connectSrcValue = Array.from(connectSrcCandidates).join(' ')
   // Next.js 15 app-router output includes inline bootstrap scripts without nonce

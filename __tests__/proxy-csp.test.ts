@@ -16,10 +16,6 @@ jest.mock('@/lib/csrf', () => ({
   })),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
-}))
-
 const mockGetToken = getToken as jest.MockedFunction<typeof getToken>
 
 describe('proxy CSP policy', () => {

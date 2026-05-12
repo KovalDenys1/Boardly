@@ -9,7 +9,7 @@ type BoundaryViolation = {
 
 const repoRoot = process.cwd()
 const scanRoots = ['app', 'components', 'contexts', 'hooks', 'lib', 'scripts', 'types']
-const rootFiles = ['socket-server.ts']
+const rootFiles: string[] = []
 const sourceExtensions = new Set(['.ts', '.tsx'])
 const ignoredDirectories = new Set(['node_modules', '.next', '.git', 'coverage', 'reports'])
 
@@ -82,9 +82,7 @@ function isServerEntry(relativeFile: string) {
   return (
     relativeFile.startsWith('app/api/') ||
     relativeFile.startsWith('lib/server/') ||
-    relativeFile.startsWith('lib/socket/') ||
-    relativeFile.startsWith('scripts/') ||
-    relativeFile === 'socket-server.ts'
+    relativeFile.startsWith('scripts/')
   )
 }
 

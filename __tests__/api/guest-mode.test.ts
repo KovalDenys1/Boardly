@@ -47,12 +47,6 @@ jest.mock('@/lib/request-auth', () => ({
   getRequestAuthUser: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn().mockResolvedValue(true),
-  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
-  getSocketInternalAuthHeaders: jest.fn(() => ({})),
-}))
-
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
     info: jest.fn(),

@@ -7,7 +7,7 @@ jest.mock('@/lib/restore-game-engine-client', () => ({
   restoreGameEngineClient: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
+jest.mock('@/lib/auth-headers', () => ({
   getAuthHeaders: jest.fn(() => ({
     'Content-Type': 'application/json',
   })),
