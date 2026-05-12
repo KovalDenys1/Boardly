@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, type Socket } from 'socket.io-client'
 import GameIcon, { GAME_SVG_PATHS } from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { AuthGateModal } from '@/components/AuthGateModal'
@@ -13,8 +12,7 @@ import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { getSupabaseClient } from '@/lib/supabase-client'
 
 type Lobby = {
   id: string
@@ -141,9 +139,9 @@ export default function GameLobbiesPage({
 }: GameLobbiesPageProps) {
   const router = useRouter()
   const { status } = useSession()
-  const { isGuest, guestToken } = useGuest()
+  const { isGuest } = useGuest()
   const { t } = useTranslation()
-  const socketRef = useRef<Socket | null>(null)
+  const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null>(null)
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
@@ -184,10 +182,6 @@ export default function GameLobbiesPage({
       return
     }
 
-    if (isGuest && !guestToken) {
-      return
-    }
-
     loadLobbies()
     let isMounted = true
 
@@ -195,58 +189,27 @@ export default function GameLobbiesPage({
       loadLobbies()
     }, 5000)
 
-    const initSocket = async () => {
-      if (!isAuthenticated) return
-      if (socketRef.current) return
-
-      const socketAuth = await resolveSocketClientAuth({
-        isGuest: isGuest && status !== 'authenticated',
-        guestToken: isGuest && status !== 'authenticated' ? guestToken : null,
-      })
-
-      if (!socketAuth) {
-        clientLogger.warn(`Skipping lobby socket connection for ${gameType}: auth payload unavailable`)
-        return
-      }
-
-      if (!isMounted) {
-        return
-      }
-
-      const nextSocket = io(getBrowserSocketUrl(), {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-      })
-
-      nextSocket.on('connect', () => {
-        nextSocket.emit('join-lobby-list')
-      })
-
-      nextSocket.on('lobby-list-update', () => {
-        loadLobbies()
-      })
-
-      socketRef.current = nextSocket
+    if (!realtimeChannelRef.current) {
+      const supabase = getSupabaseClient()
+      const channel = supabase
+        .channel(`game-lobbies-${gameType}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'Lobbies' }, () => {
+          clientLogger.log(`📡 Lobby list update for ${gameType} via Supabase Realtime`)
+          loadLobbies()
+        })
+        .subscribe()
+      realtimeChannelRef.current = channel
     }
-
-    void initSocket()
 
     return () => {
       isMounted = false
       clearInterval(refreshInterval)
-
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('leave-lobby-list')
-        socketRef.current.disconnect()
+      if (realtimeChannelRef.current) {
+        void getSupabaseClient().removeChannel(realtimeChannelRef.current)
+        realtimeChannelRef.current = null
       }
-
-      socketRef.current = null
     }
-  }, [gameType, guestToken, isAuthenticated, isGuest, loadLobbies, status])
+  }, [gameType, loadLobbies])
 
   const handleJoinByCode = () => {
     if (joinCode.length !== 4) return

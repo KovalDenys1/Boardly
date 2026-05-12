@@ -3,12 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, Socket } from 'socket.io-client'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 import { clientLogger } from '@/lib/client-logger'
+import { getSupabaseClient } from '@/lib/supabase-client'
 import {
   buildLobbyQueryParams,
   hasActiveLobbyFilters,
@@ -16,9 +14,6 @@ import {
   parseFiltersFromSearchParams,
 } from '@/lib/lobby-filters'
 import type { LobbyCardData } from '@/components/LobbyCard'
-
-// Module-level socket persists across mounts to avoid reconnect on filter changes.
-let socket: Socket | null = null
 
 export interface LobbyStats {
   totalLobbies: number
@@ -49,10 +44,9 @@ export function useLobbyList() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
-  const { isGuest, guestToken } = useGuest()
+  const { isGuest } = useGuest()
 
   const authenticatedUserId = session?.user?.id ?? null
-  const hasAuthenticatedSession = Boolean(authenticatedUserId)
 
   const [lobbies, setLobbies] = useState<LobbyCardData[]>([])
   const [stats, setStats] = useState<LobbyStats>(EMPTY_STATS)
@@ -183,59 +177,21 @@ export function useLobbyList() {
     }
   }, [clearRefreshIndicatorTimeout])
 
-  // Socket connection for live lobby list updates
+  // Supabase Realtime: subscribe to Lobbies table changes for live lobby list updates
   useEffect(() => {
-    if (status === 'loading') return
-    if (isGuest && !guestToken) return
-    if (status === 'unauthenticated' && !isGuest) {
-      clientLogger.log('Skipping lobby list socket connection for anonymous visitor')
-      return
-    }
-
-    let cancelled = false
-    const handleConnect = () => {
-      clientLogger.log('✅ Socket connected for lobby list')
-      socket?.emit('join-lobby-list')
-    }
-    const handleLobbyListUpdate = () => {
-      clientLogger.log('📡 Lobby list update received')
-      void loadLobbiesRef.current({ minimumRefreshingMs: AUTO_REFRESH_FEEDBACK_MS, indicatorMode: 'auto' })
-    }
-    const handleDisconnect = () => { clientLogger.log('❌ Socket disconnected from lobby list') }
-
-    const initSocket = async () => {
-      const url = getBrowserSocketUrl()
-      const useGuestAuth = !hasAuthenticatedSession && isGuest
-      const socketAuth = await resolveSocketClientAuth({ isGuest: useGuestAuth, guestToken: useGuestAuth ? guestToken : null })
-      if (!socketAuth) { clientLogger.warn('Skipping lobby list socket connection: auth payload unavailable'); return }
-      if (cancelled) return
-      if (!socket || socket.disconnected) {
-        socket = io(url, { transports: ['websocket', 'polling'], reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 1000, auth: socketAuth.authPayload, query: socketAuth.queryPayload })
-      }
-      socket.off('connect', handleConnect)
-      socket.off('lobby-list-update', handleLobbyListUpdate)
-      socket.off('disconnect', handleDisconnect)
-      socket.on('connect', handleConnect)
-      socket.on('lobby-list-update', handleLobbyListUpdate)
-      socket.on('disconnect', handleDisconnect)
-      if (socket.connected) handleConnect()
-    }
-
-    void initSocket()
+    const supabase = getSupabaseClient()
+    const channel = supabase
+      .channel('lobby-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Lobbies' }, () => {
+        clientLogger.log('📡 Lobby list update received via Supabase Realtime')
+        void loadLobbiesRef.current({ minimumRefreshingMs: AUTO_REFRESH_FEEDBACK_MS, indicatorMode: 'auto' })
+      })
+      .subscribe()
 
     return () => {
-      cancelled = true
-      if (socket) {
-        clientLogger.log('🔌 Disconnecting socket from lobby list')
-        if (socket.connected) socket.emit('leave-lobby-list')
-        socket.off('connect', handleConnect)
-        socket.off('lobby-list-update', handleLobbyListUpdate)
-        socket.off('disconnect', handleDisconnect)
-        socket.disconnect()
-        socket = null
-      }
+      void supabase.removeChannel(channel)
     }
-  }, [authenticatedUserId, hasAuthenticatedSession, isGuest, guestToken, status])
+  }, [])
 
   const clearAllFilters = useCallback(() =>
     setFilters({ gameType: undefined, status: 'all', search: '', minPlayers: undefined, maxPlayers: undefined, sortBy: 'createdAt', sortOrder: 'desc' }),
