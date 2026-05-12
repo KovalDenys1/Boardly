@@ -485,7 +485,7 @@ export default function MemoryGameBoard({
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="flex items-center gap-1 truncate font-bold">
+                        <p className={`flex items-center gap-1 truncate font-bold ${premiumByUserId.get(player.id) ? 'text-amber-500' : ''}`}>
                           {displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}
                           {premiumByUserId.get(player.id) && <span className="shrink-0 text-xs" title="Premium">👑</span>}
                         </p>
