@@ -17,6 +17,7 @@ import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 
 interface AliasPageProps {
   code: string
+  isSpectator?: boolean
 }
 
 interface Lobby {
@@ -331,7 +332,7 @@ const GuessChatPanel: React.FC<{
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function AliasPage({ code }: AliasPageProps) {
+export default function AliasPage({ code, isSpectator = false }: AliasPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest, guestToken, guestId } = useGuest()
@@ -998,7 +999,7 @@ export default function AliasPage({ code }: AliasPageProps) {
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
     return (
       <>
-        {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+        {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
           <GameContextBar
             code={code}
@@ -1134,7 +1135,7 @@ export default function AliasPage({ code }: AliasPageProps) {
     const describerName = describerPlayer?.name ?? 'Describer'
     return (
       <>
-        {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+        {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
           <GameContextBar
             code={code}
@@ -1160,7 +1161,10 @@ export default function AliasPage({ code }: AliasPageProps) {
                 padding: '10px 18px', background: 'rgba(31,27,22,0.06)',
                 border: '1.5px solid var(--bd-line)', borderRadius: 999,
               }}>
-                <BdLabel>Listen up · type your guess in the chat</BdLabel>
+                {isSpectator
+                  ? <BdLabel>👁 Spectating · watch the game</BdLabel>
+                  : <BdLabel>Listen up · type your guess in the chat</BdLabel>
+                }
               </div>
 
               <div style={{
@@ -1214,8 +1218,8 @@ export default function AliasPage({ code }: AliasPageProps) {
               </div>
             </div>
 
-            {/* Chat panel — guessers type here */}
-            <GuessChatPanel {...chatProps} canType={true} />
+            {/* Chat panel — guessers type here; spectators are read-only */}
+            <GuessChatPanel {...chatProps} canType={!isSpectator} />
           </main>
         </div>
       </>
@@ -1234,7 +1238,7 @@ export default function AliasPage({ code }: AliasPageProps) {
 
     return (
       <>
-        {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+        {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title="Alias · Turn complete" />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>

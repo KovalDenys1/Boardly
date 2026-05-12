@@ -225,9 +225,10 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
     )
 }
 
-function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, t }: {
+function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, isSpectator, t }: {
     isFinished: boolean; winnerName: string | null; isDraw: boolean;
     currentDisc: PlayerDisc; currentPlayerName: string; secs: number; moveCount: number; turnTimerLimit: number;
+    isSpectator?: boolean;
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string;
 }) {
     if (isFinished && !isDraw && winnerName) {
@@ -257,6 +258,22 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
                     boxShadow: '2px 2px 0 var(--bd-ink)', fontFamily: 'var(--bd-font-display)',
                 }}>🤝</span>
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{t('games.connect_four.game.draw')}</span>
+            </div>
+        )
+    }
+    if (isSpectator) {
+        const discColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
+        return (
+            <div style={{
+                padding: '10px 14px', borderRadius: 14, background: 'white',
+                border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
+                display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+                <span style={{ fontSize: 14 }}>👁</span>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: discColor, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)' }} />
+                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
+                <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveCount + 1}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>Spectating</span>
             </div>
         )
     }
@@ -357,6 +374,7 @@ interface Lobby {
 
 interface ConnectFourLobbyPageProps {
     code: string
+    isSpectator?: boolean
 }
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
@@ -400,7 +418,7 @@ function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps) {
+export default function ConnectFourLobbyPage({ code, isSpectator = false }: ConnectFourLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId } = useGuest()
@@ -717,7 +735,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             : 30
 
     const { timeLeft } = useGameTimer({
-        isMyTurn: isMyTurn(),
+        isMyTurn: isSpectator ? false : isMyTurn(),
         gameState: timerStateData?.pendingRequest ? null : timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
@@ -989,6 +1007,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             secs={timeLeft}
             moveCount={gameData.moveCount}
             turnTimerLimit={turnTimerLimit}
+            isSpectator={isSpectator}
             t={t}
         />
     )
@@ -1025,7 +1044,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         </div>
     )
 
-    const requestSection = pendingRequest ? (
+    const requestSection = !isSpectator && pendingRequest ? (
         <div style={{
             padding: '8px 10px', borderRadius: 12, background: 'rgba(255,255,255,0.92)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 3px 10px rgba(31,27,22,0.06)',
@@ -1051,7 +1070,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         </div>
     ) : null
 
-    const boardDisabled = !isMyTurn() || isFinished || isMoveSubmitting || !!pendingRequest
+    const boardDisabled = isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || !!pendingRequest
 
     const renderBoardSection = () => (
         <div className="ttt-board-card" style={{ position: 'relative' }}>
@@ -1066,7 +1085,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 lastDroppedRow={gameData.lastDroppedRow}
                 lastDroppedCol={gameData.lastDroppedCol}
             />
-            {isFinished && (
+            {isFinished && !isSpectator && (
                 <div className="ttt-board-overlay" style={{ borderRadius: 16 }}>
                     <C4ResultOverlay
                         winnerName={winnerName}
@@ -1082,7 +1101,13 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         </div>
     )
 
-    const actionsSection = (
+    const actionsSection = isSpectator ? (
+        <div style={{ display: 'flex', gap: 8 }}>
+            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
+                ← Back to lobby
+            </a>
+        </div>
+    ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
                 onClick={() => void handleRequestUndo()}
@@ -1196,18 +1221,20 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             </div>
 
             {/* ── MODALS ──────────────────────────────────────────────────── */}
-            <ConfirmModal
-                isOpen={showLeaveConfirmModal}
-                onClose={() => setShowLeaveConfirmModal(false)}
-                onConfirm={handleLeave}
-                title={t('game.ui.leave')}
-                message={t('game.ui.leaveConfirm')}
-                confirmText={t('common.confirm')}
-                cancelText={t('common.cancel')}
-                variant="danger"
-                icon="🚪"
-            />
-            {resolvedStatus === 'playing' && socket && (
+            {!isSpectator && (
+                <ConfirmModal
+                    isOpen={showLeaveConfirmModal}
+                    onClose={() => setShowLeaveConfirmModal(false)}
+                    onConfirm={handleLeave}
+                    title={t('game.ui.leave')}
+                    message={t('game.ui.leaveConfirm')}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    variant="danger"
+                    icon="🚪"
+                />
+            )}
+            {!isSpectator && resolvedStatus === 'playing' && socket && (
                 <ReactionOverlay socket={socket} lobbyCode={code} />
             )}
         </div>

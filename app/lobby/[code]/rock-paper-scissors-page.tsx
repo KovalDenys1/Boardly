@@ -43,11 +43,12 @@ interface LobbyData {
 
 interface RockPaperScissorsLobbyPageProps {
     code: string
+    isSpectator?: boolean
 }
 
 const LIFECYCLE_REDIRECT_FALLBACK_MS = 1600
 
-export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLobbyPageProps) {
+export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }: RockPaperScissorsLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId, guestName } = useGuest()
@@ -468,7 +469,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
     const currentPlayer = lobby.game.players.find((p) => p.id === currentUserId)
     const gameData = lobby.game.data as RockPaperScissorsGameData
 
-    if (!currentPlayer) {
+    if (!currentPlayer && !isSpectator) {
         return (
             <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm max-w-md text-center">
@@ -526,11 +527,11 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                     <section>
                         <RockPaperScissorsGameBoard
                             gameData={gameData}
-                            playerId={currentPlayer.id}
-                            playerName={currentPlayer.name}
+                            playerId={isSpectator ? '' : currentPlayer!.id}
+                            playerName={isSpectator ? 'Spectator' : currentPlayer!.name}
                             players={lobby.game.players}
                             onSubmitChoice={handleSubmitChoice}
-                            isLoading={isSubmitting}
+                            isLoading={isSpectator || isSubmitting}
                         />
                     </section>
 
@@ -563,7 +564,7 @@ export default function RockPaperScissorsLobbyPage({ code }: RockPaperScissorsLo
                 </div>
             </div>
 
-            {lobby.status === 'playing' && socket && (
+            {!isSpectator && lobby.status === 'playing' && socket && (
                 <ReactionOverlay socket={socket} lobbyCode={code} />
             )}
         </div>

@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 're
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { io, Socket } from 'socket.io-client'
+import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getBrowserSocketUrl } from '@/lib/socket-url'
@@ -12,6 +13,14 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { SocketEvents, JoinedSpectatorsPayload, SpectatorJoinedPayload, SpectatorLeftPayload, SpectatorChatMessagePayload } from '@/types/socket-events'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
 import { SPECTATOR_VIEWS } from './views'
+
+const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
+const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false })
+const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false })
+const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
+const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false })
+
+const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party'])
 
 type SpectatorUser = {
   userId: string
@@ -31,6 +40,73 @@ type SpectatorChatMessage = {
   lobbyCode: string
   message: string
   timestamp?: number
+}
+
+function SpectatorTopBar({
+  spectatorCount,
+  canJoinAsPlayer,
+  joiningAsPlayer,
+  onJoinAsPlayer,
+  lobbyCode,
+}: {
+  spectatorCount: number
+  canJoinAsPlayer: boolean
+  joiningAsPlayer: boolean
+  onJoinAsPlayer: () => void
+  lobbyCode: string
+}) {
+  return (
+    <div style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+      background: 'rgba(31,27,22,0.92)',
+      backdropFilter: 'blur(8px)',
+      borderBottom: '1px solid rgba(255,255,255,0.12)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 16px',
+      gap: 12,
+      flexWrap: 'wrap',
+    }}>
+      <span style={{
+        color: 'white', fontSize: 13, fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        👁 Spectating · {spectatorCount} watching
+      </span>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {canJoinAsPlayer && (
+          <button
+            type="button"
+            onClick={onJoinAsPlayer}
+            disabled={joiningAsPlayer}
+            style={{
+              padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+              background: 'var(--bd-coral)', color: 'white', border: 'none',
+              cursor: joiningAsPlayer ? 'not-allowed' : 'pointer',
+              opacity: joiningAsPlayer ? 0.65 : 1,
+              fontFamily: 'inherit',
+            }}
+          >
+            {joiningAsPlayer ? 'Joining...' : 'Join as Player'}
+          </button>
+        )}
+        <a
+          href={`/lobby/${lobbyCode}`}
+          style={{
+            padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+            border: '1px solid rgba(255,255,255,0.18)', textDecoration: 'none',
+            fontFamily: 'inherit',
+          }}
+        >
+          ← Lobbies
+        </a>
+      </div>
+    </div>
+  )
 }
 
 function ReadOnlySpectatorBoard({
@@ -267,8 +343,29 @@ export default function SpectatorLobbyPage() {
     )
   }
 
-  const players = Array.isArray(data.activeGame?.players) ? data.activeGame.players : []
+  // ── Dedicated game types: render real game component with isSpectator prop ──
+  if (DEDICATED_SPECTATOR_GAMES.has(data.lobby.gameType)) {
+    const gameType = data.lobby.gameType
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+        />
+        {gameType === 'connect_four' && <ConnectFourLobbyPage code={code} isSpectator />}
+        {gameType === 'tic_tac_toe' && <TicTacToeLobbyPage code={code} isSpectator />}
+        {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
+        {gameType === 'alias' && <AliasPage code={code} isSpectator />}
+        {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
+      </>
+    )
+  }
 
+  // ── Legacy games (memory, yahtzee, spy): existing spectator view ────────────
+  const players = Array.isArray(data.activeGame?.players) ? data.activeGame.players : []
   const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
 
   return (

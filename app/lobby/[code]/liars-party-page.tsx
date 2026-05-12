@@ -17,6 +17,7 @@ import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } f
 
 interface LiarsPartyPageProps {
   code: string
+  isSpectator?: boolean
 }
 
 interface Lobby {
@@ -490,7 +491,7 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBack
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
+export default function LiarsPartyPage({ code, isSpectator = false }: LiarsPartyPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest, guestToken, guestId } = useGuest()
@@ -734,7 +735,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
         players={players}
         data={data}
         rules={rules}
-        isHost={isHost}
+        isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onStart={handleStartGame}
         onLeave={() => router.push('/games')}
@@ -758,7 +759,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       }
       return (
         <>
-          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
           <ClaimScreen
             data={data}
             players={players}
@@ -785,12 +786,12 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       }
       return (
         <>
-          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
           <ChallengeScreen
             data={data}
             players={players}
             currentUserId={currentUserId}
-            isMoveSubmitting={isMoveSubmitting}
+            isMoveSubmitting={isSpectator || isMoveSubmitting}
             timerRemaining={timerRemaining}
             onVote={(decision) => handleMove('submit-challenge', { decision })}
             t={t}
@@ -802,11 +803,11 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
     if (data.phase === 'reveal') {
       return (
         <>
-          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
           <RevealScreen
             data={data}
             players={players}
-            isHost={isHost}
+            isHost={!isSpectator && isHost}
             isMoveSubmitting={isMoveSubmitting}
             onAdvanceRound={() => handleMove('advance-round', {})}
             t={t}
@@ -821,7 +822,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       <GameOverScreen
         data={data}
         players={players}
-        isHost={isHost}
+        isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onPlayAgain={handleStartGame}
         onBackToGames={() => router.push('/games')}
