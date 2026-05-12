@@ -78,6 +78,7 @@ const en = {
     copyInviteLinkPrivate: 'Copy Invite Link (includes password)',
     inviteLinkCopied: 'Link Copied!',
     gameAbandoned: 'Game ended - not enough players remaining',
+    leave: 'Leave',
     invite: {
       title: 'Invite Friends',
       description: 'Select friends to invite to this lobby',

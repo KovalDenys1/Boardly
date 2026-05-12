@@ -78,6 +78,7 @@ const no = {
     copyInviteLinkPrivate: 'Kopier invitasjonslenke (inkl. passord)',
     inviteLinkCopied: 'Lenke kopiert!',
     gameAbandoned: 'Spill avsluttet - ikke nok spillere igjen',
+    leave: 'Forlat',
     invite: {
       title: 'Inviter venner',
       description: 'Velg venner å invitere til denne lobbyen',

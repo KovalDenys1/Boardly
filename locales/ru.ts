@@ -78,6 +78,7 @@ const ru = {
     copyInviteLinkPrivate: 'Скопировать ссылку (включая пароль)',
     inviteLinkCopied: 'Ссылка скопирована!',
     gameAbandoned: 'Игра завершена - недостаточно игроков',
+    leave: 'Выйти',
     invite: {
       title: 'Пригласить друзей',
       description: 'Выберите друзей для приглашения в это лобби',
