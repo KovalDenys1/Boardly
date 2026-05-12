@@ -18,6 +18,9 @@ model Users {
   passwordHash    String?
   image           String?
   avatarUrl         String?
+  bio             String?
+  accentColor     String?
+  featuredGame    String?
   stripeCustomerId      String?   @unique
   stripeSubscriptionId  String?   @unique
   premiumUntil          DateTime? @db.Timestamptz(3)
@@ -166,6 +169,7 @@ model Lobbies {
   turnTimer       Int            @default(60) // Turn time limit in seconds (30, 60, 90, 120)
   isActive        Boolean        @default(true)
   gameType        String         @default("yahtzee")
+  theme           String         @default("default")
   createdAt       DateTime       @default(now()) @db.Timestamptz(3)
   creatorId       String?
   creator         Users?         @relation("LobbyCreator", fields: [creatorId], references: [id], onDelete: SetNull)

@@ -14,6 +14,7 @@ import { hashLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 
 const log = apiLogger('/api/lobby')
 
@@ -24,6 +25,7 @@ const createLobbySchema = z.object({
   allowSpectators: z.boolean().default(false),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
   gameType: z.string().default('yahtzee'),
+  theme: z.enum(LOBBY_THEME_IDS as [LobbyTheme, ...LobbyTheme[]]).default(FREE_LOBBY_THEME),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
   memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
 })
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
       gameType,
       ticTacToeRounds,
       memoryDifficulty,
+      theme,
     } = createLobbySchema.parse(body)
 
     if (isTemporarilyUnavailableGameType(gameType)) {
@@ -115,6 +118,10 @@ export async function POST(request: NextRequest) {
 
     if (maxPlayers > FREE_MAX_PLAYERS && !isPremium) {
       return NextResponse.json({ error: 'Premium required to increase player limit beyond 10' }, { status: 403 })
+    }
+
+    if ((PREMIUM_LOBBY_THEMES as string[]).includes(theme) && !isPremium) {
+      return NextResponse.json({ error: 'Premium required for custom lobby themes' }, { status: 403 })
     }
 
     const persistedGameType = toPersistedGameType(gameType)
@@ -168,6 +175,7 @@ export async function POST(request: NextRequest) {
           spectatorCount: number
           turnTimer: number
           gameType: string
+          theme: string
           creatorId: string | null
         }
       | null = null
@@ -191,6 +199,7 @@ export async function POST(request: NextRequest) {
             spectatorCount: 0,
             turnTimer,
             gameType,
+            theme,
             creatorId: requestUser.id,
             games: {
               create: {
@@ -217,6 +226,7 @@ export async function POST(request: NextRequest) {
             spectatorCount: true,
             turnTimer: true,
             gameType: true,
+            theme: true,
             creatorId: true,
           },
         })

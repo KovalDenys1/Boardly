@@ -101,6 +101,7 @@ export interface Lobby {
   creatorId?: string | null
   allowSpectators?: boolean
   isActive?: boolean
+  theme?: string
   games?: Game[]
   creator?: { username?: string; email?: string }
   spectatorCount?: number
