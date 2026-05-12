@@ -54,7 +54,7 @@ interface WaitingScreenProps {
   isStarting: boolean
   onStart: () => void
   onLeave: () => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLeave, t }: WaitingScreenProps) {
@@ -66,7 +66,7 @@ function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLe
       className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-waiting-room"
     >
-      <h1 className="text-3xl font-bold text-white drop-shadow">🎭 Liar&apos;s Party</h1>
+      <h1 className="text-3xl font-bold text-white drop-shadow">🎭 {t('liarsParty.name')}</h1>
 
       <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white text-center">
         <div className="text-lg font-semibold mb-1">{players.length} / 12</div>
@@ -88,7 +88,7 @@ function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLe
       </div>
 
       <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white">
-        <div className="font-semibold mb-2">Players ({players.length})</div>
+        <div className="font-semibold mb-2">{t('liarsParty.playersHeading', { count: players.length })}</div>
         <div className="space-y-1">
           {players.map(p => (
             <div key={p.id} className="text-sm text-white/90">{p.name}</div>
@@ -124,7 +124,7 @@ interface ClaimScreenProps {
   isMoveSubmitting: boolean
   timerRemaining: number
   onSubmitClaim: (claim: string, isBluff: boolean) => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onSubmitClaim, t }: ClaimScreenProps) {
@@ -196,7 +196,7 @@ interface EliminatedClaimScreenProps {
   players: GamePlayer[]
   currentUserId: string
   timerRemaining: number
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t }: EliminatedClaimScreenProps) {
@@ -231,7 +231,7 @@ interface ChallengeScreenProps {
   isMoveSubmitting: boolean
   timerRemaining: number
   onVote: (decision: 'challenge' | 'believe') => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onVote, t }: ChallengeScreenProps) {
@@ -293,7 +293,7 @@ interface EliminatedChallengeScreenProps {
   data: LiarsPartyGameData
   currentUserId: string
   timerRemaining: number
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: EliminatedChallengeScreenProps) {
@@ -330,7 +330,7 @@ interface RevealScreenProps {
   isHost: boolean
   isMoveSubmitting: boolean
   onAdvanceRound: () => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function RevealScreen({ data, players, isHost, isMoveSubmitting, onAdvanceRound, t }: RevealScreenProps) {
@@ -432,7 +432,7 @@ interface GameOverScreenProps {
   isStarting: boolean
   onPlayAgain: () => void
   onBackToGames: () => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBackToGames, t }: GameOverScreenProps) {
@@ -722,11 +722,11 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
   const rules = gameEngine
     ? (gameEngine as LiarsPartyGame).getGameRules()
     : [
-        'Each round, one active player becomes the claimant and submits one claim.',
-        'Other active players submit one vote: challenge or believe.',
-        'A bluff is considered caught only when challengers are a strict majority.',
-        'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
-        'A player is eliminated after reaching strike limit.',
+        t('liarsParty.rule1'),
+        t('liarsParty.rule2'),
+        t('liarsParty.rule3'),
+        t('liarsParty.rule4'),
+        t('liarsParty.rule5'),
       ]
 
   if (resolvedStatus === 'waiting') {

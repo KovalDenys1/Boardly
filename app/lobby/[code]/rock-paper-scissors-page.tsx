@@ -211,7 +211,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
             })
         } catch (err) {
             clientLogger.error('Failed to load lobby:', err)
-            setError(t('errors.failed_to_load_lobby'))
+            setError(t('errors.failedToLoad'))
         } finally {
             setLoading(false)
         }
