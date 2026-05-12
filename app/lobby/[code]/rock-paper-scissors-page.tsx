@@ -9,7 +9,7 @@ import RockPaperScissorsGameBoard from '@/components/RockPaperScissorsGameBoard'
 import { RockPaperScissorsGameData, RPSChoice } from '@/lib/games/rock-paper-scissors-game'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { normalizeLobbySnapshotResponse, type LobbySnapshotLike } from '@/lib/lobby-snapshot'
@@ -56,7 +56,6 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
     const [loading, setLoading] = useState(true)
     const [lobby, setLobby] = useState<LobbyData | null>(null)
-    const [socketConnected, setSocketConnected] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -262,39 +261,23 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
         void loadLobbyData()
     }, [status, isGuest, guestToken, loadLobbyData])
 
-    const handleSocketConnect = useCallback(() => {
-        setSocketConnected(true)
-        clientLogger.log('🔌 RPS: Connected to Socket.IO and joined lobby')
-    }, [])
-
-    const handleGameUpdate = useCallback(async () => {
+    const handleGameUpdate = useCallback(async (_payload: unknown) => {
         await loadLobbyData()
         clientLogger.log('📡 RPS: Received game update')
     }, [loadLobbyData])
 
-    const handleLobbyUpdate = useCallback(async () => {
+    const handleLobbyUpdate = useCallback(async (_data: unknown) => {
         await loadLobbyData()
         clientLogger.log('📡 RPS: Received lobby update')
     }, [loadLobbyData])
 
-    const handleSocketDisconnect = useCallback(() => {
-        setSocketConnected(false)
-        clientLogger.log('🔌 RPS: Socket disconnected')
-    }, [])
-
-    const socket = useGameSocket({
+    const { isConnected: socketConnected } = useRealtimeConnection({
         code,
-        status,
-        isGuest,
-        guestToken,
-        gameName: 'RPS',
-        onConnect: handleSocketConnect,
+        shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
         onGameUpdate: handleGameUpdate,
         onLobbyUpdate: handleLobbyUpdate,
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
-        onDisconnect: handleSocketDisconnect,
-        extraOptions: { reconnectionAttempts: 5, reconnectionDelayMax: 5000 },
     })
 
     const handleSubmitChoice = async (choice: RPSChoice) => {
@@ -514,11 +497,9 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
                             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                                 {t('games.rock_paper_scissors.firstTo', { count: gameData.mode === 'best-of-3' ? 2 : 3 })}
                             </span>
-                            {socket && (
-                                <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                                    {t('games.rock_paper_scissors.playersCount', { count: lobby.game.players.length })}
-                                </span>
-                            )}
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                {t('games.rock_paper_scissors.playersCount', { count: lobby.game.players.length })}
+                            </span>
                         </div>
                     </div>
                 </header>
@@ -564,7 +545,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
                 </div>
             </div>
 
-            {!isSpectator && lobby.status === 'playing' && socket && (
+            {!isSpectator && lobby.status === 'playing' && (
                 <ReactionOverlay lobbyCode={code} />
             )}
         </div>

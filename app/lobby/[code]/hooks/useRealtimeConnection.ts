@@ -15,12 +15,12 @@ interface UseRealtimeConnectionProps {
    * Mirrors the shouldJoinLobbyRoom prop from useSocketConnection.
    */
   shouldJoinLobbyRoom?: boolean
-  onGameUpdate: (data: GameUpdatePayload) => void
-  onChatMessage: (message: ChatMessagePayload) => void
-  onPlayerTyping: (data: PlayerTypingPayload) => void
-  onLobbyUpdate: (data: LobbyUpdatePayload) => void
-  onPlayerJoined: (data: PlayerJoinedPayload) => void
-  onGameStarted: (data: GameStartedPayload) => void
+  onGameUpdate?: (data: GameUpdatePayload) => void
+  onChatMessage?: (message: ChatMessagePayload) => void
+  onPlayerTyping?: (data: PlayerTypingPayload) => void
+  onLobbyUpdate?: (data: LobbyUpdatePayload) => void
+  onPlayerJoined?: (data: PlayerJoinedPayload) => void
+  onGameStarted?: (data: GameStartedPayload) => void
   onGameAbandoned?: (data: GameAbandonedPayload) => void
   onPlayerLeft?: (data: PlayerLeftPayload) => void
   onBotAction?: (event: BaseBotActionEvent) => void
@@ -84,17 +84,17 @@ export function useRealtimeConnection({
       .channel(`lobby:${code}`)
       .on('broadcast', { event: 'game-update' }, ({ payload }) => {
         clientLogger.log('📡 game-update via Supabase Broadcast')
-        onGameUpdateRef.current(payload as GameUpdatePayload)
+        onGameUpdateRef.current?.(payload as GameUpdatePayload)
       })
       .on('broadcast', { event: 'chat-message' }, ({ payload }) => {
-        onChatMessageRef.current(payload as ChatMessagePayload)
+        onChatMessageRef.current?.(payload as ChatMessagePayload)
       })
       .on('broadcast', { event: 'player-typing' }, ({ payload }) => {
-        onPlayerTypingRef.current(payload as PlayerTypingPayload)
+        onPlayerTypingRef.current?.(payload as PlayerTypingPayload)
       })
       .on('broadcast', { event: 'player-joined' }, ({ payload }) => {
         clientLogger.log('📡 player-joined via Supabase Broadcast')
-        onPlayerJoinedRef.current(payload as PlayerJoinedPayload)
+        onPlayerJoinedRef.current?.(payload as PlayerJoinedPayload)
       })
       .on('broadcast', { event: 'player-left' }, ({ payload }) => {
         clientLogger.log('📡 player-left via Supabase Broadcast')
@@ -102,7 +102,7 @@ export function useRealtimeConnection({
       })
       .on('broadcast', { event: 'game-started' }, ({ payload }) => {
         clientLogger.log('📡 game-started via Supabase Broadcast')
-        onGameStartedRef.current(payload as GameStartedPayload)
+        onGameStartedRef.current?.(payload as GameStartedPayload)
       })
       .on('broadcast', { event: 'game-abandoned' }, ({ payload }) => {
         clientLogger.log('📡 game-abandoned via Supabase Broadcast')
@@ -138,7 +138,7 @@ export function useRealtimeConnection({
         { event: '*', schema: 'public', table: 'Lobbies', filter: `code=eq.${code}` },
         () => {
           clientLogger.log('📡 Lobby row changed via Postgres Changes')
-          onLobbyUpdateRef.current({ lobbyCode: code })
+          onLobbyUpdateRef.current?.({ lobbyCode: code })
         }
       )
       .subscribe()

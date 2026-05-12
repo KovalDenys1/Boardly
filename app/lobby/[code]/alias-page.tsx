@@ -8,7 +8,8 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import type { ChatMessagePayload, GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -439,7 +440,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
 
-  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+  const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
     const activeGameId = activeGameIdRef.current
     if (payload?.action === 'state-change' && activeGameId) {
       const state = (payload?.payload as Record<string, unknown>)?.state
@@ -464,17 +465,27 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     void loadLobby()
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
 
-  const socket = useGameSocket({
+  const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
+    const uid = getCurrentUserId()
+    if (msg.userId === uid) return
+    const rawId = (msg as unknown as Record<string, unknown>).id
+    setGuesses(prev => [...prev.slice(-99), {
+      id: typeof rawId === 'number' ? rawId : Date.now(),
+      userId: msg.userId,
+      username: msg.username ?? 'Player',
+      text: msg.message ?? '',
+    }])
+  }, [getCurrentUserId])
+
+  const { emitWhenConnected } = useRealtimeConnection({
     code,
-    status,
-    isGuest,
-    guestToken,
-    gameName: 'Alias',
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
-    onLobbyUpdate: loadLobby,
-    onPlayerJoined: loadLobby,
+    onLobbyUpdate: () => { void loadLobby() },
+    onPlayerJoined: () => { void loadLobby() },
+    onChatMessage: handleChatMessage,
   })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
@@ -577,33 +588,17 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
   // ─── Guess chat ────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!socket) return
-    const handler = (msg: Record<string, unknown>) => {
-      const uid = getCurrentUserId()
-      if (msg.userId === uid) return
-      setGuesses(prev => [...prev.slice(-99), {
-        id: typeof msg.id === 'number' ? msg.id : Date.now(),
-        userId: String(msg.userId ?? ''),
-        username: String(msg.username ?? 'Player'),
-        text: String(msg.message ?? ''),
-      }])
-    }
-    socket.on('chat-message', handler)
-    return () => { socket.off('chat-message', handler) }
-  }, [socket, getCurrentUserId])
-
-  useEffect(() => {
     guessesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [guesses])
 
   const sendGuess = useCallback(() => {
-    if (!socket || !guessInput.trim()) return
+    if (!guessInput.trim()) return
     const uid = getCurrentUserId()
     const username = isGuest
       ? 'Guest'
       : (session?.user as any)?.username ?? session?.user?.name ?? 'Player'
     const id = Date.now()
-    socket.emit('chat-message', {
+    emitWhenConnected('chat-message', {
       userId: uid,
       username,
       message: guessInput.trim(),
@@ -618,7 +613,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
       text: guessInput.trim(),
     }])
     setGuessInput('')
-  }, [socket, guessInput, getCurrentUserId, isGuest, session, code])
+  }, [emitWhenConnected, guessInput, getCurrentUserId, isGuest, session, code])
 
   const handleGuessKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

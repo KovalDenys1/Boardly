@@ -8,7 +8,8 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -593,7 +594,7 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
 
-  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+  const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
     const activeGameId = activeGameIdRef.current
     if (payload?.action === 'state-change' && activeGameId) {
       const state = (payload?.payload as Record<string, unknown>)?.state
@@ -618,17 +619,14 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     void loadLobby()
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
 
-  const socket = useGameSocket({
+  useRealtimeConnection({
     code,
-    status,
-    isGuest,
-    guestToken,
-    gameName: 'LiarsParty',
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
-    onLobbyUpdate: loadLobby,
-    onPlayerJoined: loadLobby,
+    onLobbyUpdate: () => { void loadLobby() },
+    onPlayerJoined: () => { void loadLobby() },
   })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {

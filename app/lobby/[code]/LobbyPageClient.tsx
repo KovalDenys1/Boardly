@@ -864,7 +864,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [lobby, game, currentUserIdForMembership])
 
   // Realtime connection hook - must be before useLobbyActions
-  const { isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useRealtimeConnection({
+  const { isConnected, isReconnecting, reconnectAttempt } = useRealtimeConnection({
     code,
     shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
@@ -883,6 +883,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     },
   })
+
+  const sendChatMessage = useCallback((message: string) => {
+    void fetch(`/api/lobby/${code}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    })
+  }, [code])
 
   // Calculate once to avoid calling functions repeatedly
   const userId = getCurrentUserId()
@@ -1199,7 +1207,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     userId,
     username,
     isMyTurn: isMyTurn(),
-    emitWhenConnected,
     code,
     setRollHistory,
     setCelebrationEvent,
@@ -1913,12 +1920,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {
-                    emitWhenConnected('send-chat-message', {
-                      lobbyCode: code,
-                      message,
-                      userId: getCurrentUserId(),
-                      username: getCurrentUserName(),
-                    })
+                    sendChatMessage(message)
                   }}
                   currentUserId={getCurrentUserId()}
                   isMinimized={false}
@@ -2332,12 +2334,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       <Chat
                         messages={chatMessages}
                         onSendMessage={(message) => {
-                          emitWhenConnected('send-chat-message', {
-                            lobbyCode: code,
-                            message,
-                            userId: getCurrentUserId(),
-                            username: getCurrentUserName(),
-                          })
+                          sendChatMessage(message)
                         }}
                         currentUserId={getCurrentUserId()}
                         isMinimized={false}
@@ -2356,12 +2353,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {
-                    emitWhenConnected('send-chat-message', {
-                      lobbyCode: code,
-                      message,
-                      userId: getCurrentUserId(),
-                      username: getCurrentUserName(),
-                    })
+                    sendChatMessage(message)
                   }}
                   currentUserId={getCurrentUserId()}
                   isMinimized={chatMinimized}
@@ -2429,12 +2421,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onLeave={() => setShowLeaveConfirmModal(true)}
               chatMessages={chatMessages}
               onSendChatMessage={(message) => {
-                emitWhenConnected('send-chat-message', {
-                  lobbyCode: code,
-                  message,
-                  userId: getCurrentUserId(),
-                  username: getCurrentUserName(),
-                })
+                sendChatMessage(message)
               }}
               chatUnreadCount={unreadMessageCount}
               someoneTyping={someoneTyping}
@@ -2461,12 +2448,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           <Chat
             messages={chatMessages}
             onSendMessage={(message) => {
-              emitWhenConnected('send-chat-message', {
-                lobbyCode: code,
-                message,
-                userId: getCurrentUserId(),
-                username: getCurrentUserName(),
-              })
+              sendChatMessage(message)
             }}
             currentUserId={getCurrentUserId()}
             isMinimized={chatMinimized}

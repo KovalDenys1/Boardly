@@ -24,7 +24,6 @@ interface UseGameActionsProps {
   userId: string | null | undefined
   username: string | null
   isMyTurn: boolean
-  emitWhenConnected: (event: string, data: Record<string, unknown>) => void
   code: string
   setRollHistory: React.Dispatch<React.SetStateAction<RollHistoryEntry[]>>
   setCelebrationEvent: React.Dispatch<React.SetStateAction<CelebrationEvent | null>>
@@ -80,7 +79,6 @@ export function useGameActions(props: UseGameActionsProps) {
     userId,
     username,
     isMyTurn,
-    emitWhenConnected,
     code,
     setRollHistory,
     setCelebrationEvent,
@@ -312,11 +310,6 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       if (data.serverBroadcasted !== true) {
-        emitWhenConnected('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
         void reconcileWithServerSnapshot()
       }
 
@@ -360,7 +353,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -559,11 +552,6 @@ export function useGameActions(props: UseGameActionsProps) {
       })
 
       if (data.serverBroadcasted !== true) {
-        emitWhenConnected('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
         void reconcileWithServerSnapshot()
       }
 
@@ -652,7 +640,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   return {
     handleRollDice,

@@ -12,12 +12,12 @@ import {
     CellValue,
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
+import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -555,7 +555,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
 
-  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+  const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
     clientLogger.log('📡 Game update received:', payload)
     const activeGameId = activeGameIdRef.current
     const directState = extractAuthoritativeStateFromGameUpdate(payload)
@@ -563,15 +563,22 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     void loadLobby()
   }, [applyAuthoritativeState, loadLobby])
 
-  const socket = useGameSocket({
+  const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
+    if (msg.userId === chatCurrentUserIdRef.current) return
+    const d = new Date(msg.timestamp)
+    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+    const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
+    const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'lav' : 'sky'
+    setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
+  }, [])
+
+  const { emitWhenConnected } = useRealtimeConnection({
     code,
-    status,
-    isGuest,
-    guestToken,
-    gameName: 'Tic-Tac-Toe',
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
+    onChatMessage: handleChatMessage,
   })
 
     const isMyTurn = useCallback(() => {
@@ -657,9 +664,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
             } else if (move.type === 'timeout-forfeit') {
                 showToast.infoText('Time expired. Round forfeited.')
             }
-            if (socket?.connected && !isAutoAction) {
-                socket.emit('game-action', { lobbyCode: code, action: 'state-change', payload: { gameId: game.id, state: optimisticState } })
-            }
             const resolvedEngine = isAutoAction
                 ? (() => {
                     if (!authoritativeState || typeof authoritativeState !== 'object') return null
@@ -685,7 +689,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         } finally {
             setIsMoveSubmitting(false)
         }
-    }, [applyAuthoritativeState, gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
 
     const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
         if (!gameEngine) return null
@@ -752,7 +756,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         leaveStartedAtRef.current = Date.now()
         leaveApiOutcomeRef.current = 'pending'
         leaveApiStatusCodeRef.current = null
-        if (socket?.connected) { socket.emit('leave-lobby', code); socket.disconnect() }
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
         void fetchWithGuest(`/api/lobby/${code}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, signal: controller.signal })
@@ -842,21 +845,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
     }, [localChat])
-
-    // Receive chat messages from other players
-    useEffect(() => {
-        if (!socket) return
-        const handler = (msg: { id: string; userId: string; username: string; message: string; timestamp: number }) => {
-            if (msg.userId === chatCurrentUserIdRef.current) return
-            const d = new Date(msg.timestamp)
-            const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
-            const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
-            const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'lav' : 'sky'
-            setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
-        }
-        socket.on('chat-message', handler)
-        return () => { socket.off('chat-message', handler) }
-    }, [socket])
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -991,7 +979,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
         setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: chatInput.trim(), time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        socket?.emit('send-chat-message', { lobbyCode: code, message: chatInput.trim() })
+        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
         setChatInput('')
     }
 
@@ -999,7 +987,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
         setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: emoji, time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        socket?.emit('send-chat-message', { lobbyCode: code, message: emoji })
+        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
     }
 
     // ─── Sections ─────────────────────────────────────────────────────────────
@@ -1345,7 +1333,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                     icon="🚪"
                 />
             )}
-            {!isSpectator && resolvedStatus === 'playing' && socket && (
+            {!isSpectator && resolvedStatus === 'playing' && (
                 <ReactionOverlay lobbyCode={code} />
             )}
         </div>
