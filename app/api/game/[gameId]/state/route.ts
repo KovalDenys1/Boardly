@@ -5,7 +5,7 @@ import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
@@ -709,16 +709,10 @@ export async function POST(
       ? sanitizeSpyStateForBroadcast(authoritativeState)
       : authoritativeState
 
-    const serverBroadcasted = await notifySocket(
-      `lobby:${game.lobby.code}`,
-      'game-update',
-      {
-        action: 'state-change',
-        payload: broadcastState,
-      },
-      0,
-      resolveStateChangeNotifyTimeoutMs(game.lobby.gameType)
-    )
+    const serverBroadcasted = await broadcastToLobby(game.lobby.code, 'game-update', {
+      action: 'state-change',
+      payload: broadcastState,
+    })
     void replaySnapshotPromise
 
     if (!serverBroadcasted) {

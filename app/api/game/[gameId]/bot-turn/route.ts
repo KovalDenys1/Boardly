@@ -4,7 +4,7 @@ import { restoreGameEngine, hasBotSupport } from '@/lib/game-registry'
 import type { RegisteredGameType } from '@/lib/game-registry'
 import { Move } from '@/lib/game-engine'
 import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
@@ -274,8 +274,7 @@ export async function POST(
 
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: BaseBotActionEvent) => {
-      // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', { ...event })
+      await broadcastToLobby(resolvedLobbyCode, 'bot-action', { ...event })
     }
 
     // Dispatch to the appropriate bot executor based on game type
@@ -500,18 +499,11 @@ export async function POST(
             void replaySnapshotPromise
             log.info('Player scores updated')
 
-          const notifyTimeoutMs = resolveBotStateNotifyTimeoutMs(gameType)
           const currentState = gameEngine.getState()
-          await notifySocket(
-            `lobby:${resolvedLobbyCode}`,
-            'game-update',
-            {
-              action: 'state-change',
-              payload: currentState,
-            },
-            0,
-            notifyTimeoutMs
-          )
+          void broadcastToLobby(resolvedLobbyCode, 'game-update', {
+            action: 'state-change',
+            payload: currentState,
+          })
         } catch (dbError) {
           log.error('Critical: Failed to persist bot move state', dbError as Error, {
             gameId,

@@ -1,17 +1,22 @@
 import { act, render, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
-import { io } from 'socket.io-client'
 import MemoryLobbiesPage from '@/app/games/memory/lobbies/page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 
 const mockPush = jest.fn()
-let socketHandlers: Record<string, (() => void) | undefined> = {}
-let mockSocket: {
-  connected: boolean
-  on: jest.Mock
-  emit: jest.Mock
-  disconnect: jest.Mock
+let postgresChangesCallback: (() => void) | undefined = undefined
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockChannel: any = {
+  on: jest.fn((_event: string, _filter: object, cb: () => void) => {
+    postgresChangesCallback = cb
+    return mockChannel
+  }),
+  subscribe: jest.fn().mockReturnThis(),
+}
+const mockSupabaseClient = {
+  channel: jest.fn().mockReturnValue(mockChannel),
+  removeChannel: jest.fn().mockResolvedValue({}),
 }
 
 jest.mock('next/navigation', () => ({
@@ -24,16 +29,8 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }))
 
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(),
-}))
-
-jest.mock('@/lib/socket-url', () => ({
-  getBrowserSocketUrl: jest.fn(() => 'http://localhost:3001'),
-}))
-
-jest.mock('@/lib/socket-client-auth', () => ({
-  resolveSocketClientAuth: jest.fn(),
+jest.mock('@/lib/supabase-client', () => ({
+  getSupabaseClient: jest.fn(() => mockSupabaseClient),
 }))
 
 jest.mock('@/lib/client-logger', () => ({
@@ -78,37 +75,29 @@ function mockJsonResponse(payload: unknown) {
 describe('Memory lobby list page', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    socketHandlers = {}
-    mockSocket = {
-      connected: true,
-      on: jest.fn((event: string, handler: () => void) => {
-        socketHandlers[event] = handler
-      }),
-      emit: jest.fn(),
-      disconnect: jest.fn(),
-    }
+    postgresChangesCallback = undefined
+    mockChannel.on.mockImplementation((_event: string, _filter: object, cb: () => void) => {
+      postgresChangesCallback = cb
+      return mockChannel
+    })
 
     ;(useSession as jest.Mock).mockReturnValue({ status: 'authenticated' })
-    ;(io as jest.Mock).mockReturnValue(mockSocket)
-    ;(resolveSocketClientAuth as jest.Mock).mockResolvedValue({
-      authPayload: {},
-      queryPayload: {},
-    })
     ;(fetchWithGuest as jest.Mock).mockResolvedValue(mockJsonResponse({ lobbies: [] }))
   })
 
-  it('loads memory lobbies, refreshes on socket updates, and cleans up on unmount', async () => {
+  it('loads memory lobbies, refreshes on Supabase Realtime updates, and cleans up on unmount', async () => {
     const { unmount } = render(<MemoryLobbiesPage />)
 
     await waitFor(() => {
       expect(fetchWithGuest).toHaveBeenCalledWith('/api/lobby?gameType=memory')
     })
 
-    expect(io).toHaveBeenCalled()
-    expect(typeof socketHandlers['lobby-list-update']).toBe('function')
+    expect(mockSupabaseClient.channel).toHaveBeenCalledWith('game-lobbies-memory')
+    expect(mockChannel.subscribe).toHaveBeenCalled()
+    expect(typeof postgresChangesCallback).toBe('function')
 
     act(() => {
-      socketHandlers['lobby-list-update']?.()
+      postgresChangesCallback?.()
     })
 
     await waitFor(() => {
@@ -117,7 +106,6 @@ describe('Memory lobby list page', () => {
 
     unmount()
 
-    expect(mockSocket.emit).toHaveBeenCalledWith('leave-lobby-list')
-    expect(mockSocket.disconnect).toHaveBeenCalled()
+    expect(mockSupabaseClient.removeChannel).toHaveBeenCalledWith(mockChannel)
   })
 })

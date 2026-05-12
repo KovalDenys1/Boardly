@@ -761,7 +761,7 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
       }
       return (
         <>
-          {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
           <ClaimScreen
             data={data}
             players={players}
@@ -788,7 +788,7 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
       }
       return (
         <>
-          {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
           <ChallengeScreen
             data={data}
             players={players}
@@ -805,7 +805,7 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     if (data.phase === 'reveal') {
       return (
         <>
-          {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
           <RevealScreen
             data={data}
             players={players}

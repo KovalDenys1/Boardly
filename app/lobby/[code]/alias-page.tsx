@@ -1004,7 +1004,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     const word = data.currentCard?.[data.currentCardIndex] ?? ''
     return (
       <>
-        {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
           <GameContextBar
             code={code}
@@ -1140,7 +1140,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     const describerName = describerPlayer?.name ?? 'Describer'
     return (
       <>
-        {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
           <GameContextBar
             code={code}
@@ -1243,7 +1243,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
 
     return (
       <>
-        {!isSpectator && socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+        {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { SpyGame, sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
@@ -154,17 +154,14 @@ export async function POST(
 
     const broadcastState = sanitizeSpyStateForBroadcast(updatedState)
 
-    // Notify all clients via WebSocket
-    await notifySocket(`lobby:${game.lobby.code}`, 'spy-action', {
+    void broadcastToLobby(game.lobby.code, 'spy-action', {
       action,
       playerId: userId,
       playerName: username,
       data,
       state: broadcastState,
     })
-
-    // Also send game-update for consistency
-    await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
+    void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'spy-action',
       payload: { state: broadcastState },
     })

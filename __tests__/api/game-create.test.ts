@@ -31,8 +31,8 @@ jest.mock('@/lib/db', () => ({
   },
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn(),
+jest.mock('@/lib/supabase-server', () => ({
+  broadcastToLobby: jest.fn(),
 }))
 
 jest.mock('@/lib/logger', () => ({

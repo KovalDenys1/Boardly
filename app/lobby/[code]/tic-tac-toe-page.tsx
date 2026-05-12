@@ -1346,7 +1346,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                 />
             )}
             {!isSpectator && resolvedStatus === 'playing' && socket && (
-                <ReactionOverlay socket={socket} lobbyCode={code} />
+                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

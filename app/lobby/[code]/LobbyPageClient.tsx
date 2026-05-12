@@ -78,7 +78,7 @@ interface DBPlayer {
   }
 }
 
-import { useSocketConnection } from './hooks/useSocketConnection'
+import { useRealtimeConnection } from './hooks/useRealtimeConnection'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
@@ -863,14 +863,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return players.some((player: GamePlayer) => player?.userId === currentUserIdForMembership)
   }, [lobby, game, currentUserIdForMembership])
 
-  // Socket connection hook - must be before useLobbyActions
-  const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
+  // Realtime connection hook - must be before useLobbyActions
+  const { isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useRealtimeConnection({
     code,
-    session,
-    isGuest,
-    guestId,
-    guestName,
-    guestToken,
     shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
     onChatMessage,
@@ -882,7 +877,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onPlayerLeft,
     onBotAction,
     onSpectatorCountChange,
-    // State sync callback - automatically refreshes lobby data after reconnection
     onStateSync: async () => {
       if (loadLobbyRef.current) {
         await loadLobbyRef.current()
@@ -921,7 +915,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setRollHistory,
     setCelebrationEvent,
     setChatMessages,
-    socket, // Now socket is available
     isGuest,
     guestId,
     guestName,
@@ -1342,10 +1335,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     leaveApiOutcomeRef.current = 'pending'
     leaveApiStatusCodeRef.current = null
 
-    if (socket) {
-      socket.emit('leave-lobby', code)
-      socket.disconnect()
-    }
+
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
@@ -2531,8 +2521,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         icon="🚪"
       />
 
-      {isGameStarted && socket && (
-        <ReactionOverlay socket={socket} lobbyCode={code} />
+      {isGameStarted && (
+        <ReactionOverlay lobbyCode={code} />
       )}
 
       <PlayerProfileCard

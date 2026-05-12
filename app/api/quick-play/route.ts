@@ -11,7 +11,7 @@ import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { generateLobbyCode } from '@/lib/lobby'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 
@@ -63,20 +63,14 @@ async function fillWithBots(
       if (!isPrismaUniqueConstraintError(err)) throw err
     }
 
-    await notifySocket(`lobby:${lobbyCode}`, 'player-joined', {
+    void broadcastToLobby(lobbyCode, 'player-joined', {
       lobbyCode,
       username: botUser.username || botDisplayName,
       userId: botUser.id,
       isBot: true,
     })
   }
-
-  if (botsNeeded > 0) {
-    await notifySocket(`lobby:${lobbyCode}`, 'lobby-update', {
-      lobbyCode,
-      type: 'player-joined',
-    })
-  }
+  // lobby-update handled by Postgres Changes on Lobbies table
 }
 
 export async function POST(req: NextRequest) {
@@ -188,15 +182,12 @@ export async function POST(req: NextRequest) {
             { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
           )
 
-          await notifySocket(`lobby:${target.code}`, 'player-joined', {
+          void broadcastToLobby(target.code, 'player-joined', {
             lobbyCode: target.code,
             username: user.username || 'Player',
             userId: user.id,
           })
-          await notifySocket(`lobby:${target.code}`, 'lobby-update', {
-            lobbyCode: target.code,
-            type: 'player-joined',
-          })
+          // lobby-update handled by Postgres Changes on Lobbies table
 
           log.info('Quick play: joined existing lobby', {
             userId: user.id,

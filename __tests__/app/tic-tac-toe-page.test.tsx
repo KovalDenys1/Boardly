@@ -113,6 +113,16 @@ jest.mock('socket.io-client', () => ({
   io: jest.fn(() => mockSocket),
 }))
 
+jest.mock('@/lib/supabase-client', () => ({
+  getSupabaseClient: jest.fn(() => ({
+    channel: jest.fn(() => ({
+      on: jest.fn().mockReturnThis(),
+      subscribe: jest.fn().mockReturnThis(),
+    })),
+    removeChannel: jest.fn().mockResolvedValue({}),
+  })),
+}))
+
 function buildLobbyResponse() {
   const engine = new TicTacToeGame('game-1')
   engine.addPlayer({

@@ -1235,7 +1235,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                 />
             )}
             {!isSpectator && resolvedStatus === 'playing' && socket && (
-                <ReactionOverlay socket={socket} lobbyCode={code} />
+                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

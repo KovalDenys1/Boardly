@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { SpyGame, SpyGamePhase } from '@/lib/games/spy-game'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { getActiveSpyLocations } from '@/lib/spy-locations'
@@ -166,13 +166,8 @@ export async function POST(
       log.info('Spy game round initialized', { gameId })
     }
 
-    // Notify all clients via WebSocket
-    await notifySocket(`lobby:${game.lobby.code}`, 'spy-round-start', {
-      state: updatedState,
-    })
-
-    // Broadcast canonical game update so generic game listeners reconcile immediately.
-    await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
+    void broadcastToLobby(game.lobby.code, 'spy-round-start', { state: updatedState })
+    void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
       payload: { state: updatedState },
     })

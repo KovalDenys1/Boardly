@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { executeBotTurn } from '@/lib/bots'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 jest.mock('@/lib/db', () => ({
@@ -34,8 +34,8 @@ jest.mock('@/lib/bots', () => ({
   getBotDifficulty: jest.fn(() => 'medium'),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn(),
+jest.mock('@/lib/supabase-server', () => ({
+  broadcastToLobby: jest.fn(),
 }))
 
 jest.mock('@/lib/disconnected-turn', () => ({
@@ -66,7 +66,7 @@ jest.mock('@/lib/logger', () => ({
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 const mockRestoreGameEngine = restoreGameEngine as jest.MockedFunction<typeof restoreGameEngine>
 const mockExecuteBotTurn = executeBotTurn as jest.MockedFunction<typeof executeBotTurn>
-const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
 const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
   typeof appendGameReplaySnapshot
 >
@@ -89,7 +89,7 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
     process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
     ;(prisma.games.update as jest.Mock).mockResolvedValue({} as any)
     ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 } as any)
-    mockNotifySocket.mockResolvedValue(true as any)
+    mockBroadcastToLobby.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
   })
 
@@ -318,14 +318,12 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
         actionType: 'bot:place',
       })
     )
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABCD12',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABCD12',
       'game-update',
       expect.objectContaining({
         action: 'state-change',
-      }),
-      0,
-      250
+      })
     )
   })
 })

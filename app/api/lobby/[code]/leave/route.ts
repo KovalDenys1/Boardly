@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 
 const limiter = rateLimit(rateLimitPresets.api)
-const SOCKET_NOTIFY_DEBOUNCE_MS = 0
 
 type ReassignedCreator = {
   userId: string
@@ -21,26 +20,13 @@ function emitLobbyEvent(
   event: string,
   data: Record<string, unknown>
 ) {
-  void notifySocket(`lobby:${code}`, event, data, SOCKET_NOTIFY_DEBOUNCE_MS)
-    .then((sent) => {
-      if (!sent) {
-        log.warn('Failed to emit lobby leave event', {
-          code,
-          event,
-        })
-      }
-    })
-    .catch((error) => {
-      log.warn('Lobby leave socket emit errored', {
-        code,
-        event,
-        error,
-      })
-    })
+  void broadcastToLobby(code, event, data).then((sent) => {
+    if (!sent) log.warn('Failed to broadcast lobby leave event', { code, event })
+  })
 }
 
 function notifyLobbyListUpdate() {
-  void notifySocket('lobby-list', 'lobby-list-update', {}, SOCKET_NOTIFY_DEBOUNCE_MS)
+  // Postgres Changes on Lobbies table handles lobby-list updates globally
 }
 
 async function reassignLobbyCreatorIfNeeded(

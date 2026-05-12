@@ -18,7 +18,6 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import type { Socket } from 'socket.io-client'
 import type { Game, GamePlayer, Lobby } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -45,7 +44,6 @@ interface UseLobbyActionsProps {
   setRollHistory: (history: RollHistoryEntry[]) => void
   setCelebrationEvent: (event: CelebrationEvent | null) => void
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
-  socket: Socket | null
   isGuest: boolean
   guestId: string | null
   guestName: string | null
@@ -153,7 +151,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setRollHistory,
     setCelebrationEvent,
     setChatMessages,
-    socket,
     isGuest,
     guestId,
     guestName,
@@ -398,13 +395,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await loadLobbyRef.current()
       }
 
-      // useSocketConnection joins room on each connect/reconnect.
-      // Emit only when already connected to avoid duplicate JOIN_LOBBY emissions.
-      if (socket && socket.connected) {
-        clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
-        socket.emit('join-lobby', code)
-      }
-
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
@@ -431,7 +421,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate, lobby?.allowSpectators, onLobbyFull])
+  }, [code, password, isGuest, guestId, guestName, guestToken, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate, lobby?.allowSpectators, onLobbyFull])
 
   const handleGuestJoinLobby = useCallback(async () => {
     const normalizedGuestName = guestNameInput.trim()

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { FakeArtistGame } from '@/lib/games/fake-artist-game'
 import { Move, type RestorableGameState } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
@@ -185,7 +185,7 @@ export async function POST(
 
       if (game.lobby?.code) {
         if (emitActionEvent) {
-          await notifySocket(`lobby:${game.lobby.code}`, 'fake-artist-action', {
+          void broadcastToLobby(game.lobby.code, 'fake-artist-action', {
             action: emitActionEvent.action,
             playerId: emitActionEvent.playerId ?? null,
             data: emitActionEvent.data ?? {},
@@ -193,7 +193,7 @@ export async function POST(
           })
         }
 
-        await notifySocket(`lobby:${game.lobby.code}`, 'game-update', {
+        void broadcastToLobby(game.lobby.code, 'game-update', {
           action: 'state-change',
           payload: { state: nextState },
         })

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { normalizeBotDifficulty, getBotDisplayName } from '@/lib/bot-profiles'
 
 export async function PATCH(
@@ -75,7 +75,7 @@ export async function PATCH(
       }),
     ])
 
-    await notifySocket(`lobby:${code}`, 'lobby-update', {
+    void broadcastToLobby(code, 'lobby-update', {
       lobbyCode: code,
       type: 'bot-difficulty-changed',
     })

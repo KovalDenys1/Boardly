@@ -4,7 +4,7 @@ import { createGameEngine, getGameMetadata, isSupportedGameType } from '@/lib/ga
 import { type GameConfig } from '@/lib/game-engine'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { isBot } from '@/lib/bots'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { SpyGame } from '@/lib/games/spy-game'
@@ -438,25 +438,14 @@ export async function POST(request: NextRequest) {
       data: { isActive: false }, // Mark lobby as inactive when game starts
     })
 
-    // Notify all clients via WebSocket that game started
-    await notifySocket(
-      `lobby:${lobby.code}`,
-      'game-started',
-      {
-        lobbyCode: lobby.code,
-        gameId: game.id,
-      }
-    )
-
-    // Also send game state update
-    await notifySocket(
-      `lobby:${lobby.code}`,
-      'game-update',
-      {
-        action: 'state-change',
-        payload: { state: gameEngine.getState() },
-      }
-    )
+    void broadcastToLobby(lobby.code, 'game-started', {
+      lobbyCode: lobby.code,
+      gameId: game.id,
+    })
+    void broadcastToLobby(lobby.code, 'game-update', {
+      action: 'state-change',
+      payload: { state: gameEngine.getState() },
+    })
 
     // Check if first player is a bot and trigger bot turn
     const currentPlayerIndex = gameEngine.getState().currentPlayerIndex

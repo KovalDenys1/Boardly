@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Socket } from 'socket.io-client'
-import { SocketEvents } from '@/types/socket-events'
+import { getSupabaseClient } from '@/lib/supabase-client'
 
 const REACTION_DURATION_MS = 1600
 
@@ -22,45 +21,47 @@ interface ReactionPayload {
 }
 
 interface ReactionOverlayProps {
-  socket: Socket | null
   lobbyCode: string
 }
 
-export function ReactionOverlay({ socket, lobbyCode }: ReactionOverlayProps) {
+export function ReactionOverlay({ lobbyCode }: ReactionOverlayProps) {
   const [reactions, setReactions] = useState<FloatingReaction[]>([])
 
   useEffect(() => {
-    if (!socket) return
+    if (!lobbyCode) return
 
+    const supabase = getSupabaseClient()
     const timeouts: ReturnType<typeof setTimeout>[] = []
 
-    const handler = (data: ReactionPayload) => {
-      if (!data?.id || !data?.emoji || !data?.username) return
-      setReactions((prev) => [
-        ...prev,
-        {
-          id: data.id,
-          emoji: data.emoji,
-          username: data.username,
-          x: 25 + Math.random() * 50,
-        },
-      ])
-      const t = setTimeout(() => {
-        setReactions((prev) => prev.filter((r) => r.id !== data.id))
-      }, REACTION_DURATION_MS)
-      timeouts.push(t)
-    }
+    const channel = supabase
+      .channel(`reactions:${lobbyCode}`)
+      .on('broadcast', { event: 'reaction' }, ({ payload }) => {
+        const data = payload as ReactionPayload
+        if (!data?.id || !data?.emoji || !data?.username) return
+        setReactions((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            emoji: data.emoji,
+            username: data.username,
+            x: 25 + Math.random() * 50,
+          },
+        ])
+        const t = setTimeout(() => {
+          setReactions((prev) => prev.filter((r) => r.id !== data.id))
+        }, REACTION_DURATION_MS)
+        timeouts.push(t)
+      })
+      .subscribe()
 
-    socket.on(SocketEvents.REACTION, handler)
     return () => {
-      socket.off(SocketEvents.REACTION, handler)
+      void supabase.removeChannel(channel)
       timeouts.forEach(clearTimeout)
     }
-  }, [socket])
+  }, [lobbyCode])
 
   return (
     <>
-      {/* Floating reactions */}
       {reactions.map((r) => (
         <div
           key={r.id}

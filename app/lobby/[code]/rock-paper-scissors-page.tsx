@@ -565,7 +565,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
             </div>
 
             {!isSpectator && lobby.status === 'playing' && socket && (
-                <ReactionOverlay socket={socket} lobbyCode={code} />
+                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
         </div>
