@@ -687,7 +687,7 @@ export default function SpyGameBoard({
                         ) : (
                           <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
                         )}
-                        <span className="flex min-w-0 flex-1 items-center gap-1 truncate font-bold">
+                        <span className={`flex min-w-0 flex-1 items-center gap-1 truncate font-bold ${player.isPremium ? 'text-amber-500' : ''}`}>
                           {player.name}
                           {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
                         </span>
