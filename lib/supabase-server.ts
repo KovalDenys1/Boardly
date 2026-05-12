@@ -5,12 +5,8 @@
 
 const BROADCAST_TIMEOUT_MS = 3000
 
-/**
- * Broadcast an event to all Supabase Realtime subscribers on a lobby channel.
- * Replaces notifySocket() for lobby-scoped events.
- */
-export async function broadcastToLobby(
-  lobbyCode: string,
+async function broadcastToChannel(
+  topic: string,
   event: string,
   payload: Record<string, unknown>
 ): Promise<boolean> {
@@ -27,7 +23,7 @@ export async function broadcastToLobby(
         Authorization: `Bearer ${serviceKey}`,
       },
       body: JSON.stringify({
-        messages: [{ topic: `lobby:${lobbyCode}`, event, payload }],
+        messages: [{ topic, event, payload }],
       }),
       signal: AbortSignal.timeout(BROADCAST_TIMEOUT_MS),
     })
@@ -35,4 +31,22 @@ export async function broadcastToLobby(
   } catch {
     return false
   }
+}
+
+/** Broadcast an event to all subscribers on a lobby channel (`lobby:{code}`). */
+export async function broadcastToLobby(
+  lobbyCode: string,
+  event: string,
+  payload: Record<string, unknown>
+): Promise<boolean> {
+  return broadcastToChannel(`lobby:${lobbyCode}`, event, payload)
+}
+
+/** Broadcast an event to a specific user's channel (`user:{userId}`). */
+export async function broadcastToUser(
+  userId: string,
+  event: string,
+  payload: Record<string, unknown>
+): Promise<boolean> {
+  return broadcastToChannel(`user:${userId}`, event, payload)
 }
