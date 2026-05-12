@@ -14,15 +14,14 @@ type ReassignedCreator = {
   username: string
 }
 
-function emitLobbyEvent(
+async function emitLobbyEvent(
   log: ReturnType<typeof apiLogger>,
   code: string,
   event: string,
   data: Record<string, unknown>
 ) {
-  void broadcastToLobby(code, event, data).then((sent) => {
-    if (!sent) log.warn('Failed to broadcast lobby leave event', { code, event })
-  })
+  const sent = await broadcastToLobby(code, event, data)
+  if (!sent) log.warn('Failed to broadcast lobby leave event', { code, event })
 }
 
 function notifyLobbyListUpdate() {
@@ -223,19 +222,21 @@ export async function POST(
         })
       }
 
-      emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
-      emitLobbyEvent(log, code, 'lobby-update', {
-        lobbyCode: code,
-        type: 'player-left',
-        ...(reassignedCreator
-          ? {
-              data: {
-                creatorId: reassignedCreator.userId,
-                creatorName: reassignedCreator.username,
-              },
-            }
-          : {}),
-      })
+      await Promise.all([
+        emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload),
+        emitLobbyEvent(log, code, 'lobby-update', {
+          lobbyCode: code,
+          type: 'player-left',
+          ...(reassignedCreator
+            ? {
+                data: {
+                  creatorId: reassignedCreator.userId,
+                  creatorName: reassignedCreator.username,
+                },
+              }
+            : {}),
+        }),
+      ])
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -265,19 +266,21 @@ export async function POST(
         })
       }
 
-      emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
-      emitLobbyEvent(log, code, 'lobby-update', {
-        lobbyCode: code,
-        type: 'player-left',
-        ...(reassignedCreator
-          ? {
-              data: {
-                creatorId: reassignedCreator.userId,
-                creatorName: reassignedCreator.username,
-              },
-            }
-          : {}),
-      })
+      await Promise.all([
+        emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload),
+        emitLobbyEvent(log, code, 'lobby-update', {
+          lobbyCode: code,
+          type: 'player-left',
+          ...(reassignedCreator
+            ? {
+                data: {
+                  creatorId: reassignedCreator.userId,
+                  creatorName: reassignedCreator.username,
+                },
+              }
+            : {}),
+        }),
+      ])
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -310,7 +313,7 @@ export async function POST(
         data: { isActive: false }
       })
 
-      emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
+      await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
       notifyLobbyListUpdate()
 
       return NextResponse.json({
@@ -344,7 +347,7 @@ export async function POST(
         data: { isActive: false }
       })
 
-      emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
       notifyLobbyListUpdate()
 
       return NextResponse.json({
@@ -356,9 +359,9 @@ export async function POST(
     }
 
     // If multiple players remain (human or bot), continue the game
-    emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
+    await emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
     if (reassignedCreator) {
-      emitLobbyEvent(log, code, 'lobby-update', {
+      await emitLobbyEvent(log, code, 'lobby-update', {
         lobbyCode: code,
         type: 'player-left',
         data: {
