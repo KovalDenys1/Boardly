@@ -1168,7 +1168,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                         onChange={e => setChatInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && sendChat()}
                     />
-                    <button onClick={sendChat} style={{ padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13, boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit' }}>↗</button>
+                    <button onClick={sendChat} aria-label={t('chat.send')} style={{ padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13, boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit' }}>↗</button>
                 </div>
             </div>
         </div>

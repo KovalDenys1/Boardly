@@ -211,6 +211,7 @@ function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t
     >
       <div
         className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
+        role="alert"
         data-testid="eliminated-banner"
       >
         {t('liarsParty.eliminatedAt', { round: eliminatedRound ?? '?' })}
@@ -308,6 +309,7 @@ function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: E
     >
       <div
         className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
+        role="alert"
         data-testid="eliminated-banner"
       >
         {t('liarsParty.eliminatedAt', { round: eliminatedRound ?? '?' })}

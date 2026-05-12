@@ -440,7 +440,7 @@ export default function SpectatorLobbyPage() {
               <div className="space-y-2">
                 {players.map((player: GamePlayer) => (
                   <div key={player.id} className="flex items-center gap-2 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
-                    <span className="bd-avatar bd-avatar-lav h-7 w-7 text-xs">
+                    <span role="img" aria-label={player.user?.username || 'Player'} className="bd-avatar bd-avatar-lav h-7 w-7 text-xs">
                       {(player.user?.username || 'P').charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate text-sm font-semibold text-bd-ink">
@@ -460,7 +460,7 @@ export default function SpectatorLobbyPage() {
               <div className="space-y-2">
                 {spectators.map((spectator) => (
                   <div key={spectator.userId} className="flex items-center gap-2 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
-                    <span className="bd-avatar bd-avatar-coral h-7 w-7 text-xs">
+                    <span role="img" aria-label={spectator.username} className="bd-avatar bd-avatar-coral h-7 w-7 text-xs">
                       {spectator.username.charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate text-sm font-semibold text-bd-ink">{spectator.username}</span>
