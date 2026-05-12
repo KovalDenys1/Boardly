@@ -1759,6 +1759,10 @@ const no = {
     pickGame: 'Velg et spill — vi finner eller oppretter en kamp umiddelbart.',
     createdLobby: 'Nytt rom opprettet — klart til å spille!',
     joinedLobby: 'Fant en åpen lobby — kobler til!',
+    playVsBot: 'Spill mot bot',
+    selectDifficulty: 'Velg vanskelighetsgrad',
+    starting: 'Starter…',
+    signInToPlay: 'Logg inn for å spille mot bot',
   },
   leaderboard: {
     title: 'Toppliste',

@@ -24,6 +24,8 @@ const quickPlaySchema = z.object({
     (v) => isSupportedGameType(v) && hasBotSupport(v),
     { message: `gameType must be one of: ${QUICK_PLAY_GAME_TYPES.join(', ')}` }
   ),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
+  forceSolo: z.boolean().optional().default(false),
 })
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
@@ -36,11 +38,11 @@ async function fillWithBots(
   gameType: string,
   currentPlayerCount: number,
   minPlayers: number,
-  creatorId: string
+  creatorId: string,
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium'
 ) {
   const botsNeeded = Math.max(0, minPlayers - currentPlayerCount)
   for (let i = 0; i < botsNeeded; i++) {
-    const difficulty = 'medium'
     const normalizedDifficulty = normalizeBotDifficulty(difficulty)
     const baseName = getBotDisplayName(gameType, normalizedDifficulty)
     const botDisplayName = i > 0 ? `${baseName} ${i + 1}` : baseName
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid gameType' }, { status: 400 })
   }
 
-  const { gameType } = parsed.data
+  const { gameType, difficulty, forceSolo } = parsed.data
 
   if (!hasBotSupport(gameType)) {
     return NextResponse.json({ error: 'Bot support required for Quick Play' }, { status: 400 })
@@ -108,110 +110,112 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'This game is temporarily unavailable' }, { status: 400 })
   }
 
-  log.info('Quick play request', { userId: user.id, gameType })
+  log.info('Quick play request', { userId: user.id, gameType, difficulty, forceSolo })
 
-  // --- Step 1: find best open lobby ---
-  const openLobbies = await prisma.lobbies.findMany({
-    where: {
-      isActive: true,
-      gameType,
-      password: null,
-      games: {
-        some: {
-          status: 'waiting',
-          players: {
-            none: { userId: user.id },
+  // --- Step 1: find best open lobby (skipped when forceSolo=true) ---
+  if (!forceSolo) {
+    const openLobbies = await prisma.lobbies.findMany({
+      where: {
+        isActive: true,
+        gameType,
+        password: null,
+        games: {
+          some: {
+            status: 'waiting',
+            players: {
+              none: { userId: user.id },
+            },
           },
         },
       },
-    },
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      maxPlayers: true,
-      gameType: true,
-      creatorId: true,
-      createdAt: true,
-      games: {
-        where: { status: 'waiting' },
-        select: {
-          id: true,
-          status: true,
-          createdAt: true,
-          _count: { select: { players: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 20,
-  })
-
-  // Pick lobby with most players that still has room (closest to starting)
-  const candidates = openLobbies
-    .filter((lobby) => {
-      const game = lobby.games[0]
-      if (!game) return false
-      return game._count.players < lobby.maxPlayers
-    })
-    .sort((a, b) => {
-      const aCount = a.games[0]?._count?.players ?? 0
-      const bCount = b.games[0]?._count?.players ?? 0
-      return bCount - aCount
-    })
-
-  if (candidates.length > 0) {
-    const target = candidates[0]
-    const game = target.games[0]
-
-    // Try to join with serializable transaction to handle race
-    for (let attempt = 0; attempt <= MAX_JOIN_RETRIES; attempt++) {
-      try {
-        await prisma.$transaction(
-          async (tx) => {
-            const count = await tx.players.count({ where: { gameId: game.id } })
-            if (count >= target.maxPlayers) throw new Error('LOBBY_FULL')
-            await tx.players.create({
-              data: {
-                gameId: game.id,
-                userId: user.id,
-                position: count,
-                scorecard: JSON.stringify({}),
-              },
-            })
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        maxPlayers: true,
+        gameType: true,
+        creatorId: true,
+        createdAt: true,
+        games: {
+          where: { status: 'waiting' },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            _count: { select: { players: true } },
           },
-          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        )
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    })
 
-        await notifySocket(`lobby:${target.code}`, 'player-joined', {
-          lobbyCode: target.code,
-          username: user.username || 'Player',
-          userId: user.id,
-        })
-        await notifySocket(`lobby:${target.code}`, 'lobby-update', {
-          lobbyCode: target.code,
-          type: 'player-joined',
-        })
+    // Pick lobby with most players that still has room (closest to starting)
+    const candidates = openLobbies
+      .filter((lobby) => {
+        const game = lobby.games[0]
+        if (!game) return false
+        return game._count.players < lobby.maxPlayers
+      })
+      .sort((a, b) => {
+        const aCount = a.games[0]?._count?.players ?? 0
+        const bCount = b.games[0]?._count?.players ?? 0
+        return bCount - aCount
+      })
 
-        log.info('Quick play: joined existing lobby', {
-          userId: user.id,
-          lobbyCode: target.code,
-        })
+    if (candidates.length > 0) {
+      const target = candidates[0]
+      const game = target.games[0]
 
-        return NextResponse.json({ lobbyCode: target.code, isNew: false })
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : ''
-        if (msg === 'LOBBY_FULL' && attempt < MAX_JOIN_RETRIES) continue
-        if (
-          err instanceof Prisma.PrismaClientKnownRequestError &&
-          err.code === 'P2034' &&
-          attempt < MAX_JOIN_RETRIES
-        )
-          continue
-        // Lobby became unavailable — fall through to create new one
-        break
+      // Try to join with serializable transaction to handle race
+      for (let attempt = 0; attempt <= MAX_JOIN_RETRIES; attempt++) {
+        try {
+          await prisma.$transaction(
+            async (tx) => {
+              const count = await tx.players.count({ where: { gameId: game.id } })
+              if (count >= target.maxPlayers) throw new Error('LOBBY_FULL')
+              await tx.players.create({
+                data: {
+                  gameId: game.id,
+                  userId: user.id,
+                  position: count,
+                  scorecard: JSON.stringify({}),
+                },
+              })
+            },
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+          )
+
+          await notifySocket(`lobby:${target.code}`, 'player-joined', {
+            lobbyCode: target.code,
+            username: user.username || 'Player',
+            userId: user.id,
+          })
+          await notifySocket(`lobby:${target.code}`, 'lobby-update', {
+            lobbyCode: target.code,
+            type: 'player-joined',
+          })
+
+          log.info('Quick play: joined existing lobby', {
+            userId: user.id,
+            lobbyCode: target.code,
+          })
+
+          return NextResponse.json({ lobbyCode: target.code, isNew: false })
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : ''
+          if (msg === 'LOBBY_FULL' && attempt < MAX_JOIN_RETRIES) continue
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === 'P2034' &&
+            attempt < MAX_JOIN_RETRIES
+          )
+            continue
+          // Lobby became unavailable — fall through to create new one
+          break
+        }
       }
     }
   }
@@ -283,7 +287,7 @@ export async function POST(req: NextRequest) {
 
   // Fill with bots (1 human already in, need minPlayers - 1 bots)
   try {
-    await fillWithBots(newCode, gameId, gameType, 1, minPlayers, user.id)
+    await fillWithBots(newCode, gameId, gameType, 1, minPlayers, user.id, difficulty)
   } catch (err) {
     log.error('Quick play: bot fill failed', err as Error)
     // Non-fatal — user is still in the lobby

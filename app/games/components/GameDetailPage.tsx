@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { useTranslation } from '@/lib/i18n-helpers'
+import PlayVsBotButton from './PlayVsBotButton'
 
 type DetailStep = {
   title: string
@@ -35,6 +36,7 @@ type GameDetailPageProps = {
   benefitsTitle: string
   benefits: string[]
   guideHref?: string
+  playVsBotGameType?: string
 }
 
 function GameDetailIcon({
@@ -89,6 +91,7 @@ export default function GameDetailPage({
   benefitsTitle,
   benefits,
   guideHref,
+  playVsBotGameType,
 }: GameDetailPageProps) {
   const { t } = useTranslation()
   return (
@@ -126,6 +129,9 @@ export default function GameDetailPage({
                   <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center">
                     {primaryCtaLabel}
                   </Link>
+                )}
+                {playVsBotGameType && !primaryCtaDisabled && (
+                  <PlayVsBotButton gameType={playVsBotGameType} />
                 )}
                 <Link href="/games" className="bd-btn bd-btn-soft bd-btn-lg justify-center">
                   {t('home.browseGames')}

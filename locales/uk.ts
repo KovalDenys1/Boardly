@@ -1772,6 +1772,10 @@ const uk: Translation = {
     pickGame: 'Оберіть гру — ми миттєво знайдемо або створимо матч.',
     createdLobby: 'Створено нову кімнату — можна грати!',
     joinedLobby: 'Знайдено відкрите лобі — приєднуємось!',
+    playVsBot: 'Грати проти бота',
+    selectDifficulty: 'Оберіть складність',
+    starting: 'Запускаємо…',
+    signInToPlay: 'Увійдіть, щоб грати проти бота',
   },
   leaderboard: {
     title: 'Таблиця лідерів',

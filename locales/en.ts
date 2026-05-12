@@ -1770,6 +1770,10 @@ const en = {
     pickGame: "Pick a game — we'll find or create a match instantly.",
     createdLobby: 'Created a new room — ready to play!',
     joinedLobby: 'Found an open lobby — joining now!',
+    playVsBot: 'Play vs Bot',
+    selectDifficulty: 'Select difficulty',
+    starting: 'Starting…',
+    signInToPlay: 'Sign in to play vs bot',
   },
   leaderboard: {
     title: 'Leaderboard',
