@@ -2781,12 +2781,14 @@ export default function ProfilePage() {
                       { id: 'holo',  name: 'Holographic',  preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)', text: '#2D2266' },
                       { id: 'dark',  name: 'Dark Glow',    preview: 'linear-gradient(135deg, #2A2522, #16120E)', text: '#4FC9A6' },
                     ].map(({ id, name, preview, text }) => {
-                      const active = (premiumCardStyle ?? 'gold') === id
+                      const active = hasUploadPack && (premiumCardStyle ?? 'gold') === id
                       return (
                         <button
                           key={id}
                           type="button"
                           disabled={!hasUploadPack}
+                          aria-pressed={active}
+                          aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
                           onClick={() => {
                             setPremiumCardStyle(id)
                             void handleSaveCustomization({ premiumCardStyle: id })
