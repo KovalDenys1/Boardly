@@ -188,6 +188,7 @@ export default function ProfilePage() {
   const [profileBio, setProfileBio] = useState('')
   const [profileAccentColor, setProfileAccentColor] = useState<string | null>(null)
   const [profileFeaturedGame, setProfileFeaturedGame] = useState<string | null>(null)
+  const [premiumCardStyle, setPremiumCardStyle] = useState<string | null>(null)
   const [customizeSaving, setCustomizeSaving] = useState(false)
 
   // Settings state
@@ -297,6 +298,7 @@ export default function ProfilePage() {
       setProfileBio(customizeData.bio ?? '')
       setProfileAccentColor(customizeData.accentColor ?? null)
       setProfileFeaturedGame(customizeData.featuredGame ?? null)
+      setPremiumCardStyle(customizeData.premiumCardStyle ?? null)
     }
     return data.user as ProfileSummary
   }, [t])
@@ -329,7 +331,7 @@ export default function ProfilePage() {
     }
   }, [fetchProfileSummary])
 
-  const handleSaveCustomization = useCallback(async (fields: { bio?: string; accentColor?: string | null; featuredGame?: string | null }) => {
+  const handleSaveCustomization = useCallback(async (fields: { bio?: string; accentColor?: string | null; featuredGame?: string | null; premiumCardStyle?: string | null }) => {
     setCustomizeSaving(true)
     try {
       const res = await fetch('/api/user/customize', {
@@ -2726,6 +2728,51 @@ export default function ProfilePage() {
                       Shown on your public profile
                     </p>
                   )}
+                </div>
+
+                {/* Premium profile card style */}
+                <div>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Card Style</label>
+                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      { id: 'gold',  name: 'Gold',        preview: 'linear-gradient(135deg, #F5E4B8, #B8862E)', text: '#3A2A0A' },
+                      { id: 'glass', name: 'Glass',        preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)', text: '#fff' },
+                      { id: 'holo',  name: 'Holographic',  preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)', text: '#2D2266' },
+                      { id: 'dark',  name: 'Dark Glow',    preview: 'linear-gradient(135deg, #2A2522, #16120E)', text: '#4FC9A6' },
+                    ].map(({ id, name, preview, text }) => {
+                      const active = (premiumCardStyle ?? 'gold') === id
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          disabled={!hasUploadPack}
+                          onClick={() => {
+                            setPremiumCardStyle(id)
+                            void handleSaveCustomization({ premiumCardStyle: id })
+                          }}
+                          style={{
+                            background: preview,
+                            opacity: hasUploadPack ? 1 : 0.4,
+                            cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                            outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
+                            outlineOffset: 2,
+                          }}
+                          className="relative rounded-xl px-3 py-3 text-xs font-bold transition"
+                        >
+                          <span style={{ color: text, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
+                          {active && (
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-bd-ink">✓</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="mt-1.5 text-xs text-bd-ink-muted">
+                    How your profile looks to others on your public page
+                  </p>
                 </div>
               </div>
             </div>

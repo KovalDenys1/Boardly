@@ -18,6 +18,8 @@ const VALID_GAME_TYPES = new Set([
   'guess_the_spy', 'connect_four', 'alias', 'liars_party',
 ])
 
+const VALID_CARD_STYLES = new Set(['gold', 'glass', 'holo', 'dark'])
+
 export async function GET(request: NextRequest) {
   const rl = await limiter(request)
   if (rl) return rl
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   const user = await prisma.users.findUnique({
     where: { id: session.user.id },
-    select: { bio: true, accentColor: true, featuredGame: true, premiumUntil: true },
+    select: { bio: true, accentColor: true, featuredGame: true, premiumCardStyle: true, premiumUntil: true },
   })
 
   if (!user) {
@@ -42,6 +44,7 @@ export async function GET(request: NextRequest) {
     bio: user.bio ?? '',
     accentColor: user.accentColor ?? null,
     featuredGame: user.featuredGame ?? null,
+    premiumCardStyle: user.premiumCardStyle ?? null,
     isPremium,
   })
 }
@@ -59,6 +62,7 @@ export async function PATCH(request: NextRequest) {
     bio?: unknown
     accentColor?: unknown
     featuredGame?: unknown
+    premiumCardStyle?: unknown
   }
 
   const dbUser = await prisma.users.findUnique({
@@ -67,7 +71,7 @@ export async function PATCH(request: NextRequest) {
   })
   const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
 
-  const updateData: { bio?: string | null; accentColor?: string | null; featuredGame?: string | null } = {}
+  const updateData: { bio?: string | null; accentColor?: string | null; featuredGame?: string | null; premiumCardStyle?: string | null } = {}
 
   if (body.bio !== undefined) {
     if (typeof body.bio !== 'string') {
@@ -95,6 +99,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid game type' }, { status: 400 })
     }
     updateData.featuredGame = (body.featuredGame as string | null) ?? null
+  }
+
+  if (body.premiumCardStyle !== undefined) {
+    if (!isPremium) {
+      return NextResponse.json({ error: 'Premium required to set card style' }, { status: 403 })
+    }
+    if (body.premiumCardStyle !== null && (typeof body.premiumCardStyle !== 'string' || !VALID_CARD_STYLES.has(body.premiumCardStyle))) {
+      return NextResponse.json({ error: 'Invalid card style' }, { status: 400 })
+    }
+    updateData.premiumCardStyle = (body.premiumCardStyle as string | null) ?? null
   }
 
   if (Object.keys(updateData).length === 0) {

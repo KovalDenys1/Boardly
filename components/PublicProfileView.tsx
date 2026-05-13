@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
+import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -22,11 +23,13 @@ export type PublicProfileViewData = {
   username: string | null
   image: string | null
   avatarUrl?: string | null
+  bio?: string | null
   createdAt: string
   friendsCount: number
   gamesPlayed: number
   completedGamesCount?: number
   isPremium?: boolean
+  premiumCardStyle?: string | null
 }
 
 type PublicProfileViewProps = {
@@ -403,7 +406,21 @@ export default function PublicProfileView({
 
               <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10 dark:border-slate-700 dark:bg-slate-800/70">
                 <div className="relative flex w-full max-w-sm flex-col items-center text-center">
-                  {renderAvatar()}
+                  {profile.isPremium ? (
+                    <PremiumProfileCard
+                      style={(profile.premiumCardStyle as PremiumCardStyle | null | undefined) ?? 'gold'}
+                      profile={{
+                        displayName,
+                        handle,
+                        bio: profile.bio,
+                        memberSince,
+                        gamesPlayed: levelSourceGames,
+                        level,
+                      }}
+                    />
+                  ) : (
+                    renderAvatar()
+                  )}
                   <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">
                     {t('profile.publicProfile.linkHint')}
                   </p>
