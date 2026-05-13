@@ -173,6 +173,7 @@ export async function GET(
         turnTimer: true,
         isActive: true,
         gameType: true,
+        theme: true,
         createdAt: true,
         creatorId: true,
         password: true,

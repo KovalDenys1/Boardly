@@ -133,7 +133,7 @@ export default function GameDetailPage({
                 {playVsBotGameType && !primaryCtaDisabled && (
                   <PlayVsBotButton gameType={playVsBotGameType} />
                 )}
-                <Link href="/games" className="bd-btn bd-btn-soft bd-btn-lg justify-center">
+                <Link href="/games" className="bd-btn bd-btn-ghost bd-btn-lg justify-center">
                   {t('home.browseGames')}
                 </Link>
               </div>
