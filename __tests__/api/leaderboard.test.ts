@@ -44,6 +44,9 @@ describe('GET /api/leaderboard', () => {
         wins: BigInt(5),
         losses: BigInt(7),
         winRate: 41.7,
+        avatarUrl: null,
+        image: null,
+        premiumUntil: null,
       },
     ] as any)
   })
@@ -65,6 +68,8 @@ describe('GET /api/leaderboard', () => {
           wins: 5,
           losses: 7,
           winRate: 41.7,
+          avatarUrl: null,
+          isPremium: false,
         },
       ],
       hasMore: false,

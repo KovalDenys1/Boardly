@@ -48,7 +48,11 @@ const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getS
 describe('GET /api/user/[id]/stats', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(mockPrisma.users.findUnique as jest.Mock).mockResolvedValue({ role: 'user', suspended: false })
+    ;(mockPrisma.users.findUnique as jest.Mock).mockResolvedValue({
+      role: 'user',
+      suspended: false,
+      premiumUntil: new Date(Date.now() + 86400000),
+    })
   })
 
   it('returns 401 when the requester is not authenticated', async () => {
