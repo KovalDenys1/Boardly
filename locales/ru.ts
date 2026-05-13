@@ -2076,6 +2076,7 @@ const ru = {
     socialOpenAction: 'Открыть',
     hostReassigned: '👑 {{player}} теперь хост',
     youAreNowHost: '👑 Вы теперь хост',
+    hostLeftSession: 'Хост покинул сессию. Создайте новое лобби для следующей игры.',
   },
   deleteAccount: {
     title: 'Удалить аккаунт',

@@ -2076,6 +2076,7 @@ const no = {
     socialOpenAction: 'Åpne',
     hostReassigned: '👑 {{player}} er nå vert',
     youAreNowHost: '👑 Du er nå vert',
+    hostLeftSession: 'Verten forlot økten. Opprett et nytt rom for å spille igjen.',
   },
   deleteAccount: {
     title: 'Slett konto',

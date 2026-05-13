@@ -6,8 +6,6 @@ import Stripe from 'stripe'
 
 const log = apiLogger('/api/stripe/webhook')
 
-export const config = { api: { bodyParser: false } }
-
 async function updateSubscriptionState(
   customerId: string,
   subscriptionId: string | null,

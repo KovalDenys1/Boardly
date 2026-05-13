@@ -2090,6 +2090,7 @@ const uk: Translation = {
     socialOpenAction: 'Відкрити',
     hostReassigned: '👑 {{player}} тепер хост',
     youAreNowHost: '👑 Ви тепер хост',
+    hostLeftSession: 'Хост покинув сесію. Створіть нове лобі для нової гри.',
   },
   deleteAccount: {
     title: 'Видалення Акаунту',

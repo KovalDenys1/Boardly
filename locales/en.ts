@@ -2088,6 +2088,7 @@ const en = {
     socialOpenAction: 'Open',
     hostReassigned: '👑 {{player}} is now the host',
     youAreNowHost: '👑 You are now the host',
+    hostLeftSession: 'Host left the session. Create a new lobby to play again.',
   },
   deleteAccount: {
     title: 'Delete Account',

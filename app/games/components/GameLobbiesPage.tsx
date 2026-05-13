@@ -20,6 +20,7 @@ type Lobby = {
   name: string
   maxPlayers: number
   gameType: string
+  allowSpectators: boolean
   creator: {
     username: string | null
     email: string | null
@@ -397,21 +398,15 @@ export default function GameLobbiesPage({
                   const isWaiting = activeGame?.status === 'waiting'
                   const isPlaying = activeGame?.status === 'playing'
                   const isFull = playerCount >= lobby.maxPlayers
+                  const canSpectate = isPlaying && lobby.allowSpectators
                   const hostName = lobby.creator?.username || lobby.creator?.email?.split('@')[0] || 'Anonymous'
 
                   return (
                     <div
                       key={lobby.id}
-                      className={`cursor-pointer p-5 transition-colors hover:bg-bd-card-warm ${
+                      className={`p-5 transition-colors hover:bg-bd-card-warm ${
                         idx % 3 !== 2 ? 'md:border-r md:border-bd-line' : ''
                       } ${idx < lobbies.length - (lobbies.length % 3 || 3) ? 'border-b border-bd-line' : ''}`}
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          setAuthGateDest(`/lobby/${lobby.code}`)
-                          return
-                        }
-                        router.push(`/lobby/${lobby.code}`)
-                      }}
                     >
                       <div className="mb-3 flex items-start justify-between gap-2">
                         <h3 className="truncate font-bold text-bd-ink">{lobby.name}</h3>
@@ -420,15 +415,15 @@ export default function GameLobbiesPage({
                         </span>
                       </div>
 
-                      <p className="mb-4 truncate text-sm text-bd-ink-muted">
+                      <p className="mb-3 truncate text-sm text-bd-ink-muted">
                         👤 {tx('host')}: {hostName}
                       </p>
 
-                      <div className="flex items-center justify-between">
-                        <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
-                          👥 {playerCount}/{lobby.maxPlayers}
-                        </span>
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
+                            👥 {playerCount}/{lobby.maxPlayers}
+                          </span>
                           {isWaiting && (
                             <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-[#9b6b00]">
                               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#9b6b00]" />
@@ -445,6 +440,33 @@ export default function GameLobbiesPage({
                             <span className="rounded-full bg-bd-coral/15 px-2.5 py-1 text-[11px] font-bold text-bd-coral-deep">
                               {tx('full')}
                             </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {canSpectate && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                router.push(`/lobby/${lobby.code}/spectate`)
+                              }}
+                              className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
+                            >
+                              👁 {t('lobby.watch')}
+                            </button>
+                          )}
+                          {!canSpectate && (
+                            <button
+                              onClick={() => {
+                                if (!isAuthenticated) {
+                                  setAuthGateDest(`/lobby/${lobby.code}`)
+                                  return
+                                }
+                                router.push(`/lobby/${lobby.code}`)
+                              }}
+                              className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
+                            >
+                              {isPlaying ? t('lobby.openLobby') : t('lobby.join')}
+                            </button>
                           )}
                         </div>
                       </div>

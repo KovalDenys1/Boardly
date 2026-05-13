@@ -804,6 +804,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     remainingPlayers?: number
     nextCreatorId?: string
     nextCreatorName?: string
+    hostLeft?: boolean
   }) => {
     clientLogger.log('📡 Player left:', data)
 
@@ -815,6 +816,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (departedPlayerName) {
       showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
       playAmbientSound('playerLeave')
+    }
+
+    // Host left during post-game — no reassignment, just notify and refresh
+    if (data.hostLeft) {
+      showToast.info('toast.hostLeftSession')
+      if (loadLobbyRef.current) {
+        void loadLobbyRef.current()
+      }
+      return
     }
 
     if (data.nextCreatorId) {

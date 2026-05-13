@@ -179,12 +179,14 @@ export async function POST(
     const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
 
     const creatorLeft = lobby.creatorId === userId
+    const isTerminalGame = activeGame.status === 'finished' || activeGame.status === 'abandoned' || activeGame.status === 'cancelled'
     const lobbyCanStayActive =
       activeGame.status === 'playing'
         ? remainingPlayers >= minPlayersRequired && remainingHumanPlayers > 0
         : remainingPlayers > 0 && remainingHumanPlayers > 0
+    // Don't reassign creator during post-game — only the original host can start the next game
     const reassignedCreator =
-      creatorLeft && lobbyCanStayActive
+      creatorLeft && lobbyCanStayActive && !isTerminalGame
         ? await reassignLobbyCreatorIfNeeded(log, lobby.id, activeGame.id, code)
         : null
 
@@ -266,21 +268,10 @@ export async function POST(
         })
       }
 
-      await Promise.all([
-        emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload),
-        emitLobbyEvent(log, code, 'lobby-update', {
-          lobbyCode: code,
-          type: 'player-left',
-          ...(reassignedCreator
-            ? {
-                data: {
-                  creatorId: reassignedCreator.userId,
-                  creatorName: reassignedCreator.username,
-                },
-              }
-            : {}),
-        }),
-      ])
+      await emitLobbyEvent(log, code, 'player-left', {
+        ...playerLeftEventPayload,
+        ...(creatorLeft ? { hostLeft: true } : {}),
+      })
 
       return NextResponse.json({
         message: 'You left the lobby',
