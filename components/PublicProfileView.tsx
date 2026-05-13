@@ -345,7 +345,9 @@ export default function PublicProfileView({
                   onClick={handleBack}
                   className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
-                  <span aria-hidden>{'<-'}</span>
+                  <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   {t('common.back')}
                 </button>
 
@@ -427,10 +429,21 @@ export default function PublicProfileView({
                   <button
                     type="button"
                     onClick={() => void handleCopyProfileLink()}
-                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+                    disabled={copiedProfileLink}
+                    aria-label={copiedProfileLink ? 'Link copied!' : 'Copy profile link'}
+                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                   >
-                    <span>{copiedProfileLink ? 'Copied' : 'Copy profile link'}</span>
-                    <span aria-hidden>{copiedProfileLink ? '✓' : '↗'}</span>
+                    {copiedProfileLink ? (
+                      <>
+                        <span>Copied!</span>
+                        <span aria-hidden>✓</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Copy profile link</span>
+                        <span aria-hidden>↗</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

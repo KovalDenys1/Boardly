@@ -28,6 +28,9 @@ module.exports = {
         'bd-bg':         '#FBF6EE',
         'bd-bg2':        '#F2E9D8',
         'bd-card-warm':  '#FFF8EC',
+        'bd-danger-border': '#F0B3AC',
+        'bd-danger-bg':     '#FFF2EF',
+        'bd-danger-text':   '#A6554A',
       },
       fontFamily: {
         display: ['var(--bd-font-display)', 'Georgia', 'serif'],
