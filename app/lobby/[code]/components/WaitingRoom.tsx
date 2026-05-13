@@ -2,7 +2,8 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
 import type { BotDifficulty } from '@/lib/bot-profiles'
-import { getLobbyTheme } from '@/lib/lobby-themes'
+import { getLobbyTheme, type LobbyTheme } from '@/lib/lobby-themes'
+import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 
 interface WaitingRoomProps {
   game: Game | null
@@ -35,19 +36,9 @@ export default function WaitingRoom({
 
   return (
     <div className="space-y-2 px-4 py-4 sm:px-6">
-      {/* Theme accent bar */}
+      {/* Theme banner */}
       {hasCustomTheme && (
-        <div
-          className="mb-2 -mx-4 sm:-mx-6 -mt-4 px-4 sm:px-6 py-2 flex items-center gap-2 text-xs font-semibold"
-          style={{
-            background: lobbyTheme.bg,
-            borderBottom: `3px solid ${lobbyTheme.accent}`,
-            color: lobbyTheme.text,
-          }}
-        >
-          <span style={{ color: lobbyTheme.accent }}>●</span>
-          {lobbyTheme.name} theme
-        </div>
+        <LobbyThemeBanner theme={lobby.theme as LobbyTheme} />
       )}
       {/* Players */}
       {game?.players?.map((p: GamePlayer, index: number) => {

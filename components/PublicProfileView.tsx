@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
+import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -22,11 +23,13 @@ export type PublicProfileViewData = {
   username: string | null
   image: string | null
   avatarUrl?: string | null
+  bio?: string | null
   createdAt: string
   friendsCount: number
   gamesPlayed: number
   completedGamesCount?: number
   isPremium?: boolean
+  premiumCardStyle?: string | null
 }
 
 type PublicProfileViewProps = {
@@ -342,7 +345,9 @@ export default function PublicProfileView({
                   onClick={handleBack}
                   className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
-                  <span aria-hidden>{'<-'}</span>
+                  <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   {t('common.back')}
                 </button>
 
@@ -403,17 +408,42 @@ export default function PublicProfileView({
 
               <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10 dark:border-slate-700 dark:bg-slate-800/70">
                 <div className="relative flex w-full max-w-sm flex-col items-center text-center">
-                  {renderAvatar()}
+                  {profile.isPremium ? (
+                    <PremiumProfileCard
+                      style={(profile.premiumCardStyle as PremiumCardStyle | null | undefined) ?? 'gold'}
+                      profile={{
+                        displayName,
+                        handle,
+                        bio: profile.bio,
+                        memberSince,
+                        gamesPlayed: levelSourceGames,
+                        level,
+                      }}
+                    />
+                  ) : (
+                    renderAvatar()
+                  )}
                   <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">
                     {t('profile.publicProfile.linkHint')}
                   </p>
                   <button
                     type="button"
                     onClick={() => void handleCopyProfileLink()}
-                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+                    disabled={copiedProfileLink}
+                    aria-label={copiedProfileLink ? 'Link copied!' : 'Copy profile link'}
+                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                   >
-                    <span>{copiedProfileLink ? 'Copied' : 'Copy profile link'}</span>
-                    <span aria-hidden>{copiedProfileLink ? '✓' : '↗'}</span>
+                    {copiedProfileLink ? (
+                      <>
+                        <span>Copied!</span>
+                        <span aria-hidden>✓</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Copy profile link</span>
+                        <span aria-hidden>↗</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

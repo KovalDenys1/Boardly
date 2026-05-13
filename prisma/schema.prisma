@@ -19,8 +19,9 @@ model Users {
   image           String?
   avatarUrl         String?
   bio             String?
-  accentColor     String?
-  featuredGame    String?
+  accentColor       String?
+  featuredGame      String?
+  premiumCardStyle  String?
   stripeCustomerId      String?   @unique
   stripeSubscriptionId  String?   @unique
   premiumUntil          DateTime? @db.Timestamptz(3)

@@ -188,6 +188,7 @@ export default function ProfilePage() {
   const [profileBio, setProfileBio] = useState('')
   const [profileAccentColor, setProfileAccentColor] = useState<string | null>(null)
   const [profileFeaturedGame, setProfileFeaturedGame] = useState<string | null>(null)
+  const [premiumCardStyle, setPremiumCardStyle] = useState<string | null>(null)
   const [customizeSaving, setCustomizeSaving] = useState(false)
 
   // Settings state
@@ -297,6 +298,7 @@ export default function ProfilePage() {
       setProfileBio(customizeData.bio ?? '')
       setProfileAccentColor(customizeData.accentColor ?? null)
       setProfileFeaturedGame(customizeData.featuredGame ?? null)
+      setPremiumCardStyle(customizeData.premiumCardStyle ?? null)
     }
     return data.user as ProfileSummary
   }, [t])
@@ -329,7 +331,7 @@ export default function ProfilePage() {
     }
   }, [fetchProfileSummary])
 
-  const handleSaveCustomization = useCallback(async (fields: { bio?: string; accentColor?: string | null; featuredGame?: string | null }) => {
+  const handleSaveCustomization = useCallback(async (fields: { bio?: string; accentColor?: string | null; featuredGame?: string | null; premiumCardStyle?: string | null }) => {
     setCustomizeSaving(true)
     try {
       const res = await fetch('/api/user/customize', {
@@ -361,6 +363,7 @@ export default function ProfilePage() {
   }, [])
 
   const handleCheckout = useCallback(async () => {
+    setPremiumActionLoading(true)
     try {
       const res = await fetch('/api/stripe/checkout', { method: 'POST' })
       const data = await res.json()
@@ -368,6 +371,8 @@ export default function ProfilePage() {
       else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
     } catch {
       showToast.error('errors.generic', 'Failed to start checkout')
+    } finally {
+      setPremiumActionLoading(false)
     }
   }, [])
 
@@ -2073,11 +2078,11 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                <div className="rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] p-5 dark:border-red-500/20 dark:bg-red-500/10">
+                <div className="rounded-[1.5rem] border border-bd-danger-border bg-bd-danger-bg p-5 dark:border-red-500/20 dark:bg-red-500/10">
                   <h3 className="text-base font-bold text-bd-coral-deep dark:text-red-300">
                     {t('profile.dangerZone.title')}
                   </h3>
-                  <p className="mt-1 text-sm text-[#A6554A] dark:text-red-200/70">
+                  <p className="mt-1 text-sm text-bd-danger-text dark:text-red-200/70">
                     {t('profile.dangerZone.description')}
                   </p>
                   {!showDeleteConfirm ? (
@@ -2089,11 +2094,16 @@ export default function ProfilePage() {
                       {t('profile.dangerZone.deleteAccount')}
                     </button>
                   ) : (
-                    <div className="mt-4 rounded-2xl border border-[#F0B3AC] bg-white p-4 dark:border-red-500/20 dark:bg-slate-900/70">
-                      <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">
+                    <div
+                      role="dialog"
+                      aria-modal="false"
+                      aria-labelledby="delete-confirm-title"
+                      className="mt-4 rounded-2xl border border-bd-danger-border bg-white p-4 dark:border-red-500/20 dark:bg-slate-900/70"
+                    >
+                      <p id="delete-confirm-title" className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">
                         {t('profile.dangerZone.confirmTitle')}
                       </p>
-                      <p className="mt-2 break-all text-sm text-[#A6554A] dark:text-red-200/70">
+                      <p className="mt-2 break-all text-sm text-bd-danger-text dark:text-red-200/70">
                         {t('profile.dangerZone.confirmDescription', {
                           email: session?.user?.email || currentEmail,
                         })}
@@ -2609,10 +2619,20 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => void handleCheckout()}
-                    className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95"
+                    disabled={premiumActionLoading}
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <span>⭐</span>
-                    <span>Get Premium — $2.99/mo</span>
+                    {premiumActionLoading ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⭐</span>
+                        <span>Get Premium — $2.99/mo</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>
@@ -2637,14 +2657,21 @@ export default function ProfilePage() {
                     className="w-full rounded-xl border border-bd-line bg-white px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                   />
                   <div className="mt-1 flex items-center justify-between">
-                    <span className="text-xs text-bd-ink-muted">{profileBio.length}/160</span>
+                    <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
+                      {profileBio.length}/160
+                    </span>
                     <button
                       type="button"
                       disabled={customizeSaving}
                       onClick={() => void handleSaveCustomization({ bio: profileBio })}
-                      className="rounded-lg bg-bd-ink px-3 py-1.5 text-xs font-semibold text-bd-bg transition hover:opacity-80 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-white shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {customizeSaving ? '...' : 'Save bio'}
+                      {customizeSaving ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Saving…
+                        </>
+                      ) : 'Save bio'}
                     </button>
                   </div>
                 </div>
@@ -2656,20 +2683,31 @@ export default function ProfilePage() {
                     {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {['#FF6B5B', '#4FA3E8', '#48BB78', '#F6AD55', '#9B8CFF', '#F687B3', '#FC8181', '#68D391'].map((color) => (
+                    {([
+                      { hex: '#FF6B5B', name: 'Coral' },
+                      { hex: '#4FA3E8', name: 'Sky' },
+                      { hex: '#48BB78', name: 'Green' },
+                      { hex: '#F6AD55', name: 'Orange' },
+                      { hex: '#9B8CFF', name: 'Lavender' },
+                      { hex: '#F687B3', name: 'Pink' },
+                      { hex: '#FC8181', name: 'Red' },
+                      { hex: '#68D391', name: 'Mint' },
+                    ] as const).map(({ hex, name }) => (
                       <button
-                        key={color}
+                        key={hex}
                         type="button"
                         disabled={!hasUploadPack}
                         onClick={() => {
-                          const next = profileAccentColor === color ? null : color
+                          const next = profileAccentColor === hex ? null : hex
                           setProfileAccentColor(next)
                           void handleSaveCustomization({ accentColor: next })
                         }}
-                        title={hasUploadPack ? color : 'Premium required'}
+                        aria-label={hasUploadPack ? `${name} accent color${profileAccentColor === hex ? ' (active)' : ''}` : `${name} — Premium required`}
+                        aria-pressed={profileAccentColor === hex}
+                        title={hasUploadPack ? name : 'Premium required'}
                         style={{
-                          width: 32, height: 32, borderRadius: 8, background: color, border: 'none',
-                          outline: profileAccentColor === color ? `3px solid ${color}` : '2px solid transparent',
+                          width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
+                          outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
                           outlineOffset: 2, cursor: hasUploadPack ? 'pointer' : 'not-allowed',
                           opacity: hasUploadPack ? 1 : 0.4,
                           transition: 'all 0.15s',
@@ -2679,7 +2717,9 @@ export default function ProfilePage() {
                   </div>
                   {profileAccentColor && (
                     <p className="mt-1.5 text-xs text-bd-ink-muted">
-                      Active: <span style={{ color: profileAccentColor, fontWeight: 700 }}>{profileAccentColor}</span>
+                      Active: <span style={{ color: profileAccentColor, fontWeight: 700 }}>
+                        {({ '#FF6B5B': 'Coral', '#4FA3E8': 'Sky', '#48BB78': 'Green', '#F6AD55': 'Orange', '#9B8CFF': 'Lavender', '#F687B3': 'Pink', '#FC8181': 'Red', '#68D391': 'Mint' } as Record<string, string>)[profileAccentColor] ?? profileAccentColor}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -2726,6 +2766,53 @@ export default function ProfilePage() {
                       Shown on your public profile
                     </p>
                   )}
+                </div>
+
+                {/* Premium profile card style */}
+                <div>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Card Style</label>
+                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      { id: 'gold',  name: 'Gold',        preview: 'linear-gradient(135deg, #F5E4B8, #B8862E)', text: '#3A2A0A' },
+                      { id: 'glass', name: 'Glass',        preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)', text: '#fff' },
+                      { id: 'holo',  name: 'Holographic',  preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)', text: '#2D2266' },
+                      { id: 'dark',  name: 'Dark Glow',    preview: 'linear-gradient(135deg, #2A2522, #16120E)', text: '#4FC9A6' },
+                    ].map(({ id, name, preview, text }) => {
+                      const active = hasUploadPack && (premiumCardStyle ?? 'gold') === id
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          disabled={!hasUploadPack}
+                          aria-pressed={active}
+                          aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
+                          onClick={() => {
+                            setPremiumCardStyle(id)
+                            void handleSaveCustomization({ premiumCardStyle: id })
+                          }}
+                          style={{
+                            background: preview,
+                            opacity: hasUploadPack ? 1 : 0.4,
+                            cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                            outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
+                            outlineOffset: 2,
+                          }}
+                          className="relative rounded-xl px-3 py-3 text-xs font-bold transition"
+                        >
+                          <span style={{ color: text, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
+                          {active && (
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-bd-ink">✓</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="mt-1.5 text-xs text-bd-ink-muted">
+                    How your profile looks to others on your public page
+                  </p>
                 </div>
               </div>
             </div>
