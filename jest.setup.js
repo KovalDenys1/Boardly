@@ -118,17 +118,6 @@ jest.mock('next-auth/react', () => ({
   signOut: jest.fn(),
 }))
 
-// Mock socket.io-client
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    emit: jest.fn(),
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-  })),
-}))
-
 afterEach(() => {
   jest.clearAllTimers()
   jest.useRealTimers()
