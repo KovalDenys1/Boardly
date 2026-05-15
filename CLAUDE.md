@@ -80,7 +80,7 @@ Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based 
 ## Stack
 - Next.js 16, React 19, TypeScript, Tailwind CSS
 - PostgreSQL via Supabase, Prisma 7
-- Auth: NextAuth, Socket.io for real-time
+- Auth: NextAuth, Supabase Realtime (Broadcast + Postgres Changes)
 - Deployed on Vercel (iad1 / US East)
 
 ## Adding a new game — checklist
