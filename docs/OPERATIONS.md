@@ -17,7 +17,7 @@ npm install
 cp .env.example .env.local
 npm run db:generate
 npm run db:push
-npm run dev:all
+npm run dev
 ```
 
 ## Machine bootstrap and sync
@@ -31,7 +31,7 @@ npm install
 cp .env.example .env.local
 npm run db:generate
 npm run db:push
-npm run dev:all
+npm run dev
 ```
 
 ### Daily sync workflow
@@ -40,7 +40,7 @@ npm run dev:all
 git pull
 npm install
 npm run db:generate
-npm run dev:all
+npm run dev
 ```
 
 Before pushing changes:
@@ -58,7 +58,6 @@ Use one primary file for local development: `.env.local`.
 Notes:
 
 - Next.js automatically loads `.env.local`.
-- `socket-server.ts` loads `.env.local` first, then `.env` as fallback.
 - Keep `.env` optional (for local overrides only), not mandatory.
 
 ## Required env vars (minimum)
@@ -73,7 +72,8 @@ Recommended:
 - `DIRECT_URL` (for migrations)
 - `GUEST_JWT_SECRET` (guest token signing isolation)
 - `CRON_SECRET` (required in production; recommended locally to test `/api/cron/*`)
-- `NEXT_PUBLIC_SOCKET_URL` (explicit socket endpoint in non-local envs)
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Supabase project credentials for Realtime)
+- `SUPABASE_SERVICE_ROLE_KEY` (server-side Supabase client for `broadcastToLobby`)
 - `MCP_POSTGRES_CA_CERT_PATH` (optional CA bundle path for hosted/TLS PostgreSQL used by Prisma 7 adapter and MCP scripts; not needed for local localhost PostgreSQL)
 - hosted `DATABASE_URL` note: if your provider ships `sslmode=require` without a CA bundle, Boardly now enables libpq-compatible TLS semantics at runtime unless `MCP_POSTGRES_CA_CERT_PATH` is configured for strict `verify-full`
 - `BOT_UX_DELAY_MS` or `BOT_UX_DELAY_SCALE` + `BOT_UX_DELAY_MIN_MS` + `BOT_UX_DELAY_MAX_MS` (optional bot UX timing controls)
@@ -97,19 +97,17 @@ Recommended:
 Canonical secrets only:
 
 - `NEXTAUTH_SECRET`
-- `SOCKET_SERVER_INTERNAL_SECRET`
 - `CRON_SECRET`
 
 Migration from deprecated aliases:
 
-1. Remove `JWT_SECRET` from all app/socket environments.
+1. Remove `JWT_SECRET` from all app environments.
 2. Ensure `NEXTAUTH_SECRET` is set and has at least 32 characters.
-3. Remove `SOCKET_INTERNAL_SECRET` from all app/socket environments.
-4. Ensure `SOCKET_SERVER_INTERNAL_SECRET` is set and has at least 16 characters.
-5. Ensure `CRON_SECRET` is set and scheduler jobs send `Authorization: Bearer ${CRON_SECRET}`.
-6. Do not use `NEXTAUTH_SECRET` for cron endpoint authorization.
-7. Redeploy Next.js app and socket service together.
-8. Verify `/api/notify`, internal metrics auth, and `/api/cron/*` auth still succeed.
+3. Ensure `CRON_SECRET` is set and scheduler jobs send `Authorization: Bearer ${CRON_SECRET}`.
+4. Do not use `NEXTAUTH_SECRET` for cron endpoint authorization.
+5. Redeploy the Next.js app and verify `/api/cron/*` auth still succeeds.
+
+Note: `SOCKET_SERVER_INTERNAL_SECRET`, `NEXT_PUBLIC_SOCKET_URL`, and `SOCKET_SERVER_URL` are decommissioned — remove them from all environments after the Supabase Realtime migration.
 
 ## Build and deploy
 
@@ -197,13 +195,13 @@ Check:
 - migrations run in dedicated job/service only
 - `DIRECT_URL` is configured for migrations
 
-### Socket not connecting locally
+### Realtime not working locally
 
 Check:
 
-- both servers running (`npm run dev:all`)
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set correctly in `.env.local`
+- `SUPABASE_SERVICE_ROLE_KEY` is set (required for server-side `broadcastToLobby`)
 - `CORS_ORIGIN` includes your frontend origin
-- `NEXT_PUBLIC_SOCKET_URL` is correct (or unset for local default)
 
 ### Guest requests unauthorized
 

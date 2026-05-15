@@ -2,10 +2,10 @@
 
 ## System topology
 
-Boardly uses a dual-server model:
+Boardly uses a single-server model:
 
 - Next.js app server (`:3000`): API routes, auth, pages, SSR.
-- Socket.IO server (`:3001`): realtime room events, connection lifecycle, presence.
+- Supabase Realtime: Broadcast + Postgres Changes (no separate process — stateless REST calls from API routes, channel subscriptions on the client).
 - PostgreSQL (Supabase) via Prisma.
 
 ## Authoritative state flow
@@ -78,18 +78,26 @@ For game launch and promotion requirements, see `docs/GAME_DEVELOPMENT.md`.
 
 ## Realtime patterns
 
-Key files:
+Architecture: Supabase Realtime — no separate server process.
 
-- `socket-server.ts`
-- `types/socket-events.ts`
-- `app/lobby/[code]/hooks/useSocketConnection.ts`
+### Server-side broadcast
 
-Important safeguards:
+- Entry point: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)`
+- Mechanism: stateless REST POST to Supabase `/realtime/v1/api/broadcast`
+- **Must be `await`ed before returning an API response** — Vercel kills pending promises after `NextResponse.json()` returns
 
-- event sequencing metadata (`sequenceId`, `timestamp`)
-- deduplication on reconnect bursts
-- room-based broadcasting (`lobby:<code>`)
-- disconnect handling with turn advancement for disconnected active players
+### Client-side subscription
+
+- `hooks/useRealtimeConnection.ts` — subscribes to:
+  - `lobby:{code}` Broadcast channel (game events)
+  - `lobby-pg:{code}` Postgres Changes channel (lobby row changes)
+- `hooks/use-lobby-list.ts` — global Postgres Changes on `Lobbies` table
+- `components/ReactionOverlay.tsx` — `reactions:{code}` Broadcast channel (internal)
+
+### When to use Broadcast vs Postgres Changes
+
+- **Broadcast**: events that need immediate delivery or carry computed/sanitized payloads (game moves, reactions, `player-joined` with username)
+- **Postgres Changes**: structural state sync where the raw DB row is sufficient (lobby status, settings changes)
 
 ## Lobby lifecycle redirect rules
 
