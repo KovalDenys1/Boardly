@@ -313,6 +313,10 @@ const uk: Translation = {
     mute: 'Вимкнути звук',
     unmute: 'Увімкнути звук',
     volume: 'Гучність',
+    themeLabel: 'Тема',
+    themeLight: 'Світла',
+    themeDark: 'Темна',
+    themeSystem: 'Системна',
   },
   home: {
     welcomeBack: 'З поверненням, {{name}}!',

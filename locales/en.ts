@@ -311,6 +311,10 @@ const en = {
     mute: 'Mute',
     unmute: 'Unmute',
     volume: 'Volume',
+    themeLabel: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
   },
   home: {
     welcomeBack: 'Welcome back, {{name}}!',

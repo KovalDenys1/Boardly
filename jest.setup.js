@@ -46,6 +46,23 @@ if (typeof window !== 'undefined') {
   })
 }
 
+// Mock matchMedia for components using media queries in tests
+if (typeof window !== 'undefined' && typeof window.matchMedia === 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+}
+
 if (typeof global.ResizeObserver === 'undefined') {
   class ResizeObserverMock {
     observe() {}
