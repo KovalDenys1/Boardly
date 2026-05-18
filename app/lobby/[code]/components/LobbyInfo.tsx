@@ -229,7 +229,7 @@ export default function LobbyInfo({
           <div
             className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
-                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
+                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
                 : ''
             }`}
             onClick={() => openEditor('maxPlayers')}
@@ -248,7 +248,7 @@ export default function LobbyInfo({
           <div
             className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
-                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
+                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
                 : ''
             }`}
             onClick={() => openEditor('turnTimer')}
@@ -265,7 +265,7 @@ export default function LobbyInfo({
           <div
             className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
-                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
+                ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30'
                 : ''
             }`}
             onClick={() => openEditor('allowSpectators')}
@@ -284,19 +284,19 @@ export default function LobbyInfo({
             <span className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted mr-1">Share:</span>
             <button
               onClick={handleShareTelegram}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-bd-bg2"
             >
               📱 Telegram
             </button>
             <button
               onClick={handleShareWhatsApp}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-bd-bg2"
             >
               💬 WhatsApp
             </button>
             <button
               onClick={handleShareDiscord}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-bd-bg2"
               title="Copy link for Discord"
             >
               🎮 Discord
@@ -321,7 +321,7 @@ export default function LobbyInfo({
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         value === maxPlayers
                           ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                          : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
+                          : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {value}
@@ -346,7 +346,7 @@ export default function LobbyInfo({
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         seconds === lobby?.turnTimer
                           ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                          : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
+                          : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {seconds}s
@@ -369,7 +369,7 @@ export default function LobbyInfo({
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       lobby?.allowSpectators
                         ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                        : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
+                        : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     Enabled
@@ -381,7 +381,7 @@ export default function LobbyInfo({
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       lobby?.allowSpectators === false
                         ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                        : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink'
+                        : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     Disabled
@@ -396,7 +396,7 @@ export default function LobbyInfo({
 
   if (variant === 'header') {
     return (
-      <div className="flex-shrink-0 border-b border-bd-line bg-white">
+      <div className="flex-shrink-0 border-b border-bd-line bg-bd-card-warm">
         {inner}
       </div>
     )

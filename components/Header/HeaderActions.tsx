@@ -9,6 +9,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { navigateToProfile } from '@/lib/profile-navigation'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
+import { ThemeToggle } from './ThemeToggle'
 
 interface HeaderActionsProps {
   isAuthenticated: boolean
@@ -53,6 +54,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   if (isGuestSession) {
     return (
       <div className="hidden lg:flex shrink-0 items-center gap-2">
+        <ThemeToggle />
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
@@ -74,6 +76,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   if (!isAuthenticated) {
     return (
       <div className="hidden lg:flex shrink-0 items-center gap-2">
+        <ThemeToggle />
         <button
           onClick={() => router.push(buildCurrentAuthUrl('login'))}
           className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-bd-bg2"
@@ -99,6 +102,7 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
 
   return (
     <div className="hidden lg:flex items-center gap-2 lg:gap-3 min-w-0">
+      <ThemeToggle />
       <div className="min-w-0 max-w-[180px] self-center text-right">
         <div className="flex flex-col items-end justify-center leading-tight">
           <span

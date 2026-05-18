@@ -15,6 +15,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
+import { getLobbyTheme } from '@/lib/lobby-themes'
 
 interface AliasPageProps {
   code: string
@@ -29,6 +30,7 @@ interface Lobby {
   name: string
   isActive?: boolean
   turnTimer?: number
+  theme?: string
 }
 
 interface GamePlayer {
@@ -101,13 +103,16 @@ const linkBtn: React.CSSProperties = {
   padding: '8px 12px',
 }
 
-const pageBg: React.CSSProperties = {
-  height: 'calc(100dvh - 4rem)',
-  overflowY: 'auto',
-  background: 'linear-gradient(135deg, #FFF3EE 0%, #FBF6EE 60%, #FFF0F0 100%)',
-  padding: '14px 24px',
-  fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
-  color: 'var(--bd-ink)',
+function pageBg(theme?: string): React.CSSProperties {
+  const t = getLobbyTheme(theme)
+  return {
+    height: 'calc(100dvh - 4rem)',
+    overflowY: 'auto',
+    background: t.bg,
+    color: t.text,
+    padding: '14px 24px',
+    fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+  }
 }
 
 // ─── Design sub-components ────────────────────────────────────────────────────
@@ -626,7 +631,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
 
   if (loading) {
     return (
-      <div style={{ ...pageBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <LoadingSpinner />
       </div>
     )
@@ -702,7 +707,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     )
 
     return (
-      <div style={pageBg} data-testid="alias-waiting-room">
+      <div style={pageBg(lobby?.theme)} data-testid="alias-waiting-room">
         <GameContextBar code={code} />
         <main style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{
@@ -804,7 +809,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     const teamsValid = data.teams.every(t => t.playerIds.length >= 1)
 
     return (
-      <div style={pageBg} data-testid="alias-team-assignment">
+      <div style={pageBg(lobby?.theme)} data-testid="alias-team-assignment">
         <GameContextBar code={code} />
         <main style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
@@ -1000,7 +1005,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     return (
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
+        <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-describer-screen">
           <GameContextBar
             code={code}
             right={
@@ -1136,7 +1141,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     return (
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
+        <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-guesser-screen">
           <GameContextBar
             code={code}
             right={
@@ -1239,7 +1244,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     return (
       <>
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
-        <div style={{ ...pageBg, display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
+        <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
           <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
@@ -1385,7 +1390,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
 
     return (
       <div data-testid="alias-game-over-screen" style={{
-        ...pageBg, background: 'linear-gradient(135deg, #FFE9DD 0%, #FBF6EE 50%, #EFE6FF 100%)',
+        ...pageBg(lobby?.theme), background: 'linear-gradient(135deg, #FFE9DD 0%, #FBF6EE 50%, #EFE6FF 100%)',
         position: 'relative', overflow: 'hidden',
       }}>
         <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
@@ -1457,7 +1462,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
   }
 
   return (
-    <div style={{ ...pageBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ ...pageBg(lobby?.theme), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <LoadingSpinner />
     </div>
   )

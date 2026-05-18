@@ -311,6 +311,10 @@ const no = {
     mute: 'Demp',
     unmute: 'Aktiver lyd',
     volume: 'Volum',
+    themeLabel: 'Tema',
+    themeLight: 'Lys',
+    themeDark: 'Mørk',
+    themeSystem: 'System',
   },
   home: {
     welcomeBack: 'Velkommen tilbake, {{name}}!',

@@ -203,7 +203,14 @@ Never use `rgba` as a replacement for a solid color that has a token.
 
 ## Dark mode
 
-Dark mode is **deferred**. Do not add `dark:` variants to new components. Existing `dark:` classes in older components (Header, MobileMenu) can stay until those components are redesigned.
+Dark mode is implemented via CSS variable swapping. **Do not use `dark:` Tailwind variants in any component** — the CSS variable override in `globals.css` (`html.dark { }`) handles the entire app automatically.
+
+- `html.dark` is applied by the theme init script in `app/layout.tsx` (runs in `<head>` before paint — no flash)
+- User preference is stored in `localStorage` under key `theme` (`light` | `dark` | `system`)
+- `system` (default) follows `prefers-color-scheme` automatically
+- Toggle UI: `ThemeToggle` (desktop header icon) and `ThemeMobilePanel` (mobile menu panel)
+- Lobby premium themes (`ocean`, `midnight`, `sakura`, `neon_city`) override CSS vars at container level via `getThemePageStyle()` — they are immune to the global dark/light toggle
+- Existing `dark:` classes in Header/MobileMenu are legacy and will be cleaned up when those components are redesigned
 
 ---
 

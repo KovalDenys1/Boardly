@@ -18,6 +18,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
+import { getLobbyTheme } from '@/lib/lobby-themes'
 
 type RpsLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -39,6 +40,7 @@ interface LobbyData {
     gameId?: string
     gameType?: string
     game?: RPSGame
+    theme?: string
 }
 
 interface RockPaperScissorsLobbyPageProps {
@@ -468,9 +470,11 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
         )
     }
 
+    const themeColors = getLobbyTheme(lobby?.theme)
+
     return (
-        <div className="h-[calc(100dvh-4rem)] overflow-y-auto">
-        <div className="bg-gradient-to-b from-sky-50 via-white to-indigo-50 px-4 py-5 sm:px-6 sm:py-8 min-h-full">
+        <div className="h-[calc(100dvh-4rem)] overflow-y-auto" style={{ background: themeColors.bg, color: themeColors.text }}>
+        <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
             <div className="mx-auto max-w-5xl space-y-5">
                 <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

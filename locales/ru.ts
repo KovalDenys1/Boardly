@@ -311,6 +311,10 @@ const ru = {
     mute: 'Выключить звук',
     unmute: 'Включить звук',
     volume: 'Громкость',
+    themeLabel: 'Тема',
+    themeLight: 'Светлая',
+    themeDark: 'Тёмная',
+    themeSystem: 'Системная',
   },
   home: {
     welcomeBack: 'С возвращением, {{name}}!',

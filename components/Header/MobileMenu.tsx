@@ -9,6 +9,7 @@ import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
 import { UserAvatar } from './UserAvatar'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { AudioSettingsMobilePanel } from './AudioSettingsButton'
+import { ThemeMobilePanel } from './ThemeToggle'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface MobileMenuProps {
@@ -351,6 +352,7 @@ export function MobileMenu({
               </div>
 
               <AudioSettingsMobilePanel />
+              <ThemeMobilePanel />
             </nav>
 
             {/* Bottom actions */}

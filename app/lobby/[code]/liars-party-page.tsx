@@ -29,6 +29,7 @@ interface Lobby {
   name: string
   isActive?: boolean
   turnTimer?: number
+  theme?: string
 }
 
 interface GamePlayer {

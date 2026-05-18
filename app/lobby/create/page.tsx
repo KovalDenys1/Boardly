@@ -17,7 +17,7 @@ import {
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
-import { LOBBY_THEMES, LOBBY_THEME_IDS, type LobbyTheme } from '@/lib/lobby-themes'
+import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
@@ -569,19 +569,22 @@ function CreateLobbyPage() {
       active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink'
     }`
 
+  const currentTheme = getLobbyTheme(selectedTheme)
+
   return (
     <div className="page-shell bd-page bd-screen flex flex-col">
 
-      {/* Top bar: back + game selector */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-bd-line bg-white px-5 py-3">
+      {/* Top bar: back + game selector — always white, never themed */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-[#E8DDC8] bg-white px-5 py-3">
         <button
           type="button"
           onClick={() => router.push('/games')}
           className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+          style={{ color: '#1F1B16', borderColor: '#E8DDC8' }}
         >
           ← {t('lobby.create.cancel')}
         </button>
-        <div className="h-4 w-px shrink-0 bg-bd-line" />
+        <div className="h-4 w-px shrink-0 bg-[#E8DDC8]" />
         <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {Object.entries(GAME_INFO)
             .filter(([key]) => !isTemporarilyUnavailableGameType(key))
@@ -592,11 +595,11 @@ function CreateLobbyPage() {
                 type="button"
                 onClick={() => setSelectedGameType(key as GameType)}
                 aria-label={t('lobby.create.selectGame', { name: t(info.nameKey as TranslationKeys) })}
-                className={`bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all ${
-                  selectedGameType === key
-                    ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                    : 'hover:border-bd-ink hover:bg-white'
-                }`}
+                style={selectedGameType === key
+                  ? { background: '#1F1B16', color: '#FBF6EE', borderColor: '#1F1B16' }
+                  : { background: 'white', color: '#1F1B16', borderColor: '#E8DDC8' }
+                }
+                className="bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all"
               >
                 {info.emoji} {t(info.nameKey as TranslationKeys)}
               </button>
@@ -604,8 +607,8 @@ function CreateLobbyPage() {
         </div>
       </div>
 
-      {/* Main area */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* Main area — themed */}
+      <div className="flex min-h-0 flex-1 overflow-hidden" style={getThemePageStyle(selectedTheme)}>
 
         {/* Left: game preview */}
         <div className="hidden w-72 shrink-0 flex-col border-r border-bd-line bg-bd-card-warm xl:flex">
@@ -934,8 +937,8 @@ function CreateLobbyPage() {
             type="submit"
             form="create-lobby-form"
             disabled={loading}
-            className="bd-btn bd-btn-coral px-5 py-2.5 font-bold"
-            style={{ opacity: loading ? 0.7 : 1 }}
+            className="bd-btn px-5 py-2.5 font-bold text-white"
+            style={{ opacity: loading ? 0.7 : 1, background: currentTheme.accent, borderColor: currentTheme.accent }}
           >
             {loading ? (
               <>
