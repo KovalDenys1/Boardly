@@ -1687,6 +1687,25 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }))
   }, [game?.players, gameEngine])
 
+  const hasMultipleHumans = React.useMemo(() => {
+    if (!game?.players) return false
+    return game.players.filter((p) => !p.user?.bot && !p.bot).length >= 2
+  }, [game?.players])
+
+  const chatPlayerProfiles = React.useMemo(() => {
+    if (!game?.players) return undefined
+    const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+    for (const p of game.players) {
+      if (p.userId) {
+        map.set(p.userId, {
+          avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null,
+          isPremium: !!p.user?.isPremium,
+        })
+      }
+    }
+    return map
+  }, [game?.players])
+
   const yahtzeeScoreTabBadge = React.useMemo(() => {
     if (
       lobby?.gameType !== 'yahtzee' ||
@@ -1885,7 +1904,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
           {/* Tab selector (mobile only) */}
           <div className="flex border-b sm:hidden" style={{ borderColor: 'var(--bd-line)' }}>
-            {(['players', 'chat'] as const).map((tab) => (
+            {(['players', ...(hasMultipleHumans ? ['chat'] : [])] as ('players' | 'chat')[]).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -1926,7 +1945,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               />
             </div>
             {/* Chat - mobile only, inside card */}
-            {waitingRoomTab === 'chat' && (
+            {hasMultipleHumans && waitingRoomTab === 'chat' && (
               <div className="h-full sm:hidden">
                 <Chat
                   messages={chatMessages}
@@ -1934,6 +1953,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     sendChatMessage(message)
                   }}
                   currentUserId={getCurrentUserId()}
+                  playerProfiles={chatPlayerProfiles}
                   isMinimized={false}
                   onToggleMinimize={() => {}}
                   unreadCount={0}
@@ -2335,6 +2355,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </MobileTabPanel>
 
                   {/* Chat Tab */}
+                  {hasMultipleHumans && (
                   <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
                     <div
                       className="min-h-full"
@@ -2348,6 +2369,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                           sendChatMessage(message)
                         }}
                         currentUserId={getCurrentUserId()}
+                        playerProfiles={chatPlayerProfiles}
                         isMinimized={false}
                         onToggleMinimize={() => { }}
                         unreadCount={0}
@@ -2356,10 +2378,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       />
                     </div>
                   </MobileTabPanel>
+                  )}
                 </div>
               </div>
 
               {/* Desktop Chat - Minimized Button */}
+              {hasMultipleHumans && (
               <div className="hidden md:block">
                 <Chat
                   messages={chatMessages}
@@ -2367,6 +2391,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     sendChatMessage(message)
                   }}
                   currentUserId={getCurrentUserId()}
+                  playerProfiles={chatPlayerProfiles}
                   isMinimized={chatMinimized}
                   onToggleMinimize={() => {
                     setChatMinimized(!chatMinimized)
@@ -2378,6 +2403,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   someoneTyping={someoneTyping}
                 />
               </div>
+              )}
 
               {/* Mobile Bottom Navigation */}
               <MobileTabs
@@ -2389,10 +2415,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   }
                 }}
                 tabs={[
-                  { id: 'game', label: 'Game', icon: '🎲' },
-                  { id: 'scorecard', label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
-                  { id: 'players', label: 'Players', icon: '👥' },
-                  { id: 'chat', label: 'Chat', icon: '💬', badge: unreadMessageCount },
+                  { id: 'game' as const, label: 'Game', icon: '🎲' },
+                  { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
+                  { id: 'players' as const, label: 'Players', icon: '👥' },
+                  ...(hasMultipleHumans ? [{ id: 'chat' as const, label: 'Chat', icon: '💬', badge: unreadMessageCount }] : []),
                 ]}
                 unreadChatCount={unreadMessageCount}
               />
@@ -2430,10 +2456,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               canStartGame={!!canStartGame}
               onPlayAgain={handleStartGame}
               onLeave={() => setShowLeaveConfirmModal(true)}
-              chatMessages={chatMessages}
-              onSendChatMessage={(message) => {
-                sendChatMessage(message)
-              }}
+              chatMessages={hasMultipleHumans ? chatMessages : undefined}
+              onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
               chatUnreadCount={unreadMessageCount}
               someoneTyping={someoneTyping}
             />
@@ -2454,7 +2478,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       )}
 
       {/* Desktop Chat - waiting room (sm+) */}
-      {!isGameStarted && isInGame && (
+      {!isGameStarted && isInGame && hasMultipleHumans && (
         <div className="hidden sm:block">
           <Chat
             messages={chatMessages}
@@ -2462,6 +2486,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               sendChatMessage(message)
             }}
             currentUserId={getCurrentUserId()}
+            playerProfiles={chatPlayerProfiles}
             isMinimized={chatMinimized}
             onToggleMinimize={() => {
               setChatMinimized(!chatMinimized)

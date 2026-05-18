@@ -1,6 +1,5 @@
 import {
   isFakeArtistEnabled,
-  isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
@@ -13,10 +12,10 @@ export type RegisteredGameType =
   | 'memory'
   | 'connect_four'
   | 'alias'
+  | 'liars_party'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
-  | 'liars_party'
   | 'fake_artist'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
@@ -140,6 +139,16 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     supportsBots: false,
     translationKey: 'alias',
   },
+
+  liars_party: {
+    type: 'liars_party',
+    name: "Liar's Party",
+    icon: '🎭',
+    minPlayers: 4,
+    maxPlayers: 12,
+    supportsBots: false,
+    translationKey: 'liars_party',
+  },
 }
 
 const TELEPHONE_DOODLE_METADATA: GameMetadata = {
@@ -160,16 +169,6 @@ const SKETCH_AND_GUESS_METADATA: GameMetadata = {
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'guess_my_drawing',
-}
-
-const LIARS_PARTY_METADATA: GameMetadata = {
-  type: 'liars_party',
-  name: "Liar's Party",
-  icon: '🎭',
-  minPlayers: 4,
-  maxPlayers: 12,
-  supportsBots: false,
-  translationKey: 'liars_party',
 }
 
 const FAKE_ARTIST_METADATA: GameMetadata = {
@@ -292,14 +291,31 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     },
   },
   {
+    id: 'liars-party',
+    gameType: 'liars_party',
+    nameKey: 'games.liars_party.name',
+    emoji: '🎭',
+    descriptionKey: 'games.liars_party.description',
+    players: '4-12',
+    difficultyKey: 'games.liars_party.difficulty',
+    availability: 'available',
+    route: '/games/liars-party/lobbies',
+    color: 'from-violet-500 to-purple-600',
+    lobbyCreateConfig: {
+      gradient: 'from-violet-600 via-purple-500 to-fuchsia-400',
+      allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
+      defaultMaxPlayers: 8,
+    },
+  },
+  {
     id: 'rps',
     gameType: 'rock_paper_scissors',
     nameKey: 'games.rock_paper_scissors.name',
-    emoji: '🍂',
+    emoji: '✊',
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '2',
     difficultyKey: 'games.rock_paper_scissors.difficulty',
-    availability: 'in-development',
+    availability: 'available',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
     lobbyCreateConfig: {
@@ -395,7 +411,6 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
-    (value === 'liars_party' && isLiarsPartyEnabled()) ||
     (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
@@ -409,9 +424,6 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   }
   if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
     return SKETCH_AND_GUESS_METADATA
-  }
-  if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
-    return LIARS_PARTY_METADATA
   }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
@@ -440,7 +452,6 @@ export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
   const types: SupportedCatalogGameType[] = getAllRegisteredGameTypes()
   if (isTelephoneDoodleEnabled()) types.push('telephone_doodle')
   if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
-  if (isLiarsPartyEnabled()) types.push('liars_party')
   if (isFakeArtistEnabled()) types.push('fake_artist')
   return types
 }

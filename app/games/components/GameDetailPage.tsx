@@ -120,20 +120,20 @@ export default function GameDetailPage({
               <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg">
                 {description}
               </p>
-              <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:items-start lg:justify-start">
+              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:items-start lg:justify-start">
                 {primaryCtaDisabled ? (
-                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70" aria-disabled="true">
+                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:min-w-[160px]" aria-disabled="true">
                     {primaryCtaLabel}
                   </span>
                 ) : (
-                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center">
+                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:min-w-[160px]">
                     {primaryCtaLabel}
                   </Link>
                 )}
                 {playVsBotGameType && !primaryCtaDisabled && (
-                  <PlayVsBotButton gameType={playVsBotGameType} />
+                  <PlayVsBotButton gameType={playVsBotGameType} className="sm:min-w-[160px]" />
                 )}
-                <Link href="/games" className="bd-btn bd-btn-ghost bd-btn-lg justify-center">
+                <Link href="/games" className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:min-w-[160px]">
                   {t('home.browseGames')}
                 </Link>
               </div>

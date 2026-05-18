@@ -265,12 +265,12 @@ const Scorecard = React.memo(function Scorecard({
         !isCurrentPlayer ? 'opacity-90' : ''
       }`}
       style={{
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+        background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       }}
     >
       {/* Player / navigation header */}
       {hasHeader && (
-        <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'rgba(251,246,238,0.82)' }}>
+        <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           {playerName && (
             <div className="min-w-0 flex-1">
               <span className="bd-kicker">Scorecard</span>
@@ -304,7 +304,7 @@ const Scorecard = React.memo(function Scorecard({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,255,255,0.62)' }}>
+      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
         <span className="bd-chip px-3 py-1.5 text-[11px]">
           {filledCategories}/{upperSection.length + lowerSection.length} filled
         </span>
@@ -322,7 +322,7 @@ const Scorecard = React.memo(function Scorecard({
       </div>
 
       {shouldShowScoringGuidance && (
-        <div className="flex-shrink-0 border-b px-3 sm:px-4 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, rgba(255,255,255,0.9) 52%, rgba(107,193,240,0.14) 100%)' }}>
+        <div className="flex-shrink-0 border-b px-3 sm:px-4 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 52%, rgba(107,193,240,0.14) 100%)' }}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="bd-kicker" style={{ color: 'var(--bd-mint-deep)' }}>

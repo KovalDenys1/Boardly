@@ -587,7 +587,7 @@ export default function SpyGameBoard({
                     <p className="rounded-xl bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">{t('spy.noQuestionsYet')}</p>
                   )}
                   {questionHistory.map((entry) => (
-                    <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-xl border border-[var(--bd-line)] bg-white p-3 text-sm">
+                    <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-3 text-sm">
                       <p className="font-black text-[var(--bd-ink)]">
                         {entry.askerName} - {entry.targetName}
                       </p>

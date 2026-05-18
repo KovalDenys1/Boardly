@@ -120,7 +120,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
     <>
       <div
         className="bd-card animate-fade-in h-auto md:h-full flex flex-col p-4"
-        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+        style={{ background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)' }}
       >
         <button
           onClick={() => {
@@ -179,10 +179,10 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
               `}
                 style={{
                   background: isBot
-                    ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, rgba(255,255,255,0.92) 100%)'
+                    ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, var(--bd-bg) 100%)'
                     : isCurrentTurn
                     ? 'linear-gradient(90deg, rgba(107,193,240,0.16) 0%, rgba(79,201,166,0.12) 100%)'
-                    : 'rgba(255,255,255,0.82)',
+                    : 'var(--bd-bg)',
                   borderColor:
                     isCurrentTurn
                       ? 'rgba(107,193,240,0.28)'

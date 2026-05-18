@@ -437,7 +437,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
     if (error || !lobby || !lobby.game) {
         return (
             <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
-                <div className="rounded-2xl border border-rose-200 bg-white p-6 shadow-sm max-w-md text-center">
+                <div className="rounded-2xl border border-rose-200 bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
                     <p className="text-rose-700">{error || t('errors.gameNotFound')}</p>
                     <button
                         onClick={() => router.push(`/lobby/${code}`)}
@@ -457,11 +457,11 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
     if (!currentPlayer && !isSpectator) {
         return (
             <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-indigo-50 flex items-center justify-center p-4">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm max-w-md text-center">
-                    <p className="text-slate-700 mb-4">You are not part of this match.</p>
+                <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-6 shadow-sm max-w-md text-center">
+                    <p className="text-bd-ink-soft mb-4">You are not part of this match.</p>
                     <button
                         onClick={() => router.push(`/lobby/${code}`)}
-                        className="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-700"
+                        className="rounded-xl bd-btn bd-btn-primary px-4 py-2 font-semibold transition"
                     >
                         {t('lobby.game.back_to_lobby')}
                     </button>
@@ -476,13 +476,13 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
         <div className="h-[calc(100dvh-4rem)] overflow-y-auto" style={{ background: themeColors.bg, color: themeColors.text }}>
         <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
             <div className="mx-auto max-w-5xl space-y-5">
-                <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                <header className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+                            <h1 className="text-2xl font-extrabold text-bd-ink sm:text-3xl">
                                 🍂 {t('games.rock_paper_scissors.name')}
                             </h1>
-                            <p className="mt-1 text-sm text-slate-600">
+                            <p className="mt-1 text-sm text-bd-ink-muted">
                                 {t('lobby.game.code')}: <span className="font-mono font-semibold">{code.toUpperCase()}</span>
                             </p>
                         </div>
@@ -498,10 +498,10 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
                                 <span className={`h-2 w-2 rounded-full ${socketConnected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                                 {socketConnected ? t('games.rock_paper_scissors.liveUpdates') : t('games.rock_paper_scissors.reconnecting')}
                             </span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                            <span className="inline-flex items-center gap-1 rounded-full bd-chip px-3 py-1 text-xs font-semibold">
                                 {t('games.rock_paper_scissors.firstTo', { count: gameData.mode === 'best-of-3' ? 2 : 3 })}
                             </span>
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                            <span className="inline-flex items-center rounded-full bd-chip px-3 py-1 text-xs font-semibold">
                                 {t('games.rock_paper_scissors.playersCount', { count: lobby.game.players.length })}
                             </span>
                         </div>
@@ -521,18 +521,18 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
                     </section>
 
                     <aside className="space-y-4">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <p className="text-sm font-semibold text-slate-800">{t('games.rock_paper_scissors.howItWorksTitle')}</p>
-                            <ul className="mt-2 space-y-2 text-sm text-slate-600">
+                        <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm">
+                            <p className="text-sm font-semibold text-bd-ink">{t('games.rock_paper_scissors.howItWorksTitle')}</p>
+                            <ul className="mt-2 space-y-2 text-sm text-bd-ink-muted">
                                 <li>1. {t('games.rock_paper_scissors.howItWorks1')}</li>
                                 <li>2. {t('games.rock_paper_scissors.howItWorks2')}</li>
                                 <li>3. {t('games.rock_paper_scissors.howItWorks3')}</li>
                             </ul>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                            <p className="text-sm font-semibold text-slate-800 mb-2">{t('games.rock_paper_scissors.rulesTitle')}</p>
-                            <div className="space-y-2 text-sm text-slate-600">
+                        <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm">
+                            <p className="text-sm font-semibold text-bd-ink mb-2">{t('games.rock_paper_scissors.rulesTitle')}</p>
+                            <div className="space-y-2 text-sm text-bd-ink-muted">
                                 <p>{t('games.rock_paper_scissors.rockBeatsScissors')}</p>
                                 <p>{t('games.rock_paper_scissors.scissorsBeatsPaper')}</p>
                                 <p>{t('games.rock_paper_scissors.paperBeatsRock')}</p>
@@ -541,7 +541,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
 
                         <button
                             onClick={() => router.push(`/lobby/${code}`)}
-                            className="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-700"
+                            className="w-full bd-btn bd-btn-primary rounded-xl px-4 py-3 font-semibold transition justify-center"
                         >
                             {t('lobby.game.back_to_lobby')}
                         </button>
