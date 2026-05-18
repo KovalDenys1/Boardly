@@ -289,6 +289,19 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return () => window.clearTimeout(timer)
   }, [yahtzeeResultsHold])
 
+  // Apply theme CSS variables to <html> so portaled components (e.g. Modal) inherit them
+  useEffect(() => {
+    const theme = lobby?.theme
+    if (!theme || theme === 'default') return
+    const style = getThemePageStyle(theme) as Record<string, string>
+    const vars = Object.entries(style).filter(([k]) => k.startsWith('--'))
+    const root = document.documentElement
+    vars.forEach(([k, v]) => root.style.setProperty(k, v))
+    return () => {
+      vars.forEach(([k]) => root.style.removeProperty(k))
+    }
+  }, [lobby?.theme])
+
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
   const isLeavingLobbyRef = React.useRef(false)
@@ -2038,7 +2051,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   }}
                 >
                   {/* Mobile: Compact 2-row layout */}
-                  <div className="md:hidden">
+                  <div className="lg:hidden">
                     {/* Row 1: Game Info */}
                     <div className="mb-2 flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--bd-line)' }}>
                       <div className="flex items-center gap-2">
@@ -2097,7 +2110,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Desktop/Tablet: Original layout */}
-                  <div className="hidden md:flex items-center justify-between">
+                  <div className="hidden lg:flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
@@ -2167,7 +2180,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {/* Main Game Area - More spacing between columns */}
               <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
-                <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
+                <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
                   <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
                     <GameBoard
@@ -2261,7 +2274,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Mobile: Tabbed Layout */}
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="md:hidden relative"
+                  className="lg:hidden relative"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2385,7 +2398,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
               {/* Desktop Chat - Minimized Button */}
               {hasMultipleHumans && (
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {

@@ -20,7 +20,7 @@ interface MobileTabsProps {
 
 export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCount }: MobileTabsProps) {
   return (
-    <div className="flex-shrink-0 w-full bg-white/10 backdrop-blur-xl border-t border-white/20 shadow-lg md:hidden pb-[max(env(safe-area-inset-bottom),0.25rem)]">
+    <div className="flex-shrink-0 w-full bg-white/10 backdrop-blur-xl border-t border-white/20 shadow-lg lg:hidden pb-[max(env(safe-area-inset-bottom),0.25rem)]">
       <div className="grid grid-cols-4 gap-0">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
