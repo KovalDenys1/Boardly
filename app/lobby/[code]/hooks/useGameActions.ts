@@ -261,8 +261,10 @@ export function useGameActions(props: UseGameActionsProps) {
 
         const currentPlayer = newEngine.getCurrentPlayer()
         const rollNumber = 3 - newEngine.getRollsLeft()
+        const parsedServerState = (() => { try { return JSON.parse(data.game.state) } catch { return null } })()
+        const serverTs = parsedServerState?.data?.lastRoll?.timestamp
         const newEntry: RollHistoryEntry = {
-          id: `${Date.now()}_${Math.random()}`,
+          id: serverTs ? `${userId || guestId}-${serverTs}` : `${Date.now()}_${Math.random()}`,
           turnNumber: newEngine.getRound(),
           playerName: currentPlayer?.name || username || 'You',
           rollNumber: rollNumber,
