@@ -80,8 +80,8 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
               boxShadow: '0 4px 0 0 rgba(31,27,22,0.18)',
             }
           : {
-              background: 'linear-gradient(180deg, var(--bd-bg2) 0%, var(--bd-bg) 100%)',
-              border: '2px solid var(--bd-line)',
+              background: 'rgba(255,255,255,0.72)',
+              border: '1.5px solid rgba(0,0,0,0.12)',
               boxShadow: '0 4px 0 0 rgba(0,0,0,0.18)',
             }
       }
@@ -90,7 +90,7 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
       {getDotPositions(value).map((position, index) => (
         <div
           key={`${position}-${index}`}
-          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 rounded-full shadow-sm bg-[var(--bd-ink)] ${dotClasses[position]}`}
+          className={`absolute w-2.5 h-2.5 md:w-3 md:h-3 lg:w-2 lg:h-2 rounded-full shadow-sm bg-[var(--bd-ink)] ${dotClasses[position]}`}
         />
       ))}
       
