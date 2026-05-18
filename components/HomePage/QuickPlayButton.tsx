@@ -64,71 +64,159 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
     <>
       <button
         onClick={() => setShowPicker(true)}
-        className={
-          className ??
-          'w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-2xl shadow-purple-900/30 hover:scale-105 hover:from-purple-500 hover:to-purple-400 transition-all duration-300 flex items-center justify-center gap-3'
-        }
+        className={className ?? 'home-cta-button home-cta-button-primary'}
       >
-        <span className="text-2xl">⚡</span>
+        <span>⚡</span>
         <span>{t('home.quickPlay', 'Quick Play')}</span>
       </button>
 
       {showPicker && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+            background: 'rgba(31,27,22,0.7)',
+            backdropFilter: 'blur(4px)',
+          }}
           onClick={(e) => {
             if (!isSearching && e.target === e.currentTarget) setShowPicker(false)
           }}
         >
-          <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-white p-6 shadow-2xl dark:bg-slate-900">
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              background: 'var(--bd-card-warm)',
+              border: '2px solid var(--bd-ink)',
+              borderRadius: 20,
+              boxShadow: '6px 6px 0 var(--bd-ink)',
+              padding: '28px 28px 32px',
+            }}
+          >
             {isSearching ? (
-              <div className="py-6 text-center">
-                <p className="text-4xl mb-4 animate-bounce">⚡</p>
-                <p className="text-lg font-bold text-slate-900 dark:text-white">
+              <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+                <p style={{ fontSize: 48, marginBottom: 16, lineHeight: 1 }}>⚡</p>
+                <p
+                  style={{
+                    fontFamily: 'var(--bd-font-display)',
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: 'var(--bd-ink)',
+                    marginBottom: 8,
+                  }}
+                >
                   {t('quickPlay.finding', 'Finding a game…')}
                 </p>
-                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)' }}>
                   {t('quickPlay.searching', 'Looking for a room or setting one up for you')}
                 </p>
               </div>
             ) : (
               <>
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                    ⚡ {t('home.quickPlay', 'Quick Play')}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <h2
+                    style={{
+                      fontFamily: 'var(--bd-font-display)',
+                      fontSize: 22,
+                      fontWeight: 700,
+                      color: 'var(--bd-ink)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <span>⚡</span>
+                    {t('home.quickPlay', 'Quick Play')}
                   </h2>
                   <button
                     onClick={() => setShowPicker(false)}
-                    className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      display: 'grid',
+                      placeItems: 'center',
+                      background: 'var(--bd-bg2)',
+                      border: '2px solid var(--bd-ink)',
+                      borderRadius: 8,
+                      boxShadow: '2px 2px 0 var(--bd-ink)',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: 'var(--bd-ink)',
+                      lineHeight: 1,
+                    }}
                   >
                     ✕
                   </button>
                 </div>
-                <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-                  {t('quickPlay.pickGame', 'Pick a game — we\'ll find or create a match instantly.')}
+                <p style={{ fontSize: 14, color: 'var(--bd-ink-soft)', marginBottom: 20 }}>
+                  {t('quickPlay.pickGame', "Pick a game — we'll find or create a match instantly.")}
                 </p>
-                <div className="space-y-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {BOT_SUPPORTED_GAMES.map((game) => (
                     <button
                       key={game.type}
                       onClick={() => handleGameSelect(game.type)}
-                      className="flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left transition hover:border-purple-300 hover:bg-purple-50 dark:border-slate-700 dark:hover:border-purple-600 dark:hover:bg-purple-900/20"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                        padding: '14px 16px',
+                        background: 'var(--bd-bg)',
+                        border: '2px solid var(--bd-ink)',
+                        borderRadius: 12,
+                        boxShadow: '3px 3px 0 var(--bd-ink)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'transform 0.1s, box-shadow 0.1s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translate(-1px, -1px)'
+                        e.currentTarget.style.boxShadow = '4px 4px 0 var(--bd-ink)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translate(0, 0)'
+                        e.currentTarget.style.boxShadow = '3px 3px 0 var(--bd-ink)'
+                      }}
                     >
-                      <span className="text-3xl">{game.emoji}</span>
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-white">{game.label}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {game.players} players
+                      <span
+                        style={{
+                          width: 44,
+                          height: 44,
+                          display: 'grid',
+                          placeItems: 'center',
+                          background: 'var(--bd-sun)',
+                          border: '2px solid var(--bd-ink)',
+                          borderRadius: 10,
+                          fontSize: 22,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {game.emoji}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <p
+                          style={{
+                            fontFamily: 'var(--bd-font-display)',
+                            fontWeight: 700,
+                            fontSize: 15,
+                            color: 'var(--bd-ink)',
+                            lineHeight: 1.2,
+                            marginBottom: 2,
+                          }}
+                        >
+                          {game.label}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>
+                          {game.players} {t('quickPlay.players', 'players')}
                         </p>
                       </div>
-                      <svg
-                        className="ml-auto h-4 w-4 shrink-0 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                      <span style={{ fontSize: 16, color: 'var(--bd-ink-muted)', fontWeight: 700 }}>→</span>
                     </button>
                   ))}
                 </div>
