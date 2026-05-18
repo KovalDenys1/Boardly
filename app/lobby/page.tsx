@@ -1,10 +1,13 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Footer from '@/components/Footer'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import LobbyFilters from '@/components/LobbyFilters'
 import LobbyCard from '@/components/LobbyCard'
+import { AuthGateModal } from '@/components/AuthGateModal'
+import { useGuest } from '@/contexts/GuestContext'
 import i18n from '@/i18n'
 import { useLobbyList } from './use-lobby-list'
 
@@ -28,9 +31,26 @@ function LobbyListPageContent() {
     isRefreshLocked,
   } = useLobbyList()
 
+  const { status } = useSession()
+  const { isGuest } = useGuest()
+  const isAuthenticated = status === 'authenticated' || isGuest
+  const [authGateDest, setAuthGateDest] = useState<string | null>(null)
+
+  const handleCreateLobby = () => {
+    if (!isAuthenticated) {
+      setAuthGateDest('/lobby/create')
+      return
+    }
+    router.push('/lobby/create')
+  }
+
   if (!ready || !i18n.isInitialized) return <LoadingSkeleton />
 
   return (
+    <>
+    {authGateDest && (
+      <AuthGateModal dest={authGateDest} onClose={() => setAuthGateDest(null)} />
+    )}
     <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
 
@@ -77,7 +97,7 @@ function LobbyListPageContent() {
             {/* Right: full-height create button */}
             <button
               type="button"
-              onClick={() => router.push('/lobby/create')}
+              onClick={handleCreateLobby}
               className="flex min-h-[80px] w-full shrink-0 flex-row items-center justify-center gap-3 rounded-3xl border-2 border-bd-ink bg-bd-coral text-white shadow-[4px_4px_0_var(--bd-ink)] transition-all hover:-translate-y-0.5 hover:shadow-[4px_6px_0_var(--bd-ink)] active:translate-y-0.5 active:shadow-[4px_2px_0_var(--bd-ink)] sm:w-[220px] sm:flex-col sm:min-h-0"
             >
               <span className="text-4xl">✨</span>
@@ -160,7 +180,7 @@ function LobbyListPageContent() {
                 {hasActiveFilters ? t('lobby.noFilterMatchesDescription') : t('lobby.noLobbiesDescription')}
               </p>
               <button
-                onClick={hasActiveFilters ? clearAllFilters : () => router.push('/lobby/create')}
+                onClick={hasActiveFilters ? clearAllFilters : handleCreateLobby}
                 className="bd-btn bd-btn-coral bd-btn-lg"
               >
                 {hasActiveFilters ? t('lobby.filters.clearAll') : t('lobby.createFirst')}
@@ -184,6 +204,7 @@ function LobbyListPageContent() {
       </div>
       <Footer />
     </div>
+    </>
   )
 }
 
