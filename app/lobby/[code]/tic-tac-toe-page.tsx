@@ -249,9 +249,10 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     )
 }
 
-function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave, isLoading, t }: {
+function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave, isLoading, isHost, t }: {
     winnerName: string | null; winnerSymbol: string | null; isDraw: boolean;
-    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean; t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
+    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
+    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
     const color = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -296,12 +297,20 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
                     padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
                     background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
                 }}>{t('games.tictactoe.game.leave')}</button>
-                <button onClick={onPlayAgain} disabled={isLoading} style={{
-                    padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
-                    background: 'var(--bd-coral)', color: 'white', border: 'none',
-                    boxShadow: '0 4px 0 var(--bd-coral-deep)', cursor: isLoading ? 'not-allowed' : 'pointer',
-                    opacity: isLoading ? 0.7 : 1, fontFamily: 'inherit',
-                }}>{isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}</button>
+                {isHost ? (
+                    <button onClick={onPlayAgain} disabled={isLoading} style={{
+                        padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
+                        background: 'var(--bd-coral)', color: 'white', border: 'none',
+                        boxShadow: '0 4px 0 var(--bd-coral-deep)', cursor: isLoading ? 'not-allowed' : 'pointer',
+                        opacity: isLoading ? 0.7 : 1, fontFamily: 'inherit',
+                    }}>{isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}</button>
+                ) : (
+                    <div style={{
+                        padding: '10px 16px', fontSize: 13, borderRadius: 14, fontWeight: 600,
+                        background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)',
+                        fontFamily: 'inherit', textAlign: 'center',
+                    }}>{t('game.ui.waitingForHost')}</div>
+                )}
             </div>
         </div>
     )
@@ -789,6 +798,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         if (!lobby || !game || !gameEngine) { router.push(`/lobby/${code}`); return }
         const userId = getCurrentUserId()
         if (!userId) { router.push(`/lobby/${code}`); return }
+        if (lobby.creatorId !== userId) { showToast.info('game.ui.waitingForHost'); return }
         const gameData = gameEngine.getState().data as TicTacToeGameData
         const targetRounds = gameData.match?.targetRounds ?? null
         const roundsPlayed = gameData.match?.roundsPlayed ?? 0
@@ -1117,7 +1127,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                         isDraw={isDraw}
                         onPlayAgain={handlePlayAgain}
                         onLeave={() => setShowLeaveConfirmModal(true)}
-                        isLoading={isRematchSubmitting || (isMatchComplete && !isLobbyCreator)}
+                        isLoading={isRematchSubmitting}
+                        isHost={isLobbyCreator}
                         t={t}
                     />
                 </div>

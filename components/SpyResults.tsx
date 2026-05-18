@@ -17,6 +17,7 @@ interface SpyResultsProps {
   totalRounds: number
   onNextRound?: () => void
   onPlayAgain?: () => void
+  isHost?: boolean
   onRequestRematch?: () => void
   isRequestRematchPending?: boolean
   onBackToLobby?: () => void
@@ -34,6 +35,7 @@ export default function SpyResults({
   totalRounds,
   onNextRound,
   onPlayAgain,
+  isHost = false,
   onRequestRematch,
   isRequestRematchPending = false,
   onBackToLobby,
@@ -166,10 +168,16 @@ export default function SpyResults({
 
           {isGameOver && (
             <>
-              {onPlayAgain && (
-                <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
-                  {t('spy.playAgain')}
-                </button>
+              {onPlayAgain !== undefined && (
+                isHost ? (
+                  <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
+                    {t('spy.playAgain')}
+                  </button>
+                ) : (
+                  <div className="flex-1 rounded-2xl border border-[var(--bd-line)] px-4 py-3 text-center text-sm font-semibold text-bd-ink-muted">
+                    {t('game.ui.waitingForHost')}
+                  </div>
+                )
               )}
               {onRequestRematch && (
                 <button

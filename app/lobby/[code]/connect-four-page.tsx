@@ -317,9 +317,9 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     )
 }
 
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, isLoading, t }: {
+function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, isLoading, isHost, t }: {
     winnerName: string | null; isDraw: boolean; isMyWin: boolean
-    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean
+    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
@@ -334,18 +334,28 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, is
                 {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
-                <button
-                    onClick={onPlayAgain}
-                    disabled={isLoading}
-                    style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
-                        background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
-                        cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
-                        fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
-                    }}
-                >
-                    {t('games.connect_four.game.playAgain')}
-                </button>
+                {isHost ? (
+                    <button
+                        onClick={onPlayAgain}
+                        disabled={isLoading}
+                        style={{
+                            padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
+                            background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
+                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
+                            fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
+                        }}
+                    >
+                        {t('games.connect_four.game.playAgain')}
+                    </button>
+                ) : (
+                    <div style={{
+                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)',
+                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
+                    }}>
+                        {t('game.ui.waitingForHost')}
+                    </div>
+                )}
                 <button
                     onClick={onLeave}
                     style={{
@@ -795,6 +805,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         if (!lobby || !game || !gameEngine) { router.push(`/lobby/${code}`); return }
         const userId = getCurrentUserId()
         if (!userId) { router.push(`/lobby/${code}`); return }
+        if (lobby.creatorId !== userId) { showToast.info('game.ui.waitingForHost'); return }
         setIsRematchSubmitting(true)
         try {
             // Try next-round in the same game first
@@ -1084,6 +1095,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                         onPlayAgain={handlePlayAgain}
                         onLeave={() => setShowLeaveConfirmModal(true)}
                         isLoading={isRematchSubmitting}
+                        isHost={!!lobby && lobby.creatorId === currentUserId}
                         t={t}
                     />
                 </div>

@@ -67,7 +67,7 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
   }
 
   return (
-    <div className={`flex flex-col items-center gap-2 ${className}`}>
+    <div className="flex flex-col items-center gap-2">
       <span className="text-sm font-semibold text-bd-ink-muted">
         {t('quickPlay.selectDifficulty')}
       </span>

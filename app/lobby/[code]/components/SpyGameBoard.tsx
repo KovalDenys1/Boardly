@@ -729,6 +729,7 @@ export default function SpyGameBoard({
                 : undefined
             }
             onPlayAgain={onPlayAgain}
+            isHost={isCreator}
             onRequestRematch={onRequestRematch}
             isRequestRematchPending={isRequestingRematch}
             onBackToLobby={onBackToLobby}
