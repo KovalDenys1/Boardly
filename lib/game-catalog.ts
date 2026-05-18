@@ -298,7 +298,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.liars_party.description',
     players: '4-12',
     difficultyKey: 'games.liars_party.difficulty',
-    availability: 'available',
+    availability: 'in-development',
     route: '/games/liars-party/lobbies',
     color: 'from-violet-500 to-purple-600',
     lobbyCreateConfig: {
@@ -315,7 +315,7 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '2',
     difficultyKey: 'games.rock_paper_scissors.difficulty',
-    availability: 'available',
+    availability: 'in-development',
     route: '/games/rock-paper-scissors/lobbies',
     color: 'from-indigo-400 to-purple-500',
     lobbyCreateConfig: {
