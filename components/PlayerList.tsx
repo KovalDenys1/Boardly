@@ -334,7 +334,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Player Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className={`font-bold text-base truncate ${isPremium ? 'text-amber-500' : ''}`}>
+                        <span className={`font-bold text-base truncate ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>
                           {playerName}
                         </span>
                         {isPremium && (
