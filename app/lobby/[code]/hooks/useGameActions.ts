@@ -155,7 +155,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
     const preMoveHeld = [...gameEngine.getHeld()]
 
-    if (isMoveInProgress) {
+    if (isMoveInProgress && !isAutoAction) {
       clientLogger.log('Move already in progress, ignoring')
       return null
     }
@@ -387,7 +387,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
     const preMoveHeld = [...gameEngine.getHeld()]
 
-    if (isMoveInProgress) {
+    if (isMoveInProgress && !isAutoAction) {
       clientLogger.log('Move already in progress, ignoring')
       return null
     }
