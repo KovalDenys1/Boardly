@@ -12,10 +12,16 @@ interface ChatMessage {
   type?: 'message' | 'system'
 }
 
+interface PlayerProfile {
+  avatarUrl?: string | null
+  isPremium?: boolean
+}
+
 interface ChatProps {
   messages: ChatMessage[]
   onSendMessage: (message: string) => void
   currentUserId?: string | null
+  playerProfiles?: Map<string, PlayerProfile>
   isMinimized?: boolean
   onToggleMinimize?: () => void
   onClearChat?: () => void
@@ -28,6 +34,7 @@ export default function Chat({
   messages,
   onSendMessage,
   currentUserId,
+  playerProfiles,
   isMinimized = false,
   onToggleMinimize,
   onClearChat,
@@ -153,18 +160,18 @@ export default function Chat({
       ref={chatRef}
       className={`bd-card flex flex-col overflow-hidden ${fullScreen ? 'h-full rounded-none border-0 shadow-none' : 'fixed z-50 rounded-[24px]'}`}
       style={fullScreen ? {
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+        background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       } : {
         bottom: '20px',
         right: '20px',
         width: 'min(420px, calc(100vw - 40px))',
         height: 'min(600px, calc(100vh - 100px))',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+        background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       }}
     >
       <div
         className={`flex items-center justify-between border-b px-4 py-3 ${fullScreen ? 'rounded-none' : 'rounded-t-[24px]'}`}
-        style={{ borderColor: 'var(--bd-line)', background: 'rgba(251,246,238,0.9)' }}
+        style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
           <div className="bd-live-dot" aria-hidden="true" />
@@ -212,7 +219,7 @@ export default function Chat({
         className="relative flex-1 space-y-2.5 overflow-y-auto p-4 scroll-smooth"
         style={{
           background:
-            'radial-gradient(circle at 14% 8%, rgba(255,196,77,0.08), transparent 28%), radial-gradient(circle at 88% 12%, rgba(155,140,255,0.08), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(251,246,238,0.94) 100%)',
+            'radial-gradient(circle at 14% 8%, rgba(255,196,77,0.08), transparent 28%), radial-gradient(circle at 88% 12%, rgba(155,140,255,0.08), transparent 32%), linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
         }}
         role="log"
         aria-live="polite"
@@ -230,6 +237,9 @@ export default function Chat({
             {messages.map((msg, index) => {
               const isCurrentUser = msg.userId === currentUserId
               const showAvatar = msg.type !== 'system' && (index === 0 || messages[index - 1].userId !== msg.userId)
+              const profile = playerProfiles?.get(msg.userId)
+              const avatarUrl = profile?.avatarUrl
+              const isPremium = profile?.isPremium
 
               return (
                 <div
@@ -238,15 +248,24 @@ export default function Chat({
                 >
                   {msg.type !== 'system' && (
                     <div className={`flex-shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'}`}>
-                      <div className={`bd-avatar h-8 w-8 text-sm ${isCurrentUser ? 'bd-avatar-coral' : 'bd-avatar-lav'}`}>
-                        {(isCurrentUser ? 'You' : msg.username).charAt(0).toUpperCase()}
-                      </div>
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={msg.username}
+                          className="h-8 w-8 rounded-full border-2 border-bd-line object-cover"
+                        />
+                      ) : (
+                        <div className={`bd-avatar h-8 w-8 text-sm ${isCurrentUser ? 'bd-avatar-coral' : 'bd-avatar-lav'}`}>
+                          {(isCurrentUser ? 'You' : msg.username).charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
                   )}
 
                   <div className={`flex flex-col ${msg.type === 'system' ? 'mx-auto items-center' : isCurrentUser ? 'items-end' : 'items-start'}`}>
                     {msg.type !== 'system' && showAvatar && !isCurrentUser && (
-                      <div className="mb-1 px-1 text-xs font-semibold text-bd-ink-soft">
+                      <div className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-amber-500' : 'text-bd-ink-soft'}`}>
+                        {isPremium && <span className="mr-0.5">👑</span>}
                         {msg.username}
                       </div>
                     )}
@@ -262,7 +281,7 @@ export default function Chat({
                       style={
                         msg.type === 'system'
                           ? {
-                              background: 'rgba(242,233,216,0.88)',
+                              background: 'var(--bd-card-warm)',
                               color: 'var(--bd-ink-soft)',
                               border: '1px solid var(--bd-line)',
                             }
@@ -272,7 +291,7 @@ export default function Chat({
                                 boxShadow: '0 4px 0 0 rgba(255,107,91,0.22)',
                               }
                             : {
-                                background: 'rgba(255,255,255,0.92)',
+                                background: 'var(--bd-bg)',
                                 border: '1px solid var(--bd-line)',
                               }
                       }
@@ -311,7 +330,7 @@ export default function Chat({
       {someoneTyping && (
         <div
           className="border-t px-4 py-2.5 animate-[fade-in_0.3s_ease-out]"
-          style={{ borderColor: 'var(--bd-line)', background: 'rgba(242,233,216,0.62)' }}
+          style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-card-warm)' }}
         >
           <div className="flex items-center gap-2.5 text-bd-ink-muted">
             <div className="flex gap-1">
@@ -327,7 +346,7 @@ export default function Chat({
       <form
         onSubmit={handleSubmit}
         className={`border-t p-4 ${fullScreen ? 'rounded-none' : 'rounded-b-[24px]'}`}
-        style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,248,236,0.9)' }}
+        style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}
       >
         <div className="flex items-stretch gap-2.5">
           <div className="relative flex-1">
