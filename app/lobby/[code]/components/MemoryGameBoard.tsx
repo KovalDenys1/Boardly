@@ -315,9 +315,9 @@ export default function MemoryGameBoard({
   if (!gameData || cards.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="rounded-2xl border border-white/20 bg-white/10 px-8 py-10 text-center">
+        <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-8 py-10 text-center">
           <LoadingSpinner size="md" />
-          <p className="mt-4 text-sm text-white/70">{t('common.loading')}</p>
+          <p className="mt-4 text-sm text-bd-ink-muted">{t('common.loading')}</p>
         </div>
       </div>
     )

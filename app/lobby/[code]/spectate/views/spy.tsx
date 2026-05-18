@@ -20,7 +20,7 @@ export default function SpyView({ state }: SpectatorViewProps) {
           Questions: {questionHistory.length}
         </div>
       </div>
-      <div className="rounded-2xl border border-bd-line bg-white p-3">
+      <div className="rounded-2xl border border-bd-line bg-[var(--bd-bg)] p-3">
         <div className="mb-2 text-sm font-bold">Recent Q&A</div>
         <div className="space-y-2 text-sm">
           {questionHistory.slice(-5).map((entry: Record<string, unknown>, index: number) => (

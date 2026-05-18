@@ -125,7 +125,7 @@ const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
 const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
   loading: () => (
-    <div className="h-full min-h-[280px] rounded-xl border border-white/15 bg-white/5">
+    <div className="h-full min-h-[280px] rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)]">
       <div className="flex h-full items-center justify-center">
         <LoadingSpinner size="md" />
       </div>
@@ -2003,7 +2003,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <button
                   type="button"
                   onClick={() => router.push(`/lobby/${code}/spectate`)}
-                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-white px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
+                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-[var(--bd-bg2)] px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
                 >
                   Open spectator view →
                 </button>
@@ -2463,10 +2463,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
-                <h2 className="mb-3 text-2xl font-extrabold text-white">Game Started</h2>
-                <p className="text-white/70">
-                  The game type <code className="rounded bg-white/10 px-2 py-0.5 text-white">{String(lobby?.gameType || DEFAULT_GAME_TYPE)}</code> is active.
+              <div className="w-full max-w-2xl bg-[var(--bd-bg2)] border border-[var(--bd-line)] rounded-2xl p-8 text-center">
+                <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">Game Started</h2>
+                <p className="text-bd-ink-soft">
+                  The game type <code className="rounded bg-[var(--bd-bg)] px-2 py-0.5 text-bd-ink">{String(lobby?.gameType || DEFAULT_GAME_TYPE)}</code> is active.
                 </p>
                 <p className="mt-2 text-sm text-white/50">
                   This lobby view currently has no dedicated in-game renderer for it.

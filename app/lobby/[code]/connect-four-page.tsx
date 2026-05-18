@@ -266,7 +266,7 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
         const discColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
         return (
             <div style={{
-                padding: '10px 14px', borderRadius: 14, background: 'white',
+                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
                 border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
                 display: 'flex', alignItems: 'center', gap: 10,
             }}>
@@ -283,7 +283,7 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     const barColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
     return (
         <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'white',
+            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
             display: 'flex', alignItems: 'center', gap: 12,
         }}>
@@ -1164,7 +1164,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                     <input
-                        style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'white', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
+                        style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
                         placeholder={t('game.ui.chatPlaceholder')}
                         value={chatInput}
                         onChange={e => setChatInput(e.target.value)}

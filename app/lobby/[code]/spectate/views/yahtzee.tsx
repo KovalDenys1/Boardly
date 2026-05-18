@@ -14,7 +14,7 @@ export default function YahtzeeView({ state, players }: SpectatorViewProps) {
           <div
             key={`${index}-${die}`}
             className={`rounded-2xl border-[1.5px] p-3 text-center text-xl font-black shadow-[0_2px_0_var(--bd-line)] ${
-              held[index] ? 'border-bd-sun bg-bd-sun/25 text-bd-sun-deep' : 'border-bd-line bg-white text-bd-ink'
+              held[index] ? 'border-bd-sun bg-bd-sun/25 text-bd-sun-deep' : 'border-bd-line bg-[var(--bd-bg2)] text-bd-ink'
             }`}
           >
             {Number(die) || '-'}
@@ -32,7 +32,7 @@ export default function YahtzeeView({ state, players }: SpectatorViewProps) {
             : '-'}
         </div>
       </div>
-      <div className="rounded-2xl border border-bd-line bg-white p-3">
+      <div className="rounded-2xl border border-bd-line bg-[var(--bd-bg)] p-3">
         <h3 className="mb-2 font-bold text-bd-ink">Scorecards</h3>
         <div className="space-y-2">
           {players.map((player, index) => {
