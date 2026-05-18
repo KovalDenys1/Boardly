@@ -1980,8 +1980,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       ) : (
         // Game Started - Mobile-optimized viewport
         <div
-          className="flex flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/50 dark:from-slate-900 dark:via-blue-950/30 dark:to-purple-950/30"
+          className="flex flex-col overflow-hidden"
           style={{
+            background: 'var(--bd-bg)',
             position: 'fixed' as const,
             top: '4rem',
             left: 0,
