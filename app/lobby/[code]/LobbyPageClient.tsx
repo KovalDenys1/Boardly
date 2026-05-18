@@ -2043,7 +2043,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <>
               {/* Top Status Bar - Responsive */}
-              <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
+              <div className="flex-shrink-0 pt-2 mb-3 px-2 sm:px-4">
                 <div
                   className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
                   style={{
