@@ -1778,6 +1778,7 @@ const en = {
     selectDifficulty: 'Select difficulty',
     starting: 'Starting…',
     signInToPlay: 'Sign in to play vs bot',
+    players: 'players',
   },
   leaderboard: {
     title: 'Leaderboard',

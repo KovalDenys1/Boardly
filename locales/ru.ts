@@ -1767,6 +1767,7 @@ const ru = {
     selectDifficulty: 'Выберите сложность',
     starting: 'Запускаем…',
     signInToPlay: 'Войдите, чтобы играть против бота',
+    players: 'игроки',
   },
   leaderboard: {
     title: 'Таблица лидеров',

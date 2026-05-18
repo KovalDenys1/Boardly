@@ -1780,6 +1780,7 @@ const uk: Translation = {
     selectDifficulty: 'Оберіть складність',
     starting: 'Запускаємо…',
     signInToPlay: 'Увійдіть, щоб грати проти бота',
+    players: 'гравці',
   },
   leaderboard: {
     title: 'Таблиця лідерів',

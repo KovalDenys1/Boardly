@@ -213,7 +213,7 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                           {game.label}
                         </p>
                         <p style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>
-                          {game.players} players
+                          {game.players} {t('quickPlay.players')}
                         </p>
                       </div>
                       <span style={{ fontSize: 16, color: 'var(--bd-ink-muted)', fontWeight: 700 }}>→</span>

@@ -1767,6 +1767,7 @@ const no = {
     selectDifficulty: 'Velg vanskelighetsgrad',
     starting: 'Starter…',
     signInToPlay: 'Logg inn for å spille mot bot',
+    players: 'spillere',
   },
   leaderboard: {
     title: 'Toppliste',
