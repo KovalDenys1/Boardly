@@ -34,7 +34,7 @@ export function getThemePageStyle(theme: string | null | undefined): CSSProperti
     '--bd-line': t.border,
     '--bd-card-warm': t.bg2,
     '--bd-input-bg': t.dark ? t.bg2 : '#ffffff',
-    '--bd-btn-ink': '#1F1B16',
+    '--bd-btn-ink': t.text,
     background: t.bg,
     color: t.text,
     transition: 'background 0.3s ease, color 0.3s ease',

@@ -1036,7 +1036,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
 
     const requestSection = !isSpectator && pendingRequest ? (
         <div style={{
-            padding: '8px 10px', borderRadius: 12, background: 'rgba(255,255,255,0.92)',
+            padding: '8px 10px', borderRadius: 12, background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 3px 10px rgba(31,27,22,0.06)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
         }}>

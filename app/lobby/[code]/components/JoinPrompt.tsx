@@ -190,7 +190,7 @@ export default function JoinPrompt({
                 <div className="w-full border-t border-bd-line"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-4 text-bd-ink-muted">or</span>
+                <span className="bg-bd-bg px-4 text-bd-ink-muted">or</span>
               </div>
             </div>
 

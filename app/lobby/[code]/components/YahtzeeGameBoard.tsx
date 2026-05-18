@@ -86,11 +86,11 @@ export default function GameBoard({
       <div
         className="bd-card flex-1 overflow-hidden flex flex-col min-h-0"
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+          background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
         }}
       >
         {/* Timer at top of dice area */}
-        <div className="flex-shrink-0 p-3 border-b" style={{ borderColor: 'var(--bd-line)', background: 'rgba(251,246,238,0.72)' }}>
+        <div className="flex-shrink-0 p-3 border-b" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           <div className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-2xl transition-all ${percentage <= 17 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse shadow-lg' :
               percentage <= 50 ? 'bg-[var(--bd-sun)] text-bd-ink shadow-sm' :
                 'text-bd-ink shadow-sm'
@@ -114,7 +114,7 @@ export default function GameBoard({
         </div>
 
         {/* Controls pinned to bottom of card */}
-        <div className="flex-shrink-0 p-3 space-y-2 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,248,236,0.6)' }}>
+        <div className="flex-shrink-0 p-3 space-y-2 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           <div
             className={`rounded-2xl border px-3 py-3 shadow-sm ${nextStepTone}`}
             style={{
@@ -185,7 +185,7 @@ export default function GameBoard({
               </div>
             )
           ) : (
-            <div className="text-center px-3 py-2 rounded-2xl border" style={{ background: 'rgba(242,233,216,0.7)', borderColor: 'var(--bd-line)' }}>
+            <div className="text-center px-3 py-2 rounded-2xl border" style={{ background: 'var(--bd-card-warm)', borderColor: 'var(--bd-line)' }}>
               <div className="flex items-center justify-center gap-1.5 sm:gap-2">
                 <span className="text-base sm:text-xl">⏳</span>
                 <p className="text-sm text-bd-ink-muted font-medium">

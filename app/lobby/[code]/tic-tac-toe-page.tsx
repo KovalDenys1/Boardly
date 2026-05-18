@@ -1039,7 +1039,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         <div style={{
             padding: '8px 10px',
             borderRadius: 12,
-            background: 'rgba(255,255,255,0.92)',
+            background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)',
             boxShadow: '0 3px 10px rgba(31,27,22,0.06)',
             display: 'flex',
