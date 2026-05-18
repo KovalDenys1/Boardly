@@ -18,9 +18,10 @@ const DIFFICULTY_KEYS: Record<Difficulty, TranslationKeys> = {
 
 interface PlayVsBotButtonProps {
   gameType: string
+  className?: string
 }
 
-export default function PlayVsBotButton({ gameType }: PlayVsBotButtonProps) {
+export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotButtonProps) {
   const { t } = useTranslation()
   const router = useRouter()
   const { status } = useSession()
@@ -58,7 +59,7 @@ export default function PlayVsBotButton({ gameType }: PlayVsBotButtonProps) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="bd-btn bd-btn-soft bd-btn-lg justify-center"
+        className={`bd-btn bd-btn-soft bd-btn-lg justify-center ${className}`}
       >
         🤖 {t('quickPlay.playVsBot')}
       </button>
@@ -66,7 +67,7 @@ export default function PlayVsBotButton({ gameType }: PlayVsBotButtonProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className={`flex flex-col items-center gap-2 ${className}`}>
       <span className="text-sm font-semibold text-bd-ink-muted">
         {t('quickPlay.selectDifficulty')}
       </span>
