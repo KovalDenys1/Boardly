@@ -131,7 +131,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, isPr
                 )}
                 <div style={{
                     position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
-                    background: 'white', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
+                    background: 'var(--bd-bg)', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
                 }}>
                     <TttMark mark={symbol} size={14} />
                 </div>
@@ -203,7 +203,7 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     if (isSpectator) {
         return (
             <div style={{
-                padding: '10px 14px', borderRadius: 14, background: 'white',
+                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
                 border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
                 display: 'flex', alignItems: 'center', gap: 10,
             }}>
@@ -219,7 +219,7 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     const danger = secs <= 5
     return (
         <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'white',
+            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
             display: 'flex', alignItems: 'center', gap: 12,
         }}>
@@ -257,7 +257,7 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
     const color = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
         <div style={{
-            background: 'white', borderRadius: 22, padding: '24px 32px', textAlign: 'center',
+            background: 'var(--bd-bg)', borderRadius: 22, padding: '24px 32px', textAlign: 'center',
             boxShadow: '0 10px 0 var(--bd-ink)', border: '2px solid var(--bd-ink)', maxWidth: 320,
             animation: 'ttt-overlay-in 0.45s cubic-bezier(0.2,0.7,0.2,1)',
         }}>
@@ -1264,7 +1264,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                     <input
                         style={{
                             flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)',
-                            borderRadius: 12, background: 'white', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
+                            borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
                         }}
                         placeholder={t('game.ui.chatPlaceholder')}
                         value={chatInput}

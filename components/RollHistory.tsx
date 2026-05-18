@@ -31,7 +31,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
     return (
       <div
         className="bd-card h-full flex flex-col p-4"
-        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+        style={{ background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)' }}
       >
         <div className="mb-3 flex items-center gap-2">
           <span className="text-xl">🧾</span>
@@ -52,7 +52,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
   return (
     <div
       className="bd-card h-full flex flex-col p-4"
-      style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+      style={{ background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)' }}
     >
       <div className="mb-3 flex items-center gap-2">
         <span className="text-xl">🧾</span>
@@ -82,11 +82,11 @@ export default function RollHistory({ entries }: RollHistoryProps) {
                 background:
                   entryType === 'score'
                     ? isBotEntry
-                      ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, rgba(255,255,255,0.95) 100%)'
-                      : 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, rgba(255,255,255,0.95) 100%)'
+                      ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, var(--bd-bg) 100%)'
+                      : 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 100%)'
                     : isBotEntry
-                      ? 'linear-gradient(90deg, rgba(155,140,255,0.1) 0%, rgba(255,248,236,0.95) 100%)'
-                      : 'linear-gradient(90deg, rgba(107,193,240,0.12) 0%, rgba(255,248,236,0.95) 100%)',
+                      ? 'linear-gradient(90deg, rgba(155,140,255,0.1) 0%, var(--bd-bg2) 100%)'
+                      : 'linear-gradient(90deg, rgba(107,193,240,0.12) 0%, var(--bd-bg2) 100%)',
                 borderColor:
                   entryType === 'score'
                     ? isBotEntry
@@ -149,7 +149,7 @@ export default function RollHistory({ entries }: RollHistoryProps) {
                                   color: 'var(--bd-ink)',
                                 }
                               : {
-                                  background: 'rgba(255,255,255,0.96)',
+                                  background: 'var(--bd-bg2)',
                                   borderColor: 'var(--bd-line)',
                                   color: 'var(--bd-ink)',
                                 }

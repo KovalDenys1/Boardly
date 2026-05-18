@@ -19,7 +19,7 @@ const DiceGroup = React.memo(function DiceGroup({ dice, held, onToggleHold, disa
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-3 sm:gap-4 sm:p-4">
       {/* Dice Grid - Optimized for visibility */}
-      <div className="bd-dot-grid w-full rounded-[28px] border border-bd-line bg-white/55 px-4 py-5 sm:px-5 sm:py-6">
+      <div className="bd-dot-grid w-full rounded-[28px] border border-bd-line px-4 py-5 sm:px-5 sm:py-6" style={{ background: 'var(--bd-bg2)' }}>
         <div className="flex flex-wrap justify-center items-center gap-2 sm:gap-4 lg:gap-2">
         {dice.map((value, index) => (
           <Dice

@@ -77,13 +77,13 @@ const rowVariants: Record<CategoryState, string> = {
   'high-value':
     'border-emerald-200 bg-[rgba(79,201,166,0.16)] hover:bg-[rgba(79,201,166,0.24)] hover:shadow-md cursor-pointer',
   'low-value':
-    'border-[var(--bd-line)] bg-white/80 hover:bg-[var(--bd-bg)] hover:shadow-sm cursor-pointer',
+    'border-[var(--bd-line)] bg-[var(--bd-bg)] hover:bg-[var(--bd-bg2)] hover:shadow-sm cursor-pointer',
   sacrifice:
     'border-amber-200 bg-[rgba(255,196,77,0.16)] hover:bg-[rgba(255,196,77,0.24)] hover:shadow-sm cursor-pointer',
   filled:
     'border-[var(--bd-line)] bg-[var(--bd-card-warm)] cursor-default',
   disabled:
-    'border-[var(--bd-line)] bg-white/50 opacity-60 cursor-not-allowed',
+    'border-[var(--bd-line)] bg-[var(--bd-bg)] opacity-60 cursor-not-allowed',
 }
 
 const Scorecard = React.memo(function Scorecard({

@@ -58,10 +58,12 @@ export default function GameBoard({
 
   let nextStepTitle = 'Wait for your turn'
   let nextStepCopy = 'The dice and scorecard will unlock when play comes back to you.'
-  let nextStepTone = 'bg-slate-50 border-slate-200 text-bd-ink dark:bg-slate-900/40 dark:border-slate-700 dark:text-white'
+  let nextStepBg = 'var(--bd-bg)'
+  let nextStepBorder = 'var(--bd-line)'
 
   if (isMyTurn) {
-    nextStepTone = 'bg-blue-50 border-blue-200 text-bd-ink dark:bg-blue-950/30 dark:border-blue-800 dark:text-white'
+    nextStepBg = 'rgba(107,193,240,0.10)'
+    nextStepBorder = 'rgba(107,193,240,0.28)'
 
     if (rollsLeft === 3) {
       nextStepTitle = 'Start with your first roll'
@@ -69,14 +71,16 @@ export default function GameBoard({
     } else if (rollsLeft === 0) {
       nextStepTitle = 'Score this hand now'
       nextStepCopy = 'No rolls left. Open the scorecard and bank this result in the category you want.'
-      nextStepTone = 'bg-emerald-50 border-emerald-200 text-bd-ink dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-white'
+      nextStepBg = 'rgba(79,201,166,0.10)'
+      nextStepBorder = 'rgba(79,201,166,0.28)'
     } else if (heldCount === 0) {
       nextStepTitle = 'Pick dice to keep or reroll'
       nextStepCopy = 'Tap the dice you want to hold, then roll again or score this hand as it is.'
     } else {
       nextStepTitle = 'Decide between rerolling and scoring'
       nextStepCopy = `${heldCount} die${heldCount === 1 ? '' : ' dice'} held. Chase a better combo or bank this hand now.`
-      nextStepTone = 'bg-violet-50 border-violet-200 text-bd-ink dark:bg-violet-950/30 dark:border-violet-800 dark:text-white'
+      nextStepBg = 'rgba(155,140,255,0.10)'
+      nextStepBorder = 'rgba(155,140,255,0.28)'
     }
   }
 
@@ -116,14 +120,8 @@ export default function GameBoard({
         {/* Controls pinned to bottom of card */}
         <div className="flex-shrink-0 p-3 space-y-2 border-t pb-[max(env(safe-area-inset-bottom),0.5rem)]" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           <div
-            className={`rounded-2xl border px-3 py-3 shadow-sm ${nextStepTone}`}
-            style={{
-              borderColor:
-                nextStepTone.includes('emerald') ? 'rgba(79,201,166,0.28)' :
-                nextStepTone.includes('violet') ? 'rgba(155,140,255,0.28)' :
-                nextStepTone.includes('blue') ? 'rgba(107,193,240,0.28)' :
-                'var(--bd-line)',
-            }}
+            className="rounded-2xl border px-3 py-3 shadow-sm"
+            style={{ background: nextStepBg, borderColor: nextStepBorder }}
           >
             <div className="flex items-center justify-between gap-2">
               <p className="bd-kicker">

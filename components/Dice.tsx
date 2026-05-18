@@ -80,9 +80,9 @@ export default function Dice({ value, held, onToggleHold, isRolling = false, dis
               boxShadow: '0 4px 0 0 rgba(31,27,22,0.18)',
             }
           : {
-              background: 'linear-gradient(180deg, #FFFFFF 0%, var(--bd-bg) 100%)',
-              border: '3px solid var(--bd-ink)',
-              boxShadow: '0 4px 0 0 rgba(31,27,22,0.18)',
+              background: 'linear-gradient(180deg, var(--bd-bg2) 0%, var(--bd-bg) 100%)',
+              border: '2px solid var(--bd-line)',
+              boxShadow: '0 4px 0 0 rgba(0,0,0,0.18)',
             }
       }
     >

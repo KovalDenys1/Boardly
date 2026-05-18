@@ -300,7 +300,7 @@ export default function Chat({
                         {msg.message}
                       </div>
                       {msg.type !== 'system' && (
-                        <div className={`mt-1.5 flex items-center gap-1 text-[10px] ${isCurrentUser ? 'justify-end text-[rgba(251,246,238,0.78)]' : 'text-bd-ink-muted'}`}>
+                        <div className={`mt-1.5 flex items-center gap-1 text-[10px] ${isCurrentUser ? 'justify-end opacity-60' : 'text-bd-ink-muted'}`}>
                           <span>{formatTime(msg.timestamp)}</span>
                           {isCurrentUser && <span className="opacity-75">✓</span>}
                         </div>

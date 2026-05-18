@@ -2033,7 +2033,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 <div
                   className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+                    background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
                   }}
                 >
                   {/* Mobile: Compact 2-row layout */}
