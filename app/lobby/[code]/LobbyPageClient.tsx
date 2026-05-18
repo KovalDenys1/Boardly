@@ -96,6 +96,7 @@ import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobb
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
+import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 
 function CenteredLoadingFallback() {
   return (
@@ -1799,7 +1800,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`}>
+    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
      <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
 
       {!isInGame && !isGameStarted ? (

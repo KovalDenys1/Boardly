@@ -13,6 +13,7 @@ import {
     COLS,
 } from '@/lib/games/connect-four-game'
 import { clientLogger } from '@/lib/client-logger'
+import { getLobbyTheme } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
@@ -370,6 +371,7 @@ interface Lobby {
     name: string
     isActive?: boolean
     turnTimer?: number
+    theme?: string
 }
 
 interface ConnectFourLobbyPageProps {
@@ -1162,8 +1164,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         </div>
     )
 
+    const themeStyle = { background: getLobbyTheme(lobby.theme).bg, color: getLobbyTheme(lobby.theme).text }
+
     return (
-        <div className="ttt-screen">
+        <div className="ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">

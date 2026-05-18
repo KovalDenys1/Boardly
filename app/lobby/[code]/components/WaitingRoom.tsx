@@ -62,7 +62,7 @@ export default function WaitingRoom({
                 ? 'border-bd-mint/45 bg-bd-mint/15'
                 : isBot
                   ? 'border-bd-lav/35 bg-bd-lav/10'
-                  : 'border-bd-line bg-white'
+                  : 'border-bd-line bg-bd-card-warm'
             } ${canClickProfile ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-card-warm' : ''}`}
           >
             {avatarSrc ? (
@@ -118,7 +118,7 @@ export default function WaitingRoom({
           key={`empty-${i}`}
           className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-bd-line bg-white text-xs font-bold text-bd-ink-muted">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-bd-line bg-bd-bg2 text-xs font-bold text-bd-ink-muted">
             {playerCount + i + 1}
           </div>
           <span className="text-sm italic text-bd-ink-muted">
