@@ -21,16 +21,17 @@ describe('public game access helpers', () => {
   })
 
   it('marks coming-soon games as temporarily unavailable', () => {
-    expect(isTemporarilyUnavailableGameType('rock_paper_scissors')).toBe(true)
+    expect(isTemporarilyUnavailableGameType('rock_paper_scissors')).toBe(false)
     expect(isTemporarilyUnavailableGameType('alias')).toBe(false)
-    expect(isTemporarilyUnavailableGameType('liars_party')).toBe(true)
+    expect(isTemporarilyUnavailableGameType('liars_party')).toBe(false)
     expect(isTemporarilyUnavailableGameType('yahtzee')).toBe(false)
     expect(isTemporarilyUnavailableGameType(undefined)).toBe(false)
   })
 
-  it('getPublicRegisteredGameTypes excludes temporarily unavailable games', () => {
+  it('getPublicRegisteredGameTypes includes newly available games', () => {
     const publicTypes = getPublicRegisteredGameTypes()
-    expect(publicTypes).not.toContain('rock_paper_scissors')
+    expect(publicTypes).toContain('rock_paper_scissors')
+    expect(publicTypes).toContain('liars_party')
     expect(publicTypes).toContain('yahtzee')
     expect(publicTypes).toContain('guess_the_spy')
     expect(publicTypes).toContain('tic_tac_toe')

@@ -43,6 +43,11 @@ const BOT_NAMES_BY_GAME: Record<
     medium: 'Word Tactician',
     hard: 'Word Oracle',
   },
+  liars_party: {
+    easy: 'Honest Rookie',
+    medium: 'Bluff Tactician',
+    hard: 'Deception Master',
+  },
 }
 
 const FALLBACK_NAMES: Record<BotDifficulty, string> = {

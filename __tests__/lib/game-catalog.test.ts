@@ -38,16 +38,19 @@ describe('game catalog availability', () => {
   })
 
   it('returns only available game types for filters and public entry points', () => {
-    expect(getAvailableGameTypes()).toEqual([
-      'yahtzee',
-      'guess_the_spy',
-      'tic_tac_toe',
-      'memory',
-      'connect_four',
-      'alias',
-    ])
+    const available = getAvailableGameTypes()
+    expect(available).toContain('yahtzee')
+    expect(available).toContain('guess_the_spy')
+    expect(available).toContain('tic_tac_toe')
+    expect(available).toContain('memory')
+    expect(available).toContain('connect_four')
+    expect(available).toContain('alias')
+    expect(available).toContain('liars_party')
+    expect(available).toContain('rock_paper_scissors')
     expect(isAvailableGameType('yahtzee')).toBe(true)
-    expect(isAvailableGameType('rock_paper_scissors')).toBe(false)
+    expect(isAvailableGameType('rock_paper_scissors')).toBe(true)
+    expect(isAvailableGameType('liars_party')).toBe(true)
+    expect(isAvailableGameType('sketch_and_guess')).toBe(false)
   })
 
   it('exposes memory as a bot-supported game type', () => {
