@@ -78,6 +78,10 @@ const ru = {
     copyInviteLinkPrivate: 'Скопировать ссылку (включая пароль)',
     inviteLinkCopied: 'Ссылка скопирована!',
     gameAbandoned: 'Игра завершена - недостаточно игроков',
+    gameInterrupted: {
+      returning: 'Возврат в лобби через {{seconds}}...',
+      returnNow: 'Вернуться в лобби',
+    },
     leave: 'Выйти',
     invite: {
       title: 'Пригласить друзей',

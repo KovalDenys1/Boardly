@@ -78,6 +78,10 @@ const en = {
     copyInviteLinkPrivate: 'Copy Invite Link (includes password)',
     inviteLinkCopied: 'Link Copied!',
     gameAbandoned: 'Game ended - not enough players remaining',
+    gameInterrupted: {
+      returning: 'Returning to lobby in {{seconds}}...',
+      returnNow: 'Return to lobby',
+    },
     leave: 'Leave',
     invite: {
       title: 'Invite Friends',

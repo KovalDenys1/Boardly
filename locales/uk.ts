@@ -87,6 +87,10 @@ const uk: Translation = {
     copyInviteLinkPrivate: 'Скопіювати посилання (з паролем)',
     inviteLinkCopied: 'Посилання скопійовано!',
     gameAbandoned: 'Гру завершено - недостатньо гравців',
+    gameInterrupted: {
+      returning: 'Повернення до лобі через {{seconds}}...',
+      returnNow: 'Повернутися до лобі',
+    },
     leave: 'Вийти',
     invite: {
       title: 'Запросити друзів',

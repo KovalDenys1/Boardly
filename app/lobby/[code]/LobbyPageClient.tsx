@@ -117,6 +117,7 @@ const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
 const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const MobileTabPanel = dynamic(() => import('./components/MobileTabPanel'))
+const GameInterruptedOverlay = dynamic(() => import('./components/GameInterruptedOverlay'))
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
 const WaitingRoomActions = dynamic(() => import('./components/WaitingRoomActions'))
@@ -237,6 +238,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   // Leave confirmation modal state
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
+
+  // Game interrupted overlay (player left → insufficient players, or game abandoned)
+  const [gameInterruptedInfo, setGameInterruptedInfo] = useState<{
+    playerName?: string
+    reason: 'player_left' | 'abandoned'
+  } | null>(null)
+
+  // Players who have left mid-game (still shown in UI but greyed out)
+  const [departedPlayerIds, setDepartedPlayerIds] = useState<Set<string>>(new Set())
 
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
@@ -802,9 +812,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       void loadLobbyRef.current()
     }
 
-    triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`, {
-      toastKey: 'lobby.gameAbandoned',
-    })
+    setGameInterruptedInfo({ reason: 'abandoned' })
   }, [triggerLifecycleRedirect])
 
   const minPlayersRequired = React.useMemo(() => {
@@ -827,9 +835,11 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
 
     const departedPlayerName = data.username || data.playerName
-    if (departedPlayerName) {
-      showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
-      playAmbientSound('playerLeave')
+    playAmbientSound('playerLeave')
+
+    // Track departed player for grey UI display
+    if (data.userId) {
+      setDepartedPlayerIds(prev => new Set([...prev, data.userId]))
     }
 
     // Host left during post-game — no reassignment, just notify and refresh
@@ -851,13 +861,14 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     }
 
     if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
-      triggerLifecycleRedirect('player-left:insufficient-players', {
-        toastKey: 'lobby.gameAbandoned',
-      })
+      setGameInterruptedInfo({ playerName: departedPlayerName, reason: 'player_left' })
       return
     }
 
-    // Refresh lobby data
+    // Game continues — show a toast and refresh
+    if (departedPlayerName) {
+      showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+    }
     if (loadLobbyRef.current) {
       void loadLobbyRef.current()
     }
@@ -2006,6 +2017,18 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             overscrollBehavior: 'none',
           }}
         >
+          {/* Game interrupted overlay */}
+          {gameInterruptedInfo && (
+            <GameInterruptedOverlay
+              playerName={gameInterruptedInfo.playerName}
+              reason={gameInterruptedInfo.reason}
+              onRedirect={() => {
+                setGameInterruptedInfo(null)
+                triggerLifecycleRedirect('game-interrupted-overlay')
+              }}
+            />
+          )}
+
           {/* Spectator banner */}
           {isSpectator && (
             <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
@@ -2261,6 +2284,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         }}
                         onProfileClick={setProfileUserId}
                         selectedPlayerId={selectedPlayerId || undefined}
+                        departedPlayerIds={departedPlayerIds}
                       />
                     </div>
 
@@ -2360,6 +2384,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         }}
                         onProfileClick={setProfileUserId}
                         selectedPlayerId={selectedPlayerId || undefined}
+                        departedPlayerIds={departedPlayerIds}
                       />
 
                       <div className="mt-4">
