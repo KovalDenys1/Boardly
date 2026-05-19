@@ -299,7 +299,7 @@ describe('POST /api/game/create', () => {
     expect(mockPrisma.lobbies.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'lobby-123' },
-        data: { isActive: false },
+        data: { isActive: true },
       })
     )
   })

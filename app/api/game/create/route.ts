@@ -432,10 +432,11 @@ export async function POST(request: NextRequest) {
       playerCount: game.players.length
     })
 
-    // Update lobby status
+    // Keep lobby active so it stays discoverable in the list while the game is playing.
+    // isActive is set to false by the leave route when all players leave or the game ends.
     await prisma.lobbies.update({
       where: { id: lobbyId },
-      data: { isActive: false }, // Mark lobby as inactive when game starts
+      data: { isActive: true },
     })
 
     void broadcastToLobby(lobby.code, 'game-started', {
