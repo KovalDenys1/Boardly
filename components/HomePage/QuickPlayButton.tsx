@@ -6,10 +6,11 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { GAME_SVG_PATHS } from '@/components/GameIcon'
 
 const BOT_SUPPORTED_GAMES = [
-  { type: 'yahtzee', emoji: '🎲', label: 'Yahtzee', players: '1–4' },
-  { type: 'tic_tac_toe', emoji: '❌', label: 'Tic Tac Toe', players: '2' },
+  { type: 'yahtzee', svgId: 'yahtzee', label: 'Yahtzee', players: '1–4' },
+  { type: 'tic_tac_toe', svgId: 'tic-tac-toe', label: 'Tic Tac Toe', players: '2' },
 ] as const
 
 type GameType = (typeof BOT_SUPPORTED_GAMES)[number]['type']
@@ -193,11 +194,17 @@ export default function QuickPlayButton({ className }: QuickPlayButtonProps) {
                           background: 'var(--bd-sun)',
                           border: '2px solid var(--bd-ink)',
                           borderRadius: 10,
-                          fontSize: 22,
                           flexShrink: 0,
                         }}
                       >
-                        {game.emoji}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 512 512"
+                          width={22}
+                          height={22}
+                          style={{ color: 'var(--bd-ink)' }}
+                          dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
+                        />
                       </span>
                       <div style={{ flex: 1 }}>
                         <p

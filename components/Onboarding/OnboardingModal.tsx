@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/OnboardingContext'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -8,6 +8,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-game-access'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
 
 export function OnboardingModal() {
   const router = useRouter()
@@ -20,6 +21,13 @@ export function OnboardingModal() {
     () => getPublicRegisteredGameTypes().map((type) => ({ type, meta: getGameMetadata(type)! })),
     []
   )
+
+  useEffect(() => {
+    if (!showModal) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [showModal])
 
   if (!showModal) return null
 
@@ -54,18 +62,8 @@ export function OnboardingModal() {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        background: 'rgba(31,27,22,0.7)',
-        backdropFilter: 'blur(4px)',
-        padding: '0 0 0 0',
-      }}
-      className="sm:items-center sm:p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4"
+      style={{ background: 'rgba(31,27,22,0.7)', backdropFilter: 'blur(4px)' }}
     >
       <div
         style={{
@@ -95,7 +93,33 @@ export function OnboardingModal() {
         />
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
+          {/* X close button */}
+          <button
+            onClick={skipOnboarding}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 32,
+              height: 32,
+              display: 'grid',
+              placeItems: 'center',
+              background: 'var(--bd-bg2)',
+              border: '2px solid var(--bd-ink)',
+              borderRadius: 8,
+              boxShadow: '2px 2px 0 var(--bd-ink)',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--bd-ink)',
+              lineHeight: 1,
+            }}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+
           <div
             style={{
               width: 56,
@@ -106,11 +130,10 @@ export function OnboardingModal() {
               border: '2px solid var(--bd-ink)',
               borderRadius: 14,
               boxShadow: '3px 3px 0 var(--bd-ink)',
-              fontSize: 28,
               margin: '0 auto 14px',
             }}
           >
-            🎲
+            <GameIcon gameId="yahtzee" accentColor="var(--bd-ink)" size={28} />
           </div>
           <h2
             style={{
@@ -150,16 +173,14 @@ export function OnboardingModal() {
                 background: selectedGame === type ? 'var(--bd-sun)' : 'var(--bd-bg)',
                 border: `2px solid var(--bd-ink)`,
                 borderRadius: 14,
-                boxShadow: selectedGame === type
-                  ? '3px 3px 0 var(--bd-ink)'
-                  : '3px 3px 0 var(--bd-ink)',
+                boxShadow: '3px 3px 0 var(--bd-ink)',
                 cursor: 'pointer',
                 textAlign: 'center',
                 transform: selectedGame === type ? 'translate(-1px, -1px)' : 'translate(0,0)',
                 transition: 'transform 0.1s, background 0.1s',
               }}
             >
-              <span style={{ fontSize: 30, lineHeight: 1 }}>{meta.icon}</span>
+              <GameIcon gameId={meta.svgId} accentColor={selectedGame === type ? 'var(--bd-ink)' : meta.accentColor} size={30} />
               <span
                 style={{
                   fontFamily: 'var(--bd-font-display)',
