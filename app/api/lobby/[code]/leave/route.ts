@@ -7,6 +7,7 @@ import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { restoreGameEngine } from '@/lib/game-registry'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -412,6 +413,25 @@ export async function POST(
         }
       } catch (e) {
         log.warn('Failed to advance turn after player left mid-game', { error: e })
+      }
+    }
+
+    // Engine-managed games: delegate player-leave state mutation to the engine
+    const ENGINE_LEAVE_GAMES = new Set(['alias', 'liars_party'])
+    if (ENGINE_LEAVE_GAMES.has(activeGame.gameType)) {
+      try {
+        const engine = restoreGameEngine(activeGame.gameType, activeGame.id, activeGame.state)
+        const changed = engine.handlePlayerLeave(userId)
+        if (changed) {
+          const newState = engine.getState()
+          await prisma.games.update({
+            where: { id: activeGame.id },
+            data: { state: toPersistedGameStateInput(newState) },
+          })
+          await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: newState })
+        }
+      } catch (e) {
+        log.warn('Failed to apply engine handlePlayerLeave', { error: e, gameType: activeGame.gameType })
       }
     }
 

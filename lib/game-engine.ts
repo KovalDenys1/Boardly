@@ -198,7 +198,7 @@ export abstract class GameEngine {
     } else {
       // Move to next player (only if this type of move should advance turn)
       if (this.shouldAdvanceTurn(move)) {
-        this.nextPlayer();
+        this.advanceTurnIndex();
       }
     }
 
@@ -217,9 +217,18 @@ export abstract class GameEngine {
     return false;
   }
 
-  private nextPlayer(): void {
+  protected advanceTurnIndex(): void {
     this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % this.state.players.length;
-    this.state.lastMoveAt = Date.now(); // Track when turn changed
+    this.state.lastMoveAt = Date.now();
+  }
+
+  handlePlayerLeave(playerId: string): boolean {
+    const wasCurrentPlayer = this.state.players[this.state.currentPlayerIndex]?.id === playerId
+    if (wasCurrentPlayer) {
+      this.advanceTurnIndex()
+      return true
+    }
+    return false
   }
 
   getState(): RestorableGameState {

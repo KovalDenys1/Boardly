@@ -201,6 +201,43 @@ export class AliasGame extends GameEngine {
     }
   }
 
+  handlePlayerLeave(playerId: string): boolean {
+    const data = this.state.data as AliasGameData
+    let changed = false
+
+    for (const team of data.teams) {
+      const idx = team.playerIds.indexOf(playerId)
+      if (idx === -1) continue
+
+      const isCurrentTeam = data.teams[data.currentTeamIndex]?.id === team.id
+      const isCurrentDescriber = idx === team.describerIndex
+
+      // End the active turn if the current describer is leaving
+      if (isCurrentTeam && isCurrentDescriber && data.phase === 'turn_active') {
+        this._endTurn()
+        // _endTurn() advanced describerIndex; re-clamp after splice below
+      }
+
+      team.playerIds.splice(idx, 1)
+
+      if (team.playerIds.length > 0) {
+        if (!isCurrentDescriber && idx < team.describerIndex) {
+          team.describerIndex--
+        } else if (isCurrentDescriber) {
+          team.describerIndex = team.describerIndex % team.playerIds.length
+        }
+      } else {
+        team.describerIndex = 0
+      }
+
+      this.state.updatedAt = new Date()
+      changed = true
+      break
+    }
+
+    return changed
+  }
+
   applyTimeoutFallback(turnTimerSeconds: number, nowMs: number = Date.now()): { changed: boolean } {
     const data = this.state.data as AliasGameData
     if (data.phase !== 'turn_active' || data.turnStartedAt === null) {
