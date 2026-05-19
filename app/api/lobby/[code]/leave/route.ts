@@ -6,6 +6,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -350,6 +351,37 @@ export async function POST(
     }
 
     // If multiple players remain (human or bot), continue the game
+    // If the departed player was the current player, advance the turn immediately
+    let turnAdvanced = false
+    try {
+      const parsedState = parseAndValidateGameState(activeGame.state)
+      const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
+      if (currentPlayerId === userId) {
+        const numPlayers = parsedState.players.length
+        parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % numPlayers
+
+        // Reset Yahtzee-specific per-turn state when present
+        const data = parsedState.data as Record<string, unknown> | null | undefined
+        if (data && typeof data === 'object') {
+          if ('rollsLeft' in data) data.rollsLeft = 3
+          if ('held' in data) data.held = [false, false, false, false, false]
+          if ('lastRoll' in data) delete data.lastRoll
+        }
+
+        await prisma.games.update({
+          where: { id: activeGame.id },
+          data: { state: toPersistedGameStateInput(parsedState) },
+        })
+        turnAdvanced = true
+        await emitLobbyEvent(log, code, 'game-update', {
+          action: 'state-change',
+          payload: parsedState,
+        })
+      }
+    } catch (e) {
+      log.warn('Failed to advance turn after player left mid-game', { error: e })
+    }
+
     await emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
     if (reassignedCreator) {
       await emitLobbyEvent(log, code, 'lobby-update', {
@@ -361,6 +393,8 @@ export async function POST(
         },
       })
     }
+
+    log.info('Player left, game continues', { code, userId, remainingPlayers, turnAdvanced })
 
     return NextResponse.json({
       message: 'You left the lobby',

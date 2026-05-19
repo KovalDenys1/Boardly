@@ -34,9 +34,10 @@ interface PlayerListProps {
   onPlayerClick?: (userId: string) => void
   onProfileClick?: (userId: string) => void
   selectedPlayerId?: string
+  departedPlayerIds?: Set<string>
 }
 
-const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, onProfileClick, selectedPlayerId }: PlayerListProps) {
+const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, onProfileClick, selectedPlayerId, departedPlayerIds }: PlayerListProps) {
   const { t } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const difficultyLabelMap: Record<BotDifficulty, string> = {
@@ -140,12 +141,13 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
         <div className="space-y-1.5 overflow-visible md:overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
           {sortedPlayers.map((player, index) => {
             // Use player.position (actual game index) instead of sorted index
-            const isCurrentTurn = player.position === currentTurn
+            const isDeparted = departedPlayerIds?.has(player.userId) ?? false
+            const isCurrentTurn = player.position === currentTurn && !isDeparted
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
             const isPremium = !isBot && !!player.user.isPremium
-            const isClickable = !!onPlayerClick
+            const isClickable = !!onPlayerClick && !isDeparted
             const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
@@ -169,22 +171,24 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 tabIndex={isClickable ? 0 : undefined}
                 className={`
                 w-full text-left p-2.5 rounded-2xl transition-all duration-200 shadow-sm snap-start border
-                ${isCurrentTurn
-                    ? 'shadow-md'
-                    : ''
-                  }
-                ${isCurrentUser ? '!border-green-500' : ''}
-                ${isSelected ? '!border-[#FFC44D]' : ''}
+                ${isDeparted ? 'opacity-45' : ''}
+                ${!isDeparted && isCurrentTurn ? 'shadow-md' : ''}
+                ${!isDeparted && isCurrentUser ? '!border-green-500' : ''}
+                ${!isDeparted && isSelected ? '!border-[#FFC44D]' : ''}
                 ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC44D]' : ''}
               `}
                 style={{
-                  background: isBot
+                  background: isDeparted
+                    ? 'var(--bd-bg2)'
+                    : isBot
                     ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, var(--bd-bg) 100%)'
                     : isCurrentTurn
                     ? 'linear-gradient(90deg, rgba(107,193,240,0.16) 0%, rgba(79,201,166,0.12) 100%)'
                     : 'var(--bd-bg)',
                   borderColor:
-                    isCurrentTurn
+                    isDeparted
+                      ? 'var(--bd-line)'
+                      : isCurrentTurn
                       ? 'rgba(107,193,240,0.28)'
                       : 'var(--bd-line)',
                 }}
@@ -209,7 +213,10 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                         <span className={`font-semibold truncate ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`} style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {playerName}
                         </span>
-                        {isPremium && (
+                        {isDeparted && (
+                          <span className="bd-chip shrink-0 text-bd-ink-muted" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>left</span>
+                        )}
+                        {!isDeparted && isPremium && (
                           <span className="shrink-0" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }} title="Premium">👑</span>
                         )}
                         {isBot && (
