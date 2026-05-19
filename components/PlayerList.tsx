@@ -148,7 +148,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isBot = !!player.user.bot
             const isPremium = !isBot && !!player.user.isPremium
             const isClickable = !!onPlayerClick && !isDeparted
-            const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+            const playerName = player.user.username || player.user.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
             const handlePlayerActivate = () => {
@@ -301,7 +301,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
             const isPremium = !isBot && !!player.user.isPremium
-            const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+            const playerName = player.user.username || player.user.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
 

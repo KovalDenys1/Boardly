@@ -69,7 +69,7 @@ interface MemoryGameBoardProps {
 const MISMATCH_RESOLVE_DELAY_MS = 1200
 
 function getPlayerDisplayName(player: LobbyPlayer): string {
-  return player.user?.username || player.user?.name || player.name || player.user?.email || 'Player'
+  return player.user?.username || player.user?.name || player.name || 'Player'
 }
 
 function getDifficultyLabel(

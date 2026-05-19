@@ -409,7 +409,7 @@ export default function SpectatorLobbyPage() {
                       {(player.user?.username || 'P').charAt(0).toUpperCase()}
                     </span>
                     <span className="truncate text-sm font-semibold text-bd-ink">
-                      {player.user?.username || player.user?.email || 'Player'}
+                      {player.user?.username || player.name || 'Player'}
                     </span>
                   </div>
                 ))}

@@ -28,7 +28,7 @@ export default function YahtzeeView({ state, players }: SpectatorViewProps) {
         <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
           Current Turn:{' '}
           {currentPlayerIndex !== null && players[currentPlayerIndex]
-            ? players[currentPlayerIndex].user?.username || players[currentPlayerIndex].user?.email || `Player ${currentPlayerIndex + 1}`
+            ? players[currentPlayerIndex].user?.username || players[currentPlayerIndex].name || `Player ${currentPlayerIndex + 1}`
             : '-'}
         </div>
       </div>
@@ -45,7 +45,7 @@ export default function YahtzeeView({ state, players }: SpectatorViewProps) {
             return (
               <div key={player.id} className="flex items-center justify-between rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm">
                 <span>
-                  {player.user?.username || player.user?.email || `Player ${index + 1}`}
+                  {player.user?.username || player.name || `Player ${index + 1}`}
                   {currentPlayerIndex === index ? ' • turn' : ''}
                 </span>
                 <span className="text-bd-ink-muted">

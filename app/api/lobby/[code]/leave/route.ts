@@ -351,6 +351,31 @@ export async function POST(
       })
     }
 
+    // End game if 1 human remains with no bots in a formerly multi-human game.
+    // This covers games (e.g. Yahtzee, minPlayers:1) that satisfy minPlayersRequired=1
+    // but can't continue meaningfully as a multiplayer session.
+    const remainingBots = remainingPlayers - remainingHumanPlayers
+    if (remainingHumanPlayers === 1 && remainingBots === 0 && activeGame.players.length > 1) {
+      const abandonNow = new Date()
+      const abandonDuration = activeGame.startedAt instanceof Date
+        ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
+        : null
+      await prisma.games.update({
+        where: { id: activeGame.id },
+        data: {
+          status: 'abandoned',
+          abandonedAt: abandonNow,
+          endedAt: abandonNow,
+          ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
+          terminalMetadata: { outcome: 'abandoned', reason: 'insufficient_players' },
+        }
+      })
+      await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
+      await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      notifyLobbyListUpdate()
+      return NextResponse.json({ message: 'You left the lobby', gameEnded: true, gameAbandoned: true, lobbyDeactivated: true })
+    }
+
     // Spy: if the spy left the game cannot meaningfully continue even with enough players
     if (activeGame.gameType === 'guess_the_spy') {
       try {

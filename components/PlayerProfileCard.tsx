@@ -12,6 +12,7 @@ interface PlayerCardData {
   avatarUrl?: string | null
   publicProfileId: string | null
   isGuest: boolean
+  isPremium: boolean
   gamesPlayed: number
   wins: number
   winRate: number
@@ -123,9 +124,12 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-base truncate" style={{ color: 'var(--bd-ink)' }}>
+                  <span className={`font-bold text-base truncate ${data.isPremium ? 'text-amber-500' : ''}`} style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}>
                     {data.username ?? 'Unknown'}
                   </span>
+                  {data.isPremium && (
+                    <span className="text-base leading-none" title="Premium">👑</span>
+                  )}
                   {data.isGuest && (
                     <span
                       className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"

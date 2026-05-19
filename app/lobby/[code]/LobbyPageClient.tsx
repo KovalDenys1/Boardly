@@ -461,7 +461,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const getCurrentUserName = useCallback(() => {
     if (isGuest) return guestName
-    return (session?.user as { username?: string })?.username || session?.user?.email || session?.user?.name || 'You'
+    return (session?.user as { username?: string })?.username || session?.user?.name || 'You'
   }, [isGuest, guestName, session?.user])
 
   const isMyTurn = useCallback(() => {
@@ -680,14 +680,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
-    if (chatMinimized) {
+    const currentUserId = isGuest ? guestId : session?.user?.id
+    const isOwnMessage = message.userId === currentUserId
+    const isChatVisible = !chatMinimized || mobileActiveTab === 'chat'
+    if (!isChatVisible && !isOwnMessage) {
       setUnreadMessageCount(prev => prev + 1)
     }
-    const currentUserId = isGuest ? guestId : session?.user?.id
-    if (message.userId !== currentUserId) {
+    if (!isOwnMessage) {
       playAmbientSound('message')
     }
-  }, [chatMinimized, isGuest, guestId, session?.user?.id, playAmbientSound])
+  }, [chatMinimized, mobileActiveTab, isGuest, guestId, session?.user?.id, playAmbientSound])
 
   const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
 
@@ -935,7 +937,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })
 
   const sendChatMessage = useCallback((message: string) => {
-    void fetch(`/api/lobby/${code}/chat`, {
+    void fetchWithGuest(`/api/lobby/${code}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
@@ -2014,6 +2016,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   unreadCount={0}
                   someoneTyping={someoneTyping}
                   fullScreen={true}
+                  onProfileClick={setProfileUserId}
                 />
               </div>
             )}
@@ -2259,7 +2262,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-6 min-w-0 h-full overflow-hidden">
+                  <div className="lg:col-span-6 min-w-0 h-full">
                     {(() => {
                       // Show selected player's scorecard or current player's scorecard
                       const currentUserId = getCurrentUserId()
@@ -2303,9 +2306,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-3 min-w-0 h-full overflow-hidden flex flex-col gap-3">
+                  <div className="lg:col-span-3 min-w-0 h-full flex flex-col gap-3">
                     {/* Players List - 40% of space */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
@@ -2321,7 +2324,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                     </div>
 
                     {/* Roll History - 60% of space. Always rendered to prevent layout jump on first roll. */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0">
                       <RollHistory entries={rollHistory} />
                     </div>
                   </div>
@@ -2446,6 +2449,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         unreadCount={0}
                         someoneTyping={someoneTyping}
                         fullScreen={true}
+                        onProfileClick={setProfileUserId}
                       />
                     </div>
                   </MobileTabPanel>
@@ -2472,6 +2476,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   }}
                   unreadCount={unreadMessageCount}
                   someoneTyping={someoneTyping}
+                  onProfileClick={setProfileUserId}
                 />
               </div>
               )}
@@ -2568,6 +2573,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             }}
             unreadCount={unreadMessageCount}
             someoneTyping={someoneTyping}
+            onProfileClick={setProfileUserId}
           />
         </div>
       )}

@@ -43,7 +43,7 @@ export default function WaitingRoom({
       {/* Players */}
       {game?.players?.map((p: GamePlayer, index: number) => {
         const isBot = !!p.user?.bot
-        const playerName = p.user?.username || p.user?.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+        const playerName = p.user?.username || p.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
         const isCurrentUser = p.userId === getCurrentUserId()
         const isPremium = !isBot && !!(p.user as { isPremium?: boolean } | undefined)?.isPremium
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined

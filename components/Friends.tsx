@@ -756,8 +756,8 @@ export default function Friends() {
                   const bPresence = resolvePresence(b)
                   const priorityDiff = presencePriority[aPresence] - presencePriority[bPresence]
                   if (priorityDiff !== 0) return priorityDiff
-                  const aName = a.username || a.email
-                  const bName = b.username || b.email
+                  const aName = a.username ?? ''
+                  const bName = b.username ?? ''
                   return aName.localeCompare(bName)
                 })
                 .map((friend) => {
@@ -808,7 +808,7 @@ export default function Friends() {
                         <div className="flex min-w-0 flex-1 items-start gap-4">
                           <div className="relative shrink-0">
                             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[1.1rem] border-2 border-bd-ink bg-bd-lav text-white shadow-[2px_2px_0_var(--bd-ink)]">
-                              {renderAvatar(friend.username || friend.email, friend.avatar)}
+                              {renderAvatar(friend.username || 'Unknown', friend.avatar)}
                             </div>
                             {isOnline && (
                               <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-bd-mint dark:border-slate-900" />
@@ -818,7 +818,7 @@ export default function Friends() {
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="flex items-center gap-1.5 truncate text-lg font-bold text-bd-ink dark:text-white">
-                                {friend.username || friend.email}
+                                {friend.username || 'Unknown'}
                                 {friend.isPremium && <span className="shrink-0 text-sm" title="Premium">👑</span>}
                               </h4>
                               {presenceBadge && (

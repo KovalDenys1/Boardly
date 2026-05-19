@@ -40,7 +40,7 @@ export default function WaitingRoomActions({
   const canConfigureBots = supportsBots && canAddMorePlayers
   const canStartWithAutoBot = supportsBots && !hasBot && playerCount > 0 && playerCount < minPlayers && canAddMorePlayers
   const canStartImmediately = playerCount >= minPlayers || canStartWithAutoBot
-  const creatorName = lobby?.creator?.username || lobby?.creator?.email || t('lobby.ownerFallback')
+  const creatorName = lobby?.creator?.username || t('lobby.ownerFallback')
   const difficultyLabelMap: Record<BotDifficulty, string> = {
     easy: t('game.ui.botDifficultyEasy'),
     medium: t('game.ui.botDifficultyMedium'),

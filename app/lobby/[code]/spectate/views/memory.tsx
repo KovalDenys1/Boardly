@@ -16,7 +16,7 @@ export default function MemoryView({ state, players }: SpectatorViewProps) {
   const currentPlayerIndex = typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : 0
   const isFinished = state.status === 'finished' || winnerId !== null
 
-  const playerName = (p: (typeof players)[number]) => p.user?.username ?? p.user?.email ?? p.name
+  const playerName = (p: (typeof players)[number]) => p.user?.username ?? p.name
 
   const winner = winnerId ? players.find((p) => p.userId === winnerId || p.id === winnerId) : null
   const statusText = isFinished

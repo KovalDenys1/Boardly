@@ -279,30 +279,6 @@ export default function LobbyInfo({
           </div>
         </div>
 
-        {!isPlaying && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted mr-1">Share:</span>
-            <button
-              onClick={handleShareTelegram}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-bd-bg2"
-            >
-              📱 Telegram
-            </button>
-            <button
-              onClick={handleShareWhatsApp}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-bd-bg2"
-            >
-              💬 WhatsApp
-            </button>
-            <button
-              onClick={handleShareDiscord}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-1.5 text-xs font-semibold text-bd-ink transition-colors hover:border-bd-ink hover:bg-bd-bg2"
-              title="Copy link for Discord"
-            >
-              🎮 Discord
-            </button>
-          </div>
-        )}
 
         {canEditLobbySettings && activeSettingEditor && (
           <div className="mt-3 rounded-xl border border-bd-mint/45 bg-bd-mint/10 px-3 py-3">

@@ -28,6 +28,7 @@ interface ChatProps {
   unreadCount?: number
   someoneTyping?: boolean
   fullScreen?: boolean
+  onProfileClick?: (userId: string) => void
 }
 
 export default function Chat({
@@ -41,6 +42,7 @@ export default function Chat({
   unreadCount = 0,
   someoneTyping = false,
   fullScreen = false,
+  onProfileClick,
 }: ChatProps) {
   const { t } = useTranslation()
   const [newMessage, setNewMessage] = useState('')
@@ -247,7 +249,10 @@ export default function Chat({
                   className={`flex gap-2 ${isCurrentUser ? 'flex-row-reverse' : 'flex-row'} animate-[slideIn_0.2s_ease-out]`}
                 >
                   {msg.type !== 'system' && (
-                    <div className={`flex-shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'}`}>
+                    <div
+                      className={`flex-shrink-0 ${showAvatar ? 'opacity-100' : 'opacity-0'} ${!isCurrentUser && onProfileClick && msg.userId !== 'system' ? 'cursor-pointer' : ''}`}
+                      onClick={!isCurrentUser && onProfileClick && msg.userId !== 'system' ? () => onProfileClick(msg.userId) : undefined}
+                    >
                       {avatarUrl ? (
                         <img
                           src={avatarUrl}
@@ -264,7 +269,10 @@ export default function Chat({
 
                   <div className={`flex flex-col ${msg.type === 'system' ? 'mx-auto items-center' : isCurrentUser ? 'items-end' : 'items-start'}`}>
                     {msg.type !== 'system' && showAvatar && !isCurrentUser && (
-                      <div className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-amber-500' : 'text-bd-ink-soft'}`}>
+                      <div
+                        className={`mb-1 px-1 text-xs font-semibold ${isPremium ? 'text-amber-500' : 'text-bd-ink-soft'} ${onProfileClick && msg.userId !== 'system' ? 'cursor-pointer hover:underline' : ''}`}
+                        onClick={onProfileClick && msg.userId !== 'system' ? () => onProfileClick(msg.userId) : undefined}
+                      >
                         {isPremium && <span className="mr-0.5">👑</span>}
                         {msg.username}
                       </div>
