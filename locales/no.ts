@@ -1010,6 +1010,7 @@ const no = {
       backToLobby: '← Tilbake til lobby',
       accept: 'Godta',
       decline: 'Avslå',
+      returnToLobby: 'Tilbake til venterom',
     }
   },
   yahtzee: {

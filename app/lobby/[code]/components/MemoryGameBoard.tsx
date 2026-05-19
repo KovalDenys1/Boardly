@@ -58,6 +58,7 @@ interface MemoryGameBoardProps {
   turnTimerLimit?: number
   canStartGame?: boolean
   onPlayAgain?: () => void
+  onReturnToWaiting?: () => void
   onLeave?: () => void
   chatMessages?: ChatMessagePayload[]
   onSendChatMessage?: (message: string) => void
@@ -89,6 +90,7 @@ export default function MemoryGameBoard({
   turnTimerLimit: rawTurnTimerLimit,
   canStartGame,
   onPlayAgain,
+  onReturnToWaiting,
   onLeave,
   chatMessages = [],
   onSendChatMessage,
@@ -410,12 +412,21 @@ export default function MemoryGameBoard({
             </div>
           )}
 
-          {parsedState.status === 'finished' && onPlayAgain && (
-            <div className="mt-3">
+          {parsedState.status === 'finished' && (
+            <div className="mt-3 flex flex-col gap-2">
               {canStartGame ? (
-                <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
-                  {t('lobby.game.playAgain')}
-                </button>
+                <>
+                  {onPlayAgain && (
+                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
+                      {t('lobby.game.playAgain')}
+                    </button>
+                  )}
+                  {onReturnToWaiting && (
+                    <button onClick={onReturnToWaiting} className="bd-btn bd-btn-soft w-full justify-center">
+                      {t('game.ui.returnToLobby')}
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">{t('game.ui.waitingForHost')}</p>
               )}

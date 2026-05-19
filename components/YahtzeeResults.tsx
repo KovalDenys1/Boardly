@@ -16,6 +16,7 @@ interface YahtzeeResultsProps {
   onRequestRematch?: () => void
   onBackToLobby: () => void
   onReturnToLobbyRoom?: () => void
+  onReturnToWaiting?: () => void
   autoReturnAt?: number | null
   isGuest?: boolean
   registerUrl?: string
@@ -51,6 +52,7 @@ export default function YahtzeeResults({
   onRequestRematch,
   onBackToLobby,
   onReturnToLobbyRoom,
+  onReturnToWaiting,
   autoReturnAt = null,
   isGuest = false,
   registerUrl = '/auth/register',
@@ -342,6 +344,14 @@ export default function YahtzeeResults({
                   <span className="text-lg">🔄</span>
                   <span>{t('yahtzee.results.playAgain')}</span>
                 </button>
+                {onReturnToWaiting && canStartGame && (
+                  <button
+                    onClick={onReturnToWaiting}
+                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2"
+                  >
+                    <span>{t('game.ui.returnToLobby')}</span>
+                  </button>
+                )}
                 {onRequestRematch && canRequestRematch && (
                   <button
                     onClick={onRequestRematch}

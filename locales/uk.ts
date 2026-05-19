@@ -1012,6 +1012,7 @@ const uk: Translation = {
       backToLobby: '← Назад до лобі',
       accept: 'Прийняти',
       decline: 'Відхилити',
+      returnToLobby: 'Повернутися до лобі',
     },
   },
   yahtzee: {

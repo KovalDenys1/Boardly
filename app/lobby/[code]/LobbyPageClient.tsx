@@ -898,6 +898,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return players.some((player: GamePlayer) => player?.userId === currentUserIdForMembership)
   }, [lobby, game, currentUserIdForMembership])
 
+  const handleGameReset = useCallback(() => {
+    if (loadLobbyRef.current) void loadLobbyRef.current()
+  }, [])
+
   // Realtime connection hook - must be before useLobbyActions
   const { isConnected, isReconnecting, reconnectAttempt } = useRealtimeConnection({
     code,
@@ -917,6 +921,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         await loadLobbyRef.current()
       }
     },
+    onGameReset: handleGameReset,
   })
 
   const sendChatMessage = useCallback((message: string) => {
@@ -925,6 +930,21 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     })
+  }, [code])
+
+  const [isReturningToWaiting, setIsReturningToWaiting] = React.useState(false)
+
+  const handleReturnToWaiting = useCallback(async () => {
+    setIsReturningToWaiting(true)
+    try {
+      const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to return to waiting room')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+    } catch (error) {
+      console.error('Failed to return to waiting room:', error)
+    } finally {
+      setIsReturningToWaiting(false)
+    }
   }, [code])
 
   // Calculate once to avoid calling functions repeatedly
@@ -1903,6 +1923,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onRequestRematch={handleRequestRematch}
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
             onReturnToLobbyRoom={() => setYahtzeeResultsHold(null)}
+            onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
             autoReturnAt={yahtzeeResultsHold?.releaseAt ?? null}
             isGuest={isGuest}
             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
@@ -2060,6 +2081,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+              onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isGuest={isGuest}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
@@ -2494,6 +2516,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               turnTimerLimit={turnTimerLimit}
               canStartGame={!!canStartGame}
               onPlayAgain={handleStartGame}
+              onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
               chatMessages={hasMultipleHumans ? chatMessages : undefined}
               onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}

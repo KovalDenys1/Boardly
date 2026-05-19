@@ -482,6 +482,10 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     }])
   }, [getCurrentUserId])
 
+  const handleGameReset = useCallback(() => {
+    router.push(`/lobby/${code}`)
+  }, [code, router])
+
   const { emitWhenConnected } = useRealtimeConnection({
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
@@ -491,6 +495,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     onLobbyUpdate: () => { void loadLobby() },
     onPlayerJoined: () => { void loadLobby() },
     onChatMessage: handleChatMessage,
+    onGameReset: handleGameReset,
   })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
@@ -560,6 +565,21 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
       setIsStarting(false)
     }
   }, [lobby?.id, isStarting])
+
+  const handleReturnToWaiting = useCallback(async () => {
+    const userId = getCurrentUserId()
+    if (!userId || !lobby || lobby.creatorId !== userId) return
+    setIsStarting(true)
+    try {
+      const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to return to waiting room')
+      router.push(`/lobby/${code}`)
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.gameStartFailed')
+    } finally {
+      setIsStarting(false)
+    }
+  }, [code, getCurrentUserId, lobby, router])
 
   // ─── Live timer ────────────────────────────────────────────────────────────
 
@@ -1448,11 +1468,24 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {isHost && (
-              <button style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }} onClick={handleStartGame} disabled={isStarting}>
-                {isStarting ? 'Starting…' : t('alias.playAgain')}
-                <span aria-hidden style={{ fontSize: 18 }}>↻</span>
-              </button>
+            {isHost ? (
+              <>
+                <button style={{ ...primaryBtn, fontSize: 18, padding: '16px 28px' }} onClick={handleStartGame} disabled={isStarting}>
+                  {isStarting ? 'Starting…' : t('alias.playAgain')}
+                  <span aria-hidden style={{ fontSize: 18 }}>↻</span>
+                </button>
+                <button
+                  style={{ padding: '12px 22px', borderRadius: 14, fontWeight: 600, fontSize: 15, background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(0,0,0,0.18)', color: 'var(--bd-ink)', cursor: isStarting ? 'not-allowed' : 'pointer', opacity: isStarting ? 0.65 : 1, fontFamily: 'inherit' }}
+                  onClick={handleReturnToWaiting}
+                  disabled={isStarting}
+                >
+                  {t('game.ui.returnToLobby')}
+                </button>
+              </>
+            ) : (
+              <div style={{ padding: '10px 18px', borderRadius: 14, fontWeight: 600, fontSize: 14, background: 'rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--bd-ink-soft)', fontFamily: 'inherit', textAlign: 'center' }}>
+                {t('game.ui.waitingForHost')}
+              </div>
             )}
             <button style={linkBtn} onClick={() => router.push('/games')}>Leave game</button>
           </div>

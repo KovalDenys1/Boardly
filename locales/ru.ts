@@ -1010,6 +1010,7 @@ const ru = {
       backToLobby: '← Назад в лобби',
       accept: 'Принять',
       decline: 'Отклонить',
+      returnToLobby: 'Вернуться в лобби',
     }
   },
   yahtzee: {

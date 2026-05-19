@@ -317,9 +317,9 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     )
 }
 
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, isLoading, isHost, t }: {
+function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, isLoading, isHost, t }: {
     winnerName: string | null; isDraw: boolean; isMyWin: boolean
-    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
+    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
@@ -335,18 +335,31 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, is
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
                 {isHost ? (
-                    <button
-                        onClick={onPlayAgain}
-                        disabled={isLoading}
-                        style={{
-                            padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
-                            background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
-                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
-                            fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
-                        }}
-                    >
-                        {t('games.connect_four.game.playAgain')}
-                    </button>
+                    <>
+                        <button
+                            onClick={onPlayAgain}
+                            disabled={isLoading}
+                            style={{
+                                padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
+                                background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
+                                cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
+                                fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
+                            }}
+                        >
+                            {t('games.connect_four.game.playAgain')}
+                        </button>
+                        <button
+                            onClick={onReturnToLobby}
+                            disabled={isLoading}
+                            style={{
+                                padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                                background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)',
+                                cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1, fontFamily: 'inherit',
+                            }}
+                        >
+                            {t('game.ui.returnToLobby')}
+                        </button>
+                    </>
                 ) : (
                     <div style={{
                         padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
@@ -624,6 +637,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
     }, [])
 
+    const handleGameReset = useCallback(() => {
+        router.push(`/lobby/${code}`)
+    }, [code, router])
+
     const { emitWhenConnected } = useRealtimeConnection({
         code,
         shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
@@ -631,6 +648,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
         onChatMessage: handleChatMessage,
+        onGameReset: handleGameReset,
     })
 
     const isMyTurn = useCallback(() => {
@@ -840,6 +858,22 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
             setIsRematchSubmitting(false)
         }
     }, [applyAuthoritativeState, code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router])
+
+    const handleReturnToWaiting = useCallback(async () => {
+        const userId = getCurrentUserId()
+        if (!userId || !lobby || lobby.creatorId !== userId) return
+        setIsRematchSubmitting(true)
+        try {
+            const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+            if (!res.ok) throw new Error('Failed to return to waiting room')
+            router.push(`/lobby/${code}`)
+        } catch (error) {
+            clientLogger.error('Failed to return to waiting room:', error)
+            showToast.errorFrom(error, 'games.connect_four.game.moveFailed')
+        } finally {
+            setIsRematchSubmitting(false)
+        }
+    }, [code, getCurrentUserId, lobby, router])
 
     // Scroll chat to bottom
     useEffect(() => {
@@ -1093,6 +1127,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                         isDraw={isDraw}
                         isMyWin={isMyWin}
                         onPlayAgain={handlePlayAgain}
+                        onReturnToLobby={handleReturnToWaiting}
                         onLeave={() => setShowLeaveConfirmModal(true)}
                         isLoading={isRematchSubmitting}
                         isHost={!!lobby && lobby.creatorId === currentUserId}

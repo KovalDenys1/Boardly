@@ -435,11 +435,12 @@ interface GameOverScreenProps {
   isHost: boolean
   isStarting: boolean
   onPlayAgain: () => void
+  onReturnToLobby: () => void
   onBackToGames: () => void
   t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBackToGames, t }: GameOverScreenProps) {
+function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, onBackToGames, t }: GameOverScreenProps) {
   const winner = players.find(p => p.userId === data.winnerId || p.id === data.winnerId)
   const winnerName = winner?.name ?? data.winnerId ?? '?'
 
@@ -477,14 +478,27 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBack
         </div>
       </div>
 
-      {isHost && (
-        <button
-          onClick={onPlayAgain}
-          disabled={isStarting}
-          className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
-        >
-          {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
-        </button>
+      {isHost ? (
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={onPlayAgain}
+            disabled={isStarting}
+            className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
+          >
+            {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
+          </button>
+          <button
+            onClick={onReturnToLobby}
+            disabled={isStarting}
+            className="px-6 py-2 bg-white/20 text-white rounded-xl font-semibold text-sm hover:bg-white/30 disabled:opacity-50"
+          >
+            {t('game.ui.returnToLobby')}
+          </button>
+        </div>
+      ) : (
+        <div className="px-6 py-3 bg-white/10 text-white/60 rounded-xl font-semibold text-sm text-center">
+          {t('game.ui.waitingForHost')}
+        </div>
       )}
       <button onClick={onBackToGames} className="text-sm text-white/70 underline">
         {t('lobby.leave')}
@@ -620,6 +634,10 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     void loadLobby()
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
 
+  const handleGameReset = useCallback(() => {
+    router.push(`/lobby/${code}`)
+  }, [code, router])
+
   useRealtimeConnection({
     code,
     shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
@@ -628,6 +646,7 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     onPlayerLeft: handlePlayerLeft,
     onLobbyUpdate: () => { void loadLobby() },
     onPlayerJoined: () => { void loadLobby() },
+    onGameReset: handleGameReset,
   })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
@@ -697,6 +716,21 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
       setIsStarting(false)
     }
   }, [lobby?.id, isStarting])
+
+  const handleReturnToWaiting = useCallback(async () => {
+    const userId = getCurrentUserId()
+    if (!userId || !lobby || lobby.creatorId !== userId) return
+    setIsStarting(true)
+    try {
+      const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to return to waiting room')
+      router.push(`/lobby/${code}`)
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.gameStartFailed')
+    } finally {
+      setIsStarting(false)
+    }
+  }, [code, getCurrentUserId, lobby, router])
 
   if (loading) {
     return (
@@ -826,6 +860,7 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
         isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onPlayAgain={handleStartGame}
+        onReturnToLobby={handleReturnToWaiting}
         onBackToGames={() => router.push('/games')}
         t={t}
       />

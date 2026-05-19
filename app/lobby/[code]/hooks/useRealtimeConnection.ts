@@ -8,6 +8,11 @@ import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyU
 import type { GameAbandonedPayload, PlayerLeftPayload } from '@/types/socket-events'
 import type { BaseBotActionEvent } from '@/lib/bots'
 
+export interface GameResetPayload {
+  lobbyCode: string
+  gameId: string
+}
+
 interface UseRealtimeConnectionProps {
   code: string
   /**
@@ -26,6 +31,7 @@ interface UseRealtimeConnectionProps {
   onBotAction?: (event: BaseBotActionEvent) => void
   onSpectatorCountChange?: (count: number) => void
   onStateSync?: () => Promise<void>
+  onGameReset?: (data: GameResetPayload) => void
 }
 
 export function useRealtimeConnection({
@@ -41,6 +47,7 @@ export function useRealtimeConnection({
   onPlayerLeft,
   onBotAction,
   onStateSync,
+  onGameReset,
 }: UseRealtimeConnectionProps) {
   const [isConnected, setIsConnected] = useState(false)
   const broadcastChannelRef = useRef<RealtimeChannel | null>(null)
@@ -58,6 +65,7 @@ export function useRealtimeConnection({
   const onPlayerLeftRef = useRef(onPlayerLeft)
   const onBotActionRef = useRef(onBotAction)
   const onStateSyncRef = useRef(onStateSync)
+  const onGameResetRef = useRef(onGameReset)
 
   useEffect(() => {
     onGameUpdateRef.current = onGameUpdate
@@ -70,7 +78,8 @@ export function useRealtimeConnection({
     onPlayerLeftRef.current = onPlayerLeft
     onBotActionRef.current = onBotAction
     onStateSyncRef.current = onStateSync
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onStateSync])
+    onGameResetRef.current = onGameReset
+  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onStateSync, onGameReset])
 
   useEffect(() => {
     if (!code || !shouldJoinLobbyRoom) {
@@ -110,6 +119,10 @@ export function useRealtimeConnection({
       })
       .on('broadcast', { event: 'bot-action' }, ({ payload }) => {
         onBotActionRef.current?.(payload as BaseBotActionEvent)
+      })
+      .on('broadcast', { event: 'game-reset' }, ({ payload }) => {
+        clientLogger.log('📡 game-reset via Supabase Broadcast')
+        onGameResetRef.current?.(payload as GameResetPayload)
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {

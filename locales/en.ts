@@ -1010,6 +1010,7 @@ const en = {
       backToLobby: '← Back to lobby',
       accept: 'Accept',
       decline: 'Decline',
+      returnToLobby: 'Return to Lobby',
     },
   },
   yahtzee: {
