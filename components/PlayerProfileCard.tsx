@@ -83,7 +83,15 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-4 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-[var(--bd-bg2)]"
+          style={{ color: 'var(--bd-ink-soft)' }}
+          aria-label="Close"
+        >
+          ×
+        </button>
         {loading ? (
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-3">
