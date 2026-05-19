@@ -722,6 +722,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       loadLobbyRef.current()
     }
 
+    // Bots show their own toast from addBot() — skip the generic joined toast
+    if (data.isBot) return
+
     // Show notification and play sound only after initial load
     const currentUserId = isGuest ? guestId : session?.user?.id
     if (data.username && data.userId !== currentUserId) {
@@ -827,10 +830,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     nextCreatorId?: string
     nextCreatorName?: string
     hostLeft?: boolean
+    isBot?: boolean
   }) => {
     clientLogger.log('📡 Player left:', data)
 
     if (isLeavingLobbyRef.current) {
+      return
+    }
+
+    // Bot kick already toasted from kickBot() — skip the generic left toast + sound
+    if (data.isBot) {
+      if (loadLobbyRef.current) void loadLobbyRef.current()
       return
     }
 

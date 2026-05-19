@@ -60,6 +60,7 @@ export interface GameUpdatePayload {
 export interface PlayerJoinedPayload {
   username: string
   userId: string
+  isBot?: boolean
 }
 
 export interface GameStartedPayload {
