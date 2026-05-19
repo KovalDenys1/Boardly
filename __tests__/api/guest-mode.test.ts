@@ -181,19 +181,7 @@ describe('Guest mode API endpoints', () => {
     expect(createArgs.data.name).toBe('Lobby TEST123')
   })
 
-  it('accepts lobby creation for newly-available games (rps, liars_party)', async () => {
-    mockPrisma.lobbies.create.mockResolvedValue({
-      id: 'lobby_rps',
-      code: 'TEST',
-      name: 'Guest Lobby',
-      maxPlayers: 2,
-      gameType: 'rock_paper_scissors',
-      hostId: null,
-      status: 'waiting',
-      theme: null,
-      password: null,
-      isPasswordProtected: false,
-    })
+  it('rejects lobby creation for temporarily in-development games (rps, liars_party)', async () => {
     const req = new NextRequest('http://localhost:3000/api/lobby', {
       method: 'POST',
       body: JSON.stringify({
@@ -205,7 +193,7 @@ describe('Guest mode API endpoints', () => {
 
     const response = await CREATE_LOBBY(req)
 
-    expect(response.status).not.toBe(400)
+    expect(response.status).toBe(400)
   })
 
   it('joins waiting lobby as guest player', async () => {

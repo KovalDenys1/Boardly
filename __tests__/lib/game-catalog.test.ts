@@ -45,11 +45,12 @@ describe('game catalog availability', () => {
     expect(available).toContain('memory')
     expect(available).toContain('connect_four')
     expect(available).toContain('alias')
-    expect(available).toContain('liars_party')
-    expect(available).toContain('rock_paper_scissors')
+    // RPS and Liar's Party are temporarily in-development
+    expect(available).not.toContain('liars_party')
+    expect(available).not.toContain('rock_paper_scissors')
     expect(isAvailableGameType('yahtzee')).toBe(true)
-    expect(isAvailableGameType('rock_paper_scissors')).toBe(true)
-    expect(isAvailableGameType('liars_party')).toBe(true)
+    expect(isAvailableGameType('rock_paper_scissors')).toBe(false)
+    expect(isAvailableGameType('liars_party')).toBe(false)
     expect(isAvailableGameType('sketch_and_guess')).toBe(false)
   })
 
