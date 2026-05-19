@@ -331,7 +331,7 @@ const ru = {
     createFreeAccount: 'Создать бесплатный аккаунт',
     heroSubtitle: 'Выбери игру, создай комнату и поделись ссылкой. Без загрузок, без аккаунта — гости присоединятся за секунды.',
     gamesReadyBadge: '{{count}} игр готово к игре',
-    moreComingLater: 'ещё {{count}} в разработке',
+    moreComingLater: 'ещё {{count}} игр в разработке',
     statsGamesReady: 'Игр доступно',
     statsBotsAvailable: 'Играй с ботами',
     statsInCollection: 'Игр в каталоге',

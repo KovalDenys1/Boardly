@@ -331,7 +331,7 @@ const no = {
     createFreeAccount: 'Opprett gratis konto',
     heroSubtitle: 'Velg et spill, opprett et rom og del lenken. Ingen nedlasting, ingen konto nødvendig — gjester kan bli med på sekunder.',
     gamesReadyBadge: '{{count}} spill klare',
-    moreComingLater: '{{count}} til på vei',
+    moreComingLater: '{{count}} spill til på vei',
     statsGamesReady: 'Spill tilgjengelig',
     statsBotsAvailable: 'Spill solo med bots',
     statsInCollection: 'Spill i katalogen',

@@ -333,7 +333,7 @@ const uk: Translation = {
     createFreeAccount: 'Створити безкоштовний акаунт',
     heroSubtitle: 'Вибери гру, створи кімнату та поділися посиланням. Без завантажень, без акаунту — гості можуть приєднатися за секунди.',
     gamesReadyBadge: '{{count}} ігор готові до гри',
-    moreComingLater: 'ще {{count}} в розробці',
+    moreComingLater: 'ще {{count}} ігор в розробці',
     statsGamesReady: 'Ігор доступно',
     statsBotsAvailable: 'Грай з ботами',
     statsInCollection: 'Ігор у каталозі',

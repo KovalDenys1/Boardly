@@ -331,7 +331,7 @@ const en = {
     createFreeAccount: 'Create free account',
     heroSubtitle: 'Pick a game, create a room, and share the link. No download, no account required — guests can join in seconds.',
     gamesReadyBadge: '{{count}} games ready to play',
-    moreComingLater: '{{count}} more coming soon',
+    moreComingLater: '{{count}} more games coming soon',
     statsGamesReady: 'Games ready now',
     statsBotsAvailable: 'Play solo with bots',
     statsInCollection: 'Games in catalog',
