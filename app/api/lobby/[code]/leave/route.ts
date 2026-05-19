@@ -350,36 +350,69 @@ export async function POST(
       })
     }
 
-    // If multiple players remain (human or bot), continue the game
-    // If the departed player was the current player, advance the turn immediately
-    let turnAdvanced = false
-    try {
-      const parsedState = parseAndValidateGameState(activeGame.state)
-      const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
-      if (currentPlayerId === userId) {
-        const numPlayers = parsedState.players.length
-        parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % numPlayers
-
-        // Reset Yahtzee-specific per-turn state when present
-        const data = parsedState.data as Record<string, unknown> | null | undefined
-        if (data && typeof data === 'object') {
-          if ('rollsLeft' in data) data.rollsLeft = 3
-          if ('held' in data) data.held = [false, false, false, false, false]
-          if ('lastRoll' in data) delete data.lastRoll
+    // Spy: if the spy left the game cannot meaningfully continue even with enough players
+    if (activeGame.gameType === 'guess_the_spy') {
+      try {
+        const spyState = parseAndValidateGameState(activeGame.state)
+        const spyPlayerId = (spyState.data as Record<string, unknown> | null)?.spyPlayerId
+        if (spyPlayerId === userId) {
+          const abandonNow = new Date()
+          const abandonDuration = activeGame.startedAt instanceof Date
+            ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
+            : null
+          await prisma.games.update({
+            where: { id: activeGame.id },
+            data: {
+              status: 'abandoned',
+              abandonedAt: abandonNow,
+              endedAt: abandonNow,
+              ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
+              terminalMetadata: { outcome: 'abandoned', reason: 'spy_left' },
+            },
+          })
+          await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
+          await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'spy_left' })
+          notifyLobbyListUpdate()
+          return NextResponse.json({ message: 'You left the lobby', gameEnded: true, gameAbandoned: true, lobbyDeactivated: true })
         }
-
-        await prisma.games.update({
-          where: { id: activeGame.id },
-          data: { state: toPersistedGameStateInput(parsedState) },
-        })
-        turnAdvanced = true
-        await emitLobbyEvent(log, code, 'game-update', {
-          action: 'state-change',
-          payload: parsedState,
-        })
+      } catch (e) {
+        log.warn('Failed to check spy role on player leave', { error: e })
       }
-    } catch (e) {
-      log.warn('Failed to advance turn after player left mid-game', { error: e })
+      // Non-spy left: game continues but Spy is phase-based — no currentPlayerIndex to advance
+    }
+
+    // For turn-based games: advance to the next player if the departed player was current
+    // Alias uses currentTeamIndex+describerIndex; Liar's Party uses claimantOrder — skip
+    // to avoid state corruption. Timer will handle stuck turns for those games.
+    const ADVANCE_TURN_GAMES = new Set(['yahtzee', 'memory'])
+    let turnAdvanced = false
+    if (ADVANCE_TURN_GAMES.has(activeGame.gameType)) {
+      try {
+        const parsedState = parseAndValidateGameState(activeGame.state)
+        const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
+        if (currentPlayerId === userId) {
+          parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % parsedState.players.length
+          const data = parsedState.data as Record<string, unknown> | null | undefined
+          if (data && typeof data === 'object') {
+            // Yahtzee
+            if ('rollsLeft' in data) data.rollsLeft = 3
+            if ('held' in data) data.held = [false, false, false, false, false]
+            if ('lastRoll' in data) delete data.lastRoll
+            // Memory
+            if ('flippedCardIds' in data) data.flippedCardIds = []
+            if ('pendingMismatchCardIds' in data) data.pendingMismatchCardIds = []
+            if ('advanceTurnAfterMove' in data) data.advanceTurnAfterMove = false
+          }
+          await prisma.games.update({
+            where: { id: activeGame.id },
+            data: { state: toPersistedGameStateInput(parsedState) },
+          })
+          turnAdvanced = true
+          await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: parsedState })
+        }
+      } catch (e) {
+        log.warn('Failed to advance turn after player left mid-game', { error: e })
+      }
     }
 
     await emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
