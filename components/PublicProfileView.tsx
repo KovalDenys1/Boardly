@@ -239,8 +239,16 @@ export default function PublicProfileView({
         )}
       </div>
       <div className="absolute -bottom-3 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
-        Lv. {level}
+        Lvl. {level}
       </div>
+      {profile.isPremium && (
+        <div
+          className="absolute -top-3 -left-4 z-10 -rotate-[8deg] rounded-full border-2 border-bd-ink px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
+          style={{ background: '#FBBF24' }}
+        >
+          Premium
+        </div>
+      )}
     </div>
   )
 
@@ -275,7 +283,7 @@ export default function PublicProfileView({
     }
 
     return (
-      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[1.15fr_0.85fr]">
         <div className="px-6 py-8 sm:px-8 sm:py-10">
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
             {t('profile.publicProfile.eyebrow')}
@@ -295,7 +303,7 @@ export default function PublicProfileView({
           )}
           {shouldShowAction && <div className="mt-8">{renderAction()}</div>}
         </div>
-        <div className="flex items-center border-t border-bd-line bg-bd-card-warm px-6 py-8 sm:px-8 lg:border-l lg:border-t-0 dark:border-slate-700 dark:bg-slate-800/70">
+        <div className="flex items-center border-t border-bd-line bg-bd-card-warm px-6 py-8 sm:px-8 md:border-l md:border-t-0 dark:border-slate-700 dark:bg-slate-800/70">
           <div className="w-full rounded-3xl border border-dashed border-bd-line bg-white p-5 text-left dark:border-slate-700 dark:bg-slate-900/70">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
               {t('profile.settings.privacy.friendsOnly')}
@@ -337,8 +345,8 @@ export default function PublicProfileView({
         ) : (
           <div className="relative w-full overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900">
             <div className="dot-grid absolute inset-0 opacity-30" />
-            <div className="relative grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="p-6 sm:p-8 lg:p-10">
+            <div className="relative grid gap-0 md:grid-cols-[1.1fr_0.9fr]">
+              <div className="p-6 sm:p-8 md:p-10">
                 <button
                   type="button"
                   onClick={handleBack}
@@ -405,7 +413,7 @@ export default function PublicProfileView({
                 )}
               </div>
 
-              <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10 dark:border-slate-700 dark:bg-slate-800/70">
+              <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 dark:border-slate-700 dark:bg-slate-800/70">
                 <div className="relative flex w-full max-w-sm flex-col items-center text-center">
                   {renderAvatar()}
                   <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">

@@ -165,7 +165,7 @@ const uk: Translation = {
       gameMode: 'Режим гри',
       gameModeHelper: 'Швидкий режим, короткий режим та моди з\'являться незабаром!',
       comingSoon: 'Незабаром',
-      password: 'Пароль (необов\'язково)',
+      password: 'Пароль',
       passwordPlaceholder: 'Залиште порожнім для публічного лобі',
       create: 'Створити лобі',
       creating: 'Створюємо...',

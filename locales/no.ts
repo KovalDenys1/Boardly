@@ -156,7 +156,7 @@ const no = {
       gameMode: 'Spillmodus',
       gameModeHelper: 'Rask modus, kort modus og mods kommer snart!',
       comingSoon: 'Kommer snart',
-      password: 'Passord (valgfritt)',
+      password: 'Passord',
       passwordPlaceholder: 'La stå tomt for offentlig lobby',
       create: 'Opprett lobby',
       creating: 'Oppretter...',

@@ -156,7 +156,7 @@ const ru = {
       gameMode: 'Режим игры',
       gameModeHelper: 'Быстрый режим, короткий режим и моды появятся скоро!',
       comingSoon: 'Скоро',
-      password: 'Пароль (необязательно)',
+      password: 'Пароль',
       passwordPlaceholder: 'Оставьте пустым для публичного лобби',
       create: 'Создать лобби',
       creating: 'Создаём...',

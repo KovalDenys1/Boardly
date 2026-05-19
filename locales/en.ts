@@ -156,7 +156,7 @@ const en = {
       gameMode: 'Game Mode',
       gameModeHelper: 'Fast mode, short mode, and mods coming soon!',
       comingSoon: 'Coming Soon',
-      password: 'Password (Optional)',
+      password: 'Password',
       passwordPlaceholder: 'Leave empty for public lobby',
       create: 'Create Lobby',
       creating: 'Creating...',
