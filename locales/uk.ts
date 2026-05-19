@@ -337,7 +337,7 @@ const uk: Translation = {
     statsGamesReady: 'Ігор доступно',
     statsBotsAvailable: 'Грай з ботами',
     statsInCollection: 'Ігор у каталозі',
-    statsBrowserNative: 'Розмір завантаження',
+    statsBrowserNative: 'Встановлень потрібно',
     chooseWhatToPlay: 'Що будемо грати?',
     seeAllGames: 'Усі ігри →',
     heroTagline: 'Твої друзі — за одним посиланням.',

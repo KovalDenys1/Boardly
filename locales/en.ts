@@ -335,7 +335,7 @@ const en = {
     statsGamesReady: 'Games ready now',
     statsBotsAvailable: 'Play solo with bots',
     statsInCollection: 'Games in catalog',
-    statsBrowserNative: 'Download size',
+    statsBrowserNative: 'Installs needed',
     chooseWhatToPlay: 'Choose what to play',
     seeAllGames: 'See all games →',
     heroTagline: 'Your friends are one link away.',

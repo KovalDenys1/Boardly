@@ -374,7 +374,7 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
               { label: t('home.statsGamesReady'), value: String(facts.availableGameCount) },
               { label: t('home.statsBotsAvailable'), value: String(facts.quickPlayGameCount) },
               { label: t('home.statsInCollection'), value: String(facts.catalogGameCount) },
-              { label: t('home.statsBrowserNative'), value: '0 MB' },
+              { label: t('home.statsBrowserNative'), value: '0' },
             ].map((s) => (
               <div key={s.label}>
                 <div
