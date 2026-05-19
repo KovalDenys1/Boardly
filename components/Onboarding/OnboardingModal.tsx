@@ -71,13 +71,11 @@ export function OnboardingModal() {
           maxWidth: 420,
           background: 'var(--bd-card-warm)',
           border: '2px solid var(--bd-ink)',
-          borderRadius: '20px 20px 0 0',
-          boxShadow: '0 -4px 0 var(--bd-ink)',
           padding: '24px 24px 32px',
           maxHeight: '92dvh',
           overflowY: 'auto',
         }}
-        className="sm:rounded-[20px] sm:shadow-[6px_6px_0_var(--bd-ink)]"
+        className="rounded-[20px_20px_0_0] shadow-[0_-4px_0_var(--bd-ink)] sm:rounded-[20px] sm:shadow-[6px_6px_0_var(--bd-ink)]"
       >
         {/* Drag handle — mobile only */}
         <div
