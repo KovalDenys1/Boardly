@@ -335,7 +335,7 @@ const no = {
     statsGamesReady: 'Spill tilgjengelig',
     statsBotsAvailable: 'Spill solo med bots',
     statsInCollection: 'Spill i katalogen',
-    statsBrowserNative: 'Ingen nedlasting',
+    statsBrowserNative: 'Nedlastingsstørrelse',
     chooseWhatToPlay: 'Hva skal vi spille?',
     seeAllGames: 'Se alle spill →',
     heroTagline: 'Vennene dine er én lenke unna.',

@@ -335,7 +335,7 @@ const ru = {
     statsGamesReady: 'Игр доступно',
     statsBotsAvailable: 'Играй с ботами',
     statsInCollection: 'Игр в каталоге',
-    statsBrowserNative: 'Без установки',
+    statsBrowserNative: 'Размер загрузки',
     chooseWhatToPlay: 'Во что поиграем?',
     seeAllGames: 'Все игры →',
     heroTagline: 'Твои друзья — в одной ссылке.',
