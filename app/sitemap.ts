@@ -23,9 +23,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Active game pages
     page('/games/yahtzee', { changeFrequency: 'monthly', priority: 0.9 }),
     page('/games/tic-tac-toe', { changeFrequency: 'monthly', priority: 0.9 }),
+    page('/games/connect-four', { changeFrequency: 'monthly', priority: 0.9 }),
     page('/games/memory', { changeFrequency: 'monthly', priority: 0.85 }),
     page('/games/spy', { changeFrequency: 'monthly', priority: 0.85 }),
-    // alias and liars-party are coming soon — excluded until live
+    page('/games/alias', { changeFrequency: 'monthly', priority: 0.85 }),
 
     // Discovery pages
     page('/leaderboard', { changeFrequency: 'daily', priority: 0.7 }),

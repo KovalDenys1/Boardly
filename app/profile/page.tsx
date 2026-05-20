@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
 import AvatarPicker from '@/components/AvatarPicker'
+import { PREMIUM_PRICE_AMOUNT } from '@/lib/stripe'
 import PublicProfileView from '@/components/PublicProfileView'
 import {
   getStoredAppearancePreferences,
@@ -2498,7 +2499,7 @@ export default function ProfilePage() {
               <div className="max-w-2xl">
                 <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
                 <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
-                  {!hasUploadPack ? 'Unlock exclusive features for $2.99/month.' : 'Manage your subscription and customize your profile.'}
+                  {!hasUploadPack ? `Unlock exclusive features for ${PREMIUM_PRICE_AMOUNT}/month.` : 'Manage your subscription and customize your profile.'}
                 </p>
               </div>
 
@@ -2637,7 +2638,7 @@ export default function ProfilePage() {
                       ) : (
                         <>
                           <span>⭐</span>
-                          <span>Get Premium — $2.99/mo</span>
+                          <span>Get Premium — {PREMIUM_PRICE_AMOUNT}/mo</span>
                         </>
                       )}
                     </button>
@@ -2785,7 +2786,7 @@ export default function ProfilePage() {
                   <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">How your profile card looks to others on your public page.</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {[
-                      { id: 'gold',  name: 'Gold',        desc: 'Rich gold gradient',     preview: 'linear-gradient(150deg, #F5E4B8 0%, #E6C265 38%, #B8862E 75%)', text: '#3A2A0A' },
+                      { id: 'gold',  name: 'Gold',        desc: 'Champagne & gold accents', preview: '#FAF2D8',                                                          text: '#3A2800' },
                       { id: 'glass', name: 'Glass',       desc: 'Frosted glass',           preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)',             text: '#1F1B16' },
                       { id: 'holo',  name: 'Holographic', desc: 'Iridescent shimmer',      preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)',    text: '#2D2266' },
                       { id: 'dark',  name: 'Dark Glow',   desc: 'Dark with mint glow',     preview: 'linear-gradient(135deg, #2A2522, #16120E)',                       text: '#4FC9A6' },

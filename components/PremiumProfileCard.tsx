@@ -33,62 +33,63 @@ function GoldCard({ profile }: { profile: ProfileData }) {
   return (
     <div style={{
       position: 'relative', overflow: 'hidden', borderRadius: 24,
-      background: 'linear-gradient(150deg, #F5E4B8 0%, #E6C265 38%, #B8862E 75%, #6D4A14 100%)',
-      boxShadow: '0 1px 0 rgba(255,255,255,0.4) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 20px 38px -20px rgba(109,74,20,0.5)',
+      background: '#FAF2D8',
+      border: '1px solid rgba(184,140,30,0.3)',
+      boxShadow: '0 0 0 1px rgba(255,255,255,0.8) inset, 0 20px 38px -20px rgba(109,74,20,0.2)',
       padding: '22px 20px',
-      color: '#3A2A0A',
+      color: '#3A2800',
       display: 'flex', flexDirection: 'column', gap: 14,
     }}>
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.15,
-        backgroundImage: 'radial-gradient(circle at 28% 28%, rgba(255,255,255,0.6) 0, transparent 50%), radial-gradient(circle at 80% 80%, rgba(0,0,0,0.4) 0, transparent 50%)' }} />
+      {/* subtle dot texture */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.25,
+        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,140,30,0.35) 1px, transparent 1px)',
+        backgroundSize: '18px 18px' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
-        {/* avatar */}
         <div style={{ position: 'relative', width: 72, height: 72 }}>
           <div style={{
-            position: 'absolute', inset: -4, borderRadius: '50%',
-            background: 'conic-gradient(from 210deg, #FFF3D6, #B8862E, #6D4A14, #E6C265, #FFF3D6)',
-            boxShadow: '0 5px 14px -5px rgba(0,0,0,0.4)',
+            position: 'absolute', inset: -3, borderRadius: '50%',
+            background: 'conic-gradient(from 0deg, #C9A020, #F0D060, #C9A020, #8A6A0A, #C9A020)',
           }} />
           <div style={{
             position: 'absolute', inset: 3, borderRadius: '50%',
-            background: 'linear-gradient(150deg, #FFF3D6, #E6C265 80%)',
+            background: '#FAF2D8',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Fraunces", Georgia, serif', fontWeight: 700, fontSize: 28, color: '#3A2A0A',
+            fontFamily: '"Fraunces", Georgia, serif', fontWeight: 700, fontSize: 28, color: '#3A2800',
           }}>{profile.displayName.charAt(0).toUpperCase()}</div>
         </div>
         <div style={{
-          padding: '5px 10px 5px', borderRadius: 999,
-          background: 'linear-gradient(180deg, #FFF3D6, #E6C265)',
-          border: '1px solid rgba(58,42,10,0.3)',
+          padding: '4px 10px', borderRadius: 999,
+          background: 'rgba(201,160,32,0.12)',
+          border: '1px solid rgba(184,140,30,0.4)',
           fontFamily: '"Fraunces", Georgia, serif', fontStyle: 'italic',
-          fontSize: 12, color: '#3A2A0A', display: 'flex', alignItems: 'center', gap: 5,
-          boxShadow: '0 1px 0 rgba(255,255,255,0.7) inset',
+          fontSize: 11, color: '#7A5800', display: 'flex', alignItems: 'center', gap: 5,
+          letterSpacing: '0.04em',
         }}>
           <span>👑</span> Premium
         </div>
       </div>
       <div style={{ position: 'relative' }}>
-        <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontStyle: 'italic', fontSize: 26, fontWeight: 600, color: '#3A2A0A', letterSpacing: '-0.01em', lineHeight: 1, textShadow: '0 1px 0 rgba(255,255,255,0.4)' }}>
+        <div style={{ fontFamily: '"Fraunces", Georgia, serif', fontStyle: 'italic', fontSize: 26, fontWeight: 600, color: '#3A2800', letterSpacing: '-0.01em', lineHeight: 1 }}>
           {profile.displayName}
         </div>
-        <div style={{ fontSize: 11, color: 'rgba(58,42,10,0.6)', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.14em' }}>
+        <div style={{ fontSize: 11, color: 'rgba(58,40,0,0.5)', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.16em' }}>
           Member since {profile.memberSince}
         </div>
       </div>
       {profile.bio && (
-        <div style={{ fontSize: 13, color: 'rgba(58,42,10,0.75)', lineHeight: 1.45, fontStyle: 'italic', fontFamily: '"Fraunces", Georgia, serif' }}>
+        <div style={{ fontSize: 13, color: 'rgba(58,40,0,0.65)', lineHeight: 1.45, fontStyle: 'italic', fontFamily: '"Fraunces", Georgia, serif' }}>
           &ldquo;{profile.bio}&rdquo;
         </div>
       )}
       <div style={{
         marginTop: 'auto',
-        background: 'linear-gradient(180deg, rgba(255,243,214,0.45), rgba(184,134,46,0.15))',
-        border: '1px solid rgba(58,42,10,0.16)',
+        background: 'rgba(201,160,32,0.08)',
+        border: '1px solid rgba(184,140,30,0.2)',
         borderRadius: 14, padding: '10px 12px',
-        display: 'flex', justifyContent: 'space-between', color: '#3A2A0A',
+        display: 'flex', justifyContent: 'space-between', color: '#3A2800',
       }}>
         <StatBlock label="Games"  value={profile.gamesPlayed} />
-        <div style={{ width: 1, background: 'rgba(58,42,10,0.16)' }} />
+        <div style={{ width: 1, background: 'rgba(184,140,30,0.2)' }} />
         <StatBlock label="Level"  value={`Lv. ${profile.level}`} />
       </div>
     </div>
