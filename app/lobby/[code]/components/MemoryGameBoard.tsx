@@ -64,6 +64,8 @@ interface MemoryGameBoardProps {
   onSendChatMessage?: (message: string) => void
   chatUnreadCount?: number
   someoneTyping?: boolean
+  playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
+  onProfileClick?: (userId: string) => void
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
@@ -96,6 +98,8 @@ export default function MemoryGameBoard({
   onSendChatMessage,
   chatUnreadCount = 0,
   someoneTyping = false,
+  playerProfiles,
+  onProfileClick,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -519,6 +523,8 @@ export default function MemoryGameBoard({
                   onToggleMinimize={() => {}}
                   unreadCount={chatUnreadCount}
                   someoneTyping={someoneTyping}
+                  playerProfiles={playerProfiles}
+                  onProfileClick={onProfileClick}
                   fullScreen
                 />
               </section>
