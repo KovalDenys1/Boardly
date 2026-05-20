@@ -460,10 +460,10 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     triggerLifecycleRedirect('alias-lifecycle-redirect')
   }, [loadLobby, triggerLifecycleRedirect])
 
-  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number }) => {
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
     clientLogger.log('📡 Alias player left', payload)
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
-    if (typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
+    if (!payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('alias-lifecycle-redirect')
       return
     }

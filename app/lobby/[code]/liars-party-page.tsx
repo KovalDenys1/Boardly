@@ -624,10 +624,10 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     triggerLifecycleRedirect('liars-party-lifecycle-redirect')
   }, [loadLobby, triggerLifecycleRedirect])
 
-  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number }) => {
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
     clientLogger.log('📡 LiarsParty player left', payload)
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
-    if (typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
+    if (!payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('liars-party-lifecycle-redirect')
       return
     }

@@ -554,7 +554,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
-        nextCreatorId?: string; nextCreatorName?: string;
+        nextCreatorId?: string; nextCreatorName?: string; gameTerminal?: boolean;
     }) => {
         clientLogger.log('📡 Tic-Tac-Toe player left:', data)
         if (isLeavingLobbyRef.current) return
@@ -568,7 +568,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                 showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
             }
         }
-        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+        if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
             triggerLifecycleRedirect('player-left:insufficient-players')
             return
         }
@@ -877,7 +877,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
         setIsRematchSubmitting(true)
         try {
             const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
-            if (!res.ok) throw new Error('Failed to return to waiting room')
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({})) as { error?: string }
+                throw new Error(data.error ?? `HTTP ${res.status}`)
+            }
             router.push(`/lobby/${code}`)
         } catch (error) {
             clientLogger.error('Failed to return to waiting room:', error)

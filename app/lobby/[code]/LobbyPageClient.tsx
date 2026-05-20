@@ -834,6 +834,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     nextCreatorName?: string
     hostLeft?: boolean
     isBot?: boolean
+    gameTerminal?: boolean
   }) => {
     clientLogger.log('📡 Player left:', data)
 
@@ -873,7 +874,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     }
 
-    if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+    if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
       setGameInterruptedInfo({ playerName: departedPlayerName, reason: 'player_left' })
       return
     }
@@ -2540,6 +2541,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
               chatUnreadCount={unreadMessageCount}
               someoneTyping={someoneTyping}
+              playerProfiles={chatPlayerProfiles}
+              onProfileClick={setProfileUserId}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">

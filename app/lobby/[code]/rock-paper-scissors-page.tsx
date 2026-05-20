@@ -241,6 +241,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
         username?: string
         playerName?: string
         remainingPlayers?: number
+        gameTerminal?: boolean
     }) => {
         clientLogger.log('📡 RPS player left:', data)
 
@@ -249,7 +250,7 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
             showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
         }
 
-        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+        if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
             triggerLifecycleRedirect('player-left:insufficient-players')
             return
         }

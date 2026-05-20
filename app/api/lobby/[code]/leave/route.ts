@@ -273,6 +273,7 @@ export async function POST(
       await emitLobbyEvent(log, code, 'player-left', {
         ...playerLeftEventPayload,
         ...(creatorLeft ? { hostLeft: true } : {}),
+        gameTerminal: true,
       })
 
       return NextResponse.json({

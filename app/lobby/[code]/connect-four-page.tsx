@@ -593,7 +593,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
-        nextCreatorId?: string; nextCreatorName?: string;
+        nextCreatorId?: string; nextCreatorName?: string; gameTerminal?: boolean;
     }) => {
         clientLogger.log('📡 Connect Four player left:', data)
         if (isLeavingLobbyRef.current) return
@@ -607,7 +607,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                 showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
             }
         }
-        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+        if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
             triggerLifecycleRedirect('player-left:insufficient-players')
             return
         }
