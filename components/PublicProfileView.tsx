@@ -53,6 +53,31 @@ type PublicProfileViewProps = {
   onBack?: () => void
 }
 
+function getPremiumPanelStyle(cardStyle: string): React.CSSProperties {
+  switch (cardStyle) {
+    case 'gold':
+      return {
+        background: '#FAF2D8',
+        borderColor: 'rgba(184,140,30,0.25)',
+      }
+    case 'glass':
+      return {
+        background: 'linear-gradient(135deg, rgba(255,107,91,0.22) 0%, rgba(255,196,77,0.22) 45%, rgba(79,201,166,0.22) 100%)',
+      }
+    case 'holo':
+      return {
+        background: 'linear-gradient(115deg, rgba(180,240,255,0.35), rgba(201,184,255,0.32), rgba(255,184,224,0.28), rgba(255,227,168,0.28))',
+      }
+    case 'dark':
+      return {
+        background: 'radial-gradient(circle at 20% 0%, #2A2522 0%, #16120E 70%)',
+        borderColor: 'rgba(255,255,255,0.05)',
+      }
+    default:
+      return {}
+  }
+}
+
 const primaryActionClassName =
   'inline-flex w-full items-center justify-center rounded-2xl bg-bd-ink px-5 py-3 text-sm font-bold text-bd-bg shadow-[0_4px_0_var(--bd-coral)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_0_var(--bd-coral)] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950'
 const secondaryActionClassName =
@@ -442,49 +467,58 @@ export default function PublicProfileView({
                 )}
               </div>
 
-              <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 dark:border-slate-700 dark:bg-slate-800/70">
-                <div className="relative flex w-full max-w-sm flex-col items-center text-center">
-                  {profile.isPremium && profile.premiumCardStyle ? (
-                    <div className="w-full">
-                      <PremiumProfileCard
-                        style={profile.premiumCardStyle as PremiumCardStyle}
-                        profile={{
-                          displayName,
-                          handle,
-                          bio: profile.bio,
-                          memberSince,
-                          gamesPlayed: levelSourceGames,
-                          level,
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    renderAvatar()
-                  )}
-                  <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">
-                    {t('profile.publicProfile.linkHint')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void handleCopyProfileLink()}
-                    disabled={copiedProfileLink}
-                    aria-label={copiedProfileLink ? 'Link copied!' : 'Copy profile link'}
-                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+              {(() => {
+                const panelCardStyle = profile.isPremium && profile.premiumCardStyle
+                const isDarkPanel = panelCardStyle && profile.premiumCardStyle === 'dark'
+                return (
+                  <div
+                    className={`relative flex items-center justify-center border-t p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 ${panelCardStyle ? 'border-transparent' : 'border-bd-line bg-bd-card-warm dark:border-slate-700 dark:bg-slate-800/70'}`}
+                    style={panelCardStyle ? getPremiumPanelStyle(profile.premiumCardStyle!) : undefined}
                   >
-                    {copiedProfileLink ? (
-                      <>
-                        <span>Copied!</span>
-                        <span aria-hidden>✓</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Copy profile link</span>
-                        <span aria-hidden>↗</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+                    <div className="relative flex w-full max-w-sm flex-col items-center text-center">
+                      {panelCardStyle ? (
+                        <div className="w-full">
+                          <PremiumProfileCard
+                            style={profile.premiumCardStyle as PremiumCardStyle}
+                            profile={{
+                              displayName,
+                              handle,
+                              bio: profile.bio,
+                              memberSince,
+                              gamesPlayed: levelSourceGames,
+                              level,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        renderAvatar()
+                      )}
+                      <p className={`mt-8 text-sm leading-6 ${isDarkPanel ? 'text-slate-400' : 'text-bd-ink-muted dark:text-slate-300'}`}>
+                        {t('profile.publicProfile.linkHint')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyProfileLink()}
+                        disabled={copiedProfileLink}
+                        aria-label={copiedProfileLink ? 'Link copied!' : 'Copy profile link'}
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+                      >
+                        {copiedProfileLink ? (
+                          <>
+                            <span>Copied!</span>
+                            <span aria-hidden>✓</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Copy profile link</span>
+                            <span aria-hidden>↗</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}
