@@ -93,9 +93,21 @@ export function useGameActions(props: UseGameActionsProps) {
   const [isScoring, setIsScoring] = useState(false)
   const [isStateReverting, setIsStateReverting] = useState(false)
   const rollbackIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prevIsMyTurnRef = useRef(false)
 
   // Local held state - purely client-side between rolls
   const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
+
+  // Safety reset: when the turn flips to ours, clear any leftover in-progress flags.
+  // This handles the case where isMoveInProgress got stuck during a disconnect/turn advance.
+  useEffect(() => {
+    if (isMyTurn && !prevIsMyTurnRef.current) {
+      setIsMoveInProgress(false)
+      setIsRolling(false)
+      setIsScoring(false)
+    }
+    prevIsMyTurnRef.current = isMyTurn
+  }, [isMyTurn])
 
   const triggerRollbackIndicator = useCallback(() => {
     if (rollbackIndicatorTimeoutRef.current) {

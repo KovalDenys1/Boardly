@@ -64,6 +64,8 @@ export default function Modal({
     full: '100%'
   }
 
+  const portalTarget = document.getElementById('bd-lobby-portal') ?? document.body
+
   return createPortal(
     <div
       className={`fixed inset-0 z-50 flex justify-center animate-fade-in ${
@@ -144,6 +146,6 @@ export default function Modal({
         </div>
       </div>
     </div>,
-    document.body
+    portalTarget
   )
 }

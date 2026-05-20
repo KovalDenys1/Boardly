@@ -405,8 +405,8 @@ export default function PublicProfileView({
                 {shouldShowAction && (
                   <div
                     className={`mt-8 ${
-                      relation === 'self' ? 'flex w-full justify-center' : 'max-w-sm'
-                    }`}
+                      relation === 'self' ? 'flex justify-center' : ''
+                    } w-full`}
                   >
                     {renderAction()}
                   </div>

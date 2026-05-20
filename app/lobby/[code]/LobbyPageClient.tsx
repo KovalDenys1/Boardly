@@ -299,16 +299,17 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return () => window.clearTimeout(timer)
   }, [yahtzeeResultsHold])
 
-  // Apply theme CSS variables to <html> so portaled components (e.g. Modal) inherit them
+  // Apply theme CSS variables to the lobby portal root so portaled components (e.g. Modal)
+  // inherit them. We do NOT set these on <html> to avoid contaminating the global header/nav.
   useEffect(() => {
     const theme = lobby?.theme
-    if (!theme || theme === 'default') return
+    const el = document.getElementById('bd-lobby-portal')
+    if (!el || !theme || theme === 'default') return
     const style = getThemePageStyle(theme) as Record<string, string>
     const vars = Object.entries(style).filter(([k]) => k.startsWith('--'))
-    const root = document.documentElement
-    vars.forEach(([k, v]) => root.style.setProperty(k, v))
+    vars.forEach(([k, v]) => el.style.setProperty(k, v))
     return () => {
-      vars.forEach(([k]) => root.style.removeProperty(k))
+      vars.forEach(([k]) => el.style.removeProperty(k))
     }
   }, [lobby?.theme])
 
@@ -1876,6 +1877,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   return (
     <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
+      {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
+      <div id="bd-lobby-portal" className="contents" />
      <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
 
       {!isInGame && !isGameStarted ? (

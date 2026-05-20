@@ -55,42 +55,46 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
     }
   }
 
-  if (!open) {
-    return (
+  return (
+    <div className={`relative ${className}`} style={{ minHeight: 58 }}>
+      {/* Original button — fades out when open */}
       <button
         onClick={() => setOpen(true)}
-        className={`bd-btn bd-btn-soft bd-btn-lg justify-center ${className}`}
+        className={`bd-btn bd-btn-soft bd-btn-lg w-full justify-center absolute inset-0 transition-opacity duration-200 ${
+          open ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
       >
         🤖 {t('quickPlay.playVsBot')}
       </button>
-    )
-  }
 
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-sm font-semibold text-bd-ink-muted">
-        {t('quickPlay.selectDifficulty')}
-      </span>
-      <div className="flex gap-2">
+      {/* Difficulty picker — fades in when open */}
+      <div
+        className={`absolute inset-0 flex items-center gap-1.5 transition-opacity duration-200 ${
+          open ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
         {(['easy', 'medium', 'hard'] as Difficulty[]).map((diff) => (
           <button
             key={diff}
             onClick={() => handleDifficulty(diff)}
             disabled={loading}
-            className="bd-btn bd-btn-soft disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-2xl border-2 border-bd-ink py-3 text-sm font-bold text-bd-ink transition-colors hover:bg-bd-ink hover:text-bd-bg disabled:opacity-50"
+            style={{ background: 'var(--bd-bg2)' }}
           >
-            {loading ? t('quickPlay.starting') : t(DIFFICULTY_KEYS[diff])}
+            {loading ? '…' : t(DIFFICULTY_KEYS[diff])}
           </button>
         ))}
+        {!loading && (
+          <button
+            onClick={() => setOpen(false)}
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border-2 border-bd-line text-base text-bd-ink-muted transition-colors hover:border-bd-ink hover:text-bd-ink"
+            style={{ background: 'var(--bd-bg2)' }}
+            aria-label="Cancel"
+          >
+            ✕
+          </button>
+        )}
       </div>
-      {!loading && (
-        <button
-          onClick={() => setOpen(false)}
-          className="text-xs text-bd-ink-muted underline"
-        >
-          {t('common.cancel')}
-        </button>
-      )}
     </div>
   )
 }
