@@ -43,6 +43,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         email: user.email!,
         emailVerified: user.emailVerified,
         image: user.image,
+        avatarUrl: user.avatarUrl,
       }
     },
 
@@ -55,6 +56,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         email: user.email!,
         emailVerified: user.emailVerified,
         image: user.image,
+        avatarUrl: user.avatarUrl,
       }
     },
 
@@ -71,6 +73,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         email: user.email!,
         emailVerified: user.emailVerified,
         image: user.image,
+        avatarUrl: user.avatarUrl,
       }
     },
 

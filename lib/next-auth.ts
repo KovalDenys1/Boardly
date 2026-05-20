@@ -264,7 +264,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = typeof user.email === 'string' ? user.email.trim().toLowerCase() : user.email
         token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
-        token.picture = null
+        token.picture = (user as { avatarUrl?: string | null }).avatarUrl ?? null
         token.emailVerified = user.emailVerified
         token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
         token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false

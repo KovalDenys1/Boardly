@@ -1877,9 +1877,10 @@ export default function ProfilePage() {
                     username={profileSummary?.username ?? null}
                     email={profileSummary?.email ?? null}
                     hasUploadPack={hasUploadPack}
-                    onSaved={(avatarUrl) =>
+                    onSaved={async (avatarUrl) => {
                       setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
-                    }
+                      await update()
+                    }}
                     onUnlockUpload={async () => {
                       try {
                         const res = await fetch('/api/stripe/checkout', { method: 'POST' })
