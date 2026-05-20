@@ -13,7 +13,7 @@ import {
     COLS,
 } from '@/lib/games/connect-four-game'
 import { clientLogger } from '@/lib/client-logger'
-import { getLobbyTheme } from '@/lib/lobby-themes'
+import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
@@ -112,8 +112,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                 disabled={disabled || colFull}
                                 aria-label={`column ${c + 1}`}
                                 style={{
-                                    width: 'clamp(34px, 7.5vw, 52px)',
-                                    height: 'clamp(34px, 7.5vw, 52px)',
+                                    width: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
+                                    height: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
                                     background: 'rgba(255,255,255,0.10)',
@@ -164,7 +164,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-            background: isActive ? 'white' : 'transparent',
+            background: isActive ? 'var(--bd-input-bg)' : 'transparent',
             border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
             boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
             flexDirection: side === 'right' ? 'row-reverse' : 'row',
@@ -175,12 +175,12 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlaye
                 {avatarSrc ? (
                     <img src={avatarSrc} alt={name} style={{
                         width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
-                        border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
+                        border: '2px solid var(--bd-input-bg)', boxShadow: '0 0 0 2px var(--bd-ink)',
                     }} />
                 ) : (
                 <div style={{
                     width: 42, height: 42, borderRadius: '50%', background: discColor,
-                    display: 'grid', placeItems: 'center', border: '2px solid white',
+                    display: 'grid', placeItems: 'center', border: '2px solid var(--bd-input-bg)',
                     boxShadow: '0 0 0 2px var(--bd-ink)',
                     fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
                 }}>
@@ -467,6 +467,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
+    const [isMobile, setIsMobile] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -878,6 +879,14 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         }
     }, [code, getCurrentUserId, lobby, router])
 
+    useEffect(() => {
+        const mq = window.matchMedia('(max-width: 899px)')
+        setIsMobile(mq.matches)
+        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+        mq.addEventListener('change', handler)
+        return () => mq.removeEventListener('change', handler)
+    }, [])
+
     // Scroll chat to bottom
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
@@ -1148,15 +1157,15 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
             </a>
         </div>
     ) : (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
             <button
                 onClick={() => void handleRequestUndo()}
                 disabled={!canRequestUndo}
-                style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
+                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5, width: isMobile ? '100%' : undefined }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
             </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : undefined }}>
                 {t('games.connect_four.game.leave')}
             </button>
         </div>
@@ -1214,7 +1223,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         </div>
     )
 
-    const themeStyle = { background: getLobbyTheme(lobby.theme).bg, color: getLobbyTheme(lobby.theme).text }
+    const themeStyle = getThemePageStyle(lobby.theme)
 
     return (
         <div className="ttt-screen" style={themeStyle}>

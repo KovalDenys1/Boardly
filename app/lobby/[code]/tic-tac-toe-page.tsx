@@ -12,7 +12,7 @@ import {
     CellValue,
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
-import { getLobbyTheme } from '@/lib/lobby-themes'
+import { getThemePageStyle } from '@/lib/lobby-themes'
 import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
@@ -1328,7 +1328,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     const _ = { myWins, myLosses, drawsCount, mySymbol, isMatchComplete, isLobbyCreator }
     void _
 
-    const themeStyle = { background: getLobbyTheme(lobby.theme).bg, color: getLobbyTheme(lobby.theme).text }
+    const themeStyle = getThemePageStyle(lobby.theme)
 
     return (
         <div className="ttt-screen" style={themeStyle}>

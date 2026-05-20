@@ -216,6 +216,7 @@ export async function POST(req: NextRequest) {
   const initialState = engine.getState()
   const persistedGameType = toPersistedGameType(gameType)
   const minPlayers = engine.getConfig().minPlayers
+  const maxPlayers = engine.getConfig().maxPlayers
 
   let newCode: string | null = null
   let gameId: string | null = null
@@ -229,7 +230,7 @@ export async function POST(req: NextRequest) {
         data: {
           code,
           name: lobbyName,
-          maxPlayers: minPlayers,
+          maxPlayers,
           gameType,
           creatorId: user.id,
           games: {
