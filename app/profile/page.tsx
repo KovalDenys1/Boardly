@@ -2498,143 +2498,151 @@ export default function ProfilePage() {
               <div className="max-w-2xl">
                 <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
                 <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
-                  {!hasUploadPack
-                    ? 'Unlock exclusive features for $2.99/month.'
-                    : premiumCancelAtPeriodEnd
-                      ? `Your subscription ends on ${formatPremiumDate(premiumUntilDate)} and will not renew.`
-                      : `Renews on ${formatPremiumDate(premiumUntilDate)}.`}
+                  {!hasUploadPack ? 'Unlock exclusive features for $2.99/month.' : 'Manage your subscription and customize your profile.'}
                 </p>
               </div>
 
-              <div className={profileSurfaceClassName}>
-                {hasUploadPack && (
-                  <div className="mb-5 flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/30">
-                      {premiumCancelAtPeriodEnd ? '⌛' : '⭐'}
-                    </span>
-                    <div>
-                      <p className={`font-semibold ${premiumCancelAtPeriodEnd ? 'text-amber-600 dark:text-amber-400' : 'text-bd-ink dark:text-white'}`}>
-                        {premiumCancelAtPeriodEnd ? `Cancels on ${formatPremiumDate(premiumUntilDate)}` : 'Premium is active'}
-                      </p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {premiumCancelAtPeriodEnd
-                          ? 'You will lose access to premium features after this date.'
-                          : `Renews on ${formatPremiumDate(premiumUntilDate)}`}
-                      </p>
+              {/* Premium status card */}
+              {hasUploadPack && (
+                <div className={`${premiumCancelAtPeriodEnd ? 'border-amber-300/60 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-950/20' : 'border-amber-300/60 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-950/20'} rounded-[1.5rem] border p-5`}>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/40">
+                        {premiumCancelAtPeriodEnd ? '⌛' : '⭐'}
+                      </span>
+                      <div>
+                        <p className="font-bold text-amber-800 dark:text-amber-300">
+                          {premiumCancelAtPeriodEnd ? `Cancels on ${formatPremiumDate(premiumUntilDate)}` : 'Premium is active'}
+                        </p>
+                        <p className="mt-0.5 text-sm text-amber-700/70 dark:text-amber-400/70">
+                          {premiumCancelAtPeriodEnd
+                            ? 'You will lose access to premium features after this date.'
+                            : `Renews on ${formatPremiumDate(premiumUntilDate)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {hasSubscriptionId && !premiumCancelAtPeriodEnd && (
+                        <button
+                          type="button"
+                          onClick={() => void handleCancelSubscription()}
+                          disabled={premiumActionLoading}
+                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
+                        >
+                          {premiumActionLoading ? '...' : 'Cancel'}
+                        </button>
+                      )}
+                      {hasSubscriptionId && premiumCancelAtPeriodEnd && (
+                        <button
+                          type="button"
+                          onClick={() => void handleReactivate()}
+                          disabled={premiumActionLoading}
+                          className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                        >
+                          <span>⭐</span>
+                          <span>{premiumActionLoading ? '...' : 'Reactivate'}</span>
+                        </button>
+                      )}
+                      {hasSubscriptionId && (
+                        <button
+                          type="button"
+                          onClick={() => void handleManageBilling()}
+                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                        >
+                          Manage billing
+                        </button>
+                      )}
+                      {!hasSubscriptionId && (
+                        <button
+                          type="button"
+                          onClick={() => void handleManageBilling()}
+                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                        >
+                          Manage subscription
+                        </button>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                <div className="mb-6 overflow-hidden rounded-xl border border-bd-line dark:border-slate-700">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-bd-line bg-bd-bg2 dark:border-slate-700 dark:bg-slate-800/60">
-                        <th className="px-4 py-3 text-left font-semibold text-bd-ink dark:text-white">Feature</th>
-                        <th className="px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400">Free</th>
-                        <th className="px-4 py-3 text-center font-semibold text-amber-600 dark:text-amber-400">Premium</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-bd-line dark:divide-slate-700">
-                      {[
-                        { feature: 'Play all games', free: true, premium: true },
-                        { feature: '16 built-in avatar styles', free: true, premium: true },
-                        { feature: 'Custom photo upload', free: false, premium: true },
-                        { feature: 'Premium badge in lobby', free: false, premium: true },
-                        { feature: 'Gold username color', free: false, premium: true },
-                        { feature: 'More features coming...', free: false, premium: true },
-                      ].map(({ feature, free, premium }) => (
-                        <tr key={feature} className="bg-white dark:bg-slate-800/50">
-                          <td className="px-4 py-3 text-bd-ink dark:text-slate-200">{feature}</td>
-                          <td className="px-4 py-3 text-center">
-                            {free
-                              ? <span className="text-bd-mint-deep dark:text-bd-mint">✓</span>
-                              : <span className="text-slate-300 dark:text-slate-600">—</span>}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {premium
-                              ? <span className="text-amber-500">✓</span>
-                              : <span className="text-slate-300 dark:text-slate-600">—</span>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {/* Feature overview */}
+              <div className={profileSurfaceClassName}>
+                <h3 className="mb-4 text-base font-bold text-bd-ink dark:text-white">What&apos;s included</h3>
+
+                {/* Free features */}
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-muted dark:text-slate-500">Free forever</p>
+                <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { icon: '🎮', label: 'Play all games', desc: 'Full access to every game mode' },
+                    { icon: '🎭', label: '16 built-in avatars', desc: 'Choose from all avatar styles' },
+                    { icon: '📝', label: 'Bio', desc: 'Show a short bio on your profile' },
+                    { icon: '🔗', label: 'Public profile', desc: 'Shareable profile link' },
+                  ].map(({ icon, label, desc }) => (
+                    <div key={label} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+                      <span className="mt-0.5 text-base">{icon}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
+                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
+                      </div>
+                      <span className="ml-auto shrink-0 text-sm text-bd-mint-deep dark:text-bd-mint">✓</span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Active premium — will renew */}
-                {hasUploadPack && !premiumCancelAtPeriodEnd && hasSubscriptionId && (
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleCancelSubscription()}
-                      disabled={premiumActionLoading}
-                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-slate-600 dark:text-slate-400 dark:hover:border-red-500 dark:hover:text-red-400"
+                {/* Premium features */}
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">⭐ Premium exclusive</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { icon: '📸', label: 'Custom photo upload', desc: 'Use any photo as your avatar' },
+                    { icon: '👑', label: 'Badge & gold name', desc: 'Crown icon + gold color in every lobby' },
+                    { icon: '🎨', label: 'Profile card style', desc: 'Gold, Glass, Holographic or Dark Glow' },
+                    { icon: '🌈', label: 'Accent color', desc: 'Custom color for your username' },
+                    { icon: '🏆', label: 'Featured game', desc: 'Show your favorite game on your profile' },
+                  ].map(({ icon, label, desc }) => (
+                    <div
+                      key={label}
+                      className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
+                        hasUploadPack
+                          ? 'border-amber-200/70 bg-amber-50/60 dark:border-amber-700/30 dark:bg-amber-950/20'
+                          : 'border-bd-line bg-white opacity-60 dark:border-slate-700 dark:bg-slate-800/50'
+                      }`}
                     >
-                      {premiumActionLoading ? '...' : 'Cancel subscription'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleManageBilling()}
-                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
-                    >
-                      Manage billing
-                    </button>
-                  </div>
-                )}
+                      <span className="mt-0.5 text-base">{icon}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
+                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
+                      </div>
+                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                        {hasUploadPack ? '✓' : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-                {/* Cancelled — will not renew */}
-                {hasUploadPack && premiumCancelAtPeriodEnd && hasSubscriptionId && (
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleReactivate()}
-                      disabled={premiumActionLoading}
-                      className="flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
-                    >
-                      <span>⭐</span>
-                      <span>{premiumActionLoading ? '...' : 'Reactivate subscription'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleManageBilling()}
-                      className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
-                    >
-                      Manage billing
-                    </button>
-                  </div>
-                )}
-
-                {/* Premium but no subscriptionId stored — fallback to portal */}
-                {hasUploadPack && !hasSubscriptionId && (
-                  <button
-                    type="button"
-                    onClick={() => void handleManageBilling()}
-                    className="rounded-xl border border-bd-line px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-bd-ink dark:border-slate-600 dark:text-slate-400 dark:hover:text-white"
-                  >
-                    Manage subscription
-                  </button>
-                )}
-
-                {/* Free user */}
+                {/* Free user CTA */}
                 {!hasUploadPack && (
-                  <button
-                    type="button"
-                    onClick={() => void handleCheckout()}
-                    disabled={premiumActionLoading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {premiumActionLoading ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        <span>Loading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>⭐</span>
-                        <span>Get Premium — $2.99/mo</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleCheckout()}
+                      disabled={premiumActionLoading}
+                      className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {premiumActionLoading ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⭐</span>
+                          <span>Get Premium — $2.99/mo</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">Cancel anytime</p>
+                  </div>
                 )}
               </div>
 
@@ -2646,7 +2654,7 @@ export default function ProfilePage() {
                 </p>
 
                 {/* Bio — free */}
-                <div className="mb-5">
+                <div className="mb-6">
                   <label className="mb-1.5 block text-sm font-semibold text-bd-ink dark:text-white">
                     Bio <span className="text-xs font-normal text-bd-ink-muted">(max 160 chars · free)</span>
                   </label>
@@ -2677,12 +2685,15 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                <div className="border-t border-bd-line pt-5 dark:border-slate-700">
+
                 {/* Accent color — premium */}
-                <div className="mb-5">
-                  <div className="mb-1.5 flex items-center gap-2">
+                <div className="mb-6">
+                  <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Accent Color</label>
-                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
                   </div>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Applied to your username on your public profile.</p>
                   <div className="flex flex-wrap gap-2">
                     {([
                       { hex: '#FF6B5B', name: 'Coral' },
@@ -2726,11 +2737,12 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Featured game — premium */}
-                <div>
-                  <div className="mb-1.5 flex items-center gap-2">
+                <div className="mb-6">
+                  <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink dark:text-white">Featured Game</label>
-                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
                   </div>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Shown as a badge on your public profile. Click again to remove.</p>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'yahtzee', label: '🎲 Yahtzee' },
@@ -2753,8 +2765,8 @@ export default function ProfilePage() {
                         }}
                         className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
                           profileFeaturedGame === id
-                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                            : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white'
+                            ? 'border-bd-ink bg-bd-ink text-bd-bg dark:border-white dark:bg-white dark:text-bd-ink'
+                            : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-slate-400'
                         }`}
                         style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: hasUploadPack ? 'pointer' : 'not-allowed' }}
                       >
@@ -2762,26 +2774,22 @@ export default function ProfilePage() {
                       </button>
                     ))}
                   </div>
-                  {profileFeaturedGame && (
-                    <p className="mt-1.5 text-xs text-bd-ink-muted">
-                      Shown on your public profile
-                    </p>
-                  )}
                 </div>
 
                 {/* Premium profile card style */}
                 <div>
-                  <div className="mb-1.5 flex items-center gap-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Card Style</label>
-                    {!hasUploadPack && <span className="text-xs font-bold text-amber-500">👑 Premium</span>}
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
                   </div>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">How your profile card looks to others on your public page.</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {[
-                      { id: 'gold',  name: 'Gold',        preview: 'linear-gradient(135deg, #F5E4B8, #B8862E)', text: '#3A2A0A' },
-                      { id: 'glass', name: 'Glass',        preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)', text: '#fff' },
-                      { id: 'holo',  name: 'Holographic',  preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)', text: '#2D2266' },
-                      { id: 'dark',  name: 'Dark Glow',    preview: 'linear-gradient(135deg, #2A2522, #16120E)', text: '#4FC9A6' },
-                    ].map(({ id, name, preview, text }) => {
+                      { id: 'gold',  name: 'Gold',        desc: 'Rich gold gradient',     preview: 'linear-gradient(150deg, #F5E4B8 0%, #E6C265 38%, #B8862E 75%)', text: '#3A2A0A' },
+                      { id: 'glass', name: 'Glass',       desc: 'Frosted glass',           preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)',             text: '#1F1B16' },
+                      { id: 'holo',  name: 'Holographic', desc: 'Iridescent shimmer',      preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)',    text: '#2D2266' },
+                      { id: 'dark',  name: 'Dark Glow',   desc: 'Dark with mint glow',     preview: 'linear-gradient(135deg, #2A2522, #16120E)',                       text: '#4FC9A6' },
+                    ].map(({ id, name, desc, preview, text }) => {
                       const active = hasUploadPack && (premiumCardStyle ?? 'gold') === id
                       return (
                         <button
@@ -2801,19 +2809,19 @@ export default function ProfilePage() {
                             outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
                             outlineOffset: 2,
                           }}
-                          className="relative rounded-xl px-3 py-3 text-xs font-bold transition"
+                          className="relative flex flex-col justify-end rounded-xl px-3 py-5 text-left transition"
                         >
-                          <span style={{ color: text, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
+                          <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
+                          <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{desc}</span>
                           {active && (
-                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-bd-ink">✓</span>
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-bd-ink shadow-sm">✓</span>
                           )}
                         </button>
                       )
                     })}
                   </div>
-                  <p className="mt-1.5 text-xs text-bd-ink-muted">
-                    How your profile looks to others on your public page
-                  </p>
+                </div>
+
                 </div>
               </div>
             </div>

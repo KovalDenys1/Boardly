@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
+import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -17,6 +18,17 @@ export type PublicProfileRelation =
 
 export type PublicProfileAccessState = 'available' | 'friends_only' | 'private'
 
+const FEATURED_GAME_LABELS: Record<string, { label: string; icon: string }> = {
+  yahtzee:            { label: 'Yahtzee',             icon: '🎲' },
+  guess_the_spy:      { label: 'Guess the Spy',       icon: '🕵️' },
+  tic_tac_toe:        { label: 'Tic Tac Toe',         icon: '✕' },
+  rock_paper_scissors:{ label: 'Rock Paper Scissors', icon: '✊' },
+  memory:             { label: 'Memory',              icon: '🃏' },
+  connect_four:       { label: 'Connect Four',        icon: '🔴' },
+  alias:              { label: 'Alias',               icon: '💬' },
+  liars_party:        { label: "Liar's Party",        icon: '🃏' },
+}
+
 export type PublicProfileViewData = {
   publicProfileId: string
   username: string | null
@@ -24,6 +36,8 @@ export type PublicProfileViewData = {
   avatarUrl?: string | null
   bio?: string | null
   premiumCardStyle?: string | null
+  accentColor?: string | null
+  featuredGame?: string | null
   createdAt: string
   friendsCount: number
   gamesPlayed: number
@@ -362,16 +376,31 @@ export default function PublicProfileView({
                   <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
                     {t('profile.publicProfile.eyebrow')}
                   </p>
-                  <h1 className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${profile.isPremium ? 'text-amber-500' : 'text-bd-ink dark:text-white'}`}>
+                  <h1
+                    className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${profile.isPremium && !profile.accentColor ? 'text-amber-500' : !profile.isPremium ? 'text-bd-ink dark:text-white' : ''}`}
+                    style={profile.isPremium && profile.accentColor ? { color: profile.accentColor } : undefined}
+                  >
                     {displayName}
                     {profile.isPremium && <span className="ml-2 text-3xl sm:text-4xl" title="Premium">👑</span>}
                   </h1>
                   <p className="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
                     @{handle}
                   </p>
-                  <p className="mt-4 max-w-xl text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
-                    {t('profile.publicProfile.subtitle')}
-                  </p>
+                  {profile.bio ? (
+                    <p className="mt-4 max-w-xl text-sm italic leading-6 text-bd-ink dark:text-slate-200">
+                      &ldquo;{profile.bio}&rdquo;
+                    </p>
+                  ) : (
+                    <p className="mt-4 max-w-xl text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
+                      {t('profile.publicProfile.subtitle')}
+                    </p>
+                  )}
+                  {profile.isPremium && profile.featuredGame && FEATURED_GAME_LABELS[profile.featuredGame] && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-bd-line bg-bd-card-warm px-3 py-1 text-xs font-semibold text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                      <span>{FEATURED_GAME_LABELS[profile.featuredGame].icon}</span>
+                      <span>Loves {FEATURED_GAME_LABELS[profile.featuredGame].label}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -415,7 +444,23 @@ export default function PublicProfileView({
 
               <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 dark:border-slate-700 dark:bg-slate-800/70">
                 <div className="relative flex w-full max-w-sm flex-col items-center text-center">
-                  {renderAvatar()}
+                  {profile.isPremium && profile.premiumCardStyle ? (
+                    <div className="w-full">
+                      <PremiumProfileCard
+                        style={profile.premiumCardStyle as PremiumCardStyle}
+                        profile={{
+                          displayName,
+                          handle,
+                          bio: profile.bio,
+                          memberSince,
+                          gamesPlayed: levelSourceGames,
+                          level,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    renderAvatar()
+                  )}
                   <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">
                     {t('profile.publicProfile.linkHint')}
                   </p>
