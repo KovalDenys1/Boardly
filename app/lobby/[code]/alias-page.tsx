@@ -252,7 +252,7 @@ const GameContextBar: React.FC<{ code: string; title?: string; right?: React.Rea
 )
 
 // Guess chat panel — shown on describer + guesser screens
-const GuessChatPanel: React.FC<{
+function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId, isMobile }: {
   guesses: GuessMessage[]
   guessInput: string
   onInputChange: (v: string) => void
@@ -261,87 +261,91 @@ const GuessChatPanel: React.FC<{
   canType: boolean
   endRef: React.RefObject<HTMLDivElement | null>
   currentUserId: string | null | undefined
-}> = ({ guesses, guessInput, onInputChange, onSend, onKeyDown, canType, endRef, currentUserId }) => (
-  <div style={{
-    ...cardBase,
-    display: 'flex', flexDirection: 'column',
-    width: 280, minWidth: 280, maxWidth: 280,
-    height: '100%', maxHeight: 560,
-    overflow: 'hidden', flexShrink: 0,
-  }}>
-    <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--bd-line)' }}>
-      <BdLabel>Guesses</BdLabel>
-    </div>
-    <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {guesses.length === 0 && (
-        <p style={{ color: 'var(--bd-ink-muted)', fontSize: 13, fontStyle: 'italic', textAlign: 'center', margin: '20px 0' }}>
-          No guesses yet…
-        </p>
-      )}
-      {guesses.map((g) => {
-        const isMe = g.userId === currentUserId
-        return (
-          <div key={g.id} style={{
-            display: 'flex', flexDirection: 'column', gap: 2,
-            alignItems: isMe ? 'flex-end' : 'flex-start',
-          }}>
-            {!isMe && (
-              <BdLabel style={{ fontSize: 9, marginLeft: 4 }}>{g.username}</BdLabel>
-            )}
-            <span style={{
-              padding: '7px 12px',
-              borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-              background: isMe ? 'var(--bd-ink)' : 'var(--bd-bg2)',
-              color: isMe ? 'var(--bd-bg)' : 'var(--bd-ink)',
-              fontSize: 14, fontWeight: 500, maxWidth: 220,
-              wordBreak: 'break-word',
-            }}>
-              {g.text}
-            </span>
-          </div>
-        )
-      })}
-      <div ref={endRef} />
-    </div>
-    {canType && (
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
-        <input
-          type="text"
-          value={guessInput}
-          onChange={e => onInputChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder="Type your guess…"
-          maxLength={80}
-          style={{
-            flex: 1, background: 'var(--bd-bg2)',
-            border: '1.5px solid var(--bd-line)', borderRadius: 10,
-            padding: '8px 12px', fontSize: 14, color: 'var(--bd-ink)',
-            outline: 'none',
-            fontFamily: 'inherit',
-          }}
-        />
-        <button
-          onClick={onSend}
-          disabled={!guessInput.trim()}
-          style={{
-            background: 'var(--bd-ink)', color: 'var(--bd-bg)',
-            border: 'none', borderRadius: 10,
-            padding: '8px 14px', fontWeight: 600, fontSize: 14,
-            cursor: 'pointer',
-            opacity: guessInput.trim() ? 1 : 0.4,
-          }}
-        >→</button>
+  isMobile?: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <div style={{
+      ...cardBase,
+      display: 'flex', flexDirection: 'column',
+      width: isMobile ? '100%' : 280, minWidth: 0, maxWidth: isMobile ? '100%' : 280,
+      height: isMobile ? 220 : '100%', maxHeight: isMobile ? 220 : 560,
+      overflow: 'hidden', flexShrink: 0,
+    }}>
+      <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid var(--bd-line)' }}>
+        <BdLabel>{t('alias.guesses')}</BdLabel>
       </div>
-    )}
-  </div>
-)
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {guesses.length === 0 && (
+          <p style={{ color: 'var(--bd-ink-muted)', fontSize: 13, fontStyle: 'italic', textAlign: 'center', margin: '20px 0' }}>
+            {t('alias.noGuessesYet')}
+          </p>
+        )}
+        {guesses.map((g) => {
+          const isMe = g.userId === currentUserId
+          return (
+            <div key={g.id} style={{
+              display: 'flex', flexDirection: 'column', gap: 2,
+              alignItems: isMe ? 'flex-end' : 'flex-start',
+            }}>
+              {!isMe && (
+                <BdLabel style={{ fontSize: 9, marginLeft: 4 }}>{g.username}</BdLabel>
+              )}
+              <span style={{
+                padding: '7px 12px',
+                borderRadius: isMe ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                background: isMe ? 'var(--bd-ink)' : 'var(--bd-bg2)',
+                color: isMe ? 'var(--bd-bg)' : 'var(--bd-ink)',
+                fontSize: 14, fontWeight: 500, maxWidth: 220,
+                wordBreak: 'break-word',
+              }}>
+                {g.text}
+              </span>
+            </div>
+          )
+        })}
+        <div ref={endRef} />
+      </div>
+      {canType && (
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
+          <input
+            type="text"
+            value={guessInput}
+            onChange={e => onInputChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={t('alias.guessPlaceholder')}
+            maxLength={80}
+            style={{
+              flex: 1, background: 'var(--bd-bg2)',
+              border: '1.5px solid var(--bd-line)', borderRadius: 10,
+              padding: '8px 12px', fontSize: 14, color: 'var(--bd-ink)',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+          <button
+            onClick={onSend}
+            disabled={!guessInput.trim()}
+            style={{
+              background: 'var(--bd-ink)', color: 'var(--bd-bg)',
+              border: 'none', borderRadius: 10,
+              padding: '8px 14px', fontWeight: 600, fontSize: 14,
+              cursor: 'pointer',
+              opacity: guessInput.trim() ? 1 : 0.4,
+            }}
+          >→</button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AliasPage({ code, isSpectator = false }: AliasPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const { isGuest, guestToken, guestId } = useGuest()
+  const { isGuest, guestToken, guestId, guestName } = useGuest()
   const { t } = useTranslation()
 
   const [loading, setLoading] = useState(true)
@@ -350,6 +354,15 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
   const [gameEngine, setGameEngine] = useState<AliasGame | null>(null)
   const [isStarting, setIsStarting] = useState(false)
   const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    setIsMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   // Live timer
   const [remaining, setRemaining] = useState(0)
@@ -620,7 +633,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     if (!guessInput.trim()) return
     const uid = getCurrentUserId()
     const username = isGuest
-      ? 'Guest'
+      ? (guestName ?? 'Guest')
       : (session?.user as any)?.username ?? session?.user?.name ?? 'Player'
     const id = Date.now()
     emitWhenConnected('chat-message', {
@@ -766,11 +779,13 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 20, alignItems: 'stretch' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto 1fr', gap: 20, alignItems: 'stretch' }}>
             <TeamCard side="left" name={t('alias.team1')} accent="var(--bd-coral)" accentDeep="var(--bd-coral-deep)" list={team1} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
-            </div>
+            {!isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="bd-float" style={{ fontFamily: FONT_DISPLAY, fontSize: 36, color: 'var(--bd-ink-muted)', fontStyle: 'italic' }}>vs</span>
+              </div>
+            )}
             <TeamCard side="right" name={t('alias.team2')} accent="var(--bd-lav)" accentDeep="#7A6AE8" list={team2} />
           </div>
 
@@ -786,8 +801,8 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
               }} />
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 14 }}>
                 {ready
-                  ? 'All set — ready when host is.'
-                  : `Need ${Math.max(0, 4 - players.length)} more player${players.length === 3 ? '' : 's'} to begin.`}
+                  ? t('alias.allSetReady')
+                  : t('alias.needMorePlayers', { count: Math.max(0, 4 - players.length) })}
               </span>
             </div>
             {isHost ? (
@@ -807,7 +822,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                 fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
               }}>
                 <span className="bd-float" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--bd-ink-muted)' }} />
-                Waiting for host to start…
+                {t('alias.waitingForHostToStart')}
               </span>
             )}
           </div>
@@ -988,7 +1003,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
                 fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
               }}>
                 <span className="bd-float" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--bd-ink-muted)' }} />
-                Waiting for host to start…
+                {t('alias.waitingForHostToStart')}
               </span>
             )}
           </div>
@@ -1017,6 +1032,7 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     onKeyDown: handleGuessKeyDown,
     endRef: guessesEndRef,
     currentUserId,
+    isMobile,
   }
 
   // ── PHASE 2 — Describer turn ───────────────────────────────────────────────
@@ -1041,7 +1057,8 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
           />
           <main style={{
             maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', gap: 24, alignItems: 'flex-start',
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start',
+            padding: isMobile ? '0 0 16px' : undefined,
           }}>
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
@@ -1177,7 +1194,8 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
           />
           <main style={{
             maxWidth: 1200, width: '100%', margin: '0 auto', flex: 1, minHeight: 0,
-            display: 'flex', gap: 24, alignItems: 'flex-start',
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start',
+            padding: isMobile ? '0 0 16px' : undefined,
           }}>
             {/* Game content */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
@@ -1266,12 +1284,12 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
         {!isSpectator && <ReactionOverlay lobbyCode={code} />}
         <div style={{ ...pageBg(lobby?.theme), display: 'flex', flexDirection: 'column' }} data-testid="alias-turn-results-screen">
           <GameContextBar code={code} title={t('alias.turnCompleteTitle')} />
-          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
+          <main style={{ maxWidth: 980, width: '100%', margin: '0 auto', flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: 22, alignItems: 'stretch' }}>
             {/* Word list */}
             <section style={{ ...cardBase, padding: 28, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16, flexShrink: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <BdLabel>{describerPlayer?.name ? `${describerPlayer.name} described` : 'Words this turn'}</BdLabel>
+                  <BdLabel>{describerPlayer?.name ? t('alias.describerWords', { name: describerPlayer.name }) : t('alias.wordsThisTurn')}</BdLabel>
                   <h2 style={{ fontFamily: FONT_DISPLAY, fontWeight: 700, fontSize: 28, margin: 0 }}>
                     {wordResults.length} {wordResults.length === 1 ? 'word' : 'words'}
                   </h2>

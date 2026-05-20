@@ -417,6 +417,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const isLeavingLobbyRef = React.useRef(false)
+    const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const leaveStartedAtRef = React.useRef<number | null>(null)
@@ -624,7 +625,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
             isAutoAction?: boolean
         }
     ): Promise<boolean> => {
-        if (!gameEngine || !game || isMoveSubmitting) return false
+        if (!gameEngine || !game || isMoveSubmittingRef.current) return false
         const normalizedAutoActionContext = options?.autoActionContext
         const isAutoAction = options?.isAutoAction === true
         const submitStartedAt = Date.now()
@@ -640,6 +641,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                 }
                 return false
             }
+            isMoveSubmittingRef.current = true
+            setIsMoveSubmitting(true)
             let optimisticState = optimisticEngine.getState()
             if (!isAutoAction) {
                 optimisticEngine.processMove(move)
@@ -655,7 +658,6 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                     }
                 })
             }
-            setIsMoveSubmitting(true)
             const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -718,9 +720,10 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
             await loadLobby()
             return false
         } finally {
+            isMoveSubmittingRef.current = false
             setIsMoveSubmitting(false)
         }
-    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isGuest])
 
     const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
         if (!gameEngine) return null

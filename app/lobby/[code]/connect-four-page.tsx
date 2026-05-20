@@ -77,7 +77,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 {Array.from({ length: COLS }, (_, c) => (
                     <div key={c} style={{
                         height: 20, display: 'grid', placeItems: 'center',
-                        opacity: hoverCol === c && !disabled ? 1 : 0,
+                        opacity: hoverCol === c && !disabled && board[0][c] === null ? 1 : 0,
                         transition: 'opacity 0.12s',
                     }}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -458,6 +458,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const [hoverCol, setHoverCol] = useState<number | null>(null)
     const isLeavingLobbyRef = React.useRef(false)
+    const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const leaveStartedAtRef = React.useRef<number | null>(null)
@@ -660,7 +661,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         move: Move,
         options?: { autoActionContext?: AutoActionContext; isAutoAction?: boolean }
     ): Promise<boolean> => {
-        if (!gameEngine || !game || isMoveSubmitting) return false
+        if (!gameEngine || !game || isMoveSubmittingRef.current) return false
         const isAutoAction = options?.isAutoAction === true
         const normalizedAutoActionContext = options?.autoActionContext
         const submitStartedAt = Date.now()
@@ -674,6 +675,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                 if (!isAutoAction) showToast.error('errors.invalidActionData')
                 return false
             }
+            isMoveSubmittingRef.current = true
+            setIsMoveSubmitting(true)
             let optimisticState = optimisticEngine.getState()
             if (!isAutoAction) {
                 optimisticEngine.processMove(move)
@@ -689,7 +692,6 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
                     }
                 })
             }
-            setIsMoveSubmitting(true)
             const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -740,9 +742,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
             await loadLobby()
             return false
         } finally {
+            isMoveSubmittingRef.current = false
             setIsMoveSubmitting(false)
         }
-    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isGuest])
 
     const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
         if (!gameEngine) return null
