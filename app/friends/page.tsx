@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Friends from '@/components/Friends'
@@ -12,17 +12,18 @@ function FriendsPageContent() {
   const router = useRouter()
   const { t } = useTranslation()
 
-  if (status === 'loading') {
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/login?returnUrl=/friends')
+    }
+  }, [status, router])
+
+  if (status === 'loading' || status === 'unauthenticated') {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
-  }
-
-  if (status === 'unauthenticated') {
-    router.push('/auth/login?returnUrl=/friends')
-    return null
   }
 
   return (
