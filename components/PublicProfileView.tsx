@@ -571,6 +571,7 @@ export default function PublicProfileView({
                               memberSince,
                               gamesPlayed: levelSourceGames,
                               level,
+                              avatarUrl: profile.avatarUrl ?? profile.image,
                             }}
                           />
                         </div>

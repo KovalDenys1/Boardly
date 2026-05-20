@@ -16,6 +16,21 @@ interface ProfileData {
   memberSince: string
   gamesPlayed: number
   level: number
+  avatarUrl?: string | null
+}
+
+function AvatarInner({ profile, size, textColor, bg }: { profile: ProfileData; size: number; textColor: string; bg: string }) {
+  if (profile.avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={profile.avatarUrl} alt={profile.displayName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+    )
+  }
+  return (
+    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Fraunces", Georgia, serif', fontWeight: 700, fontSize: size, color: textColor }}>
+      {profile.displayName.charAt(0).toUpperCase()}
+    </div>
+  )
 }
 
 function StatBlock({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
@@ -50,12 +65,9 @@ function GoldCard({ profile }: { profile: ProfileData }) {
             position: 'absolute', inset: -3, borderRadius: '50%',
             background: 'conic-gradient(from 0deg, #C9A020, #F0D060, #C9A020, #8A6A0A, #C9A020)',
           }} />
-          <div style={{
-            position: 'absolute', inset: 3, borderRadius: '50%',
-            background: '#FAF2D8',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Fraunces", Georgia, serif', fontWeight: 700, fontSize: 28, color: '#3A2800',
-          }}>{profile.displayName.charAt(0).toUpperCase()}</div>
+          <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', overflow: 'hidden' }}>
+            <AvatarInner profile={profile} size={28} textColor="#3A2800" bg="#FAF2D8" />
+          </div>
         </div>
         <div style={{
           padding: '4px 10px', borderRadius: 999,
@@ -116,14 +128,14 @@ function GlassCard({ profile }: { profile: ProfileData }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ position: 'relative' }}>
             <div style={{
-              width: 72, height: 72, borderRadius: '50%',
+              width: 72, height: 72, borderRadius: '50%', overflow: 'hidden',
               background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.6))',
               backdropFilter: 'blur(8px)',
               border: '2px solid rgba(255,255,255,0.7)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 28, color: '#1F1B16',
               boxShadow: '0 5px 12px -5px rgba(0,0,0,0.22)',
-            }}>{profile.displayName.charAt(0).toUpperCase()}</div>
+            }}>
+              <AvatarInner profile={profile} size={28} textColor="#1F1B16" bg="linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.6))" />
+            </div>
             <div style={{
               position: 'absolute', bottom: -2, right: -2,
               width: 22, height: 22, borderRadius: '50%',
@@ -176,13 +188,9 @@ function HoloCard({ profile }: { profile: ProfileData }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ position: 'relative', width: 72, height: 72 }}>
               <div className="bd-holo-ring" style={{ position: 'absolute', inset: -3, borderRadius: '50%', filter: 'blur(0.5px)' }} />
-              <div style={{
-                position: 'absolute', inset: 3, borderRadius: '50%',
-                background: 'linear-gradient(150deg, #fff, #F0EEF8)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 28, color: '#1F1B16',
-                boxShadow: 'inset 0 0 0 2px #fff, 0 3px 8px rgba(0,0,0,0.16)',
-              }}>{profile.displayName.charAt(0).toUpperCase()}</div>
+              <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', overflow: 'hidden', boxShadow: 'inset 0 0 0 2px #fff, 0 3px 8px rgba(0,0,0,0.16)' }}>
+                <AvatarInner profile={profile} size={28} textColor="#1F1B16" bg="linear-gradient(150deg, #fff, #F0EEF8)" />
+              </div>
             </div>
             <div style={{
               padding: '4px 9px 4px', borderRadius: 999,
@@ -233,14 +241,9 @@ function DarkCard({ profile }: { profile: ProfileData }) {
       <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ position: 'relative', width: 72, height: 72 }}>
           <div style={{ position: 'absolute', inset: -3, borderRadius: '50%', background: 'linear-gradient(150deg, #4FC9A6, transparent 60%)', filter: 'blur(2px)' }} />
-          <div style={{
-            position: 'absolute', inset: 3, borderRadius: '50%',
-            background: 'linear-gradient(150deg, #2A2522, #16120E)',
-            border: '1px solid rgba(79,201,166,0.38)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 28, color: '#F2EBDF',
-            boxShadow: 'inset 0 0 20px rgba(79,201,166,0.12)',
-          }}>{profile.displayName.charAt(0).toUpperCase()}</div>
+          <div style={{ position: 'absolute', inset: 3, borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(79,201,166,0.38)', boxShadow: 'inset 0 0 20px rgba(79,201,166,0.12)' }}>
+            <AvatarInner profile={profile} size={28} textColor="#F2EBDF" bg="linear-gradient(150deg, #2A2522, #16120E)" />
+          </div>
         </div>
         <div style={{
           padding: '4px 10px', borderRadius: 999,
