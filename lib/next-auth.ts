@@ -337,6 +337,17 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // One-time backfill for stale tokens: sync avatar + username from DB
+      if (!token.avatarResolved && token.id) {
+        const dbUser = await prisma.users.findUnique({
+          where: { id: String(token.id) },
+          select: { avatarUrl: true, username: true },
+        })
+        token.picture = dbUser?.avatarUrl ?? null
+        if (dbUser?.username) token.name = dbUser.username
+        token.avatarResolved = true
+      }
+
       // Update lastActiveAt for authenticated users (throttled to once per 5 minutes)
       if (token.id && !token.lastActiveUpdate) {
         token.lastActiveUpdate = Date.now()

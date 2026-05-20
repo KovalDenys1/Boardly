@@ -40,5 +40,6 @@ declare module 'next-auth/jwt' {
     rememberMe?: boolean
     authenticatedAt?: number
     lastActiveUpdate?: number // Timestamp of last lastActiveAt update
+    avatarResolved?: boolean // Set after avatar backfill check to avoid repeated DB queries
   }
 }
