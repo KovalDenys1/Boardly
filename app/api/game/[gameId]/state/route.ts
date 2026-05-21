@@ -8,6 +8,7 @@ import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/discon
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { verifyCsrfToken } from '@/lib/csrf'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
@@ -204,6 +205,10 @@ export async function POST(
     const rateLimitResult = await limiter(request)
     if (rateLimitResult) {
       return rateLimitResult
+    }
+
+    if (!verifyCsrfToken(request)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { gameId } = await params
