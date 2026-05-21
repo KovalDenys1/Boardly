@@ -105,7 +105,7 @@ function CreateLobbyPage() {
     name: '',
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
-    allowSpectators: true,
+    allowSpectators: false,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60,
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
@@ -852,22 +852,30 @@ function CreateLobbyPage() {
               <div className="h-px flex-1 bg-bd-line" />
             </div>
 
-            {/* Spectators */}
+            {/* Spectators — premium only */}
             <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
               <div>
-                <p className="font-semibold text-bd-ink">Spectators</p>
-                <p className="text-[13px] text-bd-ink-muted">Allow others to watch</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-bd-ink">Spectators</p>
+                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500">👑 Premium</span>}
+                </div>
+                <p className="text-[13px] text-bd-ink-muted">
+                  {isPremiumUser ? 'Allow others to watch' : 'Upgrade to allow spectators'}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
+                disabled={!isPremiumUser}
+                onClick={() => isPremiumUser && setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
                 aria-pressed={formData.allowSpectators}
                 aria-label="Toggle spectators"
                 style={{
                   position: 'relative', display: 'inline-flex', height: 28, width: 52,
-                  alignItems: 'center', borderRadius: 999, border: 'none', cursor: 'pointer',
+                  alignItems: 'center', borderRadius: 999, border: 'none',
+                  cursor: isPremiumUser ? 'pointer' : 'not-allowed',
                   flexShrink: 0, transition: 'background 0.2s',
                   background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
+                  opacity: isPremiumUser ? 1 : 0.5,
                 }}
               >
                 <span style={{
