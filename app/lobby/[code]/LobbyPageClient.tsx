@@ -632,9 +632,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               (p) => p.userId === lastRoll.playerId || p.id === lastRoll.playerId
             )
 
-            // Safety check: ensure player exists and has required data
             const playerIsBot = !!(player?.user?.bot || player?.bot)
-            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp && !playerIsBot) {
+            if (player && Array.isArray(lastRoll.dice) && lastRoll.timestamp) {
               const turnNumber = getYahtzeeTurnNumberFromScorecard(
                 newEngine instanceof YahtzeeGame ? newEngine.getScorecard(lastRoll.playerId) : null
               )
@@ -646,8 +645,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                 if (exists) return prev
 
-                // Play dice roll sound for other players' rolls (not our own)
-                if (lastRoll.playerId !== currentUserId) {
+                if (!playerIsBot && lastRoll.playerId !== currentUserId) {
                   playAmbientSound('diceRoll', { force: true })
                 }
 
@@ -659,8 +657,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   rollNumber: lastRoll.rollNumber,
                   turnNumber: turnNumber,
                   held: normalizeHeldIndexes(lastRoll.held),
-                  isBot: false,
-                  botId: null,
+                  isBot: playerIsBot,
+                  botId: playerIsBot ? (player.userId ?? null) : null,
                   timestamp: lastRoll.timestamp,
                 }
 

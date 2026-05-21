@@ -21,7 +21,7 @@ interface MobileTabsProps {
 export default function MobileTabs({ activeTab, onTabChange, tabs, unreadChatCount }: MobileTabsProps) {
   return (
     <div className="flex-shrink-0 w-full border-t shadow-lg lg:hidden pb-[max(env(safe-area-inset-bottom),0.25rem)]" style={{ background: 'var(--bd-bg2)', borderColor: 'var(--bd-line)' }}>
-      <div className="grid grid-cols-4 gap-0">
+      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
           const badgeValue =
