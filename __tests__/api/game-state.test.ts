@@ -150,6 +150,7 @@ describe('POST /api/game/[gameId]/state', () => {
   const buildRequest = (body: unknown) =>
     new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
+      headers: { origin: 'http://localhost:3000' },
       body: JSON.stringify(body),
     })
 
@@ -931,5 +932,98 @@ describe('POST /api/game/[gameId]/state', () => {
         triggeredAt: expect.any(Number),
       })
     )
+  })
+
+  it('returns 409 for second concurrent move when optimistic lock fails', async () => {
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 1,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+    }
+
+    const mockEngine = {
+      makeMove: jest.fn().mockReturnValue(true),
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-2' })),
+      getPlayers: jest.fn(() => [
+        { id: 'player-1', score: 10 },
+        { id: 'player-2', score: 5 },
+      ]),
+      getScorecard: jest.fn(() => ({})),
+    }
+
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValue(dbGame as any)
+    // First request wins; second gets count:0 (another writer won the lock)
+    mockPrisma.games.updateMany
+      .mockResolvedValueOnce({ count: 1 } as any)
+      .mockResolvedValueOnce({ count: 0 } as any)
+    mockPrisma.players.update.mockResolvedValue({} as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    const [first, second] = await Promise.all([
+      POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      }),
+      POST(buildRequest({ move: { type: 'roll', data: {} } }), {
+        params: Promise.resolve({ gameId: 'game-123' }),
+      }),
+    ])
+
+    const statuses = [first.status, second.status].sort()
+    expect(statuses).toEqual([200, 409])
+
+    const loser = first.status === 409 ? first : second
+    expect((await loser.json()).code).toBe('STATE_CONFLICT')
+  })
+
+  it('returns 202 AUTO_ACTION_DEBOUNCED for duplicate auto-action with same debounce key', async () => {
+    const engineState = {
+      ...persistedState,
+      currentPlayerIndex: 0,
+      updatedAt: new Date().toISOString(),
+      lastMoveAt: Date.now(),
+    }
+    const mockEngine = {
+      getState: jest.fn(() => engineState),
+      getCurrentPlayer: jest.fn(() => ({ id: 'player-1' })),
+      getRollsLeft: jest.fn(() => 0),
+    }
+    mockGetRequestAuthUser.mockResolvedValue(mockAuthUser)
+    mockPrisma.games.findUnique.mockResolvedValue(dbGame as any)
+    mockRestoreGameEngine.mockReturnValue(mockEngine as any)
+
+    // Unique key per test run to avoid cross-test debounce state bleeding
+    const uniqueKey = `debounce-${Date.now()}-${Math.random()}`
+    const autoActionBody = {
+      move: { type: 'score', data: { category: 'chance' } },
+      autoActionContext: {
+        source: 'turn-timeout',
+        debounceKey: uniqueKey,
+        turnSnapshot: {
+          currentPlayerId: 'player-1',
+          currentPlayerIndex: 0,
+          lastMoveAt: null,
+          rollsLeft: 0,
+          updatedAt: engineState.updatedAt,
+        },
+      },
+    }
+
+    // First call registers the key in the module-level debounce map
+    await POST(buildRequest(autoActionBody), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+
+    // Second identical call within the 2s window must be skipped
+    const second = await POST(buildRequest(autoActionBody), {
+      params: Promise.resolve({ gameId: 'game-123' }),
+    })
+    const payload = await second.json()
+
+    expect(second.status).toBe(202)
+    expect(payload.code).toBe('AUTO_ACTION_DEBOUNCED')
+    expect(payload.skipped).toBe(true)
   })
 })
