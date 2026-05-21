@@ -4,6 +4,10 @@ import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 
+const MAX_BOT_RETRIES = 2
+const WATCHDOG_MS = 14_000
+const RETRY_DELAY_MS = 2_000
+
 interface GamePlayer {
   userId: string
   user?: {
@@ -34,6 +38,18 @@ export function useBotTurn({
   const botTurnInProgress = useRef(false)
   const lastBotPlayerId = useRef<string | null>(null)
   const lastPlayerIndex = useRef<number | null>(null)
+  const retryAttemptRef = useRef(0)
+  const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ref to always hold the latest triggerBotTurn for self-referencing retries
+  const triggerBotTurnRef = useRef<((botUserId: string, gameId: string) => Promise<void>) | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (watchdogTimerRef.current !== null) clearTimeout(watchdogTimerRef.current)
+      if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
+    }
+  }, [])
 
   const reconcileAfterBotTurn = useCallback(async (reason: string) => {
     if (!reconcileWithServerSnapshot) return
@@ -49,6 +65,15 @@ export function useBotTurn({
     }
   }, [reconcileWithServerSnapshot])
 
+  const scheduleRetry = useCallback((botUserId: string, gameId: string, delayMs: number) => {
+    if (retryTimerRef.current !== null) clearTimeout(retryTimerRef.current)
+    retryTimerRef.current = setTimeout(() => {
+      lastBotPlayerId.current = null
+      lastPlayerIndex.current = null
+      void triggerBotTurnRef.current?.(botUserId, gameId)
+    }, delayMs)
+  }, [])
+
   const triggerBotTurn = useCallback(async (botUserId: string, gameId: string) => {
     if (botTurnInProgress.current) {
       clientLogger.log('🤖 Bot turn already in progress, skipping...')
@@ -56,6 +81,15 @@ export function useBotTurn({
     }
 
     botTurnInProgress.current = true
+
+    // Watchdog: if bot turn hangs, force-unlock and retry silently
+    watchdogTimerRef.current = setTimeout(() => {
+      if (!botTurnInProgress.current) return
+      clientLogger.warn('🤖 Bot turn watchdog fired — force-unlocking', { botUserId })
+      botTurnInProgress.current = false
+      void reconcileAfterBotTurn('watchdog')
+      scheduleRetry(botUserId, gameId, RETRY_DELAY_MS)
+    }, WATCHDOG_MS)
 
     clientLogger.log('🤖 Triggering bot turn for:', botUserId)
 
@@ -70,36 +104,53 @@ export function useBotTurn({
       if (!response.ok) {
         const error = responseData as { error?: string }
 
-        // Don't show error toast or log for expected race conditions:
-        // - 409: Bot turn already in progress (lock prevented duplicate)
-        // - "Not bot's turn": Race condition timing issue
+        // Expected race conditions — silent skip, no retry
         if (response.status === 409 || error.error === "Not bot's turn") {
           clientLogger.debug('🤖 Bot turn request skipped (expected race condition):', { status: response.status, error: error.error })
           if (error.error === "Not bot's turn") {
-            // Allow a retry after snapshot reconciliation if local state was ahead.
             lastBotPlayerId.current = null
             lastPlayerIndex.current = null
           }
-          return // Silent return, no error thrown
+          retryAttemptRef.current = 0
+          return
         }
 
         clientLogger.error('🤖 Bot turn API error:', { status: response.status, error })
+        if (retryAttemptRef.current < MAX_BOT_RETRIES) {
+          retryAttemptRef.current++
+          clientLogger.warn(`🤖 Retrying bot turn (attempt ${retryAttemptRef.current}/${MAX_BOT_RETRIES})`)
+          scheduleRetry(botUserId, gameId, RETRY_DELAY_MS)
+          return
+        }
+        retryAttemptRef.current = 0
         showToast.error('toast.botMoveFailed')
-        throw new Error(error.error || 'Bot turn failed')
+        return
       }
 
-      const data = responseData
-      clientLogger.log('🤖 Bot turn completed:', data)
+      retryAttemptRef.current = 0
+      clientLogger.log('🤖 Bot turn completed:', responseData)
     } catch (error) {
       clientLogger.error('🤖 Bot turn error:', error)
-      // Allow retry on the same turn after transport/runtime failures.
-      lastBotPlayerId.current = null
-      lastPlayerIndex.current = null
-      await reconcileAfterBotTurn('bot-turn-error')
+      if (retryAttemptRef.current < MAX_BOT_RETRIES) {
+        retryAttemptRef.current++
+        clientLogger.warn(`🤖 Retrying bot turn after error (attempt ${retryAttemptRef.current}/${MAX_BOT_RETRIES})`)
+        scheduleRetry(botUserId, gameId, RETRY_DELAY_MS)
+      } else {
+        retryAttemptRef.current = 0
+        showToast.error('toast.botMoveFailed')
+        await reconcileAfterBotTurn('bot-turn-error')
+      }
     } finally {
+      if (watchdogTimerRef.current !== null) {
+        clearTimeout(watchdogTimerRef.current)
+        watchdogTimerRef.current = null
+      }
       botTurnInProgress.current = false
     }
-  }, [code, reconcileAfterBotTurn])
+  }, [code, reconcileAfterBotTurn, scheduleRetry])
+
+  // Keep ref current for retry self-calls
+  triggerBotTurnRef.current = triggerBotTurn
 
   // Monitor for bot turns
   useEffect(() => {

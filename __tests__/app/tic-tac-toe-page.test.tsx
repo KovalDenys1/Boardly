@@ -72,6 +72,7 @@ jest.mock('@/lib/client-logger', () => ({
     log: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
+    debug: jest.fn(),
   },
 }))
 

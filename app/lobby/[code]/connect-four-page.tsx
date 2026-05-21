@@ -31,6 +31,7 @@ import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { useGameTimer } from './hooks/useGameTimer'
+import { useBotTurn } from './hooks/useBotTurn'
 
 // ─── Design sub-components ────────────────────────────────────────────────────
 
@@ -790,6 +791,13 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 { autoActionContext, isAutoAction: true }
             )
         },
+    })
+
+    useBotTurn({
+        game,
+        gameEngine,
+        code,
+        isGameStarted: game?.status === 'playing',
     })
 
     const handleLeave = async () => {

@@ -461,7 +461,7 @@ export async function POST(request: NextRequest) {
 
       // Trigger bot turn via separate HTTP request (fire and forget)
       const botApiUrl = `${request.nextUrl.origin}/api/game/${game.id}/bot-turn`
-      const internalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+      const internalSecret = process.env.BOARDLY_INTERNAL_SECRET
       const forwardedAuthorization = request.headers.get('authorization')
       const forwardedGuestToken = request.headers.get('X-Guest-Token')
       const botTurnHeaders: Record<string, string> = {
