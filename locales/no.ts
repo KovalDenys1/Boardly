@@ -1016,6 +1016,7 @@ const no = {
       accept: 'Godta',
       decline: 'Avslå',
       returnToLobby: 'Tilbake til venterom',
+      kickPlayer: 'Fjern spiller',
     }
   },
   yahtzee: {
@@ -2050,6 +2051,9 @@ const no = {
     addingBot: 'Legger til bot-spiller...',
     botAddFailed: 'Kunne ikke legge til bot-spiller. Prøv igjen.',
     botKicked: 'Bot fjernet fra lobbyen.',
+    playerKicked: 'Spiller fjernet fra lobbyen.',
+    playerWasKicked: '{{player}} ble fjernet fra lobbyen.',
+    youWereKicked: 'Du ble fjernet fra lobbyen av verten.',
     botAddedToStart: '🤖 La til {{botName}} ({{difficulty}}) så du kan starte med en gang!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) ble med i lobbyen!',
     gameStarted: '🎲 Spillet startet! {{player}} begynner!',

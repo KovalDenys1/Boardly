@@ -835,6 +835,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     hostLeft?: boolean
     isBot?: boolean
     gameTerminal?: boolean
+    kicked?: boolean
   }) => {
     clientLogger.log('📡 Player left:', data)
 
@@ -844,6 +845,22 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     // Bot kick already toasted from kickBot() — skip the generic left toast + sound
     if (data.isBot) {
+      if (loadLobbyRef.current) void loadLobbyRef.current()
+      return
+    }
+
+    // Kicked player: redirect them out, others see a toast
+    if (data.kicked) {
+      const currentUserId = isGuest ? guestId : session?.user?.id
+      if (data.userId === currentUserId) {
+        showToast.error('toast.youWereKicked')
+        triggerLifecycleRedirect('kicked')
+        return
+      }
+      const departedName = data.username || data.playerName
+      if (departedName) {
+        showToast.info('toast.playerWasKicked', undefined, { player: departedName })
+      }
       if (loadLobbyRef.current) void loadLobbyRef.current()
       return
     }
@@ -970,6 +987,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     loadLobby,
     addBotToLobby,
     kickBot,
+    kickPlayer,
     changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
@@ -2001,7 +2019,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 minPlayers={minPlayersRequired}
                 getCurrentUserId={getCurrentUserId}
                 canManageBots={canStartGame}
+                canKickPlayers={isCreator}
                 onKickBot={kickBot}
+                onKickPlayer={kickPlayer}
                 onProfileClick={setProfileUserId}
               />
             </div>

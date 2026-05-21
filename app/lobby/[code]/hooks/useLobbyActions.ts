@@ -726,6 +726,23 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     return data
   }, [code, isGuest, guestId, guestName, guestToken, setLobby, lobby])
 
+  const kickPlayer = useCallback(async (playerId: string) => {
+    try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+      const res = await fetch(`/api/lobby/${code}/kick-player`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ playerId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to kick player')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+      showToast.success('toast.playerKicked')
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.error')
+    }
+  }, [code, isGuest, guestId, guestName, guestToken])
+
   const kickBot = useCallback(async (botPlayerId: string) => {
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -763,6 +780,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     loadLobby,
     addBotToLobby,
     kickBot,
+    kickPlayer,
     changeBotDifficulty,
     announceBotJoined,
     handleJoinLobby,

@@ -1018,6 +1018,7 @@ const uk: Translation = {
       accept: 'Прийняти',
       decline: 'Відхилити',
       returnToLobby: 'Повернутися до лобі',
+      kickPlayer: 'Видалити гравця',
     },
   },
   yahtzee: {
@@ -2064,6 +2065,9 @@ const uk: Translation = {
     addingBot: 'Додавання бота...',
     botAddFailed: 'Не вдалося додати бота. Спробуйте ще раз.',
     botKicked: 'Бота видалено з лобі.',
+    playerKicked: 'Гравця видалено з лобі.',
+    playerWasKicked: '{{player}} було видалено з лобі.',
+    youWereKicked: 'Вас видалив з лобі хост.',
     botAddedToStart: '🤖 Додано {{botName}} ({{difficulty}}), щоб можна було одразу почати гру!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) приєднався до лобі!',
     gameStarted: '🎲 Гру розпочато! {{player}} ходить першим!',

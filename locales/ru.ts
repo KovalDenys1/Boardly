@@ -1016,6 +1016,7 @@ const ru = {
       accept: 'Принять',
       decline: 'Отклонить',
       returnToLobby: 'Вернуться в лобби',
+      kickPlayer: 'Удалить игрока',
     }
   },
   yahtzee: {
@@ -2050,6 +2051,9 @@ const ru = {
     addingBot: 'Добавление бота...',
     botAddFailed: 'Не удалось добавить бота. Попробуйте снова.',
     botKicked: 'Бот удалён из лобби.',
+    playerKicked: 'Игрок удалён из лобби.',
+    playerWasKicked: '{{player}} был удалён из лобби.',
+    youWereKicked: 'Хост удалил вас из лобби.',
     botAddedToStart: '🤖 Добавлен {{botName}} ({{difficulty}}), чтобы можно было начать игру!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) присоединился к лобби!',
     gameStarted: '🎲 Игра началась! {{player}} ходит первым!',

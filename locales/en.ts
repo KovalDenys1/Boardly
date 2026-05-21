@@ -1016,6 +1016,7 @@ const en = {
       accept: 'Accept',
       decline: 'Decline',
       returnToLobby: 'Return to Lobby',
+      kickPlayer: 'Remove player',
     },
   },
   yahtzee: {
@@ -2062,6 +2063,9 @@ const en = {
     addingBot: 'Adding bot player...',
     botAddFailed: 'Failed to add bot player. Please try again.',
     botKicked: 'Bot removed from lobby.',
+    playerKicked: 'Player removed from lobby.',
+    playerWasKicked: '{{player}} was removed from the lobby.',
+    youWereKicked: 'You were removed from the lobby by the host.',
     botAddedToStart: '🤖 Added {{botName}} ({{difficulty}}) so you can start playing!',
     botJoinedLobby: '🤖 {{botName}} ({{difficulty}}) joined the lobby!',
     gameStarted: '🎲 Game started! {{player}} goes first!',

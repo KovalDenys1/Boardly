@@ -12,7 +12,9 @@ interface WaitingRoomProps {
   minPlayers: number
   getCurrentUserId: () => string | null | undefined
   canManageBots?: boolean
+  canKickPlayers?: boolean
   onKickBot?: (botPlayerId: string) => void
+  onKickPlayer?: (playerId: string) => void
   onProfileClick?: (userId: string) => void
 }
 
@@ -22,7 +24,9 @@ export default function WaitingRoom({
   minPlayers,
   getCurrentUserId,
   canManageBots,
+  canKickPlayers,
   onKickBot,
+  onKickPlayer,
   onProfileClick,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
@@ -104,6 +108,16 @@ export default function WaitingRoom({
                 onClick={() => onKickBot(p.id)}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
                 title="Remove bot"
+              >
+                ✕
+              </button>
+            )}
+            {/* Kick player button */}
+            {!isBot && !isCurrentUser && canKickPlayers && onKickPlayer && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onKickPlayer(p.id) }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
+                title={t('game.ui.kickPlayer')}
               >
                 ✕
               </button>
