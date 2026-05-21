@@ -33,10 +33,9 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   
-  // Socket.IO
-  NEXT_PUBLIC_SOCKET_URL: z.string().url().optional(),
   CORS_ORIGIN: z.string().optional(),
-  SOCKET_SERVER_INTERNAL_SECRET: z.string().min(16, 'SOCKET_SERVER_INTERNAL_SECRET must be at least 16 characters').optional(),
+  // Internal secret for server-to-server bot-turn requests
+  BOARDLY_INTERNAL_SECRET: z.string().optional(),
   BOT_UX_DELAY_MS: z.string().optional(),
   BOT_UX_DELAY_SCALE: z.string().optional(),
   BOT_UX_DELAY_MIN_MS: z.string().optional(),
@@ -62,7 +61,6 @@ export type Env = z.infer<typeof envSchema>
 
 export interface ValidateEnvOptions {
   requireCronSecretInProduction?: boolean
-  requireSocketInternalSecretInProduction?: boolean
 }
 
 /**
@@ -72,33 +70,24 @@ export interface ValidateEnvOptions {
 export function validateEnv(options: ValidateEnvOptions = {}): Env {
   const {
     requireCronSecretInProduction = true,
-    requireSocketInternalSecretInProduction = true,
   } = options
 
   try {
     const env = envSchema.parse(process.env)
-    
+
     // Additional custom validations
     if (env.NODE_ENV === 'production') {
       // In production, these should be set
       if (!env.RESEND_API_KEY) {
         console.warn('⚠️  RESEND_API_KEY not set. Email functionality will be disabled.')
       }
-      
-      if (!env.NEXT_PUBLIC_SOCKET_URL) {
-        console.warn('⚠️  NEXT_PUBLIC_SOCKET_URL not set. Using default origin.')
-      }
-      
+
       if (!env.CORS_ORIGIN) {
         console.warn('⚠️  CORS_ORIGIN not set. Using NEXTAUTH_URL as origin.')
       }
 
       if (!env.NEXTAUTH_SECRET) {
-        console.warn('⚠️  NEXTAUTH_SECRET not set. Auth token validation and guest socket auth may fail.')
-      }
-
-      if (requireSocketInternalSecretInProduction && !env.SOCKET_SERVER_INTERNAL_SECRET) {
-        throw new Error('SOCKET_SERVER_INTERNAL_SECRET is required in production')
+        console.warn('⚠️  NEXTAUTH_SECRET not set. Auth token validation may fail.')
       }
 
       if (requireCronSecretInProduction && !env.CRON_SECRET) {
@@ -179,8 +168,7 @@ export function printEnvInfo(options: ValidateEnvOptions = {}): void {
     console.log(`  - Email Service: ⚠️  Disabled`)
   }
   
-  console.log(`  - Socket.IO URL: ${env.NEXT_PUBLIC_SOCKET_URL || 'Not set (using default)'}`)
-  console.log(`  - Socket Internal Secret: ${env.SOCKET_SERVER_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set'}`)
+  console.log(`  - Internal Secret (BOARDLY_INTERNAL_SECRET): ${env.BOARDLY_INTERNAL_SECRET ? '✅ Set' : '⚠️  Not set (server-side bot turns will fall back to client-side)'}`)
   console.log(`  - Bot UX Delay Override: ${env.BOT_UX_DELAY_MS || 'auto'}`)
   console.log(`  - Bot UX Delay Scale: ${env.BOT_UX_DELAY_SCALE || '0.55 (default)'}`)
   console.log(

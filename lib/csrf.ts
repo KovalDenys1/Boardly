@@ -11,11 +11,8 @@ import { logger } from './logger'
 
 const DEFAULT_ALLOWED_ORIGINS = [
   process.env.NEXTAUTH_URL || 'http://localhost:3000',
-  process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001',
   'http://localhost:3000',
-  'http://localhost:3001',
   'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
   'https://boardly.online',
 ]
 

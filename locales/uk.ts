@@ -1828,7 +1828,7 @@ const uk: Translation = {
     invalidToken: 'Невірний або відсутній токен',
     failedToLoad: 'Не вдалося завантажити дані. Спробуйте знову.',
     gameNotFound: 'Гру не знайдено',
-    // Socket/Connection errors
+    // Connection errors
     connectionTimeout: 'Час очікування з\'єднання вичерпано. Перевірте інтернет.',
     connectionError: 'Помилка з\'єднання. Повторне підключення...',
     connectionFailed: 'Не вдалося підключитися до сервера. Перевірте інтернет-з\'єднання.',
@@ -2242,7 +2242,7 @@ const uk: Translation = {
     },
   },
   homeFooter: {
-    copyright: '© {{year}} Boardly. Зроблено з Next.js, Socket.IO та Prisma.',
+    copyright: '© {{year}} Boardly. Зроблено з Next.js, Supabase та Prisma.',
   },
   footer: {
     tagline: 'Грай у настільні ігри онлайн з друзями в реальному часі. Безкоштовно, без завантаження.',
@@ -2258,7 +2258,7 @@ const uk: Translation = {
     community: 'Спільнота',
     sendFeedback: 'Залишити відгук ↗',
     allRightsReserved: '© {{year}} Boardly · Усі права захищені',
-    builtWith: 'Створено з Next.js, Socket.IO та Prisma',
+    builtWith: 'Створено з Next.js, Supabase та Prisma',
   },
   onboarding: {
     title: 'Ласкаво просимо до Boardly!',

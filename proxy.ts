@@ -7,9 +7,7 @@ const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
 const SECURITY_HEADERS = getSecurityHeaders()
 const DEFAULT_CORS_ORIGINS = [
   'http://localhost:3000',
-  'http://localhost:3001',
   'http://127.0.0.1:3000',
-  'http://127.0.0.1:3001',
   'https://boardly.online',
 ]
 const ALLOWED_ORIGINS_FROM_ENV = process.env.CORS_ORIGIN
@@ -65,7 +63,7 @@ function resolveAllowedCorsOrigin(origin: string | null): string | null {
 }
 
 function hasValidInternalSecret(request: NextRequest): boolean {
-  const configuredSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+  const configuredSecret = process.env.BOARDLY_INTERNAL_SECRET
   if (!configuredSecret) return false
   return request.headers.get('X-Internal-Secret') === configuredSecret
 }

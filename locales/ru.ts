@@ -2228,7 +2228,7 @@ const ru = {
     },
   },
   homeFooter: {
-    copyright: '© {{year}} Boardly. Создано с Next.js, Socket.IO и Prisma.',
+    copyright: '© {{year}} Boardly. Создано с Next.js, Supabase и Prisma.',
   },
   footer: {
     tagline: 'Играй в настольные игры онлайн с друзьями в реальном времени. Бесплатно, без скачивания.',
@@ -2244,7 +2244,7 @@ const ru = {
     community: 'Сообщество',
     sendFeedback: 'Оставить отзыв ↗',
     allRightsReserved: '© {{year}} Boardly · Все права защищены',
-    builtWith: 'Создано с Next.js, Socket.IO и Prisma',
+    builtWith: 'Создано с Next.js, Supabase и Prisma',
   },
   onboarding: {
     title: 'Добро пожаловать в Boardly!',

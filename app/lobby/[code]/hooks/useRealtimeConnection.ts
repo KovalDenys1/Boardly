@@ -5,7 +5,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-client'
 import { clientLogger } from '@/lib/client-logger'
 import type { GameUpdatePayload, ChatMessagePayload, PlayerTypingPayload, LobbyUpdatePayload, PlayerJoinedPayload, GameStartedPayload } from '@/types/game'
-import type { GameAbandonedPayload, PlayerLeftPayload } from '@/types/socket-events'
+import type { GameAbandonedPayload, PlayerLeftPayload } from '@/types/realtime-events'
 import type { BaseBotActionEvent } from '@/lib/bots'
 
 export interface GameResetPayload {
