@@ -2641,7 +2641,7 @@ export default function LobbyPage() {
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const { gameType, gameStatus, loading, handleGameStarted } = useLobbyRouteState({
+  const { gameType, gameStatus, loading, handleGameStarted, handleGameReset } = useLobbyRouteState({
     code,
     status,
     isGuest,
@@ -2656,7 +2656,7 @@ export default function LobbyPage() {
   const dedicatedGameType = resolveDedicatedLobbyPageGameType(gameType, gameStatus)
 
   if (dedicatedGameType === 'tic_tac_toe') {
-    return <TicTacToeLobbyPage code={code} />
+    return <TicTacToeLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'rock_paper_scissors') {
@@ -2664,15 +2664,15 @@ export default function LobbyPage() {
   }
 
   if (dedicatedGameType === 'alias') {
-    return <AliasLobbyPage code={code} />
+    return <AliasLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'liars_party') {
-    return <LiarsPartyLobbyPage code={code} />
+    return <LiarsPartyLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'connect_four') {
-    return <ConnectFourLobbyPage code={code} />
+    return <ConnectFourLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   // For all other cases, including all waiting rooms, use the shared lobby shell.

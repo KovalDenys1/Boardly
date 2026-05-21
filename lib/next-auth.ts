@@ -87,6 +87,7 @@ export const authOptions: NextAuthOptions = {
             email: true,
             username: true,
             image: true,
+            avatarUrl: true,
             passwordHash: true,
             emailVerified: true,
             role: true,
@@ -115,6 +116,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email ?? email,
           name: user.username,
           image: user.image,
+          avatarUrl: user.avatarUrl,
           emailVerified: user.emailVerified,
           role: user.role,
           suspended: user.suspended,
@@ -337,15 +339,18 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // One-time backfill for stale tokens: sync avatar + username from DB
-      if (!token.avatarResolved && token.id) {
+      // Sync avatar + username from DB (throttled to once per 30 minutes)
+      const THIRTY_MINUTES = 30 * 60 * 1000
+      const lastAvatarSync = token.avatarResolved as number | boolean | undefined
+      const lastAvatarSyncTime = typeof lastAvatarSync === 'number' ? lastAvatarSync : 0
+      if (token.id && (typeof lastAvatarSync !== 'number' || Date.now() - lastAvatarSyncTime > THIRTY_MINUTES)) {
         const dbUser = await prisma.users.findUnique({
           where: { id: String(token.id) },
           select: { avatarUrl: true, username: true },
         })
         token.picture = dbUser?.avatarUrl ?? null
         if (dbUser?.username) token.name = dbUser.username
-        token.avatarResolved = true
+        token.avatarResolved = Date.now()
       }
 
       // Update lastActiveAt for authenticated users (throttled to once per 5 minutes)

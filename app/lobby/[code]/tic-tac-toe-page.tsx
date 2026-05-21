@@ -358,6 +358,7 @@ interface Lobby {
 interface TicTacToeLobbyPageProps {
     code: string
     isSpectator?: boolean
+    onGameReset?: () => void
 }
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
@@ -403,7 +404,7 @@ function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTacToeLobbyPageProps) {
+export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameReset }: TicTacToeLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId } = useGuest()
@@ -600,8 +601,9 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
   }, [])
 
   const handleGameReset = useCallback(() => {
-    router.push(`/lobby/${code}`)
-  }, [code, router])
+    if (onGameReset) onGameReset()
+    else router.push(`/lobby/${code}`)
+  }, [code, onGameReset, router])
 
   const { emitWhenConnected } = useRealtimeConnection({
     code,
@@ -884,14 +886,15 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false }: TicTac
                 const data = await res.json().catch(() => ({})) as { error?: string }
                 throw new Error(data.error ?? `HTTP ${res.status}`)
             }
-            router.push(`/lobby/${code}`)
+            if (onGameReset) onGameReset()
+            else router.push(`/lobby/${code}`)
         } catch (error) {
             clientLogger.error('Failed to return to waiting room:', error)
             showToast.errorFrom(error, 'games.tictactoe.game.continueFailed')
         } finally {
             setIsRematchSubmitting(false)
         }
-    }, [code, getCurrentUserId, lobby, router])
+    }, [code, getCurrentUserId, lobby, onGameReset, router])
 
     // ─── Design effects ───────────────────────────────────────────────────────
 

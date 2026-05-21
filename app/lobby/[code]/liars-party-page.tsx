@@ -19,6 +19,7 @@ import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } f
 interface LiarsPartyPageProps {
   code: string
   isSpectator?: boolean
+  onGameReset?: () => void
 }
 
 interface Lobby {
@@ -509,7 +510,7 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onRetu
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function LiarsPartyPage({ code, isSpectator = false }: LiarsPartyPageProps) {
+export default function LiarsPartyPage({ code, isSpectator = false, onGameReset }: LiarsPartyPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest, guestToken, guestId } = useGuest()
@@ -635,8 +636,9 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
 
   const handleGameReset = useCallback(() => {
-    router.push(`/lobby/${code}`)
-  }, [code, router])
+    if (onGameReset) onGameReset()
+    else router.push(`/lobby/${code}`)
+  }, [code, onGameReset, router])
 
   useRealtimeConnection({
     code,
@@ -724,13 +726,14 @@ export default function LiarsPartyPage({ code, isSpectator = false }: LiarsParty
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
       if (!res.ok) throw new Error('Failed to return to waiting room')
-      router.push(`/lobby/${code}`)
+      if (onGameReset) onGameReset()
+      else router.push(`/lobby/${code}`)
     } catch (err) {
       showToast.errorFrom(err, 'toast.gameStartFailed')
     } finally {
       setIsStarting(false)
     }
-  }, [code, getCurrentUserId, lobby, router])
+  }, [code, getCurrentUserId, lobby, onGameReset, router])
 
   if (loading) {
     return (

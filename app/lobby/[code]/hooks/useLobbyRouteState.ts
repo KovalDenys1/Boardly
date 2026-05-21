@@ -20,6 +20,7 @@ interface UseLobbyRouteStateResult {
   gameStatus: string | null
   loading: boolean
   handleGameStarted: (startedGameType: string) => void
+  handleGameReset: () => void
 }
 
 export function useLobbyRouteState({
@@ -91,10 +92,15 @@ export function useLobbyRouteState({
     setGameStatus('playing')
   }, [])
 
+  const handleGameReset = useCallback(() => {
+    setGameStatus(null)
+  }, [])
+
   return {
     gameType,
     gameStatus,
     loading,
     handleGameStarted,
+    handleGameReset,
   }
 }

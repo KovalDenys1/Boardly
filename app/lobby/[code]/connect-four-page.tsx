@@ -400,6 +400,7 @@ interface Lobby {
 interface ConnectFourLobbyPageProps {
     code: string
     isSpectator?: boolean
+    onGameReset?: () => void
 }
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
@@ -443,7 +444,7 @@ function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ConnectFourLobbyPage({ code, isSpectator = false }: ConnectFourLobbyPageProps) {
+export default function ConnectFourLobbyPage({ code, isSpectator = false, onGameReset }: ConnectFourLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId } = useGuest()
@@ -640,8 +641,9 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
     }, [])
 
     const handleGameReset = useCallback(() => {
-        router.push(`/lobby/${code}`)
-    }, [code, router])
+        if (onGameReset) onGameReset()
+        else router.push(`/lobby/${code}`)
+    }, [code, onGameReset, router])
 
     const { emitWhenConnected } = useRealtimeConnection({
         code,
@@ -870,14 +872,15 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false }: Conn
         try {
             const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
             if (!res.ok) throw new Error('Failed to return to waiting room')
-            router.push(`/lobby/${code}`)
+            if (onGameReset) onGameReset()
+            else router.push(`/lobby/${code}`)
         } catch (error) {
             clientLogger.error('Failed to return to waiting room:', error)
             showToast.errorFrom(error, 'games.connect_four.game.moveFailed')
         } finally {
             setIsRematchSubmitting(false)
         }
-    }, [code, getCurrentUserId, lobby, router])
+    }, [code, getCurrentUserId, lobby, onGameReset, router])
 
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 899px)')

@@ -20,6 +20,7 @@ import { getLobbyTheme } from '@/lib/lobby-themes'
 interface AliasPageProps {
   code: string
   isSpectator?: boolean
+  onGameReset?: () => void
 }
 
 interface Lobby {
@@ -342,7 +343,7 @@ function GuessChatPanel({ guesses, guessInput, onInputChange, onSend, onKeyDown,
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function AliasPage({ code, isSpectator = false }: AliasPageProps) {
+export default function AliasPage({ code, isSpectator = false, onGameReset }: AliasPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest, guestToken, guestId, guestName } = useGuest()
@@ -496,8 +497,9 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
   }, [getCurrentUserId])
 
   const handleGameReset = useCallback(() => {
-    router.push(`/lobby/${code}`)
-  }, [code, router])
+    if (onGameReset) onGameReset()
+    else router.push(`/lobby/${code}`)
+  }, [code, onGameReset, router])
 
   const { emitWhenConnected } = useRealtimeConnection({
     code,
@@ -586,13 +588,14 @@ export default function AliasPage({ code, isSpectator = false }: AliasPageProps)
     try {
       const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
       if (!res.ok) throw new Error('Failed to return to waiting room')
-      router.push(`/lobby/${code}`)
+      if (onGameReset) onGameReset()
+      else router.push(`/lobby/${code}`)
     } catch (err) {
       showToast.errorFrom(err, 'toast.gameStartFailed')
     } finally {
       setIsStarting(false)
     }
-  }, [code, getCurrentUserId, lobby, router])
+  }, [code, getCurrentUserId, lobby, onGameReset, router])
 
   // ─── Live timer ────────────────────────────────────────────────────────────
 
