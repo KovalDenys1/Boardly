@@ -70,7 +70,7 @@ const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broa
 const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
   typeof appendGameReplaySnapshot
 >
-const originalSocketSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+const originalSocketSecret = process.env.BOARDLY_INTERNAL_SECRET
 
 function buildRequest(body: unknown, headers: Record<string, string> = {}) {
   return new NextRequest('http://localhost:3000/api/game/game-123/bot-turn', {
@@ -86,7 +86,7 @@ function buildRequest(body: unknown, headers: Record<string, string> = {}) {
 describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
+    process.env.BOARDLY_INTERNAL_SECRET = 'test-internal-secret'
     ;(prisma.games.update as jest.Mock).mockResolvedValue({} as any)
     ;(prisma.games.updateMany as jest.Mock).mockResolvedValue({ count: 1 } as any)
     mockBroadcastToLobby.mockResolvedValue(true as any)
@@ -94,7 +94,7 @@ describe('POST /api/game/[gameId]/bot-turn auth guard', () => {
   })
 
   afterAll(() => {
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalSocketSecret
+    process.env.BOARDLY_INTERNAL_SECRET = originalSocketSecret
   })
 
   it('returns 401 when request has no internal secret and no authenticated user', async () => {

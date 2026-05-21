@@ -125,7 +125,7 @@ function autoTriggerBotTurn(params: {
   const timeoutId = setTimeout(() => controller.abort(), BOT_TURN_TRIGGER_TIMEOUT_MS)
   const triggeredAt = Date.now()
   const turnEndToBotTriggerMs = resolveTurnEndToBotTriggerMs(authoritativeState, triggeredAt)
-  const internalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+  const internalSecret = process.env.BOARDLY_INTERNAL_SECRET
   const forwardedAuthorization = request.headers.get('authorization')
   const forwardedGuestToken = request.headers.get('X-Guest-Token')
   const botTurnHeaders: Record<string, string> = {

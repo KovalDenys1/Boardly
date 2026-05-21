@@ -29,6 +29,7 @@ import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { useGameTimer } from './hooks/useGameTimer'
+import { useBotTurn } from './hooks/useBotTurn'
 
 // ─── Design sub-components ───────────────────────────────────────────────────
 
@@ -783,6 +784,13 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 { autoActionContext, isAutoAction: true }
             )
         },
+    })
+
+    useBotTurn({
+        game,
+        gameEngine,
+        code,
+        isGameStarted: game?.status === 'playing',
     })
 
     const handleLeave = async () => {

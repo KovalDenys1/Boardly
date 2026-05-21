@@ -68,8 +68,8 @@ describe('proxy CSRF enforcement', () => {
   })
 
   it('allows cross-origin internal requests with valid internal secret header', async () => {
-    const originalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
+    const originalSecret = process.env.BOARDLY_INTERNAL_SECRET
+    process.env.BOARDLY_INTERNAL_SECRET = 'test-internal-secret'
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
       headers: {
@@ -80,7 +80,7 @@ describe('proxy CSRF enforcement', () => {
 
     const response = await proxy(request)
 
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalSecret
+    process.env.BOARDLY_INTERNAL_SECRET = originalSecret
     expect(response.status).not.toBe(403)
   })
 

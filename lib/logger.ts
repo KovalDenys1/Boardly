@@ -174,11 +174,6 @@ export function apiLogger(endpoint: string) {
   return logger.child({ endpoint, type: 'api' })
 }
 
-// Export helper for Socket.IO logging
-export function socketLogger(event: string) {
-  return logger.child({ event, type: 'socket' })
-}
-
 // Export helper for game logic logging
 export function gameLogger(gameId: string, gameType: string) {
   return logger.child({ gameId, gameType, type: 'game' })

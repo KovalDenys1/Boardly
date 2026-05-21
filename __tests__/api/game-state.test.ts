@@ -70,7 +70,7 @@ const rateLimitModule = jest.requireMock('@/lib/rate-limit') as {
 }
 const originalFetch = global.fetch
 const mockFetch = jest.fn()
-const originalSocketSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+const originalSocketSecret = process.env.BOARDLY_INTERNAL_SECRET
 
 describe('POST /api/game/[gameId]/state', () => {
   const mockAuthUser = {
@@ -131,7 +131,7 @@ describe('POST /api/game/[gameId]/state', () => {
     jest.clearAllMocks()
     rateLimitModule.__gameLimiter.mockResolvedValue(null)
     mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
+    process.env.BOARDLY_INTERNAL_SECRET = 'test-internal-secret'
     mockBroadcastToLobby.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockPrisma.players.update.mockResolvedValue({} as any)
@@ -144,7 +144,7 @@ describe('POST /api/game/[gameId]/state', () => {
 
   afterAll(() => {
     global.fetch = originalFetch
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalSocketSecret
+    process.env.BOARDLY_INTERNAL_SECRET = originalSocketSecret
   })
 
   const buildRequest = (body: unknown) =>

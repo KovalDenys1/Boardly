@@ -1,22 +1,11 @@
 // ============================================================================
-// Socket Event Definitions - Centralized Type-Safe Event System
-// ============================================================================
-// Version: 1.0.0
-// Last Updated: February 3, 2026
-//
-// This file defines all WebSocket events used in Boardly.
-// - Prevents typos with const enum
-// - Enforces type safety with TypeScript
-// - Documents event payloads and flows
-// - Supports future versioning and extensions
+// Realtime Event Definitions - Supabase Broadcast payload types
 // ============================================================================
 
 /**
- * Socket Event Names - Use these constants instead of raw strings
- * 
- * Usage:
- *   socket.emit(SocketEvents.JOIN_LOBBY, { lobbyCode: 'ABC123' })
- *   socket.on(SocketEvents.GAME_UPDATE, (data: GameUpdatePayload) => {...})
+ * Legacy event name constants — kept for reference only.
+ * Supabase Broadcast uses plain string event names (e.g. 'game-update').
+ * Do not use these as socket.emit() calls; Socket.IO has been removed.
  */
 export const SocketEvents = {
   // ========================================
@@ -507,8 +496,7 @@ export const SocketRooms = {
  * 3. Server → All in lobby: CHAT_MESSAGE { id, userId, message, timestamp }
  * 
  * RECONNECTION FLOW:
- * 1. Client reconnects (socket.io handles automatically)
- * 2. Client → Server: JOIN_LOBBY { lobbyCode } (re-join room)
- * 3. Client → API: GET /api/lobby/[code] (fetch latest state)
- * 4. Client processes any missed events (future: event replay)
+ * 1. Supabase Realtime channel auto-reconnects
+ * 2. Client → API: GET /api/lobby/[code] (fetch latest state)
+ * 3. Client processes any missed events (future: event replay)
  */

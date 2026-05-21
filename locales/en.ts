@@ -1826,7 +1826,7 @@ const en = {
     invalidToken: 'Invalid or missing token',
     failedToLoad: 'Failed to load data. Please try again.',
     gameNotFound: 'Game not found',
-    // Socket/Connection errors
+    // Connection errors
     connectionTimeout: 'Connection timeout. Please check your internet.',
     connectionError: 'Connection error. Retrying...',
     connectionFailed: 'Failed to connect to server. Please check your internet connection.',
@@ -2240,7 +2240,7 @@ const en = {
     },
   },
   homeFooter: {
-    copyright: '© {{year}} Boardly. Built with Next.js, Socket.IO, and Prisma.',
+    copyright: '© {{year}} Boardly. Built with Next.js, Supabase, and Prisma.',
   },
   footer: {
     tagline: 'Play board games online with friends in real-time. Free, no download required.',
@@ -2256,7 +2256,7 @@ const en = {
     community: 'Community',
     sendFeedback: 'Send Feedback ↗',
     allRightsReserved: '© {{year}} Boardly · All rights reserved',
-    builtWith: 'Built with Next.js, Socket.IO & Prisma',
+    builtWith: 'Built with Next.js, Supabase & Prisma',
   },
   onboarding: {
     title: 'Welcome to Boardly!',

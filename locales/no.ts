@@ -2228,7 +2228,7 @@ const no = {
     },
   },
   homeFooter: {
-    copyright: '© {{year}} Boardly. Bygget med Next.js, Socket.IO og Prisma.',
+    copyright: '© {{year}} Boardly. Bygget med Next.js, Supabase og Prisma.',
   },
   footer: {
     tagline: 'Spill brettspill online med venner i sanntid. Gratis, ingen nedlasting nødvendig.',
@@ -2244,7 +2244,7 @@ const no = {
     community: 'Fellesskap',
     sendFeedback: 'Send tilbakemelding ↗',
     allRightsReserved: '© {{year}} Boardly · Alle rettigheter forbeholdt',
-    builtWith: 'Bygget med Next.js, Socket.IO og Prisma',
+    builtWith: 'Bygget med Next.js, Supabase og Prisma',
   },
   onboarding: {
     title: 'Velkommen til Boardly!',
