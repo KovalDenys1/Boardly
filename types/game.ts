@@ -50,7 +50,7 @@ export interface Game {
   updatedAt: Date
 }
 
-// Socket event payloads
+// Realtime event payloads
 export interface GameUpdatePayload {
   action: string
   payload: AnyGameState | { state: AnyGameState } | Record<string, unknown>

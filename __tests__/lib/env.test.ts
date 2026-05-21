@@ -16,8 +16,6 @@ describe('validateEnv', () => {
       NODE_ENV: nodeEnv,
       DATABASE_URL: 'postgresql://postgres:password@localhost:5432/boardly',
       NEXTAUTH_SECRET: 'x'.repeat(32),
-      SOCKET_SERVER_INTERNAL_SECRET: 'y'.repeat(16),
-      NEXT_PUBLIC_SOCKET_URL: 'http://localhost:3001',
       CORS_ORIGIN: 'http://localhost:3000',
     })
   }
@@ -43,14 +41,14 @@ describe('validateEnv', () => {
     expect(() => validateEnv()).not.toThrow()
   })
 
-  it('allows production socket runtime without CRON_SECRET when explicitly opted out', () => {
+  it('allows production without CRON_SECRET when explicitly opted out', () => {
     applyBaseEnv('production')
     delete process.env.CRON_SECRET
 
     expect(() => validateEnv({ requireCronSecretInProduction: false })).not.toThrow()
   })
 
-  it('allows printEnvInfo for socket runtime without CRON_SECRET when explicitly opted out', () => {
+  it('allows printEnvInfo without CRON_SECRET when explicitly opted out', () => {
     applyBaseEnv('production')
     delete process.env.CRON_SECRET
 

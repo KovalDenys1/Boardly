@@ -50,8 +50,6 @@ jest.mock('@/lib/next-auth', () => ({
 
 jest.mock('@/lib/supabase-server', () => ({
   broadcastToLobby: jest.fn(),
-  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
-  getSocketInternalAuthHeaders: jest.fn(() => ({})),
 }))
 
 jest.mock('@/lib/logger', () => ({

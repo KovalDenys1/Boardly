@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getSupabaseClient } from '@/lib/supabase-client'
 import { clientLogger } from '@/lib/client-logger'
-import type { LobbyInvitePayload, RematchRequestPayload } from '@/types/socket-events'
+import type { LobbyInvitePayload, RematchRequestPayload } from '@/types/realtime-events'
 
 const EVENT_TTL_MS = 60000
 
