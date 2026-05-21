@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import GameIcon, { GAME_SVG_PATHS } from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { AuthGateModal } from '@/components/AuthGateModal'
+import RejoinLobbyBanner from '@/components/RejoinLobbyBanner'
 import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
@@ -13,6 +14,7 @@ import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { getSupabaseClient } from '@/lib/supabase-client'
+import { useMyActiveLobby } from '@/app/lobby/use-my-active-lobby'
 
 type Lobby = {
   id: string
@@ -142,6 +144,7 @@ export default function GameLobbiesPage({
   const { status } = useSession()
   const { isGuest } = useGuest()
   const { t } = useTranslation()
+  const { lobby: activeLobby, dismiss: dismissActiveLobby } = useMyActiveLobby(status === 'authenticated')
   const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null>(null)
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
@@ -240,6 +243,10 @@ export default function GameLobbiesPage({
     <div className="bd-page bd-screen page-shell">
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
+
+          {activeLobby && activeLobby.gameType === gameType && (
+            <RejoinLobbyBanner lobby={activeLobby} onDismiss={dismissActiveLobby} />
+          )}
 
           {/* Breadcrumb */}
           <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-bd-ink-muted sm:text-sm">

@@ -130,6 +130,11 @@ const no = {
       playing: 'Spiller',
       finished: 'Ferdig'
     },
+    rejoinBanner: {
+      title: 'Lobbyen din venter',
+      subtitle: '{{playerCount}}/{{maxPlayers}} spillere',
+      returnButton: 'Gå tilbake til lobby',
+    },
     players: {
       title: 'Spillere',
       clickToView: 'Klikk for å se',

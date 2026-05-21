@@ -130,6 +130,11 @@ const ru = {
       playing: 'В игре',
       finished: 'Завершено'
     },
+    rejoinBanner: {
+      title: 'Ваше лобби ожидает',
+      subtitle: '{{playerCount}}/{{maxPlayers}} игроков',
+      returnButton: 'Вернуться в лобби',
+    },
     players: {
       title: 'Игроки',
       clickToView: 'Нажмите для просмотра',

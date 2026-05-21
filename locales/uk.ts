@@ -139,6 +139,11 @@ const uk: Translation = {
       playing: 'В процесі',
       finished: 'Завершено',
     },
+    rejoinBanner: {
+      title: 'Ваше лобі очікує',
+      subtitle: '{{playerCount}}/{{maxPlayers}} гравців',
+      returnButton: 'Повернутися до лобі',
+    },
     players: {
       title: 'Гравці',
       clickToView: 'Натисніть для перегляду',

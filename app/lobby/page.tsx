@@ -7,9 +7,11 @@ import LoadingSkeleton from '@/components/LoadingSkeleton'
 import LobbyFilters from '@/components/LobbyFilters'
 import LobbyCard from '@/components/LobbyCard'
 import { AuthGateModal } from '@/components/AuthGateModal'
+import RejoinLobbyBanner from '@/components/RejoinLobbyBanner'
 import { useGuest } from '@/contexts/GuestContext'
 import i18n from '@/i18n'
 import { useLobbyList } from './use-lobby-list'
+import { useMyActiveLobby } from './use-my-active-lobby'
 
 function LobbyListPageContent() {
   const {
@@ -35,6 +37,7 @@ function LobbyListPageContent() {
   const { isGuest } = useGuest()
   const isAuthenticated = status === 'authenticated' || isGuest
   const [authGateDest, setAuthGateDest] = useState<string | null>(null)
+  const { lobby: activeLobby, dismiss: dismissActiveLobby } = useMyActiveLobby(status === 'authenticated')
 
   const handleCreateLobby = () => {
     if (!isAuthenticated) {
@@ -53,6 +56,10 @@ function LobbyListPageContent() {
     )}
     <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-[1280px] grow px-8 pb-10 pt-10">
+
+        {activeLobby && (
+          <RejoinLobbyBanner lobby={activeLobby} onDismiss={dismissActiveLobby} />
+        )}
 
         {/* Page header */}
         <div

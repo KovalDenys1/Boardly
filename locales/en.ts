@@ -130,6 +130,11 @@ const en = {
       playing: 'Playing',
       finished: 'Finished',
     },
+    rejoinBanner: {
+      title: 'Your lobby is waiting',
+      subtitle: '{{playerCount}}/{{maxPlayers}} players',
+      returnButton: 'Return to lobby',
+    },
     players: {
       title: 'Players',
       clickToView: 'Click to view',
