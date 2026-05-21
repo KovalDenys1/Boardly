@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+
+const kickPlayerSchema = z.object({
+  playerId: z.string().uuid(),
+})
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -24,11 +29,11 @@ export async function POST(
     }
 
     const { code } = await params
-    const { playerId } = await request.json() as { playerId?: string }
-
-    if (!playerId) {
-      return NextResponse.json({ error: 'playerId is required' }, { status: 400 })
+    const body = kickPlayerSchema.safeParse(await request.json())
+    if (!body.success) {
+      return NextResponse.json({ error: 'Invalid playerId' }, { status: 400 })
     }
+    const { playerId } = body.data
 
     const lobby = await prisma.lobbies.findUnique({
       where: { code },

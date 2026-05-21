@@ -722,7 +722,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               background: 'rgba(255,255,255,0.55)', border: '1.5px solid var(--bd-line)',
             }}>
               <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
-              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? '#F59E0B' : undefined }}>
+              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-premium)' : undefined }}>
                 {p.name}
                 {p.user?.isPremium && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
                 {p.userId === currentUserId && (
@@ -915,7 +915,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
                         }}>
                           <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
-                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? '#F59E0B' : undefined }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
                             {name}
                             {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
                           </span>
