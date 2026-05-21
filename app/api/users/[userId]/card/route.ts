@@ -15,8 +15,10 @@ export async function GET(
       id: true,
       username: true,
       image: true,
+      avatarUrl: true,
       publicProfileId: true,
       isGuest: true,
+      premiumUntil: true,
       bot: { select: { id: true } },
       players: {
         where: { game: { status: 'finished' } },
@@ -83,12 +85,15 @@ export async function GET(
     }
   }
 
+  const isPremium = user.premiumUntil ? new Date(user.premiumUntil) > new Date() : false
+
   return NextResponse.json({
     userId: user.id,
     username: user.username,
-    image: user.image,
+    image: user.avatarUrl ?? user.image,
     publicProfileId: user.publicProfileId,
     isGuest: user.isGuest,
+    isPremium,
     gamesPlayed,
     wins,
     winRate,

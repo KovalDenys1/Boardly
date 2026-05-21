@@ -21,7 +21,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         data: {
           email: user.email,
           emailVerified: user.emailVerified ?? null,
-          image: user.image ?? null,
+          image: null,
           username: username ?? null,
         },
       })
@@ -43,6 +43,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         email: user.email!,
         emailVerified: user.emailVerified,
         image: user.image,
+        avatarUrl: user.avatarUrl,
       }
     },
 
@@ -55,6 +56,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         email: user.email!,
         emailVerified: user.emailVerified,
         image: user.image,
+        avatarUrl: user.avatarUrl,
       }
     },
 
@@ -71,6 +73,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
         email: user.email!,
         emailVerified: user.emailVerified,
         image: user.image,
+        avatarUrl: user.avatarUrl,
       }
     },
 
@@ -79,7 +82,7 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
       if (user.name !== undefined) data.username = user.name
       if (user.email !== undefined) data.email = user.email
       if (user.emailVerified !== undefined) data.emailVerified = user.emailVerified
-      if (user.image !== undefined) data.image = user.image
+      // Never let NextAuth overwrite image with an OAuth provider photo — image is managed by our avatar system
 
       const updated = await prisma.users.update({
         where: { id: user.id },

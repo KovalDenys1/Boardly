@@ -8,8 +8,7 @@ import { POST as SEND_INVITE } from '@/app/api/lobby/[code]/invite/route'
 import { POST as REQUEST_REMATCH } from '@/app/api/lobby/[code]/rematch/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
-import { SocketEvents } from '@/types/socket-events'
+import { broadcastToUser } from '@/lib/supabase-server'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -32,8 +31,8 @@ jest.mock('@/lib/request-auth', () => ({
   getRequestAuthUser: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn().mockResolvedValue(true),
+jest.mock('@/lib/supabase-server', () => ({
+  broadcastToUser: jest.fn().mockResolvedValue(true),
 }))
 
 jest.mock('@/lib/logger', () => ({
@@ -44,17 +43,37 @@ jest.mock('@/lib/logger', () => ({
   })),
 }))
 
+jest.mock('@/lib/in-app-notifications', () => ({
+  createInAppNotification: jest.fn().mockResolvedValue(undefined),
+}))
+
+jest.mock('@/lib/notification-preferences', () => ({
+  getNotificationPreferences: jest.fn().mockResolvedValue({
+    unsubscribedAll: false,
+    gameInvites: true,
+  }),
+}))
+
+jest.mock('@/lib/notifications-log', () => ({
+  recordNotificationDelivery: jest.fn().mockResolvedValue(undefined),
+}))
+
+jest.mock('@/lib/email', () => ({
+  sendGameInviteEmail: jest.fn().mockResolvedValue({ success: true }),
+}))
+
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
-const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockBroadcastToUser = broadcastToUser as jest.MockedFunction<typeof broadcastToUser>
 
 describe('Social loop APIs', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockBroadcastToUser.mockResolvedValue(true)
   })
 
   describe('POST /api/lobby/[code]/invite', () => {
-    it('sends socket invites only to valid friends', async () => {
+    it('sends Supabase Broadcast invites only to valid friends', async () => {
       mockGetRequestAuthUser.mockResolvedValue({
         id: 'user-1',
         username: 'Host',
@@ -71,10 +90,11 @@ describe('Social loop APIs', () => {
         {
           user1Id: 'user-1',
           user2Id: 'friend-1',
-          user1: { id: 'user-1', username: 'Host' },
-          user2: { id: 'friend-1', username: 'Friend' },
+          user1: { id: 'user-1', username: 'Host', email: null },
+          user2: { id: 'friend-1', username: 'Friend', email: null },
         },
       ] as any)
+      mockPrisma.lobbyInvites.createMany.mockResolvedValue({ count: 1 } as any)
 
       const request = new NextRequest('http://localhost:3000/api/lobby/ABCD/invite', {
         method: 'POST',
@@ -89,14 +109,13 @@ describe('Social loop APIs', () => {
       expect(response.status).toBe(200)
       expect(data.invitedCount).toBe(1)
       expect(data.skippedFriendIds).toEqual(['unknown-2'])
-      expect(mockNotifySocket).toHaveBeenCalledWith(
-        'user:friend-1',
-        SocketEvents.LOBBY_INVITE,
+      expect(mockBroadcastToUser).toHaveBeenCalledWith(
+        'friend-1',
+        'lobby-invite',
         expect.objectContaining({
           lobbyCode: 'ABCD',
           invitedById: 'user-1',
-        }),
-        0
+        })
       )
     })
 
@@ -116,7 +135,7 @@ describe('Social loop APIs', () => {
 
       const response = await SEND_INVITE(request, { params: Promise.resolve({ code: 'ABCD' }) })
       expect(response.status).toBe(403)
-      expect(mockNotifySocket).not.toHaveBeenCalled()
+      expect(mockBroadcastToUser).not.toHaveBeenCalled()
     })
   })
 
@@ -135,7 +154,7 @@ describe('Social loop APIs', () => {
 
       expect(response.status).toBe(401)
       expect(data.translationKey).toBe('errors.unauthorized')
-      expect(mockNotifySocket).not.toHaveBeenCalled()
+      expect(mockBroadcastToUser).not.toHaveBeenCalled()
     })
 
     it('notifies other participants when creator requests rematch', async () => {
@@ -167,14 +186,13 @@ describe('Social loop APIs', () => {
       expect(response.status).toBe(200)
       expect(data.notifiedCount).toBe(1)
       expect(data.notifiedUserIds).toEqual(['friend-1'])
-      expect(mockNotifySocket).toHaveBeenCalledWith(
-        'user:friend-1',
-        SocketEvents.REMATCH_REQUEST,
+      expect(mockBroadcastToUser).toHaveBeenCalledWith(
+        'friend-1',
+        'rematch-request',
         expect.objectContaining({
           lobbyCode: 'ABCD',
           requestedById: 'host-1',
-        }),
-        0
+        })
       )
     })
 
@@ -206,7 +224,7 @@ describe('Social loop APIs', () => {
 
       expect(response.status).toBe(403)
       expect(data.translationKey).toBe('toast.rematchNotParticipant')
-      expect(mockNotifySocket).not.toHaveBeenCalled()
+      expect(mockBroadcastToUser).not.toHaveBeenCalled()
     })
 
     it('returns no notifications when requester is the only remaining latest-game participant', async () => {
@@ -240,7 +258,7 @@ describe('Social loop APIs', () => {
       expect(response.status).toBe(200)
       expect(data.notifiedCount).toBe(0)
       expect(data.notifiedUserIds).toEqual([])
-      expect(mockNotifySocket).not.toHaveBeenCalled()
+      expect(mockBroadcastToUser).not.toHaveBeenCalled()
     })
 
     it('returns localized error when lobby has no games yet', async () => {
@@ -267,7 +285,7 @@ describe('Social loop APIs', () => {
 
       expect(response.status).toBe(400)
       expect(data.translationKey).toBe('toast.rematchNoCompletedGame')
-      expect(mockNotifySocket).not.toHaveBeenCalled()
+      expect(mockBroadcastToUser).not.toHaveBeenCalled()
     })
   })
 })

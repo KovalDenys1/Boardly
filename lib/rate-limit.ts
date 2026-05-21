@@ -251,6 +251,13 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 10,
     message: 'Too many lobbies created. Please try again later.'
+  },
+
+  // Relaxed limit for premium lobby creation
+  lobbyCreationPremium: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 30,
+    message: 'Too many lobbies created. Please try again later.'
   }
 }
 

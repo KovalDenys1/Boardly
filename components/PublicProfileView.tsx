@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
+import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -17,14 +18,31 @@ export type PublicProfileRelation =
 
 export type PublicProfileAccessState = 'available' | 'friends_only' | 'private'
 
+const FEATURED_GAME_LABELS: Record<string, { label: string; icon: string }> = {
+  yahtzee:            { label: 'Yahtzee',             icon: '🎲' },
+  guess_the_spy:      { label: 'Guess the Spy',       icon: '🕵️' },
+  tic_tac_toe:        { label: 'Tic Tac Toe',         icon: '✕' },
+  rock_paper_scissors:{ label: 'Rock Paper Scissors', icon: '✊' },
+  memory:             { label: 'Memory',              icon: '🃏' },
+  connect_four:       { label: 'Connect Four',        icon: '🔴' },
+  alias:              { label: 'Alias',               icon: '💬' },
+  liars_party:        { label: "Liar's Party",        icon: '🃏' },
+}
+
 export type PublicProfileViewData = {
   publicProfileId: string
   username: string | null
   image: string | null
+  avatarUrl?: string | null
+  bio?: string | null
+  premiumCardStyle?: string | null
+  accentColor?: string | null
+  featuredGame?: string | null
   createdAt: string
   friendsCount: number
   gamesPlayed: number
   completedGamesCount?: number
+  isPremium?: boolean
 }
 
 type PublicProfileViewProps = {
@@ -33,6 +51,73 @@ type PublicProfileViewProps = {
   accessState?: PublicProfileAccessState
   mode?: 'page' | 'embedded-preview'
   onBack?: () => void
+}
+
+function getPremiumPanelStyle(cardStyle: string): React.CSSProperties {
+  switch (cardStyle) {
+    case 'gold':
+      return {
+        background: '#FAF2D8',
+        borderColor: 'rgba(184,140,30,0.25)',
+      }
+    case 'glass':
+      return {
+        background: 'linear-gradient(135deg, rgba(255,107,91,0.22) 0%, rgba(255,196,77,0.22) 45%, rgba(79,201,166,0.22) 100%)',
+      }
+    case 'holo':
+      return {
+        background: 'linear-gradient(115deg, rgba(180,240,255,0.35), rgba(201,184,255,0.32), rgba(255,184,224,0.28), rgba(255,227,168,0.28))',
+      }
+    case 'dark':
+      return {
+        background: 'radial-gradient(circle at 20% 0%, #2A2522 0%, #16120E 70%)',
+        borderColor: 'rgba(255,255,255,0.05)',
+      }
+    default:
+      return {}
+  }
+}
+
+const PREMIUM_PAGE_THEMES: Record<string, {
+  pageBg: string
+  decorBg: string
+  cardBg: string
+  cardBorder: string
+  cardShadow: string
+  isDark: boolean
+}> = {
+  gold: {
+    pageBg: 'linear-gradient(160deg, #FDF8EC 0%, #FAF0D0 55%, #F5E6B0 100%)',
+    decorBg: 'radial-gradient(circle at 12% 8%, rgba(201,160,32,0.22) 0, transparent 35%), radial-gradient(circle at 88% 14%, rgba(180,140,30,0.15) 0, transparent 40%), radial-gradient(circle at 50% 100%, rgba(240,210,80,0.14) 0, transparent 50%)',
+    cardBg: '#FFFEF8',
+    cardBorder: 'rgba(184,140,30,0.28)',
+    cardShadow: '0 6px 0 0 rgba(184,140,30,0.12), 0 14px 28px -10px rgba(109,74,20,0.15)',
+    isDark: false,
+  },
+  glass: {
+    pageBg: 'linear-gradient(135deg, #FFF0EE 0%, #FFFBF0 45%, #EDFAF6 100%)',
+    decorBg: 'radial-gradient(circle at 12% 8%, rgba(255,107,91,0.22) 0, transparent 35%), radial-gradient(circle at 88% 14%, rgba(255,196,77,0.2) 0, transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.2) 0, transparent 50%)',
+    cardBg: 'rgba(255,255,255,0.88)',
+    cardBorder: 'rgba(255,107,91,0.22)',
+    cardShadow: '0 6px 0 0 rgba(255,107,91,0.1), 0 14px 28px -10px rgba(255,107,91,0.14)',
+    isDark: false,
+  },
+  holo: {
+    pageBg: 'linear-gradient(115deg, #EEF9FF 0%, #F4F0FF 35%, #FFF0F8 65%, #FFFBEE 100%)',
+    decorBg: 'radial-gradient(circle at 12% 8%, rgba(180,240,255,0.3) 0, transparent 35%), radial-gradient(circle at 88% 14%, rgba(201,184,255,0.28) 0, transparent 40%), radial-gradient(circle at 50% 100%, rgba(255,184,224,0.22) 0, transparent 50%)',
+    cardBg: 'rgba(255,255,255,0.88)',
+    cardBorder: 'rgba(201,184,255,0.38)',
+    cardShadow: '0 6px 0 0 rgba(201,184,255,0.18), 0 14px 28px -10px rgba(180,140,255,0.14)',
+    isDark: false,
+  },
+  dark: {
+    pageBg: 'radial-gradient(ellipse at top, #1C1509 0%, #0D0A07 70%)',
+    decorBg: 'radial-gradient(circle at 12% 8%, rgba(79,201,166,0.1) 0, transparent 35%), radial-gradient(circle at 88% 14%, rgba(79,201,166,0.07) 0, transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.05) 0, transparent 50%)',
+    cardBg: '#18130A',
+    cardBorder: 'rgba(255,255,255,0.06)',
+    cardShadow: '0 6px 0 0 rgba(0,0,0,0.5), 0 14px 28px -10px rgba(0,0,0,0.6)',
+    isDark: true,
+  },
 }
 
 const primaryActionClassName =
@@ -53,6 +138,31 @@ export default function PublicProfileView({
   const [relation, setRelation] = useState<PublicProfileRelation>(initialRelation)
   const [submitting, setSubmitting] = useState(false)
   const [copiedProfileLink, setCopiedProfileLink] = useState(false)
+
+  const pageTheme = profile.isPremium && profile.premiumCardStyle
+    ? (PREMIUM_PAGE_THEMES[profile.premiumCardStyle] ?? null)
+    : null
+  const isDark = pageTheme?.isDark ?? false
+
+  const tc = isDark ? {
+    eyebrow:      'text-slate-500',
+    handle:       'text-slate-500',
+    body:         'text-slate-300',
+    back:         'text-slate-400 hover:bg-white/8',
+    statCard:     'border-white/[0.07] bg-white/[0.05]',
+    statLabel:    'text-slate-500',
+    statValueAlt: 'text-slate-200',
+    badge:        'border-white/10 bg-white/[0.07] text-slate-300',
+  } : {
+    eyebrow:      'text-bd-ink-muted dark:text-slate-400',
+    handle:       'text-bd-ink-muted',
+    body:         'text-bd-ink-soft dark:text-slate-300',
+    back:         'text-bd-ink-soft hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800',
+    statCard:     'border-bd-line bg-bd-card-warm dark:border-slate-700 dark:bg-slate-800',
+    statLabel:    'text-bd-ink-muted dark:text-slate-400',
+    statValueAlt: 'text-bd-ink dark:text-white',
+    badge:        'border-bd-line bg-bd-card-warm text-bd-ink dark:border-slate-700 dark:bg-slate-800 dark:text-white',
+  }
   const isEmbeddedPreview = mode === 'embedded-preview'
   const shouldShowAction = !isEmbeddedPreview
 
@@ -225,9 +335,9 @@ export default function PublicProfileView({
       <div
         className={`flex ${sizeClassName} items-center justify-center overflow-hidden rounded-[2rem] border-[3px] border-bd-ink bg-bd-lav text-white shadow-[6px_6px_0_var(--bd-ink)]`}
       >
-        {profile.image ? (
+        {(profile.avatarUrl || profile.image) ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.image} alt={displayName} className="h-full w-full object-cover" />
+          <img src={profile.avatarUrl ?? profile.image!} alt={displayName} className="h-full w-full object-cover" />
         ) : (
           <span className="font-display text-7xl font-black uppercase sm:text-8xl">
             {displayName.charAt(0)}
@@ -235,8 +345,16 @@ export default function PublicProfileView({
         )}
       </div>
       <div className="absolute -bottom-3 -right-4 rotate-[8deg] rounded-full border-2 border-bd-ink bg-bd-mint px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
-        Lv. {level}
+        Lvl. {level}
       </div>
+      {profile.isPremium && (
+        <div
+          className="absolute -top-3 -left-4 z-10 -rotate-[8deg] rounded-full border-2 border-bd-ink px-3 py-1 font-display text-xs font-bold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]"
+          style={{ background: '#FBBF24' }}
+        >
+          Premium
+        </div>
+      )}
     </div>
   )
 
@@ -271,7 +389,7 @@ export default function PublicProfileView({
     }
 
     return (
-      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[1.15fr_0.85fr]">
         <div className="px-6 py-8 sm:px-8 sm:py-10">
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
             {t('profile.publicProfile.eyebrow')}
@@ -291,7 +409,7 @@ export default function PublicProfileView({
           )}
           {shouldShowAction && <div className="mt-8">{renderAction()}</div>}
         </div>
-        <div className="flex items-center border-t border-bd-line bg-bd-card-warm px-6 py-8 sm:px-8 lg:border-l lg:border-t-0 dark:border-slate-700 dark:bg-slate-800/70">
+        <div className="flex items-center border-t border-bd-line bg-bd-card-warm px-6 py-8 sm:px-8 md:border-l md:border-t-0 dark:border-slate-700 dark:bg-slate-800/70">
           <div className="w-full rounded-3xl border border-dashed border-bd-line bg-white p-5 text-left dark:border-slate-700 dark:bg-slate-900/70">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
               {t('profile.settings.privacy.friendsOnly')}
@@ -307,19 +425,23 @@ export default function PublicProfileView({
 
   return (
     <div
-      className={`relative overflow-hidden bg-bd-bg text-bd-ink ${
+      className={`relative overflow-hidden text-bd-ink ${
         isEmbeddedPreview
-          ? 'rounded-[2rem] border-[1.5px] border-bd-line shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700'
+          ? 'rounded-[2rem] border-[1.5px] border-bd-line bg-bd-bg shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700'
           : 'flex min-h-[calc(100vh-64px)] items-center safe-left safe-right'
-      }`}
-      style={isEmbeddedPreview ? undefined : { minHeight: 'calc(100dvh - 64px)' }}
+      } ${isDark ? 'text-white' : 'bg-bd-bg'}`}
+      style={{
+        ...(isEmbeddedPreview ? undefined : { minHeight: 'calc(100dvh - 64px)' }),
+        ...(pageTheme && !isEmbeddedPreview ? { background: pageTheme.pageBg } : {}),
+      }}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(255,196,77,0.18),transparent_35%),radial-gradient(circle_at_88%_14%,rgba(155,140,255,0.16),transparent_40%),radial-gradient(circle_at_50%_100%,rgba(79,201,166,0.14),transparent_50%)]"
+        className="pointer-events-none absolute inset-0"
+        style={{ background: pageTheme ? pageTheme.decorBg : 'radial-gradient(circle at 12% 8%, rgba(255,196,77,0.18) 0, transparent 35%), radial-gradient(circle at 88% 14%, rgba(155,140,255,0.16) 0, transparent 40%), radial-gradient(circle at 50% 100%, rgba(79,201,166,0.14) 0, transparent 50%)' }}
       />
-      <div className="pointer-events-none absolute right-[-4rem] top-20 h-44 w-44 rounded-full bg-bd-lav/10" />
-      <div className="pointer-events-none absolute left-[-3rem] bottom-20 h-36 w-36 rotate-12 rounded-[2rem] bg-bd-mint/10" />
+      <div className={`pointer-events-none absolute right-[-4rem] top-20 h-44 w-44 rounded-full ${isDark ? 'bg-bd-mint/5' : 'bg-bd-lav/10'}`} />
+      <div className={`pointer-events-none absolute left-[-3rem] bottom-20 h-36 w-36 rotate-12 rounded-[2rem] ${isDark ? 'bg-bd-mint/5' : 'bg-bd-mint/10'}`} />
 
       <div
         className={`relative ${
@@ -331,89 +453,157 @@ export default function PublicProfileView({
         {accessState !== 'available' ? (
           renderRestrictedState()
         ) : (
-          <div className="relative w-full overflow-hidden rounded-[2rem] border-[1.5px] border-bd-line bg-white shadow-[0_6px_0_0_rgba(31,27,22,0.08),0_14px_28px_-10px_rgba(31,27,22,0.18)] dark:border-slate-700 dark:bg-slate-900">
-            <div className="dot-grid absolute inset-0 opacity-30" />
-            <div className="relative grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="p-6 sm:p-8 lg:p-10">
+          <div
+            className="relative w-full overflow-hidden rounded-[2rem] border-[1.5px]"
+            style={{
+              background: pageTheme?.cardBg ?? 'white',
+              borderColor: pageTheme?.cardBorder ?? 'var(--bd-line)',
+              boxShadow: pageTheme?.cardShadow ?? '0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)',
+            }}
+          >
+            <div className={`dot-grid absolute inset-0 ${isDark ? 'opacity-20' : 'opacity-30'}`} />
+            <div className="relative grid gap-0 md:grid-cols-[1.1fr_0.9fr]">
+              <div className="p-6 sm:p-8 md:p-10">
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold text-bd-ink-soft transition-colors hover:bg-bd-bg2 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${tc.back}`}
                 >
-                  <span aria-hidden>{'<-'}</span>
+                  <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M10 3L5 8L10 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   {t('common.back')}
                 </button>
 
                 <div className="mt-8 max-w-2xl">
-                  <p className="font-mono text-xs font-semibold uppercase tracking-[0.32em] text-bd-ink-muted dark:text-slate-400">
+                  <p className={`font-mono text-xs font-semibold uppercase tracking-[0.32em] ${tc.eyebrow}`}>
                     {t('profile.publicProfile.eyebrow')}
                   </p>
-                  <h1 className="mt-3 font-display text-4xl font-black leading-none text-bd-ink dark:text-white sm:text-5xl">
+                  <h1
+                    className={`mt-3 font-display text-4xl font-black leading-none sm:text-5xl ${
+                      profile.isPremium && !profile.accentColor
+                        ? 'text-amber-500'
+                        : !profile.isPremium
+                          ? isDark ? 'text-white' : 'text-bd-ink'
+                          : ''
+                    }`}
+                    style={profile.isPremium && profile.accentColor ? { color: profile.accentColor } : undefined}
+                  >
                     {displayName}
+                    {profile.isPremium && <span className="ml-2 text-3xl sm:text-4xl" title="Premium">👑</span>}
                   </h1>
-                  <p className="mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-bd-ink-muted">
+                  <p className={`mt-2 font-mono text-xs font-semibold uppercase tracking-[0.18em] ${tc.handle}`}>
                     @{handle}
                   </p>
-                  <p className="mt-4 max-w-xl text-sm leading-6 text-bd-ink-soft dark:text-slate-300 sm:text-base">
-                    {t('profile.publicProfile.subtitle')}
-                  </p>
+                  {profile.bio ? (
+                    <p className={`mt-4 max-w-xl text-sm italic leading-6 ${isDark ? 'text-slate-300' : 'text-bd-ink dark:text-slate-200'}`}>
+                      &ldquo;{profile.bio}&rdquo;
+                    </p>
+                  ) : (
+                    <p className={`mt-4 max-w-xl text-sm leading-6 sm:text-base ${tc.body}`}>
+                      {t('profile.publicProfile.subtitle')}
+                    </p>
+                  )}
+                  {profile.isPremium && profile.featuredGame && FEATURED_GAME_LABELS[profile.featuredGame] && (
+                    <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${tc.badge}`}>
+                      <span>{FEATURED_GAME_LABELS[profile.featuredGame].icon}</span>
+                      <span>Loves {FEATURED_GAME_LABELS[profile.featuredGame].label}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                  <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
+                  <div className={`relative overflow-hidden rounded-2xl border p-4 ${tc.statCard}`}>
                     <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-coral opacity-20" />
-                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                    <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.friends.title')}
                     </p>
-                    <p className="mt-3 font-display text-3xl font-bold text-bd-coral-deep dark:text-white">
+                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-coral' : 'text-bd-coral-deep dark:text-white'}`}>
                       {profile.friendsCount}
                     </p>
                   </div>
-                  <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
+                  <div className={`relative overflow-hidden rounded-2xl border p-4 ${tc.statCard}`}>
                     <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-mint opacity-20" />
-                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                    <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.stats.gamesCompleted')}
                     </p>
-                    <p className="mt-3 font-display text-3xl font-bold text-bd-mint-deep dark:text-white">
+                    <p className={`mt-3 font-display text-3xl font-bold ${isDark ? 'text-bd-mint' : 'text-bd-mint-deep dark:text-white'}`}>
                       {levelSourceGames}
                     </p>
                   </div>
-                  <div className="relative overflow-hidden rounded-2xl border border-bd-line bg-bd-card-warm p-4 dark:border-slate-700 dark:bg-slate-800">
+                  <div className={`relative overflow-hidden rounded-2xl border p-4 ${tc.statCard}`}>
                     <div className="absolute -right-3 -top-3 h-14 w-14 rounded-full bg-bd-sun opacity-25" />
-                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-bd-ink-muted dark:text-slate-400">
+                    <p className={`font-mono text-[11px] uppercase tracking-[0.22em] ${tc.statLabel}`}>
                       {t('profile.memberSince')}
                     </p>
-                    <p className="mt-3 text-lg font-bold text-bd-ink dark:text-white">{memberSince}</p>
+                    <p className={`mt-3 text-lg font-bold ${tc.statValueAlt}`}>{memberSince}</p>
                   </div>
                 </div>
 
                 {shouldShowAction && (
                   <div
                     className={`mt-8 ${
-                      relation === 'self' ? 'flex w-full justify-center' : 'max-w-sm'
-                    }`}
+                      relation === 'self' ? 'flex justify-center' : ''
+                    } w-full`}
                   >
                     {renderAction()}
                   </div>
                 )}
               </div>
 
-              <div className="relative flex items-center justify-center border-t border-bd-line bg-bd-card-warm p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10 dark:border-slate-700 dark:bg-slate-800/70">
-                <div className="relative flex w-full max-w-sm flex-col items-center text-center">
-                  {renderAvatar()}
-                  <p className="mt-8 text-sm leading-6 text-bd-ink-muted dark:text-slate-300">
-                    {t('profile.publicProfile.linkHint')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void handleCopyProfileLink()}
-                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)]"
+              {(() => {
+                const panelCardStyle = profile.isPremium && profile.premiumCardStyle
+                const isDarkPanel = panelCardStyle && profile.premiumCardStyle === 'dark'
+                return (
+                  <div
+                    className={`relative flex items-center justify-center border-t p-6 sm:p-8 md:border-l md:border-t-0 md:p-10 ${panelCardStyle ? 'border-transparent' : 'border-bd-line bg-bd-card-warm dark:border-slate-700 dark:bg-slate-800/70'}`}
+                    style={panelCardStyle ? getPremiumPanelStyle(profile.premiumCardStyle!) : undefined}
                   >
-                    <span>{copiedProfileLink ? 'Copied' : 'Copy profile link'}</span>
-                    <span aria-hidden>{copiedProfileLink ? '✓' : '↗'}</span>
-                  </button>
-                </div>
-              </div>
+                    <div className="relative flex w-full max-w-sm flex-col items-center text-center">
+                      {panelCardStyle ? (
+                        <div className="w-full">
+                          <PremiumProfileCard
+                            style={profile.premiumCardStyle as PremiumCardStyle}
+                            profile={{
+                              displayName,
+                              handle,
+                              bio: profile.bio,
+                              memberSince,
+                              gamesPlayed: levelSourceGames,
+                              level,
+                              avatarUrl: profile.avatarUrl ?? profile.image,
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        renderAvatar()
+                      )}
+                      <p className={`mt-8 text-sm leading-6 ${isDarkPanel ? 'text-slate-400' : 'text-bd-ink-muted dark:text-slate-300'}`}>
+                        {t('profile.publicProfile.linkHint')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyProfileLink()}
+                        disabled={copiedProfileLink}
+                        aria-label={copiedProfileLink ? 'Link copied!' : 'Copy profile link'}
+                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
+                      >
+                        {copiedProfileLink ? (
+                          <>
+                            <span>Copied!</span>
+                            <span aria-hidden>✓</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Copy profile link</span>
+                            <span aria-hidden>↗</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}

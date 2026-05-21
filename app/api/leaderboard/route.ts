@@ -63,6 +63,9 @@ export async function GET(req: NextRequest) {
       userId: string
       username: string | null
       publicProfileId: string | null
+      avatarUrl: string | null
+      image: string | null
+      premiumUntil: Date | null
       gamesPlayed: bigint
       wins: bigint
       losses: bigint
@@ -84,6 +87,9 @@ export async function GET(req: NextRequest) {
           u.id AS "userId",
           u.username,
           u."publicProfileId",
+          u."avatarUrl",
+          u.image,
+          u."premiumUntil",
           p.id AS "playerId",
           (
             p."isWinner" = true
@@ -111,6 +117,8 @@ export async function GET(req: NextRequest) {
         "userId",
         username,
         "publicProfileId",
+        "avatarUrl",
+        image,
         COUNT("playerId")                                                        AS "gamesPlayed",
         COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")      AS wins,
         COUNT("playerId") FILTER (WHERE NOT "isWinner" AND NOT "isDraw")        AS losses,
@@ -124,7 +132,7 @@ export async function GET(req: NextRequest) {
           1
         )::float                                                                 AS "winRate"
       FROM leaderboard_rows
-      GROUP BY "userId", username, "publicProfileId"
+      GROUP BY "userId", username, "publicProfileId", "avatarUrl", image, "premiumUntil"
       HAVING COUNT("playerId") >= ${minGames}
       ORDER BY
         COUNT("playerId") FILTER (WHERE "isWinner" = true AND NOT "isDraw")::numeric
@@ -138,11 +146,14 @@ export async function GET(req: NextRequest) {
       OFFSET ${offset}
     `)
 
+    const now = new Date()
     const entries = rows.map((r, i) => ({
       rank: page * PAGE_SIZE + i + 1,
       userId: r.userId,
       username: r.username ?? 'Player',
       publicProfileId: r.publicProfileId ?? null,
+      avatarUrl: r.avatarUrl ?? r.image ?? null,
+      isPremium: !!r.premiumUntil && r.premiumUntil > now,
       gamesPlayed: Number(r.gamesPlayed),
       wins: Number(r.wins),
       losses: Number(r.losses),

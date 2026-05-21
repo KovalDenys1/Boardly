@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToUser } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { createInAppNotification } from '@/lib/in-app-notifications'
-import { SocketEvents, SocketRooms } from '@/types/socket-events'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
 const limiter = rateLimit(rateLimitPresets.lobbyCreation)
@@ -118,12 +117,7 @@ export async function POST(
 
     await Promise.all(
       dedupedTargetUserIds.map((userId) =>
-        notifySocket(
-          SocketRooms.user(userId),
-          SocketEvents.REMATCH_REQUEST,
-          rematchPayload,
-          0
-        )
+        broadcastToUser(userId, 'rematch-request', rematchPayload)
       )
     )
 

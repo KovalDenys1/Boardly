@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
 const limiter = rateLimit(rateLimitPresets.api)
@@ -68,17 +68,14 @@ export async function POST(
 
     await prisma.players.delete({ where: { id: botPlayerId } })
 
-    await notifySocket(`lobby:${code}`, 'player-left', {
+    void broadcastToLobby(code, 'player-left', {
       lobbyCode: code,
       userId: botPlayer.userId,
       username: botPlayer.user?.username,
       isBot: true,
       remainingCount: activeGame.players.length - 1,
     })
-    await notifySocket(`lobby:${code}`, 'lobby-update', {
-      lobbyCode: code,
-      type: 'player-left',
-    })
+    // lobby-update handled by Postgres Changes on Lobbies table
 
     return NextResponse.json({ success: true, message: 'Bot removed' })
   } catch (error) {

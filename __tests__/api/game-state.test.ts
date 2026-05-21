@@ -8,7 +8,7 @@ import { POST } from '@/app/api/game/[gameId]/state/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 
 jest.mock('@/lib/db', () => ({
@@ -32,8 +32,8 @@ jest.mock('@/lib/game-registry', () => ({
   restoreGameEngine: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn(),
+jest.mock('@/lib/supabase-server', () => ({
+  broadcastToLobby: jest.fn(),
 }))
 
 jest.mock('@/lib/game-replay', () => ({
@@ -61,7 +61,7 @@ jest.mock('@/lib/logger', () => ({
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
 const mockRestoreGameEngine = restoreGameEngine as jest.MockedFunction<typeof restoreGameEngine>
-const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
 const mockAppendGameReplaySnapshot = appendGameReplaySnapshot as jest.MockedFunction<
   typeof appendGameReplaySnapshot
 >
@@ -80,9 +80,11 @@ describe('POST /api/game/[gameId]/state', () => {
   }
 
   const persistedState = {
+    id: 'game-123',
+    gameType: 'yahtzee',
     players: [
-      { id: 'player-1', isActive: true },
-      { id: 'player-2', isActive: true },
+      { id: 'player-1', name: 'Player 1', isActive: true },
+      { id: 'player-2', name: 'Player 2', isActive: true },
     ],
     currentPlayerIndex: 0,
     status: 'playing',
@@ -90,6 +92,7 @@ describe('POST /api/game/[gameId]/state', () => {
       rollsLeft: 3,
       held: [false, false, false, false, false],
     },
+    createdAt: new Date('2026-02-15T10:00:00.000Z').toISOString(),
     updatedAt: new Date().toISOString(),
   }
 
@@ -129,7 +132,7 @@ describe('POST /api/game/[gameId]/state', () => {
     rateLimitModule.__gameLimiter.mockResolvedValue(null)
     mockPrisma.$transaction.mockImplementation(async (callback: any) => callback(mockPrisma as any))
     process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
-    mockNotifySocket.mockResolvedValue(true as any)
+    mockBroadcastToLobby.mockResolvedValue(true as any)
     mockAppendGameReplaySnapshot.mockResolvedValue(undefined)
     mockPrisma.players.update.mockResolvedValue({} as any)
     mockFetch.mockResolvedValue({
@@ -254,7 +257,15 @@ describe('POST /api/game/[gameId]/state', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(200)
-    expect(mockRestoreGameEngine).toHaveBeenCalledWith('yahtzee', 'game-123', persistedState)
+    expect(mockRestoreGameEngine).toHaveBeenCalledWith(
+      'yahtzee',
+      'game-123',
+      expect.objectContaining({
+        ...persistedState,
+        createdAt: new Date(persistedState.createdAt),
+        updatedAt: expect.any(Date),
+      })
+    )
     expect(mockPrisma.games.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: 'game-123', currentTurn: 0 }),
@@ -268,14 +279,12 @@ describe('POST /api/game/[gameId]/state', () => {
         actionType: 'roll',
       })
     )
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABCD12',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABCD12',
       'game-update',
       expect.objectContaining({
         action: 'state-change',
-      }),
-      0,
-      expect.any(Number)
+      })
     )
     expect(payload.game.id).toBe('game-123')
     expect(payload.serverBroadcasted).toBe(true)
@@ -314,7 +323,7 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(response.status).toBe(409)
     expect(payload.code).toBe('STATE_CONFLICT')
     expect(mockPrisma.players.update).not.toHaveBeenCalled()
-    expect(mockNotifySocket).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
   })
 
   it('returns 500 when score update fails after game update attempt', async () => {
@@ -350,7 +359,7 @@ describe('POST /api/game/[gameId]/state', () => {
     expect(response.status).toBe(500)
     expect(payload.error).toBe('Internal server error')
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1)
-    expect(mockNotifySocket).not.toHaveBeenCalled()
+    expect(mockBroadcastToLobby).not.toHaveBeenCalled()
   })
 
   it('rejects auto-action while turn timer is still active based on authoritative state timestamp', async () => {
@@ -644,14 +653,12 @@ describe('POST /api/game/[gameId]/state', () => {
         triggeredAt: expect.any(Number),
       })
     )
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABCD12',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABCD12',
       'game-update',
       expect.objectContaining({
         action: 'state-change',
-      }),
-      0,
-      250
+      })
     )
   })
 
@@ -739,12 +746,15 @@ describe('POST /api/game/[gameId]/state', () => {
 
   it('auto-accepts Tic-Tac-Toe draw offers from a bot when the position is a theoretical draw', async () => {
     const ticTacToeState = {
+      id: 'game-123',
+      gameType: 'tic_tac_toe',
       players: [
-        { id: 'player-1', isActive: true },
-        { id: 'bot-1', isActive: true },
+        { id: 'player-1', name: 'Player 1', isActive: true },
+        { id: 'bot-1', name: 'Bot 1', isActive: true },
       ],
       currentPlayerIndex: 0,
       status: 'finished',
+      createdAt: new Date('2026-02-15T10:00:00.000Z').toISOString(),
       updatedAt: new Date().toISOString(),
       lastMoveAt: Date.now(),
       data: {

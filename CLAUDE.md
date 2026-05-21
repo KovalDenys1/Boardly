@@ -1,8 +1,37 @@
 # Claude — Boardly Project Context
 
+## Sprint Process
+
+**Cadence:** 1 week (Mon–Sun). No gaps — every week has a sprint.
+
+**Monday planning (5-10 min):**
+1. Pick 3-5 issues from Backlog → label `sprint: current`
+2. Update `Boardly.md` → "Current Sprint" section
+3. Update `05 Planned.md` → "This Week" with Boardly priorities
+
+**Sunday review:**
+1. Check what merged to develop → remove `sprint: current` label, add `sprint: next` for carry-overs
+2. Update `Boardly.md` sprint section
+
+**Issue → branch → PR flow:**
+1. Issue must exist before writing code
+2. Create branch: `feature/<issue-number>-short-description` or `fix/<issue-number>-description`
+3. Commit: `#<issue-number> feat/fix/chore: description`
+4. PR → `develop`, title: `#<issue> type: description`
+
+**Labels to use on every issue:**
+- Priority: `priority:critical` / `priority:high` / `priority:medium` / `priority:low`
+- Size: `size: XS` (<1h) / `size: S` (1-3h) / `size: M` (3-8h) / `size: L` (>8h, split it)
+- Category: `type:feature` / `type:bug` / `type:game` / etc.
+- Sprint: `sprint: current` / `sprint: next`
+
+---
+
 ## Branching strategy
 - `develop` — integration branch, all feature PRs merge here first
 - `main` — production, only merges from `develop` via PR
+- `release/vX.Y.Z` — release branch (develop → main PR)
+- `hotfix/description` — critical prod fix, merges directly to main + develop
 
 ## Rules for merging to main
 **NEVER open a PR develop → main unless ALL of the following are true:**
@@ -28,10 +57,30 @@ Check GitHub Actions for the develop branch — all checks must be green before 
 - `pre-commit`: runs `git --no-pager diff --cached --check` + locale parity check
 - `pre-push`: blocks direct push to main, runs db:generate + ci:quick + smoke tests
 
+## Release Process
+
+**Versioning: SemVer** — `vMAJOR.MINOR.PATCH`
+- PATCH: bug fixes only
+- MINOR: new features, new games
+- MAJOR: breaking DB/auth changes
+
+**To cut a release:**
+```bash
+git checkout develop && git pull
+git checkout -b release/vX.Y.Z
+gh pr create --base main --title "Release vX.Y.Z"
+# After merge:
+gh release create vX.Y.Z --generate-notes --title "Boardly vX.Y.Z"
+```
+
+Release notes are auto-drafted by `.github/workflows/release-drafter.yml` based on PR labels.
+
+---
+
 ## Stack
 - Next.js 16, React 19, TypeScript, Tailwind CSS
 - PostgreSQL via Supabase, Prisma 7
-- Auth: NextAuth, Socket.io for real-time
+- Auth: NextAuth, Supabase Realtime (Broadcast + Postgres Changes)
 - Deployed on Vercel (iad1 / US East)
 
 ## Adding a new game — checklist

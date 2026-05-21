@@ -8,7 +8,7 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
-import { getCatalogGames, type SupportedCatalogGameType, type LobbyCreateConfig, type GameCatalogEntry } from '@/lib/game-catalog'
+import { getCatalogGames, isAvailableCatalogEntry, type SupportedCatalogGameType } from '@/lib/game-catalog'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 import { showToast } from '@/lib/i18n-toast'
 import {
@@ -17,6 +17,7 @@ import {
 } from '@/lib/analytics'
 import { markPendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { buildCurrentAuthUrl } from '@/lib/auth-redirect'
+import { LOBBY_THEMES, LOBBY_THEME_IDS, getLobbyTheme, getThemePageStyle, type LobbyTheme } from '@/lib/lobby-themes'
 
 type GameType = SupportedCatalogGameType
 type MemoryDifficulty = 'easy' | 'medium' | 'hard'
@@ -46,9 +47,7 @@ type GameInfo = {
 function buildGameInfoFromCatalog(): Record<string, GameInfo> {
   return Object.fromEntries(
     getCatalogGames()
-      .filter((g): g is GameCatalogEntry & { gameType: SupportedCatalogGameType; lobbyCreateConfig: LobbyCreateConfig } =>
-        g.gameType !== undefined && g.lobbyCreateConfig !== undefined
-      )
+      .filter(isAvailableCatalogEntry)
       .map((g) => [
         g.gameType,
         {
@@ -106,7 +105,7 @@ function CreateLobbyPage() {
     name: '',
     password: '',
     maxPlayers: GAME_INFO[selectedGameType].defaultMaxPlayers,
-    allowSpectators: true,
+    allowSpectators: false,
     turnTimer: GAME_INFO[selectedGameType].settings.defaultTurnTimer || 60,
     ticTacToeRounds: GAME_INFO[selectedGameType].settings.defaultRounds ?? null,
     memoryDifficulty: GAME_INFO[selectedGameType].settings.defaultDifficulty ?? 'easy',
@@ -121,6 +120,8 @@ function CreateLobbyPage() {
   const [showFriendsModal, setShowFriendsModal] = useState(false)
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([])
   const [tipsOpen, setTipsOpen] = useState(false)
+  const [selectedTheme, setSelectedTheme] = useState<LobbyTheme>('default')
+  const [isPremiumUser, setIsPremiumUser] = useState(false)
 
   useEffect(() => {
     clientLogger.log('🎮 Game type selected:', selectedGameType)
@@ -143,6 +144,15 @@ function CreateLobbyPage() {
       router.push('/')
     }
   }, [status, isGuest, router])
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetch('/api/user/customize', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((d) => { if (d.isPremium) setIsPremiumUser(true) })
+        .catch(() => {})
+    }
+  }, [status])
 
   const handlePartySelection = async (friendIds: string[]) => {
     setSelectedFriendIds(friendIds)
@@ -195,6 +205,7 @@ function CreateLobbyPage() {
         allowSpectators: formData.allowSpectators,
         turnTimer: formData.turnTimer,
         gameType: formData.gameType,
+        theme: selectedTheme,
         ...(formData.gameType === 'tic_tac_toe' ? {
           ticTacToeRounds: formData.ticTacToeRounds,
           boardSize,
@@ -558,19 +569,22 @@ function CreateLobbyPage() {
       active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink'
     }`
 
+  const currentTheme = getLobbyTheme(selectedTheme)
+
   return (
     <div className="page-shell bd-page bd-screen flex flex-col">
 
-      {/* Top bar: back + game selector */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-bd-line bg-white px-5 py-3">
+      {/* Top bar: back + game selector — always white, never themed */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-[#E8DDC8] bg-white px-5 py-3">
         <button
           type="button"
           onClick={() => router.push('/games')}
           className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
+          style={{ color: '#1F1B16', borderColor: '#E8DDC8' }}
         >
           ← {t('lobby.create.cancel')}
         </button>
-        <div className="h-4 w-px shrink-0 bg-bd-line" />
+        <div className="h-4 w-px shrink-0 bg-[#E8DDC8]" />
         <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {Object.entries(GAME_INFO)
             .filter(([key]) => !isTemporarilyUnavailableGameType(key))
@@ -581,11 +595,11 @@ function CreateLobbyPage() {
                 type="button"
                 onClick={() => setSelectedGameType(key as GameType)}
                 aria-label={t('lobby.create.selectGame', { name: t(info.nameKey as TranslationKeys) })}
-                className={`bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all ${
-                  selectedGameType === key
-                    ? 'border-bd-ink bg-bd-ink text-bd-bg'
-                    : 'hover:border-bd-ink hover:bg-white'
-                }`}
+                style={selectedGameType === key
+                  ? { background: '#1F1B16', color: '#FBF6EE', borderColor: '#1F1B16' }
+                  : { background: 'white', color: '#1F1B16', borderColor: '#E8DDC8' }
+                }
+                className="bd-chip shrink-0 cursor-pointer px-3.5 py-1.5 text-[13px] transition-all"
               >
                 {info.emoji} {t(info.nameKey as TranslationKeys)}
               </button>
@@ -593,8 +607,8 @@ function CreateLobbyPage() {
         </div>
       </div>
 
-      {/* Main area */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* Main area — themed */}
+      <div className="flex min-h-0 flex-1 overflow-hidden" style={getThemePageStyle(selectedTheme)}>
 
         {/* Left: game preview */}
         <div className="hidden w-72 shrink-0 flex-col border-r border-bd-line bg-bd-card-warm xl:flex">
@@ -785,6 +799,52 @@ function CreateLobbyPage() {
               </>
             )}
 
+            {/* Lobby theme — premium */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-bd-ink">🎨 Lobby Theme</label>
+                {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500">👑 Premium</span>}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {LOBBY_THEME_IDS.map((themeId) => {
+                  const t = LOBBY_THEMES[themeId]
+                  const isPremiumTheme = themeId !== 'default'
+                  const isLocked = isPremiumTheme && !isPremiumUser
+                  const isSelected = selectedTheme === themeId
+                  return (
+                    <button
+                      key={themeId}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && setSelectedTheme(themeId)}
+                      title={isLocked ? `${t.name} — Premium only` : t.name}
+                      style={{
+                        position: 'relative',
+                        width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                        background: t.bg,
+                        border: isSelected ? `3px solid ${t.accent}` : '2px solid var(--bd-line)',
+                        boxShadow: isSelected ? `0 0 0 2px ${t.accent}40` : undefined,
+                        cursor: isLocked ? 'not-allowed' : 'pointer',
+                        opacity: isLocked ? 0.5 : 1,
+                        overflow: 'hidden',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        height: 8, background: t.accent,
+                      }} />
+                      {isLocked && <span style={{ position: 'absolute', top: 1, right: 1, fontSize: 9 }}>👑</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[12px] text-bd-ink-muted">
+                {selectedTheme === 'default' ? 'Classic warm look' : `${LOBBY_THEMES[selectedTheme].name} theme selected`}
+                {!isPremiumUser && ' · Upgrade to unlock custom themes'}
+              </p>
+            </div>
+
             {/* Lobby options */}
             <div className="flex items-center gap-3 pt-1">
               <div className="h-px flex-1 bg-bd-line" />
@@ -792,22 +852,30 @@ function CreateLobbyPage() {
               <div className="h-px flex-1 bg-bd-line" />
             </div>
 
-            {/* Spectators */}
+            {/* Spectators — premium only */}
             <div className="flex items-center justify-between gap-4 rounded-2xl border-2 border-bd-line bg-bd-card-warm px-4 py-3.5">
               <div>
-                <p className="font-semibold text-bd-ink">Spectators</p>
-                <p className="text-[13px] text-bd-ink-muted">Allow others to watch</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-bd-ink">Spectators</p>
+                  {!isPremiumUser && <span className="text-[11px] font-bold text-amber-500">👑 Premium</span>}
+                </div>
+                <p className="text-[13px] text-bd-ink-muted">
+                  {isPremiumUser ? 'Allow others to watch' : 'Upgrade to allow spectators'}
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
+                disabled={!isPremiumUser}
+                onClick={() => isPremiumUser && setFormData((prev) => ({ ...prev, allowSpectators: !prev.allowSpectators }))}
                 aria-pressed={formData.allowSpectators}
                 aria-label="Toggle spectators"
                 style={{
                   position: 'relative', display: 'inline-flex', height: 28, width: 52,
-                  alignItems: 'center', borderRadius: 999, border: 'none', cursor: 'pointer',
+                  alignItems: 'center', borderRadius: 999, border: 'none',
+                  cursor: isPremiumUser ? 'pointer' : 'not-allowed',
                   flexShrink: 0, transition: 'background 0.2s',
                   background: formData.allowSpectators ? 'var(--bd-mint)' : 'var(--bd-bg2)',
+                  opacity: isPremiumUser ? 1 : 0.5,
                 }}
               >
                 <span style={{
@@ -877,8 +945,8 @@ function CreateLobbyPage() {
             type="submit"
             form="create-lobby-form"
             disabled={loading}
-            className="bd-btn bd-btn-coral px-5 py-2.5 font-bold"
-            style={{ opacity: loading ? 0.7 : 1 }}
+            className="bd-btn px-5 py-2.5 font-bold text-white"
+            style={{ opacity: loading ? 0.7 : 1, background: currentTheme.accent, borderColor: currentTheme.accent }}
           >
             {loading ? (
               <>

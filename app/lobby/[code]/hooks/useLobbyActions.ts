@@ -3,10 +3,9 @@ import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
-import { getAuthHeaders } from '@/lib/socket-url'
+import { getAuthHeaders } from '@/lib/auth-headers'
 import {
   trackAuth,
-  trackError,
   trackFunnelStep,
   trackLobbyJoined,
   trackGameStarted,
@@ -19,7 +18,6 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { BotDifficulty, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import i18n from '@/i18n'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
-import type { Socket } from 'socket.io-client'
 import type { Game, GamePlayer, Lobby } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
 import type { RollHistoryEntry } from '@/components/RollHistory'
@@ -46,7 +44,6 @@ interface UseLobbyActionsProps {
   setRollHistory: (history: RollHistoryEntry[]) => void
   setCelebrationEvent: (event: CelebrationEvent | null) => void
   setChatMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
-  socket: Socket | null
   isGuest: boolean
   guestId: string | null
   guestName: string | null
@@ -65,6 +62,7 @@ interface UseLobbyActionsProps {
   setLoading: (loading: boolean) => void
   setStartingGame: (starting: boolean) => void
   selectedBotDifficulty: BotDifficulty
+  onLobbyFull?: () => void
 }
 
 interface AddBotOptions {
@@ -153,7 +151,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setRollHistory,
     setCelebrationEvent,
     setChatMessages,
-    socket,
     isGuest,
     guestId,
     guestName,
@@ -164,6 +161,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    onLobbyFull,
   } = props
 
   const [password, setPassword] = useState('')
@@ -397,13 +395,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
         await loadLobbyRef.current()
       }
 
-      // useSocketConnection joins room on each connect/reconnect.
-      // Emit only when already connected to avoid duplicate JOIN_LOBBY emissions.
-      if (socket && socket.connected) {
-        clientLogger.log('📡 Rejoining lobby room after successful HTTP join')
-        socket.emit('join-lobby', code)
-      }
-
       // Track lobby join
       trackLobbyJoined({
         lobbyCode: code,
@@ -421,11 +412,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       }
       setChatMessages(prev => [...prev, joinMessage])
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      if (message === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+        onLobbyFull()
+      } else {
+        setError(message)
+      }
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, password, isGuest, guestId, guestName, guestToken, socket, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate])
+  }, [code, password, isGuest, guestId, guestName, guestToken, username, setGame, setChatMessages, setError, lobby?.gameType, lobby?.isPrivate, lobby?.allowSpectators, onLobbyFull])
 
   const handleGuestJoinLobby = useCallback(async () => {
     const normalizedGuestName = guestNameInput.trim()
@@ -459,12 +455,6 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       const data = await response.json()
 
       if (!response.ok) {
-        trackError({
-          errorType: 'auth',
-          errorMessage: data.error || 'Guest join failed',
-          component: 'LobbyPageClient',
-          severity: 'medium',
-        })
         throw new Error(data.error || 'Failed to join lobby')
       }
 
@@ -491,11 +481,16 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
       })
       trackFunnelStep('guest-join')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err))
+      const message = err instanceof Error ? err.message : String(err)
+      if (message === 'Lobby is full' && lobby?.allowSpectators && onLobbyFull) {
+        onLobbyFull()
+      } else {
+        setError(message)
+      }
     } finally {
       setIsJoiningLobby(false)
     }
-  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode])
+  }, [code, guestNameInput, guestToken, password, setError, setGame, setGuestMode, lobby?.allowSpectators, onLobbyFull])
 
   const handleStartGame = useCallback(async () => {
     if (!lobby?.id) return
@@ -731,6 +726,23 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     return data
   }, [code, isGuest, guestId, guestName, guestToken, setLobby, lobby])
 
+  const kickPlayer = useCallback(async (playerId: string) => {
+    try {
+      const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
+      const res = await fetch(`/api/lobby/${code}/kick-player`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ playerId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to kick player')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+      showToast.success('toast.playerKicked')
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.error')
+    }
+  }, [code, isGuest, guestId, guestName, guestToken])
+
   const kickBot = useCallback(async (botPlayerId: string) => {
     try {
       const headers = getAuthHeaders(isGuest, guestId, guestName, guestToken)
@@ -768,6 +780,7 @@ export function useLobbyActions(props: UseLobbyActionsProps) {
     loadLobby,
     addBotToLobby,
     kickBot,
+    kickPlayer,
     changeBotDifficulty,
     announceBotJoined,
     handleJoinLobby,

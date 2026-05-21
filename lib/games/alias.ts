@@ -86,16 +86,8 @@ export class AliasGame extends GameEngine {
   }
 
   startGame(): boolean {
-    const data = this.state.data as AliasGameData
-    const allTeamsValid = data.teams.every(t => t.playerIds.length >= 2)
-    if (!allTeamsValid) return false
     if (!super.startGame()) return false
-    const card = this._dealCard()
-    data.currentCard = card
-    data.currentCardIndex = 0
-    data.currentCardResults = []
-    data.turnStartedAt = Date.now()
-    data.phase = 'turn_active'
+    // Stay in team_assignment phase — players rearrange teams, host calls start_round
     return true
   }
 
@@ -135,6 +127,15 @@ export class AliasGame extends GameEngine {
       case 'next_turn': {
         return data.phase === 'turn_results'
       }
+      case 'assign_team': {
+        if (data.phase !== 'team_assignment') return false
+        const { teamId } = move.data as { teamId: string }
+        return data.teams.some(t => t.id === teamId)
+      }
+      case 'start_round': {
+        if (data.phase !== 'team_assignment') return false
+        return data.teams.every(t => t.playerIds.length >= 1)
+      }
       default:
         return false
     }
@@ -169,7 +170,72 @@ export class AliasGame extends GameEngine {
         data.phase = 'turn_active'
         break
       }
+      case 'assign_team': {
+        const { teamId } = move.data as { teamId: string }
+        for (const team of data.teams) {
+          team.playerIds = team.playerIds.filter(id => id !== move.playerId)
+        }
+        const target = data.teams.find(t => t.id === teamId)
+        if (target) target.playerIds.push(move.playerId)
+        break
+      }
+      case 'start_round': {
+        // Assign any unassigned players to the smallest team
+        const assignedIds = new Set(data.teams.flatMap(t => t.playerIds))
+        for (const player of this.state.players) {
+          if (!assignedIds.has(player.id)) {
+            const smallest = data.teams.reduce((a, b) =>
+              a.playerIds.length <= b.playerIds.length ? a : b
+            )
+            smallest.playerIds.push(player.id)
+          }
+        }
+        const card = this._dealCard()
+        data.currentCard = card
+        data.currentCardIndex = 0
+        data.currentCardResults = []
+        data.turnStartedAt = Date.now()
+        data.phase = 'turn_active'
+        break
+      }
     }
+  }
+
+  handlePlayerLeave(playerId: string): boolean {
+    const data = this.state.data as AliasGameData
+    let changed = false
+
+    for (const team of data.teams) {
+      const idx = team.playerIds.indexOf(playerId)
+      if (idx === -1) continue
+
+      const isCurrentTeam = data.teams[data.currentTeamIndex]?.id === team.id
+      const isCurrentDescriber = idx === team.describerIndex
+
+      // End the active turn if the current describer is leaving
+      if (isCurrentTeam && isCurrentDescriber && data.phase === 'turn_active') {
+        this._endTurn()
+        // _endTurn() advanced describerIndex; re-clamp after splice below
+      }
+
+      team.playerIds.splice(idx, 1)
+
+      if (team.playerIds.length > 0) {
+        if (!isCurrentDescriber && idx < team.describerIndex) {
+          team.describerIndex--
+        } else if (isCurrentDescriber) {
+          team.describerIndex = team.describerIndex % team.playerIds.length
+        }
+      } else {
+        team.describerIndex = 0
+      }
+
+      this.state.updatedAt = new Date()
+      changed = true
+      break
+    }
+
+    return changed
   }
 
   applyTimeoutFallback(turnTimerSeconds: number, nowMs: number = Date.now()): { changed: boolean } {

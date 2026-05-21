@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { Prisma } from '@/prisma/client'
 import { prisma } from '@/lib/db'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
@@ -29,7 +29,6 @@ import {
   toPersistedGameStateInput,
 } from '@/lib/persisted-game-state'
 
-const apiLimiter = rateLimit(rateLimitPresets.api)
 const gameLimiter = rateLimit(rateLimitPresets.game)
 const UNLIMITED_SPECTATORS_VALUE = 0
 const MAX_JOIN_SERIALIZABLE_RETRIES = 2
@@ -125,7 +124,7 @@ async function commitTimeoutFallback(params: {
   })
 
   if (gameSocketEvent && gameSocketData) {
-    await notifySocket(`lobby:${lobbyCode}`, gameSocketEvent, {
+    void broadcastToLobby(lobbyCode, gameSocketEvent, {
       action: 'timeout-fallback',
       playerId: null,
       data: gameSocketData,
@@ -133,7 +132,7 @@ async function commitTimeoutFallback(params: {
     })
   }
 
-  await notifySocket(`lobby:${lobbyCode}`, 'game-update', {
+  void broadcastToLobby(lobbyCode, 'game-update', {
     action: 'state-change',
     payload: { state: nextState },
   })
@@ -154,8 +153,7 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    // Rate limit GET requests
-    const rateLimitResult = await apiLimiter(request)
+    const rateLimitResult = await gameLimiter(request)
     if (rateLimitResult) return rateLimitResult
 
     const { searchParams } = new URL(request.url)
@@ -175,6 +173,7 @@ export async function GET(
         turnTimer: true,
         isActive: true,
         gameType: true,
+        theme: true,
         createdAt: true,
         creatorId: true,
         password: true,
@@ -203,6 +202,9 @@ export async function GET(
                     id: true,
                     username: true,
                     isGuest: true,
+                    image: true,
+                    avatarUrl: true,
+                    premiumUntil: true,
                     bot: {
                       select: {
                         difficulty: true,
@@ -595,23 +597,13 @@ export async function POST(
       }
     }
 
-    // Notify all clients via WebSocket that a player joined
-    await notifySocket(
-      `lobby:${code}`,
-      'player-joined',
-      {
-        username: player.user.username || 'Player',
-        userId: userId,
-        isGuest: player.user.isGuest,
-      }
-    )
-
-    // Also send lobby-update event
-    await notifySocket(
-      `lobby:${code}`,
-      'lobby-update',
-      { lobbyCode: code }
-    )
+    // Broadcast player-joined — includes username not available via Postgres Changes
+    void broadcastToLobby(code, 'player-joined', {
+      username: player.user.username || 'Player',
+      userId: userId,
+      isGuest: player.user.isGuest,
+    })
+    // lobby-update is handled by Postgres Changes on Lobbies table
 
     await prisma.lobbyInvites.updateMany({
       where: {
@@ -755,8 +747,7 @@ export async function PATCH(
       },
     })
 
-    await notifySocket(`lobby:${code}`, 'lobby-update', { lobbyCode: code })
-
+    // Postgres Changes on Lobbies table broadcasts the settings update automatically
     log.info('Lobby settings updated', {
       code,
       updaterId: requestUser.id,

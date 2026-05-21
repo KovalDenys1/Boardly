@@ -16,6 +16,7 @@ interface YahtzeeResultsProps {
   onRequestRematch?: () => void
   onBackToLobby: () => void
   onReturnToLobbyRoom?: () => void
+  onReturnToWaiting?: () => void
   autoReturnAt?: number | null
   isGuest?: boolean
   registerUrl?: string
@@ -51,6 +52,7 @@ export default function YahtzeeResults({
   onRequestRematch,
   onBackToLobby,
   onReturnToLobbyRoom,
+  onReturnToWaiting,
   autoReturnAt = null,
   isGuest = false,
   registerUrl = '/auth/register',
@@ -98,7 +100,7 @@ export default function YahtzeeResults({
             style={{
               borderColor: 'var(--bd-line)',
               background:
-                'linear-gradient(135deg, rgba(255,196,77,0.2) 0%, rgba(255,255,255,0.96) 46%, rgba(155,140,255,0.14) 100%)',
+                'linear-gradient(135deg, rgba(255,196,77,0.2) 0%, var(--bd-bg) 46%, rgba(155,140,255,0.14) 100%)',
             }}
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -142,7 +144,7 @@ export default function YahtzeeResults({
               style={{
                 borderColor: 'rgba(255,196,77,0.32)',
                 background:
-                  'linear-gradient(180deg, rgba(255,244,213,0.68) 0%, rgba(255,255,255,0.92) 100%)',
+                  'linear-gradient(180deg, rgba(255,244,213,0.68) 0%, var(--bd-bg) 100%)',
               }}
             >
               <div className="flex items-center gap-2 text-[var(--bd-coral-deep)]">
@@ -163,7 +165,7 @@ export default function YahtzeeResults({
               </p>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,255,255,0.78)' }}>
+                <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}>
                   <div className="bd-kicker">Upper</div>
                   <div className="mt-1 text-2xl font-bold text-bd-ink">
                     {winner.upperSectionScore}
@@ -172,7 +174,7 @@ export default function YahtzeeResults({
                     )}
                   </div>
                 </div>
-                <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,255,255,0.78)' }}>
+                <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}>
                   <div className="bd-kicker">Lower</div>
                   <div className="mt-1 text-2xl font-bold text-bd-ink">{winner.lowerSectionScore}</div>
                 </div>
@@ -233,12 +235,12 @@ export default function YahtzeeResults({
                             : 'var(--bd-line)',
                     background:
                       player.rank === 0
-                        ? 'linear-gradient(135deg, rgba(255,244,213,0.8), rgba(255,255,255,0.96))'
+                        ? 'linear-gradient(135deg, rgba(255,244,213,0.8), var(--bd-bg))'
                         : player.rank === 1
-                          ? 'linear-gradient(135deg, rgba(155,140,255,0.12), rgba(255,255,255,0.96))'
+                          ? 'linear-gradient(135deg, rgba(155,140,255,0.12), var(--bd-bg))'
                           : player.rank === 2
-                            ? 'linear-gradient(135deg, rgba(255,107,91,0.1), rgba(255,255,255,0.96))'
-                            : 'rgba(255,255,255,0.92)',
+                            ? 'linear-gradient(135deg, rgba(255,107,91,0.1), var(--bd-bg))'
+                            : 'var(--bd-bg)',
                   }}
                 >
                   <div className="mb-2 flex items-center justify-between gap-2">
@@ -315,7 +317,7 @@ export default function YahtzeeResults({
             className="border-t px-4 py-4 sm:px-6"
             style={{
               borderColor: 'var(--bd-line)',
-              background: 'rgba(255,255,255,0.72)',
+              background: 'var(--bd-bg2)',
             }}
           >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -342,6 +344,14 @@ export default function YahtzeeResults({
                   <span className="text-lg">🔄</span>
                   <span>{t('yahtzee.results.playAgain')}</span>
                 </button>
+                {onReturnToWaiting && canStartGame && (
+                  <button
+                    onClick={onReturnToWaiting}
+                    className="bd-btn bd-btn-soft flex items-center justify-center gap-2"
+                  >
+                    <span>{t('game.ui.returnToLobby')}</span>
+                  </button>
+                )}
                 {onRequestRematch && canRequestRematch && (
                   <button
                     onClick={onRequestRematch}

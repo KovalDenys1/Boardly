@@ -20,6 +20,9 @@ interface LobbyPlayer {
     username?: string | null
     name?: string | null
     email?: string | null
+    image?: string | null
+    avatarUrl?: string | null
+    isPremium?: boolean
     bot?: unknown
   } | null
   name?: string | null
@@ -55,17 +58,20 @@ interface MemoryGameBoardProps {
   turnTimerLimit?: number
   canStartGame?: boolean
   onPlayAgain?: () => void
+  onReturnToWaiting?: () => void
   onLeave?: () => void
   chatMessages?: ChatMessagePayload[]
   onSendChatMessage?: (message: string) => void
   chatUnreadCount?: number
   someoneTyping?: boolean
+  playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
+  onProfileClick?: (userId: string) => void
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
 
 function getPlayerDisplayName(player: LobbyPlayer): string {
-  return player.user?.username || player.user?.name || player.name || player.user?.email || 'Player'
+  return player.user?.username || player.user?.name || player.name || 'Player'
 }
 
 function getDifficultyLabel(
@@ -86,11 +92,14 @@ export default function MemoryGameBoard({
   turnTimerLimit: rawTurnTimerLimit,
   canStartGame,
   onPlayAgain,
+  onReturnToWaiting,
   onLeave,
   chatMessages = [],
   onSendChatMessage,
   chatUnreadCount = 0,
   someoneTyping = false,
+  playerProfiles,
+  onProfileClick,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -134,6 +143,22 @@ export default function MemoryGameBoard({
     }
     return result
   }, [players, parsedState.players])
+
+  const premiumByUserId = useMemo(() => {
+    const result = new Map<string, boolean>()
+    for (const player of players) {
+      result.set(player.userId, !!player.user?.isPremium)
+    }
+    return result
+  }, [players])
+
+  const avatarByUserId = useMemo(() => {
+    const result = new Map<string, string | null>()
+    for (const player of players) {
+      result.set(player.userId, player.user?.avatarUrl ?? player.user?.image ?? null)
+    }
+    return result
+  }, [players])
 
   // Remove optimistic IDs once server state catches up (card appears in flippedCardIds or isFlipped)
   useEffect(() => {
@@ -296,9 +321,9 @@ export default function MemoryGameBoard({
   if (!gameData || cards.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="rounded-2xl border border-white/20 bg-white/10 px-8 py-10 text-center">
+        <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg2)] px-8 py-10 text-center">
           <LoadingSpinner size="md" />
-          <p className="mt-4 text-sm text-white/70">{t('common.loading')}</p>
+          <p className="mt-4 text-sm text-bd-ink-muted">{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -391,12 +416,21 @@ export default function MemoryGameBoard({
             </div>
           )}
 
-          {parsedState.status === 'finished' && onPlayAgain && (
-            <div className="mt-3">
+          {parsedState.status === 'finished' && (
+            <div className="mt-3 flex flex-col gap-2">
               {canStartGame ? (
-                <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
-                  {t('lobby.game.playAgain')}
-                </button>
+                <>
+                  {onPlayAgain && (
+                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
+                      {t('lobby.game.playAgain')}
+                    </button>
+                  )}
+                  {onReturnToWaiting && (
+                    <button onClick={onReturnToWaiting} className="bd-btn bd-btn-soft w-full justify-center">
+                      {t('game.ui.returnToLobby')}
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">{t('game.ui.waitingForHost')}</p>
               )}
@@ -454,11 +488,22 @@ export default function MemoryGameBoard({
                   const isCurrent = player.id === currentPlayerId
                   return (
                     <div key={player.id} className={`memory-score-row ${isCurrent ? 'memory-score-row-active' : ''}`}>
-                      <span className="bd-avatar bd-avatar-sun h-9 w-9">
-                        {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
-                      </span>
+                      {avatarByUserId.get(player.id) ? (
+                        <img
+                          src={avatarByUserId.get(player.id)!}
+                          alt={displayNameByUserId.get(player.id) || '?'}
+                          className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover"
+                        />
+                      ) : (
+                        <span className="bd-avatar bd-avatar-sun h-9 w-9">
+                          {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
+                        </span>
+                      )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-bold">{displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}</p>
+                        <p className={`flex items-center gap-1 truncate font-bold ${premiumByUserId.get(player.id) ? 'text-amber-500' : ''}`}>
+                          {displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}
+                          {premiumByUserId.get(player.id) && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                        </p>
                         <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>
                       </div>
                       <span className="text-lg font-black">{score}</span>
@@ -478,6 +523,8 @@ export default function MemoryGameBoard({
                   onToggleMinimize={() => {}}
                   unreadCount={chatUnreadCount}
                   someoneTyping={someoneTyping}
+                  playerProfiles={playerProfiles}
+                  onProfileClick={onProfileClick}
                   fullScreen
                 />
               </section>

@@ -9,6 +9,7 @@
   --bd-ink: #1F1B16;
   --bd-ink-soft: #4A3F33;
   --bd-ink-muted: #8A7A66;
+  --bd-btn-ink: var(--bd-ink);
   --bd-line: #E8DDC8;
   --bd-coral: #FF6B5B;
   --bd-coral-deep: #E04B3B;
@@ -21,7 +22,19 @@
   --bd-lav-deep: #7867E8;
   --bd-sky: #6BC1F0;
   --bd-card-warm: #FFF8EC;
+  --bd-input-bg: #ffffff;
   --bd-font-display: Georgia, serif;
+}
+
+html.dark {
+  --bd-bg:        #1E1B17;
+  --bd-bg2:       #2B2720;
+  --bd-ink:       #F0E8DB;
+  --bd-ink-soft:  #B5A494;
+  --bd-ink-muted: #7A6E62;
+  --bd-line:      #3A3530;
+  --bd-card-warm: #242018;
+  --bd-input-bg:  #2B2720;
 }
 
 @keyframes bd-float {
@@ -1228,6 +1241,16 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 .bd-pulse { animation: bd-pulse 1.6s infinite; }
 
+@keyframes bd-listening {
+  0%   { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes bd-confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(1200px) rotate(400deg); opacity: 0.5; }
+}
+
 /* ============ BD SHARED COMPONENT CLASSES ============ */
 
 /* Screen entry animation */
@@ -1249,7 +1272,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* Card */
 .bd-card {
-  background: #fff;
+  background: var(--bd-card-warm);
   border-radius: 24px;
   border: 1.5px solid var(--bd-line);
   box-shadow: 0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18);
@@ -1335,7 +1358,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 .bd-btn:active { transform: translateY(2px); }
 
 .bd-btn-primary {
-  background: var(--bd-ink); color: var(--bd-bg);
+  background: var(--bd-btn-ink); color: var(--bd-bg);
   box-shadow: 0 4px 0 0 var(--bd-coral);
 }
 .bd-btn-primary:hover { box-shadow: 0 6px 0 0 var(--bd-coral); transform: translateY(-1px); }
@@ -1350,9 +1373,9 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .bd-btn-ghost {
   background: transparent; color: var(--bd-ink);
-  border: 2px solid var(--bd-ink);
+  border: 2px solid var(--bd-btn-ink);
 }
-.bd-btn-ghost:hover { background: var(--bd-ink); color: var(--bd-bg); }
+.bd-btn-ghost:hover { background: var(--bd-btn-ink); color: var(--bd-bg); }
 
 .bd-btn-soft {
   background: var(--bd-card-warm); color: var(--bd-ink);
@@ -1368,7 +1391,8 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: 14px 16px;
   border: 2px solid var(--bd-line);
   border-radius: 12px;
-  background: white;
+  background: var(--bd-input-bg);
+  color: var(--bd-ink);
   font-size: 15px; font-family: inherit;
   transition: border-color 0.15s;
   width: 100%; display: block;

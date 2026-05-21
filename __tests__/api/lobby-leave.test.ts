@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server'
 import { POST as LEAVE } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
@@ -35,10 +35,8 @@ jest.mock('@/lib/rate-limit', () => ({
   rateLimitPresets: { api: {} },
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn(() => Promise.resolve(true)),
-  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
-  getSocketInternalAuthHeaders: jest.fn(() => ({})),
+jest.mock('@/lib/supabase-server', () => ({
+  broadcastToLobby: jest.fn(() => Promise.resolve(true)),
 }))
 
 jest.mock('@/lib/logger', () => ({
@@ -59,7 +57,7 @@ jest.mock('@/lib/lobby-player-requirements', () => ({
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetRequestAuthUser = getRequestAuthUser as jest.MockedFunction<typeof getRequestAuthUser>
-const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
 
 function makeRequest(code = 'ABC123') {
   return new NextRequest(`http://localhost/api/lobby/${code}/leave`, { method: 'POST' })
@@ -95,7 +93,7 @@ const mockLobby = (game = mockGame()) => ({
 
 beforeEach(() => {
   jest.clearAllMocks()
-  mockNotifySocket.mockResolvedValue(true)
+  mockBroadcastToLobby.mockResolvedValue(true)
   mockPrisma.lobbies.update.mockResolvedValue({} as any)
   mockPrisma.games.update.mockResolvedValue({} as any)
   mockPrisma.players.delete.mockResolvedValue({} as any)
@@ -130,19 +128,17 @@ describe('POST /api/lobby/[code]/leave — host reassignment', () => {
     )
 
     // lobby-update event carries new creatorId
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABC123',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'lobby-update',
-      expect.objectContaining({ data: expect.objectContaining({ creatorId: OTHER_ID }) }),
-      expect.any(Number)
+      expect.objectContaining({ data: expect.objectContaining({ creatorId: OTHER_ID }) })
     )
 
     // player-left event carries nextCreatorId
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABC123',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'player-left',
-      expect.objectContaining({ nextCreatorId: OTHER_ID, nextCreatorName: 'Other' }),
-      expect.any(Number)
+      expect.objectContaining({ nextCreatorId: OTHER_ID, nextCreatorName: 'Other' })
     )
   })
 

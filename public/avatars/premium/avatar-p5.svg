@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Ninja/Mask -->
+  <!-- Head wrap -->
+  <circle cx="50" cy="45" r="22" fill="white" opacity="0.15"/>
+  <!-- Face mask - top half -->
+  <path d="M28 40 Q28 25 50 25 Q72 25 72 40 L72 48 Q72 54 50 54 Q28 54 28 48 Z" fill="white" opacity="0.95"/>
+  <!-- Eyes slit -->
+  <rect x="33" y="40" width="34" height="6" rx="3" fill="#0f172a" opacity="0.15"/>
+  <!-- Left eye glow -->
+  <ellipse cx="42" cy="43" rx="5" ry="3" fill="#3b82f6" opacity="0.8"/>
+  <ellipse cx="42" cy="43" rx="3" ry="2" fill="white" opacity="0.9"/>
+  <!-- Right eye glow -->
+  <ellipse cx="58" cy="43" rx="5" ry="3" fill="#3b82f6" opacity="0.8"/>
+  <ellipse cx="58" cy="43" rx="3" ry="2" fill="white" opacity="0.9"/>
+  <!-- Lower face wrap -->
+  <path d="M28 48 Q28 70 50 72 Q72 70 72 48 L72 54 Q72 74 50 76 Q28 74 28 54 Z" fill="white" opacity="0.85"/>
+  <!-- Headband knot -->
+  <circle cx="82" cy="36" r="6" fill="white" opacity="0.9"/>
+  <path d="M76 36 Q80 28 82 30 Q84 28 88 36" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+</svg>

@@ -1,24 +1,22 @@
+// @ts-nocheck
 import { act, render, screen, waitFor } from '@testing-library/react'
 import AliasLobbyPage from '@/app/lobby/[code]/alias-page'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
-import { io } from 'socket.io-client'
 import { showToast } from '@/lib/i18n-toast'
 
 const mockReplace = jest.fn()
 const mockPush = jest.fn()
 const mockPrefetch = jest.fn()
-const socketHandlers: Record<string, (payload?: any) => void> = {}
-const mockSocket: any = {
-  on: jest.fn((event: string, handler: (payload?: any) => void) => {
-    socketHandlers[event] = handler
-    return mockSocket
+
+const broadcastHandlers: Record<string, (data: { payload: unknown }) => void> = {}
+const mockChannel: any = {
+  on: jest.fn((type: string, filter: { event?: string }, handler: (data: unknown) => void) => {
+    if (type === 'broadcast' && filter.event) {
+      broadcastHandlers[filter.event] = handler as any
+    }
+    return mockChannel
   }),
-  off: jest.fn(),
-  emit: jest.fn(),
-  disconnect: jest.fn(),
-  close: jest.fn(),
-  connected: true,
+  subscribe: jest.fn(() => mockChannel),
 }
 
 jest.mock('next/navigation', () => ({
@@ -67,14 +65,6 @@ jest.mock('@/lib/fetch-with-guest', () => ({
   fetchWithGuest: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-client-auth', () => ({
-  resolveSocketClientAuth: jest.fn(),
-}))
-
-jest.mock('@/lib/socket-url', () => ({
-  getBrowserSocketUrl: jest.fn(() => 'http://socket.test'),
-}))
-
 jest.mock('@/lib/client-logger', () => ({
   clientLogger: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }))
@@ -97,8 +87,11 @@ jest.mock('@/components/ReactionOverlay', () => ({
   default: () => null,
 }))
 
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => mockSocket),
+jest.mock('@/lib/supabase-client', () => ({
+  getSupabaseClient: jest.fn(() => ({
+    channel: jest.fn(() => mockChannel),
+    removeChannel: jest.fn().mockResolvedValue({}),
+  })),
 }))
 
 function buildLobbyResponse() {
@@ -150,17 +143,11 @@ function buildLobbyResponse() {
 
 describe('AliasLobbyPage', () => {
   const mockFetchWithGuest = fetchWithGuest as jest.MockedFunction<typeof fetchWithGuest>
-  const mockResolveSocketClientAuth = resolveSocketClientAuth as jest.MockedFunction<typeof resolveSocketClientAuth>
-  const mockIo = io as jest.MockedFunction<typeof io>
   const toast = showToast as jest.Mocked<typeof showToast>
 
   beforeEach(() => {
     jest.clearAllMocks()
-    Object.keys(socketHandlers).forEach((key) => delete socketHandlers[key])
-    mockResolveSocketClientAuth.mockResolvedValue({
-      authPayload: { userId: 'user-1' },
-      queryPayload: {},
-    })
+    Object.keys(broadcastHandlers).forEach((key) => delete broadcastHandlers[key])
     mockFetchWithGuest.mockResolvedValue({
       ok: true,
       json: async () => buildLobbyResponse(),
@@ -169,17 +156,17 @@ describe('AliasLobbyPage', () => {
 
   it('renders the waiting room team assignment screen', async () => {
     render(<AliasLobbyPage code="ABCD" />)
-    await waitFor(() => expect(mockIo).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
   })
 
-  it('redirects away when the socket reports an abandoned game', async () => {
+  it('redirects away when a game-abandoned broadcast is received', async () => {
     render(<AliasLobbyPage code="ABCD" />)
-    await waitFor(() => expect(mockIo).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
 
     act(() => {
-      socketHandlers['game-abandoned']?.({ gameId: 'game-1', reason: 'insufficient_players' })
+      broadcastHandlers['game-abandoned']?.({
+        payload: { gameId: 'game-1', reason: 'insufficient_players' },
+      })
     })
 
     await waitFor(() => {
@@ -193,13 +180,14 @@ describe('AliasLobbyPage', () => {
     })
   })
 
-  it('redirects when a player leaves and remaining players drop below minimum', async () => {
+  it('redirects when a player-left broadcast drops below the minimum player count', async () => {
     render(<AliasLobbyPage code="ABCD" />)
-    await waitFor(() => expect(mockIo).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByTestId('alias-waiting-room')).toBeTruthy())
 
     act(() => {
-      socketHandlers['player-left']?.({ userId: 'user-4', username: 'Dave', remainingPlayers: 3 })
+      broadcastHandlers['player-left']?.({
+        payload: { userId: 'user-4', username: 'Dave', remainingPlayers: 3 },
+      })
     })
 
     await waitFor(() => {

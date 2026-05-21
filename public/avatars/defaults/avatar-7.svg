@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#9333ea"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Chess pawn -->
+  <!-- Head -->
+  <circle cx="50" cy="30" r="12" fill="white" opacity="0.95"/>
+  <!-- Neck -->
+  <rect x="44" y="41" width="12" height="8" rx="2" fill="white" opacity="0.95"/>
+  <!-- Body -->
+  <path d="M37 49 L63 49 L68 68 L32 68 Z" fill="white" opacity="0.95"/>
+  <!-- Base -->
+  <rect x="28" y="68" width="44" height="8" rx="4" fill="white" opacity="0.95"/>
+</svg>

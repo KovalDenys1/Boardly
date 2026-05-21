@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { hasBotSupport } from '@/lib/game-registry'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 
@@ -116,22 +116,13 @@ export async function POST(
       }
     }
 
-    await notifySocket(
-      `lobby:${code}`,
-      'player-joined',
-      {
-        lobbyCode: code,
-        username: botUser.username || botDisplayName,
-        userId: botUser.id,
-        isBot: true,
-      }
-    )
-
-    await notifySocket(
-      `lobby:${code}`,
-      'lobby-update',
-      { lobbyCode: code, type: 'player-joined' }
-    )
+    void broadcastToLobby(code, 'player-joined', {
+      lobbyCode: code,
+      username: botUser.username || botDisplayName,
+      userId: botUser.id,
+      isBot: true,
+    })
+    // lobby-update handled by Postgres Changes on Lobbies table
 
     // Fetch updated game
     const updatedGame = await prisma.games.findUnique({

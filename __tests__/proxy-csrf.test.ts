@@ -10,24 +10,17 @@ jest.mock('next-auth/jwt', () => ({
   getToken: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
-}))
-
 const mockGetToken = getToken as jest.MockedFunction<typeof getToken>
-const originalInternalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
 const originalCronSecret = process.env.CRON_SECRET
 
 describe('proxy CSRF enforcement', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetToken.mockResolvedValue(null as any)
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
     process.env.CRON_SECRET = 'test-cron-secret'
   })
 
   afterAll(() => {
-    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalInternalSecret
     process.env.CRON_SECRET = originalCronSecret
   })
 
@@ -75,6 +68,8 @@ describe('proxy CSRF enforcement', () => {
   })
 
   it('allows cross-origin internal requests with valid internal secret header', async () => {
+    const originalSecret = process.env.SOCKET_SERVER_INTERNAL_SECRET
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = 'test-internal-secret'
     const request = new NextRequest('http://localhost:3000/api/game/game-123/state', {
       method: 'POST',
       headers: {
@@ -85,6 +80,7 @@ describe('proxy CSRF enforcement', () => {
 
     const response = await proxy(request)
 
+    process.env.SOCKET_SERVER_INTERNAL_SECRET = originalSecret
     expect(response.status).not.toBe(403)
   })
 

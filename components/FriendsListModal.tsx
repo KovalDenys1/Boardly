@@ -177,8 +177,8 @@ export default function FriendsListModal({
                     presencePriority[resolvePresence(a)] - presencePriority[resolvePresence(b)]
                   if (priorityDiff !== 0) return priorityDiff
 
-                  const aName = a.username || a.email
-                  const bName = b.username || b.email
+                  const aName = a.username ?? ''
+                  const bName = b.username ?? ''
                   return aName.localeCompare(bName)
                 })
                 .map((friend) => {
@@ -222,7 +222,7 @@ export default function FriendsListModal({
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-2">
                           <span className="font-medium" style={{ color: 'var(--bd-ink)' }}>
-                            {friend.username || friend.email}
+                            {friend.username || 'Unknown'}
                           </span>
                           {presenceLabel && (
                             <span className="text-xs font-medium" style={{ color: '#22C55E' }}>

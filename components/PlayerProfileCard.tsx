@@ -9,8 +9,10 @@ interface PlayerCardData {
   userId: string
   username: string | null
   image: string | null
+  avatarUrl?: string | null
   publicProfileId: string | null
   isGuest: boolean
+  isPremium: boolean
   gamesPlayed: number
   wins: number
   winRate: number
@@ -81,7 +83,15 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="sm">
-      <div className="p-5 space-y-4">
+      <div className="p-5 space-y-4 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-0 right-0 flex h-7 w-7 items-center justify-center rounded-full text-lg transition-colors hover:bg-[var(--bd-bg2)]"
+          style={{ color: 'var(--bd-ink-soft)' }}
+          aria-label="Close"
+        >
+          ×
+        </button>
         {loading ? (
           <div className="animate-pulse space-y-4">
             <div className="flex items-center gap-3">
@@ -105,9 +115,9 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
           <>
             {/* Avatar + name */}
             <div className="flex items-center gap-3">
-              {data.image ? (
+              {(data.avatarUrl || data.image) ? (
                 <img
-                  src={data.image}
+                  src={data.avatarUrl ?? data.image!}
                   alt=""
                   className="w-14 h-14 rounded-full object-cover shrink-0"
                   style={{ outline: '2px solid var(--bd-line)' }}
@@ -122,9 +132,12 @@ export default function PlayerProfileCard({ userId, onClose }: PlayerProfileCard
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-base truncate" style={{ color: 'var(--bd-ink)' }}>
+                  <span className={`font-bold text-base truncate ${data.isPremium ? 'text-amber-500' : ''}`} style={data.isPremium ? {} : { color: 'var(--bd-ink)' }}>
                     {data.username ?? 'Unknown'}
                   </span>
+                  {data.isPremium && (
+                    <span className="text-base leading-none" title="Premium">👑</span>
+                  )}
                   {data.isGuest && (
                     <span
                       className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"

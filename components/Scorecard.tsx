@@ -77,13 +77,13 @@ const rowVariants: Record<CategoryState, string> = {
   'high-value':
     'border-emerald-200 bg-[rgba(79,201,166,0.16)] hover:bg-[rgba(79,201,166,0.24)] hover:shadow-md cursor-pointer',
   'low-value':
-    'border-[var(--bd-line)] bg-white/80 hover:bg-[var(--bd-bg)] hover:shadow-sm cursor-pointer',
+    'border-[var(--bd-line)] bg-[var(--bd-bg)] hover:bg-[var(--bd-bg2)] hover:shadow-sm cursor-pointer',
   sacrifice:
     'border-amber-200 bg-[rgba(255,196,77,0.16)] hover:bg-[rgba(255,196,77,0.24)] hover:shadow-sm cursor-pointer',
   filled:
     'border-[var(--bd-line)] bg-[var(--bd-card-warm)] cursor-default',
   disabled:
-    'border-[var(--bd-line)] bg-white/50 opacity-60 cursor-not-allowed',
+    'border-[var(--bd-line)] bg-[var(--bd-bg)] opacity-60 cursor-not-allowed',
 }
 
 const Scorecard = React.memo(function Scorecard({
@@ -265,12 +265,12 @@ const Scorecard = React.memo(function Scorecard({
         !isCurrentPlayer ? 'opacity-90' : ''
       }`}
       style={{
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+        background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
       }}
     >
       {/* Player / navigation header */}
       {hasHeader && (
-        <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'rgba(251,246,238,0.82)' }}>
+        <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           {playerName && (
             <div className="min-w-0 flex-1">
               <span className="bd-kicker">Scorecard</span>
@@ -304,7 +304,7 @@ const Scorecard = React.memo(function Scorecard({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4" style={{ borderColor: 'var(--bd-line)', background: 'rgba(255,255,255,0.62)' }}>
+      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
         <span className="bd-chip px-3 py-1.5 text-[11px]">
           {filledCategories}/{upperSection.length + lowerSection.length} filled
         </span>
@@ -322,7 +322,7 @@ const Scorecard = React.memo(function Scorecard({
       </div>
 
       {shouldShowScoringGuidance && (
-        <div className="flex-shrink-0 border-b px-3 sm:px-4 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, rgba(255,255,255,0.9) 52%, rgba(107,193,240,0.14) 100%)' }}>
+        <div className="flex-shrink-0 border-b px-3 sm:px-4 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 52%, rgba(107,193,240,0.14) 100%)' }}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="bd-kicker" style={{ color: 'var(--bd-mint-deep)' }}>

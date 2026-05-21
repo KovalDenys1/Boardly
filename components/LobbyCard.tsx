@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslation } from '@/lib/i18n-helpers'
+import { GAME_SVG_PATHS } from '@/components/GameIcon'
 
 export interface LobbyCardData {
   id: string
@@ -35,13 +36,17 @@ interface LobbyCardProps {
 export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: LobbyCardProps) {
   const { t } = useTranslation()
 
-  const getGamePresentation = (gameType: string | undefined): { icon: string; label: string; accent: string } => {
+  const getGamePresentation = (gameType: string | undefined): { svgId: string; label: string; accent: string } => {
     switch (gameType) {
-      case 'yahtzee':            return { icon: '🎲', label: t('games.yahtzee.title', 'Yahtzee'),              accent: 'var(--bd-lav)' }
-      case 'guess_the_spy':      return { icon: '🕵️', label: t('games.spy.name', 'Guess the Spy'),            accent: 'var(--bd-coral)' }
-      case 'tic_tac_toe':        return { icon: '❌', label: t('games.tictactoe.name', 'Tic-Tac-Toe'),         accent: 'var(--bd-mint)' }
-      case 'rock_paper_scissors':return { icon: '✊', label: t('games.rock_paper_scissors.name', 'RPS'),        accent: 'var(--bd-sun)' }
-      default:                   return { icon: '🎮', label: t('lobby.gameUnknown'),                           accent: 'var(--bd-sky)' }
+      case 'yahtzee':            return { svgId: 'yahtzee',      label: t('games.yahtzee.title', 'Yahtzee'),              accent: 'var(--bd-sky)' }
+      case 'guess_the_spy':      return { svgId: 'spy',          label: t('games.spy.name', 'Guess the Spy'),             accent: 'var(--bd-lav)' }
+      case 'tic_tac_toe':        return { svgId: 'tic-tac-toe',  label: t('games.tictactoe.name', 'Tic-Tac-Toe'),         accent: 'var(--bd-coral)' }
+      case 'rock_paper_scissors':return { svgId: 'rps',          label: t('games.rock_paper_scissors.name', 'RPS'),       accent: 'var(--bd-sun)' }
+      case 'memory':             return { svgId: 'memory',       label: t('games.memory.name', 'Memory'),                 accent: 'var(--bd-mint)' }
+      case 'connect_four':       return { svgId: 'connect-four', label: t('games.connect_four.name', 'Connect Four'),     accent: 'var(--bd-coral)' }
+      case 'alias':              return { svgId: 'alias',        label: t('games.alias.name', 'Alias'),                   accent: 'var(--bd-coral)' }
+      case 'liars_party':        return { svgId: 'liars-party',  label: t('games.liars_party.name', "Liar's Party"),      accent: 'var(--bd-lav)' }
+      default:                   return { svgId: 'yahtzee',      label: t('lobby.gameUnknown'),                           accent: 'var(--bd-sky)' }
     }
   }
 
@@ -65,8 +70,15 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(31,27,22,0.07)'; }}
     >
       {/* Game icon */}
-      <div style={{ width: 48, height: 48, borderRadius: 14, background: `${game.accent}22`, border: `1.5px solid ${game.accent}44`, display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0 }}>
-        {game.icon}
+      <div style={{ width: 48, height: 48, borderRadius: 14, background: `${game.accent}22`, border: `1.5px solid ${game.accent}44`, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          width={24}
+          height={24}
+          style={{ color: game.accent }}
+          dangerouslySetInnerHTML={{ __html: GAME_SVG_PATHS[game.svgId] ?? '' }}
+        />
       </div>
 
       {/* Main info */}

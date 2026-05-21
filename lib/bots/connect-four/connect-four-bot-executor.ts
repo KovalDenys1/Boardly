@@ -2,7 +2,7 @@ import { ConnectFourGame } from '@/lib/games/connect-four-game'
 import { BotDifficulty, MoveCallback } from '../core/bot-types'
 import { ConnectFourBot } from './connect-four-bot'
 import { clientLogger } from '@/lib/client-logger'
-import { resolveBotUxDelayMs } from '../core/bot-ux-timing'
+import { botDelay } from '../core/bot-ux-timing'
 
 export interface ConnectFourBotActionEvent {
   type: 'thinking' | 'drop'
@@ -26,7 +26,7 @@ export class ConnectFourBotExecutor {
 
     onBotAction?.({ type: 'thinking', botName: botPlayer.name, message: `${botPlayer.name} is thinking...` })
 
-    await this.delay(difficulty, 150)
+    await botDelay(difficulty, 150)
 
     const decision = await bot.makeDecision()
     const move = bot.decisionToMove(decision)
@@ -41,10 +41,5 @@ export class ConnectFourBotExecutor {
     })
 
     clientLogger.debug('🤖 [C4-BOT] Move executed', { botUserId, col: decision.col })
-  }
-
-  private static delay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
-    const delayMs = resolveBotUxDelayMs(difficulty, baseMs)
-    return new Promise((resolve) => setTimeout(resolve, delayMs))
   }
 }

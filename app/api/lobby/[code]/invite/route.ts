@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import { getRequestAuthUser } from '@/lib/request-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToUser } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { getNotificationPreferences } from '@/lib/notification-preferences'
 import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 import { sendGameInviteEmail } from '@/lib/email'
-import { SocketEvents, SocketRooms } from '@/types/socket-events'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
 const inviteSchema = z.object({
@@ -163,12 +162,7 @@ export async function POST(
 
     await Promise.all(
       Array.from(invitedFriends.values()).map((friend) =>
-        notifySocket(
-          SocketRooms.user(friend.id),
-          SocketEvents.LOBBY_INVITE,
-          invitePayload,
-          0
-        )
+        broadcastToUser(friend.id, 'lobby-invite', invitePayload)
       )
     )
 

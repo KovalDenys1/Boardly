@@ -6,7 +6,7 @@ import SpyRoleReveal from '@/components/SpyRoleReveal'
 import SpyVoting from '@/components/SpyVoting'
 import SpyResults from '@/components/SpyResults'
 import { GamePlayer } from '@/types/game'
-import { getAuthHeaders } from '@/lib/socket-url'
+import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { GameState } from '@/lib/game-engine'
@@ -133,12 +133,14 @@ export default function SpyGameBoard({
         id: player.userId,
         name: player.user?.username || player.name || 'Player',
         score: player.score || 0,
+        avatarSrc: player.user?.avatarUrl ?? player.user?.image ?? null,
+        isPremium: !!(player.user as { isPremium?: boolean } | undefined)?.isPremium,
       })),
     [players]
   )
 
   const playersById = React.useMemo(() => {
-    const map = new Map<string, { id: string; name: string; score: number }>()
+    const map = new Map<string, { id: string; name: string; score: number; avatarSrc: string | null }>()
     for (const player of normalizedPlayers) {
       map.set(player.id, player)
     }
@@ -585,7 +587,7 @@ export default function SpyGameBoard({
                     <p className="rounded-xl bg-[var(--bd-card-warm)] p-4 text-sm font-semibold text-[var(--bd-ink-muted)]">{t('spy.noQuestionsYet')}</p>
                   )}
                   {questionHistory.map((entry) => (
-                    <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-xl border border-[var(--bd-line)] bg-white p-3 text-sm">
+                    <div key={`${entry.timestamp}-${entry.askerId}`} className="rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-3 text-sm">
                       <p className="font-black text-[var(--bd-ink)]">
                         {entry.askerName} - {entry.targetName}
                       </p>
@@ -680,8 +682,15 @@ export default function SpyGameBoard({
                     const isCurrent = player.id === data.currentQuestionerId
                     return (
                       <div key={player.id} className={`spy-player-row ${isCurrent ? 'spy-player-row-active' : ''}`}>
-                        <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
-                        <span className="min-w-0 flex-1 truncate font-bold">{player.name}</span>
+                        {player.avatarSrc ? (
+                          <img src={player.avatarSrc} alt={player.name} className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover" />
+                        ) : (
+                          <span className="bd-avatar bd-avatar-sky h-8 w-8">{player.name.charAt(0).toUpperCase()}</span>
+                        )}
+                        <span className={`flex min-w-0 flex-1 items-center gap-1 truncate font-bold ${player.isPremium ? 'text-amber-500' : ''}`}>
+                          {player.name}
+                          {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                        </span>
                         <span className="font-black">{scores[player.id] || 0}</span>
                       </div>
                     )
@@ -720,6 +729,7 @@ export default function SpyGameBoard({
                 : undefined
             }
             onPlayAgain={onPlayAgain}
+            isHost={isCreator}
             onRequestRematch={onRequestRematch}
             isRequestRematchPending={isRequestingRematch}
             onBackToLobby={onBackToLobby}

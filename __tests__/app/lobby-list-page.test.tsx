@@ -1,11 +1,24 @@
 import { render, waitFor } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
-import { io } from 'socket.io-client'
 import LobbyListPage from '@/app/lobby/page'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
 
 const mockPush = jest.fn()
 const mockFetch = jest.fn()
+
+let postgresChangesCallback: (() => void) | undefined = undefined
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockChannel: any = {
+  on: jest.fn((_event: string, _filter: object, cb: () => void) => {
+    postgresChangesCallback = cb
+    return mockChannel
+  }),
+  subscribe: jest.fn().mockReturnThis(),
+}
+const mockSupabaseClient = {
+  channel: jest.fn().mockReturnValue(mockChannel),
+  removeChannel: jest.fn().mockResolvedValue({}),
+}
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -20,16 +33,8 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(),
 }))
 
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(),
-}))
-
-jest.mock('@/lib/socket-url', () => ({
-  getBrowserSocketUrl: jest.fn(() => 'http://localhost:3001'),
-}))
-
-jest.mock('@/lib/socket-client-auth', () => ({
-  resolveSocketClientAuth: jest.fn(),
+jest.mock('@/lib/supabase-client', () => ({
+  getSupabaseClient: jest.fn(() => mockSupabaseClient),
 }))
 
 jest.mock('@/lib/client-logger', () => ({
@@ -89,6 +94,11 @@ function mockJsonResponse(payload: unknown) {
 describe('Lobby list page', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    postgresChangesCallback = undefined
+    mockChannel.on.mockImplementation((_event: string, _filter: object, cb: () => void) => {
+      postgresChangesCallback = cb
+      return mockChannel
+    })
     mockFetch.mockResolvedValue(
       mockJsonResponse({
         lobbies: [],
@@ -103,7 +113,7 @@ describe('Lobby list page', () => {
     global.fetch = mockFetch as unknown as typeof fetch
   })
 
-  it('does not request an authenticated socket token for anonymous visitors', async () => {
+  it('fetches lobbies and subscribes to Supabase Realtime for live updates', async () => {
     ;(useSession as jest.Mock).mockReturnValue({
       data: null,
       status: 'unauthenticated',
@@ -120,7 +130,7 @@ describe('Lobby list page', () => {
     expect(requestInit).toEqual(expect.objectContaining({
       cache: 'no-store',
     }))
-    expect(resolveSocketClientAuth).not.toHaveBeenCalled()
-    expect(io).not.toHaveBeenCalled()
+    expect(mockSupabaseClient.channel).toHaveBeenCalledWith('lobby-list')
+    expect(mockChannel.subscribe).toHaveBeenCalled()
   })
 })

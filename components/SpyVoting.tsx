@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Player } from '@/lib/game-engine'
 
+type SpyPlayer = Player & { isPremium?: boolean }
+
 interface SpyVotingProps {
-  players: Player[]
+  players: SpyPlayer[]
   currentUserId: string
   onVote: (targetId: string) => void
   hasVoted: boolean
@@ -64,7 +66,10 @@ export default function SpyVoting({
                   <span className="bd-avatar bd-avatar-lav h-10 w-10">
                     {player.name.charAt(0).toUpperCase()}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-left font-bold">{player.name}</span>
+                  <span className="flex min-w-0 flex-1 items-center gap-1 text-left font-bold">
+                    <span className="truncate">{player.name}</span>
+                    {player.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+                  </span>
                   <span className={`spy-check ${selected ? 'spy-check-selected' : ''}`} />
                 </button>
               )

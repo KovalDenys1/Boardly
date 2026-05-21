@@ -14,6 +14,7 @@ interface Player {
     username: string | null
     email: string | null
     isBot?: boolean
+    isPremium?: boolean
     bot?: {
       id: string
       userId: string
@@ -33,9 +34,10 @@ interface PlayerListProps {
   onPlayerClick?: (userId: string) => void
   onProfileClick?: (userId: string) => void
   selectedPlayerId?: string
+  departedPlayerIds?: Set<string>
 }
 
-const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, onProfileClick, selectedPlayerId }: PlayerListProps) {
+const PlayerList = React.memo(function PlayerList({ players, currentTurn, currentUserId, onPlayerClick, onProfileClick, selectedPlayerId, departedPlayerIds }: PlayerListProps) {
   const { t } = useTranslation()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const difficultyLabelMap: Record<BotDifficulty, string> = {
@@ -119,7 +121,7 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
     <>
       <div
         className="bd-card animate-fade-in h-auto md:h-full flex flex-col p-4"
-        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)' }}
+        style={{ background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)' }}
       >
         <button
           onClick={() => {
@@ -139,12 +141,14 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
         <div className="space-y-1.5 overflow-visible md:overflow-y-auto pr-1 flex-1 custom-scrollbar snap-y snap-mandatory">
           {sortedPlayers.map((player, index) => {
             // Use player.position (actual game index) instead of sorted index
-            const isCurrentTurn = player.position === currentTurn
+            const isDeparted = departedPlayerIds?.has(player.userId) ?? false
+            const isCurrentTurn = player.position === currentTurn && !isDeparted
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
-            const isClickable = !!onPlayerClick
-            const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+            const isPremium = !isBot && !!player.user.isPremium
+            const isClickable = !!onPlayerClick && !isDeparted
+            const playerName = player.user.username || player.user.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
             const handlePlayerActivate = () => {
@@ -167,22 +171,24 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                 tabIndex={isClickable ? 0 : undefined}
                 className={`
                 w-full text-left p-2.5 rounded-2xl transition-all duration-200 shadow-sm snap-start border
-                ${isCurrentTurn
-                    ? 'shadow-md'
-                    : ''
-                  }
-                ${isCurrentUser ? '!border-green-500' : ''}
-                ${isSelected ? '!border-[#FFC44D]' : ''}
+                ${isDeparted ? 'opacity-45' : ''}
+                ${!isDeparted && isCurrentTurn ? 'shadow-md' : ''}
+                ${!isDeparted && isCurrentUser ? '!border-green-500' : ''}
+                ${!isDeparted && isSelected ? '!border-[#FFC44D]' : ''}
                 ${isClickable ? 'cursor-pointer hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFC44D]' : ''}
               `}
                 style={{
-                  background: isBot
-                    ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, rgba(255,255,255,0.92) 100%)'
+                  background: isDeparted
+                    ? 'var(--bd-bg2)'
+                    : isBot
+                    ? 'linear-gradient(90deg, rgba(155,140,255,0.12) 0%, var(--bd-bg) 100%)'
                     : isCurrentTurn
                     ? 'linear-gradient(90deg, rgba(107,193,240,0.16) 0%, rgba(79,201,166,0.12) 100%)'
-                    : 'rgba(255,255,255,0.82)',
+                    : 'var(--bd-bg)',
                   borderColor:
-                    isCurrentTurn
+                    isDeparted
+                      ? 'var(--bd-line)'
+                      : isCurrentTurn
                       ? 'rgba(107,193,240,0.28)'
                       : 'var(--bd-line)',
                 }}
@@ -204,9 +210,15 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Player Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center flex-wrap" style={{ gap: 'clamp(3px, 0.3vw, 6px)', marginBottom: 'clamp(1px, 0.1vh, 3px)' }}>
-                        <span className="font-semibold truncate text-bd-ink" style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
+                        <span className={`font-semibold truncate ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`} style={{ fontSize: 'clamp(12px, 0.95vw, 15px)' }}>
                           {playerName}
                         </span>
+                        {isDeparted && (
+                          <span className="bd-chip shrink-0 text-bd-ink-muted" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>left</span>
+                        )}
+                        {!isDeparted && isPremium && (
+                          <span className="shrink-0" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }} title="Premium">👑</span>
+                        )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav shrink-0 shadow-sm" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', padding: 'clamp(1px, 0.15vh, 3px) clamp(5px, 0.45vw, 8px)' }}>
                             AI
@@ -288,7 +300,8 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
             const isCurrentUser = player.userId === currentUserId
             const isSelected = selectedPlayerId === player.userId
             const isBot = !!player.user.bot
-            const playerName = player.user.name || player.user.username || player.user.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+            const isPremium = !isBot && !!player.user.isPremium
+            const playerName = player.user.username || player.user.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
             const botDifficulty = player.user.bot?.difficulty as BotDifficulty | undefined
             const botDifficultyLabel = botDifficulty ? difficultyLabelMap[botDifficulty] : null
 
@@ -328,9 +341,12 @@ const PlayerList = React.memo(function PlayerList({ players, currentTurn, curren
                     {/* Player Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-base truncate">
+                        <span className={`font-bold text-base truncate ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>
                           {playerName}
                         </span>
+                        {isPremium && (
+                          <span className="shrink-0 text-sm" title="Premium">👑</span>
+                        )}
                         {isBot && (
                           <span className="bd-chip bd-chip-lav text-xs px-2 py-1 rounded-full shrink-0 shadow-sm font-semibold">
                             AI

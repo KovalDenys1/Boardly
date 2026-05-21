@@ -28,6 +28,10 @@ function parseNonNegativeInt(value: string | undefined): number | null {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
 }
 
+export function botDelay(difficulty: BotDifficulty, baseMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, resolveBotUxDelayMs(difficulty, baseMs)))
+}
+
 export function resolveBotUxDelayMs(difficulty: BotDifficulty, baseDelayMs: number): number {
   const safeBaseDelayMs = Number.isFinite(baseDelayMs) ? Math.max(0, Math.round(baseDelayMs)) : 0
   const overrideDelayMs = parseNonNegativeInt(process.env.BOT_UX_DELAY_MS)

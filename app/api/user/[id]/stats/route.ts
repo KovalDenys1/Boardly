@@ -46,10 +46,12 @@ export async function GET(
     }
 
     const requesterUserId = session.user.id
-    const requesterDbUser = requesterUserId !== targetUserId
-      ? await prisma.users.findUnique({ where: { id: requesterUserId }, select: { role: true, suspended: true } })
-      : null
+    const requesterDbUser = await prisma.users.findUnique({
+      where: { id: requesterUserId },
+      select: { role: true, suspended: true, premiumUntil: true },
+    })
     const requesterIsAdmin = requesterDbUser?.role === 'admin' && !requesterDbUser?.suspended
+    const isPremium = !!requesterDbUser?.premiumUntil && requesterDbUser.premiumUntil > new Date()
 
     if (requesterUserId !== targetUserId && !requesterIsAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -83,10 +85,32 @@ export async function GET(
       to: toDate,
     })
 
+    const hasAdvancedAccess = isPremium || requesterIsAdmin
+    const responsePayload = hasAdvancedAccess
+      ? { overall: payload.overall, byGame: payload.byGame, trends: payload.trends }
+      : {
+          overall: {
+            totalGames: payload.overall.totalGames,
+            wins: payload.overall.wins,
+            losses: payload.overall.losses,
+            draws: payload.overall.draws,
+            winRate: payload.overall.winRate,
+            avgGameDurationMinutes: payload.overall.avgGameDurationMinutes,
+            favoriteGame: payload.overall.favoriteGame,
+            currentWinStreak: null,
+            longestWinStreak: null,
+          },
+          byGame: null,
+          trends: null,
+        }
+
     return NextResponse.json(
       {
         userId: targetUserId,
-        ...payload,
+        ...responsePayload,
+        dateRange: payload.dateRange,
+        generatedAt: payload.generatedAt,
+        isPremium,
       },
       {
         headers: {

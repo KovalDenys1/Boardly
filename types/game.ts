@@ -27,6 +27,9 @@ export interface GamePlayer {
     id: string
     username: string
     email?: string
+    image?: string | null
+    avatarUrl?: string | null
+    isPremium?: boolean
     bot?: {
       id: string
       userId: string
@@ -57,6 +60,7 @@ export interface GameUpdatePayload {
 export interface PlayerJoinedPayload {
   username: string
   userId: string
+  isBot?: boolean
 }
 
 export interface GameStartedPayload {
@@ -98,6 +102,7 @@ export interface Lobby {
   creatorId?: string | null
   allowSpectators?: boolean
   isActive?: boolean
+  theme?: string
   games?: Game[]
   creator?: { username?: string; email?: string }
   spectatorCount?: number

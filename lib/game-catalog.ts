@@ -1,7 +1,5 @@
 import {
-  isAliasEnabled,
   isFakeArtistEnabled,
-  isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
@@ -13,12 +11,12 @@ export type RegisteredGameType =
   | 'rock_paper_scissors'
   | 'memory'
   | 'connect_four'
+  | 'alias'
+  | 'liars_party'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
-  | 'liars_party'
   | 'fake_artist'
-  | 'alias'
 export type SupportedCatalogGameType = RegisteredGameType | ExperimentalGameType
 export type GameCatalogAvailability = 'available' | 'in-development' | 'planned'
 
@@ -31,18 +29,37 @@ export type LobbyCreateConfig = {
   difficulty?: { options: string[]; default: string }
 }
 
-export type GameCatalogEntry = {
+type GameCatalogEntryBase = {
   id: string
-  gameType?: SupportedCatalogGameType
   nameKey: string
   emoji: string
   descriptionKey: string
   players: string
   difficultyKey: string
-  availability: GameCatalogAvailability
-  route?: string
   color: string
+}
+
+/** A game that is live and playable — gameType, route, and lobbyCreateConfig are all required. */
+export type AvailableGameCatalogEntry = GameCatalogEntryBase & {
+  availability: 'available'
+  gameType: SupportedCatalogGameType
+  route: string
+  lobbyCreateConfig: LobbyCreateConfig
+}
+
+/** A game that is not yet available — all fields beyond the base are optional. */
+export type NonAvailableGameCatalogEntry = GameCatalogEntryBase & {
+  availability: 'in-development' | 'planned'
+  gameType?: SupportedCatalogGameType
+  route?: string
   lobbyCreateConfig?: LobbyCreateConfig
+}
+
+export type GameCatalogEntry = AvailableGameCatalogEntry | NonAvailableGameCatalogEntry
+
+/** Type guard — narrows to AvailableGameCatalogEntry (static available + has lobbyCreateConfig). */
+export function isAvailableCatalogEntry(game: GameCatalogEntry): game is AvailableGameCatalogEntry {
+  return game.availability === 'available' && game.lobbyCreateConfig !== undefined
 }
 
 export const DEFAULT_GAME_TYPE: RegisteredGameType = 'yahtzee'
@@ -51,6 +68,8 @@ export interface GameMetadata {
   type: SupportedCatalogGameType
   name: string
   icon: string
+  svgId: string
+  accentColor: string
   minPlayers: number
   maxPlayers: number
   supportsBots: boolean
@@ -62,6 +81,8 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     type: 'yahtzee',
     name: 'Yahtzee',
     icon: '🎲',
+    svgId: 'yahtzee',
+    accentColor: 'var(--bd-sky)',
     minPlayers: 1,
     maxPlayers: 4,
     supportsBots: true,
@@ -71,6 +92,8 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     type: 'guess_the_spy',
     name: 'Guess the Spy',
     icon: '🕵️',
+    svgId: 'spy',
+    accentColor: 'var(--bd-lav)',
     minPlayers: 3,
     maxPlayers: 10,
     supportsBots: false,
@@ -80,6 +103,8 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     type: 'tic_tac_toe',
     name: 'Tic Tac Toe',
     icon: '❌⭕',
+    svgId: 'tic-tac-toe',
+    accentColor: 'var(--bd-coral)',
     minPlayers: 2,
     maxPlayers: 2,
     supportsBots: true,
@@ -89,6 +114,8 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     type: 'rock_paper_scissors',
     name: 'Rock Paper Scissors',
     icon: '✊✋✌️',
+    svgId: 'rps',
+    accentColor: 'var(--bd-sun)',
     minPlayers: 2,
     maxPlayers: 2,
     supportsBots: true,
@@ -98,6 +125,8 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     type: 'memory',
     name: 'Memory',
     icon: '🧠',
+    svgId: 'memory',
+    accentColor: 'var(--bd-mint)',
     minPlayers: 2,
     maxPlayers: 4,
     supportsBots: true,
@@ -107,10 +136,36 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     type: 'connect_four',
     name: 'Connect Four',
     icon: '🔴',
+    svgId: 'connect-four',
+    accentColor: 'var(--bd-coral)',
     minPlayers: 2,
     maxPlayers: 2,
     supportsBots: true,
     translationKey: 'connect_four',
+  },
+
+  alias: {
+    type: 'alias',
+    name: 'Alias',
+    icon: '🗣️',
+    svgId: 'alias',
+    accentColor: 'var(--bd-coral)',
+    minPlayers: 4,
+    maxPlayers: 16,
+    supportsBots: false,
+    translationKey: 'alias',
+  },
+
+  liars_party: {
+    type: 'liars_party',
+    name: "Liar's Party",
+    icon: '🎭',
+    svgId: 'liars-party',
+    accentColor: 'var(--bd-lav)',
+    minPlayers: 4,
+    maxPlayers: 12,
+    supportsBots: false,
+    translationKey: 'liars_party',
   },
 }
 
@@ -118,6 +173,8 @@ const TELEPHONE_DOODLE_METADATA: GameMetadata = {
   type: 'telephone_doodle',
   name: 'Telephone Doodle',
   icon: '📞',
+  svgId: 'telephone-doodle',
+  accentColor: 'var(--bd-sky)',
   minPlayers: 3,
   maxPlayers: 12,
   supportsBots: false,
@@ -128,40 +185,24 @@ const SKETCH_AND_GUESS_METADATA: GameMetadata = {
   type: 'sketch_and_guess',
   name: 'Sketch & Guess',
   icon: '🎨',
+  svgId: 'guess-my-drawing',
+  accentColor: 'var(--bd-mint)',
   minPlayers: 3,
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'guess_my_drawing',
 }
 
-const LIARS_PARTY_METADATA: GameMetadata = {
-  type: 'liars_party',
-  name: "Liar's Party",
-  icon: '🎭',
-  minPlayers: 4,
-  maxPlayers: 12,
-  supportsBots: false,
-  translationKey: 'liars_party',
-}
-
 const FAKE_ARTIST_METADATA: GameMetadata = {
   type: 'fake_artist',
   name: 'Fake Artist',
   icon: '🖌️',
+  svgId: 'fake-artist',
+  accentColor: 'var(--bd-lav)',
   minPlayers: 4,
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'fake_artist',
-}
-
-const ALIAS_METADATA: GameMetadata = {
-  type: 'alias',
-  name: 'Alias',
-  icon: '🗣️',
-  minPlayers: 4,
-  maxPlayers: 16,
-  supportsBots: false,
-  translationKey: 'alias',
 }
 
 const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
@@ -256,10 +297,45 @@ const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [
     },
   },
   {
+    id: 'alias',
+    gameType: 'alias',
+    nameKey: 'games.alias.name',
+    emoji: '🗣️',
+    descriptionKey: 'games.alias.description',
+    players: '4-16',
+    difficultyKey: 'games.alias.difficulty',
+    availability: 'available',
+    route: '/games/alias/lobbies',
+    color: 'from-coral-400 to-red-500',
+    lobbyCreateConfig: {
+      gradient: 'from-coral-500 via-red-500 to-pink-500',
+      allowedPlayers: [4, 6, 8, 10, 12, 16],
+      defaultMaxPlayers: 8,
+      turnTimer: { options: [30, 60, 90, 120], default: 60 },
+    },
+  },
+  {
+    id: 'liars-party',
+    gameType: 'liars_party',
+    nameKey: 'games.liars_party.name',
+    emoji: '🎭',
+    descriptionKey: 'games.liars_party.description',
+    players: '4-12',
+    difficultyKey: 'games.liars_party.difficulty',
+    availability: 'in-development',
+    route: '/games/liars-party/lobbies',
+    color: 'from-violet-500 to-purple-600',
+    lobbyCreateConfig: {
+      gradient: 'from-violet-600 via-purple-500 to-fuchsia-400',
+      allowedPlayers: [4, 5, 6, 7, 8, 9, 10, 11, 12],
+      defaultMaxPlayers: 8,
+    },
+  },
+  {
     id: 'rps',
     gameType: 'rock_paper_scissors',
     nameKey: 'games.rock_paper_scissors.name',
-    emoji: '🍂',
+    emoji: '✊',
     descriptionKey: 'games.rock_paper_scissors.description',
     players: '2',
     difficultyKey: 'games.rock_paper_scissors.difficulty',
@@ -359,9 +435,7 @@ export function isSupportedGameType(value: string): value is SupportedCatalogGam
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
-    (value === 'liars_party' && isLiarsPartyEnabled()) ||
-    (value === 'fake_artist' && isFakeArtistEnabled()) ||
-    (value === 'alias' && isAliasEnabled())
+    (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
 
@@ -375,14 +449,8 @@ export function getGameMetadata(gameType: string): GameMetadata | null {
   if (gameType === 'sketch_and_guess' && isSketchAndGuessEnabled()) {
     return SKETCH_AND_GUESS_METADATA
   }
-  if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
-    return LIARS_PARTY_METADATA
-  }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_METADATA
-  }
-  if (gameType === 'alias' && isAliasEnabled()) {
-    return ALIAS_METADATA
   }
   return null
 }
@@ -408,9 +476,7 @@ export function getAllEnabledGameTypes(): SupportedCatalogGameType[] {
   const types: SupportedCatalogGameType[] = getAllRegisteredGameTypes()
   if (isTelephoneDoodleEnabled()) types.push('telephone_doodle')
   if (isSketchAndGuessEnabled()) types.push('sketch_and_guess')
-  if (isLiarsPartyEnabled()) types.push('liars_party')
   if (isFakeArtistEnabled()) types.push('fake_artist')
-  if (isAliasEnabled()) types.push('alias')
   return types
 }
 
@@ -434,7 +500,7 @@ export function getAvailableGameTypes(options?: {
   enabledExperimental?: readonly string[]
 }): SupportedCatalogGameType[] {
   return getCatalogAvailableGames(options).flatMap((game) =>
-    game.gameType ? [game.gameType] : []
+    game.gameType !== undefined ? [game.gameType] : []
   )
 }
 
@@ -454,10 +520,11 @@ export function getCatalogGames(options?: {
       (game.gameType === 'fake_artist' && isFakeArtistEnabled()) ||
       (game.gameType === 'telephone_doodle' && isTelephoneDoodleEnabled())
 
+    // Promoted experimental games may lack lobbyCreateConfig — isAvailableCatalogEntry guards this.
     return {
       ...game,
       availability: isEnabled ? 'available' : game.availability,
-    }
+    } as GameCatalogEntry
   })
 }
 

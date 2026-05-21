@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Rocket -->
+  <!-- Body -->
+  <path d="M50 18 Q60 28 62 50 L50 56 L38 50 Q40 28 50 18 Z" fill="white" opacity="0.95"/>
+  <!-- Nose cone tip -->
+  <circle cx="50" cy="18" r="3" fill="white" opacity="0.95"/>
+  <!-- Left fin -->
+  <path d="M38 50 L28 66 L40 60 Z" fill="white" opacity="0.85"/>
+  <!-- Right fin -->
+  <path d="M62 50 L72 66 L60 60 Z" fill="white" opacity="0.85"/>
+  <!-- Window -->
+  <circle cx="50" cy="40" r="7" fill="#06b6d4" opacity="0.4"/>
+  <circle cx="50" cy="40" r="5" fill="white" opacity="0.2"/>
+  <!-- Flame -->
+  <path d="M44 60 Q50 75 56 60 Q53 68 50 72 Q47 68 44 60 Z" fill="#f59e0b" opacity="0.9"/>
+  <path d="M46 60 Q50 70 54 60 Q52 65 50 68 Q48 65 46 60 Z" fill="white" opacity="0.8"/>
+</svg>

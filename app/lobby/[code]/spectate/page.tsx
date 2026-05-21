@@ -3,14 +3,23 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, Socket } from 'socket.io-client'
+import type { RealtimeChannel } from '@supabase/supabase-js'
+import dynamic from 'next/dynamic'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
+import { useTranslation } from '@/lib/i18n-helpers'
+import { getSupabaseClient } from '@/lib/supabase-client'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import { SocketEvents, JoinedSpectatorsPayload, SpectatorJoinedPayload, SpectatorLeftPayload, SpectatorChatMessagePayload } from '@/types/socket-events'
 import type { Lobby, Game, GamePlayer } from '@/types/game'
+import { SPECTATOR_VIEWS } from './views'
+
+const ConnectFourLobbyPage = dynamic(() => import('../connect-four-page'), { ssr: false })
+const TicTacToeLobbyPage = dynamic(() => import('../tic-tac-toe-page'), { ssr: false })
+const RockPaperScissorsLobbyPage = dynamic(() => import('../rock-paper-scissors-page'), { ssr: false })
+const AliasPage = dynamic(() => import('../alias-page'), { ssr: false })
+const LiarsPartyPage = dynamic(() => import('../liars-party-page'), { ssr: false })
+
+const DEDICATED_SPECTATOR_GAMES = new Set(['connect_four', 'tic_tac_toe', 'rock_paper_scissors', 'alias', 'liars_party'])
 
 type SpectatorUser = {
   userId: string
@@ -32,155 +41,69 @@ type SpectatorChatMessage = {
   timestamp?: number
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function ReadOnlyYahtzeeView({ state, players }: { state: Record<string, any>; players: GamePlayer[] }) {
-  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
-  const dice = Array.isArray(data.dice) ? data.dice : []
-  const held = Array.isArray(data.held) ? data.held : []
-  const scores = Array.isArray(data.scores) ? data.scores : []
-  const currentPlayerIndex =
-    typeof state.currentPlayerIndex === 'number' ? state.currentPlayerIndex : null
-
+function SpectatorTopBar({
+  spectatorCount,
+  canJoinAsPlayer,
+  joiningAsPlayer,
+  onJoinAsPlayer,
+  lobbyCode,
+}: {
+  spectatorCount: number
+  canJoinAsPlayer: boolean
+  joiningAsPlayer: boolean
+  onJoinAsPlayer: () => void
+  lobbyCode: string
+}) {
+  const { t } = useTranslation()
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-5 gap-2">
-        {dice.map((die: unknown, index: number) => (
-          <div
-            key={`${index}-${die}`}
-            className={`rounded-2xl border-[1.5px] p-3 text-center text-xl font-black shadow-[0_2px_0_var(--bd-line)] ${
-              held[index] ? 'border-bd-sun bg-bd-sun/25 text-bd-sun-deep' : 'border-bd-line bg-white text-bd-ink'
-            }`}
+    <div style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+      background: 'rgba(31,27,22,0.92)',
+      backdropFilter: 'blur(8px)',
+      borderBottom: '1px solid rgba(255,255,255,0.12)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 16px',
+      gap: 12,
+      flexWrap: 'wrap',
+    }}>
+      <span style={{
+        color: 'white', fontSize: 13, fontWeight: 600,
+        display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        {t('spectate.watchingCount', { count: spectatorCount })}
+      </span>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {canJoinAsPlayer && (
+          <button
+            type="button"
+            onClick={onJoinAsPlayer}
+            disabled={joiningAsPlayer}
+            style={{
+              padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 700,
+              background: 'var(--bd-coral)', color: 'white', border: 'none',
+              cursor: joiningAsPlayer ? 'not-allowed' : 'pointer',
+              opacity: joiningAsPlayer ? 0.65 : 1,
+              fontFamily: 'inherit',
+            }}
           >
-            {Number(die) || '-'}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Rolls Left: {typeof data.rollsLeft === 'number' ? data.rollsLeft : '-'}</div>
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
-          Current Turn:{' '}
-          {currentPlayerIndex !== null && players[currentPlayerIndex]
-            ? players[currentPlayerIndex].user?.username || players[currentPlayerIndex].user?.email || `Player ${currentPlayerIndex + 1}`
-            : '-'}
-        </div>
-      </div>
-      <div className="rounded-2xl border border-bd-line bg-white p-3">
-        <h3 className="mb-2 font-bold text-bd-ink">Scorecards</h3>
-        <div className="space-y-2">
-          {players.map((player: GamePlayer, index: number) => {
-            const scorecard = isRecord(scores[index]) ? scores[index] : {}
-            const filled = Object.keys(scorecard).length
-            const total = Object.values(scorecard).reduce(
-              (sum: number, value) => sum + (typeof value === 'number' ? value : 0),
-              0
-            )
-            return (
-              <div key={player.id} className="flex items-center justify-between rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm">
-                <span>
-                  {player.user?.username || player.user?.email || `Player ${index + 1}`}
-                  {currentPlayerIndex === index ? ' • turn' : ''}
-                </span>
-                <span className="text-bd-ink-muted">
-                  score {total} • filled {filled}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ReadOnlyTicTacToeView({ state }: { state: Record<string, any> }) {
-  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
-  const board = Array.isArray(data.board) ? data.board : []
-  return (
-    <div className="space-y-4">
-      <div className="mx-auto grid w-fit grid-cols-3 gap-2 rounded-3xl border-[1.5px] border-bd-line bg-bd-card-warm p-3 shadow-[0_4px_0_var(--bd-line)]">
-        {board.flatMap((row: unknown, rowIndex: number) =>
-          (Array.isArray(row) ? row : [null, null, null]).map((cell: unknown, colIndex: number) => (
-            <div
-              key={`${rowIndex}-${colIndex}`}
-              className="flex h-16 w-16 items-center justify-center rounded-2xl border-[1.5px] border-bd-line bg-white text-2xl font-black text-bd-ink shadow-[0_2px_0_var(--bd-line)]"
-            >
-              {typeof cell === 'string' || typeof cell === 'number' ? cell : ''}
-            </div>
-          ))
+            {joiningAsPlayer ? t('spectate.joining') : t('spectate.joinAsPlayer')}
+          </button>
         )}
-      </div>
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Current Symbol: {data.currentSymbol || '-'}</div>
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Winner: {data.winner || 'None'}</div>
-      </div>
-    </div>
-  )
-}
-
-function ReadOnlyRpsView({ state, players }: { state: Record<string, any>; players: GamePlayer[] }) {
-  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
-  const scores = (isRecord(data.scores) ? data.scores : {}) as Record<string, unknown>
-  const rounds = Array.isArray(data.rounds) ? data.rounds : []
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-2">
-        {players.map((player: GamePlayer, index: number) => {
-          const playerId = player.userId
-          return (
-            <div key={player.id} className="flex items-center justify-between rounded-2xl border border-bd-line bg-bd-card-warm p-3 text-sm">
-              <span>{player.user?.username || player.user?.email || `Player ${index + 1}`}</span>
-              <span className="font-bold text-bd-ink">Score: {typeof scores[playerId] === 'number' ? scores[playerId] : 0}</span>
-            </div>
-          )
-        })}
-      </div>
-      <div className="rounded-2xl border border-bd-line bg-white p-3">
-        <div className="mb-2 text-sm font-bold">Recent Rounds ({rounds.length})</div>
-        <div className="space-y-2 text-sm">
-          {rounds.slice(-5).map((round: Record<string, unknown>, index: number) => (
-            <div key={`${index}-${typeof round.winner === 'string' ? round.winner : 'none'}`} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
-              Winner: {typeof round.winner === 'string' ? round.winner : 'pending'} • choices hidden until reveal logic
-            </div>
-          ))}
-          {rounds.length === 0 && <div className="text-bd-ink-muted">No completed rounds yet</div>}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ReadOnlySpyView({ state }: { state: Record<string, any> }) {
-  const data = (isRecord(state.data) ? state.data : {}) as Record<string, any>
-  const questionHistory = Array.isArray(data.questionHistory) ? data.questionHistory : []
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Phase: {data.phase || '-'}</div>
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
-          Round: {data.currentRound || '-'} / {data.totalRounds || '-'}
-        </div>
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">Location: {data.location || 'Hidden / not started'}</div>
-        <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-3 font-semibold text-bd-ink-soft">
-          Questions: {questionHistory.length}
-        </div>
-      </div>
-      <div className="rounded-2xl border border-bd-line bg-white p-3">
-        <div className="mb-2 text-sm font-bold">Recent Q&A</div>
-        <div className="space-y-2 text-sm">
-          {questionHistory.slice(-5).map((entry: Record<string, unknown>, index: number) => (
-            <div key={`${index}-${typeof entry.timestamp === 'number' ? entry.timestamp : index}`} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
-              <div className="font-medium">
-                {typeof entry.askerName === 'string' ? entry.askerName : 'Player'} → {typeof entry.targetName === 'string' ? entry.targetName : 'Player'}
-              </div>
-              <div className="text-bd-ink-soft">{typeof entry.question === 'string' ? entry.question : '-'}</div>
-              <div className="text-bd-ink-muted">{typeof entry.answer === 'string' ? entry.answer : '-'}</div>
-            </div>
-          ))}
-          {questionHistory.length === 0 && <div className="text-bd-ink-muted">No questions yet</div>}
-        </div>
+        <a
+          href={`/lobby/${lobbyCode}`}
+          style={{
+            padding: '6px 14px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+            border: '1px solid rgba(255,255,255,0.18)', textDecoration: 'none',
+            fontFamily: 'inherit',
+          }}
+        >
+          {t('spectate.backToLobbies')}
+        </a>
       </div>
     </div>
   )
@@ -195,29 +118,23 @@ function ReadOnlySpectatorBoard({
   parsedState: Record<string, any> | null
   players: GamePlayer[]
 }) {
+  const { t } = useTranslation()
   if (!parsedState) {
-    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">Game state unavailable</div>
+    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.gameUnavailable')}</div>
   }
-
-  switch (gameType) {
-    case 'yahtzee':
-      return <ReadOnlyYahtzeeView state={parsedState} players={players} />
-    case 'tic_tac_toe':
-      return <ReadOnlyTicTacToeView state={parsedState} />
-    case 'rock_paper_scissors':
-      return <ReadOnlyRpsView state={parsedState} players={players} />
-    case 'guess_the_spy':
-      return <ReadOnlySpyView state={parsedState} />
-    default:
-      return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">No specialized spectator board for this game yet.</div>
+  const View = SPECTATOR_VIEWS[gameType]
+  if (!View) {
+    return <div className="rounded-2xl border border-bd-line bg-bd-card-warm p-4 text-sm font-medium text-bd-ink-muted">{t('spectate.noViewForGame')}</div>
   }
+  return <View state={parsedState} players={players} />
 }
 
 export default function SpectatorLobbyPage() {
   const params = useParams()
   const router = useRouter()
   const { data: session } = useSession()
-  const { isGuest, guestToken } = useGuest()
+  const { isGuest, guestToken, guestName, guestId } = useGuest()
+  const { t } = useTranslation()
   const code = String(params.code || '').toUpperCase()
 
   const [data, setData] = useState<SpectatorLobbyResponse | null>(null)
@@ -228,7 +145,7 @@ export default function SpectatorLobbyPage() {
   const [joiningAsPlayer, setJoiningAsPlayer] = useState(false)
   const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
-  const socketRef = useRef<Socket | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -262,108 +179,81 @@ export default function SpectatorLobbyPage() {
     void loadSnapshot()
   }, [loadSnapshot])
 
+  // Polling fallback — ensures unauthenticated viewers get game state updates
+  useEffect(() => {
+    const id = setInterval(() => void loadSnapshot(), 5000)
+    return () => clearInterval(id)
+  }, [loadSnapshot])
+
+  // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat
   useEffect(() => {
     if (!code) return
-    if (isGuest && !guestToken) return
 
-    let socket: Socket | null = null
-    let disposed = false
+    const userId = session?.user?.id ?? (isGuest ? guestId : null)
+    const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : null)
 
-    const setup = async () => {
-      const socketAuth = await resolveSocketClientAuth({
-        isGuest: Boolean(isGuest),
-        guestToken: guestToken ?? null,
+    const supabase = getSupabaseClient()
+    const channel = supabase.channel(`spectators:${code}`, {
+      config: {
+        presence: { key: userId ?? 'anon' },
+        broadcast: { self: false },
+      },
+    })
+    channelRef.current = channel
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState<{ userId: string; username: string }>()
+        const all = Object.values(state).flat()
+        setSpectators(all.map((s) => ({ userId: s.userId, username: s.username })))
+        setSpectatorCount(all.length)
       })
-      if (!socketAuth || disposed) return
-
-      socket = io(getBrowserSocketUrl(), {
-        transports: ['websocket', 'polling'],
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-      })
-      socketRef.current = socket
-
-      socket.on('connect', () => {
-        socket?.emit(SocketEvents.JOIN_SPECTATORS, code)
-      })
-
-      socket.on(SocketEvents.JOINED_SPECTATORS, (payload: JoinedSpectatorsPayload) => {
-        if (payload?.lobbyCode !== code) return
-        setSpectators(Array.isArray(payload?.spectators) ? payload.spectators : [])
-        setSpectatorCount(typeof payload?.count === 'number' ? payload.count : 0)
-      })
-
-      socket.on(SocketEvents.SPECTATOR_JOINED, (payload: SpectatorJoinedPayload) => {
-        if (payload?.lobbyCode !== code) return
-        if (typeof payload?.count === 'number') {
-          setSpectatorCount(payload.count)
-        }
-        if (typeof payload?.userId === 'string' && typeof payload?.username === 'string') {
-          setSpectators((prev) =>
-            prev.some((s) => s.userId === payload.userId)
-              ? prev
-              : [...prev, { userId: payload.userId, username: payload.username }]
-          )
-        }
-      })
-
-      socket.on(SocketEvents.SPECTATOR_LEFT, (payload: SpectatorLeftPayload) => {
-        if (payload?.lobbyCode !== code) return
-        if (typeof payload?.count === 'number') {
-          setSpectatorCount(payload.count)
-        }
-        if (typeof payload?.userId === 'string') {
-          setSpectators((prev) => prev.filter((s) => s.userId !== payload.userId))
-        }
-      })
-
-      socket.on(SocketEvents.SPECTATOR_CHAT_MESSAGE, (payload: SpectatorChatMessagePayload) => {
-        if (payload?.lobbyCode !== code) return
-        if (typeof payload?.id !== 'string' || typeof payload?.message !== 'string') return
+      .on('broadcast', { event: 'spectator-chat' }, ({ payload }: { payload: SpectatorChatMessage }) => {
+        if (!payload?.id || !payload?.message) return
         setChatMessages((prev) => {
           if (prev.some((m) => m.id === payload.id)) return prev
-          const next = [...prev, payload as SpectatorChatMessage]
-          return next.slice(-100)
+          return [...prev, payload].slice(-100)
         })
       })
-
-      const refetch = () => void loadSnapshot()
-      socket.on(SocketEvents.GAME_UPDATE, refetch)
-      socket.on(SocketEvents.LOBBY_UPDATE, refetch)
-      socket.on(SocketEvents.GAME_STARTED, refetch)
-      socket.on(SocketEvents.GAME_ABANDONED, refetch)
-      socket.on(SocketEvents.PLAYER_JOINED, refetch)
-      socket.on(SocketEvents.PLAYER_LEFT, refetch)
-    }
-
-    void setup()
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && userId && username) {
+          await channel.track({ userId, username })
+        }
+      })
 
     return () => {
-      disposed = true
-      if (socket) {
-        socket.emit(SocketEvents.LEAVE_SPECTATORS, code)
-        socket.disconnect()
-      }
-      socketRef.current = null
+      void supabase.removeChannel(channel)
+      channelRef.current = null
     }
-  }, [code, guestToken, isGuest, loadSnapshot, session?.user?.id])
+  }, [code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName])
 
   const sendSpectatorChatMessage = useCallback(
     (e: FormEvent) => {
       e.preventDefault()
       const message = chatInput.trim()
       if (!message) return
-      if (!socketRef.current || socketRef.current.disconnected) {
+      const channel = channelRef.current
+      if (!channel) {
         setError('Spectator chat is unavailable while disconnected')
         return
       }
-      socketRef.current.emit(SocketEvents.SEND_SPECTATOR_CHAT_MESSAGE, {
-        lobbyCode: code,
-        message,
+      const userId = session?.user?.id ?? (isGuest ? guestId : null) ?? 'anon'
+      const username = session?.user?.name ?? (isGuest ? (guestName ?? 'Guest') : 'Viewer')
+      void channel.send({
+        type: 'broadcast',
+        event: 'spectator-chat',
+        payload: {
+          id: `spectator-chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          userId,
+          username,
+          lobbyCode: code,
+          message,
+          timestamp: Date.now(),
+        } satisfies SpectatorChatMessage,
       })
       setChatInput('')
     },
-    [chatInput, code]
+    [chatInput, code, session?.user?.id, session?.user?.name, isGuest, guestId, guestName]
   )
 
   const joinAsPlayer = useCallback(async () => {
@@ -393,8 +283,8 @@ export default function SpectatorLobbyPage() {
         <div className="bd-card flex w-full max-w-sm flex-col items-center gap-4 p-8 text-center">
           <LoadingSpinner size="lg" />
           <div>
-            <h1 className="font-display text-2xl font-black text-bd-ink">Opening spectator view</h1>
-            <p className="mt-2 text-sm text-bd-ink-muted">Loading the latest lobby snapshot.</p>
+            <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.loadingTitle')}</h1>
+            <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.loadingSubtitle')}</p>
           </div>
         </div>
       </div>
@@ -408,146 +298,177 @@ export default function SpectatorLobbyPage() {
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
             👀
           </div>
-          <h1 className="font-display text-2xl font-black text-bd-ink">Spectator mode unavailable</h1>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.unavailableTitle')}</h1>
           <p className="mt-2 text-sm text-bd-ink-muted">{error || 'No data'}</p>
           <button
             type="button"
             onClick={() => router.push('/lobby')}
             className="bd-btn bd-btn-primary mx-auto mt-5"
           >
-            Back to lobbies
+            {t('spectate.backToLobbiesBtn')}
           </button>
         </div>
       </div>
     )
   }
 
+  // ── Dedicated game types: render real game component with isSpectator prop ──
+  if (DEDICATED_SPECTATOR_GAMES.has(data.lobby.gameType)) {
+    const gameType = data.lobby.gameType
+    return (
+      <>
+        <SpectatorTopBar
+          spectatorCount={spectatorCount}
+          canJoinAsPlayer={data.canJoinAsPlayer}
+          joiningAsPlayer={joiningAsPlayer}
+          onJoinAsPlayer={joinAsPlayer}
+          lobbyCode={code}
+        />
+        {gameType === 'connect_four' && <ConnectFourLobbyPage code={code} isSpectator />}
+        {gameType === 'tic_tac_toe' && <TicTacToeLobbyPage code={code} isSpectator />}
+        {gameType === 'rock_paper_scissors' && <RockPaperScissorsLobbyPage code={code} isSpectator />}
+        {gameType === 'alias' && <AliasPage code={code} isSpectator />}
+        {gameType === 'liars_party' && <LiarsPartyPage code={code} isSpectator />}
+      </>
+    )
+  }
+
+  // ── Legacy games (memory, yahtzee, spy): existing spectator view ────────────
   const players = Array.isArray(data.activeGame?.players) ? data.activeGame.players : []
+  const isAuthenticated = Boolean(session?.user?.id) || Boolean(isGuest && guestToken)
 
   return (
     <div className="bd-page bd-screen min-h-[calc(100dvh-64px)] text-bd-ink">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="bd-card relative mb-6 overflow-hidden p-5 sm:p-6">
-          <div className="bd-dot-grid pointer-events-none absolute inset-0 opacity-30" />
-          <div className="relative flex flex-wrap items-center justify-between gap-4">
-            <div className="min-w-0">
-              <span className="bd-kicker mb-2 block">Spectator mode</span>
-              <h1 className="font-display text-3xl font-black leading-tight text-bd-ink sm:text-4xl">{data.lobby.name}</h1>
-              <p className="mt-2 text-sm font-medium text-bd-ink-muted">
-                Lobby <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span> · {data.activeGame?.status || 'waiting'}
-              </p>
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              {data.canJoinAsPlayer && (
-                <button
-                  type="button"
-                  onClick={joinAsPlayer}
-                  disabled={joiningAsPlayer}
-                  className="bd-btn bd-btn-coral justify-center disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {joiningAsPlayer ? 'Joining...' : 'Join as Player'}
-                </button>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+
+        {/* Header */}
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="bd-kicker mb-1">{t('spectate.modeKicker')}</p>
+            <h1 className="font-display text-2xl font-black leading-tight text-bd-ink sm:text-3xl">{data.lobby.name}</h1>
+            <p className="mt-1 text-sm font-medium text-bd-ink-muted">
+              Code <span className="font-mono font-bold text-bd-ink">{data.lobby.code}</span>
+              {data.activeGame?.status && (
+                <span className="ml-2 inline-flex items-center rounded-full bg-bd-mint/20 px-2 py-0.5 text-xs font-semibold text-bd-mint-deep">
+                  {data.activeGame.status}
+                </span>
               )}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            {data.canJoinAsPlayer && (
               <button
                 type="button"
-                onClick={() => router.push(`/lobby/${code}`)}
-                className="bd-btn bd-btn-soft justify-center"
+                onClick={joinAsPlayer}
+                disabled={joiningAsPlayer}
+                className="bd-btn bd-btn-coral justify-center disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Open Lobby
+                {joiningAsPlayer ? t('spectate.joining') : t('spectate.joinAsPlayer')}
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => router.push(`/lobby/${code}`)}
+              className="bd-btn bd-btn-soft justify-center"
+            >
+              {t('spectate.openLobby')}
+            </button>
           </div>
-          {error && <p className="relative mt-4 rounded-2xl border border-bd-coral/30 bg-bd-coral/10 px-4 py-3 text-sm font-medium text-bd-coral-deep">{error}</p>}
-        </section>
+        </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <section className="bd-card p-4 sm:p-5 lg:col-span-2">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-xl font-black text-bd-ink">Live game snapshot</h2>
-              <span className="bd-chip text-xs">
-                {data.lobby.gameType}
-              </span>
-            </div>
-            <div className="mb-4">
-              <ReadOnlySpectatorBoard
-                gameType={String(data.lobby.gameType || '')}
-                parsedState={isRecord(parsedState) ? parsedState : null}
-                players={players}
-              />
-            </div>
-            <details className="rounded-xl bg-gray-950 p-4 text-xs text-gray-100 overflow-auto">
-              <summary className="cursor-pointer font-semibold text-gray-200">Raw Snapshot JSON</summary>
-              <pre className="mt-3 max-h-[420px] overflow-auto">{JSON.stringify(parsedState ?? data.activeGame ?? {}, null, 2)}</pre>
-            </details>
+        {error && (
+          <p className="mb-4 rounded-2xl border border-bd-coral/30 bg-bd-coral/10 px-4 py-3 text-sm font-medium text-bd-coral-deep">
+            {error}
+          </p>
+        )}
+
+        {/* Main layout: game board + sidebar */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_280px]">
+
+          {/* Game board */}
+          <section className="bd-card overflow-hidden p-4 sm:p-6">
+            <ReadOnlySpectatorBoard
+              gameType={String(data.lobby.gameType || '')}
+              parsedState={parsedState}
+              players={players}
+            />
           </section>
 
-          <div className="space-y-4">
+          {/* Sidebar */}
+          <div className="flex flex-col gap-4">
+
+            {/* Players */}
             <section className="bd-card p-4">
-              <h2 className="mb-3 font-display text-lg font-black">Players ({players.length}/{data.lobby.maxPlayers})</h2>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">
+                Players · {players.length}/{data.lobby.maxPlayers}
+              </h2>
               <div className="space-y-2">
                 {players.map((player: GamePlayer) => (
-                  <div key={player.id} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm font-semibold text-bd-ink-soft">
-                    {player.user?.username || player.user?.email || 'Player'}
+                  <div key={player.id} className="flex items-center gap-2 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
+                    <span role="img" aria-label={player.user?.username || 'Player'} className="bd-avatar bd-avatar-lav h-7 w-7 text-xs">
+                      {(player.user?.username || 'P').charAt(0).toUpperCase()}
+                    </span>
+                    <span className="truncate text-sm font-semibold text-bd-ink">
+                      {player.user?.username || player.name || 'Player'}
+                    </span>
                   </div>
                 ))}
-                {players.length === 0 && <div className="text-sm text-bd-ink-muted">No players yet</div>}
+                {players.length === 0 && <p className="text-sm text-bd-ink-muted">{t('spectate.noPlayersYet')}</p>}
               </div>
             </section>
 
-            <details className="bd-card p-4" open>
-              <summary className="cursor-pointer font-display text-lg font-black">
-                Spectators ({spectatorCount})
-              </summary>
-              <div className="mt-3 space-y-2">
-                {spectators.map((spectator) => (
-                  <div key={spectator.userId} className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2 text-sm font-semibold text-bd-ink-soft">
-                    {spectator.username}
-                  </div>
-                ))}
-                {spectators.length === 0 && (
-                  <div className="text-sm text-bd-ink-muted">No spectators connected</div>
-                )}
-              </div>
-            </details>
-
-            <section className="rounded-[1.5rem] border border-bd-line bg-bd-card-warm p-4 text-sm">
-              <h3 className="mb-2 font-display text-lg font-black">Good to know</h3>
-              <p className="font-medium leading-relaxed text-bd-ink-muted">
-                You can watch the game here without changing the board. Player controls stay locked unless you join as a player.
-              </p>
-            </section>
-
+            {/* Spectators */}
             <section className="bd-card p-4">
-              <h3 className="mb-3 font-display text-lg font-black">Spectator Chat</h3>
-              <div className="mb-3 max-h-52 space-y-2 overflow-auto rounded-2xl border border-bd-line bg-bd-card-warm p-3">
-                {chatMessages.length === 0 && (
-                  <div className="text-sm text-bd-ink-muted">No spectator messages yet</div>
-                )}
-                {chatMessages.map((message) => (
-                  <div key={message.id} className="text-sm">
-                    <span className="font-semibold">{message.username}: </span>
-                    <span className="text-bd-ink-soft">{message.message}</span>
+              <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">
+                Spectators · {spectatorCount}
+              </h2>
+              <div className="space-y-2">
+                {spectators.map((spectator) => (
+                  <div key={spectator.userId} className="flex items-center gap-2 rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2">
+                    <span role="img" aria-label={spectator.username} className="bd-avatar bd-avatar-coral h-7 w-7 text-xs">
+                      {spectator.username.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="truncate text-sm font-semibold text-bd-ink">{spectator.username}</span>
                   </div>
                 ))}
+                {spectators.length === 0 && <p className="text-sm text-bd-ink-muted">{t('spectate.noSpectatorsConnected')}</p>}
               </div>
-              <form onSubmit={sendSpectatorChatMessage} className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Say something to spectators..."
-                  maxLength={500}
-                  className="bd-input min-w-0 flex-1 text-sm"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="bd-btn bd-btn-primary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Send
-                </button>
-              </form>
             </section>
+
+            {/* Chat — only for authenticated / guest users */}
+            {isAuthenticated && (
+              <section className="bd-card flex flex-col p-4">
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-bd-ink-muted">{t('spectate.chatTitle')}</h2>
+                <div className="mb-3 max-h-48 min-h-[80px] space-y-2 overflow-auto rounded-xl border border-bd-line bg-bd-card-warm p-3">
+                  {chatMessages.length === 0 && (
+                    <p className="text-sm text-bd-ink-muted">{t('chat.noMessages')}</p>
+                  )}
+                  {chatMessages.map((message) => (
+                    <div key={message.id} className="text-sm">
+                      <span className="font-semibold text-bd-ink">{message.username}: </span>
+                      <span className="text-bd-ink-soft">{message.message}</span>
+                    </div>
+                  ))}
+                </div>
+                <form onSubmit={sendSpectatorChatMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder={t('spectate.chatPlaceholder')}
+                    maxLength={500}
+                    className="bd-input min-w-0 flex-1 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className="bd-btn bd-btn-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {t('chat.send')}
+                  </button>
+                </form>
+              </section>
+            )}
           </div>
         </div>
       </div>

@@ -8,6 +8,8 @@ export interface LeaderboardEntry {
   userId: string
   username: string
   publicProfileId: string | null
+  avatarUrl: string | null
+  isPremium: boolean
   gamesPlayed: number
   wins: number
   losses: number

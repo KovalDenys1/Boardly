@@ -78,7 +78,7 @@ interface DBPlayer {
   }
 }
 
-import { useSocketConnection } from './hooks/useSocketConnection'
+import { useRealtimeConnection } from './hooks/useRealtimeConnection'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useGameActions, AutoActionContext } from './hooks/useGameActions'
 import { useLobbyActions } from './hooks/useLobbyActions'
@@ -96,6 +96,7 @@ import { isTerminalGameStatus, resolveLifecycleRedirectReason } from '@/lib/lobb
 import { trackLobbyLeaveRedirect } from '@/lib/analytics'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { resolveDedicatedLobbyPageGameType } from '@/lib/lobby-page-routing'
+import { getLobbyTheme, getThemePageStyle } from '@/lib/lobby-themes'
 
 function CenteredLoadingFallback() {
   return (
@@ -116,6 +117,7 @@ const SpyGameBoard = dynamic(() => import('./components/SpyGameBoard'))
 const MemoryGameBoard = dynamic(() => import('./components/MemoryGameBoard'))
 const MobileTabs = dynamic(() => import('./components/MobileTabs'))
 const MobileTabPanel = dynamic(() => import('./components/MobileTabPanel'))
+const GameInterruptedOverlay = dynamic(() => import('./components/GameInterruptedOverlay'))
 const LobbyInfo = dynamic(() => import('./components/LobbyInfo'))
 const WaitingRoom = dynamic(() => import('./components/WaitingRoom'))
 const WaitingRoomActions = dynamic(() => import('./components/WaitingRoomActions'))
@@ -124,7 +126,7 @@ const FriendsListModal = dynamic(() => import('@/components/FriendsListModal'))
 const ConfirmModal = dynamic(() => import('@/components/ConfirmModal'))
 const GameBoard = dynamic(() => import('./components/YahtzeeGameBoard'), {
   loading: () => (
-    <div className="h-full min-h-[280px] rounded-xl border border-white/15 bg-white/5">
+    <div className="h-full min-h-[280px] rounded-xl border border-[var(--bd-line)] bg-[var(--bd-bg2)]">
       <div className="flex h-full items-center justify-center">
         <LoadingSpinner size="md" />
       </div>
@@ -237,6 +239,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   // Leave confirmation modal state
   const [showLeaveConfirmModal, setShowLeaveConfirmModal] = useState(false)
 
+  // Game interrupted overlay (player left → insufficient players, or game abandoned)
+  const [gameInterruptedInfo, setGameInterruptedInfo] = useState<{
+    playerName?: string
+    reason: 'player_left' | 'abandoned'
+  } | null>(null)
+
+  // Players who have left mid-game (still shown in UI but greyed out)
+  const [departedPlayerIds, setDepartedPlayerIds] = useState<Set<string>>(new Set())
+
   // Persist roll history to localStorage whenever it changes
   useEffect(() => {
     if (typeof window !== 'undefined' && rollHistory.length > 0) {
@@ -287,6 +298,20 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
     return () => window.clearTimeout(timer)
   }, [yahtzeeResultsHold])
+
+  // Apply theme CSS variables to the lobby portal root so portaled components (e.g. Modal)
+  // inherit them. We do NOT set these on <html> to avoid contaminating the global header/nav.
+  useEffect(() => {
+    const theme = lobby?.theme
+    const el = document.getElementById('bd-lobby-portal')
+    if (!el || !theme || theme === 'default') return
+    const style = getThemePageStyle(theme) as Record<string, string>
+    const vars = Object.entries(style).filter(([k]) => k.startsWith('--'))
+    vars.forEach(([k, v]) => el.style.setProperty(k, v))
+    return () => {
+      vars.forEach(([k]) => el.style.removeProperty(k))
+    }
+  }, [lobby?.theme])
 
   // Track if this is initial page load to prevent sounds during hydration
   const isInitialLoadRef = React.useRef(true)
@@ -437,7 +462,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const getCurrentUserName = useCallback(() => {
     if (isGuest) return guestName
-    return (session?.user as { username?: string })?.username || session?.user?.email || session?.user?.name || 'You'
+    return (session?.user as { username?: string })?.username || session?.user?.name || 'You'
   }, [isGuest, guestName, session?.user])
 
   const isMyTurn = useCallback(() => {
@@ -656,14 +681,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
     setChatMessages(prev => [...prev, message])
-    if (chatMinimized) {
+    const currentUserId = isGuest ? guestId : session?.user?.id
+    const isOwnMessage = message.userId === currentUserId
+    const isChatVisible = !chatMinimized || mobileActiveTab === 'chat'
+    if (!isChatVisible && !isOwnMessage) {
       setUnreadMessageCount(prev => prev + 1)
     }
-    const currentUserId = isGuest ? guestId : session?.user?.id
-    if (message.userId !== currentUserId) {
+    if (!isOwnMessage) {
       playAmbientSound('message')
     }
-  }, [chatMinimized, isGuest, guestId, session?.user?.id, playAmbientSound])
+  }, [chatMinimized, mobileActiveTab, isGuest, guestId, session?.user?.id, playAmbientSound])
 
   const typingTimeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined)
 
@@ -697,6 +724,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     if (loadLobbyRef.current) {
       loadLobbyRef.current()
     }
+
+    // Bots show their own toast from addBot() — skip the generic joined toast
+    if (data.isBot) return
 
     // Show notification and play sound only after initial load
     const currentUserId = isGuest ? guestId : session?.user?.id
@@ -772,6 +802,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     clientLogger.log(`🤖 ${event.message}`)
   }, [playAmbientSound])
 
+  const onSpectatorCountChange = useCallback((count: number) => {
+    setLobby((prev) => (prev ? { ...prev, spectatorCount: count } : prev))
+  }, [])
+
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
     clientLogger.log('📡 Game abandoned:', data)
 
@@ -784,9 +818,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       void loadLobbyRef.current()
     }
 
-    triggerLifecycleRedirect(`game-abandoned:${data.reason || 'unknown'}`, {
-      toastKey: 'lobby.gameAbandoned',
-    })
+    setGameInterruptedInfo({ reason: 'abandoned' })
   }, [triggerLifecycleRedirect])
 
   const minPlayersRequired = React.useMemo(() => {
@@ -800,6 +832,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     remainingPlayers?: number
     nextCreatorId?: string
     nextCreatorName?: string
+    hostLeft?: boolean
+    isBot?: boolean
+    gameTerminal?: boolean
+    kicked?: boolean
   }) => {
     clientLogger.log('📡 Player left:', data)
 
@@ -807,10 +843,43 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       return
     }
 
+    // Bot kick already toasted from kickBot() — skip the generic left toast + sound
+    if (data.isBot) {
+      if (loadLobbyRef.current) void loadLobbyRef.current()
+      return
+    }
+
+    // Kicked player: redirect them out, others see a toast
+    if (data.kicked) {
+      const currentUserId = isGuest ? guestId : session?.user?.id
+      if (data.userId === currentUserId) {
+        showToast.error('toast.youWereKicked')
+        triggerLifecycleRedirect('kicked')
+        return
+      }
+      const departedName = data.username || data.playerName
+      if (departedName) {
+        showToast.info('toast.playerWasKicked', undefined, { player: departedName })
+      }
+      if (loadLobbyRef.current) void loadLobbyRef.current()
+      return
+    }
+
     const departedPlayerName = data.username || data.playerName
-    if (departedPlayerName) {
-      showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
-      playAmbientSound('playerLeave')
+    playAmbientSound('playerLeave')
+
+    // Track departed player for grey UI display
+    if (data.userId) {
+      setDepartedPlayerIds(prev => new Set([...prev, data.userId]))
+    }
+
+    // Host left during post-game — no reassignment, just notify and refresh
+    if (data.hostLeft) {
+      showToast.info('toast.hostLeftSession')
+      if (loadLobbyRef.current) {
+        void loadLobbyRef.current()
+      }
+      return
     }
 
     if (data.nextCreatorId) {
@@ -822,14 +891,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       }
     }
 
-    if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
-      triggerLifecycleRedirect('player-left:insufficient-players', {
-        toastKey: 'lobby.gameAbandoned',
-      })
+    if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+      setGameInterruptedInfo({ playerName: departedPlayerName, reason: 'player_left' })
       return
     }
 
-    // Refresh lobby data
+    // Game continues — show a toast and refresh
+    if (departedPlayerName) {
+      showToast.info('toast.playerLeft', undefined, { player: departedPlayerName })
+    }
     if (loadLobbyRef.current) {
       void loadLobbyRef.current()
     }
@@ -859,14 +929,13 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     return players.some((player: GamePlayer) => player?.userId === currentUserIdForMembership)
   }, [lobby, game, currentUserIdForMembership])
 
-  // Socket connection hook - must be before useLobbyActions
-  const { socket, isConnected, isReconnecting, reconnectAttempt, emitWhenConnected } = useSocketConnection({
+  const handleGameReset = useCallback(() => {
+    if (loadLobbyRef.current) void loadLobbyRef.current()
+  }, [])
+
+  // Realtime connection hook - must be before useLobbyActions
+  const { isConnected, isReconnecting, reconnectAttempt } = useRealtimeConnection({
     code,
-    session,
-    isGuest,
-    guestId,
-    guestName,
-    guestToken,
     shouldJoinLobbyRoom: canJoinSocketLobbyRoom,
     onGameUpdate,
     onChatMessage,
@@ -877,13 +946,37 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     onGameAbandoned,
     onPlayerLeft,
     onBotAction,
-    // State sync callback - automatically refreshes lobby data after reconnection
+    onSpectatorCountChange,
     onStateSync: async () => {
       if (loadLobbyRef.current) {
         await loadLobbyRef.current()
       }
     },
+    onGameReset: handleGameReset,
   })
+
+  const sendChatMessage = useCallback((message: string) => {
+    void fetchWithGuest(`/api/lobby/${code}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    })
+  }, [code])
+
+  const [isReturningToWaiting, setIsReturningToWaiting] = React.useState(false)
+
+  const handleReturnToWaiting = useCallback(async () => {
+    setIsReturningToWaiting(true)
+    try {
+      const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to return to waiting room')
+      if (loadLobbyRef.current) await loadLobbyRef.current()
+    } catch (error) {
+      console.error('Failed to return to waiting room:', error)
+    } finally {
+      setIsReturningToWaiting(false)
+    }
+  }, [code])
 
   // Calculate once to avoid calling functions repeatedly
   const userId = getCurrentUserId()
@@ -894,6 +987,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     loadLobby,
     addBotToLobby,
     kickBot,
+    kickPlayer,
     changeBotDifficulty,
     handleJoinLobby,
     handleGuestJoinLobby,
@@ -916,7 +1010,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setRollHistory,
     setCelebrationEvent,
     setChatMessages,
-    socket, // Now socket is available
     isGuest,
     guestId,
     guestName,
@@ -928,6 +1021,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     setLoading,
     setStartingGame,
     selectedBotDifficulty,
+    onLobbyFull: () => router.push(`/lobby/${code}/spectate`),
   })
 
   // Update ref with loadLobby function
@@ -1200,7 +1294,6 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     userId,
     username,
     isMyTurn: isMyTurn(),
-    emitWhenConnected,
     code,
     setRollHistory,
     setCelebrationEvent,
@@ -1336,10 +1429,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     leaveApiOutcomeRef.current = 'pending'
     leaveApiStatusCodeRef.current = null
 
-    if (socket) {
-      socket.emit('leave-lobby', code)
-      socket.disconnect()
-    }
+
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
@@ -1664,6 +1754,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         name: player.user?.username || null,
         username: player.user?.username || null,
         email: null,
+        isPremium: !!player.user?.isPremium,
         bot: player.user?.bot || null,
       },
       score: enginePlayers.find((enginePlayer) => enginePlayer.id === player.userId)?.score || 0,
@@ -1671,6 +1762,25 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       isReady: true,
     }))
   }, [game?.players, gameEngine])
+
+  const hasMultipleHumans = React.useMemo(() => {
+    if (!game?.players) return false
+    return game.players.filter((p) => !p.user?.bot && !p.bot).length >= 2
+  }, [game?.players])
+
+  const chatPlayerProfiles = React.useMemo(() => {
+    if (!game?.players) return undefined
+    const map = new Map<string, { avatarUrl?: string | null; isPremium?: boolean }>()
+    for (const p of game.players) {
+      if (p.userId) {
+        map.set(p.userId, {
+          avatarUrl: p.user?.avatarUrl ?? p.user?.image ?? null,
+          isPremium: !!p.user?.isPremium,
+        })
+      }
+    }
+    return map
+  }, [game?.players])
 
   const yahtzeeScoreTabBadge = React.useMemo(() => {
     if (
@@ -1785,7 +1895,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }
 
   return (
-    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`}>
+    <div className={`${!isGameStarted ? 'bd-page bd-screen min-h-[calc(100dvh-64px)]' : ''}`} style={getThemePageStyle(lobby?.theme)}>
+      {/* Portal target for Modal — lives inside the themed container so portaled components inherit theme CSS vars without contaminating the global <html> */}
+      <div id="bd-lobby-portal" className="contents" />
      <div className={`mx-auto max-w-7xl ${!isGameStarted ? 'flex min-h-[calc(100dvh-64px)] flex-col px-4 py-5 sm:px-6 sm:py-7 lg:px-8' : 'px-4 sm:px-6 lg:px-8 py-8'}`}>
 
       {!isInGame && !isGameStarted ? (
@@ -1826,6 +1938,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onJoinAsGuest={handleGuestJoinLobby}
               onLogin={() => router.push(`/auth/login?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
               onRegister={() => router.push(`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`)}
+              onWatchAsSpectator={lobby?.allowSpectators ? () => router.push(`/lobby/${code}/spectate`) : undefined}
             />
           )}
         </div>
@@ -1844,6 +1957,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             onRequestRematch={handleRequestRematch}
             onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
             onReturnToLobbyRoom={() => setYahtzeeResultsHold(null)}
+            onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
             autoReturnAt={yahtzeeResultsHold?.releaseAt ?? null}
             isGuest={isGuest}
             registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
@@ -1869,7 +1983,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
           {/* Tab selector (mobile only) */}
           <div className="flex border-b sm:hidden" style={{ borderColor: 'var(--bd-line)' }}>
-            {(['players', 'chat'] as const).map((tab) => (
+            {(['players', ...(hasMultipleHumans ? ['chat'] : [])] as ('players' | 'chat')[]).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -1905,29 +2019,28 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 minPlayers={minPlayersRequired}
                 getCurrentUserId={getCurrentUserId}
                 canManageBots={canStartGame}
+                canKickPlayers={isCreator}
                 onKickBot={kickBot}
+                onKickPlayer={kickPlayer}
                 onProfileClick={setProfileUserId}
               />
             </div>
             {/* Chat - mobile only, inside card */}
-            {waitingRoomTab === 'chat' && (
+            {hasMultipleHumans && waitingRoomTab === 'chat' && (
               <div className="h-full sm:hidden">
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {
-                    emitWhenConnected('send-chat-message', {
-                      lobbyCode: code,
-                      message,
-                      userId: getCurrentUserId(),
-                      username: getCurrentUserName(),
-                    })
+                    sendChatMessage(message)
                   }}
                   currentUserId={getCurrentUserId()}
+                  playerProfiles={chatPlayerProfiles}
                   isMinimized={false}
                   onToggleMinimize={() => {}}
                   unreadCount={0}
                   someoneTyping={someoneTyping}
                   fullScreen={true}
+                  onProfileClick={setProfileUserId}
                 />
               </div>
             )}
@@ -1949,8 +2062,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       ) : (
         // Game Started - Mobile-optimized viewport
         <div
-          className="flex flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/50 dark:from-slate-900 dark:via-blue-950/30 dark:to-purple-950/30"
+          className="flex flex-col overflow-hidden"
           style={{
+            background: 'var(--bd-bg)',
             position: 'fixed' as const,
             top: '4rem',
             left: 0,
@@ -1961,11 +2075,34 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             overscrollBehavior: 'none',
           }}
         >
+          {/* Game interrupted overlay */}
+          {gameInterruptedInfo && (
+            <GameInterruptedOverlay
+              playerName={gameInterruptedInfo.playerName}
+              reason={gameInterruptedInfo.reason}
+              onRedirect={() => {
+                setGameInterruptedInfo(null)
+                triggerLifecycleRedirect('game-interrupted-overlay')
+              }}
+            />
+          )}
+
           {/* Spectator banner */}
           {isSpectator && (
-            <div className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
-              <span>👁</span>
-              <span>{t('lobby.spectatingBanner')}</span>
+            <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 py-2 text-sm font-semibold text-bd-ink bg-bd-sun/80 border-b border-bd-ink/20">
+              <div className="flex items-center gap-2">
+                <span>👁</span>
+                <span>{t('lobby.spectatingBanner')}</span>
+              </div>
+              {lobby?.allowSpectators && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/lobby/${code}/spectate`)}
+                  className="shrink-0 rounded-xl border-2 border-bd-ink bg-[var(--bd-bg2)] px-3 py-1 text-xs font-bold text-bd-ink hover:bg-bd-sun/60 transition-colors"
+                >
+                  Open spectator view →
+                </button>
+              )}
             </div>
           )}
           {gameEngine?.isGameFinished() && gameEngine instanceof YahtzeeGame ? (
@@ -1981,21 +2118,22 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+              onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               isGuest={isGuest}
               registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && gameEngine instanceof YahtzeeGame ? (
             <>
               {/* Top Status Bar - Responsive */}
-              <div className="flex-shrink-0 mb-3 px-2 sm:px-4">
+              <div className="flex-shrink-0 pt-2 mb-3 px-2 sm:px-4">
                 <div
                   className="bd-card rounded-2xl px-3 sm:px-5 py-2.5 text-bd-ink"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--bd-card-warm) 100%)',
+                    background: 'linear-gradient(180deg, var(--bd-bg) 0%, var(--bd-card-warm) 100%)',
                   }}
                 >
                   {/* Mobile: Compact 2-row layout */}
-                  <div className="md:hidden">
+                  <div className="lg:hidden">
                     {/* Row 1: Game Info */}
                     <div className="mb-2 flex items-center justify-between border-b pb-2" style={{ borderColor: 'var(--bd-line)' }}>
                       <div className="flex items-center gap-2">
@@ -2054,7 +2192,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Desktop/Tablet: Original layout */}
-                  <div className="hidden md:flex items-center justify-between">
+                  <div className="hidden lg:flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl">🎯</span>
@@ -2124,7 +2262,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               {/* Main Game Area - More spacing between columns */}
               <div className="flex-1 relative overflow-x-hidden" style={{ minHeight: 0, height: '100%' }}>
                 {/* Desktop: Grid Layout */}
-                <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
+                <div className="hidden lg:grid grid-cols-1 lg:grid-cols-12 gap-6 px-4 pb-4 h-full overflow-hidden">
                   {/* Left: Dice Controls - 3 columns, Fixed Height */}
                   <div className="lg:col-span-3 min-w-0 flex flex-col h-full">
                     <GameBoard
@@ -2148,7 +2286,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Center: Scorecard - 6 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-6 min-w-0 h-full overflow-hidden">
+                  <div className="lg:col-span-6 min-w-0 h-full">
                     {(() => {
                       // Show selected player's scorecard or current player's scorecard
                       const currentUserId = getCurrentUserId()
@@ -2192,9 +2330,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </div>
 
                   {/* Right: Players & History - 3 columns, Internal Scroll Only */}
-                  <div className="lg:col-span-3 min-w-0 h-full overflow-hidden flex flex-col gap-3">
+                  <div className="lg:col-span-3 min-w-0 h-full flex flex-col gap-3">
                     {/* Players List - 40% of space */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
@@ -2205,11 +2343,12 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         }}
                         onProfileClick={setProfileUserId}
                         selectedPlayerId={selectedPlayerId || undefined}
+                        departedPlayerIds={departedPlayerIds}
                       />
                     </div>
 
                     {/* Roll History - 60% of space. Always rendered to prevent layout jump on first roll. */}
-                    <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 min-h-0">
                       <RollHistory entries={rollHistory} />
                     </div>
                   </div>
@@ -2218,7 +2357,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 {/* Mobile: Tabbed Layout */}
                 <div
                   key={game?.id || 'yahtzee-mobile-tabs'}
-                  className="md:hidden relative"
+                  className="lg:hidden relative"
                   style={{
                     height: '100%',
                     minHeight: 0,
@@ -2304,6 +2443,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         }}
                         onProfileClick={setProfileUserId}
                         selectedPlayerId={selectedPlayerId || undefined}
+                        departedPlayerIds={departedPlayerIds}
                       />
 
                       <div className="mt-4">
@@ -2313,6 +2453,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   </MobileTabPanel>
 
                   {/* Chat Tab */}
+                  {hasMultipleHumans && (
                   <MobileTabPanel id="chat" activeTab={mobileActiveTab}>
                     <div
                       className="min-h-full"
@@ -2323,38 +2464,33 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                       <Chat
                         messages={chatMessages}
                         onSendMessage={(message) => {
-                          emitWhenConnected('send-chat-message', {
-                            lobbyCode: code,
-                            message,
-                            userId: getCurrentUserId(),
-                            username: getCurrentUserName(),
-                          })
+                          sendChatMessage(message)
                         }}
                         currentUserId={getCurrentUserId()}
+                        playerProfiles={chatPlayerProfiles}
                         isMinimized={false}
                         onToggleMinimize={() => { }}
                         unreadCount={0}
                         someoneTyping={someoneTyping}
                         fullScreen={true}
+                        onProfileClick={setProfileUserId}
                       />
                     </div>
                   </MobileTabPanel>
+                  )}
                 </div>
               </div>
 
               {/* Desktop Chat - Minimized Button */}
-              <div className="hidden md:block">
+              {hasMultipleHumans && (
+              <div className="hidden lg:block">
                 <Chat
                   messages={chatMessages}
                   onSendMessage={(message) => {
-                    emitWhenConnected('send-chat-message', {
-                      lobbyCode: code,
-                      message,
-                      userId: getCurrentUserId(),
-                      username: getCurrentUserName(),
-                    })
+                    sendChatMessage(message)
                   }}
                   currentUserId={getCurrentUserId()}
+                  playerProfiles={chatPlayerProfiles}
                   isMinimized={chatMinimized}
                   onToggleMinimize={() => {
                     setChatMinimized(!chatMinimized)
@@ -2364,8 +2500,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   }}
                   unreadCount={unreadMessageCount}
                   someoneTyping={someoneTyping}
+                  onProfileClick={setProfileUserId}
                 />
               </div>
+              )}
 
               {/* Mobile Bottom Navigation */}
               <MobileTabs
@@ -2377,10 +2515,10 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                   }
                 }}
                 tabs={[
-                  { id: 'game', label: 'Game', icon: '🎲' },
-                  { id: 'scorecard', label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
-                  { id: 'players', label: 'Players', icon: '👥' },
-                  { id: 'chat', label: 'Chat', icon: '💬', badge: unreadMessageCount },
+                  { id: 'game' as const, label: 'Game', icon: '🎲' },
+                  { id: 'scorecard' as const, label: 'Score', icon: '📊', badge: yahtzeeScoreTabBadge },
+                  { id: 'players' as const, label: 'Players', icon: '👥' },
+                  ...(hasMultipleHumans ? [{ id: 'chat' as const, label: 'Chat', icon: '💬', badge: unreadMessageCount }] : []),
                 ]}
                 unreadChatCount={unreadMessageCount}
               />
@@ -2417,25 +2555,21 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               turnTimerLimit={turnTimerLimit}
               canStartGame={!!canStartGame}
               onPlayAgain={handleStartGame}
+              onReturnToWaiting={canStartGame ? handleReturnToWaiting : undefined}
               onLeave={() => setShowLeaveConfirmModal(true)}
-              chatMessages={chatMessages}
-              onSendChatMessage={(message) => {
-                emitWhenConnected('send-chat-message', {
-                  lobbyCode: code,
-                  message,
-                  userId: getCurrentUserId(),
-                  username: getCurrentUserName(),
-                })
-              }}
+              chatMessages={hasMultipleHumans ? chatMessages : undefined}
+              onSendChatMessage={hasMultipleHumans ? (message) => { sendChatMessage(message) } : undefined}
               chatUnreadCount={unreadMessageCount}
               someoneTyping={someoneTyping}
+              playerProfiles={chatPlayerProfiles}
+              onProfileClick={setProfileUserId}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-center">
-                <h2 className="mb-3 text-2xl font-extrabold text-white">Game Started</h2>
-                <p className="text-white/70">
-                  The game type <code className="rounded bg-white/10 px-2 py-0.5 text-white">{String(lobby?.gameType || DEFAULT_GAME_TYPE)}</code> is active.
+              <div className="w-full max-w-2xl bg-[var(--bd-bg2)] border border-[var(--bd-line)] rounded-2xl p-8 text-center">
+                <h2 className="mb-3 text-2xl font-extrabold text-bd-ink">Game Started</h2>
+                <p className="text-bd-ink-soft">
+                  The game type <code className="rounded bg-[var(--bd-bg)] px-2 py-0.5 text-bd-ink">{String(lobby?.gameType || DEFAULT_GAME_TYPE)}</code> is active.
                 </p>
                 <p className="mt-2 text-sm text-white/50">
                   This lobby view currently has no dedicated in-game renderer for it.
@@ -2447,19 +2581,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
       )}
 
       {/* Desktop Chat - waiting room (sm+) */}
-      {!isGameStarted && isInGame && (
+      {!isGameStarted && isInGame && hasMultipleHumans && (
         <div className="hidden sm:block">
           <Chat
             messages={chatMessages}
             onSendMessage={(message) => {
-              emitWhenConnected('send-chat-message', {
-                lobbyCode: code,
-                message,
-                userId: getCurrentUserId(),
-                username: getCurrentUserName(),
-              })
+              sendChatMessage(message)
             }}
             currentUserId={getCurrentUserId()}
+            playerProfiles={chatPlayerProfiles}
             isMinimized={chatMinimized}
             onToggleMinimize={() => {
               setChatMinimized(!chatMinimized)
@@ -2469,6 +2599,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             }}
             unreadCount={unreadMessageCount}
             someoneTyping={someoneTyping}
+            onProfileClick={setProfileUserId}
           />
         </div>
       )}
@@ -2512,8 +2643,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
         icon="🚪"
       />
 
-      {isGameStarted && socket && (
-        <ReactionOverlay socket={socket} lobbyCode={code} />
+      {isGameStarted && (
+        <ReactionOverlay lobbyCode={code} />
       )}
 
       <PlayerProfileCard
@@ -2530,7 +2661,7 @@ export default function LobbyPage() {
   const { status } = useSession()
   const { isGuest, guestToken } = useGuest()
   const code = params.code as string
-  const { gameType, gameStatus, loading, handleGameStarted } = useLobbyRouteState({
+  const { gameType, gameStatus, loading, handleGameStarted, handleGameReset } = useLobbyRouteState({
     code,
     status,
     isGuest,
@@ -2545,7 +2676,7 @@ export default function LobbyPage() {
   const dedicatedGameType = resolveDedicatedLobbyPageGameType(gameType, gameStatus)
 
   if (dedicatedGameType === 'tic_tac_toe') {
-    return <TicTacToeLobbyPage code={code} />
+    return <TicTacToeLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'rock_paper_scissors') {
@@ -2553,15 +2684,15 @@ export default function LobbyPage() {
   }
 
   if (dedicatedGameType === 'alias') {
-    return <AliasLobbyPage code={code} />
+    return <AliasLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'liars_party') {
-    return <LiarsPartyLobbyPage code={code} />
+    return <LiarsPartyLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   if (dedicatedGameType === 'connect_four') {
-    return <ConnectFourLobbyPage code={code} />
+    return <ConnectFourLobbyPage code={code} onGameReset={handleGameReset} />
   }
 
   // For all other cases, including all waiting rooms, use the shared lobby shell.

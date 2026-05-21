@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { restoreGameEngine } from '@/lib/game-registry'
-import { Move, Player, GameEngine } from '@/lib/game-engine'
+import { Move, Player, GameEngine, hasRollsLeft, hasScorecard, hasPendingRequest } from '@/lib/game-engine'
 import { apiLogger } from '@/lib/logger'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { parsePersistedGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
 
@@ -328,16 +328,7 @@ export async function POST(
     // Recreate game engine from saved state
     let gameState: unknown
     try {
-      gameState = parsePersistedGameState(game.state)
-
-      // Basic validation of state structure
-      if (!gameState || typeof gameState !== 'object') {
-        throw new Error('Invalid game state structure')
-      }
-
-      if (!Array.isArray((gameState as Record<string, unknown>).players)) {
-        throw new Error('Game state missing players array')
-      }
+      gameState = parseAndValidateGameState(game.state)
     } catch (parseError) {
       log.error('Failed to parse game state', parseError as Error)
       return NextResponse.json({
@@ -374,11 +365,7 @@ export async function POST(
         snapshot.currentPlayerId === serverCurrentPlayer?.id &&
         snapshotLastMoveAt === serverLastMoveAt
 
-      const getRollsLeft =
-        typeof (gameEngine as unknown as { getRollsLeft?: () => number }).getRollsLeft === 'function'
-          ? (gameEngine as unknown as { getRollsLeft: () => number }).getRollsLeft.bind(gameEngine)
-          : null
-      const serverRollsLeft = getRollsLeft ? getRollsLeft() : null
+      const serverRollsLeft = hasRollsLeft(gameEngine) ? gameEngine.getRollsLeft() : null
 
       const isSameMoveWindow =
         snapshotUpdatedAt !== null &&
@@ -452,9 +439,8 @@ export async function POST(
     }
 
     let botAutoResponse: BotAutoResponse | null = null
-    if (game.lobby.gameType === 'tic_tac_toe') {
-      const ticTacToeEngine = gameEngine as TicTacToeGame
-      const pendingRequest = ticTacToeEngine.getPendingRequest()
+    if (hasPendingRequest(gameEngine)) {
+      const pendingRequest = gameEngine.getPendingRequest()
 
       if (pendingRequest) {
         const responderPlayer = (game.players as GamePlayer[]).find(
@@ -463,7 +449,7 @@ export async function POST(
 
         if (responderPlayer?.user?.bot) {
           const accepted =
-            pendingRequest.type === 'undo' ? true : ticTacToeEngine.isTheoreticalDraw()
+            pendingRequest.type === 'undo' ? true : gameEngine.isTheoreticalDraw()
           const responseMove: Move = {
             playerId: pendingRequest.responderId,
             type: pendingRequest.type === 'undo' ? 'respond-undo' : 'respond-draw',
@@ -510,11 +496,8 @@ export async function POST(
 
     const lastMoveAtDate = resolveLastMoveAtDate(newState.lastMoveAt)
 
-    // Update player scores. Scorecard is optional and available only for games that implement getScorecard().
-    const getScorecard =
-      typeof (gameEngine as unknown as { getScorecard?: (playerId: string) => unknown }).getScorecard === 'function'
-        ? (gameEngine as unknown as { getScorecard: (playerId: string) => unknown }).getScorecard.bind(gameEngine)
-        : null
+    // Scorecard is optional and available only for games that implement getScorecard().
+    const getScorecard = hasScorecard(gameEngine) ? gameEngine.getScorecard.bind(gameEngine) : null
     const enginePlayers = gameEngine.getPlayers()
     const gamePlayers = game.players as GamePlayer[]
     const dbPlayersByUserId = new Map(gamePlayers.map((player) => [player.userId, player]))
@@ -726,16 +709,10 @@ export async function POST(
       ? sanitizeSpyStateForBroadcast(authoritativeState)
       : authoritativeState
 
-    const serverBroadcasted = await notifySocket(
-      `lobby:${game.lobby.code}`,
-      'game-update',
-      {
-        action: 'state-change',
-        payload: broadcastState,
-      },
-      0,
-      resolveStateChangeNotifyTimeoutMs(game.lobby.gameType)
-    )
+    const serverBroadcasted = await broadcastToLobby(game.lobby.code, 'game-update', {
+      action: 'state-change',
+      payload: broadcastState,
+    })
     void replaySnapshotPromise
 
     if (!serverBroadcasted) {

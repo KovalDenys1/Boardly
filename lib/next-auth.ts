@@ -87,6 +87,7 @@ export const authOptions: NextAuthOptions = {
             email: true,
             username: true,
             image: true,
+            avatarUrl: true,
             passwordHash: true,
             emailVerified: true,
             role: true,
@@ -115,6 +116,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email ?? email,
           name: user.username,
           image: user.image,
+          avatarUrl: user.avatarUrl,
           emailVerified: user.emailVerified,
           role: user.role,
           suspended: user.suspended,
@@ -264,7 +266,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.email = typeof user.email === 'string' ? user.email.trim().toLowerCase() : user.email
         token.name = (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
-        token.picture = user.image
+        token.picture = (user as { avatarUrl?: string | null }).avatarUrl ?? null
         token.emailVerified = user.emailVerified
         token.role = (user as { role?: 'user' | 'admin' }).role ?? token.role ?? 'user'
         token.suspended = (user as { suspended?: boolean }).suspended ?? token.suspended ?? false
@@ -317,6 +319,7 @@ export const authOptions: NextAuthOptions = {
             email: true,
             username: true,
             image: true,
+            avatarUrl: true,
             emailVerified: true,
             role: true,
             suspended: true,
@@ -327,13 +330,27 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.email = dbUser.email
           token.name = dbUser.username
-          token.picture = dbUser.image
+          token.picture = dbUser.avatarUrl ?? null
           token.emailVerified = dbUser.emailVerified
           token.role = dbUser.role
           token.suspended = dbUser.suspended
           token.banReason = dbUser.banReason
           token.banExpiresAt = dbUser.banExpiresAt?.toISOString() ?? null
         }
+      }
+
+      // Sync avatar + username from DB (throttled to once per 30 minutes)
+      const THIRTY_MINUTES = 30 * 60 * 1000
+      const lastAvatarSync = token.avatarResolved as number | boolean | undefined
+      const lastAvatarSyncTime = typeof lastAvatarSync === 'number' ? lastAvatarSync : 0
+      if (token.id && (typeof lastAvatarSync !== 'number' || Date.now() - lastAvatarSyncTime > THIRTY_MINUTES)) {
+        const dbUser = await prisma.users.findUnique({
+          where: { id: String(token.id) },
+          select: { avatarUrl: true, username: true },
+        })
+        token.picture = dbUser?.avatarUrl ?? null
+        if (dbUser?.username) token.name = dbUser.username
+        token.avatarResolved = Date.now()
       }
 
       // Update lastActiveAt for authenticated users (throttled to once per 5 minutes)
@@ -389,6 +406,7 @@ export const authOptions: NextAuthOptions = {
         where: { id: user.id },
         data: {
           emailVerified: new Date(),
+          image: null,
           // Only set username if user doesn't have one yet
           username: (user as { username?: string }).username || user.email?.split('@')[0] || 'user'
         }

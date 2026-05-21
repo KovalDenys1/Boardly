@@ -8,7 +8,7 @@ import { GET, POST, PATCH } from '@/app/api/lobby/[code]/route'
 import { POST as LEAVE } from '@/app/api/lobby/[code]/leave/route'
 import { prisma } from '@/lib/db'
 import { getServerSession } from 'next-auth'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 
 // Mock dependencies
 jest.mock('@/lib/db', () => ({
@@ -48,8 +48,8 @@ jest.mock('@/lib/next-auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn(),
+jest.mock('@/lib/supabase-server', () => ({
+  broadcastToLobby: jest.fn(),
   getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
   getSocketInternalAuthHeaders: jest.fn(() => ({})),
 }))
@@ -64,7 +64,7 @@ jest.mock('@/lib/logger', () => ({
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
 const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockNotifySocket = notifySocket as jest.MockedFunction<typeof notifySocket>
+const mockBroadcastToLobby = broadcastToLobby as jest.MockedFunction<typeof broadcastToLobby>
 const mockFetch = jest.fn()
 
 global.fetch = mockFetch as any
@@ -483,7 +483,7 @@ describe('POST /api/lobby/[code]/leave', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockNotifySocket.mockResolvedValue(true as any)
+    mockBroadcastToLobby.mockResolvedValue(true as any)
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({}),
@@ -591,7 +591,7 @@ describe('POST /api/lobby/[code]/leave', () => {
       data: { isActive: false },
     })
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
-    expect(mockNotifySocket).toHaveBeenCalledWith('lobby-list', 'lobby-list-update', {}, 0)
+    // lobby-list updates now handled by Postgres Changes on Lobbies table
   })
 
   it('reassigns waiting lobby creator when host leaves and human players remain', async () => {
@@ -696,9 +696,8 @@ describe('POST /api/lobby/[code]/leave', () => {
       where: { id: 'lobby-123' },
       data: { creatorId: 'user-456' },
     })
-    expect(mockNotifySocket).toHaveBeenNthCalledWith(
-      1,
-      'lobby:ABC123',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'player-left',
       expect.objectContaining({
         userId: 'user-123',
@@ -706,22 +705,15 @@ describe('POST /api/lobby/[code]/leave', () => {
         nextCreatorId: 'user-456',
         nextCreatorName: 'second-user',
         remainingPlayers: 1,
-      }),
-      0
+      })
     )
-    expect(mockNotifySocket).toHaveBeenNthCalledWith(
-      2,
-      'lobby:ABC123',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'lobby-update',
-      {
+      expect.objectContaining({
         lobbyCode: 'ABC123',
         type: 'player-left',
-        data: {
-          creatorId: 'user-456',
-          creatorName: 'second-user',
-        },
-      },
-      0
+      })
     )
   })
 
@@ -803,7 +795,7 @@ describe('POST /api/lobby/[code]/leave', () => {
     expect(mockPrisma.players.delete).not.toHaveBeenCalled()
   })
 
-  it('removes player from a finished game and reassigns the lobby creator after post-game leave', async () => {
+  it('removes player from a finished game without reassigning creator (post-game host control)', async () => {
     const finishedLobby = {
       ...mockLobby,
       creatorId: 'user-123',
@@ -886,40 +878,23 @@ describe('POST /api/lobby/[code]/leave', () => {
     )
     expect(mockPrisma.players.delete).not.toHaveBeenCalled()
     expect(mockPrisma.games.update).not.toHaveBeenCalled()
-    expect(mockPrisma.lobbies.update).toHaveBeenCalledWith({
-      where: { id: 'lobby-123' },
-      data: { creatorId: 'user-456' },
-    })
-    expect(mockNotifySocket).toHaveBeenNthCalledWith(
-      1,
-      'lobby:ABC123',
+    // Creator is NOT reassigned during post-game state
+    expect(mockPrisma.lobbies.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: { creatorId: expect.any(String) } })
+    )
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'player-left',
       expect.objectContaining({
         userId: 'user-123',
         playerId: 'user-123',
-        nextCreatorId: 'user-456',
-        nextCreatorName: 'another-user',
+        hostLeft: true,
         remainingPlayers: 1,
-      }),
-      0
-    )
-    expect(mockNotifySocket).toHaveBeenNthCalledWith(
-      2,
-      'lobby:ABC123',
-      'lobby-update',
-      {
-        lobbyCode: 'ABC123',
-        type: 'player-left',
-        data: {
-          creatorId: 'user-456',
-          creatorName: 'another-user',
-        },
-      },
-      0
+      })
     )
   })
 
-  it('responds without waiting for socket notify when other players remain', async () => {
+  it('awaits broadcast and returns 200 when other players remain', async () => {
     const playingLobby = {
       ...mockLobby,
       games: [
@@ -962,34 +937,22 @@ describe('POST /api/lobby/[code]/leave', () => {
       .mockResolvedValueOnce(2) // remaining players
       .mockResolvedValueOnce(2) // remaining human players
 
-    let resolveNotify: ((value: boolean) => void) | null = null
-    mockNotifySocket.mockReturnValue(
-      new Promise<boolean>((resolve) => {
-        resolveNotify = resolve
-      }) as any
-    )
+    mockBroadcastToLobby.mockResolvedValue(true as any)
 
     const request = new NextRequest('http://localhost:3000/api/lobby/ABC123/leave', {
       method: 'POST',
     })
 
-    const responseOrTimeout = await Promise.race([
-      LEAVE(request, { params: { code: 'ABC123' } }),
-      new Promise((resolve) => setTimeout(() => resolve('timeout'), 50)),
-    ])
+    const response = await LEAVE(request, { params: { code: 'ABC123' } })
 
-    expect(responseOrTimeout).not.toBe('timeout')
-    expect((responseOrTimeout as Response).status).toBe(200)
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABC123',
+    expect(response.status).toBe(200)
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'player-left',
       expect.objectContaining({
         playerId: 'user-123',
-      }),
-      0
+      })
     )
-
-    resolveNotify?.(true)
   })
 
   it('abandons playing game when leave results in bot-only players', async () => {
@@ -1059,11 +1022,10 @@ describe('POST /api/lobby/[code]/leave', () => {
         status: 'abandoned',
       }),
     })
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABC123',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'game-abandoned',
-      expect.objectContaining({ reason: 'no_human_players' }),
-      0
+      expect.objectContaining({ reason: 'no_human_players' })
     )
   })
 
@@ -1145,11 +1107,10 @@ describe('POST /api/lobby/[code]/leave', () => {
         status: 'abandoned',
       }),
     })
-    expect(mockNotifySocket).toHaveBeenCalledWith(
-      'lobby:ABC123',
+    expect(mockBroadcastToLobby).toHaveBeenCalledWith(
+      'ABC123',
       'game-abandoned',
-      expect.objectContaining({ reason: 'insufficient_players' }),
-      0
+      expect.objectContaining({ reason: 'insufficient_players' })
     )
   })
 })

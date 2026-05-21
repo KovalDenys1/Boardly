@@ -3,18 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { io, type Socket } from 'socket.io-client'
 import GameIcon, { GAME_SVG_PATHS } from '@/components/GameIcon'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { AuthGateModal } from '@/components/AuthGateModal'
+import RejoinLobbyBanner from '@/components/RejoinLobbyBanner'
 import { useGuest } from '@/contexts/GuestContext'
 import { clientLogger } from '@/lib/client-logger'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import type { TranslationKeys } from '@/lib/i18n-helpers'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getLobbyCreateRoute, isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
-import { resolveSocketClientAuth } from '@/lib/socket-client-auth'
-import { getBrowserSocketUrl } from '@/lib/socket-url'
+import { getSupabaseClient } from '@/lib/supabase-client'
+import { useMyActiveLobby } from '@/app/lobby/use-my-active-lobby'
 
 type Lobby = {
   id: string
@@ -22,6 +22,7 @@ type Lobby = {
   name: string
   maxPlayers: number
   gameType: string
+  allowSpectators: boolean
   creator: {
     username: string | null
     email: string | null
@@ -141,9 +142,10 @@ export default function GameLobbiesPage({
 }: GameLobbiesPageProps) {
   const router = useRouter()
   const { status } = useSession()
-  const { isGuest, guestToken } = useGuest()
+  const { isGuest } = useGuest()
   const { t } = useTranslation()
-  const socketRef = useRef<Socket | null>(null)
+  const { lobby: activeLobby, dismiss: dismissActiveLobby } = useMyActiveLobby(status === 'authenticated')
+  const realtimeChannelRef = useRef<ReturnType<ReturnType<typeof getSupabaseClient>['channel']> | null>(null)
   const [lobbies, setLobbies] = useState<Lobby[]>([])
   const [loading, setLoading] = useState(true)
   const [joinCode, setJoinCode] = useState('')
@@ -184,10 +186,6 @@ export default function GameLobbiesPage({
       return
     }
 
-    if (isGuest && !guestToken) {
-      return
-    }
-
     loadLobbies()
     let isMounted = true
 
@@ -195,58 +193,27 @@ export default function GameLobbiesPage({
       loadLobbies()
     }, 5000)
 
-    const initSocket = async () => {
-      if (!isAuthenticated) return
-      if (socketRef.current) return
-
-      const socketAuth = await resolveSocketClientAuth({
-        isGuest: isGuest && status !== 'authenticated',
-        guestToken: isGuest && status !== 'authenticated' ? guestToken : null,
-      })
-
-      if (!socketAuth) {
-        clientLogger.warn(`Skipping lobby socket connection for ${gameType}: auth payload unavailable`)
-        return
-      }
-
-      if (!isMounted) {
-        return
-      }
-
-      const nextSocket = io(getBrowserSocketUrl(), {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        auth: socketAuth.authPayload,
-        query: socketAuth.queryPayload,
-      })
-
-      nextSocket.on('connect', () => {
-        nextSocket.emit('join-lobby-list')
-      })
-
-      nextSocket.on('lobby-list-update', () => {
-        loadLobbies()
-      })
-
-      socketRef.current = nextSocket
+    if (!realtimeChannelRef.current) {
+      const supabase = getSupabaseClient()
+      const channel = supabase
+        .channel(`game-lobbies-${gameType}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'Lobbies' }, () => {
+          clientLogger.log(`📡 Lobby list update for ${gameType} via Supabase Realtime`)
+          loadLobbies()
+        })
+        .subscribe()
+      realtimeChannelRef.current = channel
     }
-
-    void initSocket()
 
     return () => {
       isMounted = false
       clearInterval(refreshInterval)
-
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('leave-lobby-list')
-        socketRef.current.disconnect()
+      if (realtimeChannelRef.current) {
+        void getSupabaseClient().removeChannel(realtimeChannelRef.current)
+        realtimeChannelRef.current = null
       }
-
-      socketRef.current = null
     }
-  }, [gameType, guestToken, isAuthenticated, isGuest, loadLobbies, status])
+  }, [gameType, loadLobbies])
 
   const handleJoinByCode = () => {
     if (joinCode.length !== 4) return
@@ -276,6 +243,10 @@ export default function GameLobbiesPage({
     <div className="bd-page bd-screen page-shell">
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
+
+          {activeLobby && activeLobby.gameType === gameType && (
+            <RejoinLobbyBanner lobby={activeLobby} onDismiss={dismissActiveLobby} />
+          )}
 
           {/* Breadcrumb */}
           <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-bd-ink-muted sm:text-sm">
@@ -434,21 +405,15 @@ export default function GameLobbiesPage({
                   const isWaiting = activeGame?.status === 'waiting'
                   const isPlaying = activeGame?.status === 'playing'
                   const isFull = playerCount >= lobby.maxPlayers
+                  const canSpectate = isPlaying && lobby.allowSpectators
                   const hostName = lobby.creator?.username || lobby.creator?.email?.split('@')[0] || 'Anonymous'
 
                   return (
                     <div
                       key={lobby.id}
-                      className={`cursor-pointer p-5 transition-colors hover:bg-bd-card-warm ${
+                      className={`p-5 transition-colors hover:bg-bd-card-warm ${
                         idx % 3 !== 2 ? 'md:border-r md:border-bd-line' : ''
                       } ${idx < lobbies.length - (lobbies.length % 3 || 3) ? 'border-b border-bd-line' : ''}`}
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          setAuthGateDest(`/lobby/${lobby.code}`)
-                          return
-                        }
-                        router.push(`/lobby/${lobby.code}`)
-                      }}
                     >
                       <div className="mb-3 flex items-start justify-between gap-2">
                         <h3 className="truncate font-bold text-bd-ink">{lobby.name}</h3>
@@ -457,15 +422,15 @@ export default function GameLobbiesPage({
                         </span>
                       </div>
 
-                      <p className="mb-4 truncate text-sm text-bd-ink-muted">
+                      <p className="mb-3 truncate text-sm text-bd-ink-muted">
                         👤 {tx('host')}: {hostName}
                       </p>
 
-                      <div className="flex items-center justify-between">
-                        <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
-                          👥 {playerCount}/{lobby.maxPlayers}
-                        </span>
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-sm font-semibold ${isFull ? 'text-bd-sun-deep' : 'text-bd-ink-soft'}`}>
+                            👥 {playerCount}/{lobby.maxPlayers}
+                          </span>
                           {isWaiting && (
                             <span className="flex items-center gap-1 rounded-full bg-bd-sun/20 px-2.5 py-1 text-[11px] font-bold text-[#9b6b00]">
                               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[#9b6b00]" />
@@ -482,6 +447,33 @@ export default function GameLobbiesPage({
                             <span className="rounded-full bg-bd-coral/15 px-2.5 py-1 text-[11px] font-bold text-bd-coral-deep">
                               {tx('full')}
                             </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {canSpectate && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                router.push(`/lobby/${lobby.code}/spectate`)
+                              }}
+                              className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
+                            >
+                              👁 {t('lobby.watch')}
+                            </button>
+                          )}
+                          {!canSpectate && (
+                            <button
+                              onClick={() => {
+                                if (!isAuthenticated) {
+                                  setAuthGateDest(`/lobby/${lobby.code}`)
+                                  return
+                                }
+                                router.push(`/lobby/${lobby.code}`)
+                              }}
+                              className="bd-btn bd-btn-soft text-xs px-3 py-1.5"
+                            >
+                              {isPlaying ? t('lobby.openLobby') : t('lobby.join')}
+                            </button>
                           )}
                         </div>
                       </div>

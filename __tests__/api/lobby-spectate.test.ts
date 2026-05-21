@@ -47,16 +47,17 @@ describe('GET /api/lobby/[code]/spectate', () => {
     jest.clearAllMocks()
   })
 
-  it('returns 401 when user is unauthorized', async () => {
+  it('returns 404 when lobby is not found', async () => {
     mockGetRequestAuthUser.mockResolvedValue(null)
+    mockPrisma.lobbies.findUnique.mockResolvedValue(null)
 
     const response = await GET(
       new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'),
       { params: Promise.resolve({ code: 'ABC123' }) }
     )
 
-    expect(response.status).toBe(401)
-    expect(await response.json()).toEqual({ error: 'Unauthorized' })
+    expect(response.status).toBe(404)
+    expect(await response.json()).toEqual({ error: 'Lobby not found' })
   })
 
   it('removes email fields from creator and players in spectator payload', async () => {
@@ -118,6 +119,9 @@ describe('GET /api/lobby/[code]/spectate', () => {
       username: 'player',
       isGuest: false,
       isBot: false,
+      isPremium: false,
+      image: null,
+      avatarUrl: null,
       bot: null,
     })
     const queryArgs = mockPrisma.lobbies.findUnique.mock.calls[0][0] as any

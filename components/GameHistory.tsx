@@ -45,6 +45,7 @@ const eyebrowClassName =
 interface Player {
   id: string
   username: string | null
+  isPremium?: boolean
   avatar: string | null
   isBot: boolean
   bot?: {
@@ -430,11 +431,16 @@ export default function GameHistory() {
                                 : 'border-bd-line bg-white text-bd-ink-soft dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200'
                             }`}
                           >
-                            <span
-                              className="max-w-[10rem] truncate text-sm font-semibold sm:max-w-[14rem]"
-                              title={player.username || `Player ${index + 1}`}
-                            >
-                              {player.username || `Player ${index + 1}`}
+                            <span className="flex items-center gap-1">
+                              <span
+                                className="max-w-[10rem] truncate text-sm font-semibold sm:max-w-[14rem]"
+                                title={player.username || `Player ${index + 1}`}
+                              >
+                                {player.username || `Player ${index + 1}`}
+                              </span>
+                              {player.isPremium && !(player.isBot || player.bot) && (
+                                <span className="shrink-0 text-xs" title="Premium">👑</span>
+                              )}
                             </span>
                             {(player.isBot || player.bot) && (
                               <span className="rounded-full bg-bd-bg2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-bd-ink-muted dark:bg-slate-800 dark:text-slate-400">

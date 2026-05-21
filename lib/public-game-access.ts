@@ -1,7 +1,7 @@
 import { getAvailableGameTypes, isRegisteredGameType } from './game-catalog'
 import type { RegisteredGameType, SupportedCatalogGameType } from './game-catalog'
 
-type UpcomingPublicGameType = 'alias' | 'liars_party'
+type UpcomingPublicGameType = never
 type LobbyRouteGameType = RegisteredGameType | UpcomingPublicGameType
 type PublicGameType = RegisteredGameType | UpcomingPublicGameType
 

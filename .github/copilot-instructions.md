@@ -21,11 +21,11 @@ Read these first before major changes:
 ## Current architecture
 
 - Next.js app server: API/auth/pages (`:3000`)
-- Socket.IO realtime server: `socket-server.ts` (`:3001`)
-- PostgreSQL + Prisma (pluralized schema tables)
+- Supabase Realtime: Broadcast (lobby events) + Postgres Changes (lobby/player table sync)
+- PostgreSQL + Prisma (pluralized schema tables, hosted on Supabase)
 
 State flow:
-`Client action -> API route -> DB update -> notify socket server -> room broadcast -> client reconcile`
+`Client action → API route → DB update → Supabase Realtime Broadcast → client reconcile`
 
 ## Non-negotiable rules
 
@@ -37,8 +37,8 @@ State flow:
 
 ## High-priority areas when touching code
 
-- `socket-server.ts` (connection lifecycle, room events, turn integrity)
-- `app/lobby/[code]/hooks/useSocketConnection.ts` (client sync/reconnect)
+- `lib/supabase-server.ts` (`broadcastToLobby` — must be `await`ed before returning response)
+- `hooks/useRealtimeConnection.ts` (client Broadcast + Postgres Changes subscription)
 - `app/api/game/[gameId]/state/route.ts` (move validation/state transitions)
 - `lib/game-engine.ts` + `lib/games/*` (game correctness)
 - `lib/guest-auth.ts` + auth routes (identity and token validation)
@@ -72,9 +72,8 @@ For realtime/auth changes, also manually verify:
 
 ## Deployment guardrails
 
-- Do not run migrations in socket service build.
+- Do not run migrations in the Vercel build — they hang cross-region. Migrations run via GitHub Actions when `prisma/migrations/` changes on `develop`.
 - Keep migration execution in a dedicated deploy step/job.
-- Ensure env vars are configured for both app and socket services.
 
 ## Documentation discipline
 

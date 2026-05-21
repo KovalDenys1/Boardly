@@ -19,9 +19,7 @@ import { LiarsPartyGame } from './games/liars-party-game'
 import { FakeArtistGame } from './games/fake-artist-game'
 import { AliasGame } from './games/alias'
 import {
-  isAliasEnabled,
   isFakeArtistEnabled,
-  isLiarsPartyEnabled,
   isSketchAndGuessEnabled,
   isTelephoneDoodleEnabled,
 } from './feature-flags'
@@ -37,12 +35,12 @@ export type RegisteredGameType =
   | 'rock_paper_scissors'
   | 'memory'
   | 'connect_four'
+  | 'alias'
+  | 'liars_party'
 export type ExperimentalGameType =
   | 'telephone_doodle'
   | 'sketch_and_guess'
-  | 'liars_party'
   | 'fake_artist'
-  | 'alias'
 export type SupportedGameType = RegisteredGameType | ExperimentalGameType
 
 /** Fallback game type used when DB value is null (legacy lobbies). */
@@ -152,6 +150,34 @@ const REGISTRY: Record<RegisteredGameType, GameRegistryEntry> = {
     create: (id, cfg) =>
       new ConnectFourGame(id, { maxPlayers: 2, minPlayers: 2, ...cfg }),
   },
+
+  alias: {
+    metadata: {
+      type: 'alias',
+      name: 'Alias',
+      icon: '🗣️',
+      minPlayers: 4,
+      maxPlayers: 16,
+      supportsBots: false,
+      translationKey: 'alias',
+    },
+    create: (id, _cfg) =>
+      new AliasGame(id),
+  },
+
+  liars_party: {
+    metadata: {
+      type: 'liars_party',
+      name: "Liar's Party",
+      icon: '🎭',
+      minPlayers: 4,
+      maxPlayers: 12,
+      supportsBots: false,
+      translationKey: 'liars_party',
+    },
+    create: (id, cfg) =>
+      new LiarsPartyGame(id, { maxPlayers: 12, minPlayers: 4, ...cfg }),
+  },
 }
 
 const TELEPHONE_DOODLE_ENTRY: GameRegistryEntry = {
@@ -182,20 +208,6 @@ const SKETCH_AND_GUESS_ENTRY: GameRegistryEntry = {
     new SketchAndGuessGame(id, { maxPlayers: 10, minPlayers: 3, ...cfg }),
 }
 
-const LIARS_PARTY_ENTRY: GameRegistryEntry = {
-  metadata: {
-    type: 'liars_party',
-    name: "Liar's Party",
-    icon: '🎭',
-    minPlayers: 4,
-    maxPlayers: 12,
-    supportsBots: false,
-    translationKey: 'liars_party',
-  },
-  create: (id, cfg) =>
-    new LiarsPartyGame(id, { maxPlayers: 12, minPlayers: 4, ...cfg }),
-}
-
 const FAKE_ARTIST_ENTRY: GameRegistryEntry = {
   metadata: {
     type: 'fake_artist',
@@ -208,20 +220,6 @@ const FAKE_ARTIST_ENTRY: GameRegistryEntry = {
   },
   create: (id, cfg) =>
     new FakeArtistGame(id, { maxPlayers: 10, minPlayers: 4, ...cfg }),
-}
-
-const ALIAS_ENTRY: GameRegistryEntry = {
-  metadata: {
-    type: 'alias',
-    name: 'Alias',
-    icon: '🗣️',
-    minPlayers: 4,
-    maxPlayers: 16,
-    supportsBots: false,
-    translationKey: 'alias',
-  },
-  create: (id, _cfg) =>
-    new AliasGame(id),
 }
 
 function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
@@ -238,16 +236,9 @@ function getRegistryEntry(gameType: string): GameRegistryEntry | undefined {
     return SKETCH_AND_GUESS_ENTRY
   }
 
-  if (gameType === 'liars_party' && isLiarsPartyEnabled()) {
-    return LIARS_PARTY_ENTRY
-  }
   if (gameType === 'fake_artist' && isFakeArtistEnabled()) {
     return FAKE_ARTIST_ENTRY
   }
-  if (gameType === 'alias' && isAliasEnabled()) {
-    return ALIAS_ENTRY
-  }
-
   return undefined
 }
 
@@ -309,14 +300,8 @@ export function getSupportedGameTypes(): SupportedGameType[] {
   if (isSketchAndGuessEnabled()) {
     experimentalTypes.push('sketch_and_guess')
   }
-  if (isLiarsPartyEnabled()) {
-    experimentalTypes.push('liars_party')
-  }
   if (isFakeArtistEnabled()) {
     experimentalTypes.push('fake_artist')
-  }
-  if (isAliasEnabled()) {
-    experimentalTypes.push('alias')
   }
 
   return [...stableTypes, ...experimentalTypes]
@@ -342,9 +327,7 @@ export function isSupportedGameType(value: string): value is SupportedGameType {
     isRegisteredGameType(value) ||
     (value === 'telephone_doodle' && isTelephoneDoodleEnabled()) ||
     (value === 'sketch_and_guess' && isSketchAndGuessEnabled()) ||
-    (value === 'liars_party' && isLiarsPartyEnabled()) ||
-    (value === 'fake_artist' && isFakeArtistEnabled()) ||
-    (value === 'alias' && isAliasEnabled())
+    (value === 'fake_artist' && isFakeArtistEnabled())
   )
 }
 

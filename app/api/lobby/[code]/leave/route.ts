@@ -1,46 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
+import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
+import { restoreGameEngine } from '@/lib/game-registry'
 
 const limiter = rateLimit(rateLimitPresets.api)
-const SOCKET_NOTIFY_DEBOUNCE_MS = 0
 
 type ReassignedCreator = {
   userId: string
   username: string
 }
 
-function emitLobbyEvent(
+async function emitLobbyEvent(
   log: ReturnType<typeof apiLogger>,
   code: string,
   event: string,
   data: Record<string, unknown>
 ) {
-  void notifySocket(`lobby:${code}`, event, data, SOCKET_NOTIFY_DEBOUNCE_MS)
-    .then((sent) => {
-      if (!sent) {
-        log.warn('Failed to emit lobby leave event', {
-          code,
-          event,
-        })
-      }
-    })
-    .catch((error) => {
-      log.warn('Lobby leave socket emit errored', {
-        code,
-        event,
-        error,
-      })
-    })
+  const sent = await broadcastToLobby(code, event, data)
+  if (!sent) log.warn('Failed to broadcast lobby leave event', { code, event })
 }
 
 function notifyLobbyListUpdate() {
-  void notifySocket('lobby-list', 'lobby-list-update', {}, SOCKET_NOTIFY_DEBOUNCE_MS)
+  // Postgres Changes on Lobbies table handles lobby-list updates globally
 }
 
 async function reassignLobbyCreatorIfNeeded(
@@ -194,12 +181,14 @@ export async function POST(
     const minPlayersRequired = getLobbyPlayerRequirements(activeGame.gameType).minPlayersRequired
 
     const creatorLeft = lobby.creatorId === userId
+    const isTerminalGame = activeGame.status === 'finished' || activeGame.status === 'abandoned' || activeGame.status === 'cancelled'
     const lobbyCanStayActive =
       activeGame.status === 'playing'
         ? remainingPlayers >= minPlayersRequired && remainingHumanPlayers > 0
         : remainingPlayers > 0 && remainingHumanPlayers > 0
+    // Don't reassign creator during post-game — only the original host can start the next game
     const reassignedCreator =
-      creatorLeft && lobbyCanStayActive
+      creatorLeft && lobbyCanStayActive && !isTerminalGame
         ? await reassignLobbyCreatorIfNeeded(log, lobby.id, activeGame.id, code)
         : null
 
@@ -237,19 +226,21 @@ export async function POST(
         })
       }
 
-      emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
-      emitLobbyEvent(log, code, 'lobby-update', {
-        lobbyCode: code,
-        type: 'player-left',
-        ...(reassignedCreator
-          ? {
-              data: {
-                creatorId: reassignedCreator.userId,
-                creatorName: reassignedCreator.username,
-              },
-            }
-          : {}),
-      })
+      await Promise.all([
+        emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload),
+        emitLobbyEvent(log, code, 'lobby-update', {
+          lobbyCode: code,
+          type: 'player-left',
+          ...(reassignedCreator
+            ? {
+                data: {
+                  creatorId: reassignedCreator.userId,
+                  creatorName: reassignedCreator.username,
+                },
+              }
+            : {}),
+        }),
+      ])
 
       return NextResponse.json({
         message: 'You left the lobby',
@@ -279,18 +270,10 @@ export async function POST(
         })
       }
 
-      emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
-      emitLobbyEvent(log, code, 'lobby-update', {
-        lobbyCode: code,
-        type: 'player-left',
-        ...(reassignedCreator
-          ? {
-              data: {
-                creatorId: reassignedCreator.userId,
-                creatorName: reassignedCreator.username,
-              },
-            }
-          : {}),
+      await emitLobbyEvent(log, code, 'player-left', {
+        ...playerLeftEventPayload,
+        ...(creatorLeft ? { hostLeft: true } : {}),
+        gameTerminal: true,
       })
 
       return NextResponse.json({
@@ -324,7 +307,7 @@ export async function POST(
         data: { isActive: false }
       })
 
-      emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
+      await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'no_human_players' })
       notifyLobbyListUpdate()
 
       return NextResponse.json({
@@ -358,7 +341,7 @@ export async function POST(
         data: { isActive: false }
       })
 
-      emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
       notifyLobbyListUpdate()
 
       return NextResponse.json({
@@ -369,10 +352,118 @@ export async function POST(
       })
     }
 
-    // If multiple players remain (human or bot), continue the game
-    emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
+    // End game if 1 human remains with no bots in a formerly multi-human game.
+    // This covers games (e.g. Yahtzee, minPlayers:1) that satisfy minPlayersRequired=1
+    // but can't continue meaningfully as a multiplayer session.
+    const remainingBots = remainingPlayers - remainingHumanPlayers
+    if (remainingHumanPlayers === 1 && remainingBots === 0 && activeGame.players.length > 1) {
+      const abandonNow = new Date()
+      const abandonDuration = activeGame.startedAt instanceof Date
+        ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
+        : null
+      await prisma.games.update({
+        where: { id: activeGame.id },
+        data: {
+          status: 'abandoned',
+          abandonedAt: abandonNow,
+          endedAt: abandonNow,
+          ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
+          terminalMetadata: { outcome: 'abandoned', reason: 'insufficient_players' },
+        }
+      })
+      await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
+      await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'insufficient_players' })
+      notifyLobbyListUpdate()
+      return NextResponse.json({ message: 'You left the lobby', gameEnded: true, gameAbandoned: true, lobbyDeactivated: true })
+    }
+
+    // Spy: if the spy left the game cannot meaningfully continue even with enough players
+    if (activeGame.gameType === 'guess_the_spy') {
+      try {
+        const spyState = parseAndValidateGameState(activeGame.state)
+        const spyPlayerId = (spyState.data as Record<string, unknown> | null)?.spyPlayerId
+        if (spyPlayerId === userId) {
+          const abandonNow = new Date()
+          const abandonDuration = activeGame.startedAt instanceof Date
+            ? Math.floor((abandonNow.getTime() - activeGame.startedAt.getTime()) / 1000)
+            : null
+          await prisma.games.update({
+            where: { id: activeGame.id },
+            data: {
+              status: 'abandoned',
+              abandonedAt: abandonNow,
+              endedAt: abandonNow,
+              ...(abandonDuration !== null ? { durationSeconds: abandonDuration } : {}),
+              terminalMetadata: { outcome: 'abandoned', reason: 'spy_left' },
+            },
+          })
+          await prisma.lobbies.update({ where: { id: lobby.id }, data: { isActive: false } })
+          await emitLobbyEvent(log, code, 'game-abandoned', { reason: 'spy_left' })
+          notifyLobbyListUpdate()
+          return NextResponse.json({ message: 'You left the lobby', gameEnded: true, gameAbandoned: true, lobbyDeactivated: true })
+        }
+      } catch (e) {
+        log.warn('Failed to check spy role on player leave', { error: e })
+      }
+      // Non-spy left: game continues but Spy is phase-based — no currentPlayerIndex to advance
+    }
+
+    // For turn-based games: advance to the next player if the departed player was current
+    // Alias uses currentTeamIndex+describerIndex; Liar's Party uses claimantOrder — skip
+    // to avoid state corruption. Timer will handle stuck turns for those games.
+    const ADVANCE_TURN_GAMES = new Set(['yahtzee', 'memory'])
+    let turnAdvanced = false
+    if (ADVANCE_TURN_GAMES.has(activeGame.gameType)) {
+      try {
+        const parsedState = parseAndValidateGameState(activeGame.state)
+        const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
+        if (currentPlayerId === userId) {
+          parsedState.currentPlayerIndex = (parsedState.currentPlayerIndex + 1) % parsedState.players.length
+          const data = parsedState.data as Record<string, unknown> | null | undefined
+          if (data && typeof data === 'object') {
+            // Yahtzee
+            if ('rollsLeft' in data) data.rollsLeft = 3
+            if ('held' in data) data.held = [false, false, false, false, false]
+            if ('lastRoll' in data) delete data.lastRoll
+            // Memory
+            if ('flippedCardIds' in data) data.flippedCardIds = []
+            if ('pendingMismatchCardIds' in data) data.pendingMismatchCardIds = []
+            if ('advanceTurnAfterMove' in data) data.advanceTurnAfterMove = false
+          }
+          await prisma.games.update({
+            where: { id: activeGame.id },
+            data: { state: toPersistedGameStateInput(parsedState) },
+          })
+          turnAdvanced = true
+          await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: parsedState })
+        }
+      } catch (e) {
+        log.warn('Failed to advance turn after player left mid-game', { error: e })
+      }
+    }
+
+    // Engine-managed games: delegate player-leave state mutation to the engine
+    const ENGINE_LEAVE_GAMES = new Set(['alias', 'liars_party'])
+    if (ENGINE_LEAVE_GAMES.has(activeGame.gameType)) {
+      try {
+        const engine = restoreGameEngine(activeGame.gameType, activeGame.id, activeGame.state)
+        const changed = engine.handlePlayerLeave(userId)
+        if (changed) {
+          const newState = engine.getState()
+          await prisma.games.update({
+            where: { id: activeGame.id },
+            data: { state: toPersistedGameStateInput(newState) },
+          })
+          await emitLobbyEvent(log, code, 'game-update', { action: 'state-change', payload: newState })
+        }
+      } catch (e) {
+        log.warn('Failed to apply engine handlePlayerLeave', { error: e, gameType: activeGame.gameType })
+      }
+    }
+
+    await emitLobbyEvent(log, code, 'player-left', playerLeftEventPayload)
     if (reassignedCreator) {
-      emitLobbyEvent(log, code, 'lobby-update', {
+      await emitLobbyEvent(log, code, 'lobby-update', {
         lobbyCode: code,
         type: 'player-left',
         data: {
@@ -381,6 +472,8 @@ export async function POST(
         },
       })
     }
+
+    log.info('Player left, game continues', { code, userId, remainingPlayers, turnAdvanced })
 
     return NextResponse.json({
       message: 'You left the lobby',

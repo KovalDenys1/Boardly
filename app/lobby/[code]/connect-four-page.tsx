@@ -13,12 +13,13 @@ import {
     COLS,
 } from '@/lib/games/connect-four-game'
 import { clientLogger } from '@/lib/client-logger'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { getThemePageStyle } from '@/lib/lobby-themes'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
+import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -56,7 +57,7 @@ function C4Disc({ disc, isWin, pop }: { disc: PlayerDisc | null; isWin?: boolean
     )
 }
 
-function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc }: {
+function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disabled, currentDisc, lastDroppedRow, lastDroppedCol }: {
     board: (PlayerDisc | null)[][]
     winningLine: [number, number][] | null
     hoverCol: number | null
@@ -64,6 +65,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     onColClick: (col: number) => void
     disabled: boolean
     currentDisc: PlayerDisc
+    lastDroppedRow: number | null
+    lastDroppedCol: number | null
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
 
@@ -74,7 +77,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 {Array.from({ length: COLS }, (_, c) => (
                     <div key={c} style={{
                         height: 20, display: 'grid', placeItems: 'center',
-                        opacity: hoverCol === c && !disabled ? 1 : 0,
+                        opacity: hoverCol === c && !disabled && board[0][c] === null ? 1 : 0,
                         transition: 'opacity 0.12s',
                     }}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -109,8 +112,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                 disabled={disabled || colFull}
                                 aria-label={`column ${c + 1}`}
                                 style={{
-                                    width: 'clamp(34px, 7.5vw, 52px)',
-                                    height: 'clamp(34px, 7.5vw, 52px)',
+                                    width: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
+                                    height: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
                                     background: 'rgba(255,255,255,0.10)',
@@ -122,7 +125,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     overflow: 'hidden',
                                 }}
                             >
-                                <C4Disc disc={cell} isWin={win} pop={!!cell && r === ROWS - 1} />
+                                <C4Disc disc={cell} isWin={win} pop={!!cell && r === lastDroppedRow && c === lastDroppedCol} />
                             </button>
                         )
                     })
@@ -153,30 +156,37 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     )
 }
 
-function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
+function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, isLocalPlayer, avatarSrc, isPremium, t }: {
     name: string; disc: PlayerDisc; isActive: boolean; isWinner: boolean; wins: number; side: 'left' | 'right';
-    t: (k: TranslationKeys) => string
+    isLocalPlayer: boolean; avatarSrc?: string | null; isPremium?: boolean; t: (k: TranslationKeys) => string
 }) {
     const discColor = disc === 1 ? DISC_RED : DISC_YELLOW
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-            background: isActive ? 'white' : 'transparent',
+            background: isActive ? 'var(--bd-input-bg)' : 'transparent',
             border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
             boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
             flexDirection: side === 'right' ? 'row-reverse' : 'row',
             transition: 'all 0.2s', minWidth: 0,
         }}>
-            {/* Avatar + disc badge — mirrors TttPlayerCard's avatar + symbol badge */}
+            {/* Avatar + disc badge */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
+                {avatarSrc ? (
+                    <img src={avatarSrc} alt={name} style={{
+                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
+                        border: '2px solid var(--bd-input-bg)', boxShadow: '0 0 0 2px var(--bd-ink)',
+                    }} />
+                ) : (
                 <div style={{
                     width: 42, height: 42, borderRadius: '50%', background: discColor,
-                    display: 'grid', placeItems: 'center', border: '2px solid white',
+                    display: 'grid', placeItems: 'center', border: '2px solid var(--bd-input-bg)',
                     boxShadow: '0 0 0 2px var(--bd-ink)',
                     fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 18, color: 'white',
                 }}>
                     {name.charAt(0).toUpperCase()}
                 </div>
+                )}
                 {/* Disc icon badge */}
                 <div style={{
                     position: 'absolute', bottom: -3, right: -3, width: 20, height: 20,
@@ -186,9 +196,10 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
             </div>
             <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? '#F59E0B' : undefined }}>
                         {name}
                     </span>
+                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
                     {isWinner && (
                         <span style={{
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
@@ -207,7 +218,7 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
                         justifyContent: side === 'right' ? 'flex-end' : 'flex-start',
                     }}>
                         <span style={{ width: 5, height: 5, borderRadius: '50%', background: discColor, display: 'inline-block' }} />
-                        {t('games.connect_four.game.theirTurn')}
+                        {isLocalPlayer ? t('games.connect_four.game.yourTurn') : t('games.connect_four.game.theirTurn')}
                     </div>
                 )}
             </div>
@@ -215,9 +226,10 @@ function C4PlayerCard({ name, disc, isActive, isWinner, wins, side, t }: {
     )
 }
 
-function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, t }: {
+function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPlayerName, secs, moveCount, turnTimerLimit, isSpectator, t }: {
     isFinished: boolean; winnerName: string | null; isDraw: boolean;
     currentDisc: PlayerDisc; currentPlayerName: string; secs: number; moveCount: number; turnTimerLimit: number;
+    isSpectator?: boolean;
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string;
 }) {
     if (isFinished && !isDraw && winnerName) {
@@ -250,12 +262,28 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
             </div>
         )
     }
+    if (isSpectator) {
+        const discColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
+        return (
+            <div style={{
+                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
+                border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
+                display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+                <span style={{ fontSize: 14 }}>👁</span>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: discColor, flexShrink: 0, boxShadow: '0 0 0 2px var(--bd-ink)' }} />
+                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
+                <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveCount + 1}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
+            </div>
+        )
+    }
     const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
     const danger = secs <= 5
     const barColor = currentDisc === 1 ? DISC_RED : DISC_YELLOW
     return (
         <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'white',
+            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
             display: 'flex', alignItems: 'center', gap: 12,
         }}>
@@ -289,9 +317,9 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     )
 }
 
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, isLoading, t }: {
+function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, isLoading, isHost, t }: {
     winnerName: string | null; isDraw: boolean; isMyWin: boolean
-    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean
+    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
@@ -306,18 +334,41 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onLeave, is
                 {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
-                <button
-                    onClick={onPlayAgain}
-                    disabled={isLoading}
-                    style={{
-                        padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
-                        background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
-                        cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
-                        fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
-                    }}
-                >
-                    {t('games.connect_four.game.playAgain')}
-                </button>
+                {isHost ? (
+                    <>
+                        <button
+                            onClick={onPlayAgain}
+                            disabled={isLoading}
+                            style={{
+                                padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
+                                background: 'var(--bd-mint-deep)', color: 'white', border: 'none',
+                                cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
+                                fontFamily: 'inherit', boxShadow: '0 4px 0 rgba(0,0,0,0.25)',
+                            }}
+                        >
+                            {t('games.connect_four.game.playAgain')}
+                        </button>
+                        <button
+                            onClick={onReturnToLobby}
+                            disabled={isLoading}
+                            style={{
+                                padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                                background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.25)',
+                                cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1, fontFamily: 'inherit',
+                            }}
+                        >
+                            {t('game.ui.returnToLobby')}
+                        </button>
+                    </>
+                ) : (
+                    <div style={{
+                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.55)',
+                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
+                    }}>
+                        {t('game.ui.waitingForHost')}
+                    </div>
+                )}
                 <button
                     onClick={onLeave}
                     style={{
@@ -343,10 +394,13 @@ interface Lobby {
     name: string
     isActive?: boolean
     turnTimer?: number
+    theme?: string
 }
 
 interface ConnectFourLobbyPageProps {
     code: string
+    isSpectator?: boolean
+    onGameReset?: () => void
 }
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
@@ -390,7 +444,7 @@ function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps) {
+export default function ConnectFourLobbyPage({ code, isSpectator = false, onGameReset }: ConnectFourLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId } = useGuest()
@@ -405,6 +459,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const [hoverCol, setHoverCol] = useState<number | null>(null)
     const isLeavingLobbyRef = React.useRef(false)
+    const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const leaveStartedAtRef = React.useRef<number | null>(null)
@@ -413,6 +468,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const minPlayersRequired = getLobbyPlayerRequirements(lobby?.gameType || 'connect_four').minPlayersRequired
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
+    const [isMobile, setIsMobile] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -540,7 +596,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
-        nextCreatorId?: string; nextCreatorName?: string;
+        nextCreatorId?: string; nextCreatorName?: string; gameTerminal?: boolean;
     }) => {
         clientLogger.log('📡 Connect Four player left:', data)
         if (isLeavingLobbyRef.current) return
@@ -554,7 +610,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
             }
         }
-        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+        if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
             triggerLifecycleRedirect('player-left:insufficient-players')
             return
         }
@@ -567,7 +623,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         void loadLobby()
     }, [status, isGuest, guestToken, loadLobby])
 
-    const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+    const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
         clientLogger.log('📡 Game update received:', payload)
         const activeGameId = activeGameIdRef.current
         const directState = extractAuthoritativeStateFromGameUpdate(payload)
@@ -575,15 +631,28 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         void loadLobby()
     }, [applyAuthoritativeState, loadLobby])
 
-    const socket = useGameSocket({
+    const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
+        if (msg.userId === chatCurrentUserIdRef.current) return
+        const d = new Date(msg.timestamp)
+        const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+        const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
+        const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'sun' : 'sky'
+        setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
+    }, [])
+
+    const handleGameReset = useCallback(() => {
+        if (onGameReset) onGameReset()
+        else router.push(`/lobby/${code}`)
+    }, [code, onGameReset, router])
+
+    const { emitWhenConnected } = useRealtimeConnection({
         code,
-        status,
-        isGuest,
-        guestToken,
-        gameName: 'Connect Four',
+        shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
         onGameUpdate: handleGameUpdate,
         onGameAbandoned: handleGameAbandoned,
         onPlayerLeft: handlePlayerLeft,
+        onChatMessage: handleChatMessage,
+        onGameReset: handleGameReset,
     })
 
     const isMyTurn = useCallback(() => {
@@ -595,7 +664,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         move: Move,
         options?: { autoActionContext?: AutoActionContext; isAutoAction?: boolean }
     ): Promise<boolean> => {
-        if (!gameEngine || !game || isMoveSubmitting) return false
+        if (!gameEngine || !game || isMoveSubmittingRef.current) return false
         const isAutoAction = options?.isAutoAction === true
         const normalizedAutoActionContext = options?.autoActionContext
         const submitStartedAt = Date.now()
@@ -609,6 +678,8 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 if (!isAutoAction) showToast.error('errors.invalidActionData')
                 return false
             }
+            isMoveSubmittingRef.current = true
+            setIsMoveSubmitting(true)
             let optimisticState = optimisticEngine.getState()
             if (!isAutoAction) {
                 optimisticEngine.processMove(move)
@@ -624,7 +695,6 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                     }
                 })
             }
-            setIsMoveSubmitting(true)
             const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -654,9 +724,6 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             } else if (move.type === 'timeout-forfeit') {
                 showToast.infoText('Time expired. Round forfeited.')
             }
-            if (socket?.connected && !isAutoAction) {
-                socket.emit('game-action', { lobbyCode: code, action: 'state-change', payload: { gameId: game.id, state: optimisticState } })
-            }
             const resolvedEngine = isAutoAction
                 ? (() => {
                     if (!authoritativeState || typeof authoritativeState !== 'object') return null
@@ -678,9 +745,10 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             await loadLobby()
             return false
         } finally {
+            isMoveSubmittingRef.current = false
             setIsMoveSubmitting(false)
         }
-    }, [applyAuthoritativeState, gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isGuest])
 
     const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
         if (!gameEngine) return null
@@ -707,7 +775,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             : 30
 
     const { timeLeft } = useGameTimer({
-        isMyTurn: isMyTurn(),
+        isMyTurn: isSpectator ? false : isMyTurn(),
         gameState: timerStateData?.pendingRequest ? null : timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
@@ -731,7 +799,6 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         leaveStartedAtRef.current = Date.now()
         leaveApiOutcomeRef.current = 'pending'
         leaveApiStatusCodeRef.current = null
-        if (socket?.connected) { socket.emit('leave-lobby', code); socket.disconnect() }
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
         void fetchWithGuest(`/api/lobby/${code}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, signal: controller.signal })
@@ -762,6 +829,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         if (!lobby || !game || !gameEngine) { router.push(`/lobby/${code}`); return }
         const userId = getCurrentUserId()
         if (!userId) { router.push(`/lobby/${code}`); return }
+        if (lobby.creatorId !== userId) { showToast.info('game.ui.waitingForHost'); return }
         setIsRematchSubmitting(true)
         try {
             // Try next-round in the same game first
@@ -797,25 +865,35 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         }
     }, [applyAuthoritativeState, code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router])
 
+    const handleReturnToWaiting = useCallback(async () => {
+        const userId = getCurrentUserId()
+        if (!userId || !lobby || lobby.creatorId !== userId) return
+        setIsRematchSubmitting(true)
+        try {
+            const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+            if (!res.ok) throw new Error('Failed to return to waiting room')
+            if (onGameReset) onGameReset()
+            else router.push(`/lobby/${code}`)
+        } catch (error) {
+            clientLogger.error('Failed to return to waiting room:', error)
+            showToast.errorFrom(error, 'games.connect_four.game.moveFailed')
+        } finally {
+            setIsRematchSubmitting(false)
+        }
+    }, [code, getCurrentUserId, lobby, onGameReset, router])
+
+    useEffect(() => {
+        const mq = window.matchMedia('(max-width: 899px)')
+        setIsMobile(mq.matches)
+        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+        mq.addEventListener('change', handler)
+        return () => mq.removeEventListener('change', handler)
+    }, [])
+
     // Scroll chat to bottom
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
     }, [localChat])
-
-    // Receive chat messages
-    useEffect(() => {
-        if (!socket) return
-        const handler = (msg: { id: string; userId: string; username: string; message: string; timestamp: number }) => {
-            if (msg.userId === chatCurrentUserIdRef.current) return
-            const d = new Date(msg.timestamp)
-            const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
-            const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
-            const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'sun' : 'sky'
-            setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
-        }
-        socket.on('chat-message', handler)
-        return () => { socket.off('chat-message', handler) }
-    }, [socket])
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -863,7 +941,9 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const gameData = state.data as ConnectFourGameData
     const players = game?.players || []
     const currentUserId = getCurrentUserId()
+    // eslint-disable-next-line react-hooks/refs
     chatCurrentUserIdRef.current = currentUserId ?? null
+    // eslint-disable-next-line react-hooks/refs
     chatStatePlayersRef.current = state.players
 
     const myPlayerIndex = state.players.findIndex(p => p.id === currentUserId)
@@ -876,6 +956,18 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
 
     const p1Name = state.players[0] ? getDisplayName(state.players[0].id) : 'Player 1'
     const p2Name = state.players[1] ? getDisplayName(state.players[1].id) : 'Player 2'
+    const getPlayerAvatar = (userId: string): string | null => {
+        const p = players.find(lp => lp.userId === userId)
+        return p?.user?.avatarUrl ?? p?.user?.image ?? null
+    }
+    const p1Avatar = state.players[0] ? getPlayerAvatar(state.players[0].id) : null
+    const p2Avatar = state.players[1] ? getPlayerAvatar(state.players[1].id) : null
+    const getIsPremium = (playerId: string) => {
+        const lp = players.find(p => p.userId === playerId)
+        return !!(lp?.user as { isPremium?: boolean } | undefined)?.isPremium
+    }
+    const p1IsPremium = state.players[0] ? getIsPremium(state.players[0].id) : false
+    const p2IsPremium = state.players[1] ? getIsPremium(state.players[1].id) : false
 
     const p1Wins = state.players[0]?.score ?? 0
     const p2Wins = state.players[1]?.score ?? 0
@@ -920,7 +1012,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         const myName = myDisc === 1 ? p1Name : p2Name
         const myColor = myDisc === 1 ? 'coral' : 'sun'
         setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
-        socket?.emit('send-chat-message', { lobbyCode: code, message: chatInput.trim() })
+        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
         setChatInput('')
     }
 
@@ -930,7 +1022,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         const myName = myDisc === 1 ? p1Name : p2Name
         const myColor = myDisc === 1 ? 'coral' : 'sun'
         setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
-        socket?.emit('send-chat-message', { lobbyCode: code, message: emoji })
+        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
     }
 
     // ─── Sections ─────────────────────────────────────────────────────────────
@@ -938,7 +1030,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const headerSection = (
         <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
-                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" t={t} />
+                <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} isPremium={p1IsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
                         <GameIcon gameId="connect-four" accentColor={DISC_RED} size={18} />
@@ -950,7 +1042,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                         wins
                     </div>
                 </div>
-                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" t={t} />
+                <C4PlayerCard name={p2Name} disc={2} isActive={!isFinished && gameData.currentDisc === 2} isWinner={!isDraw && winnerDisc === 2} wins={p2Wins} side="right" isLocalPlayer={myDisc === 2} avatarSrc={p2Avatar} isPremium={p2IsPremium} t={t} />
             </div>
         </div>
     )
@@ -965,6 +1057,7 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             secs={timeLeft}
             moveCount={gameData.moveCount}
             turnTimerLimit={turnTimerLimit}
+            isSpectator={isSpectator}
             t={t}
         />
     )
@@ -974,14 +1067,14 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
     const historySection = (
         <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
-                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Moves</h3>
+                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
                     {moveHistory.length}/42
                 </span>
             </div>
             <div className="ttt-history-list">
                 {moveHistory.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — Red starts.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.connect_four.game.noMovesYet')}</div>
                     : moveHistory.slice().reverse().map((m: ConnectFourMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
@@ -1001,9 +1094,9 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         </div>
     )
 
-    const requestSection = pendingRequest ? (
+    const requestSection = !isSpectator && pendingRequest ? (
         <div style={{
-            padding: '8px 10px', borderRadius: 12, background: 'rgba(255,255,255,0.92)',
+            padding: '8px 10px', borderRadius: 12, background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 3px 10px rgba(31,27,22,0.06)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap',
         }}>
@@ -1021,13 +1114,13 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 </div>
             ) : (
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>
-                    Waiting for response...
+                    {t('game.ui.waitingForResponse')}
                 </div>
             )}
         </div>
     ) : null
 
-    const boardDisabled = !isMyTurn() || isFinished || isMoveSubmitting || !!pendingRequest
+    const boardDisabled = isSpectator || !isMyTurn() || isFinished || isMoveSubmitting || !!pendingRequest
 
     const renderBoardSection = () => (
         <div className="ttt-board-card" style={{ position: 'relative' }}>
@@ -1039,16 +1132,20 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 onColClick={handleColClick}
                 disabled={boardDisabled}
                 currentDisc={gameData.currentDisc}
+                lastDroppedRow={gameData.lastDroppedRow}
+                lastDroppedCol={gameData.lastDroppedCol}
             />
-            {isFinished && (
+            {isFinished && !isSpectator && (
                 <div className="ttt-board-overlay" style={{ borderRadius: 16 }}>
                     <C4ResultOverlay
                         winnerName={winnerName}
                         isDraw={isDraw}
                         isMyWin={isMyWin}
                         onPlayAgain={handlePlayAgain}
+                        onReturnToLobby={handleReturnToWaiting}
                         onLeave={() => setShowLeaveConfirmModal(true)}
                         isLoading={isRematchSubmitting}
+                        isHost={!!lobby && lobby.creatorId === currentUserId}
                         t={t}
                     />
                 </div>
@@ -1056,16 +1153,22 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         </div>
     )
 
-    const actionsSection = (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    const actionsSection = isSpectator ? (
+        <div style={{ display: 'flex', gap: 8 }}>
+            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
+                {t('game.ui.backToLobby')}
+            </a>
+        </div>
+    ) : (
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 8 }}>
             <button
                 onClick={() => void handleRequestUndo()}
                 disabled={!canRequestUndo}
-                style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5 }}
+                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: canRequestUndo ? 'var(--bd-ink-soft)' : 'var(--bd-ink-muted)', cursor: canRequestUndo ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: canRequestUndo ? 1 : 0.5, width: isMobile ? '100%' : undefined }}
             >
                 ↶ {t('games.connect_four.game.requestUndo')}
             </button>
-            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '10px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit', width: isMobile ? '100%' : undefined }}>
                 {t('games.connect_four.game.leave')}
             </button>
         </div>
@@ -1075,16 +1178,16 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
         <div className="ttt-chat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--bd-line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Chat</h3>
+                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('chat.open')}</h3>
                     <span className="bd-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
                 </div>
                 <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                    {players.length} in match
+                    {t('game.ui.inMatch', { count: players.length })}
                 </span>
             </div>
             <div ref={chatRef} className="ttt-chat-feed">
                 {localChat.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>No messages yet.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>{t('chat.noMessages')}</div>
                     : localChat.map(msg => (
                         <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                             <div style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0, background: msg.color === 'coral' ? 'var(--bd-coral)' : msg.color === 'sun' ? 'var(--bd-sun)' : 'var(--bd-sky)', display: 'grid', placeItems: 'center', fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 10, color: 'white' }}>
@@ -1111,20 +1214,22 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
                 </div>
                 <div style={{ display: 'flex', gap: 6 }}>
                     <input
-                        style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'white', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
-                        placeholder="Write…"
+                        style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)', borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)' }}
+                        placeholder={t('game.ui.chatPlaceholder')}
                         value={chatInput}
                         onChange={e => setChatInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && sendChat()}
                     />
-                    <button onClick={sendChat} style={{ padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13, boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit' }}>↗</button>
+                    <button onClick={sendChat} aria-label={t('chat.send')} style={{ padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13, boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit' }}>↗</button>
                 </div>
             </div>
         </div>
     )
 
+    const themeStyle = getThemePageStyle(lobby.theme)
+
     return (
-        <div className="ttt-screen">
+        <div className="ttt-screen" style={themeStyle}>
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
                 <div className="ttt-grid">
@@ -1170,19 +1275,21 @@ export default function ConnectFourLobbyPage({ code }: ConnectFourLobbyPageProps
             </div>
 
             {/* ── MODALS ──────────────────────────────────────────────────── */}
-            <ConfirmModal
-                isOpen={showLeaveConfirmModal}
-                onClose={() => setShowLeaveConfirmModal(false)}
-                onConfirm={handleLeave}
-                title={t('game.ui.leave')}
-                message={t('game.ui.leaveConfirm')}
-                confirmText={t('common.confirm')}
-                cancelText={t('common.cancel')}
-                variant="danger"
-                icon="🚪"
-            />
-            {resolvedStatus === 'playing' && socket && (
-                <ReactionOverlay socket={socket} lobbyCode={code} />
+            {!isSpectator && (
+                <ConfirmModal
+                    isOpen={showLeaveConfirmModal}
+                    onClose={() => setShowLeaveConfirmModal(false)}
+                    onConfirm={handleLeave}
+                    title={t('game.ui.leave')}
+                    message={t('game.ui.leaveConfirm')}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    variant="danger"
+                    icon="🚪"
+                />
+            )}
+            {!isSpectator && resolvedStatus === 'playing' && (
+                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

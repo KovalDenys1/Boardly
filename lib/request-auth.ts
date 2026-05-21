@@ -24,9 +24,6 @@ function getSessionUsername(sessionUser?: SessionUserLike): string {
   if (sessionUser?.name && typeof sessionUser.name === 'string') {
     return sessionUser.name
   }
-  if (sessionUser?.email && typeof sessionUser.email === 'string') {
-    return sessionUser.email
-  }
   return 'Player'
 }
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
-import { getRequestAuthUser } from '@/lib/request-auth'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { sanitizeGameStateForSpectator } from '@/lib/spectator-state'
@@ -14,11 +13,6 @@ export async function GET(
 ) {
   const rateLimitResult = await apiLimiter(request)
   if (rateLimitResult) return rateLimitResult
-
-  const requestUser = await getRequestAuthUser(request)
-  if (!requestUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   const { code } = await params
   const includeFinished = new URL(request.url).searchParams.get('includeFinished') === 'true'

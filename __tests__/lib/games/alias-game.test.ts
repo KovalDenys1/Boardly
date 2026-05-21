@@ -16,6 +16,12 @@ function addFourPlayers(game: AliasGame) {
   game.addPlayer({ id: 'p4', name: 'Dave', score: 0, isActive: true })
 }
 
+// Starts the game AND sends start_round so the game enters turn_active.
+function startRound(game: AliasGame) {
+  game.startGame()
+  game.makeMove(createMove('start_round', 'p1'))
+}
+
 describe('AliasGame', () => {
   describe('initialization', () => {
     it('starts with two empty teams and team_assignment phase', () => {
@@ -50,7 +56,7 @@ describe('AliasGame', () => {
   })
 
   describe('startGame', () => {
-    it('rejects start when a team has fewer than 2 players', () => {
+    it('rejects start when fewer than 4 players', () => {
       const game = new AliasGame('g1')
       game.addPlayer({ id: 'p1', name: 'Alice', score: 0, isActive: true })
       game.addPlayer({ id: 'p2', name: 'Bob', score: 0, isActive: true })
@@ -59,11 +65,19 @@ describe('AliasGame', () => {
       expect(result).toBe(false)
     })
 
-    it('starts the game and enters turn_active with a 10-word card', () => {
+    it('starts the game and enters team_assignment phase', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
       const result = game.startGame()
       expect(result).toBe(true)
+      expect(getData(game).phase).toBe('team_assignment')
+    })
+
+    it('enters turn_active after start_round move', () => {
+      const game = new AliasGame('g1')
+      addFourPlayers(game)
+      game.startGame()
+      game.makeMove(createMove('start_round', 'p1'))
       const data = getData(game)
       expect(data.phase).toBe('turn_active')
       expect(data.currentCard).toHaveLength(10)
@@ -83,7 +97,7 @@ describe('AliasGame', () => {
     it('rejects word_action when caller is not the describer', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const data = getData(game)
       const describerId = data.teams[0].playerIds[0] // 'p1'
       const notDescriber = data.teams[0].playerIds[1]  // 'p3'
@@ -94,7 +108,7 @@ describe('AliasGame', () => {
     it('rejects word_action with invalid action value', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const data = getData(game)
       const describerId = data.teams[0].playerIds[0]
       expect(game.validateMove(createMove('word_action', describerId, { action: 'wrong' }))).toBe(false)
@@ -103,7 +117,7 @@ describe('AliasGame', () => {
     it('accepts end_turn from current describer', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const data = getData(game)
       const describerId = data.teams[0].playerIds[0]
       expect(game.validateMove(createMove('end_turn', describerId))).toBe(true)
@@ -112,7 +126,7 @@ describe('AliasGame', () => {
     it('rejects next_turn when not in turn_results phase', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       expect(game.validateMove(createMove('next_turn', 'p1'))).toBe(false)
     })
   })
@@ -121,7 +135,7 @@ describe('AliasGame', () => {
     it('records guess and increments card index', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const describerId = getData(game).teams[0].playerIds[0]
       game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
       const data = getData(game)
@@ -132,7 +146,7 @@ describe('AliasGame', () => {
     it('records skip and increments card index', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const describerId = getData(game).teams[0].playerIds[0]
       game.makeMove(createMove('word_action', describerId, { action: 'skip' }))
       const data = getData(game)
@@ -142,7 +156,7 @@ describe('AliasGame', () => {
     it('ends turn automatically after 10 word actions', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const describerId = getData(game).teams[0].playerIds[0]
       for (let i = 0; i < 10; i++) {
         game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
@@ -155,7 +169,7 @@ describe('AliasGame', () => {
     it('transitions to turn_results and records lastTurnResult', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const describerId = getData(game).teams[0].playerIds[0]
       game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
       game.makeMove(createMove('word_action', describerId, { action: 'skip' }))
@@ -170,7 +184,7 @@ describe('AliasGame', () => {
     it('calculates score correctly: 3 guessed - 1 skipped = +2', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const describerId = getData(game).teams[0].playerIds[0]
       game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
       game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
@@ -183,11 +197,9 @@ describe('AliasGame', () => {
     it('advances describerIndex after turn ends', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const firstDescriberId = getData(game).teams[0].playerIds[0] // 'p1'
       game.makeMove(createMove('end_turn', firstDescriberId))
-      // After turn ends, still team 0 (they haven't advanced yet), but describerIndex should advance
-      // NOTE: describerIndex advances at end of turn, so next describer is playerIds[1] = 'p3'
       expect(getData(game).teams[0].describerIndex).toBe(1)
     })
   })
@@ -203,7 +215,7 @@ describe('AliasGame', () => {
     it('switches to the other team and deals a new card', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       endTurn(game)
       expect(getData(game).currentTeamIndex).toBe(0)
       game.makeMove(createMove('next_turn', 'p1'))
@@ -216,7 +228,7 @@ describe('AliasGame', () => {
     it('finishes game after all 6 turns (3 per team)', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       // 6 turns total: team0, team1, team0, team1, team0, team1
       for (let i = 0; i < 6; i++) {
         endTurn(game)
@@ -232,7 +244,7 @@ describe('AliasGame', () => {
     it('picks winning team based on higher score', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       // Give team-1 a point on first turn
       const describerId = getData(game).teams[0].playerIds[0]
       game.makeMove(createMove('word_action', describerId, { action: 'guess' }))
@@ -248,7 +260,7 @@ describe('AliasGame', () => {
     it('sets winnerId to "tie" when scores are equal', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       for (let i = 0; i < 6; i++) {
         endTurn(game)
         if (i < 5) game.makeMove(createMove('next_turn', 'p1'))
@@ -268,7 +280,7 @@ describe('AliasGame', () => {
     it('returns changed: false when timer has not expired', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const now = Date.now()
       expect(game.applyTimeoutFallback(60, now).changed).toBe(false)
     })
@@ -276,7 +288,7 @@ describe('AliasGame', () => {
     it('skips remaining words and ends turn when timer expires', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const pastTime = Date.now() + 61_000 // 61s in the future = timer expired
       const result = game.applyTimeoutFallback(60, pastTime)
       expect(result.changed).toBe(true)
@@ -288,7 +300,7 @@ describe('AliasGame', () => {
     it('correctly scores a partial card (5 guessed, then timeout)', () => {
       const game = new AliasGame('g1')
       addFourPlayers(game)
-      game.startGame()
+      startRound(game)
       const describerId = getData(game).teams[0].playerIds[0]
       // Process 5 guesses manually
       for (let i = 0; i < 5; i++) {

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Footer from '@/components/Footer'
 import GameIcon from '@/components/GameIcon'
 import { useTranslation } from '@/lib/i18n-helpers'
+import PlayVsBotButton from './PlayVsBotButton'
 
 type DetailStep = {
   title: string
@@ -35,6 +36,7 @@ type GameDetailPageProps = {
   benefitsTitle: string
   benefits: string[]
   guideHref?: string
+  playVsBotGameType?: string
 }
 
 function GameDetailIcon({
@@ -89,6 +91,7 @@ export default function GameDetailPage({
   benefitsTitle,
   benefits,
   guideHref,
+  playVsBotGameType,
 }: GameDetailPageProps) {
   const { t } = useTranslation()
   return (
@@ -117,17 +120,20 @@ export default function GameDetailPage({
               <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-bd-ink-soft sm:text-lg">
                 {description}
               </p>
-              <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:items-start lg:justify-start">
+              <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:items-start lg:justify-start">
                 {primaryCtaDisabled ? (
-                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70" aria-disabled="true">
+                  <span className="bd-btn bd-btn-primary bd-btn-lg cursor-not-allowed justify-center opacity-70 sm:w-[190px]" aria-disabled="true">
                     {primaryCtaLabel}
                   </span>
                 ) : (
-                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center">
+                  <Link href={lobbiesHref} className="bd-btn bd-btn-primary bd-btn-lg justify-center sm:w-[190px]">
                     {primaryCtaLabel}
                   </Link>
                 )}
-                <Link href="/games" className="bd-btn bd-btn-soft bd-btn-lg justify-center">
+                {playVsBotGameType && !primaryCtaDisabled && (
+                  <PlayVsBotButton gameType={playVsBotGameType} className="sm:w-[190px]" />
+                )}
+                <Link href="/games" className="bd-btn bd-btn-ghost bd-btn-lg justify-center sm:w-[190px]">
                   {t('home.browseGames')}
                 </Link>
               </div>

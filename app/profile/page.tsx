@@ -15,6 +15,8 @@ import BoardlySelect from '@/components/ui/BoardlySelect'
 import { Label } from '@/components/ui/label'
 import { navigateBackFromProfile } from '@/lib/profile-navigation'
 import { UserAvatar } from '@/components/Header/UserAvatar'
+import AvatarPicker from '@/components/AvatarPicker'
+import { PREMIUM_PRICE_AMOUNT } from '@/lib/stripe'
 import PublicProfileView from '@/components/PublicProfileView'
 import {
   getStoredAppearancePreferences,
@@ -34,8 +36,8 @@ interface LinkedAccounts {
   discord?: LinkedAccount
 }
 
-type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'settings'
-const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'settings']
+type TabType = 'profile' | 'friends' | 'history' | 'stats' | 'premium' | 'settings'
+const PROFILE_TABS: TabType[] = ['profile', 'friends', 'history', 'stats', 'premium', 'settings']
 const PROFILE_VISIBILITY_REFRESH_INTERVAL_MS = 60 * 1000
 
 function isTabType(value: string | null): value is TabType {
@@ -66,6 +68,7 @@ type ProfileSummary = {
   email: string | null
   pendingEmail: string | null
   image: string | null
+  avatarUrl: string | null
   emailVerified: string | null
   createdAt: string
   publicProfileId: string | null
@@ -158,6 +161,11 @@ export default function ProfilePage() {
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccounts>({})
   const [loadingLinkedAccounts, setLoadingLinkedAccounts] = useState(true)
   const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null)
+  const [hasUploadPack, setHasUploadPack] = useState(false)
+  const [premiumCancelAtPeriodEnd, setPremiumCancelAtPeriodEnd] = useState(false)
+  const [premiumUntilDate, setPremiumUntilDate] = useState<Date | null>(null)
+  const [hasSubscriptionId, setHasSubscriptionId] = useState(false)
+  const [premiumActionLoading, setPremiumActionLoading] = useState(false)
   const [showPublicProfilePreview, setShowPublicProfilePreview] = useState(false)
   const [publicProfilePreviewTransitionPhase, setPublicProfilePreviewTransitionPhase] =
     useState<PublicProfilePreviewTransitionPhase>('idle')
@@ -176,6 +184,13 @@ export default function ProfilePage() {
   const tabListRef = useRef<HTMLElement | null>(null)
   const tabButtonRefs = useRef<Partial<Record<TabType, HTMLButtonElement | null>>>({})
   const sessionUserName = profileSummary?.username || session?.user?.name || ''
+
+  // Profile customization state
+  const [profileBio, setProfileBio] = useState('')
+  const [profileAccentColor, setProfileAccentColor] = useState<string | null>(null)
+  const [profileFeaturedGame, setProfileFeaturedGame] = useState<string | null>(null)
+  const [premiumCardStyle, setPremiumCardStyle] = useState<string | null>(null)
+  const [customizeSaving, setCustomizeSaving] = useState(false)
 
   // Settings state
   const [notificationsSaving, setNotificationsSaving] = useState(false)
@@ -217,6 +232,14 @@ export default function ProfilePage() {
     })
   }, [i18n.language, profileSummary?.createdAt])
 
+  const formatPremiumDate = useCallback(
+    (d: Date | null) =>
+      d
+        ? d.toLocaleDateString(i18n.language || undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : '',
+    [i18n.language]
+  )
+
   const summaryCards = useMemo(
     () => [
       {
@@ -240,24 +263,119 @@ export default function ProfilePage() {
       {
         id: 'premium',
         label: t('profile.premiumAccount'),
-        value: t('profile.comingSoon'),
-        accent: 'bg-bd-lav text-[#7867e8]',
+        value: hasUploadPack ? (premiumCancelAtPeriodEnd ? '⭐ Cancels soon' : '⭐ Active') : 'Free',
+        accent: hasUploadPack ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-bd-lav text-[#7867e8]',
+        onClick: () => {
+          setActiveTab('premium')
+          setTimeout(() => tabListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+        },
       },
     ],
-    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t]
+    [memberSinceLabel, profileSummary?.friendsCount, profileSummary?.achievementStats?.completedGamesCount, t, hasUploadPack, premiumCancelAtPeriodEnd]
   )
 
   const fetchProfileSummary = useCallback(async () => {
-    const res = await fetch('/api/user/profile', { cache: 'no-store' })
-    const data = await res.json()
+    const [profileRes, purchasesRes, customizeRes] = await Promise.all([
+      fetch('/api/user/profile', { cache: 'no-store' }),
+      fetch('/api/user/purchases', { cache: 'no-store' }),
+      fetch('/api/user/customize', { cache: 'no-store' }),
+    ])
+    const data = await profileRes.json()
 
-    if (!res.ok) {
+    if (!profileRes.ok) {
       throw new Error(data.error || t('profile.errors.loadFailed'))
     }
 
     setProfileSummary(data.user)
+    if (purchasesRes.ok) {
+      const purchasesData = await purchasesRes.json()
+      setHasUploadPack(purchasesData.isPremium === true)
+      setPremiumCancelAtPeriodEnd(purchasesData.cancelAtPeriodEnd === true)
+      setPremiumUntilDate(purchasesData.premiumUntil ? new Date(purchasesData.premiumUntil) : null)
+      setHasSubscriptionId(purchasesData.hasSubscriptionId === true)
+    }
+    if (customizeRes.ok) {
+      const customizeData = await customizeRes.json()
+      setProfileBio(customizeData.bio ?? '')
+      setProfileAccentColor(customizeData.accentColor ?? null)
+      setProfileFeaturedGame(customizeData.featuredGame ?? null)
+      setPremiumCardStyle(customizeData.premiumCardStyle ?? null)
+    }
     return data.user as ProfileSummary
   }, [t])
+
+  const handleCancelSubscription = useCallback(async () => {
+    setPremiumActionLoading(true)
+    try {
+      const res = await fetch('/api/stripe/cancel', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      await fetchProfileSummary()
+      showToast.success('toast.success', 'Subscription cancelled. Access continues until the end of the billing period.')
+    } catch {
+      showToast.error('errors.generic', 'Failed to cancel subscription')
+    } finally {
+      setPremiumActionLoading(false)
+    }
+  }, [fetchProfileSummary])
+
+  const handleReactivate = useCallback(async () => {
+    setPremiumActionLoading(true)
+    try {
+      const res = await fetch('/api/stripe/reactivate', { method: 'POST' })
+      if (!res.ok) throw new Error('Failed')
+      await fetchProfileSummary()
+      showToast.success('toast.success', 'Subscription reactivated!')
+    } catch {
+      showToast.error('errors.generic', 'Failed to reactivate subscription')
+    } finally {
+      setPremiumActionLoading(false)
+    }
+  }, [fetchProfileSummary])
+
+  const handleSaveCustomization = useCallback(async (fields: { bio?: string; accentColor?: string | null; featuredGame?: string | null; premiumCardStyle?: string | null }) => {
+    setCustomizeSaving(true)
+    try {
+      const res = await fetch('/api/user/customize', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed')
+      }
+      showToast.success('toast.saved')
+    } catch (err) {
+      showToast.error('errors.generic', err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setCustomizeSaving(false)
+    }
+  }, [])
+
+  const handleManageBilling = useCallback(async () => {
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else showToast.error('errors.generic', 'Failed to open billing portal')
+    } catch {
+      showToast.error('errors.generic', 'Failed to open billing portal')
+    }
+  }, [])
+
+  const handleCheckout = useCallback(async () => {
+    setPremiumActionLoading(true)
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const data = await res.json()
+      if (data.url) window.location.href = data.url
+      else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+    } catch {
+      showToast.error('errors.generic', 'Failed to start checkout')
+    } finally {
+      setPremiumActionLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     if (!sessionUserName) return
@@ -324,6 +442,12 @@ export default function ProfilePage() {
         '',
         `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
       )
+    }
+
+    if (currentUrl.searchParams.get('premium') === 'success') {
+      showToast.success('toast.success', '🎉 Welcome to Boardly Premium!')
+      currentUrl.searchParams.delete('premium')
+      window.history.replaceState({}, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`)
     }
   }, [])
 
@@ -1229,6 +1353,7 @@ export default function ProfilePage() {
     { id: 'friends', icon: '👥', label: t('profile.friends.title') },
     { id: 'history', icon: '🎮', label: t('profile.gameHistory.title') },
     { id: 'stats', icon: '📊', label: t('profile.stats.title') },
+    { id: 'premium', icon: '⭐', label: 'Premium' },
     { id: 'settings', icon: '⚙️', label: t('profile.settings.title') },
   ]
 
@@ -1465,6 +1590,7 @@ export default function ProfilePage() {
                   publicProfileId: profileSummary.publicProfileId,
                   username: profileSummary.username,
                   image: profileSummary.image,
+                  avatarUrl: profileSummary.avatarUrl,
                   createdAt: profileSummary.createdAt,
                   friendsCount: profileSummary.friendsCount,
                   gamesPlayed: profileSummary.gamesPlayed,
@@ -1488,7 +1614,7 @@ export default function ProfilePage() {
                     <div className="flex min-w-0 flex-1 flex-col gap-6 sm:flex-row sm:items-center">
                       <div className="relative mx-auto shrink-0 sm:mx-0">
                         <UserAvatar
-                          image={profileSummary?.image || session?.user?.image || null}
+                          image={profileSummary?.avatarUrl || profileSummary?.image || session?.user?.image || null}
                           userName={currentUsername || displayName}
                           userEmail={currentEmail}
                           className="h-28 w-28 border-4 border-white bg-bd-lav text-white shadow-[0_0_0_3px_#1F1B16] sm:h-32 sm:w-32"
@@ -1598,20 +1724,34 @@ export default function ProfilePage() {
 
                   {/* Summary Cards */}
                   <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {summaryCards.map((card) => (
-                      <div
-                        key={card.id}
-                        className="group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800"
-                      >
-                        <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full opacity-20 ${card.accent.split(' ')[0]}`} />
-                        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
-                          {card.label}
-                        </p>
-                        <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
-                          {card.value}
-                        </p>
-                      </div>
-                    ))}
+                    {summaryCards.map((card) => {
+                      const inner = (
+                        <>
+                          <div className={`absolute -right-3 -top-3 h-16 w-16 rounded-full opacity-20 ${card.accent.split(' ')[0]}`} />
+                          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-bd-ink-muted dark:text-slate-400">
+                            {card.label}
+                          </p>
+                          <p className={`mt-2 font-display text-3xl font-bold leading-none dark:text-white ${card.accent.split(' ')[1]}`}>
+                            {card.value}
+                          </p>
+                        </>
+                      )
+                      const baseClass = 'group relative overflow-hidden rounded-3xl border-[1.5px] border-bd-line bg-white p-5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] transition-all hover:-translate-y-0.5 dark:border-slate-700 dark:bg-slate-800'
+                      return card.onClick ? (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={card.onClick}
+                          className={`${baseClass} w-full text-left cursor-pointer hover:shadow-[0_6px_18px_rgba(31,27,22,0.12)]`}
+                        >
+                          {inner}
+                        </button>
+                      ) : (
+                        <div key={card.id} className={baseClass}>
+                          {inner}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   <div className="mt-5 w-full">
@@ -1649,12 +1789,12 @@ export default function ProfilePage() {
           )}
 
           {/* ── Tab Navigation ── */}
-          <div className="mt-6">
+          <div className="mt-6 overflow-x-auto scrollbar-none">
             <nav
               ref={tabListRef}
               role="tablist"
               aria-label={t('profile.title')}
-              className="relative flex gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
+              className="relative flex w-full min-w-max gap-1 rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm p-1.5 shadow-[0_4px_14px_rgba(31,27,22,0.07)] dark:border-slate-700 dark:bg-slate-900/70"
             >
               <div
                 aria-hidden="true"
@@ -1678,17 +1818,14 @@ export default function ProfilePage() {
                   aria-controls={`profile-tab-panel-${tab.id}`}
                   id={`profile-tab-${tab.id}`}
                   onClick={() => handleTabChange(tab.id)}
-                  className={`relative z-10 flex-1 min-w-0 rounded-xl px-2 py-2.5 text-center text-sm font-semibold transition-colors duration-300 ${
+                  className={`relative z-10 flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-4 ${
                     activeTab === tab.id
                       ? 'text-white'
                       : 'text-bd-ink-soft hover:bg-white/70 hover:text-bd-ink dark:text-slate-400 dark:hover:bg-slate-800/50 dark:hover:text-slate-200'
                   }`}
                 >
-                  <span className="text-base sm:hidden">{tab.icon}</span>
-                  <span className="hidden items-center justify-center gap-1.5 sm:inline-flex">
-                    <span aria-hidden className="text-sm">{tab.icon}</span>
-                    <span className="truncate text-xs lg:text-sm">{tab.label}</span>
-                  </span>
+                  <span aria-hidden className="text-base sm:text-sm">{tab.icon}</span>
+                  <span className="hidden sm:inline truncate text-xs lg:text-sm">{tab.label}</span>
                 </button>
               ))}
             </nav>
@@ -1730,6 +1867,34 @@ export default function ProfilePage() {
               )}
 
               <div className="space-y-5">
+                {/* Avatar picker */}
+                <div className={profileSurfaceClassName}>
+                  <div className="mb-5">
+                    <h3 className="text-lg font-bold text-bd-ink dark:text-white">Avatar</h3>
+                  </div>
+                  <AvatarPicker
+                    currentAvatarUrl={profileSummary?.avatarUrl ?? null}
+                    currentImage={profileSummary?.image ?? null}
+                    username={profileSummary?.username ?? null}
+                    email={profileSummary?.email ?? null}
+                    hasUploadPack={hasUploadPack}
+                    onSaved={async (avatarUrl) => {
+                      setProfileSummary((prev) => prev ? { ...prev, avatarUrl } : prev)
+                      await update()
+                    }}
+                    onUnlockUpload={async () => {
+                      try {
+                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                        const data = await res.json()
+                        if (data.url) window.location.href = data.url
+                        else showToast.error('errors.generic', data.error ?? 'Failed to start checkout')
+                      } catch {
+                        showToast.error('errors.generic', 'Failed to start checkout')
+                      }
+                    }}
+                  />
+                </div>
+
                 <form onSubmit={handleUpdateProfile} className={profileSurfaceClassName}>
                   <div className="mb-5">
                     <h3 className="text-lg font-bold text-bd-ink dark:text-white">Profile details</h3>
@@ -1915,11 +2080,11 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                <div className="rounded-[1.5rem] border border-[#F0B3AC] bg-[#FFF2EF] p-5 dark:border-red-500/20 dark:bg-red-500/10">
+                <div className="rounded-[1.5rem] border border-bd-danger-border bg-bd-danger-bg p-5 dark:border-red-500/20 dark:bg-red-500/10">
                   <h3 className="text-base font-bold text-bd-coral-deep dark:text-red-300">
                     {t('profile.dangerZone.title')}
                   </h3>
-                  <p className="mt-1 text-sm text-[#A6554A] dark:text-red-200/70">
+                  <p className="mt-1 text-sm text-bd-danger-text dark:text-red-200/70">
                     {t('profile.dangerZone.description')}
                   </p>
                   {!showDeleteConfirm ? (
@@ -1931,11 +2096,16 @@ export default function ProfilePage() {
                       {t('profile.dangerZone.deleteAccount')}
                     </button>
                   ) : (
-                    <div className="mt-4 rounded-2xl border border-[#F0B3AC] bg-white p-4 dark:border-red-500/20 dark:bg-slate-900/70">
-                      <p className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">
+                    <div
+                      role="dialog"
+                      aria-modal="false"
+                      aria-labelledby="delete-confirm-title"
+                      className="mt-4 rounded-2xl border border-bd-danger-border bg-white p-4 dark:border-red-500/20 dark:bg-slate-900/70"
+                    >
+                      <p id="delete-confirm-title" className="text-sm font-semibold text-bd-coral-deep dark:text-red-300">
                         {t('profile.dangerZone.confirmTitle')}
                       </p>
-                      <p className="mt-2 break-all text-sm text-[#A6554A] dark:text-red-200/70">
+                      <p className="mt-2 break-all text-sm text-bd-danger-text dark:text-red-200/70">
                         {t('profile.dangerZone.confirmDescription', {
                           email: session?.user?.email || currentEmail,
                         })}
@@ -2319,6 +2489,341 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </section>
+              </div>
+            </div>
+          )}
+
+          {/* Premium Tab */}
+          {activeTab === 'premium' && (
+            <div role="tabpanel" id="profile-tab-panel-premium" aria-labelledby="profile-tab-premium" className="space-y-5">
+              <div className="max-w-2xl">
+                <h2 className="font-display text-3xl font-bold text-bd-ink dark:text-white">Boardly Premium</h2>
+                <p className="mt-1 text-sm text-bd-ink-muted dark:text-slate-400">
+                  {!hasUploadPack ? `Unlock exclusive features for ${PREMIUM_PRICE_AMOUNT}/month.` : 'Manage your subscription and customize your profile.'}
+                </p>
+              </div>
+
+              {/* Premium status card */}
+              {hasUploadPack && (
+                <div className={`${premiumCancelAtPeriodEnd ? 'border-amber-300/60 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-950/20' : 'border-amber-300/60 bg-amber-50 dark:border-amber-700/40 dark:bg-amber-950/20'} rounded-[1.5rem] border p-5`}>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xl dark:bg-amber-900/40">
+                        {premiumCancelAtPeriodEnd ? '⌛' : '⭐'}
+                      </span>
+                      <div>
+                        <p className="font-bold text-amber-800 dark:text-amber-300">
+                          {premiumCancelAtPeriodEnd ? `Cancels on ${formatPremiumDate(premiumUntilDate)}` : 'Premium is active'}
+                        </p>
+                        <p className="mt-0.5 text-sm text-amber-700/70 dark:text-amber-400/70">
+                          {premiumCancelAtPeriodEnd
+                            ? 'You will lose access to premium features after this date.'
+                            : `Renews on ${formatPremiumDate(premiumUntilDate)}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {hasSubscriptionId && !premiumCancelAtPeriodEnd && (
+                        <button
+                          type="button"
+                          onClick={() => void handleCancelSubscription()}
+                          disabled={premiumActionLoading}
+                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50 dark:border-amber-700/40 dark:text-amber-400 dark:hover:border-red-500 dark:hover:text-red-400"
+                        >
+                          {premiumActionLoading ? '...' : 'Cancel'}
+                        </button>
+                      )}
+                      {hasSubscriptionId && premiumCancelAtPeriodEnd && (
+                        <button
+                          type="button"
+                          onClick={() => void handleReactivate()}
+                          disabled={premiumActionLoading}
+                          className="flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+                        >
+                          <span>⭐</span>
+                          <span>{premiumActionLoading ? '...' : 'Reactivate'}</span>
+                        </button>
+                      )}
+                      {hasSubscriptionId && (
+                        <button
+                          type="button"
+                          onClick={() => void handleManageBilling()}
+                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                        >
+                          Manage billing
+                        </button>
+                      )}
+                      {!hasSubscriptionId && (
+                        <button
+                          type="button"
+                          onClick={() => void handleManageBilling()}
+                          className="rounded-xl border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-amber-100 dark:border-amber-700/40 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                        >
+                          Manage subscription
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Feature overview */}
+              <div className={profileSurfaceClassName}>
+                <h3 className="mb-4 text-base font-bold text-bd-ink dark:text-white">What&apos;s included</h3>
+
+                {/* Free features */}
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-bd-ink-muted dark:text-slate-500">Free forever</p>
+                <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { icon: '🎮', label: 'Play all games', desc: 'Full access to every game mode' },
+                    { icon: '🎭', label: '16 built-in avatars', desc: 'Choose from all avatar styles' },
+                    { icon: '📝', label: 'Bio', desc: 'Show a short bio on your profile' },
+                    { icon: '🔗', label: 'Public profile', desc: 'Shareable profile link' },
+                  ].map(({ icon, label, desc }) => (
+                    <div key={label} className="flex items-start gap-2.5 rounded-xl border border-bd-line bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+                      <span className="mt-0.5 text-base">{icon}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
+                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
+                      </div>
+                      <span className="ml-auto shrink-0 text-sm text-bd-mint-deep dark:text-bd-mint">✓</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Premium features */}
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">⭐ Premium exclusive</p>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { icon: '📸', label: 'Custom photo upload', desc: 'Use any photo as your avatar' },
+                    { icon: '👑', label: 'Badge & gold name', desc: 'Crown icon + gold color in every lobby' },
+                    { icon: '🎨', label: 'Profile card style', desc: 'Gold, Glass, Holographic or Dark Glow' },
+                    { icon: '🌈', label: 'Accent color', desc: 'Custom color for your username' },
+                    { icon: '🏆', label: 'Featured game', desc: 'Show your favorite game on your profile' },
+                  ].map(({ icon, label, desc }) => (
+                    <div
+                      key={label}
+                      className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
+                        hasUploadPack
+                          ? 'border-amber-200/70 bg-amber-50/60 dark:border-amber-700/30 dark:bg-amber-950/20'
+                          : 'border-bd-line bg-white opacity-60 dark:border-slate-700 dark:bg-slate-800/50'
+                      }`}
+                    >
+                      <span className="mt-0.5 text-base">{icon}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-bd-ink dark:text-white">{label}</p>
+                        <p className="text-xs text-bd-ink-muted dark:text-slate-400">{desc}</p>
+                      </div>
+                      <span className={`ml-auto shrink-0 text-sm ${hasUploadPack ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                        {hasUploadPack ? '✓' : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Free user CTA */}
+                {!hasUploadPack && (
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleCheckout()}
+                      disabled={premiumActionLoading}
+                      className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-[0_3px_0_#d97706] transition-all hover:-translate-y-px hover:bg-amber-600 hover:shadow-[0_4px_0_#d97706] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {premiumActionLoading ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          <span>Loading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⭐</span>
+                          <span>Get Premium — {PREMIUM_PRICE_AMOUNT}/mo</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-xs text-bd-ink-muted dark:text-slate-500">Cancel anytime</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Customization */}
+              <div className={profileSurfaceClassName}>
+                <h3 className="mb-1 text-lg font-bold text-bd-ink dark:text-white">Profile Customization</h3>
+                <p className="mb-5 text-sm text-bd-ink-muted dark:text-slate-400">
+                  Personalize your public profile.
+                </p>
+
+                {/* Bio — free */}
+                <div className="mb-6">
+                  <label className="mb-1.5 block text-sm font-semibold text-bd-ink dark:text-white">
+                    Bio <span className="text-xs font-normal text-bd-ink-muted">(max 160 chars · free)</span>
+                  </label>
+                  <textarea
+                    value={profileBio}
+                    onChange={(e) => setProfileBio(e.target.value.slice(0, 160))}
+                    placeholder="Tell others about yourself..."
+                    rows={3}
+                    className="w-full rounded-xl border border-bd-line bg-white px-3 py-2.5 text-sm text-bd-ink placeholder:text-bd-ink-muted focus:border-bd-ink focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                  />
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className={`text-xs font-medium transition-colors ${profileBio.length >= 140 ? 'text-amber-500' : 'text-bd-ink-muted'}`}>
+                      {profileBio.length}/160
+                    </span>
+                    <button
+                      type="button"
+                      disabled={customizeSaving}
+                      onClick={() => void handleSaveCustomization({ bio: profileBio })}
+                      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-bd-lav-deep bg-bd-lav px-3 py-1.5 text-xs font-bold text-white shadow-[0_3px_0_#7867E8] transition-all hover:-translate-y-px hover:bg-bd-lav-mid hover:shadow-[0_4px_0_#7867E8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {customizeSaving ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Saving…
+                        </>
+                      ) : 'Save bio'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border-t border-bd-line pt-5 dark:border-slate-700">
+
+                {/* Accent color — premium */}
+                <div className="mb-6">
+                  <div className="mb-2 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Accent Color</label>
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
+                  </div>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Applied to your username on your public profile.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { hex: '#FF6B5B', name: 'Coral' },
+                      { hex: '#4FA3E8', name: 'Sky' },
+                      { hex: '#48BB78', name: 'Green' },
+                      { hex: '#F6AD55', name: 'Orange' },
+                      { hex: '#9B8CFF', name: 'Lavender' },
+                      { hex: '#F687B3', name: 'Pink' },
+                      { hex: '#FC8181', name: 'Red' },
+                      { hex: '#68D391', name: 'Mint' },
+                    ] as const).map(({ hex, name }) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        disabled={!hasUploadPack}
+                        onClick={() => {
+                          const next = profileAccentColor === hex ? null : hex
+                          setProfileAccentColor(next)
+                          void handleSaveCustomization({ accentColor: next })
+                        }}
+                        aria-label={hasUploadPack ? `${name} accent color${profileAccentColor === hex ? ' (active)' : ''}` : `${name} — Premium required`}
+                        aria-pressed={profileAccentColor === hex}
+                        title={hasUploadPack ? name : 'Premium required'}
+                        style={{
+                          width: 32, height: 32, borderRadius: 8, background: hex, border: 'none',
+                          outline: profileAccentColor === hex ? `3px solid ${hex}` : '2px solid transparent',
+                          outlineOffset: 2, cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                          opacity: hasUploadPack ? 1 : 0.4,
+                          transition: 'all 0.15s',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {profileAccentColor && (
+                    <p className="mt-1.5 text-xs text-bd-ink-muted">
+                      Active: <span style={{ color: profileAccentColor, fontWeight: 700 }}>
+                        {({ '#FF6B5B': 'Coral', '#4FA3E8': 'Sky', '#48BB78': 'Green', '#F6AD55': 'Orange', '#9B8CFF': 'Lavender', '#F687B3': 'Pink', '#FC8181': 'Red', '#68D391': 'Mint' } as Record<string, string>)[profileAccentColor] ?? profileAccentColor}
+                      </span>
+                    </p>
+                  )}
+                </div>
+
+                {/* Featured game — premium */}
+                <div className="mb-6">
+                  <div className="mb-2 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Featured Game</label>
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
+                  </div>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">Shown as a badge on your public profile. Click again to remove.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'yahtzee', label: '🎲 Yahtzee' },
+                      { id: 'connect_four', label: '🔴 Connect Four' },
+                      { id: 'tic_tac_toe', label: '✕ Tic-Tac-Toe' },
+                      { id: 'memory', label: '🃏 Memory' },
+                      { id: 'guess_the_spy', label: '🕵️ Spy' },
+                      { id: 'alias', label: '💬 Alias' },
+                      { id: 'rock_paper_scissors', label: '✊ RPS' },
+                      { id: 'liars_party', label: '🃏 Liar\'s Party' },
+                    ].map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={!hasUploadPack}
+                        onClick={() => {
+                          const next = profileFeaturedGame === id ? null : id
+                          setProfileFeaturedGame(next)
+                          void handleSaveCustomization({ featuredGame: next })
+                        }}
+                        className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                          profileFeaturedGame === id
+                            ? 'border-bd-ink bg-bd-ink text-bd-bg dark:border-white dark:bg-white dark:text-bd-ink'
+                            : 'border-bd-line bg-white text-bd-ink hover:border-bd-ink dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:border-slate-400'
+                        }`}
+                        style={{ opacity: hasUploadPack ? 1 : 0.4, cursor: hasUploadPack ? 'pointer' : 'not-allowed' }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Premium profile card style */}
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <label className="text-sm font-semibold text-bd-ink dark:text-white">Profile Card Style</label>
+                    {!hasUploadPack && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">👑 Premium</span>}
+                  </div>
+                  <p className="mb-2.5 text-xs text-bd-ink-muted dark:text-slate-400">How your profile card looks to others on your public page.</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {[
+                      { id: 'gold',  name: 'Gold',        desc: 'Champagne & gold accents', preview: '#FAF2D8',                                                          text: '#3A2800' },
+                      { id: 'glass', name: 'Glass',       desc: 'Frosted glass',           preview: 'linear-gradient(135deg, #FF6B5B, #FFC44D, #4FC9A6)',             text: '#1F1B16' },
+                      { id: 'holo',  name: 'Holographic', desc: 'Iridescent shimmer',      preview: 'linear-gradient(135deg, #B4F0FF, #C9B8FF, #FFB8E0, #FFE3A8)',    text: '#2D2266' },
+                      { id: 'dark',  name: 'Dark Glow',   desc: 'Dark with mint glow',     preview: 'linear-gradient(135deg, #2A2522, #16120E)',                       text: '#4FC9A6' },
+                    ].map(({ id, name, desc, preview, text }) => {
+                      const active = hasUploadPack && (premiumCardStyle ?? 'gold') === id
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          disabled={!hasUploadPack}
+                          aria-pressed={active}
+                          aria-label={hasUploadPack ? `${name} card style${active ? ' (active)' : ''}` : `${name} — Premium required`}
+                          onClick={() => {
+                            setPremiumCardStyle(id)
+                            void handleSaveCustomization({ premiumCardStyle: id })
+                          }}
+                          style={{
+                            background: preview,
+                            opacity: hasUploadPack ? 1 : 0.4,
+                            cursor: hasUploadPack ? 'pointer' : 'not-allowed',
+                            outline: active ? '3px solid var(--bd-ink)' : '2px solid transparent',
+                            outlineOffset: 2,
+                          }}
+                          className="relative flex flex-col justify-end rounded-xl px-3 py-5 text-left transition"
+                        >
+                          <span style={{ color: text, fontWeight: 700, fontSize: 13, textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{name}</span>
+                          <span style={{ color: text, fontSize: 10, opacity: 0.75, textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{desc}</span>
+                          {active && (
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[9px] font-black text-bd-ink shadow-sm">✓</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                </div>
               </div>
             </div>
           )}

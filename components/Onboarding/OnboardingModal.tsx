@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useOnboarding } from '@/contexts/OnboardingContext'
 import { useTranslation } from '@/lib/i18n-helpers'
@@ -8,6 +8,7 @@ import { showToast } from '@/lib/i18n-toast'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { getPublicRegisteredGameTypes, getGameLobbiesRoute } from '@/lib/public-game-access'
 import { getGameMetadata, hasBotSupport } from '@/lib/game-catalog'
+import GameIcon from '@/components/GameIcon'
 
 export function OnboardingModal() {
   const router = useRouter()
@@ -20,6 +21,13 @@ export function OnboardingModal() {
     () => getPublicRegisteredGameTypes().map((type) => ({ type, meta: getGameMetadata(type)! })),
     []
   )
+
+  useEffect(() => {
+    if (!showModal) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [showModal])
 
   if (!showModal) return null
 
@@ -53,39 +61,135 @@ export function OnboardingModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 shadow-2xl px-7 py-8">
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4"
+      style={{ background: 'rgba(31,27,22,0.7)', backdropFilter: 'blur(4px)' }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          background: 'var(--bd-card-warm)',
+          border: '2px solid var(--bd-ink)',
+          padding: '24px 24px 32px',
+          maxHeight: '92dvh',
+          overflowY: 'auto',
+        }}
+        className="rounded-[20px_20px_0_0] shadow-[0_-4px_0_var(--bd-ink)] sm:rounded-[20px] sm:shadow-[6px_6px_0_var(--bd-ink)]"
+      >
+        {/* Drag handle — mobile only */}
+        <div
+          style={{
+            width: 40,
+            height: 4,
+            borderRadius: 999,
+            background: 'var(--bd-ink)',
+            opacity: 0.2,
+            margin: '0 auto 20px',
+          }}
+          className="sm:hidden"
+        />
 
         {/* Header */}
-        <div className="mb-7 text-center">
-          <div className="mb-3 text-5xl">🎲</div>
+        <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
+          {/* X close button */}
+          <button
+            onClick={skipOnboarding}
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: 32,
+              height: 32,
+              display: 'grid',
+              placeItems: 'center',
+              background: 'var(--bd-bg2)',
+              border: '2px solid var(--bd-ink)',
+              borderRadius: 8,
+              boxShadow: '2px 2px 0 var(--bd-ink)',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--bd-ink)',
+              lineHeight: 1,
+            }}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              display: 'grid',
+              placeItems: 'center',
+              background: 'var(--bd-sun)',
+              border: '2px solid var(--bd-ink)',
+              borderRadius: 14,
+              boxShadow: '3px 3px 0 var(--bd-ink)',
+              margin: '0 auto 14px',
+            }}
+          >
+            <GameIcon gameId="yahtzee" accentColor="var(--bd-ink)" size={28} />
+          </div>
           <h2
-            className="text-[22px] font-extrabold text-bd-ink dark:text-white"
-            style={{ fontFamily: 'var(--bd-font-display)' }}
+            style={{
+              fontFamily: 'var(--bd-font-display)',
+              fontSize: 20,
+              fontWeight: 700,
+              color: 'var(--bd-ink)',
+              marginBottom: 4,
+            }}
           >
             {t('onboarding.title')}
           </h2>
-          <p className="mt-1.5 text-[13px] text-bd-ink-muted dark:text-slate-400">
+          <p style={{ fontSize: 13, color: 'var(--bd-ink-muted)' }}>
             {t('onboarding.subtitle')}
           </p>
         </div>
 
-        {/* Game list */}
-        <div className="mb-6 flex flex-col gap-2.5">
+        {/* Game grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
           {games.map(({ type, meta }) => (
             <button
               key={type}
               onClick={() => setSelectedGame(type)}
-              className={`flex items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3.5 text-left transition-all ${
-                selectedGame === type
-                  ? 'border-[var(--bd-lav)] bg-[rgba(155,140,255,0.08)]'
-                  : 'border-[var(--bd-line)] bg-white dark:bg-slate-800/60 dark:border-slate-700 hover:border-[var(--bd-lav-mid)] dark:hover:border-slate-500'
-              }`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                padding: '16px 12px',
+                background: selectedGame === type ? 'var(--bd-sun)' : 'var(--bd-bg)',
+                border: `2px solid var(--bd-ink)`,
+                borderRadius: 14,
+                boxShadow: '3px 3px 0 var(--bd-ink)',
+                cursor: 'pointer',
+                textAlign: 'center',
+                transform: selectedGame === type ? 'translate(-1px, -1px)' : 'translate(0,0)',
+                transition: 'transform 0.1s, background 0.1s',
+              }}
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--bd-bg2)] dark:bg-slate-700 text-2xl">
-                {meta.icon}
+              <GameIcon gameId={meta.svgId} accentColor={selectedGame === type ? 'var(--bd-ink)' : meta.accentColor} size={30} />
+              <span
+                style={{
+                  fontFamily: 'var(--bd-font-display)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--bd-ink)',
+                  lineHeight: 1.2,
+                }}
+              >
+                {meta.name}
               </span>
-              <span className="text-[15px] font-semibold text-bd-ink dark:text-white">{meta.name}</span>
             </button>
           ))}
         </div>
@@ -94,15 +198,37 @@ export function OnboardingModal() {
         <button
           onClick={handleStart}
           disabled={!selectedGame || loading}
-          className="w-full rounded-2xl py-3.5 text-[15px] font-bold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: 'var(--bd-lav)' }}
+          style={{
+            width: '100%',
+            padding: '14px 20px',
+            background: 'var(--bd-coral)',
+            color: 'white',
+            border: '2px solid var(--bd-ink)',
+            borderRadius: 14,
+            boxShadow: '3px 3px 0 var(--bd-ink)',
+            fontFamily: 'var(--bd-font-display)',
+            fontSize: 15,
+            fontWeight: 700,
+            cursor: !selectedGame || loading ? 'not-allowed' : 'pointer',
+            opacity: !selectedGame || loading ? 0.45 : 1,
+            marginBottom: 12,
+          }}
         >
           {loading ? t('onboarding.starting') : t('onboarding.startPlaying')}
         </button>
 
         <button
           onClick={skipOnboarding}
-          className="mt-4 w-full text-center text-[13px] text-bd-ink-muted hover:text-bd-ink-soft dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
+          style={{
+            width: '100%',
+            textAlign: 'center',
+            fontSize: 13,
+            color: 'var(--bd-ink-muted)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 0',
+          }}
         >
           {t('onboarding.skip')}
         </button>

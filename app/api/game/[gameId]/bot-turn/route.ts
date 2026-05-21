@@ -4,7 +4,7 @@ import { restoreGameEngine, hasBotSupport } from '@/lib/game-registry'
 import type { RegisteredGameType } from '@/lib/game-registry'
 import { Move } from '@/lib/game-engine'
 import { executeBotTurn as executeBot, getBotDifficulty } from '@/lib/bots'
-import { notifySocket } from '@/lib/socket-url'
+import { broadcastToLobby } from '@/lib/supabase-server'
 import { apiLogger } from '@/lib/logger'
 import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/disconnected-turn'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
@@ -155,6 +155,12 @@ export async function POST(
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
+    // Mutable optimistic-lock state — updated after each successful DB write so
+    // sequential moves in the same bot turn (e.g. Memory: flip 1 → flip 2) don't
+    // retry with stale WHERE clause values.
+    let lockTurn = game.currentTurn
+    let lockUpdatedAt = game.updatedAt
+
     if (!isAuthorizedInternalRequest && requestUser?.id) {
       const isParticipant = game.players.some((player) => player.userId === requestUser.id)
       if (!isParticipant) {
@@ -274,8 +280,7 @@ export async function POST(
 
     // Helper function to broadcast bot actions in real-time
     const broadcastBotAction = async (event: BaseBotActionEvent) => {
-      // Fire-and-forget pattern - don't wait for Socket.IO
-      await notifySocket(`lobby:${resolvedLobbyCode}`, 'bot-action', { ...event })
+      await broadcastToLobby(resolvedLobbyCode, 'bot-action', { ...event })
     }
 
     // Dispatch to the appropriate bot executor based on game type
@@ -361,15 +366,16 @@ export async function POST(
           try {
             // Optimistic lock: only commit if the game row hasn't changed since we loaded it.
             // This prevents duplicate bot turn commits across concurrent serverless invocations.
+            const newUpdatedAt = new Date()
             const botUpdateResult = await prisma.games.updateMany({
-              where: { id: gameId, currentTurn: game.currentTurn, updatedAt: game.updatedAt },
+              where: { id: gameId, currentTurn: lockTurn, updatedAt: lockUpdatedAt },
               data: {
                 state: toPersistedGameStateInput(newState),
                 status: newState.status,
-                currentTurn: game.currentTurn + 1,
+                currentTurn: lockTurn + 1,
                 ...(lastMoveAtDate ? { lastMoveAt: lastMoveAtDate } : {}),
                 ...terminalFields,
-                updatedAt: new Date(),
+                updatedAt: newUpdatedAt,
               },
             })
 
@@ -377,6 +383,11 @@ export async function POST(
               log.warn('Bot turn skipped: game state already changed (concurrent execution)', { gameId })
               throw new ConcurrentBotTurnError()
             }
+
+            // Advance optimistic-lock state so sequential moves within the same bot turn
+            // (e.g. Memory requires two flips per turn) use the correct WHERE clause values.
+            lockTurn += 1
+            lockUpdatedAt = newUpdatedAt
 
             // Log state transitions
             if (statusChanged) {
@@ -500,18 +511,11 @@ export async function POST(
             void replaySnapshotPromise
             log.info('Player scores updated')
 
-          const notifyTimeoutMs = resolveBotStateNotifyTimeoutMs(gameType)
           const currentState = gameEngine.getState()
-          await notifySocket(
-            `lobby:${resolvedLobbyCode}`,
-            'game-update',
-            {
-              action: 'state-change',
-              payload: currentState,
-            },
-            0,
-            notifyTimeoutMs
-          )
+          void broadcastToLobby(resolvedLobbyCode, 'game-update', {
+            action: 'state-change',
+            payload: currentState,
+          })
         } catch (dbError) {
           log.error('Critical: Failed to persist bot move state', dbError as Error, {
             gameId,

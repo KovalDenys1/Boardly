@@ -65,11 +65,27 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
         </span>
         <span className="text-xs font-bold uppercase tracking-[0.1em] text-bd-ink-muted md:hidden">{t('leaderboard.rank')}</span>
       </div>
-      <div className="min-w-0">
-        <span className="block truncate text-base font-bold text-bd-ink">{entry.username}</span>
-        {entry.publicProfileId && (
-          <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
+      <div className="flex min-w-0 items-center gap-3">
+        {entry.avatarUrl ? (
+          <img
+            src={entry.avatarUrl}
+            alt={entry.username}
+            className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[1px_1px_0_#1F1B16]"
+          />
+        ) : (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-bg2 text-sm font-extrabold text-bd-ink-muted shadow-[1px_1px_0_#1F1B16]">
+            {entry.username.charAt(0).toUpperCase()}
+          </div>
         )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className={`block truncate text-base font-bold ${entry.isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{entry.username}</span>
+            {entry.isPremium && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+          </div>
+          {entry.publicProfileId && (
+            <span className="text-xs font-semibold text-bd-ink-muted">{t('leaderboard.viewProfile')}</span>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-2 md:contents">
         <span className="rounded-xl bg-bd-bg2 px-3 py-2 text-left text-sm font-semibold text-bd-ink-soft md:bg-transparent md:p-0 md:text-right">

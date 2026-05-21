@@ -39,6 +39,8 @@ export async function GET(
                 id: true,
                 username: true,
                 image: true,
+                avatarUrl: true,
+                premiumUntil: true,
                 bot: true  // Bot relation
               }
             }
@@ -83,6 +85,7 @@ export async function GET(
       ? g.durationSeconds * 1000
       : getGameDurationMs(game.createdAt, endedAt)
 
+    const now = new Date()
     // Format response
     const formattedGame = {
       id: game.id,
@@ -102,8 +105,9 @@ export async function GET(
       players: game.players.map(player => ({
         id: player.user.id,
         username: player.user.username,
-        avatar: player.user.image,
-        isBot: !!player.user.bot,  // Convert bot relation to boolean
+        avatar: player.user.avatarUrl ?? player.user.image,
+        isBot: !!player.user.bot,
+        isPremium: !!player.user.premiumUntil && player.user.premiumUntil > now,
         score: player.score,
         finalScore: player.finalScore,
         placement: player.placement,

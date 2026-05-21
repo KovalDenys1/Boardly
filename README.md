@@ -1,103 +1,118 @@
 # Boardly
 
-Boardly is a real-time multiplayer board games platform built with Next.js, TypeScript, Prisma, PostgreSQL, and a standalone Socket.IO server.
+Real-time multiplayer board games platform built with Next.js, TypeScript, Supabase Realtime, Prisma, and PostgreSQL.
 
 Production: <https://boardly.online>
 
-## What this repository contains
+## Games
 
-- Next.js app (HTTP API, auth, pages)
-- Socket.IO server (`socket-server.ts`) for real-time lobby/game events
-- Shared game engine abstractions (`lib/game-engine.ts`)
-- Game implementations:
-  - Stable registered games: Yahtzee, Guess the Spy, Tic-Tac-Toe, Rock Paper Scissors, Memory
-  - Feature-flagged/experimental games: Telephone Doodle, Sketch and Guess, Liars Party, Fake Artist, Alias
+**Available (6):** Yahtzee, Guess the Spy, Tic-Tac-Toe, Connect Four, Memory, Alias
+**In development:** Rock Paper Scissors, Liar's Party
+**Planned:** Sketch & Guess
 
-## Architecture at a glance
+## Tech stack
 
-- App server: `:3000` (Next.js)
-- Socket server: `:3001` (Socket.IO)
-- Database: PostgreSQL (Supabase + Prisma)
+- **Framework:** Next.js 16, React 19, TypeScript
+- **Styling:** Tailwind CSS (CSS variable-based theme system, dark/light mode)
+- **Database:** PostgreSQL via Prisma 7 (hosted on Supabase)
+- **Auth:** NextAuth — registered users + signed guest JWT (`X-Guest-Token` header)
+- **Realtime:** Supabase Realtime Broadcast + Postgres Changes (replaces Socket.IO)
+- **Payments:** Stripe monthly subscription ($2.99/mo)
+- **i18n:** 4 locales — English, Russian, Norwegian, Ukrainian
+- **Hosting:** Vercel (Next.js app)
 
-Flow:
-`Client action -> API route -> DB update -> notify socket server -> room broadcast -> client reconcile`
+## Architecture
+
+```
+Client action → API route → DB update → Supabase Realtime Broadcast → client reconcile
+```
+
+Server state is always authoritative. Clients may apply optimistic updates for UX only.
+
+- **Broadcast**: `lib/supabase-server.ts` → `broadcastToLobby(code, event, payload)` — stateless REST POST, works in Vercel serverless functions. Always `await`ed before response (Vercel kills pending promises after `return`).
+- **Postgres Changes**: auto-broadcast when `prisma.lobbies.update()` runs — subscribed client-side via `useRealtimeConnection.ts`.
+- **Social events** (rematch, invite): `user:{userId}` Broadcast channel via `SocialLoopListener`.
+- **Chat**: persisted to Redis (Upstash), broadcast via Supabase Broadcast after write.
+- **Spectators**: Supabase Presence (spectator list/count) + Broadcast (spectator chat).
 
 ## Quick start
 
-### 1) Install
+### 1. Install
 
 ```bash
-npm install
+pnpm install
 ```
 
-### 2) Configure environment
+### 2. Configure environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill required values in `.env.local`.
+Fill required values in `.env.local`. Key variables:
 
-Important:
+| Variable | Description |
+|---|---|
+| `NEXTAUTH_SECRET` | JWT signing secret for auth/session tokens |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `UPSTASH_REDIS_REST_URL` | Redis URL for chat persistence |
 
-- Use `NEXTAUTH_SECRET` as the single signing secret for auth/session tokens.
-- Guest authentication uses signed guest JWTs (`X-Guest-Token`).
-
-### 3) Prepare database
+### 3. Prepare database
 
 ```bash
-npm run db:generate
-npm run db:push
+pnpm db:generate
+pnpm db:push
 ```
 
-### 4) Start development
+### 4. Start development
 
 ```bash
-npm run dev:all
-```
-
-Or run separately:
-
-```bash
-npm run dev
-npm run socket:dev
+pnpm dev
 ```
 
 ## Common scripts
 
 ```bash
-npm run dev            # Next.js
-npm run socket:dev     # Socket.IO server
-npm run dev:all        # both
-npm run build          # prisma generate + next build
-npm run test
-npm run lint
-npm run check:locales
-npm run db:generate
-npm run db:push
-npm run db:migrate
-npm run db:audit
-npm run db:rls:smoke
+pnpm dev              # Start Next.js dev server
+pnpm build            # prisma generate + next build
+pnpm test             # Jest test suite
+pnpm lint             # ESLint
+pnpm typecheck        # tsc --noEmit
+pnpm ci:quick         # lint + typecheck + arch audit
+pnpm check:locales    # Verify all 4 locale files have identical keys
+pnpm db:generate      # Regenerate Prisma client
+pnpm db:push          # Push schema changes (dev only)
+pnpm db:migrate       # Run pending migrations (production)
+pnpm db:audit         # Prisma schema audit
 ```
 
-## Documentation map
+## Branching
 
-- Project docs index: `docs/README.md`
-- Full local-only setup: `docs/LOCAL_SETUP.md`
-- Product direction: `docs/PROJECT_VISION.md`
-- System design and data flows: `docs/ARCHITECTURE.md`
-- Local/prod operations and deployment: `docs/OPERATIONS.md`
-- Current roadmap: `docs/ROADMAP.md`
-- Contribution workflow: `docs/CONTRIBUTING.md`
-- Security model details: `docs/SECURITY_MODEL.md`
-- Realtime telemetry baseline: `docs/REALTIME_TELEMETRY.md`
-- Dependency maintenance plan: `docs/DEPENDENCY_UPGRADE_PLAN.md`
-- Obsidian vault workflow: `docs/OBSIDIAN_VAULT.md`
+- `develop` — integration branch, all feature PRs merge here first
+- `main` — production, only merges from `develop` via PR
+- `hotfix/*` — critical prod fixes, merge to `main` + `develop`
+
+Branch naming: `feature/<issue-number>-short-description` or `fix/<issue-number>-description`
+Commit format: `#<issue-number> feat/fix/chore: description`
+
+## Localization
+
+All user-visible strings go through `t()` — hardcoded strings are blocked by the pre-commit hook. Locale files: `locales/en.ts`, `ru.ts`, `no.ts`, `uk.ts`. All four must have identical keys (enforced by `pnpm check:locales`).
+
+## Documentation
+
+- Architecture and data flows: `docs/ARCHITECTURE.md`
+- Local setup: `docs/LOCAL_SETUP.md`
+- Operations and deployment: `docs/OPERATIONS.md`
+- Security model: `docs/SECURITY_MODEL.md`
 - Bot developer guide: `lib/bots/README.md`
-- Migrations and RLS notes: `prisma/migrations/README.md`
-- AI agent instructions: `.github/copilot-instructions.md`
+- Migrations notes: `prisma/migrations/README.md`
 
-## Community and policy
+## Community
 
 - Security policy: `SECURITY.md`
 - Code of conduct: `CODE_OF_CONDUCT.md`

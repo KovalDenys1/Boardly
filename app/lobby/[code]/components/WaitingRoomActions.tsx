@@ -40,7 +40,7 @@ export default function WaitingRoomActions({
   const canConfigureBots = supportsBots && canAddMorePlayers
   const canStartWithAutoBot = supportsBots && !hasBot && playerCount > 0 && playerCount < minPlayers && canAddMorePlayers
   const canStartImmediately = playerCount >= minPlayers || canStartWithAutoBot
-  const creatorName = lobby?.creator?.username || lobby?.creator?.email || t('lobby.ownerFallback')
+  const creatorName = lobby?.creator?.username || t('lobby.ownerFallback')
   const difficultyLabelMap: Record<BotDifficulty, string> = {
     easy: t('game.ui.botDifficultyEasy'),
     medium: t('game.ui.botDifficultyMedium'),
@@ -67,7 +67,7 @@ export default function WaitingRoomActions({
     // Non-host view
     return (
       <div className="flex-shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
-        <div className="flex items-center gap-3 rounded-xl border border-bd-line bg-white px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl border border-bd-line bg-bd-card-warm px-4 py-3">
           <span className="text-xl shrink-0">⌛</span>
           <div className="min-w-0">
             <p className="text-sm font-bold text-bd-ink">{t('game.ui.waitingForHost')}</p>
@@ -141,7 +141,7 @@ export default function WaitingRoomActions({
 
       {/* Bot difficulty — for next bot to be added */}
       {canConfigureBots && (
-        <div className="rounded-xl border border-bd-line bg-white px-3 py-2.5">
+        <div className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2.5">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-bd-ink-muted">{t('game.ui.botDifficulty')}</p>
           <div className="grid grid-cols-3 gap-2">
             {BOT_DIFFICULTIES.map((difficulty) => (
@@ -155,7 +155,7 @@ export default function WaitingRoomActions({
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                   botDifficulty === difficulty
                     ? 'border-bd-ink bg-bd-ink text-bd-bg shadow'
-                    : 'border-bd-line bg-bd-bg2 text-bd-ink-soft hover:border-bd-ink hover:bg-white'
+                    : 'border-bd-line bg-bd-bg2 text-bd-ink-soft hover:border-bd-ink hover:bg-bd-card-warm'
                 }`}
                 aria-pressed={botDifficulty === difficulty}
               >

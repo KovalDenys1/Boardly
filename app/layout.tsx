@@ -28,11 +28,11 @@ const DeferredTelemetry = dynamic(() => import('@/components/DeferredTelemetry')
 // Header Skeleton with fixed dimensions to prevent CLS
 function HeaderSkeleton() {
   return (
-    <header className="site-header sticky top-0 z-50" style={{ height: '64px', minHeight: '64px', background: '#FBF6EE', borderBottom: '1.5px solid #E8DDC8' }}>
+    <header className="site-header sticky top-0 z-50" style={{ height: '64px', minHeight: '64px', background: 'var(--bd-bg)', borderBottom: '1.5px solid var(--bd-line)' }}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ height: '100%' }}>
         <div className="flex justify-between items-center" style={{ height: '100%' }}>
-          <div className="flex items-center gap-2" style={{ minWidth: '120px', fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, color: '#1F1B16' }}>
-            <span style={{ width: 34, height: 34, borderRadius: 9, background: '#1F1B16', color: '#FFC44D', display: 'grid', placeItems: 'center', fontSize: 20, transform: 'rotate(-6deg)', boxShadow: '3px 3px 0 #FF6B5B', flexShrink: 0 }}>B</span>
+          <div className="flex items-center gap-2" style={{ minWidth: '120px', fontFamily: "'Bricolage Grotesque', Georgia, serif", fontWeight: 800, fontSize: 22, color: 'var(--bd-ink)' }}>
+            <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--bd-ink)', color: '#FFC44D', display: 'grid', placeItems: 'center', fontSize: 20, transform: 'rotate(-6deg)', boxShadow: '3px 3px 0 #FF6B5B', flexShrink: 0 }}>B</span>
             boardly
           </div>
           <div className="flex items-center gap-4" style={{ minWidth: '200px' }}>
@@ -218,7 +218,7 @@ export default function RootLayout({
         <style 
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: 'body{margin:0;background:#FBF6EE}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
+            __html: 'body{margin:0;background:#FBF6EE}.site-header{min-height:64px;height:64px;background:#FBF6EE;border-bottom:1.5px solid #E8DDC8}html.dark body{background:#1E1B17}html.dark .site-header{background:#1E1B17;border-bottom:1.5px solid #3A3530}*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}@supports(height:100dvh){html,body{height:100dvh}}'
           }} 
         />
         <script

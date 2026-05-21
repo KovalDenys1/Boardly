@@ -40,9 +40,9 @@ export interface ConnectFourGameData {
   moveCount: number
   lastDroppedRow: number | null
   lastDroppedCol: number | null
-  undoSnapshots?: ConnectFourUndoSnapshot[]
-  pendingRequest?: ConnectFourPendingRequest | null
-  moveHistory?: ConnectFourMoveRecord[]
+  undoSnapshots: ConnectFourUndoSnapshot[]
+  pendingRequest: ConnectFourPendingRequest | null
+  moveHistory: ConnectFourMoveRecord[]
 }
 
 export class ConnectFourGame extends GameEngine {
@@ -65,8 +65,15 @@ export class ConnectFourGame extends GameEngine {
     }
   }
 
+  protected normalizeRestoredData(): void {
+    const data = this.state.data as ConnectFourGameData
+    data.undoSnapshots = Array.isArray(data.undoSnapshots) ? data.undoSnapshots : []
+    data.moveHistory = Array.isArray(data.moveHistory) ? data.moveHistory : []
+    data.pendingRequest = data.pendingRequest?.type === 'undo' ? data.pendingRequest : null
+  }
+
   validateMove(move: Move): boolean {
-    const gameData = this.ensureGameData(this.state.data as ConnectFourGameData)
+    const gameData = this.state.data as ConnectFourGameData
 
     if (move.type === 'next-round') {
       if (this.state.status !== 'finished') return false
@@ -111,7 +118,7 @@ export class ConnectFourGame extends GameEngine {
   }
 
   processMove(move: Move): void {
-    const gameData = this.ensureGameData(this.state.data as ConnectFourGameData)
+    const gameData = this.state.data as ConnectFourGameData
 
     if (move.type === 'next-round') {
       gameData.board = Array.from({ length: ROWS }, () => Array(COLS).fill(null))
@@ -146,7 +153,7 @@ export class ConnectFourGame extends GameEngine {
     if (move.type === 'respond-undo') {
       if (move.data.accept === true) {
         this.undoLastMove(gameData)
-        gameData.moveHistory?.pop()
+        gameData.moveHistory.pop()
       }
       gameData.pendingRequest = null
       return
@@ -177,12 +184,11 @@ export class ConnectFourGame extends GameEngine {
     }
     if (landRow === -1) return
 
-    gameData.undoSnapshots?.push(this.captureSnapshot(gameData))
+    gameData.undoSnapshots.push(this.captureSnapshot(gameData))
     gameData.board[landRow][col] = gameData.currentDisc
     gameData.moveCount += 1
     gameData.lastDroppedRow = landRow
     gameData.lastDroppedCol = col
-    if (!Array.isArray(gameData.moveHistory)) gameData.moveHistory = []
     gameData.moveHistory.push({ disc: gameData.currentDisc, col, row: landRow, timestamp: move.timestamp.getTime() })
 
     const winningLine = this.checkForWinner(gameData.board, landRow, col)
@@ -239,7 +245,7 @@ export class ConnectFourGame extends GameEngine {
   }
 
   getPendingRequest(): ConnectFourPendingRequest | null {
-    const gameData = this.ensureGameData(this.state.data as ConnectFourGameData)
+    const gameData = this.state.data as ConnectFourGameData
     return gameData.pendingRequest ? { ...gameData.pendingRequest } : null
   }
 
@@ -260,14 +266,6 @@ export class ConnectFourGame extends GameEngine {
       if (gameData.board[0][c] === null) cols.push(c)
     }
     return cols
-  }
-
-  private ensureGameData(gameData: ConnectFourGameData): ConnectFourGameData {
-    gameData.undoSnapshots = Array.isArray(gameData.undoSnapshots) ? gameData.undoSnapshots : []
-    gameData.moveHistory = Array.isArray(gameData.moveHistory) ? gameData.moveHistory : []
-    gameData.pendingRequest =
-      gameData.pendingRequest?.type === 'undo' ? gameData.pendingRequest : null
-    return gameData
   }
 
   private resolveResponderId(requesterId: string): string | null {

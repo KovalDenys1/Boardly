@@ -51,7 +51,6 @@ jobs:
       - name: Run smoke tests
         run: >-
           npm test -- --ci --runTestsByPath
-          __tests__/lib/socket-url.test.ts
           __tests__/lib/guest-helpers.test.ts
           __tests__/lib/game-registry.test.ts
           __tests__/lib/lobby-player-requirements.test.ts

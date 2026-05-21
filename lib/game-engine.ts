@@ -34,7 +34,38 @@ export interface GameConfig {
   maxPlayers: number;
   minPlayers: number;
   timeLimit?: number; // in minutes
-  rules?: Record<string, any>;
+  rules?: Record<string, unknown>;
+}
+
+export interface HasRollsLeft {
+  getRollsLeft(): number
+}
+
+export interface HasScorecard {
+  getScorecard(playerId: string): unknown
+}
+
+export interface PendingRequest {
+  type: 'undo' | 'draw'
+  requesterId: string
+  responderId: string
+}
+
+export interface HasPendingRequest {
+  getPendingRequest(): PendingRequest | null
+  isTheoreticalDraw(): boolean
+}
+
+export function hasRollsLeft(engine: GameEngine): engine is GameEngine & HasRollsLeft {
+  return typeof (engine as { getRollsLeft?: unknown }).getRollsLeft === 'function'
+}
+
+export function hasScorecard(engine: GameEngine): engine is GameEngine & HasScorecard {
+  return typeof (engine as { getScorecard?: unknown }).getScorecard === 'function'
+}
+
+export function hasPendingRequest(engine: GameEngine): engine is GameEngine & HasPendingRequest {
+  return typeof (engine as { getPendingRequest?: unknown }).getPendingRequest === 'function'
 }
 
 function cloneDeep<T>(value: T): T {
@@ -167,7 +198,7 @@ export abstract class GameEngine {
     } else {
       // Move to next player (only if this type of move should advance turn)
       if (this.shouldAdvanceTurn(move)) {
-        this.nextPlayer();
+        this.advanceTurnIndex();
       }
     }
 
@@ -186,9 +217,18 @@ export abstract class GameEngine {
     return false;
   }
 
-  private nextPlayer(): void {
+  protected advanceTurnIndex(): void {
     this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % this.state.players.length;
-    this.state.lastMoveAt = Date.now(); // Track when turn changed
+    this.state.lastMoveAt = Date.now();
+  }
+
+  handlePlayerLeave(playerId: string): boolean {
+    const wasCurrentPlayer = this.state.players[this.state.currentPlayerIndex]?.id === playerId
+    if (wasCurrentPlayer) {
+      this.advanceTurnIndex()
+      return true
+    }
+    return false
   }
 
   getState(): RestorableGameState {
@@ -203,11 +243,10 @@ export abstract class GameEngine {
   }
 
   getPlayers(): Player[] {
-    // Ensure players is always an array
     if (!Array.isArray(this.state.players)) {
       this.state.players = [];
     }
-    return [...this.state.players];
+    return this.state.players.map((p) => ({ ...p }));
   }
 
   isGameFinished(): boolean {
@@ -220,7 +259,6 @@ export abstract class GameEngine {
 
   // Method to restore state from saved data
   restoreState(savedState: RestorableGameState): void {
-    // Ensure players is an array when restoring state
     if (savedState && typeof savedState === 'object') {
       const { config, ...stateWithoutConfig } = savedState;
       this.state = {
@@ -233,6 +271,11 @@ export abstract class GameEngine {
       if (config && typeof config === 'object') {
         this.config = cloneDeep(config);
       }
+
+      this.normalizeRestoredData();
     }
   }
+
+  // Override in subclasses that need to normalize deserialized game data (e.g. ensure arrays exist).
+  protected normalizeRestoredData(): void {}
 }

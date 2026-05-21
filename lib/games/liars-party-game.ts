@@ -315,6 +315,49 @@ export class LiarsPartyGame extends GameEngine {
     return this.getCurrentRoundVoterIds(data).filter((playerId) => !submittedSet.has(playerId))
   }
 
+  handlePlayerLeave(playerId: string): boolean {
+    const data = this.state.data as LiarsPartyGameData
+
+    if (!data.activePlayerIds.includes(playerId)) {
+      return false
+    }
+
+    const nowMs = Date.now()
+
+    this.eliminatePlayer(data, playerId)
+    this.recomputeRanking(data)
+    this.state.updatedAt = new Date()
+
+    // Leave route will handle abandonment when active count drops too low
+    if (data.activePlayerIds.length <= 1) {
+      return true
+    }
+
+    if (data.phase === 'claim' && playerId === data.currentClaimantId) {
+      // Claimant left before submitting — advance to next active claimant
+      const next = this.resolveNextActiveClaimant(data)
+      if (next) {
+        data.currentClaimantId = next.playerId
+        data.currentClaimantIndex = next.claimantIndex
+        data.claim = null
+        data.challengeVotes = []
+        data.submittedPlayerIds = []
+        this.state.lastMoveAt = nowMs
+      }
+    } else if (data.phase === 'challenge' && !data.submittedPlayerIds.includes(playerId)) {
+      // Leaving voter hadn't voted — check if all remaining voters have now submitted
+      const remainingVoters = this.getCurrentRoundVoterIds(data)
+      const pendingVoters = remainingVoters.filter(id => !data.submittedPlayerIds.includes(id))
+      if (pendingVoters.length === 0) {
+        data.phase = 'reveal'
+        data.submittedPlayerIds = []
+        this.state.lastMoveAt = nowMs
+      }
+    }
+
+    return true
+  }
+
   applyTimeoutFallback(turnTimerSeconds: number, nowMs: number = Date.now()): LiarsPartyTimeoutResolution {
     const result: LiarsPartyTimeoutResolution = {
       changed: false,

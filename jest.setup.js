@@ -46,6 +46,23 @@ if (typeof window !== 'undefined') {
   })
 }
 
+// Mock matchMedia for components using media queries in tests
+if (typeof window !== 'undefined' && typeof window.matchMedia === 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+}
+
 if (typeof global.ResizeObserver === 'undefined') {
   class ResizeObserverMock {
     observe() {}
@@ -116,17 +133,6 @@ jest.mock('next-auth/react', () => ({
   },
   signIn: jest.fn(),
   signOut: jest.fn(),
-}))
-
-// Mock socket.io-client
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    emit: jest.fn(),
-    connect: jest.fn(),
-    disconnect: jest.fn(),
-  })),
 }))
 
 afterEach(() => {

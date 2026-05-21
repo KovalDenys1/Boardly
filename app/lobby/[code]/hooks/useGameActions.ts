@@ -5,7 +5,7 @@ import { restoreGameEngineClient } from '@/lib/restore-game-engine-client'
 import { YahtzeeCategory, calculateScore } from '@/lib/yahtzee'
 import { sounds } from '@/lib/sounds'
 import { clientLogger } from '@/lib/client-logger'
-import { getAuthHeaders } from '@/lib/socket-url'
+import { getAuthHeaders } from '@/lib/auth-headers'
 import { showToast } from '@/lib/i18n-toast'
 import { showYahtzeeCategoryToast } from '@/lib/yahtzee-notifications'
 import { RollHistoryEntry } from '@/components/RollHistory'
@@ -24,7 +24,6 @@ interface UseGameActionsProps {
   userId: string | null | undefined
   username: string | null
   isMyTurn: boolean
-  emitWhenConnected: (event: string, data: Record<string, unknown>) => void
   code: string
   setRollHistory: React.Dispatch<React.SetStateAction<RollHistoryEntry[]>>
   setCelebrationEvent: React.Dispatch<React.SetStateAction<CelebrationEvent | null>>
@@ -80,7 +79,6 @@ export function useGameActions(props: UseGameActionsProps) {
     userId,
     username,
     isMyTurn,
-    emitWhenConnected,
     code,
     setRollHistory,
     setCelebrationEvent,
@@ -95,9 +93,21 @@ export function useGameActions(props: UseGameActionsProps) {
   const [isScoring, setIsScoring] = useState(false)
   const [isStateReverting, setIsStateReverting] = useState(false)
   const rollbackIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const prevIsMyTurnRef = useRef(false)
 
   // Local held state - purely client-side between rolls
   const [held, setHeld] = useState<boolean[]>([false, false, false, false, false])
+
+  // Safety reset: when the turn flips to ours, clear any leftover in-progress flags.
+  // This handles the case where isMoveInProgress got stuck during a disconnect/turn advance.
+  useEffect(() => {
+    if (isMyTurn && !prevIsMyTurnRef.current) {
+      setIsMoveInProgress(false)
+      setIsRolling(false)
+      setIsScoring(false)
+    }
+    prevIsMyTurnRef.current = isMyTurn
+  }, [isMyTurn])
 
   const triggerRollbackIndicator = useCallback(() => {
     if (rollbackIndicatorTimeoutRef.current) {
@@ -157,7 +167,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
     const preMoveHeld = [...gameEngine.getHeld()]
 
-    if (isMoveInProgress) {
+    if (isMoveInProgress && !isAutoAction) {
       clientLogger.log('Move already in progress, ignoring')
       return null
     }
@@ -263,8 +273,10 @@ export function useGameActions(props: UseGameActionsProps) {
 
         const currentPlayer = newEngine.getCurrentPlayer()
         const rollNumber = 3 - newEngine.getRollsLeft()
+        const parsedServerState = (() => { try { return JSON.parse(data.game.state) } catch { return null } })()
+        const serverTs = parsedServerState?.data?.lastRoll?.timestamp
         const newEntry: RollHistoryEntry = {
-          id: `${Date.now()}_${Math.random()}`,
+          id: serverTs ? `${userId || guestId}-${serverTs}` : `${Date.now()}_${Math.random()}`,
           turnNumber: newEngine.getRound(),
           playerName: currentPlayer?.name || username || 'You',
           rollNumber: rollNumber,
@@ -312,11 +324,6 @@ export function useGameActions(props: UseGameActionsProps) {
       }
 
       if (data.serverBroadcasted !== true) {
-        emitWhenConnected('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
         void reconcileWithServerSnapshot()
       }
 
@@ -360,7 +367,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsRolling(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, emitWhenConnected, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, username, code, held, setGameEngine, setRollHistory, setCelebrationEvent, celebrate, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   const handleToggleHold = useCallback((diceIndex: number) => {
     if (!gameEngine || !(gameEngine instanceof YahtzeeGame) || !game) return
@@ -394,7 +401,7 @@ export function useGameActions(props: UseGameActionsProps) {
 
     const preMoveHeld = [...gameEngine.getHeld()]
 
-    if (isMoveInProgress) {
+    if (isMoveInProgress && !isAutoAction) {
       clientLogger.log('Move already in progress, ignoring')
       return null
     }
@@ -559,11 +566,6 @@ export function useGameActions(props: UseGameActionsProps) {
       })
 
       if (data.serverBroadcasted !== true) {
-        emitWhenConnected('game-action', {
-          lobbyCode: code,
-          action: 'state-change',
-          payload: data.game.state,
-        })
         void reconcileWithServerSnapshot()
       }
 
@@ -652,7 +654,7 @@ export function useGameActions(props: UseGameActionsProps) {
       setIsMoveInProgress(false)
       setIsScoring(false)
     }
-  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, emitWhenConnected, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
+  }, [gameEngine, game, isMoveInProgress, isMyTurn, userId, isGuest, guestId, guestName, guestToken, code, setGameEngine, setCelebrationEvent, celebrate, setTimerActive, fireworks, reconcileWithServerSnapshot, reconcileAfterMoveError])
 
   return {
     handleRollDice,

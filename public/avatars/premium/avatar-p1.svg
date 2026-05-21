@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="50" fill="url(#g)"/>
+  <!-- Dragon -->
+  <!-- Body -->
+  <ellipse cx="50" cy="58" rx="18" ry="14" fill="white" opacity="0.95"/>
+  <!-- Head -->
+  <circle cx="50" cy="38" r="13" fill="white" opacity="0.95"/>
+  <!-- Snout -->
+  <ellipse cx="50" cy="44" rx="6" ry="4" fill="white" opacity="0.95"/>
+  <!-- Left wing -->
+  <path d="M32 52 Q18 38 22 26 Q30 42 36 48 Z" fill="white" opacity="0.85"/>
+  <!-- Right wing -->
+  <path d="M68 52 Q82 38 78 26 Q70 42 64 48 Z" fill="white" opacity="0.85"/>
+  <!-- Eyes -->
+  <circle cx="45" cy="35" r="2.5" fill="#ef4444" opacity="0.8"/>
+  <circle cx="55" cy="35" r="2.5" fill="#ef4444" opacity="0.8"/>
+  <!-- Nostrils -->
+  <circle cx="47.5" cy="44" r="1" fill="#f59e0b" opacity="0.7"/>
+  <circle cx="52.5" cy="44" r="1" fill="#f59e0b" opacity="0.7"/>
+  <!-- Tail -->
+  <path d="M62 66 Q72 72 68 80 Q64 74 60 72 Z" fill="white" opacity="0.85"/>
+</svg>

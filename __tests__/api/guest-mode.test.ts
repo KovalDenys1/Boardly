@@ -47,12 +47,6 @@ jest.mock('@/lib/request-auth', () => ({
   getRequestAuthUser: jest.fn(),
 }))
 
-jest.mock('@/lib/socket-url', () => ({
-  notifySocket: jest.fn().mockResolvedValue(true),
-  getServerSocketUrl: jest.fn(() => 'http://localhost:3001'),
-  getSocketInternalAuthHeaders: jest.fn(() => ({})),
-}))
-
 jest.mock('@/lib/logger', () => ({
   apiLogger: jest.fn(() => ({
     info: jest.fn(),
@@ -187,22 +181,19 @@ describe('Guest mode API endpoints', () => {
     expect(createArgs.data.name).toBe('Lobby TEST123')
   })
 
-  it('rejects lobby creation for coming-soon games', async () => {
+  it('rejects lobby creation for temporarily in-development games (rps, liars_party)', async () => {
     const req = new NextRequest('http://localhost:3000/api/lobby', {
       method: 'POST',
       body: JSON.stringify({
         name: 'Guest Lobby',
-        maxPlayers: 8,
-        gameType: 'alias',
+        maxPlayers: 2,
+        gameType: 'rock_paper_scissors',
       }),
     })
 
     const response = await CREATE_LOBBY(req)
-    const data = await response.json()
 
     expect(response.status).toBe(400)
-    expect(data.error).toBe('Game type is coming soon')
-    expect(mockPrisma.lobbies.create).not.toHaveBeenCalled()
   })
 
   it('joins waiting lobby as guest player', async () => {

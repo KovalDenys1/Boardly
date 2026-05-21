@@ -12,12 +12,13 @@ import {
     CellValue,
 } from '@/lib/games/tic-tac-toe-game'
 import { clientLogger } from '@/lib/client-logger'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { getThemePageStyle } from '@/lib/lobby-themes'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
-import { AnyGameState, Game, GameUpdatePayload } from '@/types/game'
+import { AnyGameState, Game, GameUpdatePayload, type ChatMessagePayload } from '@/types/game'
 import { normalizeLobbySnapshotResponse } from '@/lib/lobby-snapshot'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -99,8 +100,8 @@ function TttBoard({ board, winningLine, onCellClick, disabled, testId }: {
     )
 }
 
-function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
-    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; t: (key: TranslationKeys) => string
+function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, isPremium, t }: {
+    name: string; symbol: 'X' | 'O'; isActive: boolean; isWinner: boolean; side: 'left' | 'right'; avatarSrc?: string | null; isPremium?: boolean; t: (key: TranslationKeys) => string
 }) {
     const bg = symbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
@@ -113,6 +114,12 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
             transition: 'all 0.2s', minWidth: 0,
         }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
+                {avatarSrc ? (
+                    <img src={avatarSrc} alt={name} style={{
+                        width: 42, height: 42, borderRadius: '50%', objectFit: 'cover',
+                        border: '2px solid white', boxShadow: '0 0 0 2px var(--bd-ink)',
+                    }} />
+                ) : (
                 <div style={{
                     width: 42, height: 42, borderRadius: '50%', background: bg,
                     display: 'grid', placeItems: 'center', border: '2px solid white',
@@ -121,16 +128,18 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
                 }}>
                     {name.charAt(0).toUpperCase()}
                 </div>
+                )}
                 <div style={{
                     position: 'absolute', bottom: -3, right: -3, width: 22, height: 22, borderRadius: 7,
-                    background: 'white', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
+                    background: 'var(--bd-bg)', border: '2px solid var(--bd-ink)', display: 'grid', placeItems: 'center',
                 }}>
                     <TttMark mark={symbol} size={14} />
                 </div>
             </div>
             <div style={{ textAlign: side === 'right' ? 'right' : 'left', minWidth: 0, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: side === 'right' ? 'flex-end' : 'flex-start' }}>
-                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isPremium ? '#F59E0B' : undefined }}>{name}</span>
+                    {isPremium && <span style={{ fontSize: 12, flexShrink: 0 }} title="Premium">👑</span>}
                     {isWinner && (
                         <span style={{
                             display: 'inline-flex', padding: '2px 7px', borderRadius: 999, fontSize: 9, fontWeight: 700,
@@ -155,9 +164,11 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, t }: {
     )
 }
 
-function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit, t }: {
+function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, currentPlayerName, secs, moveNum, turnTimerLimit, isSpectator, t }: {
     isFinished: boolean; winnerName: string | null; isDraw: boolean;
-    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number; t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
+    currentSymbol: 'X' | 'O'; currentPlayerName: string; secs: number; moveNum: number; turnTimerLimit: number;
+    isSpectator?: boolean;
+    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
     if (isFinished && !isDraw && winnerName) {
         return (
@@ -189,11 +200,26 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
             </div>
         )
     }
+    if (isSpectator) {
+        return (
+            <div style={{
+                padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
+                border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
+                display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+                <span style={{ fontSize: 14 }}>👁</span>
+                <TttMark mark={currentSymbol} size={20} />
+                <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--bd-ink)' }}>{currentPlayerName}</span>
+                <span style={{ fontSize: 11, color: 'var(--bd-ink-muted)', marginLeft: 2 }}>#{moveNum}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>{t('game.ui.spectatingBadge')}</span>
+            </div>
+        )
+    }
     const pct = turnTimerLimit > 0 ? (secs / turnTimerLimit) * 100 : 100
     const danger = secs <= 5
     return (
         <div style={{
-            padding: '10px 14px', borderRadius: 14, background: 'white',
+            padding: '10px 14px', borderRadius: 14, background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)', boxShadow: '0 4px 14px rgba(31,27,22,0.07)',
             display: 'flex', alignItems: 'center', gap: 12,
         }}>
@@ -223,14 +249,15 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     )
 }
 
-function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave, isLoading, t }: {
+function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onReturnToLobby, onLeave, isLoading, isHost, t }: {
     winnerName: string | null; winnerSymbol: string | null; isDraw: boolean;
-    onPlayAgain: () => void; onLeave: () => void; isLoading: boolean; t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
+    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
+    t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
     const color = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
     return (
         <div style={{
-            background: 'white', borderRadius: 22, padding: '24px 32px', textAlign: 'center',
+            background: 'var(--bd-bg)', borderRadius: 22, padding: '24px 32px', textAlign: 'center',
             boxShadow: '0 10px 0 var(--bd-ink)', border: '2px solid var(--bd-ink)', maxWidth: 320,
             animation: 'ttt-overlay-in 0.45s cubic-bezier(0.2,0.7,0.2,1)',
         }}>
@@ -265,17 +292,40 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onLeave
                     <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>{t('games.tictactoe.game.catsGameResult')}</p>
                 </>
             )}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                <button onClick={onLeave} style={{
-                    padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
-                    background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
-                }}>{t('games.tictactoe.game.leave')}</button>
-                <button onClick={onPlayAgain} disabled={isLoading} style={{
-                    padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
-                    background: 'var(--bd-coral)', color: 'white', border: 'none',
-                    boxShadow: '0 4px 0 var(--bd-coral-deep)', cursor: isLoading ? 'not-allowed' : 'pointer',
-                    opacity: isLoading ? 0.7 : 1, fontFamily: 'inherit',
-                }}>{isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+                {isHost ? (
+                    <>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                            <button onClick={onLeave} style={{
+                                padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
+                                background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
+                            }}>{t('games.tictactoe.game.leave')}</button>
+                            <button onClick={onPlayAgain} disabled={isLoading} style={{
+                                padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
+                                background: 'var(--bd-coral)', color: 'white', border: 'none',
+                                boxShadow: '0 4px 0 var(--bd-coral-deep)', cursor: isLoading ? 'not-allowed' : 'pointer',
+                                opacity: isLoading ? 0.7 : 1, fontFamily: 'inherit',
+                            }}>{isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}</button>
+                        </div>
+                        <button onClick={onReturnToLobby} disabled={isLoading} style={{
+                            padding: '8px 18px', fontSize: 13, borderRadius: 14, fontWeight: 600,
+                            background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)',
+                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1, fontFamily: 'inherit',
+                        }}>{t('game.ui.returnToLobby')}</button>
+                    </>
+                ) : (
+                    <>
+                        <div style={{
+                            padding: '10px 16px', fontSize: 13, borderRadius: 14, fontWeight: 600,
+                            background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)',
+                            fontFamily: 'inherit', textAlign: 'center',
+                        }}>{t('game.ui.waitingForHost')}</div>
+                        <button onClick={onLeave} style={{
+                            padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
+                            background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
+                        }}>{t('games.tictactoe.game.leave')}</button>
+                    </>
+                )}
             </div>
         </div>
     )
@@ -302,10 +352,13 @@ interface Lobby {
     name: string
     isActive?: boolean
     turnTimer?: number
+    theme?: string
 }
 
 interface TicTacToeLobbyPageProps {
     code: string
+    isSpectator?: boolean
+    onGameReset?: () => void
 }
 
 interface LocalChatMsg { id: number; who: string; text: string; time: string; color: string }
@@ -351,7 +404,7 @@ function extractAuthoritativeStateFromGameUpdate(payload: unknown): AnyGameState
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
+export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameReset }: TicTacToeLobbyPageProps) {
     const router = useRouter()
     const { data: session, status } = useSession()
     const { isGuest, guestToken, guestId } = useGuest()
@@ -365,6 +418,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const [isMoveSubmitting, setIsMoveSubmitting] = useState(false)
     const [isRematchSubmitting, setIsRematchSubmitting] = useState(false)
     const isLeavingLobbyRef = React.useRef(false)
+    const isMoveSubmittingRef = React.useRef(false)
     const lifecycleRedirectInFlightRef = React.useRef(false)
     const activeGameIdRef = React.useRef<string | null>(null)
     const leaveStartedAtRef = React.useRef<number | null>(null)
@@ -502,7 +556,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
 
     const handlePlayerLeft = useCallback((data: {
         userId: string; username?: string; playerName?: string; remainingPlayers?: number;
-        nextCreatorId?: string; nextCreatorName?: string;
+        nextCreatorId?: string; nextCreatorName?: string; gameTerminal?: boolean;
     }) => {
         clientLogger.log('📡 Tic-Tac-Toe player left:', data)
         if (isLeavingLobbyRef.current) return
@@ -516,7 +570,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 showToast.info('toast.hostReassigned', undefined, { player: data.nextCreatorName })
             }
         }
-        if (typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
+        if (!data.gameTerminal && typeof data.remainingPlayers === 'number' && data.remainingPlayers < minPlayersRequired) {
             triggerLifecycleRedirect('player-left:insufficient-players')
             return
         }
@@ -529,7 +583,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
 
-  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+  const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
     clientLogger.log('📡 Game update received:', payload)
     const activeGameId = activeGameIdRef.current
     const directState = extractAuthoritativeStateFromGameUpdate(payload)
@@ -537,15 +591,28 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     void loadLobby()
   }, [applyAuthoritativeState, loadLobby])
 
-  const socket = useGameSocket({
+  const handleChatMessage = useCallback((msg: ChatMessagePayload) => {
+    if (msg.userId === chatCurrentUserIdRef.current) return
+    const d = new Date(msg.timestamp)
+    const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+    const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
+    const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'lav' : 'sky'
+    setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
+  }, [])
+
+  const handleGameReset = useCallback(() => {
+    if (onGameReset) onGameReset()
+    else router.push(`/lobby/${code}`)
+  }, [code, onGameReset, router])
+
+  const { emitWhenConnected } = useRealtimeConnection({
     code,
-    status,
-    isGuest,
-    guestToken,
-    gameName: 'Tic-Tac-Toe',
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
+    onChatMessage: handleChatMessage,
+    onGameReset: handleGameReset,
   })
 
     const isMyTurn = useCallback(() => {
@@ -560,7 +627,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             isAutoAction?: boolean
         }
     ): Promise<boolean> => {
-        if (!gameEngine || !game || isMoveSubmitting) return false
+        if (!gameEngine || !game || isMoveSubmittingRef.current) return false
         const normalizedAutoActionContext = options?.autoActionContext
         const isAutoAction = options?.isAutoAction === true
         const submitStartedAt = Date.now()
@@ -576,6 +643,8 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 }
                 return false
             }
+            isMoveSubmittingRef.current = true
+            setIsMoveSubmitting(true)
             let optimisticState = optimisticEngine.getState()
             if (!isAutoAction) {
                 optimisticEngine.processMove(move)
@@ -591,7 +660,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     }
                 })
             }
-            setIsMoveSubmitting(true)
             const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -631,9 +699,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             } else if (move.type === 'timeout-forfeit') {
                 showToast.infoText('Time expired. Round forfeited.')
             }
-            if (socket?.connected && !isAutoAction) {
-                socket.emit('game-action', { lobbyCode: code, action: 'state-change', payload: { gameId: game.id, state: optimisticState } })
-            }
             const resolvedEngine = isAutoAction
                 ? (() => {
                     if (!authoritativeState || typeof authoritativeState !== 'object') return null
@@ -657,9 +722,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             await loadLobby()
             return false
         } finally {
+            isMoveSubmittingRef.current = false
             setIsMoveSubmitting(false)
         }
-    }, [applyAuthoritativeState, gameEngine, game, socket, code, getCurrentUserId, loadLobby, isMoveSubmitting, isGuest])
+    }, [applyAuthoritativeState, gameEngine, game, code, getCurrentUserId, loadLobby, isGuest])
 
     const buildAutoActionContext = useCallback((playerId: string): AutoActionContext | null => {
         if (!gameEngine) return null
@@ -687,7 +753,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             : 20
 
     const { timeLeft } = useGameTimer({
-        isMyTurn: isMyTurn(),
+        isMyTurn: isSpectator ? false : isMyTurn(),
         gameState: timerStateData?.pendingRequest ? null : timerState,
         turnTimerLimit,
         onTimeout: async (): Promise<boolean> => {
@@ -726,7 +792,6 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         leaveStartedAtRef.current = Date.now()
         leaveApiOutcomeRef.current = 'pending'
         leaveApiStatusCodeRef.current = null
-        if (socket?.connected) { socket.emit('leave-lobby', code); socket.disconnect() }
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), LEAVE_REQUEST_TIMEOUT_MS)
         void fetchWithGuest(`/api/lobby/${code}/leave`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, signal: controller.signal })
@@ -758,6 +823,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         if (!lobby || !game || !gameEngine) { router.push(`/lobby/${code}`); return }
         const userId = getCurrentUserId()
         if (!userId) { router.push(`/lobby/${code}`); return }
+        if (lobby.creatorId !== userId) { showToast.info('game.ui.waitingForHost'); return }
         const gameData = gameEngine.getState().data as TicTacToeGameData
         const targetRounds = gameData.match?.targetRounds ?? null
         const roundsPlayed = gameData.match?.roundsPlayed ?? 0
@@ -810,27 +876,32 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         }
     }, [applyAuthoritativeState, code, game, gameEngine, getCurrentUserId, lobby, loadLobby, router, isGuest])
 
+    const handleReturnToWaiting = useCallback(async () => {
+        const userId = getCurrentUserId()
+        if (!userId || !lobby || lobby.creatorId !== userId) return
+        setIsRematchSubmitting(true)
+        try {
+            const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({})) as { error?: string }
+                throw new Error(data.error ?? `HTTP ${res.status}`)
+            }
+            if (onGameReset) onGameReset()
+            else router.push(`/lobby/${code}`)
+        } catch (error) {
+            clientLogger.error('Failed to return to waiting room:', error)
+            showToast.errorFrom(error, 'games.tictactoe.game.continueFailed')
+        } finally {
+            setIsRematchSubmitting(false)
+        }
+    }, [code, getCurrentUserId, lobby, onGameReset, router])
+
     // ─── Design effects ───────────────────────────────────────────────────────
 
     // Scroll chat to bottom
     useEffect(() => {
         if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight
     }, [localChat])
-
-    // Receive chat messages from other players
-    useEffect(() => {
-        if (!socket) return
-        const handler = (msg: { id: string; userId: string; username: string; message: string; timestamp: number }) => {
-            if (msg.userId === chatCurrentUserIdRef.current) return
-            const d = new Date(msg.timestamp)
-            const time = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
-            const pIdx = chatStatePlayersRef.current.findIndex(p => p.id === msg.userId)
-            const color = pIdx === 0 ? 'coral' : pIdx === 1 ? 'lav' : 'sky'
-            setLocalChat(c => [...c, { id: msg.timestamp, who: msg.username, text: msg.message, time, color }])
-        }
-        socket.on('chat-message', handler)
-        return () => { socket.off('chat-message', handler) }
-    }, [socket])
 
     // ─── Early returns ────────────────────────────────────────────────────────
 
@@ -900,6 +971,18 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     }
     const xName = state.players[0] ? getDisplayName(state.players[0].id) : 'Player X'
     const oName = state.players[1] ? getDisplayName(state.players[1].id) : 'Player O'
+    const getPlayerAvatar = (userId: string): string | null => {
+        const p = players.find(lp => lp.userId === userId)
+        return p?.user?.avatarUrl ?? p?.user?.image ?? null
+    }
+    const xAvatar = state.players[0] ? getPlayerAvatar(state.players[0].id) : null
+    const oAvatar = state.players[1] ? getPlayerAvatar(state.players[1].id) : null
+    const getIsPremium = (playerId: string) => {
+        const lp = players.find(p => p.userId === playerId)
+        return !!(lp?.user as { isPremium?: boolean } | undefined)?.isPremium
+    }
+    const xIsPremium = state.players[0] ? getIsPremium(state.players[0].id) : false
+    const oIsPremium = state.players[1] ? getIsPremium(state.players[1].id) : false
 
     const winnerSymbol = gameData.winner
     const isDraw = winnerSymbol === 'draw'
@@ -953,7 +1036,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
         setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: chatInput.trim(), time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        socket?.emit('send-chat-message', { lobbyCode: code, message: chatInput.trim() })
+        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
         setChatInput('')
     }
 
@@ -961,7 +1044,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
         setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: emoji, time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        socket?.emit('send-chat-message', { lobbyCode: code, message: emoji })
+        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
     }
 
     // ─── Sections ─────────────────────────────────────────────────────────────
@@ -975,7 +1058,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 <TttBgGrid />
             </div>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
-                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" t={t} />
+                <TttPlayerCard name={xName} symbol="X" isActive={!isFinished && gameData.currentSymbol === 'X'} isWinner={!isDraw && winnerSymbol === 'X'} side="left" avatarSrc={xAvatar} isPremium={xIsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
                         Round {roundNum}
@@ -987,7 +1070,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                         {drawsCount} draws{targetRounds ? ` · BO${targetRounds}` : ''}
                     </div>
                 </div>
-                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" t={t} />
+                <TttPlayerCard name={oName} symbol="O" isActive={!isFinished && gameData.currentSymbol === 'O'} isWinner={!isDraw && winnerSymbol === 'O'} side="right" avatarSrc={oAvatar} isPremium={oIsPremium} t={t} />
             </div>
         </div>
     )
@@ -1002,15 +1085,16 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             secs={timeLeft}
             moveNum={gameData.moveCount + 1}
             turnTimerLimit={turnTimerLimit}
+            isSpectator={isSpectator}
             t={t}
         />
     )
 
-    const requestSection = pendingRequest ? (
+    const requestSection = !isSpectator && pendingRequest ? (
         <div style={{
             padding: '8px 10px',
             borderRadius: 12,
-            background: 'rgba(255,255,255,0.92)',
+            background: 'var(--bd-bg)',
             border: '1.5px solid var(--bd-line)',
             boxShadow: '0 3px 10px rgba(31,27,22,0.06)',
             display: 'flex',
@@ -1042,7 +1126,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                             fontFamily: 'inherit',
                         }}
                     >
-                        Accept
+                        {t('games.tictactoe.game.undoAccept')}
                     </button>
                     <button
                         onClick={() => void handleRespondToRequest(pendingRequest.type, false)}
@@ -1060,12 +1144,12 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                             fontFamily: 'inherit',
                         }}
                     >
-                        Decline
+                        {t('games.tictactoe.game.undoDecline')}
                     </button>
                 </div>
             ) : isPendingRequester ? (
                 <div style={{ fontSize: 11, color: 'var(--bd-ink-muted)', whiteSpace: 'nowrap' }}>
-                    Waiting for response...
+                    {t('game.ui.waitingForResponse')}
                 </div>
             ) : null}
         </div>
@@ -1077,18 +1161,20 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                 board={gameData.board}
                 winningLine={gameData.winningLine}
                 onCellClick={handleCellClick}
-                disabled={!isMyTurn() || isFinished || isMoveSubmitting}
+                disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting}
                 testId={testId}
             />
-            {isFinished && (
+            {isFinished && !isSpectator && (
                 <div className="ttt-board-overlay">
                     <TttResultModal
                         winnerName={winnerName}
                         winnerSymbol={winnerSymbol && !isDraw ? winnerSymbol : null}
                         isDraw={isDraw}
                         onPlayAgain={handlePlayAgain}
+                        onReturnToLobby={handleReturnToWaiting}
                         onLeave={() => setShowLeaveConfirmModal(true)}
-                        isLoading={isRematchSubmitting || (isMatchComplete && !isLobbyCreator)}
+                        isLoading={isRematchSubmitting}
+                        isHost={isLobbyCreator}
                         t={t}
                     />
                 </div>
@@ -1096,7 +1182,13 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         </div>
     )
 
-    const actionsSection = (
+    const actionsSection = isSpectator ? (
+        <div style={{ display: 'flex', gap: 8 }}>
+            <a href={`/lobby/${code}`} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', textDecoration: 'none', fontFamily: 'inherit' }}>
+                {t('game.ui.backToLobby')}
+            </a>
+        </div>
+    ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
                 onClick={() => void handleRequestUndo()}
@@ -1114,7 +1206,7 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     opacity: canRequestUndo ? 1 : 0.5,
                 }}
             >
-                ↶ Undo
+                ↶ {t('games.tictactoe.game.undoBtn')}
             </button>
             <button
                 onClick={() => void handleRequestDraw()}
@@ -1132,10 +1224,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     opacity: canRequestDraw ? 1 : 0.5,
                 }}
             >
-                🤝 Draw
+                🤝 {t('games.tictactoe.game.drawBtn')}
             </button>
             <button onClick={() => setShowLeaveConfirmModal(true)} style={{ padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600, background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-coral-deep)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                Leave lobby
+                {t('games.tictactoe.game.leaveLobby')}
             </button>
         </div>
     )
@@ -1143,14 +1235,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const historySection = (
         <div className="ttt-history-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
-                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Moves</h3>
+                <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
                 <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
                     {moveHistory.length}/9
                 </span>
             </div>
             <div className="ttt-history-list">
                 {moveHistory.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>No moves yet — X starts.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.tictactoe.game.noMovesYet')}</div>
                     : moveHistory.slice().reverse().map((m: TicTacToeMoveRecord, index) => (
                         <div key={`${m.timestamp}-${m.row}-${m.col}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
                             <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
@@ -1170,16 +1262,16 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
         <div className="ttt-chat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--bd-line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>Chat</h3>
+                    <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('chat.open')}</h3>
                     <span className="bd-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--bd-mint-deep)', display: 'inline-block' }} />
                 </div>
                 <span style={{ fontSize: 9, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace' }}>
-                    {players.length} in match
+                    {t('game.ui.inMatch', { count: players.length })}
                 </span>
             </div>
             <div ref={chatRef} className="ttt-chat-feed">
                 {localChat.length === 0
-                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>No messages yet.</div>
+                    ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)' }}>{t('chat.noMessages')}</div>
                     : localChat.map(msg => (
                         <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                             <div style={{
@@ -1218,14 +1310,14 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
                     <input
                         style={{
                             flex: 1, padding: '8px 10px', fontSize: 12, border: '2px solid var(--bd-line)',
-                            borderRadius: 12, background: 'white', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
+                            borderRadius: 12, background: 'var(--bd-bg)', outline: 'none', fontFamily: 'inherit', color: 'var(--bd-ink)',
                         }}
-                        placeholder="Write…"
+                        placeholder={t('game.ui.chatPlaceholder')}
                         value={chatInput}
                         onChange={e => setChatInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && sendChat()}
                     />
-                    <button onClick={sendChat} style={{
+                    <button onClick={sendChat} aria-label={t('chat.send')} style={{
                         padding: '8px 12px', borderRadius: 14, background: 'var(--bd-ink)', color: 'var(--bd-bg)',
                         border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: 13,
                         boxShadow: '0 4px 0 var(--bd-coral)', fontFamily: 'inherit',
@@ -1239,8 +1331,10 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
     const _ = { myWins, myLosses, drawsCount, mySymbol, isMatchComplete, isLobbyCreator }
     void _
 
+    const themeStyle = getThemePageStyle(lobby.theme)
+
     return (
-        <div className="ttt-screen">
+        <div className="ttt-screen" style={themeStyle}>
 
             {/* ── DESKTOP ─────────────────────────────────────────────────── */}
             <div className="ttt-desktop-layout">
@@ -1287,19 +1381,21 @@ export default function TicTacToeLobbyPage({ code }: TicTacToeLobbyPageProps) {
             </div>
 
             {/* ── MODALS ──────────────────────────────────────────────────── */}
-            <ConfirmModal
-                isOpen={showLeaveConfirmModal}
-                onClose={() => setShowLeaveConfirmModal(false)}
-                onConfirm={handleLeave}
-                title={t('game.ui.leave')}
-                message={t('game.ui.leaveConfirm')}
-                confirmText={t('common.confirm')}
-                cancelText={t('common.cancel')}
-                variant="danger"
-                icon="🚪"
-            />
-            {resolvedStatus === 'playing' && socket && (
-                <ReactionOverlay socket={socket} lobbyCode={code} />
+            {!isSpectator && (
+                <ConfirmModal
+                    isOpen={showLeaveConfirmModal}
+                    onClose={() => setShowLeaveConfirmModal(false)}
+                    onConfirm={handleLeave}
+                    title={t('game.ui.leave')}
+                    message={t('game.ui.leaveConfirm')}
+                    confirmText={t('common.confirm')}
+                    cancelText={t('common.cancel')}
+                    variant="danger"
+                    icon="🚪"
+                />
+            )}
+            {!isSpectator && resolvedStatus === 'playing' && (
+                <ReactionOverlay lobbyCode={code} />
             )}
         </div>
     )

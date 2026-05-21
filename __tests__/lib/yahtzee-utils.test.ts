@@ -7,7 +7,7 @@ import {
 } from '@/lib/yahtzee'
 import { YahtzeeCategory } from '@/lib/yahtzee'
 
-describe('Lobby Utilities', () => {
+describe('Lobby and Yahtzee Utilities', () => {
   describe('generateLobbyCode', () => {
     it('should generate 4-character code', () => {
       const code = generateLobbyCode()

@@ -42,6 +42,7 @@ export default function ConnectFourDetailContent() {
         t('games.connect_four.detail.benefit3'),
         t('games.connect_four.detail.benefit4'),
       ]}
+      playVsBotGameType="connect_four"
     />
   )
 }

@@ -25,6 +25,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const dbUser = await prisma.users.findUnique({ where: { id: userId }, select: { premiumUntil: true } })
+    const isPremium = !!dbUser?.premiumUntil && dbUser.premiumUntil > new Date()
+
+    if (!isPremium) {
+      return NextResponse.json({ error: 'Premium required to access replays' }, { status: 403 })
+    }
+
     const { gameId } = await params
     const game = await prisma.games.findUnique({
       where: { id: gameId },

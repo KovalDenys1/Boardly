@@ -17,17 +17,16 @@ Improve Boardly as a reliable real-time multiplayer platform with strong game in
 ## Architecture Snapshot
 
 - Next.js app server (HTTP API/auth/pages): `:3000`
-- Socket.IO realtime server: `socket-server.ts` (`:3001`)
-- PostgreSQL + Prisma
+- Supabase Realtime: Broadcast (lobby events) + Postgres Changes (lobby/player table sync)
+- PostgreSQL + Prisma (hosted on Supabase)
 
 Core flow:
-`Client action -> API route -> DB update -> notify socket server -> room broadcast -> client reconcile`
+`Client action → API route → DB update → Supabase Realtime Broadcast → client reconcile`
 
 ## High-Risk Areas (read before editing)
 
-- `socket-server.ts`
-- `lib/socket/handlers/*`
-- `app/lobby/[code]/hooks/useSocketConnection.ts`
+- `lib/supabase-server.ts` (`broadcastToLobby` — must always be `await`ed before `return NextResponse.json()`)
+- `hooks/useRealtimeConnection.ts` (client Broadcast + Postgres Changes subscriber)
 - `app/api/game/[gameId]/state/route.ts`
 - `lib/game-engine.ts`
 - `lib/games/*`
@@ -65,9 +64,7 @@ Setup:
 
 Run locally:
 
-- `npm run dev:all` (preferred)
 - `npm run dev`
-- `npm run socket:dev`
 
 Quality checks:
 
@@ -95,7 +92,7 @@ API / auth / guest flow:
 - `npm test`
 - manual guest join/play smoke test if behavior changed
 
-Realtime / socket / game engine:
+Realtime / game engine:
 
 - `npm run ci:quick`
 - `npm test`
@@ -154,7 +151,7 @@ External MCP scaffold template (not auto-registered):
 ## Next.js MCP
 
 - The repo now includes root `.mcp.json` for `next-devtools-mcp`.
-- For Next.js runtime MCP, start the app with `npm run dev` (or `npm run dev:all` if you also need the socket server). Next.js 16 exposes the MCP endpoint automatically during dev.
+- For Next.js runtime MCP, start the app with `npm run dev`. Next.js 16 exposes the MCP endpoint automatically during dev.
 - Use `nextjs_index` first to discover the running server, then `nextjs_call` for tools like `get_project_metadata`, `get_routes`, and `get_errors`.
 - `get_errors` and `get_page_metadata` are only useful after opening the app in a real browser session.
 - `next dev` may rewrite `tsconfig.json` and `next-env.d.ts` for local type integration. Do not commit those changes unless they are intentional and reviewed.
@@ -219,7 +216,7 @@ Suggested Codex task prompts (examples):
 ## Working Style for Agents
 
 - Prefer targeted reads (`rg`, specific files) before editing.
-- Preserve existing patterns (Next.js app router, Prisma, socket handler structure).
+- Preserve existing patterns (Next.js app router, Prisma, Supabase Realtime handler structure).
 - Do not create one-off docs unless requested; update canonical docs when behavior changes.
 - For bug fixes, add/adjust tests near the changed behavior when practical.
 - Never expose secrets from `.env` in outputs or commits.
@@ -234,9 +231,10 @@ New API behavior:
 
 Realtime bug:
 
-- `socket-server.ts`
-- `lib/socket/handlers/*`
-- `__tests__/socket/*`
+- `lib/supabase-server.ts` (server-side broadcast)
+- `hooks/useRealtimeConnection.ts` (client-side subscription)
+- `hooks/use-lobby-list.ts` (lobby list Postgres Changes)
+- `__tests__/app/*`
 
 Game logic:
 
@@ -248,4 +246,14 @@ Lobby UX/state sync:
 
 - `app/lobby/[code]/hooks/*`
 - `app/lobby/[code]/components/*`
-- `__tests__/app/*`, `__tests__/socket/*`
+- `__tests__/app/*`
+
+## Realtime Gotchas
+
+Critical non-obvious invariants — read before touching any API route or realtime code:
+
+- **Always `await broadcastToLobby()`** before `return NextResponse.json()`. Vercel terminates the serverless function as soon as the response is sent; any unresolved `void` promise is killed and the broadcast never reaches clients (this was bug #509).
+- **Never use `notifySocket`** — that function and all of `lib/socket/` were deleted in the Supabase Realtime migration. Use `broadcastToLobby` from `lib/supabase-server.ts`.
+- **Topic format is `lobby:{code}`** (no `realtime:` prefix) — the Supabase REST broadcast API strips the prefix internally.
+- **`guess_the_spy` state must be sanitized** via `sanitizeSpyStateForBroadcast()` before sending — raw Postgres Changes would leak the spy's identity to all subscribers.
+- **`player-joined` must use explicit Broadcast** (not Postgres Changes) — PG Changes on the Players table don't include the username, which would require an extra client-side DB join.

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import GameDetailPage from '../components/GameDetailPage'
 
 export const metadata: Metadata = {
-  title: 'Liar\'s Party Coming Soon - Social Bluffing Party Game',
+  title: 'Play Liar\'s Party Online - Social Bluffing Party Game',
   description:
     'Play Liar\'s Party online with friends for free! 4–12 players, real-time bluffing and voting. Make claims, challenge liars, and survive elimination. No download needed. Start on Boardly now!',
   keywords: [
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     'social party game no download',
   ],
   openGraph: {
-    title: "Liar's Party Coming Soon | Boardly",
+    title: "Play Liar's Party Online | Boardly",
     description:
       "Make claims, vote on who's bluffing, and avoid elimination. Free social bluffing game for 4–12 players.",
     url: 'https://boardly.online/games/liars-party',
@@ -23,14 +23,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Liar's Party Coming Soon | Boardly",
+    title: "Play Liar's Party Online | Boardly",
     description: 'Real-time bluffing party game in your browser. Claim, challenge, survive. Free, no download.',
   },
   alternates: {
     canonical: 'https://boardly.online/games/liars-party',
   },
   robots: {
-    index: false,
+    index: true,
     follow: true,
   },
 }
@@ -69,14 +69,15 @@ export default function LiarsPartyGamePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <GameDetailPage
         gameName="Liar's Party"
-        title="Liar's Party Is Coming Soon"
+        title="Play Liar's Party Online"
         description="A social bluffing game where players make claims, read the room, and vote on who is telling the truth."
         icon="🎭"
         iconLabel="Liar's Party"
+        gameId="liars-party"
+        accentColor="var(--bd-lav)"
         accent="var(--bd-lav)"
         lobbiesHref="/games/liars-party/lobbies"
-        primaryCtaLabel="Coming soon"
-        primaryCtaDisabled
+        primaryCtaLabel="Play now"
         facts={[
           { label: 'Players', value: '4–12' },
           { label: 'Price', value: 'Free' },

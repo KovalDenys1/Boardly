@@ -13,7 +13,7 @@ export default function MobileTabPanel({ id, activeTab, children }: MobileTabPan
 
   return (
     <div
-      className={`md:hidden absolute inset-0 w-full max-w-full transition-all duration-300 ease-in-out ${
+      className={`lg:hidden absolute inset-0 w-full max-w-full transition-all duration-300 ease-in-out ${
         isActive
           ? 'opacity-100 pointer-events-auto z-10'
           : 'opacity-0 pointer-events-none z-0'

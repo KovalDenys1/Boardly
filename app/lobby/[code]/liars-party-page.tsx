@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { clientLogger } from '@/lib/client-logger'
 import { showToast } from '@/lib/i18n-toast'
-import { useGameSocket } from '@/hooks/use-game-socket'
+import { useRealtimeConnection } from '@/app/lobby/[code]/hooks/useRealtimeConnection'
+import type { GameUpdatePayload } from '@/types/game'
 import { finalizePendingLobbyCreateMetric } from '@/lib/lobby-create-metrics'
 import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -17,6 +18,8 @@ import { LiarsPartyGame, type LiarsPartyGameData, type LiarsPartyRoundResult } f
 
 interface LiarsPartyPageProps {
   code: string
+  isSpectator?: boolean
+  onGameReset?: () => void
 }
 
 interface Lobby {
@@ -27,6 +30,7 @@ interface Lobby {
   name: string
   isActive?: boolean
   turnTimer?: number
+  theme?: string
 }
 
 interface GamePlayer {
@@ -53,7 +57,7 @@ interface WaitingScreenProps {
   isStarting: boolean
   onStart: () => void
   onLeave: () => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLeave, t }: WaitingScreenProps) {
@@ -65,7 +69,7 @@ function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLe
       className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-rose-500 to-orange-500"
       data-testid="liars-party-waiting-room"
     >
-      <h1 className="text-3xl font-bold text-white drop-shadow">🎭 Liar&apos;s Party</h1>
+      <h1 className="text-3xl font-bold text-white drop-shadow">🎭 {t('liarsParty.name')}</h1>
 
       <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white text-center">
         <div className="text-lg font-semibold mb-1">{players.length} / 12</div>
@@ -87,7 +91,7 @@ function WaitingScreen({ players, data, rules, isHost, isStarting, onStart, onLe
       </div>
 
       <div className="bg-white/10 backdrop-blur rounded-xl p-4 w-full max-w-sm text-white">
-        <div className="font-semibold mb-2">Players ({players.length})</div>
+        <div className="font-semibold mb-2">{t('liarsParty.playersHeading', { count: players.length })}</div>
         <div className="space-y-1">
           {players.map(p => (
             <div key={p.id} className="text-sm text-white/90">{p.name}</div>
@@ -123,7 +127,7 @@ interface ClaimScreenProps {
   isMoveSubmitting: boolean
   timerRemaining: number
   onSubmitClaim: (claim: string, isBluff: boolean) => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function ClaimScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onSubmitClaim, t }: ClaimScreenProps) {
@@ -195,7 +199,7 @@ interface EliminatedClaimScreenProps {
   players: GamePlayer[]
   currentUserId: string
   timerRemaining: number
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t }: EliminatedClaimScreenProps) {
@@ -210,6 +214,7 @@ function EliminatedClaimScreen({ data, players, currentUserId, timerRemaining, t
     >
       <div
         className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
+        role="alert"
         data-testid="eliminated-banner"
       >
         {t('liarsParty.eliminatedAt', { round: eliminatedRound ?? '?' })}
@@ -230,7 +235,7 @@ interface ChallengeScreenProps {
   isMoveSubmitting: boolean
   timerRemaining: number
   onVote: (decision: 'challenge' | 'believe') => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function ChallengeScreen({ data, players, currentUserId, isMoveSubmitting, timerRemaining, onVote, t }: ChallengeScreenProps) {
@@ -292,7 +297,7 @@ interface EliminatedChallengeScreenProps {
   data: LiarsPartyGameData
   currentUserId: string
   timerRemaining: number
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: EliminatedChallengeScreenProps) {
@@ -307,6 +312,7 @@ function EliminatedChallengeScreen({ data, currentUserId, timerRemaining, t }: E
     >
       <div
         className="w-full max-w-md bg-red-900/60 border border-red-400/50 rounded-xl p-4 text-white text-center"
+        role="alert"
         data-testid="eliminated-banner"
       >
         {t('liarsParty.eliminatedAt', { round: eliminatedRound ?? '?' })}
@@ -329,7 +335,7 @@ interface RevealScreenProps {
   isHost: boolean
   isMoveSubmitting: boolean
   onAdvanceRound: () => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
 function RevealScreen({ data, players, isHost, isMoveSubmitting, onAdvanceRound, t }: RevealScreenProps) {
@@ -430,11 +436,12 @@ interface GameOverScreenProps {
   isHost: boolean
   isStarting: boolean
   onPlayAgain: () => void
+  onReturnToLobby: () => void
   onBackToGames: () => void
-  t: (key: string, opts?: Record<string, unknown>) => string
+  t: (key: TranslationKeys, opts?: Record<string, unknown>) => string
 }
 
-function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBackToGames, t }: GameOverScreenProps) {
+function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onReturnToLobby, onBackToGames, t }: GameOverScreenProps) {
   const winner = players.find(p => p.userId === data.winnerId || p.id === data.winnerId)
   const winnerName = winner?.name ?? data.winnerId ?? '?'
 
@@ -472,14 +479,27 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBack
         </div>
       </div>
 
-      {isHost && (
-        <button
-          onClick={onPlayAgain}
-          disabled={isStarting}
-          className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
-        >
-          {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
-        </button>
+      {isHost ? (
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={onPlayAgain}
+            disabled={isStarting}
+            className="px-8 py-3 bg-white text-rose-600 rounded-xl font-bold hover:bg-rose-50 disabled:opacity-50 shadow-lg"
+          >
+            {isStarting ? t('common.loading') : t('liarsParty.playAgain')}
+          </button>
+          <button
+            onClick={onReturnToLobby}
+            disabled={isStarting}
+            className="px-6 py-2 bg-white/20 text-white rounded-xl font-semibold text-sm hover:bg-white/30 disabled:opacity-50"
+          >
+            {t('game.ui.returnToLobby')}
+          </button>
+        </div>
+      ) : (
+        <div className="px-6 py-3 bg-white/10 text-white/60 rounded-xl font-semibold text-sm text-center">
+          {t('game.ui.waitingForHost')}
+        </div>
       )}
       <button onClick={onBackToGames} className="text-sm text-white/70 underline">
         {t('lobby.leave')}
@@ -490,7 +510,7 @@ function GameOverScreen({ data, players, isHost, isStarting, onPlayAgain, onBack
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
+export default function LiarsPartyPage({ code, isSpectator = false, onGameReset }: LiarsPartyPageProps) {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { isGuest, guestToken, guestId } = useGuest()
@@ -590,7 +610,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
     void loadLobby()
   }, [status, isGuest, guestToken, loadLobby])
 
-  const handleGameUpdate = useCallback((payload: Record<string, unknown>) => {
+  const handleGameUpdate = useCallback((payload: GameUpdatePayload) => {
     const activeGameId = activeGameIdRef.current
     if (payload?.action === 'state-change' && activeGameId) {
       const state = (payload?.payload as Record<string, unknown>)?.state
@@ -605,27 +625,30 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
     triggerLifecycleRedirect('liars-party-lifecycle-redirect')
   }, [loadLobby, triggerLifecycleRedirect])
 
-  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number }) => {
+  const handlePlayerLeft = useCallback((payload: { userId: string; username?: string; remainingPlayers?: number; gameTerminal?: boolean }) => {
     clientLogger.log('📡 LiarsParty player left', payload)
     if (payload.username) showToast.info('toast.playerLeft', undefined, { player: payload.username })
-    if (typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
+    if (!payload.gameTerminal && typeof payload.remainingPlayers === 'number' && payload.remainingPlayers < minPlayersRequired) {
       triggerLifecycleRedirect('liars-party-lifecycle-redirect')
       return
     }
     void loadLobby()
   }, [loadLobby, triggerLifecycleRedirect, minPlayersRequired])
 
-  const socket = useGameSocket({
+  const handleGameReset = useCallback(() => {
+    if (onGameReset) onGameReset()
+    else router.push(`/lobby/${code}`)
+  }, [code, onGameReset, router])
+
+  useRealtimeConnection({
     code,
-    status,
-    isGuest,
-    guestToken,
-    gameName: 'LiarsParty',
+    shouldJoinLobbyRoom: status !== 'loading' && (status === 'authenticated' || (isGuest && !!guestToken)),
     onGameUpdate: handleGameUpdate,
     onGameAbandoned: handleGameAbandoned,
     onPlayerLeft: handlePlayerLeft,
-    onLobbyUpdate: loadLobby,
-    onPlayerJoined: loadLobby,
+    onLobbyUpdate: () => { void loadLobby() },
+    onPlayerJoined: () => { void loadLobby() },
+    onGameReset: handleGameReset,
   })
 
   const handleMove = useCallback(async (type: string, payload: Record<string, unknown>) => {
@@ -696,6 +719,22 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
     }
   }, [lobby?.id, isStarting])
 
+  const handleReturnToWaiting = useCallback(async () => {
+    const userId = getCurrentUserId()
+    if (!userId || !lobby || lobby.creatorId !== userId) return
+    setIsStarting(true)
+    try {
+      const res = await fetchWithGuest(`/api/lobby/${code}/return-to-waiting`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to return to waiting room')
+      if (onGameReset) onGameReset()
+      else router.push(`/lobby/${code}`)
+    } catch (err) {
+      showToast.errorFrom(err, 'toast.gameStartFailed')
+    } finally {
+      setIsStarting(false)
+    }
+  }, [code, getCurrentUserId, lobby, onGameReset, router])
+
   if (loading) {
     return (
       <div className="flex min-h-[calc(100dvh-4rem)] items-center justify-center">
@@ -721,11 +760,11 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
   const rules = gameEngine
     ? (gameEngine as LiarsPartyGame).getGameRules()
     : [
-        'Each round, one active player becomes the claimant and submits one claim.',
-        'Other active players submit one vote: challenge or believe.',
-        'A bluff is considered caught only when challengers are a strict majority.',
-        'Wrong votes lose points; correct reads gain points; repeated caught bluffs add strikes.',
-        'A player is eliminated after reaching strike limit.',
+        t('liarsParty.rule1'),
+        t('liarsParty.rule2'),
+        t('liarsParty.rule3'),
+        t('liarsParty.rule4'),
+        t('liarsParty.rule5'),
       ]
 
   if (resolvedStatus === 'waiting') {
@@ -734,7 +773,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
         players={players}
         data={data}
         rules={rules}
-        isHost={isHost}
+        isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onStart={handleStartGame}
         onLeave={() => router.push('/games')}
@@ -758,7 +797,7 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       }
       return (
         <>
-          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
           <ClaimScreen
             data={data}
             players={players}
@@ -785,12 +824,12 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       }
       return (
         <>
-          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
           <ChallengeScreen
             data={data}
             players={players}
             currentUserId={currentUserId}
-            isMoveSubmitting={isMoveSubmitting}
+            isMoveSubmitting={isSpectator || isMoveSubmitting}
             timerRemaining={timerRemaining}
             onVote={(decision) => handleMove('submit-challenge', { decision })}
             t={t}
@@ -802,11 +841,11 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
     if (data.phase === 'reveal') {
       return (
         <>
-          {socket && <ReactionOverlay socket={socket} lobbyCode={code} />}
+          {!isSpectator && <ReactionOverlay lobbyCode={code} />}
           <RevealScreen
             data={data}
             players={players}
-            isHost={isHost}
+            isHost={!isSpectator && isHost}
             isMoveSubmitting={isMoveSubmitting}
             onAdvanceRound={() => handleMove('advance-round', {})}
             t={t}
@@ -821,9 +860,10 @@ export default function LiarsPartyPage({ code }: LiarsPartyPageProps) {
       <GameOverScreen
         data={data}
         players={players}
-        isHost={isHost}
+        isHost={!isSpectator && isHost}
         isStarting={isStarting}
         onPlayAgain={handleStartGame}
+        onReturnToLobby={handleReturnToWaiting}
         onBackToGames={() => router.push('/games')}
         t={t}
       />

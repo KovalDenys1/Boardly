@@ -2,6 +2,8 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import type { Game, Lobby, GamePlayer } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
 import type { BotDifficulty } from '@/lib/bot-profiles'
+import { getLobbyTheme, type LobbyTheme } from '@/lib/lobby-themes'
+import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
 
 interface WaitingRoomProps {
   game: Game | null
@@ -10,7 +12,9 @@ interface WaitingRoomProps {
   minPlayers: number
   getCurrentUserId: () => string | null | undefined
   canManageBots?: boolean
+  canKickPlayers?: boolean
   onKickBot?: (botPlayerId: string) => void
+  onKickPlayer?: (playerId: string) => void
   onProfileClick?: (userId: string) => void
 }
 
@@ -20,7 +24,9 @@ export default function WaitingRoom({
   minPlayers,
   getCurrentUserId,
   canManageBots,
+  canKickPlayers,
   onKickBot,
+  onKickPlayer,
   onProfileClick,
 }: WaitingRoomProps) {
   const { t } = useTranslation()
@@ -29,16 +35,24 @@ export default function WaitingRoom({
   const maxPlayers = lobby?.maxPlayers || 4
   const openSlots = Math.max(maxPlayers - playerCount, 0)
   const missingPlayers = Math.max(minPlayers - playerCount, 0)
+  const lobbyTheme = getLobbyTheme(lobby?.theme)
+  const hasCustomTheme = lobby?.theme && lobby.theme !== 'default'
 
   return (
     <div className="space-y-2 px-4 py-4 sm:px-6">
+      {/* Theme banner */}
+      {hasCustomTheme && (
+        <LobbyThemeBanner theme={lobby.theme as LobbyTheme} />
+      )}
       {/* Players */}
       {game?.players?.map((p: GamePlayer, index: number) => {
         const isBot = !!p.user?.bot
-        const playerName = p.user?.username || p.user?.email || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
+        const playerName = p.user?.username || p.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
         const isCurrentUser = p.userId === getCurrentUserId()
+        const isPremium = !isBot && !!(p.user as { isPremium?: boolean } | undefined)?.isPremium
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined
         const difficultyLabel = botDifficulty ? t(`game.ui.botDifficulty${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)}` as Parameters<typeof t>[0]) : null
+        const avatarSrc = p.user?.avatarUrl ?? p.user?.image ?? null
 
         const canClickProfile = onProfileClick && !isBot
 
@@ -52,14 +66,25 @@ export default function WaitingRoom({
                 ? 'border-bd-mint/45 bg-bd-mint/15'
                 : isBot
                   ? 'border-bd-lav/35 bg-bd-lav/10'
-                  : 'border-bd-line bg-white'
+                  : 'border-bd-line bg-bd-card-warm'
             } ${canClickProfile ? 'cursor-pointer transition-colors hover:border-bd-ink hover:bg-bd-card-warm' : ''}`}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xs font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
-              {index + 1}
-            </div>
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt={playerName}
+                className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[2px_2px_0_var(--bd-ink)]"
+              />
+            ) : (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xs font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+                {index + 1}
+              </div>
+            )}
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-              <span className="truncate text-sm font-bold text-bd-ink">{playerName}</span>
+              <span className={`truncate text-sm font-bold ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{playerName}</span>
+              {isPremium && (
+                <span className="shrink-0 text-[11px]" title="Premium">👑</span>
+              )}
               {isCurrentUser && !isBot && (
                 <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
                   {t('game.ui.you')}
@@ -87,6 +112,16 @@ export default function WaitingRoom({
                 ✕
               </button>
             )}
+            {/* Kick player button */}
+            {!isBot && !isCurrentUser && canKickPlayers && onKickPlayer && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onKickPlayer(p.id) }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-bd-ink-muted transition-all hover:bg-bd-coral/15 hover:text-bd-coral-deep"
+                title={t('game.ui.kickPlayer')}
+              >
+                ✕
+              </button>
+            )}
           </div>
         )
       })}
@@ -97,7 +132,7 @@ export default function WaitingRoom({
           key={`empty-${i}`}
           className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-bd-line bg-white text-xs font-bold text-bd-ink-muted">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-bd-line bg-bd-bg2 text-xs font-bold text-bd-ink-muted">
             {playerCount + i + 1}
           </div>
           <span className="text-sm italic text-bd-ink-muted">

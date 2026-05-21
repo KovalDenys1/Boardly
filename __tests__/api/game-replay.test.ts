@@ -11,6 +11,9 @@ import { decodeGameReplaySnapshots } from '@/lib/game-replay'
 
 jest.mock('@/lib/db', () => ({
   prisma: {
+    users: {
+      findUnique: jest.fn(),
+    },
     games: {
       findUnique: jest.fn(),
     },
@@ -71,6 +74,7 @@ describe('GET /api/game/[gameId]/replay', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPrisma.users.findUnique.mockResolvedValue({ premiumUntil: new Date(Date.now() + 86400000) } as any)
     mockPrisma.games.findUnique.mockResolvedValue(mockGame as any)
     mockPrisma.gameStateSnapshots.findMany.mockResolvedValue([] as any)
     mockDecodeGameReplaySnapshots.mockReturnValue([

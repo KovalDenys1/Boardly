@@ -17,7 +17,16 @@ model Users {
   publicProfileId String?   @unique // Stable public ID used in shareable profile links
   passwordHash    String?
   image           String?
-  isGuest         Boolean   @default(false) // Flag for guest (temporary) users
+  avatarUrl         String?
+  bio             String?
+  accentColor       String?
+  featuredGame      String?
+  premiumCardStyle  String?
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  premiumUntil          DateTime? @db.Timestamptz(3)
+  premiumCancelAtPeriod Boolean   @default(false)
+  isGuest           Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
   banReason       String?
@@ -161,6 +170,7 @@ model Lobbies {
   turnTimer       Int            @default(60) // Turn time limit in seconds (30, 60, 90, 120)
   isActive        Boolean        @default(true)
   gameType        String         @default("yahtzee")
+  theme           String         @default("default")
   createdAt       DateTime       @default(now()) @db.Timestamptz(3)
   creatorId       String?
   creator         Users?         @relation("LobbyCreator", fields: [creatorId], references: [id], onDelete: SetNull)
