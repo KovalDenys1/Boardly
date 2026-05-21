@@ -112,6 +112,6 @@ describe('PublicProfileView', () => {
       />
     )
 
-    expect(screen.getByText('Lv. 1')).toBeTruthy()
+    expect(screen.getByText('Lvl. 1')).toBeTruthy()
   })
 })
