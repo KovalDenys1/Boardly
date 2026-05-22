@@ -2364,7 +2364,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                 >
                   {/* Game Tab */}
                   <MobileTabPanel id="game" activeTab={mobileActiveTab}>
-                    <div className="h-full min-h-0 p-4">
+                    <div className="h-full min-h-0 p-3">
                       <GameBoard
                         gameEngine={gameEngine}
                         game={game}
@@ -2429,7 +2429,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Players Tab */}
                   <MobileTabPanel id="players" activeTab={mobileActiveTab}>
-                    <div className="p-4 space-y-4">
+                    <div className="p-3 space-y-3">
                       <PlayerList
                         players={playersForLeaderboard}
                         currentTurn={gameEngine.getState().currentPlayerIndex}
@@ -2443,10 +2443,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
                         selectedPlayerId={selectedPlayerId || undefined}
                         departedPlayerIds={departedPlayerIds}
                       />
-
-                      <div className="mt-4">
-                        <RollHistory entries={rollHistory} />
-                      </div>
+                      <RollHistory entries={rollHistory} />
                     </div>
                   </MobileTabPanel>
 

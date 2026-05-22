@@ -270,7 +270,7 @@ const Scorecard = React.memo(function Scorecard({
     >
       {/* Player / navigation header */}
       {hasHeader && (
-        <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+        <div className="flex-shrink-0 flex items-center justify-between px-3 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           {playerName && (
             <div className="min-w-0 flex-1">
               <span className="bd-kicker">Scorecard</span>
@@ -304,7 +304,7 @@ const Scorecard = React.memo(function Scorecard({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5 sm:px-4" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
+      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2.5" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
         <span className="bd-chip px-3 py-1.5 text-[11px]">
           {filledCategories}/{upperSection.length + lowerSection.length} filled
         </span>
@@ -351,7 +351,7 @@ const Scorecard = React.memo(function Scorecard({
       {/* Two-column body — each column scrolls independently on small viewports */}
       <div className="flex-1 min-h-0 grid grid-cols-1 sm:grid-cols-2 overflow-y-auto sm:overflow-hidden divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: 'var(--bd-line)' }}>
         {/* ── Upper section ── */}
-        <div className="flex flex-col min-h-0 px-2.5 sm:px-3 pt-3 pb-2 sm:overflow-y-auto">
+        <div className="flex flex-col min-h-0 px-3 pt-3 pb-2 sm:overflow-y-auto">
           {/* Section header */}
           <div className="mb-2 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -413,7 +413,7 @@ const Scorecard = React.memo(function Scorecard({
         </div>
 
         {/* ── Lower section ── */}
-        <div className="flex flex-col min-h-0 px-2.5 sm:px-3 pt-3 pb-2 sm:overflow-y-auto">
+        <div className="flex flex-col min-h-0 px-3 pt-3 pb-2 sm:overflow-y-auto">
           {/* Section header */}
           <div className="mb-2 flex flex-shrink-0 items-center justify-between gap-2">
             <div className="flex items-center gap-2">
