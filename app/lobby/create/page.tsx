@@ -574,17 +574,16 @@ function CreateLobbyPage() {
   return (
     <div className="page-shell bd-page bd-screen flex flex-col">
 
-      {/* Top bar: back + game selector — always white, never themed */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-[#E8DDC8] bg-white px-5 py-3">
+      {/* Top bar: back + game selector */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--bd-line)] bg-[var(--bd-card-warm)] px-5 py-3">
         <button
           type="button"
           onClick={() => router.push('/games')}
           className="bd-btn bd-btn-soft shrink-0 px-3 py-2 text-sm"
-          style={{ color: '#1F1B16', borderColor: '#E8DDC8' }}
         >
           ← {t('lobby.create.cancel')}
         </button>
-        <div className="h-4 w-px shrink-0 bg-[#E8DDC8]" />
+        <div className="h-4 w-px shrink-0 bg-[var(--bd-line)]" />
         <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {Object.entries(GAME_INFO)
             .filter(([key]) => !isTemporarilyUnavailableGameType(key))

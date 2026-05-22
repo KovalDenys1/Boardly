@@ -52,7 +52,7 @@ function LeaderboardRow({ entry, isLast, t }: { entry: LeaderboardEntry; isLast:
   const isTop3 = entry.rank <= 3
   const rowClass = `grid gap-3 px-4 py-4 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_6rem_6rem_6rem_6rem] md:items-center md:px-5 ${
     entry.publicProfileId ? 'hover:bg-bd-card-warm' : ''
-  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-white' : 'bg-white/75'}`
+  } ${!isLast ? 'border-b border-bd-line' : ''} ${isTop3 ? 'bg-[var(--bd-card-warm)]' : 'bg-[var(--bd-bg)]'}`
 
   const content = (
     <>
@@ -190,7 +190,7 @@ function LeaderboardPageContent() {
                     key={p}
                     onClick={() => setPeriod(p)}
                     className={`bd-chip px-4 py-2 text-sm transition-all ${
-                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-white'
+                      period === p ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-[var(--bd-card-warm)]'
                     }`}
                   >
                     {p === 'all' ? t('leaderboard.allTime', 'All Time') : t('leaderboard.last30days', 'Last 30 Days')}
@@ -205,10 +205,10 @@ function LeaderboardPageContent() {
                     aria-haspopup="listbox"
                     aria-expanded={gameMenuOpen}
                     onClick={() => setGameMenuOpen((open) => !open)}
-                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-white px-4 py-3 text-left shadow-[0_4px_0_#E8DDC8] transition-all sm:w-auto ${
+                    className={`flex w-full min-w-64 items-center justify-between gap-4 rounded-2xl border-2 bg-[var(--bd-card-warm)] px-4 py-3 text-left shadow-[0_4px_0_var(--bd-line)] transition-all sm:w-auto ${
                       gameMenuOpen
-                        ? 'border-bd-ink shadow-[0_5px_0_#1F1B16]'
-                        : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_#1F1B16]'
+                        ? 'border-bd-ink shadow-[0_5px_0_var(--bd-ink)]'
+                        : 'border-bd-line hover:border-bd-ink hover:shadow-[0_5px_0_var(--bd-ink)]'
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-3">
@@ -236,7 +236,7 @@ function LeaderboardPageContent() {
 
                   {gameMenuOpen && (
                     <div
-                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-white shadow-[0_8px_0_#1F1B16,0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
+                      className="absolute right-0 z-30 mt-3 w-full min-w-72 overflow-hidden rounded-2xl border-2 border-bd-ink bg-[var(--bd-card-warm)] shadow-[0_8px_0_var(--bd-ink),0_18px_36px_-18px_rgba(31,27,22,0.45)] sm:w-80"
                       role="listbox"
                       aria-label={t('leaderboard.gameFilter')}
                     >
@@ -269,7 +269,7 @@ function LeaderboardPageContent() {
                                 <span className="truncate text-sm font-bold">{label}</span>
                               </span>
                               {selected && (
-                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white text-sm font-black text-bd-lav-deep">✓</span>
+                                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--bd-bg)] text-sm font-black text-bd-lav-deep">✓</span>
                               )}
                             </button>
                           )

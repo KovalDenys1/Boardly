@@ -87,15 +87,15 @@ function DeleteAccountContent() {
 
   return (
     <div className="page-shell-full bg-[var(--bd-bg)] flex items-center justify-center overflow-y-auto p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8">
+      <div className="max-w-md w-full bg-[var(--bd-card-warm)] border border-[var(--bd-line)] rounded-2xl shadow-2xl p-8">
         {error ? (
           <>
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">❌</div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              <h1 className="text-2xl font-bold text-[var(--bd-ink)] mb-2">
                 {t('deleteAccount.error')}
               </h1>
-              <p className="text-gray-600">{error}</p>
+              <p className="text-[var(--bd-ink-soft)]">{error}</p>
             </div>
             <button
               onClick={() => router.push('/')}
@@ -108,10 +108,10 @@ function DeleteAccountContent() {
           <>
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">✅</div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              <h1 className="text-2xl font-bold text-[var(--bd-ink)] mb-2">
                 {t('deleteAccount.success')}
               </h1>
-              <p className="text-gray-600">{t('deleteAccount.successMessage')}</p>
+              <p className="text-[var(--bd-ink-soft)]">{t('deleteAccount.successMessage')}</p>
             </div>
             <LoadingSpinner size="md" />
           </>
@@ -122,16 +122,16 @@ function DeleteAccountContent() {
               <h1 className="text-2xl font-bold text-red-600 mb-2">
                 {t('deleteAccount.title')}
               </h1>
-              <p className="text-gray-700 mb-4">
+              <p className="text-[var(--bd-ink-soft)] mb-4">
                 {t('deleteAccount.confirmation')}
               </p>
             </div>
 
-            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
-              <h2 className="font-bold text-red-800 mb-2">
+            <div className="bg-red-50 border-2 border-red-200 dark:bg-red-900/20 dark:border-red-800 rounded-lg p-4 mb-6">
+              <h2 className="font-bold text-red-800 dark:text-red-300 mb-2">
                 {t('deleteAccount.willBeDeleted')}
               </h2>
-              <ul className="text-sm text-red-700 space-y-1">
+              <ul className="text-sm text-red-700 dark:text-red-400 space-y-1">
                 <li>• {t('deleteAccount.profileData')}</li>
                 <li>• {t('deleteAccount.gameHistory')}</li>
                 <li>• {t('deleteAccount.friends')}</li>
@@ -140,7 +140,7 @@ function DeleteAccountContent() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[var(--bd-ink-soft)] mb-2">
                 {t('deleteAccount.typeDelete')}
               </label>
               <input
@@ -148,7 +148,7 @@ function DeleteAccountContent() {
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder={t('deleteAccount.confirmPlaceholder')}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-center font-mono text-lg"
+                className="w-full px-4 py-3 border-2 border-[var(--bd-line)] bg-[var(--bd-input-bg)] text-[var(--bd-ink)] rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-center font-mono text-lg"
                 disabled={deleting}
               />
             </div>

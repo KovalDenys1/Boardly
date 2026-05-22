@@ -232,7 +232,7 @@ export function NotificationsMenu() {
         onClick={() => setOpen((previousValue) => !previousValue)}
         className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all hover:-translate-y-px ${
           unreadCount > 0
-            ? 'border-[var(--bd-ink)] bg-white text-[var(--bd-ink)] shadow-[0_3px_0_rgba(31,27,22,0.14)]'
+            ? 'border-[var(--bd-ink)] bg-[var(--bd-card-warm)] text-[var(--bd-ink)] shadow-[0_3px_0_rgba(31,27,22,0.14)]'
             : 'border-[var(--bd-line)] bg-[var(--bd-card-warm)] text-[var(--bd-ink-muted)] hover:text-[var(--bd-ink)]'
         }`}
         aria-label={t('header.openNotifications')}
@@ -255,7 +255,7 @@ export function NotificationsMenu() {
             aria-label={t('common.close')}
           />
 
-          <div className="fixed left-3 right-3 top-[4.75rem] z-50 overflow-hidden rounded-3xl border border-[var(--bd-line)] bg-white shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-[22.5rem]">
+          <div className="fixed left-3 right-3 top-[4.75rem] z-50 overflow-hidden rounded-3xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-[22.5rem]">
             <div className="flex items-start justify-between gap-3 border-b border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-4">
               <div>
                 <p className="bd-kicker">
@@ -269,14 +269,14 @@ export function NotificationsMenu() {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="rounded-full border border-[var(--bd-line)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--bd-ink-soft)] transition-colors hover:bg-[var(--bd-card-warm)] hover:text-[var(--bd-ink)]"
+                  className="rounded-full border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-1.5 text-xs font-bold text-[var(--bd-ink-soft)] transition-colors hover:bg-[var(--bd-card-warm)] hover:text-[var(--bd-ink)]"
                 >
                   {t('header.markAllRead')}
                 </button>
               )}
             </div>
 
-            <div className="max-h-[32rem] overflow-y-auto bg-white px-2 py-2 overscroll-contain">
+            <div className="max-h-[32rem] overflow-y-auto bg-[var(--bd-bg)] px-2 py-2 overscroll-contain">
               {loading && notifications.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
                   {t('common.loading')}
@@ -306,7 +306,7 @@ export function NotificationsMenu() {
                         }}
                         className={`w-full rounded-2xl border px-4 py-3 text-left transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
                           item.readAt
-                            ? 'border-[var(--bd-line)] bg-white'
+                            ? 'border-[var(--bd-line)] bg-[var(--bd-card-warm)]'
                             : toneClass
                         }`}
                       >
