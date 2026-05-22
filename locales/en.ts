@@ -21,6 +21,7 @@ const en = {
     and: 'and',
     deleting: 'Deleting...',
     goHome: 'Go to Home',
+    retry: 'Retry',
     optional: 'optional',
     coming_soon: 'Coming Soon',
     rules: 'Rules',

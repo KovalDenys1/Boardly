@@ -21,6 +21,7 @@ const ru = {
     and: 'и',
     deleting: 'Удаление...',
     goHome: 'На главную',
+    retry: 'Повторить',
     optional: 'необязательно',
     coming_soon: 'Скоро',
     rules: 'Правила',

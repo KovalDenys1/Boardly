@@ -23,6 +23,7 @@ const uk: Translation = {
     and: 'та',
     deleting: 'Видалення...',
     goHome: 'На головну',
+    retry: 'Повторити',
     optional: 'необов\'язково',
     coming_soon: 'Вже скоро',
     rules: 'Правила',

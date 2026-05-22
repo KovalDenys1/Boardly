@@ -21,6 +21,7 @@ const no = {
     and: 'og',
     deleting: 'Sletter...',
     goHome: 'Gå til hjem',
+    retry: 'Prøv igjen',
     optional: 'valgfritt',
     coming_soon: 'Kommer snart',
     rules: 'Regler',

@@ -39,6 +39,7 @@ export default function FriendsListModal({
   const [friends, setFriends] = useState<Friend[]>([])
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [inviting, setInviting] = useState(false)
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function FriendsListModal({
   const loadFriends = async () => {
     try {
       setLoading(true)
+      setLoadError(false)
       const res = await fetch('/api/friends')
       if (!res.ok) throw new Error('Failed to load friends')
 
@@ -62,6 +64,7 @@ export default function FriendsListModal({
     } catch (error) {
       clientLogger.error('Error loading friends:', error)
       showToast.error('profile.friends.errors.loadFailed')
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -157,6 +160,14 @@ export default function FriendsListModal({
         {loading ? (
           <div className="flex justify-center py-8">
             <LoadingSpinner />
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <span className="text-3xl">⚠️</span>
+            <p className="text-sm" style={{ color: 'var(--bd-ink-soft)' }}>{t('profile.friends.errors.loadFailed')}</p>
+            <button onClick={loadFriends} className="bd-btn bd-btn-soft text-xs">
+              {t('common.retry')}
+            </button>
           </div>
         ) : friends.length === 0 ? (
           <div className="text-center py-8">
