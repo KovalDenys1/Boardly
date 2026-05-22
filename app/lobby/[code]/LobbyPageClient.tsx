@@ -2390,7 +2390,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
                   {/* Scorecard Tab */}
                   <MobileTabPanel id="scorecard" activeTab={mobileActiveTab}>
-                    <div className="p-4">
+                    <div className="h-full p-3">
                       {(() => {
                         const currentUserId = getCurrentUserId()
                         const viewingPlayerId = selectedPlayerId || gameEngine.getCurrentPlayer()?.id
