@@ -71,7 +71,7 @@ function getCategoryState(
 }
 
 const rowBase =
-  'group w-full flex items-center gap-2 px-2.5 sm:px-3 rounded-2xl border min-h-[46px] sm:min-h-[44px] transition-all duration-150 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none'
+  'group w-full flex items-center gap-2 px-3 rounded-2xl border min-h-[46px] sm:min-h-[44px] transition-all duration-150 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:outline-none'
 
 const rowVariants: Record<CategoryState, string> = {
   'high-value':
@@ -322,7 +322,7 @@ const Scorecard = React.memo(function Scorecard({
       </div>
 
       {shouldShowScoringGuidance && (
-        <div className="flex-shrink-0 border-b px-3 sm:px-4 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 52%, rgba(107,193,240,0.14) 100%)' }}>
+        <div className="flex-shrink-0 border-b px-3 py-3" style={{ borderColor: 'rgba(79,201,166,0.28)', background: 'linear-gradient(90deg, rgba(79,201,166,0.14) 0%, var(--bd-bg) 52%, rgba(107,193,240,0.14) 100%)' }}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="bd-kicker" style={{ color: 'var(--bd-mint-deep)' }}>
@@ -364,7 +364,7 @@ const Scorecard = React.memo(function Scorecard({
           </div>
 
           {/* Bonus progress */}
-          <div className="flex-shrink-0 mb-2.5 px-0.5">
+          <div className="flex-shrink-0 mb-2.5">
             <div className="flex items-center justify-between mb-1 gap-2">
               <span className="text-xs font-semibold text-bd-ink-muted">
                 {t('yahtzee.ui.bonusProgress', { current: upperTotal, target: 63 })}
@@ -399,7 +399,7 @@ const Scorecard = React.memo(function Scorecard({
           </div>
 
           {/* Upper subtotal */}
-          <div className="flex-shrink-0 flex items-center justify-between mt-2 pt-2 border-t px-1" style={{ borderColor: 'var(--bd-line)' }}>
+          <div className="flex-shrink-0 flex items-center justify-between mt-2 pt-2 border-t" style={{ borderColor: 'var(--bd-line)' }}>
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-bd-ink-muted">
               Subtotal
             </span>
@@ -431,7 +431,7 @@ const Scorecard = React.memo(function Scorecard({
           </div>
 
           {/* Lower subtotal */}
-          <div className="flex-shrink-0 flex items-center justify-between mt-2 pt-2 border-t px-1" style={{ borderColor: 'var(--bd-line)' }}>
+          <div className="flex-shrink-0 flex items-center justify-between mt-2 pt-2 border-t" style={{ borderColor: 'var(--bd-line)' }}>
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-bd-ink-muted">
               Subtotal
             </span>
@@ -441,7 +441,7 @@ const Scorecard = React.memo(function Scorecard({
       </div>
 
       {/* Total score footer */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: 'var(--bd-line)', background: 'linear-gradient(90deg, rgba(255,196,77,0.14) 0%, rgba(155,140,255,0.14) 100%)' }}>
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-3 border-t" style={{ borderColor: 'var(--bd-line)', background: 'linear-gradient(90deg, rgba(255,196,77,0.14) 0%, rgba(155,140,255,0.14) 100%)' }}>
         <span className="bd-kicker">
           Total
         </span>
