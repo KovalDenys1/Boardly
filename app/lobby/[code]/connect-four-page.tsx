@@ -43,10 +43,10 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
     disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc
 }) {
     if (ghost) {
-        const stroke = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
+        const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
         return (
             <svg width="100%" height="100%" viewBox="0 0 36 36" style={{ display: 'block' }}>
-                <circle cx="18" cy="18" r="13" fill="none" stroke={stroke} strokeWidth="2.5" strokeDasharray="5 3" strokeLinecap="round" />
+                <circle cx="18" cy="18" r="14" fill={fill} stroke="rgba(255,255,255,0.9)" strokeWidth="2.5" strokeDasharray="5 3" strokeLinecap="round" />
             </svg>
         )
     }
