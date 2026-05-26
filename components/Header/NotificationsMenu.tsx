@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { useTranslation } from '@/lib/i18n-helpers'
+import { getSupabaseClient } from '@/lib/supabase-client'
 import {
   buildNotificationDisplayItem,
   type NotificationTone,
@@ -48,109 +50,92 @@ export function NotificationsMenu() {
   const router = useRouter()
   const pathname = usePathname()
   const { t, i18n } = useTranslation()
+  const { data: session } = useSession()
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const fetchInFlightRef = useRef(false)
+  const summaryInFlightRef = useRef(false)
+  const listInFlightRef = useRef(false)
   const lastBackgroundRefreshAtRef = useRef(0)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
   const [notifications, setNotifications] = useState<InAppNotificationItem[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
 
-  const fetchNotifications = useCallback(async (options?: { silent?: boolean; summary?: boolean; force?: boolean }) => {
-    const silent = options?.silent ?? false
-    const summary = options?.summary ?? false
-    const force = options?.force ?? false
-
-    if (fetchInFlightRef.current && !force) {
-      return
-    }
-
-    fetchInFlightRef.current = true
-
-    if (!silent && !summary) {
-      setLoading(true)
-    }
-
+  const fetchSummary = useCallback(async () => {
+    if (summaryInFlightRef.current) return
+    summaryInFlightRef.current = true
     try {
-      const search = summary ? '?summary=1' : '?limit=20'
-      const response = await fetch(`/api/notifications${search}`, {
-        cache: 'no-store',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to load notifications')
-      }
-
+      const response = await fetch('/api/notifications?summary=1', { cache: 'no-store' })
+      if (!response.ok) return
       const data = (await response.json()) as InAppNotificationResponse
       setUnreadCount(data.unreadCount || 0)
-
-      if (!summary) {
-        setNotifications(data.notifications || [])
-      }
     } catch {
-      if (!silent && !summary) {
-        setNotifications([])
-        setUnreadCount(0)
-      }
+      // silent — badge just doesn't update
     } finally {
-      fetchInFlightRef.current = false
-      if (!silent && !summary) {
-        setLoading(false)
-      }
+      summaryInFlightRef.current = false
+    }
+  }, [])
+
+  const fetchList = useCallback(async () => {
+    if (listInFlightRef.current) return
+    listInFlightRef.current = true
+    setLoading(true)
+    setError(false)
+    try {
+      const response = await fetch('/api/notifications?limit=20', { cache: 'no-store' })
+      if (!response.ok) throw new Error('fetch failed')
+      const data = (await response.json()) as InAppNotificationResponse
+      setUnreadCount(data.unreadCount || 0)
+      setNotifications(data.notifications || [])
+    } catch {
+      setError(true)
+      setNotifications([])
+    } finally {
+      listInFlightRef.current = false
+      setLoading(false)
     }
   }, [])
 
   const refreshUnreadCount = useCallback((force = false) => {
     const now = Date.now()
-
     if (!force && now - lastBackgroundRefreshAtRef.current < NOTIFICATIONS_BACKGROUND_REFRESH_INTERVAL_MS) {
       return
     }
-
     lastBackgroundRefreshAtRef.current = now
-    void fetchNotifications({ silent: true, summary: true, force })
-  }, [fetchNotifications])
+    void fetchSummary()
+  }, [fetchSummary])
 
+  // Background unread count polling
   useEffect(() => {
     refreshUnreadCount(true)
-
     const intervalId = window.setInterval(() => {
       refreshUnreadCount()
     }, NOTIFICATIONS_BACKGROUND_REFRESH_INTERVAL_MS)
-
-    return () => {
-      window.clearInterval(intervalId)
-    }
+    return () => window.clearInterval(intervalId)
   }, [refreshUnreadCount])
 
+  // Fetch full list when dropdown opens
   useEffect(() => {
-    if (!open) {
-      return
-    }
+    if (!open) return
+    void fetchList()
+  }, [fetchList, open])
 
-    void fetchNotifications({ force: true })
-  }, [fetchNotifications, open])
-
+  // Close on navigation
   useEffect(() => {
     setOpen(false)
   }, [pathname])
 
+  // Close on outside click / Escape
   useEffect(() => {
-    if (!open) {
-      return
-    }
-
+    if (!open) return
     const handlePointerDown = (event: MouseEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) {
         setOpen(false)
       }
     }
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false)
-      }
+      if (event.key === 'Escape') setOpen(false)
     }
-
     document.addEventListener('mousedown', handlePointerDown)
     document.addEventListener('keydown', handleKeyDown)
     return () => {
@@ -159,65 +144,95 @@ export function NotificationsMenu() {
     }
   }, [open])
 
+  // Refresh on tab visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refreshUnreadCount()
       }
     }
-
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [refreshUnreadCount])
 
-  const markNotificationsRead = useCallback(async (ids: string[]) => {
-    if (ids.length === 0) {
-      return
-    }
+  // Real-time push via Supabase Broadcast on user:{userId} channel
+  useEffect(() => {
+    const userId = session?.user?.id
+    if (!userId) return
 
+    const supabase = getSupabaseClient()
+    const channel = supabase
+      .channel(`user-notifications:${userId}`)
+      .on('broadcast', { event: 'notification-created' }, () => {
+        // Immediately bump the badge
+        setUnreadCount((prev) => prev + 1)
+        // If dropdown is open, refresh the full list to show the new item
+        if (open) {
+          void fetchList()
+        }
+      })
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [session?.user?.id, open, fetchList])
+
+  const markNotificationsRead = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return
     await fetch('/api/notifications/read', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids }),
     })
-
     const now = new Date().toISOString()
-    setNotifications((previousValue) =>
-      previousValue.map((item) =>
-        ids.includes(item.id)
-          ? { ...item, readAt: item.readAt ?? now }
-          : item
+    setNotifications((prev) =>
+      prev.map((item) =>
+        ids.includes(item.id) ? { ...item, readAt: item.readAt ?? now } : item
       )
     )
-    setUnreadCount((previousValue) =>
-      Math.max(0, previousValue - ids.length)
-    )
+    setUnreadCount((prev) => Math.max(0, prev - ids.length))
   }, [])
 
   const handleMarkAllRead = async () => {
     await fetch('/api/notifications/read', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ all: true }),
     })
-
     const now = new Date().toISOString()
-    setNotifications((previousValue) =>
-      previousValue.map((item) => ({ ...item, readAt: item.readAt ?? now }))
-    )
+    setNotifications((prev) => prev.map((item) => ({ ...item, readAt: item.readAt ?? now })))
     setUnreadCount(0)
   }
 
-  const notificationEntries = useMemo(() => {
-    return notifications.map((item) => {
-      return buildNotificationDisplayItem(item, t, i18n.language)
+  const dismissNotification = useCallback(async (id: string) => {
+    // Optimistic remove
+    setNotifications((prev) => {
+      const item = prev.find((n) => n.id === id)
+      if (item && !item.readAt) {
+        setUnreadCount((c) => Math.max(0, c - 1))
+      }
+      return prev.filter((n) => n.id !== id)
     })
+    await fetch('/api/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [id] }),
+    })
+  }, [])
+
+  const handleClearAll = async () => {
+    setNotifications([])
+    setUnreadCount(0)
+    await fetch('/api/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    })
+  }
+
+  const notificationEntries = useMemo(() => {
+    return notifications.map((item) => buildNotificationDisplayItem(item, t, i18n.language))
   }, [i18n.language, notifications, t])
 
   const badgeLabel =
@@ -229,7 +244,7 @@ export function NotificationsMenu() {
     <div ref={containerRef} className="relative shrink-0">
       <button
         type="button"
-        onClick={() => setOpen((previousValue) => !previousValue)}
+        onClick={() => setOpen((prev) => !prev)}
         className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all hover:-translate-y-px ${
           unreadCount > 0
             ? 'border-[var(--bd-ink)] bg-[var(--bd-card-warm)] text-[var(--bd-ink)] shadow-[0_3px_0_rgba(31,27,22,0.14)]'
@@ -258,22 +273,29 @@ export function NotificationsMenu() {
           <div className="fixed left-3 right-3 top-[4.75rem] z-50 overflow-hidden rounded-3xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] shadow-[0_22px_60px_rgba(31,27,22,0.22)] md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-[22.5rem]">
             <div className="flex items-start justify-between gap-3 border-b border-[var(--bd-line)] bg-[var(--bd-bg)] px-4 py-4">
               <div>
-                <p className="bd-kicker">
-                  {t('header.notifications')}
-                </p>
-                <p className="mt-1 text-sm font-bold text-[var(--bd-ink)]">
-                  {badgeLabel}
-                </p>
+                <p className="bd-kicker">{t('header.notifications')}</p>
+                <p className="mt-1 text-sm font-bold text-[var(--bd-ink)]">{badgeLabel}</p>
               </div>
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleMarkAllRead}
-                  className="rounded-full border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-1.5 text-xs font-bold text-[var(--bd-ink-soft)] transition-colors hover:bg-[var(--bd-card-warm)] hover:text-[var(--bd-ink)]"
-                >
-                  {t('header.markAllRead')}
-                </button>
-              )}
+              <div className="flex shrink-0 items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="rounded-full border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-1.5 text-xs font-bold text-[var(--bd-ink-soft)] transition-colors hover:bg-[var(--bd-card-warm)] hover:text-[var(--bd-ink)]"
+                  >
+                    {t('header.markAllRead')}
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="rounded-full border border-[var(--bd-line)] bg-[var(--bd-bg)] px-3 py-1.5 text-xs font-bold text-[var(--bd-ink-soft)] transition-colors hover:bg-[var(--bd-card-warm)] hover:text-[var(--bd-coral)]"
+                  >
+                    {t('header.clearAll')}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="max-h-[32rem] overflow-y-auto bg-[var(--bd-bg)] px-2 py-2 overscroll-contain">
@@ -281,54 +303,85 @@ export function NotificationsMenu() {
                 <div className="px-4 py-8 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">
                   {t('common.loading')}
                 </div>
+              ) : error ? (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm font-semibold text-[var(--bd-coral)]">
+                    {t('header.notificationsError')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void fetchList()}
+                    className="mt-3 text-xs font-bold text-[var(--bd-ink-muted)] underline hover:text-[var(--bd-ink)]"
+                  >
+                    {t('common.retry')}
+                  </button>
+                </div>
               ) : notificationEntries.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] text-[var(--bd-ink-muted)]">
                     <BellIcon />
                   </div>
-                  <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">{t('header.notificationsEmpty')}</p>
+                  <p className="text-sm font-semibold text-[var(--bd-ink-muted)]">
+                    {t('header.notificationsEmpty')}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {notificationEntries.map((item) => {
                     const toneClass = getNotificationToneClass(item.tone)
-
                     return (
-                      <button
+                      <div
                         key={item.id}
-                        type="button"
-                        onClick={async () => {
-                          if (!item.readAt) {
-                            await markNotificationsRead([item.id])
-                          }
-                          setOpen(false)
-                          router.push(item.href)
-                        }}
-                        className={`w-full rounded-2xl border px-4 py-3 text-left transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
+                        className={`group relative rounded-2xl border transition-all hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(31,27,22,0.08)] ${
                           item.readAt
                             ? 'border-[var(--bd-line)] bg-[var(--bd-card-warm)]'
                             : toneClass
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-black leading-snug text-[var(--bd-ink)]">
-                              {item.title}
-                            </p>
-                            {item.subtitle && (
-                              <p className="mt-1 truncate text-xs font-semibold text-[var(--bd-ink-muted)]">
-                                {item.subtitle}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!item.readAt) {
+                              await markNotificationsRead([item.id])
+                            }
+                            setOpen(false)
+                            router.push(item.href)
+                          }}
+                          className="w-full px-4 py-3 text-left"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-black leading-snug text-[var(--bd-ink)]">
+                                {item.title}
                               </p>
+                              {item.subtitle && (
+                                <p className="mt-1 truncate text-xs font-semibold text-[var(--bd-ink-muted)]">
+                                  {item.subtitle}
+                                </p>
+                              )}
+                            </div>
+                            {!item.readAt && (
+                              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--bd-coral)]" />
                             )}
                           </div>
-                          {!item.readAt && (
-                            <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--bd-coral)]" />
-                          )}
-                        </div>
-                        <p className="mt-2 text-xs font-semibold text-[var(--bd-ink-muted)]">
-                          {item.timestamp}
-                        </p>
-                      </button>
+                          <p className="mt-2 text-xs font-semibold text-[var(--bd-ink-muted)]">
+                            {item.timestamp}
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void dismissNotification(item.id)
+                          }}
+                          aria-label={t('header.dismissNotification')}
+                          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--bd-bg)] text-[var(--bd-ink-muted)] opacity-0 transition-opacity hover:text-[var(--bd-ink)] group-hover:opacity-100"
+                        >
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     )
                   })}
                 </div>

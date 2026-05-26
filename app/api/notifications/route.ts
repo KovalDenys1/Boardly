@@ -61,11 +61,16 @@ export async function GET(request: NextRequest) {
   })
 
   if (summary) {
-    return NextResponse.json({
-      notifications: [],
-      unreadCount,
-      hasMore: false,
-    })
+    return NextResponse.json(
+      {
+        notifications: [],
+        unreadCount,
+        hasMore: false,
+      },
+      {
+        headers: { 'Cache-Control': 'no-store' },
+      }
+    )
   }
 
   const notifications = await prisma.notifications.findMany({
@@ -86,9 +91,43 @@ export async function GET(request: NextRequest) {
 
   const hasMore = notifications.length > limit
 
-  return NextResponse.json({
-    notifications: notifications.slice(0, limit),
-    unreadCount,
-    hasMore,
-  })
+  return NextResponse.json(
+    {
+      notifications: notifications.slice(0, limit),
+      unreadCount,
+      hasMore,
+    },
+    {
+      headers: { 'Cache-Control': 'no-store' },
+    }
+  )
+}
+
+export async function DELETE(request: NextRequest) {
+  const rateLimitResult = await limiter(request)
+  if (rateLimitResult) return rateLimitResult
+
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await request.json().catch(() => ({})) as { ids?: unknown; all?: unknown }
+  const deleteAll = body.all === true
+  const ids = Array.isArray(body.ids) ? body.ids.filter((id): id is string => typeof id === 'string') : []
+
+  if (!deleteAll && ids.length === 0) {
+    return NextResponse.json({ error: 'Provide ids or all: true' }, { status: 400 })
+  }
+
+  const where = deleteAll
+    ? { userId: session.user.id, channel: 'in_app' as const }
+    : { userId: session.user.id, channel: 'in_app' as const, id: { in: ids } }
+
+  const result = await prisma.notifications.deleteMany({ where })
+
+  return NextResponse.json(
+    { deleted: result.count },
+    { headers: { 'Cache-Control': 'no-store' } }
+  )
 }

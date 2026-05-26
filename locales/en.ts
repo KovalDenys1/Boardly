@@ -719,6 +719,11 @@ const en = {
         tieLabel: 'It\'s a tie',
         unknownPlayer: 'Unknown player',
         moveFailed: 'Failed to submit move',
+        viewBoard: 'View Board',
+        showResults: 'Show results',
+        tabBoard: 'Board',
+        tabScore: 'Score',
+        tabChat: 'Chat',
       },
     },
     rps: {

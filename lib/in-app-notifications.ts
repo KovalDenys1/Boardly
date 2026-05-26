@@ -1,6 +1,7 @@
 import { Prisma, type NotificationType } from '@/prisma/client'
 import { prisma } from './db'
 import { getNotificationPreferences } from './notification-preferences'
+import { broadcastToUser } from './supabase-server'
 
 type InAppPayload = Record<string, unknown>
 
@@ -48,6 +49,8 @@ export async function createInAppNotification(input: CreateInAppNotificationInpu
       id: true,
     },
   })
+
+  void broadcastToUser(input.userId, 'notification-created', { id: notification.id, type: input.type })
 
   return { created: true, id: notification.id }
 }

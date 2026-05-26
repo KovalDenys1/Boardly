@@ -718,7 +718,12 @@ const no = {
         winnerLabel: '{{player}} vinner',
         tieLabel: 'Uavgjort',
         unknownPlayer: 'Ukjent spiller',
-        moveFailed: 'Kunne ikke sende trekk'
+        moveFailed: 'Kunne ikke sende trekk',
+        viewBoard: 'Se brettet',
+        showResults: 'Vis resultater',
+        tabBoard: 'Brett',
+        tabScore: 'Poeng',
+        tabChat: 'Chat',
       }
     },
     rps: {

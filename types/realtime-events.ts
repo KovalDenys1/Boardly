@@ -95,6 +95,11 @@ export const SocketEvents = {
   ONLINE_USERS: 'online-users',
 
   // ========================================
+  // Notification Events
+  // ========================================
+  NOTIFICATION_CREATED: 'notification-created',
+
+  // ========================================
   // Spectator Events (future)
   // ========================================
   SPECTATOR_JOINED: 'spectator-joined',
@@ -364,6 +369,11 @@ export interface JoinedSpectatorsPayload extends BaseEventPayload {
 // ============================================================================
 // Lobby Settings Event Payloads (future)
 // ============================================================================
+
+export interface NotificationCreatedPayload {
+  id: string
+  type: string
+}
 
 export interface LobbySettingsUpdatePayload extends BaseEventPayload {
   lobbyCode: string
