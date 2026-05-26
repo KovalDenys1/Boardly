@@ -721,6 +721,11 @@ const uk: Translation = {
         tieLabel: 'Нічия',
         unknownPlayer: 'Невідомий гравець',
         moveFailed: 'Не вдалося надіслати хід',
+        viewBoard: 'Переглянути дошку',
+        showResults: 'Показати результати',
+        tabBoard: 'Дошка',
+        tabScore: 'Рахунок',
+        tabChat: 'Чат',
       },
     },
     rps: {

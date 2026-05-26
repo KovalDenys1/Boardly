@@ -718,7 +718,12 @@ const ru = {
         winnerLabel: '{{player}} победил',
         tieLabel: 'Ничья',
         unknownPlayer: 'Неизвестный игрок',
-        moveFailed: 'Не удалось отправить ход'
+        moveFailed: 'Не удалось отправить ход',
+        viewBoard: 'Посмотреть доску',
+        showResults: 'Показать результаты',
+        tabBoard: 'Доска',
+        tabScore: 'Счёт',
+        tabChat: 'Чат',
       }
     },
     rps: {
