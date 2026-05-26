@@ -330,6 +330,7 @@ const no = {
     welcomeBack: 'Velkommen tilbake, {{name}}!',
     browseGames: 'Bla gjennom spill',
     browseGamesArrow: 'Se spill →',
+    viewLobbies: 'Se lobbyer',
     playAsGuest: 'Spill som gjest',
     quickPlay: 'Rask spill',
     openProfile: 'Åpne profil',

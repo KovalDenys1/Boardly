@@ -330,6 +330,7 @@ const ru = {
     welcomeBack: 'С возвращением, {{name}}!',
     browseGames: 'Обзор игр',
     browseGamesArrow: 'Смотреть игры →',
+    viewLobbies: 'Открыть лобби',
     playAsGuest: 'Играть как гость',
     quickPlay: 'Быстрая игра',
     openProfile: 'Открыть профиль',

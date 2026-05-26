@@ -330,6 +330,7 @@ const en = {
     welcomeBack: 'Welcome back, {{name}}!',
     browseGames: 'Browse Games',
     browseGamesArrow: 'Browse games →',
+    viewLobbies: 'View Lobbies',
     playAsGuest: 'Play as guest',
     quickPlay: 'Quick Play',
     openProfile: 'Open profile',

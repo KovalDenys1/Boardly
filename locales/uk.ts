@@ -332,6 +332,7 @@ const uk: Translation = {
     welcomeBack: 'З поверненням, {{name}}!',
     browseGames: 'Огляд ігор',
     browseGamesArrow: 'Дивитись ігри →',
+    viewLobbies: 'Переглянути лобі',
     playAsGuest: 'Грати як гість',
     quickPlay: 'Швидка гра',
     openProfile: 'Відкрити профіль',

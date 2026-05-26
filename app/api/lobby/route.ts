@@ -140,6 +140,23 @@ export async function POST(request: NextRequest) {
       ...(gameType === 'memory' ? { difficulty: normalizedMemoryDifficulty } : {}),
     })
 
+    // Deactivate any previous waiting lobbies owned by this creator so they don't
+    // ghost in the Active Lobbies list when the creator navigates away without leaving.
+    if (!requestUser.isGuest) {
+      await prisma.lobbies.updateMany({
+        where: {
+          creatorId: requestUser.id,
+          isActive: true,
+          games: {
+            every: {
+              status: 'waiting',
+            },
+          },
+        },
+        data: { isActive: false },
+      })
+    }
+
     // Create lobby with initial game and add creator as first player
     // Build initial state via game engine registry
     const initialEngineConfig =
