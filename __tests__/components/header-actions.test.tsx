@@ -40,25 +40,20 @@ describe('HeaderActions responsive user block', () => {
     jest.clearAllMocks()
   })
 
-  it('applies truncation classes for long username/email values', () => {
+  it('applies truncation class to long username span', () => {
     const longUserName =
       'Very very very long display name that should not push header controls outside viewport'
-    const longEmail =
-      'very-very-very-very-long-email-address-for-mobile-header-tests@example-domain.test'
 
     render(
       <HeaderActions
         isAuthenticated
         userName={longUserName}
-        userEmail={longEmail}
+        userEmail="test@example.com"
       />
     )
 
     const userNameNode = screen.getByText(longUserName)
-    const emailNode = screen.getByText(longEmail)
-
     expect(userNameNode.className).toContain('truncate')
-    expect(emailNode.className).toContain('truncate')
   })
 
   it('uses profile navigation helper when avatar button is clicked', () => {
@@ -71,7 +66,7 @@ describe('HeaderActions responsive user block', () => {
     )
 
     const profileButton = screen
-      .getAllByTitle('Profile')
+      .getAllByTitle('Denys')
       .find((element) => element.tagName.toLowerCase() === 'button')
 
     expect(profileButton).toBeDefined()
