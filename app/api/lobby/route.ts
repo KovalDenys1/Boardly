@@ -14,6 +14,7 @@ import { hashLobbyPassword } from '@/lib/lobby-password'
 import { toPersistedGameType } from '@/lib/game-type-storage'
 import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
+import { DEFAULT_GAME_TYPE } from '@/lib/game-catalog'
 import { LOBBY_THEME_IDS, PREMIUM_LOBBY_THEMES, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 
 const log = apiLogger('/api/lobby')
@@ -24,7 +25,7 @@ const createLobbySchema = z.object({
   maxPlayers: z.number().min(2).max(16).default(6),
   allowSpectators: z.boolean().default(false),
   turnTimer: z.number().int().min(30).max(180).default(60), // Turn time in seconds (30-180)
-  gameType: z.string().default('yahtzee'),
+  gameType: z.string().default(DEFAULT_GAME_TYPE),
   theme: z.enum(LOBBY_THEME_IDS as [LobbyTheme, ...LobbyTheme[]]).default(FREE_LOBBY_THEME),
   ticTacToeRounds: z.number().int().min(1).max(100).nullable().optional(),
   memoryDifficulty: z.enum(['easy', 'medium', 'hard']).optional(),
