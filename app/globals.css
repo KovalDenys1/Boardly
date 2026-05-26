@@ -1627,6 +1627,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   }
   .ttt-board-wrap {
     width: min(100%, calc(100vw - 52px));
+    max-height: calc(100vw - 52px);
   }
 }
 
