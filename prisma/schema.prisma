@@ -462,6 +462,7 @@ model AdminAuditLogs {
 model Feedback {
   id        String   @id @default(cuid())
   type      String   // 'bug' | 'feature' | 'other'
+  status    String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
   message   String
   email     String?
   pageUrl   String?
