@@ -113,8 +113,8 @@ export default function HowToPlayTicTacToeGuide() {
             { emoji: '💡', tip: 'Start in the center (as X)', detail: 'The center square is part of 4 winning lines — more than any other cell. Taking it first gives you the most winning options.' },
             { emoji: '💡', tip: 'Take a corner if center is taken', detail: 'Corners are each part of 3 winning lines. If your opponent takes center, play a corner to set up diagonal threats.' },
             { emoji: '💡', tip: 'Block before attacking', detail: 'If your opponent has two in a row, block the third cell immediately. Missing a block almost always loses the game.' },
-            { emoji: '💡', tip: 'Create a fork', detail: 'A fork means two different ways to win at once. Your opponent can only block one, so you win the other.' },
-            { emoji: '💡', tip: 'Block forks', detail: "If your opponent is setting up a fork, block it — either by playing the cell they need, or by creating a threat that forces them to defend elsewhere." },
+            { emoji: '💡', tip: 'Set up two winning threats at once', detail: 'If you can put yourself one move away from winning in two different places at the same time, your opponent can only stop one. You win the other.' },
+            { emoji: '💡', tip: 'Stop your opponent from doing the same', detail: "If you notice your opponent building toward two threats at once, block them — either take the square they need, or create your own threat so they have to respond to you." },
           ]} />
         </GuideSection>
 

@@ -110,11 +110,11 @@ export default function HowToPlayMemoryGuide() {
 
         <GuideSection title="Strategy Tips">
           <GuideTipList items={[
-            { emoji: '💡', tip: 'Scan before you click', detail: "Don't rush your first flip. Systematic scanning beats random clicking every time." },
+            { emoji: '💡', tip: 'Look before you click', detail: "Don't rush your first flip. Take a moment to look at the whole board — a quick scan beats random clicking every time." },
             { emoji: '💡', tip: 'Use the grid like a map', detail: 'Mentally divide the grid into sections. Clear one section at a time — easier to track positions.' },
             { emoji: '💡', tip: 'Watch your opponents', detail: "When other players flip cards, you see them too. Their misses are hints about where pairs are hiding." },
-            { emoji: '💡', tip: 'Delay taking easy pairs', detail: "Once you know where a pair is, you don't have to grab it immediately — flipping a new card first gets you more information." },
-            { emoji: '💡', tip: 'Go for streaks', detail: "Consecutive matches give you extra turns. On a streak, prioritize pairs you're sure about over guesses." },
+            { emoji: '💡', tip: 'Do not grab a pair the moment you find it', detail: "Once you know where a pair is, you can wait. Flipping a new card first gives you more information — then match the pair on the next turn." },
+            { emoji: '💡', tip: 'Play it safe when you are on a roll', detail: "Matching cards gives you another turn. When you are on a streak, pick pairs you are sure about rather than taking a guess that might end your turn." },
           ]} />
         </GuideSection>
       </GuideLayout>

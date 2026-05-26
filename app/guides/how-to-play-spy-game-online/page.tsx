@@ -4,7 +4,7 @@ import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideSteps } f
 export const metadata: Metadata = {
   title: 'How to Play Guess the Spy Online - Complete Guide',
   description:
-    'Master Guess the Spy — the social deduction party game. Learn the rules, how to find the spy, how to survive as the spy, and how to run a great game night online.',
+    'Learn how to play Guess the Spy online. Rules, tips for finding the spy, how to survive as the spy, and how to run a great game night.',
   keywords: [
     'how to play guess the spy online',
     'spy game rules',
@@ -95,12 +95,12 @@ export default function HowToPlaySpyGuide() {
           ]} />
         </GuideSection>
 
-        <GuideSection title="Tips for Innocents — How to Find the Spy">
+        <GuideSection title="Tips for Non-Spy Players — How to Find the Spy">
           <GuideTipList items={[
-            { emoji: '🔍', tip: 'Ask specific-but-not-obvious questions', detail: "At a beach: 'How crowded is it?' tests the spy but doesn't reveal the location. Avoid 'What do you smell?' — too easy to bluff." },
-            { emoji: '🔍', tip: 'Watch hesitation and vagueness', detail: 'Innocents answer quickly and naturally. Spies pause, use hedging words like "maybe" or "it depends," and often give oddly short answers.' },
-            { emoji: '🔍', tip: "Don't rush the vote", detail: 'The spy wants you to vote incorrectly. Let the questioning reveal patterns before committing — a wrong vote is a loss.' },
-            { emoji: '🔍', tip: 'Cross-reference answers', detail: "If two innocents give consistent answers and a third gives something contradictory — that's your spy." },
+            { emoji: '🔍', tip: 'Ask questions that test knowledge without giving the location away', detail: "At a beach: 'How crowded is it?' tests the spy but doesn't tell them where everyone is. Avoid 'What do you smell?' — too easy to fake an answer." },
+            { emoji: '🔍', tip: 'Watch for hesitation and vague answers', detail: 'Players who know the location answer quickly and naturally. The spy tends to pause, give short answers, or use phrases like "it depends" and "maybe."' },
+            { emoji: '🔍', tip: "Don't rush the vote", detail: 'The spy wants you to accuse the wrong person. Let a few rounds of questions reveal patterns before deciding — accusing the wrong player loses the round for your group.' },
+            { emoji: '🔍', tip: 'Compare answers across players', detail: "If most players give similar answers and one gives something completely different — that's likely your spy." },
           ]} />
         </GuideSection>
 
