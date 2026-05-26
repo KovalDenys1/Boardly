@@ -1225,6 +1225,11 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ============ CONNECT FOUR - DISC DROP ============ */
 
+@keyframes c4-drop-simple {
+  from { transform: translateY(calc(-1 * var(--c4-fall-dist, 100px))); }
+  to   { transform: translateY(0); }
+}
+
 @keyframes c4-drop {
   0%   {
     transform: translateY(calc(-1 * var(--c4-fall-dist, 180px))) scale(1);

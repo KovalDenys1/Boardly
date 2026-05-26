@@ -39,8 +39,8 @@ const DISC_RED = 'var(--bd-coral)'
 const DISC_YELLOW = 'var(--bd-sun)'
 const DISC_EMPTY = 'var(--bd-bg2)'
 
-function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
-    disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc
+function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx }: {
+    disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc; fallDistancePx?: number
 }) {
     if (ghost) {
         const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
@@ -54,8 +54,28 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
     }
     const color = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
     const shadow = disc === 1 ? '0 2px 6px rgba(255,107,91,0.45)' : disc === 2 ? '0 2px 6px rgba(255,196,77,0.45)' : 'none'
-    const scale = isWin ? 'scale(1.12)' : 'scale(1)'
-    const anim = pop ? 'c4-drop 0.22s cubic-bezier(0.2,1.6,0.4,1) both' : undefined
+    const isAnimating = pop && !!fallDistancePx
+
+    if (isAnimating) {
+        const durationMs = 240 + Math.round(fallDistancePx! * 0.9)
+        return (
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                {/* Keep the empty hole visible while disc is in flight */}
+                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: DISC_EMPTY }} />
+                {/* Falling disc, animated from above */}
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: '50%',
+                    background: color,
+                    boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+                    animation: `c4-drop ${durationMs}ms linear both`,
+                    '--c4-fall-dist': `${fallDistancePx}px`,
+                    '--c4-end-scale': isWin ? '1.12' : '1',
+                } as React.CSSProperties} />
+            </div>
+        )
+    }
+
     return (
         <div style={{
             width: '100%',
@@ -63,9 +83,8 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
             borderRadius: '50%',
             background: color,
             boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
-            transform: scale,
+            transform: isWin ? 'scale(1.12)' : 'scale(1)',
             transition: 'transform 0.15s, box-shadow 0.15s',
-            animation: anim,
         }} />
     )
 }
@@ -82,6 +101,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     lastDroppedCol: number | null
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
+    const cellRef = useRef<HTMLButtonElement>(null)
 
     const getDropRow = (col: number): number | null => {
         if (board[0][col] !== null) return null
@@ -91,6 +111,11 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
         return null
     }
     const ghostRow = hoverCol !== null && !disabled ? getDropRow(hoverCol) : null
+
+    const getFallDistancePx = (targetRow: number): number => {
+        const cellH = cellRef.current?.getBoundingClientRect().height ?? 46
+        return (targetRow + 1) * (cellH + 6)
+    }
 
     return (
         <div style={{ position: 'relative', userSelect: 'none' }}>
@@ -119,6 +144,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 gridTemplateColumns: `repeat(${COLS}, 1fr)`,
                 gridTemplateRows: `repeat(${ROWS}, 1fr)`,
                 gap: 6,
+                overflow: 'hidden',
             }}>
                 {Array.from({ length: ROWS }, (_, r) =>
                     Array.from({ length: COLS }, (_, c) => {
@@ -128,9 +154,14 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                         const isHoveredCol = hoverCol === c && !disabled && !colFull
                         const isGhost = isHoveredCol && r === ghostRow && !cell
                         const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
+                        const isLastDropped = !!cell && r === lastDroppedRow && c === lastDroppedCol
+                        const fallDistancePx = isLastDropped && lastDroppedRow !== null
+                            ? getFallDistancePx(lastDroppedRow)
+                            : undefined
                         return (
                             <button
                                 key={`${r}-${c}`}
+                                ref={r === 0 && c === 0 ? cellRef : undefined}
                                 onClick={() => !colFull && !disabled && onColClick(c)}
                                 onMouseEnter={() => !disabled && !colFull && onColHover(c)}
                                 onMouseLeave={() => onColHover(null)}
@@ -148,13 +179,14 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     outline: 'none',
                                     display: 'grid',
                                     placeItems: 'center',
-                                    overflow: 'hidden',
+                                    overflow: 'visible',
                                 }}
                             >
                                 <C4Disc
                                     disc={cell}
                                     isWin={win}
-                                    pop={!!cell && r === lastDroppedRow && c === lastDroppedCol}
+                                    pop={isLastDropped}
+                                    fallDistancePx={fallDistancePx}
                                     ghost={isGhost}
                                     ghostDisc={isGhost ? currentDisc : undefined}
                                 />

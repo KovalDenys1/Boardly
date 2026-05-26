@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 
 const COLS = 6
@@ -11,6 +11,13 @@ type Board = Cell[][]
 
 function makeBoard(): Board {
   return Array.from({ length: ROWS }, () => Array(COLS).fill(null))
+}
+
+function getNextRow(board: Board, col: number): number | null {
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (!board[r][col]) return r
+  }
+  return null
 }
 
 function dropPiece(board: Board, col: number, player: Cell): Board | null {
@@ -56,14 +63,19 @@ export default function HeroDemoConnectFour() {
   const [winner, setWinner] = useState<'red' | 'yellow' | 'draw' | null>(null)
   const [hoverCol, setHoverCol] = useState<number | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [animatingDisc, setAnimatingDisc] = useState<{ row: number; col: number; player: Cell } | null>(null)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
     setIsMobile(window.innerWidth <= 767)
   }, [])
 
   const reset = useCallback(() => {
+    timersRef.current.forEach(clearTimeout)
+    timersRef.current = []
     setBoard(makeBoard())
     setWinner(null)
+    setAnimatingDisc(null)
   }, [])
 
   useEffect(() => {
@@ -72,30 +84,60 @@ export default function HeroDemoConnectFour() {
     return () => clearTimeout(t)
   }, [winner, reset])
 
-  function handleColClick(col: number) {
-    if (winner || board[0][col]) return
-    let next = dropPiece(board, col, 'red')
-    if (!next) return
-    if (checkWin(next, 'red')) { setBoard(next); setWinner('red'); return }
-    if (next.every((row) => row.every(Boolean))) { setBoard(next); setWinner('draw'); return }
+  const CELL = isMobile ? 22 : 28
+  const GAP = isMobile ? 3 : 4
+  const PADDING = isMobile ? 5 : 7
 
-    const bot = botMove(next)
-    if (bot >= 0) {
-      next = dropPiece(next, bot, 'yellow') ?? next
-      if (checkWin(next, 'yellow')) { setBoard(next); setWinner('yellow'); return }
+  const getAnimDuration = useCallback((row: number) => {
+    return 180 + Math.round((row + 1) * (CELL + GAP) * 0.7)
+  }, [CELL, GAP])
+
+  function handleColClick(col: number) {
+    if (winner || board[0][col] || animatingDisc) return
+
+    const playerRow = getNextRow(board, col)
+    if (playerRow === null) return
+    const playerBoard = dropPiece(board, col, 'red')
+    if (!playerBoard) return
+
+    setBoard(playerBoard)
+    setAnimatingDisc({ row: playerRow, col, player: 'red' })
+    const playerDur = getAnimDuration(playerRow)
+
+    if (checkWin(playerBoard, 'red')) {
+      const t = setTimeout(() => { setWinner('red'); setAnimatingDisc(null) }, playerDur + 50)
+      timersRef.current.push(t)
+      return
     }
-    setBoard(next)
+    if (playerBoard.every((row) => row.every(Boolean))) {
+      setWinner('draw'); setAnimatingDisc(null); return
+    }
+
+    const botCol = botMove(playerBoard)
+    const botRow = getNextRow(playerBoard, botCol)
+    if (botRow === null) return
+    const botBoard = dropPiece(playerBoard, botCol, 'yellow')
+    if (!botBoard) return
+
+    const t1 = setTimeout(() => {
+      setBoard(botBoard)
+      setAnimatingDisc({ row: botRow, col: botCol, player: 'yellow' })
+      const botDur = getAnimDuration(botRow)
+      const t2 = setTimeout(() => {
+        setAnimatingDisc(null)
+        if (checkWin(botBoard, 'yellow')) setWinner('yellow')
+        else if (botBoard.every((r) => r.every(Boolean))) setWinner('draw')
+      }, botDur + 50)
+      timersRef.current.push(t2)
+    }, playerDur + 100)
+    timersRef.current.push(t1)
   }
 
   const statusText =
     winner === 'red' ? '🎉 You win!'
     : winner === 'yellow' ? 'Bot wins!'
-    : winner === 'draw' ? "Draw!"
+    : winner === 'draw' ? 'Draw!'
     : 'Drop a piece'
-
-  const CELL = isMobile ? 22 : 28
-  const GAP = isMobile ? 3 : 4
-  const PADDING = isMobile ? 5 : 7
 
   return (
     <div style={{
@@ -112,7 +154,6 @@ export default function HeroDemoConnectFour() {
       </div>
 
       <div style={{ position: 'relative' }}>
-        {/* drop indicators — hidden on mobile (no hover on touch) */}
         {!isMobile && (
           <div style={{ display: 'flex', gap: GAP, marginBottom: 4, paddingLeft: PADDING, paddingRight: PADDING }}>
             {Array.from({ length: COLS }, (_, c) => (
@@ -124,9 +165,9 @@ export default function HeroDemoConnectFour() {
                 style={{
                   width: CELL, height: 16,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: winner || board[0][c] ? 'default' : 'pointer',
+                  cursor: winner || board[0][c] || animatingDisc ? 'default' : 'pointer',
                   fontSize: 13, fontWeight: 900,
-                  color: hoverCol === c && !board[0][c] && !winner ? 'var(--bd-coral)' : 'transparent',
+                  color: hoverCol === c && !board[0][c] && !winner && !animatingDisc ? 'var(--bd-coral)' : 'transparent',
                   transition: 'color 0.1s',
                 }}
               >
@@ -136,7 +177,6 @@ export default function HeroDemoConnectFour() {
           </div>
         )}
 
-        {/* grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${COLS}, ${CELL}px)`,
@@ -149,29 +189,56 @@ export default function HeroDemoConnectFour() {
           boxShadow: '0 4px 0 rgba(31,27,22,0.2)',
         }}>
           {board.map((row, r) =>
-            row.map((cell, c) => (
-              <div
-                key={`${r}-${c}`}
-                onClick={() => handleColClick(c)}
-                style={{
-                  width: CELL, height: CELL,
-                  borderRadius: '50%',
-                  background: cell === 'red'
-                    ? 'var(--bd-coral)'
-                    : cell === 'yellow'
-                      ? 'var(--bd-sun)'
-                      : hoverCol === c && !board[0][c] && !winner
-                        ? 'rgba(255,255,255,0.55)'
-                        : 'rgba(255,255,255,0.35)',
-                  border: cell
-                    ? '2.5px solid var(--bd-ink)'
-                    : '2px solid rgba(31,27,22,0.2)',
-                  cursor: winner || board[0][c] ? 'default' : 'pointer',
-                  transition: 'background 0.12s',
-                  boxShadow: cell ? '0 2px 0 rgba(31,27,22,0.25)' : 'inset 0 2px 4px rgba(31,27,22,0.1)',
-                }}
-              />
-            ))
+            row.map((cell, c) => {
+              const isAnimating = !!(
+                animatingDisc &&
+                animatingDisc.row === r &&
+                animatingDisc.col === c &&
+                animatingDisc.player === cell
+              )
+              const fallDist = isAnimating ? (animatingDisc!.row + 1) * (CELL + GAP) : 0
+              const durationMs = 180 + Math.round(fallDist * 0.7)
+              const discColor = cell === 'red' ? 'var(--bd-coral)' : cell === 'yellow' ? 'var(--bd-sun)' : null
+              const emptyBg = hoverCol === c && !board[0][c] && !winner && !animatingDisc
+                ? 'rgba(255,255,255,0.55)'
+                : 'rgba(255,255,255,0.35)'
+
+              return (
+                <div
+                  key={`${r}-${c}`}
+                  onClick={() => handleColClick(c)}
+                  style={{
+                    position: 'relative',
+                    width: CELL, height: CELL,
+                    overflow: 'visible',
+                    cursor: winner || board[0][c] || !!animatingDisc ? 'default' : 'pointer',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: '50%',
+                    background: cell && !isAnimating ? discColor! : emptyBg,
+                    border: cell && !isAnimating
+                      ? '2.5px solid var(--bd-ink)'
+                      : '2px solid rgba(31,27,22,0.2)',
+                    boxShadow: cell && !isAnimating
+                      ? '0 2px 0 rgba(31,27,22,0.25)'
+                      : 'inset 0 2px 4px rgba(31,27,22,0.1)',
+                  }} />
+                  {isAnimating && (
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      borderRadius: '50%',
+                      background: discColor!,
+                      border: '2.5px solid var(--bd-ink)',
+                      boxShadow: '0 2px 0 rgba(31,27,22,0.25)',
+                      animation: `c4-drop-simple ${durationMs}ms cubic-bezier(0.4, 0, 0.6, 1) both`,
+                      '--c4-fall-dist': `${fallDist}px`,
+                    } as React.CSSProperties} />
+                  )}
+                </div>
+              )
+            })
           )}
         </div>
       </div>
