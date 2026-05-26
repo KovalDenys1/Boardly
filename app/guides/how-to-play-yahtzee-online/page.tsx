@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import GuideLayout, { GuideSection, GuideTipList, GuideChecklist, GuideTable } from '../components/GuideLayout'
 
 export const metadata: Metadata = {
   title: 'How to Play Yahtzee Online with Friends - Complete Guide',
@@ -20,9 +20,7 @@ export const metadata: Metadata = {
     url: 'https://boardly.online/guides/how-to-play-yahtzee-online',
     type: 'article',
   },
-  alternates: {
-    canonical: 'https://boardly.online/guides/how-to-play-yahtzee-online',
-  },
+  alternates: { canonical: 'https://boardly.online/guides/how-to-play-yahtzee-online' },
 }
 
 const articleJsonLd = {
@@ -52,31 +50,10 @@ const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    {
-      '@type': 'Question',
-      name: 'What is Yahtzee?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee is a classic dice-rolling game where players roll five dice up to three times per turn and try to score the highest by filling 15 scoring categories. The player with the highest total score wins.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'How many players can play Yahtzee online?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee on Boardly supports 1–4 players. You can play solo against an AI or in real-time multiplayer with up to 3 friends.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'What is the upper section bonus in Yahtzee?',
-      acceptedAnswer: { '@type': 'Answer', text: 'If your combined score in the upper section (Aces through Sixes) totals 63 or more, you earn a 35-point bonus. The easiest way to reach 63 is to score at least 3 of each number.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'What is a Yahtzee?',
-      acceptedAnswer: { '@type': 'Answer', text: 'A Yahtzee is when all five dice show the same number. It scores 50 points. Each additional Yahtzee after the first scores a 100-point bonus.' },
-    },
-    {
-      '@type': 'Question',
-      name: 'How many scoring categories are in Yahtzee?',
-      acceptedAnswer: { '@type': 'Answer', text: 'Boardly Yahtzee has 15 scoring categories: 6 in the upper section (Ones through Sixes) and 9 in the lower section (One Pair, Two Pairs, Three of a Kind, Four of a Kind, Full House, Small Straight, Large Straight, Yahtzee, and Chance).' },
-    },
+    { '@type': 'Question', name: 'What is Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee is a classic dice-rolling game where players roll five dice up to three times per turn and try to score the highest by filling 15 scoring categories.' } },
+    { '@type': 'Question', name: 'How many players can play Yahtzee online?', acceptedAnswer: { '@type': 'Answer', text: 'Yahtzee on Boardly supports 1–4 players. You can play solo against an AI or in real-time multiplayer with up to 3 friends.' } },
+    { '@type': 'Question', name: 'What is the upper section bonus in Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'If your combined score in the upper section totals 63 or more, you earn a 35-point bonus.' } },
+    { '@type': 'Question', name: 'What is a Yahtzee?', acceptedAnswer: { '@type': 'Answer', text: 'A Yahtzee is when all five dice show the same number. It scores 50 points. Each additional Yahtzee scores a 100-point bonus.' } },
   ],
 }
 
@@ -87,147 +64,72 @@ export default function HowToPlayYahtzeeGuide() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
-      <div className="min-h-[100dvh] bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16">
+      <GuideLayout
+        emoji="🎲"
+        title="How to Play Yahtzee Online with Friends"
+        subtitle="5 min read · Free to play on Boardly · 1–4 players"
+        breadcrumbLabel="How to Play Yahtzee Online"
+        accentColor="var(--bd-sky)"
+        cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Ready to put this into practice?' }}
+        related={[
+          { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
+          { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
+          { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
+          { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
+        ]}
+      >
+        <GuideSection title="What You Need">
+          <GuideChecklist items={[
+            '✅ 1–4 players (play solo against AI or with friends)',
+            '✅ A browser — desktop, tablet, or mobile',
+            '✅ No account required (guest play available)',
+            '✅ Free — no ads, no download',
+          ]} />
+        </GuideSection>
 
-          {/* Breadcrumb */}
-          <nav className="mb-6 text-white/60 text-sm flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <span>/</span>
-            <Link href="/guides" className="hover:text-white transition-colors">Guides</Link>
-            <span>/</span>
-            <span className="text-white">How to Play Yahtzee Online</span>
-          </nav>
+        <GuideSection title="The Basic Rules">
+          <p className="mb-3 text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed. The game ends when all 15 categories are filled by every player.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--bd-ink-soft)' }}>
+            The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score totals 63 or more.
+          </p>
+        </GuideSection>
 
-          {/* Header */}
-          <header className="mb-8 sm:mb-12">
-            <div className="text-5xl sm:text-6xl mb-4">🎲</div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 drop-shadow-lg leading-tight break-words">
-              How to Play Yahtzee Online with Friends
-            </h1>
-            <p className="text-white/70 text-sm">5 min read · Free to play on Boardly</p>
-          </header>
+        <GuideSection title="All 15 Scoring Categories">
+          <h3 className="mb-3 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>Upper Section</h3>
+          <GuideTable rows={[
+            { name: 'Aces (1s)', desc: 'Sum of all dice showing 1', example: '1+1+3+4+6 = 2 pts' },
+            { name: 'Twos (2s)', desc: 'Sum of all dice showing 2', example: '2+2+2+4+6 = 6 pts' },
+            { name: 'Threes (3s)', desc: 'Sum of all dice showing 3', example: '3+3+3+4+6 = 9 pts' },
+            { name: 'Fours (4s)', desc: 'Sum of all dice showing 4', example: '4+4+4+4+6 = 16 pts' },
+            { name: 'Fives (5s)', desc: 'Sum of all dice showing 5', example: '5+5+5+5+6 = 20 pts' },
+            { name: 'Sixes (6s)', desc: 'Sum of all dice showing 6', example: '6+6+6+6+6 = 30 pts' },
+          ]} />
+          <h3 className="mb-3 mt-6 text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>Lower Section</h3>
+          <GuideTable rows={[
+            { name: 'One Pair', desc: 'Sum of the highest pair', example: '5+5+1+2+3 = 10 pts' },
+            { name: 'Two Pairs', desc: 'Sum of both pairs', example: '5+5+3+3+1 = 16 pts' },
+            { name: 'Three of a Kind', desc: 'Sum of all 5 dice', example: '3+3+3+5+6 = 20 pts' },
+            { name: 'Four of a Kind', desc: 'Sum of all 5 dice', example: '4+4+4+4+2 = 18 pts' },
+            { name: 'Full House', desc: 'Three of one + two of another', example: '25 pts fixed' },
+            { name: 'Small Straight', desc: '4 sequential dice', example: '30 pts fixed' },
+            { name: 'Large Straight', desc: '5 sequential dice', example: '40 pts fixed' },
+            { name: 'Yahtzee!', desc: 'All five dice the same', example: '50 pts (100 bonus extra)' },
+            { name: 'Chance', desc: 'Any combo — sum of all 5 dice', example: 'Useful as a dump' },
+          ]} />
+        </GuideSection>
 
-          {/* Intro */}
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
-            <p className="text-white/90 leading-relaxed text-lg">
-              Yahtzee is one of the most popular dice games in the world — and on Boardly, you can play it online with friends in real-time, completely free. This guide covers everything you need to know: the rules, all 15 scoring categories, and tips to improve your strategy.
-            </p>
-          </div>
-
-          {/* What you need */}
-          <section className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
-            <h2 className="text-2xl font-bold mb-4">What You Need</h2>
-            <ul className="space-y-2 text-white/85">
-              <li>✅ 1–4 players (play solo against AI or with friends)</li>
-              <li>✅ A browser — desktop, tablet, or mobile</li>
-              <li>✅ No account required (guest play available)</li>
-              <li>✅ Free — no ads, no download</li>
-            </ul>
-          </section>
-
-          {/* Basic rules */}
-          <section className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
-            <h2 className="text-2xl font-bold mb-4">The Basic Rules</h2>
-            <p className="text-white/85 leading-relaxed mb-4">
-              Each turn, you roll five dice. You may re-roll any or all of them up to two more times (three rolls total). After your rolls, you must assign your result to one of 15 scoring categories. Once a category is filled, it cannot be changed. The game ends when all 15 categories are filled by every player.
-            </p>
-            <p className="text-white/85 leading-relaxed">
-              The player with the highest total score wins. A bonus of 35 points is awarded if your upper section score (Aces through Sixes) totals 63 or more.
-            </p>
-          </section>
-
-          {/* Scoring categories */}
-          <section className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
-            <h2 className="text-2xl font-bold mb-6">All 15 Scoring Categories</h2>
-
-            <h3 className="text-lg font-semibold mb-3 text-white/90">Upper Section</h3>
-            <div className="space-y-3 mb-6">
-              {[
-                { name: 'Aces (1s)', desc: 'Sum of all dice showing 1', example: '1+1+3+4+6 = 2 pts' },
-                { name: 'Twos (2s)', desc: 'Sum of all dice showing 2', example: '2+2+2+4+6 = 6 pts' },
-                { name: 'Threes (3s)', desc: 'Sum of all dice showing 3', example: '3+3+3+4+6 = 9 pts' },
-                { name: 'Fours (4s)', desc: 'Sum of all dice showing 4', example: '4+4+4+4+6 = 16 pts' },
-                { name: 'Fives (5s)', desc: 'Sum of all dice showing 5', example: '5+5+5+5+6 = 20 pts' },
-                { name: 'Sixes (6s)', desc: 'Sum of all dice showing 6', example: '6+6+6+6+6 = 30 pts' },
-              ].map(({ name, desc, example }) => (
-                <div key={name} className="flex justify-between gap-4 border-b border-white/10 pb-3 last:border-0 last:pb-0">
-                  <div>
-                    <strong className="text-sm">{name}</strong>
-                    <p className="text-white/65 text-xs">{desc}</p>
-                  </div>
-                  <span className="text-white/50 text-xs shrink-0 self-center">{example}</span>
-                </div>
-              ))}
-            </div>
-
-            <h3 className="text-lg font-semibold mb-3 text-white/90">Lower Section</h3>
-            <div className="space-y-3">
-              {[
-                { name: 'One Pair', desc: 'At least two identical dice — score is sum of the highest pair', example: 'e.g. 5+5+1+2+3 = 10 pts' },
-                { name: 'Two Pairs', desc: 'Two different pairs — score is sum of both pairs', example: 'e.g. 5+5+3+3+1 = 16 pts' },
-                { name: 'Three of a Kind', desc: 'At least 3 identical dice — score is sum of all 5 dice', example: 'e.g. 3+3+3+5+6 = 20 pts' },
-                { name: 'Four of a Kind', desc: 'At least 4 identical dice — score is sum of all 5 dice', example: 'e.g. 4+4+4+4+2 = 18 pts' },
-                { name: 'Full House', desc: 'Three of one number + two of another', example: '25 pts fixed' },
-                { name: 'Small Straight', desc: 'Four sequential dice (e.g. 1-2-3-4 or 3-4-5-6)', example: '30 pts fixed' },
-                { name: 'Large Straight', desc: 'Five sequential dice (1-2-3-4-5 or 2-3-4-5-6)', example: '40 pts fixed' },
-                { name: 'Yahtzee!', desc: 'All five dice the same', example: '50 pts (100 bonus for extra)' },
-                { name: 'Chance', desc: 'Any combination — score is sum of all 5 dice', example: 'Useful as a dump' },
-              ].map(({ name, desc, example }) => (
-                <div key={name} className="flex justify-between gap-4 border-b border-white/10 pb-3 last:border-0 last:pb-0">
-                  <div>
-                    <strong className="text-sm">{name}</strong>
-                    <p className="text-white/65 text-xs">{desc}</p>
-                  </div>
-                  <span className="text-white/50 text-xs shrink-0 self-center">{example}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Strategy tips */}
-          <section className="bg-white/10 backdrop-blur-md rounded-3xl p-8 mb-8 text-white">
-            <h2 className="text-2xl font-bold mb-4">Strategy Tips</h2>
-            <ul className="space-y-4">
-              {[
-                { tip: 'Chase the upper section bonus', detail: 'Aim for at least 3 of each number in the upper section — that gets you to 63 points and the 35-point bonus, which is huge.' },
-                { tip: 'Keep Yahtzee attempts alive', detail: 'If you have 3 or 4 of the same number on your first roll, it\'s usually worth going for the Yahtzee rather than settling for three-of-a-kind.' },
-                { tip: 'Use Chance as a last resort', detail: 'Chance scores the sum of all dice — save it for turns where nothing else fits. A good Chance score is usually 20+.' },
-                { tip: 'Fill low-value categories early', detail: 'If you roll a bad set and have already filled high-value categories, put zeros in Aces or Twos early — they\'re worth little anyway.' },
-                { tip: 'Prioritize Large Straight over Small', detail: 'Large Straight scores 40 vs 30 for Small. If you have 4 sequential dice after roll 1, go for the large.' },
-              ].map(({ tip, detail }) => (
-                <li key={tip} className="border-b border-white/10 pb-4 last:border-0 last:pb-0">
-                  <strong className="block mb-1">💡 {tip}</strong>
-                  <p className="text-white/75 text-sm">{detail}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* CTA */}
-          <div className="text-center">
-            <p className="text-white/80 mb-4">Ready to put this into practice?</p>
-            <Link
-              href="/lobby/create?gameType=yahtzee"
-              className="inline-block px-10 py-4 bg-white text-blue-600 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all duration-300 shadow-xl hover:scale-105"
-            >
-              Play Yahtzee Now →
-            </Link>
-            <p className="text-white/50 text-sm mt-3">Free · No account required · 1–4 players</p>
-          </div>
-
-          {/* Related */}
-          <div className="mt-12 pt-8 border-t border-white/20">
-            <h3 className="text-white/70 text-sm font-semibold mb-4 uppercase tracking-wide">More guides</h3>
-            <div className="flex flex-col gap-3">
-              <Link href="/guides/how-to-play-spy-game-online" className="text-white hover:underline text-sm">→ How to Play Guess the Spy Online</Link>
-              <Link href="/guides/how-to-play-memory-card-game-online" className="text-white hover:underline text-sm">→ How to Play Memory Card Game Online</Link>
-              <Link href="/guides/how-to-play-tic-tac-toe-online" className="text-white hover:underline text-sm">→ How to Play Tic Tac Toe Online</Link>
-              <Link href="/guides/best-free-multiplayer-browser-games" className="text-white hover:underline text-sm">→ Best Free Multiplayer Browser Games in 2026</Link>
-            </div>
-          </div>
-        </div>
-      </div>
+        <GuideSection title="Strategy Tips">
+          <GuideTipList items={[
+            { emoji: '💡', tip: 'Chase the upper section bonus', detail: 'Aim for at least 3 of each number in the upper section — that gets you to 63 points and the 35-point bonus.' },
+            { emoji: '💡', tip: 'Keep Yahtzee attempts alive', detail: "If you have 3 or 4 of the same number on your first roll, it's usually worth going for Yahtzee rather than settling for three-of-a-kind." },
+            { emoji: '💡', tip: 'Use Chance as a last resort', detail: 'Chance scores the sum of all dice — save it for turns where nothing else fits. A good Chance score is usually 20+.' },
+            { emoji: '💡', tip: 'Fill low-value categories early', detail: "If you roll a bad set, put zeros in Aces or Twos early — they're worth little anyway." },
+            { emoji: '💡', tip: 'Prioritize Large Straight over Small', detail: 'Large Straight scores 40 vs 30 for Small. If you have 4 sequential dice after roll 1, go for the large.' },
+          ]} />
+        </GuideSection>
+      </GuideLayout>
     </>
   )
 }
