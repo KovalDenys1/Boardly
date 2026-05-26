@@ -1625,10 +1625,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   .ttt-mobile-layout {
     height: 100%;
   }
+  /* overhead = screen-padding(24) + header(80) + status(50) + tabs(46) + gaps(40) + actions(48) + card-padding(24) + buffer(13) */
   .ttt-board-wrap {
-    width: min(100%, calc(100vw - 52px));
-    height: min(100%, calc(100vw - 52px));
-    max-height: calc(100vw - 52px);
+    width: min(calc(100vw - 52px), calc(var(--ttt-h) - 325px));
+    height: auto;
   }
 }
 

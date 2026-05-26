@@ -307,7 +307,10 @@ const uk: Translation = {
     notificationsUnread_one: '{{count}} непрочитано',
     notificationsUnread_other: '{{count}} непрочитано',
     notificationsEmpty: 'Поки немає сповіщень',
+    notificationsError: 'Не вдалося завантажити сповіщення',
     markAllRead: 'Позначити все як прочитане',
+    clearAll: 'Очистити все',
+    dismissNotification: 'Сховати',
     notificationDefaultGame: 'гру',
     notificationsItems: {
       default: 'Відкрити сповіщення',

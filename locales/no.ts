@@ -305,7 +305,10 @@ const no = {
     notificationsUnread_one: '{{count}} ulest',
     notificationsUnread_other: '{{count}} uleste',
     notificationsEmpty: 'Ingen varsler ennå',
+    notificationsError: 'Kunne ikke laste varsler',
     markAllRead: 'Marker alle som lest',
+    clearAll: 'Fjern alle',
+    dismissNotification: 'Avvis',
     notificationDefaultGame: 'spill',
     notificationsItems: {
       default: 'Åpne varsel',
