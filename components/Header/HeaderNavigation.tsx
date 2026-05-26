@@ -34,40 +34,39 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
   }
 
   return (
-    <div className="hidden xl:flex" style={{ marginLeft: 'clamp(30px, 3vw, 50px)', gap: 'clamp(4px, 0.5vw, 8px)' }}>
+    <div className="hidden xl:flex" style={{ marginLeft: 'clamp(10px, 1.5vw, 28px)', gap: 'clamp(2px, 0.3vw, 6px)' }}>
       <button
         onClick={() => router.push('/')}
         className={navBtn(isActive('/'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
       >
         {t('header.home', 'Home')}
       </button>
       <button
         onClick={() => navigate('/games')}
         className={navBtn(!!pathname?.startsWith('/games'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
       >
         {t('header.games', 'Games')}
       </button>
-
       <button
         onClick={() => navigate('/lobby')}
         className={navBtn(!!pathname?.startsWith('/lobby'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
       >
         {t('header.lobbies', 'Lobbies')}
       </button>
       <button
         onClick={() => navigate('/leaderboard')}
         className={navBtn(!!pathname?.startsWith('/leaderboard'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
       >
         {t('header.leaderboard', 'Leaderboard')}
       </button>
       <button
         onClick={() => navigate('/guides')}
         className={navBtn(!!pathname?.startsWith('/guides'))}
-        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
       >
         {t('header.guides')}
       </button>
@@ -75,7 +74,7 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
         <button
           onClick={() => router.push('/friends')}
           className={navBtn(!!pathname?.startsWith('/friends'))}
-          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+          style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(8px, 0.7vw, 12px)', fontSize: 'clamp(12px, 0.85vw, 14px)' }}
         >
           {t('header.friends')}
         </button>

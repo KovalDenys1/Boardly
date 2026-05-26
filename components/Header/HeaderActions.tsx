@@ -101,41 +101,24 @@ export function HeaderActions({ isAuthenticated, userName, userEmail, userImage 
   }
 
   return (
-    <div className="hidden lg:flex items-center gap-2 lg:gap-3 min-w-0">
+    <div className="hidden lg:flex items-center gap-2 min-w-0">
       <ThemeToggle />
-      <div className="min-w-0 max-w-[180px] self-center text-right">
-        <div className="flex flex-col items-end justify-center leading-tight">
-          <span
-            role="link"
-            tabIndex={0}
-            onClick={handleProfileNavigation}
-            onKeyDown={handleProfileTextKeyDown}
-            className="inline-block max-w-full cursor-pointer truncate text-sm font-medium"
-            style={{ color: 'var(--bd-ink)' }}
-            title={t('header.profile', 'Profile')}
-          >
-            {userName || userEmail}
-          </span>
-          {userName && userEmail && (
-            <span
-              role="link"
-              tabIndex={0}
-              onClick={handleProfileNavigation}
-              onKeyDown={handleProfileTextKeyDown}
-              className="mt-0.5 inline-block max-w-full cursor-pointer truncate text-xs"
-              style={{ color: 'var(--bd-ink-muted)' }}
-              title={t('header.profile', 'Profile')}
-            >
-              {userEmail}
-            </span>
-          )}
-        </div>
-      </div>
+      <span
+        role="link"
+        tabIndex={0}
+        onClick={handleProfileNavigation}
+        onKeyDown={handleProfileTextKeyDown}
+        className="hidden 2xl:inline-block max-w-[120px] cursor-pointer truncate text-sm font-medium"
+        style={{ color: 'var(--bd-ink)' }}
+        title={userName || userEmail || t('header.profile', 'Profile')}
+      >
+        {userName || userEmail}
+      </span>
       <button
         onClick={handleProfileNavigation}
         className="overflow-hidden rounded-full p-0.5 hover:scale-110 transition-transform"
         style={{ background: 'var(--bd-bg2)', boxShadow: '0 0 0 2px var(--bd-ink)' }}
-        title={t('header.profile', 'Profile')}
+        title={userName || t('header.profile', 'Profile')}
       >
         <UserAvatar
           image={userImage}
