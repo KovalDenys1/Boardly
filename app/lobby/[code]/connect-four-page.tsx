@@ -39,8 +39,11 @@ const DISC_RED = 'var(--bd-coral)'
 const DISC_YELLOW = 'var(--bd-sun)'
 const DISC_EMPTY = 'var(--bd-bg2)'
 
-function C4Disc({ disc, isWin, pop }: { disc: PlayerDisc | null; isWin?: boolean; pop?: boolean }) {
-    const color = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
+function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
+    disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc
+}) {
+    const baseColor = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
+    const color = ghost ? (ghostDisc === 1 ? DISC_RED : DISC_YELLOW) : baseColor
     const shadow = disc === 1 ? '0 2px 6px rgba(255,107,91,0.45)' : disc === 2 ? '0 2px 6px rgba(255,196,77,0.45)' : 'none'
     const scale = isWin ? 'scale(1.12)' : 'scale(1)'
     const anim = pop ? 'c4-drop 0.22s cubic-bezier(0.2,1.6,0.4,1) both' : undefined
@@ -50,9 +53,10 @@ function C4Disc({ disc, isWin, pop }: { disc: PlayerDisc | null; isWin?: boolean
             height: '100%',
             borderRadius: '50%',
             background: color,
-            boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+            opacity: ghost ? 0.4 : 1,
+            boxShadow: ghost ? 'none' : isWin ? `0 0 0 3px white, ${shadow}` : shadow,
             transform: scale,
-            transition: 'transform 0.15s, box-shadow 0.15s',
+            transition: 'transform 0.15s, box-shadow 0.15s, opacity 0.1s',
             animation: anim,
         }} />
     )
@@ -70,6 +74,15 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     lastDroppedCol: number | null
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
+
+    const getDropRow = (col: number): number | null => {
+        if (board[0][col] !== null) return null
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (board[r][col] === null) return r
+        }
+        return null
+    }
+    const ghostRow = hoverCol !== null && !disabled ? getDropRow(hoverCol) : null
 
     return (
         <div style={{ position: 'relative', userSelect: 'none' }}>
@@ -104,6 +117,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                         const cell = board[r][c]
                         const win = isWin(r, c)
                         const colFull = board[0][c] !== null
+                        const isHoveredCol = hoverCol === c && !disabled && !colFull
+                        const isGhost = isHoveredCol && r === ghostRow && !cell
                         return (
                             <button
                                 key={`${r}-${c}`}
@@ -117,7 +132,8 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     height: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
-                                    background: 'rgba(255,255,255,0.10)',
+                                    background: isHoveredCol && !cell ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.10)',
+                                    transition: 'background 0.1s',
                                     border: 'none',
                                     cursor: disabled || colFull ? 'not-allowed' : 'pointer',
                                     outline: 'none',
@@ -126,7 +142,13 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     overflow: 'hidden',
                                 }}
                             >
-                                <C4Disc disc={cell} isWin={win} pop={!!cell && r === lastDroppedRow && c === lastDroppedCol} />
+                                <C4Disc
+                                    disc={cell}
+                                    isWin={win}
+                                    pop={!!cell && r === lastDroppedRow && c === lastDroppedCol}
+                                    ghost={isGhost}
+                                    ghostDisc={isGhost ? currentDisc : undefined}
+                                />
                             </button>
                         )
                     })
