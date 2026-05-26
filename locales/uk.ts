@@ -316,6 +316,7 @@ const uk: Translation = {
       gameInvite: '{{name}} запросив(ла) вас зіграти в {{game}}',
       rematchInvite: '{{name}} запросив(ла) вас на реванш у {{game}}',
       turnReminder: 'Зараз ваш хід у {{game}}',
+      feedbackThanks: 'Дякуємо за ваш відгук!',
     },
     settings: 'Налаштування',
     signUp: 'Реєстрація',
@@ -647,6 +648,8 @@ const uk: Translation = {
         drawBtn: 'Нічия',
         leaveLobby: 'Покинути лобі',
         spectator: 'Глядач',
+        viewBoard: 'Переглянути дошку',
+        showResults: 'Показати результати',
       },
     },
     memory: {

@@ -314,6 +314,7 @@ const ru = {
       gameInvite: '{{name}} приглашает вас сыграть в {{game}}',
       rematchInvite: '{{name}} приглашает вас на реванш в {{game}}',
       turnReminder: 'Сейчас ваш ход в {{game}}',
+      feedbackThanks: 'Спасибо за ваш отзыв!',
     },
     settings: 'Настройки',
     signUp: 'Регистрация',
@@ -645,6 +646,8 @@ const ru = {
         drawBtn: 'Ничья',
         leaveLobby: 'Покинуть лобби',
         spectator: 'Зритель',
+        viewBoard: 'Посмотреть доску',
+        showResults: 'Показать результаты',
       }
     },
     memory: {

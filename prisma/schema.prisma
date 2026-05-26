@@ -387,6 +387,7 @@ enum NotificationType {
   turn_reminder
   friend_request
   friend_accepted
+  feedback_thanks
 }
 
 enum NotificationChannel {

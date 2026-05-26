@@ -314,6 +314,7 @@ const en = {
       gameInvite: '{{name}} invited you to play {{game}}',
       rematchInvite: '{{name}} invited you to a {{game}} rematch',
       turnReminder: 'It is your turn in {{game}}',
+      feedbackThanks: 'Thank you for your feedback!',
     },
     settings: 'Settings',
     signUp: 'Sign Up',
@@ -645,6 +646,8 @@ const en = {
         drawBtn: 'Draw',
         leaveLobby: 'Leave lobby',
         spectator: 'Spectator',
+        viewBoard: 'View Board',
+        showResults: 'Show results',
       },
     },
     memory: {

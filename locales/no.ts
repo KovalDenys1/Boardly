@@ -314,6 +314,7 @@ const no = {
       gameInvite: '{{name}} inviterte deg til å spille {{game}}',
       rematchInvite: '{{name}} inviterte deg til en {{game}}-revansj',
       turnReminder: 'Det er din tur i {{game}}',
+      feedbackThanks: 'Takk for tilbakemeldingen din!',
     },
     settings: 'Innstillinger',
     signUp: 'Registrer deg',
@@ -645,6 +646,8 @@ const no = {
         drawBtn: 'Uavgjort',
         leaveLobby: 'Forlat lobby',
         spectator: 'Tilskuer',
+        viewBoard: 'Se brettet',
+        showResults: 'Vis resultater',
       }
     },
     memory: {
