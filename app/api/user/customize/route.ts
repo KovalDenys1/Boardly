@@ -14,7 +14,7 @@ const VALID_ACCENT_COLORS = new Set([
   '#9B8CFF', '#F687B3', '#FC8181', '#68D391',
 ])
 
-const VALID_GAME_TYPES = new Set(getAllRegisteredGameTypes())
+const VALID_GAME_TYPES = new Set<string>(getAllRegisteredGameTypes())
 
 const VALID_CARD_STYLES = new Set(['gold', 'glass', 'holo', 'dark'])
 
