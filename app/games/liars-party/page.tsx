@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     canonical: 'https://boardly.online/games/liars-party',
   },
   robots: {
-    index: true,
+    index: false,
     follow: true,
   },
 }
