@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import GameIcon from '@/components/GameIcon'
-import { getCatalogGames, isAvailableCatalogEntry, type GameCatalogEntry } from '@/lib/game-catalog'
+import { getCatalogGames, isAvailableCatalogEntry, getGameMetadata, type GameCatalogEntry } from '@/lib/game-catalog'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
 import { useTranslation } from '@/lib/i18n-helpers'
 
@@ -137,23 +137,6 @@ function GameCard({ name, tag, players, time, diff, desc, href, detailHref, stat
   )
 }
 
-const GAME_ACCENT_BG: Record<string, string> = {
-  yahtzee: 'rgba(125,211,252,0.15)',
-  spy: 'rgba(155,140,255,0.12)',
-  'tic-tac-toe': 'rgba(255,107,91,0.10)',
-  memory: 'rgba(79,201,166,0.12)',
-  'connect-four': 'rgba(255,107,91,0.10)',
-  alias: 'rgba(255,107,91,0.10)',
-}
-
-const GAME_DETAIL_HREF: Record<string, string> = {
-  yahtzee: '/games/yahtzee',
-  spy: '/games/spy',
-  'tic-tac-toe': '/games/tic-tac-toe',
-  memory: '/games/memory',
-  'connect-four': '/games/connect-four',
-  alias: '/games/alias',
-}
 
 function fallbackName(id: string) {
   return id
@@ -206,7 +189,7 @@ export default function GameRibbon() {
   const inDevelopmentCount = catalogGames.filter((game) => game.availability === 'in-development').length
   const plannedCount = catalogGames.filter((game) => game.availability === 'planned').length
 
-  const translatedDetails: Record<string, Omit<GameCardProps, 'href' | 'status' | 'illustration'>> = {
+  const translatedDetails: Record<string, Omit<GameCardProps, 'href' | 'detailHref' | 'status' | 'illustration' | 'accentBg'>> = {
     yahtzee: {
       name: t('games.yahtzee.name'),
       tag: t('games.yahtzee.ribbon.tag'),
@@ -214,8 +197,6 @@ export default function GameRibbon() {
       time: t('games.yahtzee.ribbon.time'),
       diff: t('games.yahtzee.difficulty'),
       desc: t('games.yahtzee.ribbon.desc'),
-      accentBg: GAME_ACCENT_BG.yahtzee,
-      detailHref: GAME_DETAIL_HREF.yahtzee,
     },
     spy: {
       name: t('games.spy.name'),
@@ -224,8 +205,6 @@ export default function GameRibbon() {
       time: t('games.spy.ribbon.time'),
       diff: t('games.spy.difficulty'),
       desc: t('games.spy.ribbon.desc'),
-      accentBg: GAME_ACCENT_BG.spy,
-      detailHref: GAME_DETAIL_HREF.spy,
     },
     'tic-tac-toe': {
       name: t('games.tictactoe.name'),
@@ -234,8 +213,6 @@ export default function GameRibbon() {
       time: t('games.tictactoe.ribbon.time'),
       diff: t('games.tictactoe.difficulty'),
       desc: t('games.tictactoe.ribbon.desc'),
-      accentBg: GAME_ACCENT_BG['tic-tac-toe'],
-      detailHref: GAME_DETAIL_HREF['tic-tac-toe'],
     },
     memory: {
       name: t('games.memory.name'),
@@ -244,8 +221,6 @@ export default function GameRibbon() {
       time: t('games.memory.ribbon.time'),
       diff: t('games.memory.difficulty'),
       desc: t('games.memory.ribbon.desc'),
-      accentBg: GAME_ACCENT_BG.memory,
-      detailHref: GAME_DETAIL_HREF.memory,
     },
     'connect-four': {
       name: t('games.connect_four.name'),
@@ -254,8 +229,6 @@ export default function GameRibbon() {
       time: t('games.connect_four.ribbon.time'),
       diff: t('games.connect_four.difficulty'),
       desc: t('games.connect_four.ribbon.desc'),
-      accentBg: GAME_ACCENT_BG['connect-four'],
-      detailHref: GAME_DETAIL_HREF['connect-four'],
     },
     alias: {
       name: t('games.alias.name'),
@@ -264,8 +237,6 @@ export default function GameRibbon() {
       time: t('games.alias.ribbon.time'),
       diff: t('games.alias.difficulty'),
       desc: t('games.alias.ribbon.desc'),
-      accentBg: GAME_ACCENT_BG.alias,
-      detailHref: GAME_DETAIL_HREF.alias,
     },
   }
 
@@ -278,13 +249,19 @@ export default function GameRibbon() {
       time: '',
       diff: '',
       desc: '',
-      accentBg: 'rgba(155,140,255,0.12)',
     }
     const href = game.route ?? getGameLobbiesRoute(game.gameType)
+    const detailHref = game.route ? game.route.replace('/lobbies', '') : undefined
+    const meta = getGameMetadata(game.gameType)
+    const accentBg = meta
+      ? `color-mix(in srgb, ${meta.accentColor} 15%, transparent)`
+      : 'rgba(155,140,255,0.12)'
 
     return {
       ...details,
       href,
+      detailHref,
+      accentBg,
       status: game.availability,
       illustration: getIllustration(game.id, game.emoji),
     }
