@@ -45,9 +45,11 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
     if (ghost) {
         const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
         return (
-            <svg width="100%" height="100%" viewBox="0 0 36 36" style={{ display: 'block' }}>
-                <circle cx="18" cy="18" r="14" fill={fill} stroke="rgba(255,255,255,0.9)" strokeWidth="2.5" strokeDasharray="5 3" strokeLinecap="round" />
-            </svg>
+            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: fill, position: 'relative', overflow: 'hidden' }}>
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="18" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="3" strokeDasharray="5 3" strokeLinecap="round" />
+                </svg>
+            </div>
         )
     }
     const color = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
