@@ -1794,6 +1794,9 @@ const en = {
       viewOwn: 'View Public Profile',
       previewHint: 'Preview how other players can see your public profile.',
       linkHint: 'Public profile links make it easier to connect without sharing a friend code.',
+      lovesGame: 'Loves {{game}}',
+      copyLink: 'Copy profile link',
+      linkCopied: 'Copied!',
     },
   },
   notFound: {

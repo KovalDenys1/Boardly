@@ -1783,6 +1783,9 @@ const no = {
       viewOwn: 'Åpne offentlig profil',
       previewHint: 'Se hvordan andre spillere kan se den offentlige profilen din.',
       linkHint: 'Offentlige profillenker gjør det enklere å koble til uten å dele vennekoden.',
+      lovesGame: 'Elsker {{game}}',
+      copyLink: 'Kopier profillenke',
+      linkCopied: 'Kopiert!',
     }
   },
   notFound: {
