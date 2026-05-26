@@ -290,6 +290,7 @@ const uk: Translation = {
     lobbies: 'Лобі',
     leaderboard: 'Таблиця лідерів',
     friends: 'Друзі',
+    guides: 'Гайди',
     profile: 'Профіль',
     login: 'Увійти',
     register: 'Реєстрація',

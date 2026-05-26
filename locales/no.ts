@@ -288,6 +288,7 @@ const no = {
     lobbies: 'Lobbyer',
     leaderboard: 'Toppliste',
     friends: 'Venner',
+    guides: 'Guider',
     profile: 'Profil',
     login: 'Logg inn',
     register: 'Registrer',

@@ -288,6 +288,7 @@ const ru = {
     lobbies: 'Лобби',
     leaderboard: 'Таблица лидеров',
     friends: 'Друзья',
+    guides: 'Гайды',
     profile: 'Профиль',
     login: 'Войти',
     register: 'Регистрация',

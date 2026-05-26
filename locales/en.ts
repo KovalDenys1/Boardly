@@ -288,6 +288,7 @@ const en = {
     lobbies: 'Lobbies',
     leaderboard: 'Leaderboard',
     friends: 'Friends',
+    guides: 'Guides',
     profile: 'Profile',
     login: 'Login',
     register: 'Register',

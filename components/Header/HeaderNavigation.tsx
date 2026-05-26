@@ -23,7 +23,7 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
         : 'text-bd-ink-soft hover:bg-bd-bg2 hover:text-bd-ink'
     }`
 
-  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard']
+  const PUBLIC_ROUTES = ['/games', '/lobby', '/leaderboard', '/guides']
 
   const navigate = (dest: string) => {
     if (!isAuthenticated && !isGuest && !PUBLIC_ROUTES.includes(dest)) {
@@ -63,6 +63,13 @@ export function HeaderNavigation({ isAuthenticated, isGuest, onUnauthClick }: He
         style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
       >
         {t('header.leaderboard', 'Leaderboard')}
+      </button>
+      <button
+        onClick={() => navigate('/guides')}
+        className={navBtn(!!pathname?.startsWith('/guides'))}
+        style={{ padding: 'clamp(6px, 0.6vh, 10px) clamp(10px, 1vw, 16px)', fontSize: 'clamp(13px, 0.95vw, 15px)' }}
+      >
+        {t('header.guides')}
       </button>
       {isAuthenticated && (
         <button
