@@ -72,6 +72,7 @@ const en = {
     ownerFallback: 'Anonymous',
     gameUnknown: 'Unknown Game',
     spectators: 'Spectators {{count}}',
+    spectatorWatching: '👁 Someone is watching',
     spectatingBanner: 'You are spectating this game',
     backToGames: 'Back to Games',
     leftLobby: 'You left the lobby',
@@ -827,6 +828,8 @@ const en = {
         disc1: 'Red',
         disc2: 'Yellow',
         noMovesYet: 'No moves yet — Red starts.',
+        tapToInspect: 'Tap outside to inspect board',
+        showResults: 'Show results',
       },
     },
     rock_paper_scissors: {
@@ -2080,6 +2083,9 @@ const en = {
     noSpectatorsConnected: 'No spectators connected',
     chatTitle: 'Spectator Chat',
     chatPlaceholder: 'Message spectators...',
+    youArePlayer: "You're a player in this game",
+    youArePlayerDesc: 'Players cannot spectate their own game.',
+    goToGame: 'Go to game',
   },
   toast: {
     copied: 'Copied to clipboard!',

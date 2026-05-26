@@ -81,6 +81,7 @@ const uk: Translation = {
     ownerFallback: 'Анонім',
     gameUnknown: 'Невідома гра',
     spectators: 'Глядачі {{count}}',
+    spectatorWatching: '👁 Хтось спостерігає',
     spectatingBanner: 'Ви спостерігаєте за цією грою',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',
@@ -829,6 +830,8 @@ const uk: Translation = {
         disc1: 'Червоний',
         disc2: 'Жовтий',
         noMovesYet: 'Ходів ще немає — починає Червоний.',
+        tapToInspect: 'Натисніть поза кнопками, щоб переглянути дошку',
+        showResults: 'Показати результат',
       },
     },
     rock_paper_scissors: {
@@ -2082,6 +2085,9 @@ const uk: Translation = {
     noSpectatorsConnected: 'Глядачі не підключені',
     chatTitle: 'Чат глядачів',
     chatPlaceholder: 'Написати глядачам...',
+    youArePlayer: 'Ви гравець у цій грі',
+    youArePlayerDesc: 'Гравці не можуть спостерігати за власною грою.',
+    goToGame: 'Перейти до гри',
   },
   toast: {
     copied: 'Скопійовано в буфер обміну!',

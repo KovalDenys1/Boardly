@@ -72,6 +72,7 @@ const ru = {
     ownerFallback: 'Аноним',
     gameUnknown: 'Неизвестная игра',
     spectators: 'Зрители {{count}}',
+    spectatorWatching: '👁 Кто-то наблюдает',
     spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
@@ -827,6 +828,8 @@ const ru = {
         disc1: 'Красный',
         disc2: 'Жёлтый',
         noMovesYet: 'Ходов нет — начинает Красный.',
+        tapToInspect: 'Нажмите вне кнопок, чтобы посмотреть доску',
+        showResults: 'Показать результат',
       },
     },
     rock_paper_scissors: {
@@ -2068,6 +2071,9 @@ const ru = {
     noSpectatorsConnected: 'Зрители не подключены',
     chatTitle: 'Чат зрителей',
     chatPlaceholder: 'Написать зрителям...',
+    youArePlayer: 'Вы игрок в этой игре',
+    youArePlayerDesc: 'Игроки не могут наблюдать за своей игрой.',
+    goToGame: 'Перейти к игре',
   },
   toast: {
     copied: 'Скопировано в буфер обмена!',

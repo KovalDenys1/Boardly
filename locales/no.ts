@@ -72,6 +72,7 @@ const no = {
     ownerFallback: 'Anonym',
     gameUnknown: 'Ukjent spill',
     spectators: 'Tilskuere {{count}}',
+    spectatorWatching: '👁 Noen ser på',
     spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
@@ -827,6 +828,8 @@ const no = {
         disc1: 'Rød',
         disc2: 'Gul',
         noMovesYet: 'Ingen trekk ennå — Rød starter.',
+        tapToInspect: 'Trykk utenfor for å se brettet',
+        showResults: 'Vis resultat',
       },
     },
     rock_paper_scissors: {
@@ -2068,6 +2071,9 @@ const no = {
     noSpectatorsConnected: 'Ingen tilskuere tilkoblet',
     chatTitle: 'Tilskuerchat',
     chatPlaceholder: 'Skriv til tilskuere...',
+    youArePlayer: 'Du er spiller i dette spillet',
+    youArePlayerDesc: 'Spillere kan ikke se på sitt eget spill.',
+    goToGame: 'Gå til spillet',
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',

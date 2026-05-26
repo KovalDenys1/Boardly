@@ -1619,16 +1619,37 @@ input[type="range"].slider-thumb::-moz-range-track {
 @media (max-width: 899px) {
   .ttt-desktop-layout { display: none !important; }
   .ttt-screen {
-    height: auto;
-    min-height: var(--ttt-h);
-    overflow-y: auto;
-    overflow-x: hidden;
+    height: var(--ttt-h);
+    overflow: hidden;
+  }
+  .ttt-mobile-layout {
+    height: 100%;
   }
   .ttt-board-wrap {
     width: min(100%, calc(100vw - 52px));
   }
-  .ttt-history-card { max-height: none; }
-  .ttt-chat-card { height: 60vh; }
+}
+
+.ttt-mobile-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.ttt-mobile-content .ttt-board-card {
+  flex: 1;
+  min-height: 0;
+}
+.ttt-mobile-content .ttt-history-card {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+.ttt-mobile-content .ttt-chat-card {
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 
 /* Guess the Spy and Memory game surfaces */

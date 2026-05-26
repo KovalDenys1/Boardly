@@ -470,6 +470,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
     const [isMobile, setIsMobile] = useState(false)
+    const [overlayInspecting, setOverlayInspecting] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -587,6 +588,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         const redirectReason = resolveLifecycleRedirectReason({ gameStatus: game?.status, lobbyIsActive: lobby?.isActive })
         if (redirectReason) triggerLifecycleRedirect(redirectReason)
     }, [game?.status, lobby?.isActive, triggerLifecycleRedirect])
+
+    useEffect(() => { setOverlayInspecting(false) }, [game?.status])
 
     const handleGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
         clientLogger.log('📡 Connect Four game abandoned:', data)
@@ -1144,19 +1147,36 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 lastDroppedCol={gameData.lastDroppedCol}
             />
             {isFinished && !isSpectator && (
-                <div className="ttt-board-overlay" style={{ borderRadius: 16 }}>
-                    <C4ResultOverlay
-                        winnerName={winnerName}
-                        isDraw={isDraw}
-                        isMyWin={isMyWin}
-                        onPlayAgain={handlePlayAgain}
-                        onReturnToLobby={handleReturnToWaiting}
-                        onLeave={() => setShowLeaveConfirmModal(true)}
-                        isLoading={isRematchSubmitting}
-                        isHost={!!lobby && lobby.creatorId === currentUserId}
-                        t={t}
-                    />
-                </div>
+                <>
+                    {!overlayInspecting && (
+                        <div className="ttt-board-overlay" style={{ borderRadius: 16 }} onClick={() => setOverlayInspecting(true)}>
+                            <div style={{ position: 'absolute', bottom: 14, fontSize: 11, color: 'rgba(255,255,255,0.45)', pointerEvents: 'none' }}>
+                                {t('games.connect_four.game.tapToInspect')}
+                            </div>
+                            <div onClick={(e) => e.stopPropagation()}>
+                                <C4ResultOverlay
+                                    winnerName={winnerName}
+                                    isDraw={isDraw}
+                                    isMyWin={isMyWin}
+                                    onPlayAgain={handlePlayAgain}
+                                    onReturnToLobby={handleReturnToWaiting}
+                                    onLeave={() => setShowLeaveConfirmModal(true)}
+                                    isLoading={isRematchSubmitting}
+                                    isHost={!!lobby && lobby.creatorId === currentUserId}
+                                    t={t}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {overlayInspecting && (
+                        <button
+                            onClick={() => setOverlayInspecting(false)}
+                            style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                        >
+                            {t('games.connect_four.game.showResults')}
+                        </button>
+                    )}
+                </>
             )}
         </div>
     )
@@ -1275,8 +1295,13 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         </button>
                     ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {mobileTab === 'board' && <>{renderBoardSection()}{actionsSection}</>}
+                <div className="ttt-mobile-content">
+                    {mobileTab === 'board' && (
+                        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {renderBoardSection()}
+                            {actionsSection}
+                        </div>
+                    )}
                     {mobileTab === 'history' && historySection}
                     {mobileTab === 'chat' && chatSection}
                 </div>
