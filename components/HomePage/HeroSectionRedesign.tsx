@@ -341,6 +341,12 @@ export default function HeroSectionRedesign({ facts }: HeroSectionRedesignProps)
                 >
                   {t('home.browseGames')}
                 </button>
+                <button
+                  onClick={() => router.push('/lobby')}
+                  className="home-cta-button home-cta-button-outline"
+                >
+                  {t('home.viewLobbies')}
+                </button>
               </>
             ) : (
               <>

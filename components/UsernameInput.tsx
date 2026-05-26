@@ -141,7 +141,7 @@ export default function UsernameInput({
           type="text"
           required={required}
           disabled={disabled}
-          className={`w-full rounded-2xl border bg-white px-4 py-3 pr-10 text-base text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted sm:text-sm ${
+          className={`w-full rounded-2xl border bg-[var(--bd-input-bg)] px-4 py-3 pr-10 text-base text-bd-ink shadow-sm outline-none transition-all placeholder:text-bd-ink-muted sm:text-sm ${
             status === 'available'
               ? 'border-emerald-400 focus:ring-2 focus:ring-emerald-500/20'
               : status === 'taken' || status === 'invalid'
@@ -200,7 +200,7 @@ export default function UsernameInput({
                 key={suggestion}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="rounded-xl border border-bd-line bg-white px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2"
+                className="rounded-xl border border-bd-line bg-[var(--bd-card-warm)] px-3 py-1 text-xs font-medium text-bd-lav-deep transition-colors hover:bg-bd-bg2"
               >
                 {suggestion}
               </button>

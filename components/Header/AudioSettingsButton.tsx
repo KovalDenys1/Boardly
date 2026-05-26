@@ -133,7 +133,7 @@ export function AudioSettingsButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-[var(--bd-line)] bg-white p-4 text-[var(--bd-ink)] shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
+        <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-4 text-[var(--bd-ink)] shadow-[0_18px_45px_rgba(31,27,22,0.18)]">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="bd-kicker">{t('header.audioSettings', 'Audio Settings')}</p>
@@ -184,7 +184,7 @@ export function AudioSettingsMobilePanel() {
   const volumePercent = Math.round(volume * 100)
 
   return (
-    <div className="rounded-2xl border border-[var(--bd-line)] bg-white p-3 shadow-sm">
+    <div className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-card-warm)] p-3 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="bd-kicker">{t('header.audioSettings', 'Audio Settings')}</p>

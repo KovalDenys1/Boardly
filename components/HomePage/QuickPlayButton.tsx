@@ -7,13 +7,21 @@ import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
 import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import { getBotSupportedGameTypes, getGameMetadata } from '@/lib/game-catalog'
+import { isTemporarilyUnavailableGameType } from '@/lib/public-game-access'
 
-const BOT_SUPPORTED_GAMES = [
-  { type: 'yahtzee', svgId: 'yahtzee', label: 'Yahtzee', players: '1–4' },
-  { type: 'tic_tac_toe', svgId: 'tic-tac-toe', label: 'Tic Tac Toe', players: '2' },
-] as const
+const BOT_SUPPORTED_GAMES = getBotSupportedGameTypes()
+  .filter((type) => !isTemporarilyUnavailableGameType(type))
+  .map((type) => {
+    const meta = getGameMetadata(type)!
+    const playerRange =
+      meta.minPlayers === meta.maxPlayers
+        ? String(meta.minPlayers)
+        : `${meta.minPlayers}–${meta.maxPlayers}`
+    return { type, svgId: meta.svgId, label: meta.name, players: playerRange }
+  })
 
-type GameType = (typeof BOT_SUPPORTED_GAMES)[number]['type']
+type GameType = string
 
 interface QuickPlayButtonProps {
   className?: string

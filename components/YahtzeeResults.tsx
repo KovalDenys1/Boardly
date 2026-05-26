@@ -105,7 +105,7 @@ export default function YahtzeeResults({
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
-                <div className="bd-kicker">Match Complete</div>
+                <div className="bd-kicker">{t('yahtzee.results.matchComplete')}</div>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-2 border-bd-ink bg-bd-sun shadow-bd-ink-4 sm:h-20 sm:w-20">
                     <span className="text-4xl sm:text-5xl">🏆</span>
@@ -126,12 +126,12 @@ export default function YahtzeeResults({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <span className="bd-chip bd-chip-sun px-3 py-1.5 text-[11px]">Winner {winner.totalScore}</span>
-                <span className="bd-chip bd-chip-mint px-3 py-1.5 text-[11px]">Margin +{winnerMargin}</span>
-                <span className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]">{results.length} players</span>
+                <span className="bd-chip bd-chip-sun px-3 py-1.5 text-[11px]">{t('yahtzee.results.winnerScore', { score: winner.totalScore })}</span>
+                <span className="bd-chip bd-chip-mint px-3 py-1.5 text-[11px]">{t('yahtzee.results.marginScore', { margin: winnerMargin })}</span>
+                <span className="bd-chip bd-chip-lav px-3 py-1.5 text-[11px]">{t('yahtzee.results.players', { count: results.length })}</span>
                 {autoReturnSeconds !== null && (
                   <span className="bd-chip px-3 py-1.5 text-[11px]">
-                    Lobby in {autoReturnSeconds}s
+                    {t('yahtzee.results.lobbyIn', { seconds: autoReturnSeconds })}
                   </span>
                 )}
               </div>
@@ -149,7 +149,7 @@ export default function YahtzeeResults({
             >
               <div className="flex items-center gap-2 text-[var(--bd-coral-deep)]">
                 <span className="text-xl">👑</span>
-                <span className="bd-kicker">Winner</span>
+                <span className="bd-kicker">{t('yahtzee.results.winnerLabel')}</span>
               </div>
               <p className="mt-3 text-2xl font-extrabold text-bd-ink sm:text-3xl">
                 {isWinner ? t('yahtzee.results.youWon') : t('yahtzee.results.playerWins', { player: winner.playerName })}
@@ -166,7 +166,7 @@ export default function YahtzeeResults({
 
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}>
-                  <div className="bd-kicker">Upper</div>
+                  <div className="bd-kicker">{t('yahtzee.results.upperSectionShort')}</div>
                   <div className="mt-1 text-2xl font-bold text-bd-ink">
                     {winner.upperSectionScore}
                     {winner.bonusAchieved && (
@@ -175,7 +175,7 @@ export default function YahtzeeResults({
                   </div>
                 </div>
                 <div className="rounded-2xl border px-3 py-3" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg)' }}>
-                  <div className="bd-kicker">Lower</div>
+                  <div className="bd-kicker">{t('yahtzee.results.lowerSectionShort')}</div>
                   <div className="mt-1 text-2xl font-bold text-bd-ink">{winner.lowerSectionScore}</div>
                 </div>
               </div>
@@ -208,7 +208,7 @@ export default function YahtzeeResults({
                     onClick={onReturnToLobbyRoom}
                     className="bd-btn bd-btn-soft !rounded-xl !px-3 !py-2 !text-xs"
                   >
-                    Return to Lobby
+                    {t('game.ui.returnToLobby')}
                   </button>
                 )}
               </div>
@@ -257,7 +257,7 @@ export default function YahtzeeResults({
                         )}
                         {player.rank === 0 && (
                           <span className="bd-chip bd-chip-sun px-2 py-1 text-[11px]">
-                            WINNER
+                            {t('yahtzee.results.winnerBadge')}
                           </span>
                         )}
                       </div>
@@ -322,11 +322,11 @@ export default function YahtzeeResults({
           >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="bd-kicker">Next Step</div>
+                <div className="bd-kicker">{t('yahtzee.results.nextStep')}</div>
                 <p className="mt-1 text-sm font-medium text-bd-ink">
                   {autoReturnSeconds !== null
-                    ? `You can review the table for a few more seconds before we return to the lobby.`
-                    : `Start another round, ask for a rematch, or head back to the lobbies.`}
+                    ? t('yahtzee.results.autoReturnMsg')
+                    : t('yahtzee.results.nextStepHint')}
                 </p>
                 {!canStartGame && (
                   <p className="mt-1 text-xs text-bd-ink-muted">

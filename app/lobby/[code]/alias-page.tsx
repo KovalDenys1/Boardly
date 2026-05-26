@@ -530,6 +530,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     }
 
     setIsMoveSubmitting(true)
+    const submitStartedAt = Date.now()
     try {
       const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
         method: 'POST',
@@ -537,7 +538,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         body: JSON.stringify({ gameId: game.id, move, userId }),
       })
 
-      trackMoveSubmitApplied({ gameType: 'alias', moveType: type, durationMs: 0, isGuest, success: res.ok, applied: res.ok, statusCode: res.status, source: 'alias_page' })
+      trackMoveSubmitApplied({ gameType: 'alias', moveType: type, durationMs: Date.now() - submitStartedAt, isGuest, success: res.ok, applied: res.ok, statusCode: res.status, source: 'alias_page' })
 
       if (res.ok) {
         const result = await res.json()
@@ -722,7 +723,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
               background: 'rgba(255,255,255,0.55)', border: '1.5px solid var(--bd-line)',
             }}>
               <BdAvatar name={p.name} color={i === 0 ? accent : undefined} />
-              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? '#F59E0B' : undefined }}>
+              <span style={{ fontWeight: 600, fontSize: 15, color: p.user?.isPremium ? 'var(--bd-premium)' : undefined }}>
                 {p.name}
                 {p.user?.isPremium && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
                 {p.userId === currentUserId && (
@@ -915,7 +916,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                           border: isYou ? `1.5px solid ${accent}` : '1.5px solid var(--bd-line)',
                         }}>
                           <BdAvatar name={name} color={isYou ? accent : undefined} size={32} />
-                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? '#F59E0B' : undefined }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: isPremiumPlayer ? 'var(--bd-premium)' : undefined }}>
                             {name}
                             {isPremiumPlayer && <span style={{ marginLeft: 4, fontSize: 12 }} title="Premium">👑</span>}
                           </span>

@@ -94,7 +94,7 @@ export default function CelebrationBanner({ event, onComplete }: CelebrationBann
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="bd-kicker">Hot Hand</div>
+            <div className="bd-kicker">{t('yahtzee.ui.hotHand')}</div>
             <h3 className="mt-0.5 text-lg font-semibold leading-tight text-bd-ink sm:text-xl">
               {event.title}
             </h3>

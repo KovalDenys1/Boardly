@@ -8,6 +8,7 @@ import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { restoreGameEngine } from '@/lib/game-registry'
+import { getGameMetadata } from '@/lib/game-catalog'
 
 const limiter = rateLimit(rateLimitPresets.api)
 
@@ -408,12 +409,12 @@ export async function POST(
       // Non-spy left: game continues but Spy is phase-based — no currentPlayerIndex to advance
     }
 
-    // For turn-based games: advance to the next player if the departed player was current
+    // For turn-based games: advance to the next player if the departed player was current.
     // Alias uses currentTeamIndex+describerIndex; Liar's Party uses claimantOrder — skip
     // to avoid state corruption. Timer will handle stuck turns for those games.
-    const ADVANCE_TURN_GAMES = new Set(['yahtzee', 'memory'])
+    const gameMeta = getGameMetadata(activeGame.gameType)
     let turnAdvanced = false
-    if (ADVANCE_TURN_GAMES.has(activeGame.gameType)) {
+    if (gameMeta?.advanceTurnOnLeave) {
       try {
         const parsedState = parseAndValidateGameState(activeGame.state)
         const currentPlayerId = parsedState.players[parsedState.currentPlayerIndex]?.id
@@ -443,8 +444,7 @@ export async function POST(
     }
 
     // Engine-managed games: delegate player-leave state mutation to the engine
-    const ENGINE_LEAVE_GAMES = new Set(['alias', 'liars_party'])
-    if (ENGINE_LEAVE_GAMES.has(activeGame.gameType)) {
+    if (gameMeta?.engineHandlesLeave) {
       try {
         const engine = restoreGameEngine(activeGame.gameType, activeGame.id, activeGame.state)
         const changed = engine.handlePlayerLeave(userId)

@@ -209,7 +209,7 @@ export interface GameUpdatePayload extends BaseEventPayload {
   /** Action that triggered the update */
   action: 'state-change' | 'turn-changed' | 'player-left' | 'game-abandoned' | 'chat-message'
   /** Game-specific data */
-  payload: unknown
+  payload: Record<string, unknown>
 }
 
 export interface GameActionPayload {
@@ -218,7 +218,7 @@ export interface GameActionPayload {
   /** Action type (validated on server) */
   action: 'state-change' | 'player-left' | 'player-joined' | 'chat-message' | 'game-abandoned'
   /** Action-specific data */
-  payload: unknown
+  payload: Record<string, unknown>
 }
 
 export interface GameAbandonedPayload extends BaseEventPayload {
@@ -279,7 +279,7 @@ export interface BotActionPayload extends BaseEventPayload {
   /** Type of action (roll, score, etc.) */
   actionType: string
   /** Action details */
-  action: unknown
+  action: Record<string, unknown>
 }
 
 // ============================================================================

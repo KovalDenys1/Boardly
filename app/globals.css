@@ -24,6 +24,7 @@
   --bd-card-warm: #FFF8EC;
   --bd-input-bg: #ffffff;
   --bd-font-display: Georgia, serif;
+  --bd-premium: #F59E0B;
 }
 
 html.dark {
@@ -2079,4 +2080,73 @@ input[type="range"].slider-thumb::-moz-range-track {
     flex: none;
     height: 420px;
   }
+}
+
+/* ===== DARK MODE OVERRIDES ===== */
+
+html.dark .bd-dot-grid {
+  background-image: radial-gradient(rgba(240,232,219,0.08) 1px, transparent 1px);
+}
+
+html.dark .home-faq-item {
+  background: var(--bd-card-warm);
+}
+
+html.dark .btn-social-unlink {
+  background: var(--bd-bg2);
+  color: var(--bd-coral);
+}
+html.dark .btn-social-unlink:hover {
+  background: rgba(255,107,91,0.15);
+  color: var(--bd-coral-deep);
+}
+
+html.dark .ttt-card,
+html.dark .ttt-history-card,
+html.dark .ttt-chat-card {
+  background: var(--bd-card-warm);
+}
+
+html.dark .ttt-board-card {
+  background: var(--bd-card-warm);
+}
+
+html.dark .ttt-cell:not(:disabled):hover {
+  background: var(--bd-bg2);
+}
+
+html.dark .ttt-tabs {
+  background: var(--bd-bg2);
+}
+
+html.dark .spy-header,
+html.dark .memory-header,
+html.dark .spy-panel,
+html.dark .memory-progress-panel,
+html.dark .memory-board-panel,
+html.dark .memory-score-panel,
+html.dark .spy-role-card,
+html.dark .spy-vote-card,
+html.dark .spy-results-card {
+  background: var(--bd-card-warm);
+}
+
+html.dark .spy-secret-tile {
+  background: var(--bd-bg2);
+}
+
+html.dark .spy-vote-option,
+html.dark .spy-result-row,
+html.dark .spy-score-row,
+html.dark .spy-player-row,
+html.dark .memory-score-row {
+  background: var(--bd-card-warm);
+}
+
+html.dark .memory-chat-panel {
+  background: var(--bd-card-warm);
+}
+
+html.dark .memory-tile-face {
+  background: var(--bd-card-warm);
 }

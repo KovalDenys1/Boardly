@@ -258,6 +258,13 @@ export const rateLimitPresets = {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 30,
     message: 'Too many lobbies created. Please try again later.'
+  },
+
+  // Strict limit for friend requests (abuse prevention)
+  friendRequest: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 15,
+    message: 'Too many friend requests. Please try again later.'
   }
 }
 

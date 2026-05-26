@@ -1,4 +1,10 @@
+import type { Metadata } from 'next'
 import GameLobbiesPage from '@/app/games/components/GameLobbiesPage'
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+  alternates: { canonical: 'https://boardly.online/games/connect-four' },
+}
 
 export default function ConnectFourLobbiesPage() {
   return (

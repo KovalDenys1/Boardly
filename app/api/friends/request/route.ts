@@ -8,7 +8,7 @@ import { apiLogger } from '@/lib/logger'
 import { extractPublicProfileId } from '@/lib/public-profile'
 import { createInAppNotification } from '@/lib/in-app-notifications'
 
-const limiter = rateLimit(rateLimitPresets.api)
+const limiter = rateLimit(rateLimitPresets.friendRequest)
 const log = apiLogger('/api/friends/request')
 
 // POST /api/friends/request - Send friend request

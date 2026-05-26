@@ -6,6 +6,8 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
 import { buildAuthUrl } from '@/lib/auth-redirect'
 import PremiumProfileCard, { type PremiumCardStyle } from '@/components/PremiumProfileCard'
+import { getGameMetadata } from '@/lib/game-catalog'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 export type PublicProfileRelation =
   | 'login_required'
@@ -18,16 +20,6 @@ export type PublicProfileRelation =
 
 export type PublicProfileAccessState = 'available' | 'friends_only' | 'private'
 
-const FEATURED_GAME_LABELS: Record<string, { label: string; icon: string }> = {
-  yahtzee:            { label: 'Yahtzee',             icon: '🎲' },
-  guess_the_spy:      { label: 'Guess the Spy',       icon: '🕵️' },
-  tic_tac_toe:        { label: 'Tic Tac Toe',         icon: '✕' },
-  rock_paper_scissors:{ label: 'Rock Paper Scissors', icon: '✊' },
-  memory:             { label: 'Memory',              icon: '🃏' },
-  connect_four:       { label: 'Connect Four',        icon: '🔴' },
-  alias:              { label: 'Alias',               icon: '💬' },
-  liars_party:        { label: "Liar's Party",        icon: '🃏' },
-}
 
 export type PublicProfileViewData = {
   publicProfileId: string
@@ -504,12 +496,17 @@ export default function PublicProfileView({
                       {t('profile.publicProfile.subtitle')}
                     </p>
                   )}
-                  {profile.isPremium && profile.featuredGame && FEATURED_GAME_LABELS[profile.featuredGame] && (
-                    <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${tc.badge}`}>
-                      <span>{FEATURED_GAME_LABELS[profile.featuredGame].icon}</span>
-                      <span>Loves {FEATURED_GAME_LABELS[profile.featuredGame].label}</span>
-                    </div>
-                  )}
+                  {profile.isPremium && profile.featuredGame && (() => {
+                    const meta = getGameMetadata(profile.featuredGame!)
+                    if (!meta) return null
+                    const gameName = t(`games.${meta.translationKey}.name` as TranslationKeys, meta.name)
+                    return (
+                      <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${tc.badge}`}>
+                        <span>{meta.icon}</span>
+                        <span>{t('profile.publicProfile.lovesGame', { game: gameName })}</span>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -585,17 +582,17 @@ export default function PublicProfileView({
                         type="button"
                         onClick={() => void handleCopyProfileLink()}
                         disabled={copiedProfileLink}
-                        aria-label={copiedProfileLink ? 'Link copied!' : 'Copy profile link'}
+                        aria-label={copiedProfileLink ? t('profile.publicProfile.linkCopied') : t('profile.publicProfile.copyLink')}
                         className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-bd-lav-deep bg-bd-lav px-4 py-3 text-sm font-bold text-white shadow-[0_4px_0_var(--bd-lav-deep)] transition-all hover:-translate-y-0.5 hover:bg-bd-lav-mid hover:shadow-[0_6px_0_var(--bd-lav-deep)] disabled:cursor-default disabled:opacity-90"
                       >
                         {copiedProfileLink ? (
                           <>
-                            <span>Copied!</span>
+                            <span>{t('profile.publicProfile.linkCopied')}</span>
                             <span aria-hidden>✓</span>
                           </>
                         ) : (
                           <>
-                            <span>Copy profile link</span>
+                            <span>{t('profile.publicProfile.copyLink')}</span>
                             <span aria-hidden>↗</span>
                           </>
                         )}

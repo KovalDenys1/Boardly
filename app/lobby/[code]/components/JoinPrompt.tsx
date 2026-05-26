@@ -153,7 +153,7 @@ export default function JoinPrompt({
               <button
                 type="button"
                 onClick={onWatchAsSpectator}
-                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-white px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10"
+                className="mt-3 w-full rounded-xl border-2 border-bd-coral-deep bg-[var(--bd-card-warm)] px-4 py-2 text-sm font-bold text-bd-coral-deep transition-colors hover:bg-bd-coral/10"
               >
                 👁 Watch as spectator instead →
               </button>

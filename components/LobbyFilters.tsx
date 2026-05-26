@@ -47,7 +47,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
 
   const chip = (active: boolean) =>
     `bd-chip cursor-pointer px-3.5 py-1.5 text-sm transition-all ${
-      active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-white'
+      active ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-[var(--bd-card-warm)]'
     }`
 
   const gameTypes: { value: string | undefined; label: string }[] = [
@@ -79,7 +79,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
             placeholder={t('lobby.filters.searchPlaceholder')}
             value={filters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full rounded-2xl border-2 border-bd-line bg-white py-2.5 pl-10 pr-4 text-sm text-bd-ink outline-none transition placeholder:text-bd-ink-muted focus:border-bd-ink"
+            className="w-full rounded-2xl border-2 border-bd-line bg-[var(--bd-input-bg)] py-2.5 pl-10 pr-4 text-sm text-bd-ink outline-none transition placeholder:text-bd-ink-muted focus:border-bd-ink"
           />
           <svg
             className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-bd-ink-muted"
@@ -100,7 +100,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`bd-chip flex cursor-pointer items-center gap-2 px-4 py-2.5 text-sm transition-all ${
-              showFilters ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-white'
+              showFilters ? 'border-bd-ink bg-bd-ink text-bd-bg' : 'hover:border-bd-ink hover:bg-[var(--bd-card-warm)]'
             }`}
           >
             {showFilters ? t('lobby.filters.hideFilters') : t('lobby.filters.showFilters')}
@@ -163,7 +163,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
                 ))}
                 <button
                   onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="bd-chip flex h-9 w-9 cursor-pointer items-center justify-center text-base transition-all hover:border-bd-ink hover:bg-white"
+                  className="bd-chip flex h-9 w-9 cursor-pointer items-center justify-center text-base transition-all hover:border-bd-ink hover:bg-[var(--bd-card-warm)]"
                   title={filters.sortOrder === 'asc' ? t('lobby.sort.asc') : t('lobby.sort.desc')}
                 >
                   {filters.sortOrder === 'asc' ? '↑' : '↓'}
@@ -181,7 +181,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
                   placeholder="1"
                   value={filters.minPlayers || ''}
                   onChange={(e) => handleFilterChange('minPlayers', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-20 rounded-2xl border-2 border-bd-line bg-white px-3 py-2 text-center text-sm text-bd-ink outline-none transition focus:border-bd-ink"
+                  className="w-20 rounded-2xl border-2 border-bd-line bg-[var(--bd-input-bg)] px-3 py-2 text-center text-sm text-bd-ink outline-none transition focus:border-bd-ink"
                 />
                 <span className="text-sm text-bd-ink-muted">–</span>
                 <input
@@ -191,7 +191,7 @@ export default function LobbyFilters({ filters, onFiltersChange, embedded = fals
                   placeholder="8"
                   value={filters.maxPlayers || ''}
                   onChange={(e) => handleFilterChange('maxPlayers', e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-20 rounded-2xl border-2 border-bd-line bg-white px-3 py-2 text-center text-sm text-bd-ink outline-none transition focus:border-bd-ink"
+                  className="w-20 rounded-2xl border-2 border-bd-line bg-[var(--bd-input-bg)] px-3 py-2 text-center text-sm text-bd-ink outline-none transition focus:border-bd-ink"
                 />
               </div>
             </div>

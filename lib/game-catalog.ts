@@ -74,6 +74,12 @@ export interface GameMetadata {
   maxPlayers: number
   supportsBots: boolean
   translationKey: string
+  /** Advance currentPlayerIndex when the current player leaves a live game */
+  advanceTurnOnLeave: boolean
+  /** Delegate player-leave state mutation to the game engine's handlePlayerLeave() */
+  engineHandlesLeave: boolean
+  /** Bot turn is triggered by checking currentPlayerIndex (turn-based games) */
+  usesTurnIndex: boolean
 }
 
 const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
@@ -87,6 +93,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 4,
     supportsBots: true,
     translationKey: 'yahtzee',
+    advanceTurnOnLeave: true,
+    engineHandlesLeave: false,
+    usesTurnIndex: true,
   },
   guess_the_spy: {
     type: 'guess_the_spy',
@@ -98,6 +107,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 10,
     supportsBots: false,
     translationKey: 'spy',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: false,
   },
   tic_tac_toe: {
     type: 'tic_tac_toe',
@@ -109,6 +121,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 2,
     supportsBots: true,
     translationKey: 'tictactoe',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: true,
   },
   rock_paper_scissors: {
     type: 'rock_paper_scissors',
@@ -120,6 +135,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 2,
     supportsBots: true,
     translationKey: 'rps',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: false,
   },
   memory: {
     type: 'memory',
@@ -131,6 +149,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 4,
     supportsBots: true,
     translationKey: 'memory',
+    advanceTurnOnLeave: true,
+    engineHandlesLeave: false,
+    usesTurnIndex: true,
   },
   connect_four: {
     type: 'connect_four',
@@ -142,6 +163,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 2,
     supportsBots: true,
     translationKey: 'connect_four',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: false,
+    usesTurnIndex: true,
   },
 
   alias: {
@@ -154,6 +178,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 16,
     supportsBots: false,
     translationKey: 'alias',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: true,
+    usesTurnIndex: false,
   },
 
   liars_party: {
@@ -166,6 +193,9 @@ const GAME_METADATA: Record<RegisteredGameType, GameMetadata> = {
     maxPlayers: 12,
     supportsBots: false,
     translationKey: 'liars_party',
+    advanceTurnOnLeave: false,
+    engineHandlesLeave: true,
+    usesTurnIndex: false,
   },
 }
 
@@ -179,6 +209,9 @@ const TELEPHONE_DOODLE_METADATA: GameMetadata = {
   maxPlayers: 12,
   supportsBots: false,
   translationKey: 'telephone_doodle',
+  advanceTurnOnLeave: false,
+  engineHandlesLeave: false,
+  usesTurnIndex: false,
 }
 
 const SKETCH_AND_GUESS_METADATA: GameMetadata = {
@@ -191,6 +224,9 @@ const SKETCH_AND_GUESS_METADATA: GameMetadata = {
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'guess_my_drawing',
+  advanceTurnOnLeave: false,
+  engineHandlesLeave: false,
+  usesTurnIndex: false,
 }
 
 const FAKE_ARTIST_METADATA: GameMetadata = {
@@ -203,6 +239,9 @@ const FAKE_ARTIST_METADATA: GameMetadata = {
   maxPlayers: 10,
   supportsBots: false,
   translationKey: 'fake_artist',
+  advanceTurnOnLeave: false,
+  engineHandlesLeave: false,
+  usesTurnIndex: false,
 }
 
 const FEATURED_GAME_CATALOG: readonly GameCatalogEntry[] = [

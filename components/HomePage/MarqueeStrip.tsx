@@ -1,25 +1,30 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslation } from '@/lib/i18n-helpers'
 
-const ITEMS = [
-  { txt: 'Play Yahtzee',          icon: '🎲', color: 'var(--bd-coral)' },
-  { txt: 'Find the spy',          icon: '🕵️', color: 'var(--bd-lav)'   },
-  { txt: 'Quick Tic Tac Toe',     icon: '❌', color: 'var(--bd-mint)'  },
-  { txt: 'Match cards in Memory', icon: '🧠', color: 'var(--bd-sun)'   },
-  { txt: 'Join as a guest',       icon: '👤', color: 'var(--bd-sky)'   },
-  { txt: 'Share a room code',     icon: '🔗', color: 'var(--bd-coral)' },
-  { txt: 'Invite friends',        icon: '💌', color: 'var(--bd-mint)'  },
-  { txt: 'Keep your stats',       icon: '📊', color: 'var(--bd-lav)'   },
-  { txt: 'No download needed',    icon: '⚡', color: 'var(--bd-sky)'   },
-  { txt: 'Play in the browser',   icon: '🌐', color: 'var(--bd-sun)'   },
-]
+const ITEM_ICONS = [
+  { key: 'home.marquee.playYahtzee',  icon: '🎲', color: 'var(--bd-coral)' },
+  { key: 'home.marquee.findTheSpy',   icon: '🕵️', color: 'var(--bd-lav)'   },
+  { key: 'home.marquee.quickTicTacToe', icon: '❌', color: 'var(--bd-mint)'  },
+  { key: 'home.marquee.matchCards',   icon: '🧠', color: 'var(--bd-sun)'   },
+  { key: 'home.marquee.joinAsGuest',  icon: '👤', color: 'var(--bd-sky)'   },
+  { key: 'home.marquee.shareCode',    icon: '🔗', color: 'var(--bd-coral)' },
+  { key: 'home.marquee.inviteFriends', icon: '💌', color: 'var(--bd-mint)'  },
+  { key: 'home.marquee.keepStats',    icon: '📊', color: 'var(--bd-lav)'   },
+  { key: 'home.marquee.noDownload',   icon: '⚡', color: 'var(--bd-sky)'   },
+  { key: 'home.marquee.playInBrowser', icon: '🌐', color: 'var(--bd-sun)'   },
+] as const
 
 function MarqueeItem({
-  item,
+  icon,
+  color,
+  txt,
   index,
 }: {
-  item: (typeof ITEMS)[number]
+  icon: string
+  color: string
+  txt: string
   index: number
 }) {
   return (
@@ -35,8 +40,8 @@ function MarqueeItem({
         whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ fontSize: 26 }}>{item.icon}</span>
-      <span style={{ color: index % 3 === 0 ? item.color : 'var(--bd-bg)' }}>{item.txt}</span>
+      <span style={{ fontSize: 26 }}>{icon}</span>
+      <span style={{ color: index % 3 === 0 ? color : 'var(--bd-bg)' }}>{txt}</span>
     </span>
   )
 }
@@ -46,6 +51,7 @@ interface MarqueeStripProps {
 }
 
 export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps) {
+  const { t } = useTranslation()
   const [canAnimate, setCanAnimate] = useState(false)
   const isHero = variant === 'hero'
 
@@ -117,10 +123,12 @@ export default function MarqueeStrip({ variant = 'section' }: MarqueeStripProps)
       <div className={`bd-marquee-track ${canAnimate ? 'is-ready' : ''}`}>
         {[0, 1, 2].map((groupIndex) => (
           <div key={groupIndex} className="bd-marquee-group">
-            {ITEMS.map((item, itemIndex) => (
+            {ITEM_ICONS.map(({ key, icon, color }, itemIndex) => (
               <MarqueeItem
-                key={`${groupIndex}-${item.txt}`}
-                item={item}
+                key={`${groupIndex}-${key}`}
+                icon={icon}
+                color={color}
+                txt={t(key)}
                 index={itemIndex}
               />
             ))}

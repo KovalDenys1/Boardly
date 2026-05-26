@@ -91,6 +91,7 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2.5">
               {([
+                { labelKey: 'footer.games', href: '/games' },
                 { labelKey: 'footer.quickPlay', href: '/#quick-play' },
                 { labelKey: 'footer.createRoom', href: '/lobby/create' },
                 { labelKey: 'footer.leaderboard', href: '/leaderboard' },

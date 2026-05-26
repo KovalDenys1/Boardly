@@ -20,9 +20,6 @@ export const metadata: Metadata = {
     url: 'https://boardly.online/games',
     type: 'website',
   },
-  alternates: {
-    canonical: 'https://boardly.online/games',
-  },
 }
 
 export default function GamesLayout({ children }: { children: React.ReactNode }) {

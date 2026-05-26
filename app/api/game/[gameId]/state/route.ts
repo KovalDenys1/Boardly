@@ -8,9 +8,11 @@ import { advanceTurnPastDisconnectedPlayers, type TurnState } from '@/lib/discon
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { appendGameReplaySnapshot } from '@/lib/game-replay'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
+import { verifyCsrfToken } from '@/lib/csrf'
 import { parseAndValidateGameState, toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { TicTacToeGame } from '@/lib/games/tic-tac-toe-game'
 import { sanitizeSpyStateForBroadcast } from '@/lib/games/spy-game'
+import { getGameMetadata } from '@/lib/game-catalog'
 
 interface AutoActionContext {
   source: 'turn-timeout'
@@ -204,6 +206,10 @@ export async function POST(
     const rateLimitResult = await limiter(request)
     if (rateLimitResult) {
       return rateLimitResult
+    }
+
+    if (!verifyCsrfToken(request)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const { gameId } = await params
@@ -613,8 +619,8 @@ export async function POST(
         return gameUpdate
       }
 
-      for (const scoreUpdate of changedPlayerUpdates) {
-        await tx.players.update({
+      await Promise.all(changedPlayerUpdates.map((scoreUpdate) =>
+        tx.players.update({
           where: { id: scoreUpdate.id },
           data: {
             score: scoreUpdate.score,
@@ -624,7 +630,7 @@ export async function POST(
             ...(scoreUpdate.isWinner !== undefined ? { isWinner: scoreUpdate.isWinner } : {}),
           },
         })
-      }
+      ))
 
       return gameUpdate
     })
@@ -678,12 +684,7 @@ export async function POST(
         if (pendingBot) {
           botUserIdToTrigger = pendingBot.userId
         }
-      } else if (
-        game.lobby.gameType === 'tic_tac_toe' ||
-        game.lobby.gameType === 'yahtzee' ||
-        game.lobby.gameType === 'memory' ||
-        game.lobby.gameType === 'connect_four'
-      ) {
+      } else if (getGameMetadata(game.lobby.gameType)?.usesTurnIndex) {
         const currentPlayerId = enginePlayers[authoritativeState.currentPlayerIndex]?.id
         const currentBotPlayer = botPlayers.find((player) => player.userId === currentPlayerId)
         if (currentBotPlayer) {
@@ -709,19 +710,19 @@ export async function POST(
       ? sanitizeSpyStateForBroadcast(authoritativeState)
       : authoritativeState
 
-    const serverBroadcasted = await broadcastToLobby(game.lobby.code, 'game-update', {
+    void replaySnapshotPromise
+    void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
       payload: broadcastState,
+    }).then((ok) => {
+      if (!ok) {
+        log.warn('Failed to broadcast authoritative state snapshot', {
+          gameId,
+          lobbyCode: game.lobby.code,
+          userId,
+        })
+      }
     })
-    void replaySnapshotPromise
-
-    if (!serverBroadcasted) {
-      log.warn('Failed to broadcast authoritative state snapshot', {
-        gameId,
-        lobbyCode: game.lobby.code,
-        userId,
-      })
-    }
 
     const response = {
       game: {
@@ -738,7 +739,6 @@ export async function POST(
           }
         }),
       },
-      serverBroadcasted,
       ...(botAutoResponse ? { autoResponse: botAutoResponse } : {}),
     }
 
