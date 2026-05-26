@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'Board Game Guides & Tips - How to Play Online',
@@ -64,6 +65,33 @@ const howToPlayGuides = [
     readTime: '4 min',
     accent: 'var(--bd-coral)',
   },
+  {
+    slug: 'how-to-play-connect-four-online',
+    title: 'How to Play Connect Four Online',
+    description: 'Drop discs, get four in a row, beat your opponent. Rules and winning tips.',
+    emoji: '🔴',
+    readTime: '3 min',
+    accent: 'var(--bd-sun)',
+  },
+  {
+    slug: 'how-to-play-alias-online',
+    title: 'How to Play Alias Online',
+    description: 'Describe words, help your team guess, and score more than the other team.',
+    emoji: '🗣️',
+    readTime: '4 min',
+    accent: 'var(--bd-coral)',
+  },
+]
+
+const strategyGuides = [
+  {
+    slug: 'yahtzee-strategy-guide',
+    title: 'Yahtzee Strategy Guide — How to Win More Often',
+    description: 'When to go for Yahtzee, how to chase the bonus, and which categories to fill first.',
+    emoji: '🏆',
+    readTime: '6 min',
+    accent: 'var(--bd-sky)',
+  },
 ]
 
 const bestOfGuides = [
@@ -92,7 +120,7 @@ const collectionJsonLd = {
   description: 'Step-by-step guides for playing board games online with friends.',
   url: 'https://boardly.online/guides',
   publisher: { '@type': 'Organization', name: 'Boardly', url: 'https://boardly.online' },
-  hasPart: [...howToPlayGuides, ...bestOfGuides].map(({ slug, title }) => ({
+  hasPart: [...howToPlayGuides, ...strategyGuides, ...bestOfGuides].map(({ slug, title }) => ({
     '@type': 'Article',
     name: title,
     url: `https://boardly.online/guides/${slug}`,
@@ -204,6 +232,22 @@ export default function GuidesPage() {
             </div>
           </section>
 
+          {/* Strategy */}
+          <section className="mb-10">
+            <div className="mb-4 flex items-center gap-3">
+              <h2 className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--bd-ink-muted)' }}>
+                Strategy
+              </h2>
+              <div className="h-px flex-1" style={{ background: 'var(--bd-line)' }} />
+              <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>{strategyGuides.length} guides</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {strategyGuides.map((guide) => (
+                <GuideCard key={guide.slug} {...guide} />
+              ))}
+            </div>
+          </section>
+
           {/* Best of */}
           <section>
             <div className="mb-4 flex items-center gap-3">
@@ -222,6 +266,7 @@ export default function GuidesPage() {
 
         </div>
       </div>
+      <Footer />
     </>
   )
 }

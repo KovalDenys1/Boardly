@@ -72,9 +72,9 @@ export default function HowToPlayYahtzeeGuide() {
         accentColor="var(--bd-sky)"
         cta={{ href: '/games/yahtzee/lobbies', label: 'Play Yahtzee Now', detail: 'Ready to put this into practice?' }}
         related={[
+          { href: '/guides/yahtzee-strategy-guide', label: 'Yahtzee Strategy Guide — How to Win More Often' },
           { href: '/guides/how-to-play-spy-game-online', label: 'How to Play Guess the Spy Online' },
-          { href: '/guides/how-to-play-memory-card-game-online', label: 'How to Play Memory Card Game Online' },
-          { href: '/guides/how-to-play-tic-tac-toe-online', label: 'How to Play Tic Tac Toe Online' },
+          { href: '/guides/how-to-play-connect-four-online', label: 'How to Play Connect Four Online' },
           { href: '/guides/best-free-multiplayer-browser-games', label: 'Best Free Multiplayer Browser Games in 2026' },
         ]}
       >
