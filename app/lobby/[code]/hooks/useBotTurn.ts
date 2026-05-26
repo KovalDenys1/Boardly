@@ -104,13 +104,22 @@ export function useBotTurn({
       if (!response.ok) {
         const error = responseData as { error?: string }
 
-        // Expected race conditions — silent skip, no retry
-        if (response.status === 409 || error.error === "Not bot's turn") {
-          clientLogger.debug('🤖 Bot turn request skipped (expected race condition):', { status: response.status, error: error.error })
-          if (error.error === "Not bot's turn") {
-            lastBotPlayerId.current = null
-            lastPlayerIndex.current = null
-          }
+        // 409 — concurrent execution: clear refs and retry in case both instances failed
+        // and no broadcast arrives (which would leave isSameTurn=true forever with no watchdog running)
+        if (response.status === 409) {
+          clientLogger.debug('🤖 Bot turn skipped (409 concurrent execution):', { status: response.status })
+          lastBotPlayerId.current = null
+          lastPlayerIndex.current = null
+          retryAttemptRef.current = 0
+          scheduleRetry(botUserId, gameId, RETRY_DELAY_MS)
+          return
+        }
+
+        // 400 "Not bot's turn" — just reset refs, no retry needed
+        if (error.error === "Not bot's turn") {
+          clientLogger.debug('🤖 Not bot\'s turn — resetting tracking')
+          lastBotPlayerId.current = null
+          lastPlayerIndex.current = null
           retryAttemptRef.current = 0
           return
         }
@@ -137,6 +146,10 @@ export function useBotTurn({
         scheduleRetry(botUserId, gameId, RETRY_DELAY_MS)
       } else {
         retryAttemptRef.current = 0
+        // Clear refs before reconcile: reconcile delivers fresh state → effect re-runs →
+        // without clearing refs isSameTurn would be true and the bot would stay frozen
+        lastBotPlayerId.current = null
+        lastPlayerIndex.current = null
         showToast.error('toast.botMoveFailed')
         await reconcileAfterBotTurn('bot-turn-error')
       }
