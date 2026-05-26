@@ -286,6 +286,8 @@ export function MobileMenu({
                       image={userImage}
                       userName={userName}
                       userEmail={userEmail}
+                      className="bg-bd-lav text-white"
+                      textClassName="font-bold"
                       style={{ width: 44, height: 44, fontSize: 18, flexShrink: 0 }}
                     />
                     <div style={{ minWidth: 0, flex: 1 }}>
