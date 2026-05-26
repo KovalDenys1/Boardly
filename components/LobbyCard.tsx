@@ -15,6 +15,7 @@ export interface LobbyCardData {
   allowSpectators?: boolean
   maxSpectators?: number
   spectatorCount?: number
+  creatorId?: string | null
   creator: {
     username: string | null
     email: string | null
@@ -31,11 +32,12 @@ export interface LobbyCardData {
 interface LobbyCardProps {
   lobby: LobbyCardData
   index: number
+  currentUserId?: string | null
   onOpenLobby: (code: string) => void
   onWatchLobby: (code: string) => void
 }
 
-export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: LobbyCardProps) {
+export default function LobbyCard({ lobby, index, currentUserId, onOpenLobby, onWatchLobby }: LobbyCardProps) {
   const { t } = useTranslation()
 
   const getGamePresentation = (gameType: string | undefined): { svgId: string; label: string; accent: string } => {
@@ -120,7 +122,7 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
           </button>
         )}
         <button type="button" onClick={() => onOpenLobby(lobby.code)} className="bd-btn bd-btn-coral" style={{ padding: '10px 16px', fontSize: 13 }}>
-          {t('lobby.openLobby')} →
+          {currentUserId && lobby.creatorId === currentUserId ? t('game.ui.returnToLobby') : t('lobby.openLobby')} →
         </button>
       </div>
     </article>

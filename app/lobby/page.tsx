@@ -33,7 +33,7 @@ function LobbyListPageContent() {
     isRefreshLocked,
   } = useLobbyList()
 
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const { isGuest } = useGuest()
   const isAuthenticated = status === 'authenticated' || isGuest
   const [authGateDest, setAuthGateDest] = useState<string | null>(null)
@@ -200,6 +200,7 @@ function LobbyListPageContent() {
                   key={lobby.id}
                   lobby={lobby}
                   index={index}
+                  currentUserId={session?.user?.id ?? null}
                   onOpenLobby={(code) => router.push(`/lobby/${code}`)}
                   onWatchLobby={(code) => router.push(`/lobby/${code}/spectate`)}
                 />
