@@ -42,8 +42,15 @@ const DISC_EMPTY = 'var(--bd-bg2)'
 function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
     disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc
 }) {
-    const baseColor = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
-    const color = ghost ? (ghostDisc === 1 ? DISC_RED : DISC_YELLOW) : baseColor
+    if (ghost) {
+        const stroke = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
+        return (
+            <svg width="100%" height="100%" viewBox="0 0 36 36" style={{ display: 'block' }}>
+                <circle cx="18" cy="18" r="13" fill="none" stroke={stroke} strokeWidth="2.5" strokeDasharray="5 3" strokeLinecap="round" />
+            </svg>
+        )
+    }
+    const color = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
     const shadow = disc === 1 ? '0 2px 6px rgba(255,107,91,0.45)' : disc === 2 ? '0 2px 6px rgba(255,196,77,0.45)' : 'none'
     const scale = isWin ? 'scale(1.12)' : 'scale(1)'
     const anim = pop ? 'c4-drop 0.22s cubic-bezier(0.2,1.6,0.4,1) both' : undefined
@@ -53,10 +60,9 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
             height: '100%',
             borderRadius: '50%',
             background: color,
-            opacity: ghost ? 0.4 : 1,
-            boxShadow: ghost ? 'none' : isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+            boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
             transform: scale,
-            transition: 'transform 0.15s, box-shadow 0.15s, opacity 0.1s',
+            transition: 'transform 0.15s, box-shadow 0.15s',
             animation: anim,
         }} />
     )
