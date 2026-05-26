@@ -1223,6 +1223,22 @@ input[type="range"].slider-thumb::-moz-range-track {
   animation: reaction-float 1.6s ease-out forwards;
 }
 
+/* ============ CONNECT FOUR - DISC DROP ============ */
+
+@keyframes c4-drop {
+  0%   {
+    transform: translateY(calc(-1 * var(--c4-fall-dist, 180px)));
+    animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.35);
+  }
+  72%  {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);
+  }
+  84%  { transform: translateY(5px); animation-timing-function: ease-in-out; }
+  93%  { transform: translateY(-2px); }
+  100% { transform: translateY(0) scale(var(--c4-end-scale, 1)); }
+}
+
 /* ============ TIC-TAC-TOE GAME SCREEN ============ */
 
 @keyframes ttt-mark-in {
@@ -2069,44 +2085,157 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: var(--bd-bg2);
 }
 
-@media (max-width: 900px) {
-  .spy-screen,
+/* ===== MEMORY GAME — DESKTOP-ONLY ELEMENTS ===== */
+
+.memory-desktop-layout { display: block; }
+.memory-mobile-layout  { display: none; }
+
+/* ===== MEMORY GAME — MOBILE LAYOUT ===== */
+
+@media (max-width: 899px) {
+  .memory-desktop-layout { display: none !important; }
+  .memory-mobile-layout  { display: flex; flex-direction: column; height: 100%; }
+
   .memory-screen {
+    --memory-h: calc(100dvh - 64px);
+    /* break out of LobbyPageClient py-8 / px-4 container padding */
+    margin: -32px -16px -32px -16px;
+    width: 100vw;
+    height: var(--memory-h);
+    overflow: hidden;
+    padding: 0;
+    min-height: unset;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 899px) {
+  .memory-screen {
+    margin-left: -24px;
+    margin-right: -24px;
+  }
+}
+
+.memory-mobile-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  background: var(--bd-bg);
+  border-bottom: 1.5px solid var(--bd-line);
+  flex-shrink: 0;
+}
+
+.memory-mobile-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bd-card-warm);
+  border-bottom: 1.5px solid var(--bd-line);
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bd-ink-soft);
+}
+
+.memory-mobile-progress-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bd-bg2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.memory-mobile-progress-track > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bd-mint);
+  transition: width 0.4s ease;
+}
+
+.memory-turn-timer-mobile {
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.memory-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bd-bg2);
+  border-bottom: 1.5px solid var(--bd-line);
+  padding: 0 6px;
+  flex-shrink: 0;
+  height: 44px;
+}
+
+.memory-tab-btn {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--bd-ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.memory-tab-btn-active {
+  color: var(--bd-ink);
+}
+
+.memory-tab-btn-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--bd-mint);
+}
+
+.memory-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--bd-coral);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.memory-mobile-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.memory-mobile-board-wrap {
+  width: min(calc(100vw - 24px), calc(var(--memory-h) - 220px));
+  aspect-ratio: auto;
+}
+
+/* spy mobile (unchanged from existing) */
+@media (max-width: 900px) {
+  .spy-screen {
     padding: 10px;
   }
 
-  .spy-header,
-  .memory-header {
+  .spy-header {
     flex-direction: column;
-  }
-
-  .memory-header-actions {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .memory-status,
-  .memory-turn-timer,
-  .memory-leave-button {
-    flex: 1 1 150px;
-  }
-
-  .memory-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .memory-side-stack {
-    order: -1;
-  }
-
-  .memory-chat-panel {
-    flex: none;
-    height: 420px;
-  }
-
-  .memory-grid {
-    width: min(100%, calc(100vw - 40px));
-    max-width: calc(100vw - 40px);
   }
 }
 
