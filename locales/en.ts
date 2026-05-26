@@ -2086,6 +2086,7 @@ const en = {
     youArePlayer: "You're a player in this game",
     youArePlayerDesc: 'Players cannot spectate their own game.',
     goToGame: 'Go to game',
+    spyReveal: 'The spy was',
   },
   toast: {
     copied: 'Copied to clipboard!',

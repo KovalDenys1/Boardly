@@ -2088,6 +2088,7 @@ const uk: Translation = {
     youArePlayer: 'Ви гравець у цій грі',
     youArePlayerDesc: 'Гравці не можуть спостерігати за власною грою.',
     goToGame: 'Перейти до гри',
+    spyReveal: 'Шпигуном був',
   },
   toast: {
     copied: 'Скопійовано в буфер обміну!',

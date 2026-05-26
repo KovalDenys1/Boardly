@@ -2074,6 +2074,7 @@ const no = {
     youArePlayer: 'Du er spiller i dette spillet',
     youArePlayerDesc: 'Spillere kan ikke se på sitt eget spill.',
     goToGame: 'Gå til spillet',
+    spyReveal: 'Spionen var',
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',

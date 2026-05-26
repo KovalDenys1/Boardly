@@ -2074,6 +2074,7 @@ const ru = {
     youArePlayer: 'Вы игрок в этой игре',
     youArePlayerDesc: 'Игроки не могут наблюдать за своей игрой.',
     goToGame: 'Перейти к игре',
+    spyReveal: 'Шпионом был',
   },
   toast: {
     copied: 'Скопировано в буфер обмена!',
