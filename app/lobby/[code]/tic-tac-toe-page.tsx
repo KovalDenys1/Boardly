@@ -791,6 +791,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         gameEngine,
         code,
         isGameStarted: game?.status === 'playing',
+        isSpectator,
     })
 
     const handleLeave = async () => {
@@ -1043,16 +1044,20 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         if (!chatInput.trim()) return
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: chatInput.trim(), time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
+        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
+        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
+        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
+        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
         setChatInput('')
     }
 
     const quickReact = (emoji: string) => {
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: emoji, time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
+        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
+        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
+        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
+        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
     }
 
     // ─── Sections ─────────────────────────────────────────────────────────────

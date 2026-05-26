@@ -646,6 +646,7 @@ const uk: Translation = {
         undoDecline: 'Відхилити',
         drawBtn: 'Нічия',
         leaveLobby: 'Покинути лобі',
+        spectator: 'Глядач',
       },
     },
     memory: {
@@ -836,6 +837,7 @@ const uk: Translation = {
         noMovesYet: 'Ходів ще немає — починає Червоний.',
         tapToInspect: 'Переглянути дошку',
         showResults: 'Показати результат',
+        spectator: 'Глядач',
       },
     },
     rock_paper_scissors: {

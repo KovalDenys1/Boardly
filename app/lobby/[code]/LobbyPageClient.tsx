@@ -1081,6 +1081,9 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     gameEngine,
     code,
     isGameStarted: game?.status === 'playing',
+    isSpectator: game?.status === 'playing' && !game?.players?.some(
+      p => p.userId === getCurrentUserId() || (isGuest && p.userId === guestId)
+    ),
     reconcileWithServerSnapshot,
   })
 

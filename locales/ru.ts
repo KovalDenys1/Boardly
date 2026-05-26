@@ -644,6 +644,7 @@ const ru = {
         undoDecline: 'Отклонить',
         drawBtn: 'Ничья',
         leaveLobby: 'Покинуть лобби',
+        spectator: 'Зритель',
       }
     },
     memory: {
@@ -834,6 +835,7 @@ const ru = {
         noMovesYet: 'Ходов нет — начинает Красный.',
         tapToInspect: 'Посмотреть доску',
         showResults: 'Показать результат',
+        spectator: 'Зритель',
       },
     },
     rock_paper_scissors: {

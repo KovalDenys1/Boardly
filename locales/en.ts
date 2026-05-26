@@ -644,6 +644,7 @@ const en = {
         undoDecline: 'Decline',
         drawBtn: 'Draw',
         leaveLobby: 'Leave lobby',
+        spectator: 'Spectator',
       },
     },
     memory: {
@@ -834,6 +835,7 @@ const en = {
         noMovesYet: 'No moves yet — Red starts.',
         tapToInspect: 'View Board',
         showResults: 'Show results',
+        spectator: 'Spectator',
       },
     },
     rock_paper_scissors: {

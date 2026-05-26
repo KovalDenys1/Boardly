@@ -842,6 +842,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         gameEngine,
         code,
         isGameStarted: game?.status === 'playing',
+        isSpectator,
     })
 
     const handleLeave = async () => {
@@ -1061,8 +1062,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         if (!chatInput.trim()) return
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = myDisc === 1 ? p1Name : p2Name
-        const myColor = myDisc === 1 ? 'coral' : 'sun'
+        const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
+        const myColor = isSpectator ? 'sky' : (myDisc === 1 ? 'coral' : 'sun')
         setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
         emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
         setChatInput('')
@@ -1071,8 +1072,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const quickReact = (emoji: string) => {
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = myDisc === 1 ? p1Name : p2Name
-        const myColor = myDisc === 1 ? 'coral' : 'sun'
+        const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
+        const myColor = isSpectator ? 'sky' : (myDisc === 1 ? 'coral' : 'sun')
         setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
         emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
     }

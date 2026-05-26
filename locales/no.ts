@@ -644,6 +644,7 @@ const no = {
         undoDecline: 'Avslå',
         drawBtn: 'Uavgjort',
         leaveLobby: 'Forlat lobby',
+        spectator: 'Tilskuer',
       }
     },
     memory: {
@@ -834,6 +835,7 @@ const no = {
         noMovesYet: 'Ingen trekk ennå — Rød starter.',
         tapToInspect: 'Se brettet',
         showResults: 'Vis resultat',
+        spectator: 'Tilskuer',
       },
     },
     rock_paper_scissors: {
