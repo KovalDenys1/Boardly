@@ -288,7 +288,6 @@ describe('POST /api/game/[gameId]/state', () => {
       })
     )
     expect(payload.game.id).toBe('game-123')
-    expect(payload.serverBroadcasted).toBe(true)
     expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1)
   })
 

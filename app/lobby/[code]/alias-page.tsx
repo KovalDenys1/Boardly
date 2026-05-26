@@ -530,6 +530,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     }
 
     setIsMoveSubmitting(true)
+    const submitStartedAt = Date.now()
     try {
       const res = await fetchWithGuest(`/api/game/${game.id}/state`, {
         method: 'POST',
@@ -537,7 +538,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
         body: JSON.stringify({ gameId: game.id, move, userId }),
       })
 
-      trackMoveSubmitApplied({ gameType: 'alias', moveType: type, durationMs: 0, isGuest, success: res.ok, applied: res.ok, statusCode: res.status, source: 'alias_page' })
+      trackMoveSubmitApplied({ gameType: 'alias', moveType: type, durationMs: Date.now() - submitStartedAt, isGuest, success: res.ok, applied: res.ok, statusCode: res.status, source: 'alias_page' })
 
       if (res.ok) {
         const result = await res.json()

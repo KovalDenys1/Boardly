@@ -710,19 +710,19 @@ export async function POST(
       ? sanitizeSpyStateForBroadcast(authoritativeState)
       : authoritativeState
 
-    const serverBroadcasted = await broadcastToLobby(game.lobby.code, 'game-update', {
+    void replaySnapshotPromise
+    void broadcastToLobby(game.lobby.code, 'game-update', {
       action: 'state-change',
       payload: broadcastState,
+    }).then((ok) => {
+      if (!ok) {
+        log.warn('Failed to broadcast authoritative state snapshot', {
+          gameId,
+          lobbyCode: game.lobby.code,
+          userId,
+        })
+      }
     })
-    void replaySnapshotPromise
-
-    if (!serverBroadcasted) {
-      log.warn('Failed to broadcast authoritative state snapshot', {
-        gameId,
-        lobbyCode: game.lobby.code,
-        userId,
-      })
-    }
 
     const response = {
       game: {
@@ -739,7 +739,6 @@ export async function POST(
           }
         }),
       },
-      serverBroadcasted,
       ...(botAutoResponse ? { autoResponse: botAutoResponse } : {}),
     }
 
