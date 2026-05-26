@@ -92,6 +92,14 @@ const strategyGuides = [
     readTime: '6 min',
     accent: 'var(--bd-sky)',
   },
+  {
+    slug: 'connect-four-strategy-guide',
+    title: 'Connect Four Strategy Guide — How to Win Every Time',
+    description: 'Center control, double threats, and the key traps that catch most players off guard.',
+    emoji: '🔴',
+    readTime: '5 min',
+    accent: 'var(--bd-sun)',
+  },
 ]
 
 const bestOfGuides = [
@@ -110,6 +118,38 @@ const bestOfGuides = [
     emoji: '👥',
     readTime: '4 min',
     accent: 'var(--bd-sun)',
+  },
+  {
+    slug: 'best-3-player-games-online',
+    title: 'Best 3 Player Games Online — Free, No Download',
+    description: 'Yahtzee, Memory, Guess the Spy — the best games for groups of three.',
+    emoji: '🎮',
+    readTime: '3 min',
+    accent: 'var(--bd-mint)',
+  },
+  {
+    slug: 'best-online-games-for-game-night',
+    title: 'Best Online Games for Game Night',
+    description: 'Five games that work for any group size — with tips for hosting online.',
+    emoji: '🎉',
+    readTime: '5 min',
+    accent: 'var(--bd-lav)',
+  },
+  {
+    slug: 'best-games-to-play-on-zoom',
+    title: 'Best Games to Play on Zoom — Free, No Download',
+    description: 'Browser games that work perfectly alongside any video call. No screen sharing needed.',
+    emoji: '💻',
+    readTime: '4 min',
+    accent: 'var(--bd-sky)',
+  },
+  {
+    slug: 'best-party-games-online',
+    title: 'Best Party Games Online — Free to Play',
+    description: 'The best online party games for groups of 4 or more — no download, no account.',
+    emoji: '🎊',
+    readTime: '4 min',
+    accent: 'var(--bd-coral)',
   },
 ]
 
