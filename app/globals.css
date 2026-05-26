@@ -1227,15 +1227,15 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 @keyframes c4-drop {
   0%   {
-    transform: translateY(calc(-1 * var(--c4-fall-dist, 180px)));
+    transform: translateY(calc(-1 * var(--c4-fall-dist, 180px))) scale(1);
     animation-timing-function: cubic-bezier(0.5, 0, 0.85, 0.35);
   }
   72%  {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);
   }
-  84%  { transform: translateY(5px); animation-timing-function: ease-in-out; }
-  93%  { transform: translateY(-2px); }
+  84%  { transform: translateY(5px) scale(1); animation-timing-function: ease-in-out; }
+  93%  { transform: translateY(-2px) scale(1); }
   100% { transform: translateY(0) scale(var(--c4-end-scale, 1)); }
 }
 
@@ -2103,7 +2103,7 @@ input[type="range"].slider-thumb::-moz-range-track {
     width: 100vw;
     height: var(--memory-h);
     overflow: hidden;
-    padding: 0;
+    padding: 4px 0 0 0;
     min-height: unset;
   }
 }
@@ -2161,44 +2161,35 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .memory-tabs {
   display: flex;
-  gap: 0;
-  background: var(--bd-bg2);
-  border-bottom: 1.5px solid var(--bd-line);
-  padding: 0 6px;
+  gap: 4px;
+  background: #FFF8EC;
+  border: 1px solid var(--bd-line);
+  border-radius: 14px;
+  padding: 4px;
+  margin: 8px 12px;
   flex-shrink: 0;
-  height: 44px;
 }
 
 .memory-tab-btn {
-  position: relative;
   flex: 1;
-  height: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--bd-ink-soft);
+  padding: 10px 8px;
+  border-radius: 10px;
+  font-weight: 600;
   font-size: 13px;
-  font-weight: 700;
+  color: var(--bd-ink-soft);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: color 0.12s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  transition: background 0.12s, color 0.12s;
 }
 
 .memory-tab-btn-active {
-  color: var(--bd-ink);
-}
-
-.memory-tab-btn-active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 8px;
-  right: 8px;
-  height: 2px;
-  border-radius: 2px 2px 0 0;
-  background: var(--bd-mint);
+  background: var(--bd-ink);
+  color: var(--bd-bg);
 }
 
 .memory-tab-badge {
@@ -2272,7 +2263,8 @@ html.dark .ttt-cell:not(:disabled):hover {
   background: var(--bd-bg2);
 }
 
-html.dark .ttt-tabs {
+html.dark .ttt-tabs,
+html.dark .memory-tabs {
   background: var(--bd-bg2);
 }
 

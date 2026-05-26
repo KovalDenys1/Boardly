@@ -787,7 +787,7 @@ export default function MemoryGameBoard({
             className={`memory-tab-btn ${mobileTab === 'score' ? 'memory-tab-btn-active' : ''}`}
             onClick={() => setMobileTab('score')}
           >
-            {t('games.memory.game.tabScore')}
+            {t('games.memory.game.tabScore')} ({matchedPairs}/{totalPairs})
           </button>
           {onSendChatMessage && (
             <button
