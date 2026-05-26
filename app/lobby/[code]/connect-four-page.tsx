@@ -119,6 +119,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                         const colFull = board[0][c] !== null
                         const isHoveredCol = hoverCol === c && !disabled && !colFull
                         const isGhost = isHoveredCol && r === ghostRow && !cell
+                        const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
                         return (
                             <button
                                 key={`${r}-${c}`}
@@ -132,7 +133,7 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     height: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
-                                    background: isHoveredCol && !cell ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.10)',
+                                    background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
                                     transition: 'background 0.1s',
                                     border: 'none',
                                     cursor: disabled || colFull ? 'not-allowed' : 'pointer',
