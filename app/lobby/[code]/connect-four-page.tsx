@@ -45,9 +45,9 @@ function C4Disc({ disc, isWin, pop, ghost, ghostDisc }: {
     if (ghost) {
         const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
         return (
-            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: fill, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: fill, position: 'relative' }}>
                 <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="18" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="3" strokeDasharray="5 3" strokeLinecap="round" />
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.5" strokeDasharray="4.5 3" strokeLinecap="round" />
                 </svg>
             </div>
         )
@@ -349,9 +349,9 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     )
 }
 
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, isLoading, isHost, t }: {
+function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, t }: {
     winnerName: string | null; isDraw: boolean; isMyWin: boolean
-    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
+    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
@@ -366,6 +366,16 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
                 {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
+                <button
+                    onClick={onInspect}
+                    style={{
+                        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+                        border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                >
+                    {t('games.connect_four.game.tapToInspect')}
+                </button>
                 {isHost ? (
                     <>
                         <button
@@ -1180,24 +1190,18 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
             {isFinished && !isSpectator && (
                 <>
                     {!overlayInspecting && (
-                        <div className="ttt-board-overlay" style={{ borderRadius: 16 }} onClick={() => setOverlayInspecting(true)}>
-                            <div style={{ position: 'absolute', bottom: 14, fontSize: 11, color: 'rgba(255,255,255,0.45)', pointerEvents: 'none' }}>
-                                {t('games.connect_four.game.tapToInspect')}
-                            </div>
-                            <div onClick={(e) => e.stopPropagation()}>
-                                <C4ResultOverlay
-                                    winnerName={winnerName}
-                                    isDraw={isDraw}
-                                    isMyWin={isMyWin}
-                                    onPlayAgain={handlePlayAgain}
-                                    onReturnToLobby={handleReturnToWaiting}
-                                    onLeave={() => setShowLeaveConfirmModal(true)}
-                                    isLoading={isRematchSubmitting}
-                                    isHost={!!lobby && lobby.creatorId === currentUserId}
-                                    t={t}
-                                />
-                            </div>
-                        </div>
+                        <C4ResultOverlay
+                            winnerName={winnerName}
+                            isDraw={isDraw}
+                            isMyWin={isMyWin}
+                            onPlayAgain={handlePlayAgain}
+                            onReturnToLobby={handleReturnToWaiting}
+                            onLeave={() => setShowLeaveConfirmModal(true)}
+                            onInspect={() => setOverlayInspecting(true)}
+                            isLoading={isRematchSubmitting}
+                            isHost={!!lobby && lobby.creatorId === currentUserId}
+                            t={t}
+                        />
                     )}
                     {overlayInspecting && (
                         <button
