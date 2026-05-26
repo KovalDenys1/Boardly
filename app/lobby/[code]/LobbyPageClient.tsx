@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -800,8 +800,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
     clientLogger.log(`🤖 ${event.message}`)
   }, [playAmbientSound])
 
+  const prevSpectatorCountRef = useRef(0)
   const onSpectatorCountChange = useCallback((count: number) => {
-    setLobby((prev) => (prev ? { ...prev, spectatorCount: count } : prev))
+    setLobby((prev) => {
+      if (!prev) return prev
+      if (count > 0 && prevSpectatorCountRef.current === 0 && prev.spectatorCount === 0) {
+        showToast.info('lobby.spectatorWatching')
+      }
+      prevSpectatorCountRef.current = count
+      return { ...prev, spectatorCount: count }
+    })
   }, [])
 
   const onGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {

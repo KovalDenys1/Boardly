@@ -60,6 +60,54 @@ describe('GET /api/lobby/[code]/spectate', () => {
     expect(await response.json()).toEqual({ error: 'Lobby not found' })
   })
 
+  it('returns 403 PLAYER_IN_GAME when authenticated user is a player in the active game', async () => {
+    mockGetRequestAuthUser.mockResolvedValue({
+      id: 'player-1',
+      username: 'alice',
+      isGuest: false,
+    })
+    mockPrisma.lobbies.findUnique.mockResolvedValue({
+      id: 'lobby-1',
+      code: 'ABC123',
+      name: 'Test Lobby',
+      maxPlayers: 4,
+      allowSpectators: true,
+      maxSpectators: 0,
+      spectatorCount: 0,
+      turnTimer: 60,
+      isActive: true,
+      gameType: 'yahtzee',
+      createdAt: new Date('2026-02-27T18:00:00.000Z'),
+      creator: { id: 'owner-1', username: 'owner' },
+      games: [
+        {
+          id: 'game-1',
+          status: 'playing',
+          updatedAt: new Date('2026-02-27T18:05:00.000Z'),
+          state: JSON.stringify({ status: 'playing' }),
+          players: [
+            {
+              user: {
+                id: 'player-1',
+                username: 'alice',
+                isGuest: false,
+                bot: null,
+              },
+            },
+          ],
+        },
+      ],
+    } as any)
+
+    const response = await GET(
+      new NextRequest('http://localhost:3000/api/lobby/ABC123/spectate'),
+      { params: Promise.resolve({ code: 'ABC123' }) }
+    )
+
+    expect(response.status).toBe(403)
+    expect(await response.json()).toMatchObject({ code: 'PLAYER_IN_GAME' })
+  })
+
   it('removes email fields from creator and players in spectator payload', async () => {
     mockGetRequestAuthUser.mockResolvedValue({
       id: 'user-1',
