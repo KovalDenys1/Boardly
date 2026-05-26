@@ -1168,6 +1168,8 @@ const no = {
       scored: 'Scoret',
       notAvailable: 'Ikke tilgjengelig',
       bonusProgress: '{{current}}/63 for bonus',
+      scorecardTitle: 'Poengtabell',
+      hotHand: 'Varm hånd',
     }
   },
   chat: {

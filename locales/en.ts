@@ -1161,6 +1161,8 @@ const en = {
       inviteFriendsToJoin: 'Invite your friends to join',
       botAutoAddTip: 'A bot will be automatically added if you start alone',
       tip: 'Tip',
+      scorecardTitle: 'Scorecard',
+      hotHand: 'Hot Hand',
       waitingForHost: 'Waiting for host to start...',
       host: 'Host',
       perTurn: 'per turn',

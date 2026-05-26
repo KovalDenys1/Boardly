@@ -273,7 +273,7 @@ const Scorecard = React.memo(function Scorecard({
         <div className="flex-shrink-0 flex items-center justify-between px-3 py-3 border-b gap-2" style={{ borderColor: 'var(--bd-line)', background: 'var(--bd-bg2)' }}>
           {playerName && (
             <div className="min-w-0 flex-1">
-              <span className="bd-kicker">Scorecard</span>
+              <span className="bd-kicker">{t('yahtzee.ui.scorecardTitle')}</span>
               <div className="truncate text-sm font-semibold text-bd-ink">{playerName}</div>
             </div>
           )}

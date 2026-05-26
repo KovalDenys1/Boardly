@@ -1168,6 +1168,8 @@ const ru = {
       scored: 'Набрано',
       notAvailable: 'Недоступно',
       bonusProgress: '{{current}}/63 для бонуса',
+      scorecardTitle: 'Таблица очков',
+      hotHand: 'Горячая рука',
     }
   },
   chat: {

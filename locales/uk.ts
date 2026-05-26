@@ -1170,6 +1170,8 @@ const uk: Translation = {
       scored: 'Зараховано',
       notAvailable: 'Недоступно',
       bonusProgress: '{{current}}/63 до бонусу',
+      scorecardTitle: 'Таблиця очок',
+      hotHand: 'Гаряча рука',
     },
   },
   chat: {
