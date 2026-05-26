@@ -53,7 +53,14 @@ function isLobbyCodeConflict(error: unknown): boolean {
     return target.toLowerCase().includes('code')
   }
 
-  return false
+  // Prisma 7 may omit meta.target — fall back to message string
+  const message = (error as { message?: unknown }).message
+  if (typeof message === 'string') {
+    const msg = message.toLowerCase()
+    return msg.includes('unique constraint') && msg.includes('code')
+  }
+
+  return true // P2002 on lobbies.create must be a code collision
 }
 
 const FREE_MAX_PLAYERS = 10
