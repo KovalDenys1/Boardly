@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/next-auth'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
+import { getAllRegisteredGameTypes } from '@/lib/game-catalog'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/user/customize')
@@ -13,10 +14,7 @@ const VALID_ACCENT_COLORS = new Set([
   '#9B8CFF', '#F687B3', '#FC8181', '#68D391',
 ])
 
-const VALID_GAME_TYPES = new Set([
-  'yahtzee', 'tic_tac_toe', 'rock_paper_scissors', 'memory',
-  'guess_the_spy', 'connect_four', 'alias', 'liars_party',
-])
+const VALID_GAME_TYPES = new Set(getAllRegisteredGameTypes())
 
 const VALID_CARD_STYLES = new Set(['gold', 'glass', 'holo', 'dark'])
 
