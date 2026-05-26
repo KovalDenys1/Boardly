@@ -77,6 +77,13 @@ export async function GET(
     return NextResponse.json({ error: 'Spectator mode is disabled for this lobby' }, { status: 403 })
   }
 
+  if (lobby.maxSpectators > 0 && lobby.spectatorCount >= lobby.maxSpectators) {
+    return NextResponse.json(
+      { error: 'Spectator limit reached', code: 'SPECTATOR_LIMIT_REACHED' },
+      { status: 403 }
+    )
+  }
+
   const activeGame = pickRelevantLobbyGame(lobby.games, { includeFinished })
 
   // Block players from spectating their own active game

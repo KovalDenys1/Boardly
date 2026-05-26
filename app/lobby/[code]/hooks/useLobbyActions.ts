@@ -80,6 +80,7 @@ interface LobbySettingsUpdatePayload {
   maxPlayers?: number
   turnTimer?: number
   allowSpectators?: boolean
+  maxSpectators?: number
 }
 
 interface LobbySnapshotResult {

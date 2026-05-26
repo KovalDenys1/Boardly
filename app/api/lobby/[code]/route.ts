@@ -143,6 +143,7 @@ const updateLobbySettingsSchema = z
     maxPlayers: z.number().int().min(2).max(10).optional(),
     turnTimer: z.number().int().min(30).max(180).optional(),
     allowSpectators: z.boolean().optional(),
+    maxSpectators: z.number().int().min(0).max(100).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one setting must be provided',
@@ -735,6 +736,9 @@ export async function PATCH(
               allowSpectators: updates.allowSpectators,
               maxSpectators: updates.allowSpectators ? UNLIMITED_SPECTATORS_VALUE : 0,
             }
+          : {}),
+        ...(typeof updates.maxSpectators === 'number' && updates.allowSpectators !== false
+          ? { maxSpectators: updates.maxSpectators }
           : {}),
       },
       select: {

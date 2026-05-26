@@ -101,6 +101,7 @@ export interface Lobby {
   hostId?: string
   creatorId?: string | null
   allowSpectators?: boolean
+  maxSpectators?: number
   isActive?: boolean
   theme?: string
   games?: Game[]

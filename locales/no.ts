@@ -25,7 +25,9 @@ const no = {
     optional: 'valgfritt',
     coming_soon: 'Kommer snart',
     rules: 'Regler',
-    in_development: 'Dette spillet er fortsatt under utvikling'
+    in_development: 'Dette spillet er fortsatt under utvikling',
+    enabled: 'Aktivert',
+    disabled: 'Deaktivert',
   },
   breadcrumbs: {
     home: 'Hjem',
@@ -73,6 +75,8 @@ const no = {
     gameUnknown: 'Ukjent spill',
     spectators: 'Tilskuere {{count}}',
     spectatorWatching: '👁 Noen ser på',
+    maxSpectatorsLabel: 'Maks tilskuere',
+    maxSpectatorsUnlimited: 'Ubegrenset',
     spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
@@ -2075,6 +2079,8 @@ const no = {
     youArePlayerDesc: 'Spillere kan ikke se på sitt eget spill.',
     goToGame: 'Gå til spillet',
     spyReveal: 'Spionen var',
+    limitReached: 'Tilskuergrensen er nådd',
+    limitReachedDesc: 'Denne lobbyen har nådd maksimalt antall tilskuere.',
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',

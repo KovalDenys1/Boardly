@@ -25,7 +25,9 @@ const ru = {
     optional: 'необязательно',
     coming_soon: 'Скоро',
     rules: 'Правила',
-    in_development: 'Эта игра всё ещё в разработке'
+    in_development: 'Эта игра всё ещё в разработке',
+    enabled: 'Включено',
+    disabled: 'Отключено',
   },
   breadcrumbs: {
     home: 'Главная',
@@ -73,6 +75,8 @@ const ru = {
     gameUnknown: 'Неизвестная игра',
     spectators: 'Зрители {{count}}',
     spectatorWatching: '👁 Кто-то наблюдает',
+    maxSpectatorsLabel: 'Макс. зрителей',
+    maxSpectatorsUnlimited: 'Без ограничений',
     spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
@@ -2075,6 +2079,8 @@ const ru = {
     youArePlayerDesc: 'Игроки не могут наблюдать за своей игрой.',
     goToGame: 'Перейти к игре',
     spyReveal: 'Шпионом был',
+    limitReached: 'Лимит зрителей достигнут',
+    limitReachedDesc: 'Это лобби достигло максимального количества зрителей.',
   },
   toast: {
     copied: 'Скопировано в буфер обмена!',

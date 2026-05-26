@@ -26,6 +26,8 @@ const en = {
     coming_soon: 'Coming Soon',
     rules: 'Rules',
     in_development: 'This game is still in development',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
   },
   breadcrumbs: {
     home: 'Home',
@@ -73,6 +75,8 @@ const en = {
     gameUnknown: 'Unknown Game',
     spectators: 'Spectators {{count}}',
     spectatorWatching: '👁 Someone is watching',
+    maxSpectatorsLabel: 'Max spectators',
+    maxSpectatorsUnlimited: 'Unlimited',
     spectatingBanner: 'You are spectating this game',
     backToGames: 'Back to Games',
     leftLobby: 'You left the lobby',
@@ -2087,6 +2091,8 @@ const en = {
     youArePlayerDesc: 'Players cannot spectate their own game.',
     goToGame: 'Go to game',
     spyReveal: 'The spy was',
+    limitReached: 'Spectator limit reached',
+    limitReachedDesc: 'This lobby has reached its maximum number of spectators.',
   },
   toast: {
     copied: 'Copied to clipboard!',

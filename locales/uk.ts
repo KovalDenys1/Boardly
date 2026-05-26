@@ -28,6 +28,8 @@ const uk: Translation = {
     coming_soon: 'Вже скоро',
     rules: 'Правила',
     in_development: 'Ця гра ще знаходиться у розробці',
+    enabled: 'Увімкнено',
+    disabled: 'Вимкнено',
   },
   breadcrumbs: {
     home: 'Головна',
@@ -82,6 +84,8 @@ const uk: Translation = {
     gameUnknown: 'Невідома гра',
     spectators: 'Глядачі {{count}}',
     spectatorWatching: '👁 Хтось спостерігає',
+    maxSpectatorsLabel: 'Макс. глядачів',
+    maxSpectatorsUnlimited: 'Без обмежень',
     spectatingBanner: 'Ви спостерігаєте за цією грою',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',
@@ -2089,6 +2093,8 @@ const uk: Translation = {
     youArePlayerDesc: 'Гравці не можуть спостерігати за власною грою.',
     goToGame: 'Перейти до гри',
     spyReveal: 'Шпигуном був',
+    limitReached: 'Ліміт глядачів досягнуто',
+    limitReachedDesc: 'Це лобі досягло максимальної кількості глядачів.',
   },
   toast: {
     copied: 'Скопійовано в буфер обміну!',

@@ -149,6 +149,7 @@ export default function SpectatorLobbyPage() {
   const gameChannelRef = useRef<RealtimeChannel | null>(null)
   const spectatorCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [isPlayerInGame, setIsPlayerInGame] = useState(false)
+  const [isLimitReached, setIsLimitReached] = useState(false)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -168,6 +169,11 @@ export default function SpectatorLobbyPage() {
       if (!res.ok) {
         if (json?.code === 'PLAYER_IN_GAME') {
           setIsPlayerInGame(true)
+          setLoading(false)
+          return
+        }
+        if (json?.code === 'SPECTATOR_LIMIT_REACHED') {
+          setIsLimitReached(true)
           setLoading(false)
           return
         }
@@ -340,6 +346,27 @@ export default function SpectatorLobbyPage() {
           >
             {t('spectate.goToGame')}
           </a>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLimitReached) {
+    return (
+      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            👥
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.limitReached')}</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.limitReachedDesc')}</p>
+          <button
+            type="button"
+            onClick={() => router.push('/lobby')}
+            className="bd-btn bd-btn-primary mx-auto mt-5"
+          >
+            {t('spectate.backToLobbiesBtn')}
+          </button>
         </div>
       </div>
     )
