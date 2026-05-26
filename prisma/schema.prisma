@@ -387,6 +387,7 @@ enum NotificationType {
   turn_reminder
   friend_request
   friend_accepted
+  feedback_thanks
 }
 
 enum NotificationChannel {
@@ -462,6 +463,7 @@ model AdminAuditLogs {
 model Feedback {
   id        String   @id @default(cuid())
   type      String   // 'bug' | 'feature' | 'other'
+  status    String   @default("open") // 'open' | 'acknowledged' | 'done' | 'wont_fix'
   message   String
   email     String?
   pageUrl   String?

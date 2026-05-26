@@ -21,6 +21,25 @@ describe('spectator state sanitization', () => {
     expect(sanitized.data.players[0].role).toBe('Spy')
   })
 
+  it('reveals spy identity when game status is finished', () => {
+    const input = {
+      data: {
+        players: [
+          { id: 'p1', isSpy: true, role: 'Spy' },
+          { id: 'p2', isSpy: false, role: 'Tourist' },
+        ],
+        spyPlayerId: 'p1',
+        spyIndex: 0,
+      },
+    }
+
+    const sanitized = sanitizeGameStateForSpectator('guess_the_spy', input, 'finished') as any
+
+    expect(sanitized.data.spyPlayerId).toBe('p1')
+    expect(sanitized.data.spyIndex).toBe(0)
+    expect(sanitized.data.players[0].isSpy).toBe(true)
+  })
+
   it('leaves non-spy games unchanged', () => {
     const input = { currentPlayerIndex: 0, data: { rollsLeft: 2 } }
     expect(sanitizeGameStateForSpectator('yahtzee', input)).toEqual(input)

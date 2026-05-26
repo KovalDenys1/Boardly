@@ -46,6 +46,7 @@ export function useRealtimeConnection({
   onGameAbandoned,
   onPlayerLeft,
   onBotAction,
+  onSpectatorCountChange,
   onStateSync,
   onGameReset,
 }: UseRealtimeConnectionProps) {
@@ -64,6 +65,7 @@ export function useRealtimeConnection({
   const onGameAbandonedRef = useRef(onGameAbandoned)
   const onPlayerLeftRef = useRef(onPlayerLeft)
   const onBotActionRef = useRef(onBotAction)
+  const onSpectatorCountChangeRef = useRef(onSpectatorCountChange)
   const onStateSyncRef = useRef(onStateSync)
   const onGameResetRef = useRef(onGameReset)
 
@@ -77,9 +79,10 @@ export function useRealtimeConnection({
     onGameAbandonedRef.current = onGameAbandoned
     onPlayerLeftRef.current = onPlayerLeft
     onBotActionRef.current = onBotAction
+    onSpectatorCountChangeRef.current = onSpectatorCountChange
     onStateSyncRef.current = onStateSync
     onGameResetRef.current = onGameReset
-  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onStateSync, onGameReset])
+  }, [onGameUpdate, onChatMessage, onPlayerTyping, onLobbyUpdate, onPlayerJoined, onGameStarted, onGameAbandoned, onPlayerLeft, onBotAction, onSpectatorCountChange, onStateSync, onGameReset])
 
   useEffect(() => {
     if (!code || !shouldJoinLobbyRoom) {
@@ -123,6 +126,12 @@ export function useRealtimeConnection({
       .on('broadcast', { event: 'game-reset' }, ({ payload }) => {
         clientLogger.log('📡 game-reset via Supabase Broadcast')
         onGameResetRef.current?.(payload as GameResetPayload)
+      })
+      .on('broadcast', { event: 'spectator-count-update' }, ({ payload }) => {
+        const count = typeof (payload as Record<string, unknown>)?.count === 'number'
+          ? (payload as Record<string, unknown>).count as number
+          : 0
+        onSpectatorCountChangeRef.current?.(count)
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {

@@ -15,7 +15,7 @@ export function LobbyPageErrorFallback() {
   const { t } = useTranslation()
 
   return (
-    <div className="bd-page flex min-h-[calc(100dvh-64px)] items-center justify-center px-4">
+    <div className="bd-page flex h-[calc(100dvh-64px)] items-center justify-center px-4">
       <div className="bd-card w-full max-w-md p-8 text-center">
         <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-bd-ink bg-bd-coral/20">
           <span className="text-3xl">!</span>

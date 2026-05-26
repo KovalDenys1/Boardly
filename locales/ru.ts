@@ -25,7 +25,9 @@ const ru = {
     optional: 'необязательно',
     coming_soon: 'Скоро',
     rules: 'Правила',
-    in_development: 'Эта игра всё ещё в разработке'
+    in_development: 'Эта игра всё ещё в разработке',
+    enabled: 'Включено',
+    disabled: 'Отключено',
   },
   breadcrumbs: {
     home: 'Главная',
@@ -72,6 +74,9 @@ const ru = {
     ownerFallback: 'Аноним',
     gameUnknown: 'Неизвестная игра',
     spectators: 'Зрители {{count}}',
+    spectatorWatching: '👁 Кто-то наблюдает',
+    maxSpectatorsLabel: 'Макс. зрителей',
+    maxSpectatorsUnlimited: 'Без ограничений',
     spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
@@ -300,7 +305,10 @@ const ru = {
     notificationsUnread_one: '{{count}} непрочитано',
     notificationsUnread_other: '{{count}} непрочитано',
     notificationsEmpty: 'Пока нет уведомлений',
+    notificationsError: 'Не удалось загрузить уведомления',
     markAllRead: 'Отметить всё как прочитанное',
+    clearAll: 'Очистить всё',
+    dismissNotification: 'Скрыть',
     notificationDefaultGame: 'игру',
     notificationsItems: {
       default: 'Открыть уведомление',
@@ -309,6 +317,7 @@ const ru = {
       gameInvite: '{{name}} приглашает вас сыграть в {{game}}',
       rematchInvite: '{{name}} приглашает вас на реванш в {{game}}',
       turnReminder: 'Сейчас ваш ход в {{game}}',
+      feedbackThanks: 'Спасибо за ваш отзыв!',
     },
     settings: 'Настройки',
     signUp: 'Регистрация',
@@ -639,6 +648,9 @@ const ru = {
         undoDecline: 'Отклонить',
         drawBtn: 'Ничья',
         leaveLobby: 'Покинуть лобби',
+        spectator: 'Зритель',
+        viewBoard: 'Посмотреть доску',
+        showResults: 'Показать результаты',
       }
     },
     memory: {
@@ -706,7 +718,12 @@ const ru = {
         winnerLabel: '{{player}} победил',
         tieLabel: 'Ничья',
         unknownPlayer: 'Неизвестный игрок',
-        moveFailed: 'Не удалось отправить ход'
+        moveFailed: 'Не удалось отправить ход',
+        viewBoard: 'Посмотреть доску',
+        showResults: 'Показать результаты',
+        tabBoard: 'Доска',
+        tabScore: 'Счёт',
+        tabChat: 'Чат',
       }
     },
     rps: {
@@ -804,7 +821,7 @@ const ru = {
         draw: '🤝 Ничья!',
         unknownPlayer: 'Неизвестный',
         currentTurn: '🎮 Текущий ход',
-        playAgain: 'Играть снова ↻',
+        playAgain: 'Играть снова',
         errorTitle: 'Ошибка игры',
         errorDescription: 'Что-то пошло не так. Попробуй ещё раз.',
         loadFailed: 'Не удалось загрузить игру.',
@@ -827,6 +844,9 @@ const ru = {
         disc1: 'Красный',
         disc2: 'Жёлтый',
         noMovesYet: 'Ходов нет — начинает Красный.',
+        tapToInspect: 'Посмотреть доску',
+        showResults: 'Показать результат',
+        spectator: 'Зритель',
       },
     },
     rock_paper_scissors: {
@@ -2068,6 +2088,12 @@ const ru = {
     noSpectatorsConnected: 'Зрители не подключены',
     chatTitle: 'Чат зрителей',
     chatPlaceholder: 'Написать зрителям...',
+    youArePlayer: 'Вы игрок в этой игре',
+    youArePlayerDesc: 'Игроки не могут наблюдать за своей игрой.',
+    goToGame: 'Перейти к игре',
+    spyReveal: 'Шпионом был',
+    limitReached: 'Лимит зрителей достигнут',
+    limitReachedDesc: 'Это лобби достигло максимального количества зрителей.',
   },
   toast: {
     copied: 'Скопировано в буфер обмена!',

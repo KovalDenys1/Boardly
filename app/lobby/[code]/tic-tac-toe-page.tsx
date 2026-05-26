@@ -250,83 +250,72 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     )
 }
 
-function TttResultModal({ winnerName, winnerSymbol, isDraw, onPlayAgain, onReturnToLobby, onLeave, isLoading, isHost, t }: {
-    winnerName: string | null; winnerSymbol: string | null; isDraw: boolean;
-    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
+function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, t }: {
+    winnerName: string | null; winnerSymbol: string | null; isDraw: boolean; isMyWin: boolean;
+    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean;
     t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
-    const color = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
+    const accentColor = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
+    const ghostBtn: React.CSSProperties = {
+        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+        border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
+    }
     return (
         <div style={{
-            background: 'var(--bd-bg)', borderRadius: 22, padding: '24px 32px', textAlign: 'center',
-            boxShadow: '0 10px 0 var(--bd-ink)', border: '2px solid var(--bd-ink)', maxWidth: 320,
-            animation: 'ttt-overlay-in 0.45s cubic-bezier(0.2,0.7,0.2,1)',
+            position: 'absolute', inset: 0, borderRadius: 'inherit',
+            background: 'rgba(31,27,22,0.82)', backdropFilter: 'blur(4px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 4, padding: 24,
         }}>
-            {!isDraw ? (
-                <>
-                    <div style={{
-                        margin: '0 auto 10px', width: 60, height: 60, borderRadius: '50%', background: color,
-                        display: 'grid', placeItems: 'center', boxShadow: '0 5px 0 var(--bd-ink)',
-                    }}>
-                        {winnerSymbol && <TttMark mark={winnerSymbol as 'X' | 'O'} size={36} />}
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        {t('games.tictactoe.game.roundOver')}
-                    </div>
-                    <h2 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1.05, marginBottom: 4, color: 'var(--bd-ink)' }}>
-                        {t('games.tictactoe.game.playerWins', { player: winnerName })}
-                    </h2>
-                    <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>{t('games.tictactoe.game.cleanRun')}</p>
-                </>
+            {isDraw ? (
+                <div style={{ fontSize: 40, marginBottom: 8 }}>🤝</div>
             ) : (
-                <>
-                    <div style={{
-                        margin: '0 auto 10px', width: 60, height: 60, borderRadius: '50%', background: 'var(--bd-bg2)',
-                        display: 'grid', placeItems: 'center', fontSize: 30, boxShadow: '0 5px 0 var(--bd-ink)', border: '2px solid var(--bd-ink)',
-                    }}>🤝</div>
-                    <div style={{ fontSize: 10, color: 'var(--bd-ink-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
-                        {t('games.tictactoe.game.roundOver')}
-                    </div>
-                    <h2 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1.05, marginBottom: 4, color: 'var(--bd-ink)' }}>
-                        {t('games.tictactoe.game.itsADraw')}
-                    </h2>
-                    <p style={{ color: 'var(--bd-ink-soft)', fontSize: 13, marginBottom: 14 }}>{t('games.tictactoe.game.catsGameResult')}</p>
-                </>
+                <div style={{
+                    width: 56, height: 56, borderRadius: '50%', background: accentColor,
+                    display: 'grid', placeItems: 'center', marginBottom: 8,
+                    boxShadow: '0 0 0 3px rgba(255,255,255,0.15)',
+                }}>
+                    {winnerSymbol && <TttMark mark={winnerSymbol as 'X' | 'O'} size={32} />}
+                </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'ui-monospace,monospace', marginBottom: 2 }}>
+                {t('games.tictactoe.game.roundOver')}
+            </div>
+            <div style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 800, fontSize: 24, color: 'white', textAlign: 'center', marginBottom: 16, lineHeight: 1.1 }}>
+                {isDraw ? t('games.tictactoe.game.itsADraw') : t('games.tictactoe.game.playerWins', { player: winnerName })}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 260 }}>
+                <button onClick={onInspect} style={ghostBtn}>
+                    {t('games.tictactoe.game.viewBoard')}
+                </button>
                 {isHost ? (
                     <>
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                            <button onClick={onLeave} style={{
-                                padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
-                                background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
-                            }}>{t('games.tictactoe.game.leave')}</button>
-                            <button onClick={onPlayAgain} disabled={isLoading} style={{
-                                padding: '12px 20px', fontSize: 15, borderRadius: 14, fontWeight: 600,
-                                background: 'var(--bd-coral)', color: 'white', border: 'none',
-                                boxShadow: '0 4px 0 var(--bd-coral-deep)', cursor: isLoading ? 'not-allowed' : 'pointer',
-                                opacity: isLoading ? 0.7 : 1, fontFamily: 'inherit',
-                            }}>{isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}</button>
-                        </div>
-                        <button onClick={onReturnToLobby} disabled={isLoading} style={{
-                            padding: '8px 18px', fontSize: 13, borderRadius: 14, fontWeight: 600,
-                            background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)',
-                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1, fontFamily: 'inherit',
-                        }}>{t('game.ui.returnToLobby')}</button>
+                        <button onClick={onPlayAgain} disabled={isLoading} style={{
+                            padding: '12px 20px', borderRadius: 14, fontWeight: 700, fontSize: 15,
+                            background: 'var(--bd-coral)', color: 'white', border: 'none',
+                            boxShadow: '0 4px 0 var(--bd-coral-deep)',
+                            cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.65 : 1,
+                            fontFamily: 'inherit',
+                        }}>
+                            {isLoading ? '…' : t('games.tictactoe.game.playAgainBtn')}
+                        </button>
+                        <button onClick={onReturnToLobby} disabled={isLoading} style={{ ...ghostBtn, opacity: isLoading ? 0.65 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+                            {t('game.ui.returnToLobby')}
+                        </button>
                     </>
                 ) : (
-                    <>
-                        <div style={{
-                            padding: '10px 16px', fontSize: 13, borderRadius: 14, fontWeight: 600,
-                            background: 'var(--bd-bg2)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-muted)',
-                            fontFamily: 'inherit', textAlign: 'center',
-                        }}>{t('game.ui.waitingForHost')}</div>
-                        <button onClick={onLeave} style={{
-                            padding: '8px 14px', fontSize: 13, borderRadius: 14, fontWeight: 600,
-                            background: 'var(--bd-card-warm)', border: '1px solid var(--bd-line)', color: 'var(--bd-ink-soft)', cursor: 'pointer', fontFamily: 'inherit',
-                        }}>{t('games.tictactoe.game.leave')}</button>
-                    </>
+                    <div style={{
+                        padding: '12px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                        background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)',
+                        border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center', fontFamily: 'inherit',
+                    }}>
+                        {t('game.ui.waitingForHost')}
+                    </div>
                 )}
+                <button onClick={onLeave} style={ghostBtn}>
+                    {t('games.tictactoe.game.leave')}
+                </button>
             </div>
         </div>
     )
@@ -429,6 +418,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     // Design states
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
+    const [overlayInspecting, setOverlayInspecting] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -791,6 +781,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         gameEngine,
         code,
         isGameStarted: game?.status === 'playing',
+        isSpectator,
     })
 
     const handleLeave = async () => {
@@ -1043,16 +1034,20 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
         if (!chatInput.trim()) return
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: chatInput.trim(), time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
+        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
+        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
+        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
+        emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
         setChatInput('')
     }
 
     const quickReact = (emoji: string) => {
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        setLocalChat(c => [...c, { id: Date.now(), who: mySymbol === 'X' ? xName : oName, text: emoji, time, color: mySymbol === 'X' ? 'coral' : 'lav' }])
-        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: mySymbol === 'X' ? xName : oName, timestamp: Date.now() })
+        const myName = isSpectator ? (session?.user?.name ?? t('games.tictactoe.game.spectator')) : (mySymbol === 'X' ? xName : oName)
+        const myColor = isSpectator ? 'sky' : (mySymbol === 'X' ? 'coral' : 'lav')
+        setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
+        emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
     }
 
     // ─── Sections ─────────────────────────────────────────────────────────────
@@ -1172,20 +1167,28 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                 disabled={isSpectator || !isMyTurn() || isFinished || isMoveSubmitting}
                 testId={testId}
             />
-            {isFinished && !isSpectator && (
-                <div className="ttt-board-overlay">
-                    <TttResultModal
-                        winnerName={winnerName}
-                        winnerSymbol={winnerSymbol && !isDraw ? winnerSymbol : null}
-                        isDraw={isDraw}
-                        onPlayAgain={handlePlayAgain}
-                        onReturnToLobby={handleReturnToWaiting}
-                        onLeave={() => setShowLeaveConfirmModal(true)}
-                        isLoading={isRematchSubmitting}
-                        isHost={isLobbyCreator}
-                        t={t}
-                    />
-                </div>
+            {isFinished && !isSpectator && !overlayInspecting && (
+                <TttResultModal
+                    winnerName={winnerName}
+                    winnerSymbol={winnerSymbol && !isDraw ? winnerSymbol : null}
+                    isDraw={isDraw}
+                    isMyWin={!isDraw && winnerSymbol === mySymbol}
+                    onPlayAgain={handlePlayAgain}
+                    onReturnToLobby={handleReturnToWaiting}
+                    onLeave={() => setShowLeaveConfirmModal(true)}
+                    onInspect={() => setOverlayInspecting(true)}
+                    isLoading={isRematchSubmitting}
+                    isHost={isLobbyCreator}
+                    t={t}
+                />
+            )}
+            {isFinished && !isSpectator && overlayInspecting && (
+                <button
+                    onClick={() => setOverlayInspecting(false)}
+                    style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                >
+                    {t('games.tictactoe.game.showResults')}
+                </button>
             )}
         </div>
     )
@@ -1381,8 +1384,13 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                         </button>
                     ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {mobileTab === 'board' && <>{renderBoardSection()}{actionsSection}</>}
+                <div className="ttt-mobile-content">
+                    {mobileTab === 'board' && (
+                        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {renderBoardSection()}
+                            {actionsSection}
+                        </div>
+                    )}
                     {mobileTab === 'history' && historySection}
                     {mobileTab === 'chat' && chatSection}
                 </div>

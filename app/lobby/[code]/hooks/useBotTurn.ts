@@ -25,6 +25,7 @@ interface UseBotTurnProps {
   gameEngine: GameEngine | null
   code: string
   isGameStarted: boolean
+  isSpectator?: boolean
   reconcileWithServerSnapshot?: () => Promise<void> | void
 }
 
@@ -33,6 +34,7 @@ export function useBotTurn({
   gameEngine,
   code,
   isGameStarted,
+  isSpectator = false,
   reconcileWithServerSnapshot,
 }: UseBotTurnProps) {
   const botTurnInProgress = useRef(false)
@@ -167,6 +169,7 @@ export function useBotTurn({
 
   // Monitor for bot turns
   useEffect(() => {
+    if (isSpectator) return
     if (!isGameStarted || !gameEngine || !game?.id || !game?.players || !Array.isArray(game.players)) {
       clientLogger.debug('🤖 [BOT-TURN-MONITOR] Skipping - preconditions not met:', {
         isGameStarted,
@@ -244,7 +247,7 @@ export function useBotTurn({
       lastBotPlayerId.current = null
       lastPlayerIndex.current = currentPlayerIndex
     }
-  }, [isGameStarted, gameEngine, game?.id, game?.players, triggerBotTurn])
+  }, [isSpectator, isGameStarted, gameEngine, game?.id, game?.players, triggerBotTurn])
 
   return {
     triggerBotTurn,

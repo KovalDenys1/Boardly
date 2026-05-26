@@ -83,6 +83,185 @@ function getDifficultyLabel(
   return t('lobby.create.difficultyEasy')
 }
 
+type MobileTab = 'board' | 'score' | 'chat'
+
+interface MemoryResultModalProps {
+  winnerId: string | null | undefined
+  winnerName: string
+  isDraw: boolean
+  isMyWin: boolean
+  canStartGame: boolean
+  onPlayAgain?: () => void
+  onReturnToWaiting?: () => void
+  onLeave?: () => void
+  onInspect: () => void
+  t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string
+}
+
+function MemoryResultModal({
+  winnerId,
+  winnerName,
+  isDraw,
+  isMyWin,
+  canStartGame,
+  onPlayAgain,
+  onReturnToWaiting,
+  onLeave,
+  onInspect,
+  t,
+}: MemoryResultModalProps) {
+  const ghostBtn: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 14,
+    border: '1.5px solid rgba(255,255,255,0.18)',
+    background: 'rgba(255,255,255,0.12)',
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    padding: '0 20px',
+    transition: 'background 0.12s',
+    width: '100%',
+  }
+
+  const title = isDraw
+    ? t('games.memory.game.tieLabel')
+    : isMyWin
+      ? t('lobby.game.playAgain').replace('Play Again', 'You win!')  // fallback
+      : t('games.memory.game.winnerLabel', { player: winnerName })
+
+  const displayTitle = isDraw
+    ? t('games.memory.game.tieLabel')
+    : isMyWin
+      ? '🎉 You win!'
+      : t('games.memory.game.winnerLabel', { player: winnerName })
+
+  void title
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 'inherit',
+        background: 'rgba(31,27,22,0.82)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 14,
+        padding: '20px 16px',
+        zIndex: 10,
+      }}
+    >
+      <p
+        style={{
+          fontFamily: 'monospace',
+          fontSize: 11,
+          letterSpacing: '0.1em',
+          color: 'rgba(255,255,255,0.45)',
+          margin: 0,
+          textTransform: 'uppercase',
+        }}
+      >
+        ROUND OVER
+      </p>
+
+      {isDraw ? (
+        <span style={{ fontSize: 48, lineHeight: 1 }}>🤝</span>
+      ) : (
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: 'var(--bd-mint)',
+            border: '2px solid rgba(31,27,22,0.6)',
+            boxShadow: '0 5px 0 rgba(31,27,22,0.25)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 26,
+          }}
+        >
+          🏆
+        </div>
+      )}
+
+      <h2
+        style={{
+          fontFamily: 'var(--bd-font-display)',
+          fontSize: 'clamp(22px, 4vw, 32px)',
+          fontWeight: 800,
+          color: '#fff',
+          margin: 0,
+          lineHeight: 1.1,
+          textAlign: 'center',
+        }}
+      >
+        {displayTitle}
+      </h2>
+
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          width: '100%',
+          maxWidth: 260,
+        }}
+      >
+        <button style={ghostBtn} onClick={onInspect}>
+          {t('games.memory.game.viewBoard')}
+        </button>
+
+        {canStartGame && onPlayAgain && (
+          <button
+            style={{
+              ...ghostBtn,
+              background: 'var(--bd-mint)',
+              color: '#fff',
+              border: '1.5px solid var(--bd-mint)',
+              boxShadow: '0 4px 0 var(--bd-mint-deep)',
+            }}
+            onClick={onPlayAgain}
+          >
+            {t('lobby.game.playAgain')}
+          </button>
+        )}
+
+        {canStartGame && onReturnToWaiting && (
+          <button style={ghostBtn} onClick={onReturnToWaiting}>
+            {t('game.ui.returnToLobby')}
+          </button>
+        )}
+
+        {!canStartGame && (
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.45)',
+              fontSize: 13,
+              textAlign: 'center',
+              margin: 0,
+            }}
+          >
+            {t('game.ui.waitingForHost')}
+          </p>
+        )}
+
+        {onLeave && (
+          <button style={ghostBtn} onClick={onLeave}>
+            {t('game.ui.leave')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function MemoryGameBoard({
   gameId,
   lobbyCode,
@@ -104,6 +283,8 @@ export default function MemoryGameBoard({
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [optimisticFlippedIds, setOptimisticFlippedIds] = useState<string[]>([])
+  const [mobileTab, setMobileTab] = useState<MobileTab>('board')
+  const [overlayInspecting, setOverlayInspecting] = useState(false)
   const resolveKeyRef = useRef<string | null>(null)
 
   const parsedState = (state || {}) as MemoryState
@@ -126,6 +307,7 @@ export default function MemoryGameBoard({
   const scoreByPlayerId = gameData?.scores || {}
   const currentPlayerId = parsedState.players?.[parsedState.currentPlayerIndex]?.id || null
   const isMyTurn = !!currentUserId && currentUserId === currentPlayerId && parsedState.status === 'playing'
+  const isFinished = parsedState.status === 'finished'
   const turnTimerLimit =
     typeof rawTurnTimerLimit === 'number' && Number.isFinite(rawTurnTimerLimit) && rawTurnTimerLimit > 0
       ? Math.floor(rawTurnTimerLimit)
@@ -160,7 +342,6 @@ export default function MemoryGameBoard({
     return result
   }, [players])
 
-  // Remove optimistic IDs once server state catches up (card appears in flippedCardIds or isFlipped)
   useEffect(() => {
     if (optimisticFlippedIds.length === 0) return
     const confirmedIds = new Set([
@@ -208,9 +389,7 @@ export default function MemoryGameBoard({
       try {
         const res = await fetchWithGuest(`/api/game/${gameId}/state`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             move,
             autoActionContext: options?.autoActionContext,
@@ -249,8 +428,6 @@ export default function MemoryGameBoard({
     [gameId, isSubmitting]
   )
 
-  // Keep a stable ref so the mismatch timer always calls the latest submitMove
-  // without re-triggering the effect when isSubmitting toggles mid-flip.
   useEffect(() => {
     submitMoveRef.current = submitMove
   }, [submitMove])
@@ -342,12 +519,14 @@ export default function MemoryGameBoard({
           })
 
   const winnerId = gameData.winnerId
+  const winnerName = (winnerId && displayNameByUserId.get(winnerId)) || t('games.memory.game.unknownPlayer')
+  const isDraw = isFinished && !winnerId
+  const isMyWin = isFinished && !!winnerId && !!currentUserId && winnerId === currentUserId
+
   const winnerMessage =
-    parsedState.status === 'finished'
+    isFinished
       ? winnerId
-        ? t('games.memory.game.winnerLabel', {
-            player: displayNameByUserId.get(winnerId) || t('games.memory.game.unknownPlayer'),
-          })
+        ? t('games.memory.game.winnerLabel', { player: winnerName })
         : t('games.memory.game.tieLabel')
       : null
 
@@ -361,65 +540,327 @@ export default function MemoryGameBoard({
     (currentPlayerId && displayNameByUserId.get(currentPlayerId)) ||
     t('games.memory.game.unknownPlayer')
 
+  const cardGrid = (
+    <div
+      className="memory-grid"
+      style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+    >
+      {cards.map((card) => {
+        const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
+        const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
+        const isDisabled =
+          !isMyTurn ||
+          isSubmitting ||
+          parsedState.status !== 'playing' ||
+          pendingMismatchCardIds.length > 0 ||
+          flippedCardIds.length >= 2 ||
+          card.isMatched ||
+          card.isFlipped ||
+          isOptimisticallyFlipped
+
+        return (
+          <button
+            key={card.id}
+            type="button"
+            onClick={() => handleCardClick(card.id)}
+            disabled={isDisabled}
+            className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}`}
+          >
+            <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
+              <span className="memory-tile-back">
+                <span className="memory-tile-back-mark">B</span>
+              </span>
+              <span className={`memory-tile-face ${symbolSizeClass}`}>
+                {card.value}
+              </span>
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  const scorePanel = (
+    <div className="mt-3 space-y-2">
+      {(parsedState.players || []).map((player) => {
+        const score = scoreByPlayerId[player.id] ?? player.score ?? 0
+        const isCurrent = player.id === currentPlayerId
+        return (
+          <div key={player.id} className={`memory-score-row ${isCurrent ? 'memory-score-row-active' : ''}`}>
+            {avatarByUserId.get(player.id) ? (
+              <img
+                src={avatarByUserId.get(player.id)!}
+                alt={displayNameByUserId.get(player.id) || '?'}
+                className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover"
+              />
+            ) : (
+              <span className="bd-avatar bd-avatar-sun h-9 w-9">
+                {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className={`flex items-center gap-1 truncate font-bold ${premiumByUserId.get(player.id) ? 'text-amber-500' : ''}`}>
+                {displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}
+                {premiumByUserId.get(player.id) && <span className="shrink-0 text-xs" title="Premium">👑</span>}
+              </p>
+              <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>
+            </div>
+            <span className="text-lg font-black">{score}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+
   return (
     <div className="memory-screen">
-      <div className="memory-shell">
-        <header className="memory-header">
-          <div className="min-w-0">
-            <p className="bd-kicker">{t('games.memory.game.lobbyLabel', { code: lobbyCode.toUpperCase() })}</p>
-            <h2 className="mt-1 truncate text-2xl font-black text-[var(--bd-ink)]">{t('games.memory.name')}</h2>
-            <p className="mt-1 text-sm font-semibold text-[var(--bd-ink-muted)]">{difficultyLabel}</p>
-          </div>
-          <div className="memory-header-actions">
-            <div className="memory-status">
-              <span className={`bd-live-dot ${parsedState.status === 'finished' ? 'opacity-0' : ''}`} />
-              <span>{statusMessage}</span>
+      {/* ── Desktop layout ─────────────────────────────── */}
+      <div className="memory-desktop-layout">
+        <div className="memory-shell">
+          <header className="memory-header">
+            <div className="min-w-0">
+              <p className="bd-kicker">{t('games.memory.game.lobbyLabel', { code: lobbyCode.toUpperCase() })}</p>
+              <h2 className="mt-1 truncate text-2xl font-black text-[var(--bd-ink)]">{t('games.memory.name')}</h2>
+              <p className="mt-1 text-sm font-semibold text-[var(--bd-ink-muted)]">{difficultyLabel}</p>
             </div>
-            <div className={`memory-turn-timer ${isTimerWarning ? 'memory-turn-timer-warning' : ''}`}>
-              <span className="font-black tabular-nums">{timeLeft}s</span>
-              <span className="memory-turn-timer-track" aria-hidden>
-                <span style={{ width: `${timerPercent}%` }} />
-              </span>
+            <div className="memory-header-actions">
+              <div className="memory-status">
+                <span className={`bd-live-dot ${isFinished ? 'opacity-0' : ''}`} />
+                <span>{statusMessage}</span>
+              </div>
+              <div className={`memory-turn-timer ${isTimerWarning ? 'memory-turn-timer-warning' : ''}`}>
+                <span className="font-black tabular-nums">{timeLeft}s</span>
+                <span className="memory-turn-timer-track" aria-hidden>
+                  <span style={{ width: `${timerPercent}%` }} />
+                </span>
+              </div>
+              {onLeave && (
+                <button
+                  type="button"
+                  onClick={onLeave}
+                  aria-label={t('game.ui.leave')}
+                  className="memory-leave-button"
+                >
+                  <span aria-hidden>🚪</span>
+                  <span>{t('game.ui.leave')}</span>
+                </button>
+              )}
             </div>
-            {onLeave && (
-              <button
-                type="button"
-                onClick={onLeave}
-                aria-label={t('game.ui.leave')}
-                className="memory-leave-button"
-              >
-                <span aria-hidden>🚪</span>
-                <span>{t('game.ui.leave')}</span>
-              </button>
+          </header>
+
+          <section className="memory-progress-panel">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-[var(--bd-ink)]">{currentPlayerName}</p>
+                <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{t('games.memory.game.pairsLabel', { count: matchedPairs })}</p>
+              </div>
+              <div className="text-left sm:text-right">
+                <p className="text-sm font-black text-[var(--bd-ink)]">{matchedPairs}/{totalPairs}</p>
+                <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{t('games.memory.game.scoreboardTitle')}</p>
+              </div>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--bd-bg2)]">
+              <div className="h-full rounded-full bg-[var(--bd-mint)] transition-all" style={{ width: `${progressPercent}%` }} />
+            </div>
+
+            {winnerMessage && (
+              <div className="mt-3 rounded-xl border border-[rgba(47,167,135,0.25)] bg-[rgba(79,201,166,0.16)] px-3 py-2 text-sm font-bold text-[var(--bd-mint-deep)]">
+                {t('games.memory.game.finishedPrefix')} {winnerMessage}
+              </div>
             )}
-          </div>
-        </header>
+          </section>
 
-        <section className="memory-progress-panel">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-bold text-[var(--bd-ink)]">{currentPlayerName}</p>
-              <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{t('games.memory.game.pairsLabel', { count: matchedPairs })}</p>
-            </div>
-            <div className="text-left sm:text-right">
-              <p className="text-sm font-black text-[var(--bd-ink)]">{matchedPairs}/{totalPairs}</p>
-              <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{t('games.memory.game.scoreboardTitle')}</p>
-            </div>
-          </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--bd-bg2)]">
-            <div className="h-full rounded-full bg-[var(--bd-mint)] transition-all" style={{ width: `${progressPercent}%` }} />
-          </div>
+          <main className="memory-layout">
+            <section className="memory-board-panel" style={{ position: 'relative' }}>
+              {cardGrid}
+              {isFinished && !overlayInspecting && (
+                <MemoryResultModal
+                  winnerId={winnerId}
+                  winnerName={winnerName}
+                  isDraw={isDraw}
+                  isMyWin={isMyWin}
+                  canStartGame={!!canStartGame}
+                  onPlayAgain={onPlayAgain}
+                  onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
+                  onLeave={onLeave}
+                  onInspect={() => setOverlayInspecting(true)}
+                  t={t}
+                />
+              )}
+              {isFinished && overlayInspecting && (
+                <button
+                  onClick={() => setOverlayInspecting(false)}
+                  style={{
+                    position: 'absolute',
+                    bottom: 12,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(31,27,22,0.75)',
+                    color: '#fff',
+                    border: '1.5px solid rgba(255,255,255,0.2)',
+                    borderRadius: 20,
+                    padding: '8px 18px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    zIndex: 5,
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  {t('games.memory.game.showResults')}
+                </button>
+              )}
+            </section>
 
-          {winnerMessage && (
-            <div className="mt-3 rounded-xl border border-[rgba(47,167,135,0.25)] bg-[rgba(79,201,166,0.16)] px-3 py-2 text-sm font-bold text-[var(--bd-mint-deep)]">
-              {t('games.memory.game.finishedPrefix')} {winnerMessage}
+            <aside className="memory-side-stack">
+              <section className="memory-score-panel">
+                <h3 className="spy-section-title">{t('games.memory.game.scoreboardTitle')}</h3>
+                {scorePanel}
+              </section>
+
+              {onSendChatMessage && (
+                <section className="memory-chat-panel">
+                  <Chat
+                    messages={chatMessages}
+                    onSendMessage={onSendChatMessage}
+                    currentUserId={currentUserId || null}
+                    isMinimized={false}
+                    onToggleMinimize={() => {}}
+                    unreadCount={chatUnreadCount}
+                    someoneTyping={someoneTyping}
+                    playerProfiles={playerProfiles}
+                    onProfileClick={onProfileClick}
+                    fullScreen
+                  />
+                </section>
+              )}
+            </aside>
+          </main>
+        </div>
+      </div>
+
+      {/* ── Mobile layout ──────────────────────────────── */}
+      <div className="memory-mobile-layout">
+        {/* Mobile header */}
+        <div className="memory-mobile-header">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-base font-black text-[var(--bd-ink)]">{t('games.memory.name')}</p>
+            <p className="text-xs font-semibold text-[var(--bd-ink-muted)]">{difficultyLabel}</p>
+          </div>
+          <div className={`memory-turn-timer memory-turn-timer-mobile ${isTimerWarning ? 'memory-turn-timer-warning' : ''}`}>
+            <span className="font-black tabular-nums">{timeLeft}s</span>
+            <span className="memory-turn-timer-track" aria-hidden>
+              <span style={{ width: `${timerPercent}%` }} />
+            </span>
+          </div>
+          {onLeave && (
+            <button
+              type="button"
+              onClick={onLeave}
+              aria-label={t('game.ui.leave')}
+              className="memory-leave-button"
+              style={{ minHeight: 36, padding: '6px 10px', fontSize: 12 }}
+            >
+              <span aria-hidden>🚪</span>
+            </button>
+          )}
+        </div>
+
+        {/* Status bar */}
+        <div className="memory-mobile-status">
+          <span className={`bd-live-dot ${isFinished ? 'opacity-0' : ''}`} />
+          <span className="truncate text-xs font-semibold">{statusMessage}</span>
+          <div className="memory-mobile-progress-track">
+            <div style={{ width: `${progressPercent}%` }} />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="memory-tabs">
+          <button
+            className={`memory-tab-btn ${mobileTab === 'board' ? 'memory-tab-btn-active' : ''}`}
+            onClick={() => setMobileTab('board')}
+          >
+            {t('games.memory.game.tabBoard')}
+          </button>
+          <button
+            className={`memory-tab-btn ${mobileTab === 'score' ? 'memory-tab-btn-active' : ''}`}
+            onClick={() => setMobileTab('score')}
+          >
+            {t('games.memory.game.tabScore')} ({matchedPairs}/{totalPairs})
+          </button>
+          {onSendChatMessage && (
+            <button
+              className={`memory-tab-btn ${mobileTab === 'chat' ? 'memory-tab-btn-active' : ''}`}
+              onClick={() => setMobileTab('chat')}
+            >
+              {t('games.memory.game.tabChat')}
+              {chatUnreadCount > 0 && mobileTab !== 'chat' && (
+                <span className="memory-tab-badge">{chatUnreadCount}</span>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Tab content */}
+        <div className="memory-mobile-content">
+          {mobileTab === 'board' && (
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' }}>
+              <div className="memory-mobile-board-wrap" style={{ position: 'relative' }}>
+                {cardGrid}
+                {isFinished && !overlayInspecting && (
+                  <MemoryResultModal
+                    winnerId={winnerId}
+                    winnerName={winnerName}
+                    isDraw={isDraw}
+                    isMyWin={isMyWin}
+                    canStartGame={!!canStartGame}
+                    onPlayAgain={onPlayAgain}
+                    onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
+                    onLeave={onLeave}
+                    onInspect={() => setOverlayInspecting(true)}
+                    t={t}
+                  />
+                )}
+                {isFinished && overlayInspecting && (
+                  <button
+                    onClick={() => setOverlayInspecting(false)}
+                    style={{
+                      position: 'absolute',
+                      bottom: 10,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(31,27,22,0.75)',
+                      color: '#fff',
+                      border: '1.5px solid rgba(255,255,255,0.2)',
+                      borderRadius: 20,
+                      padding: '7px 16px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      zIndex: 5,
+                      backdropFilter: 'blur(4px)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {t('games.memory.game.showResults')}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
-          {parsedState.status === 'finished' && (
-            <div className="mt-3 flex flex-col gap-2">
-              {canStartGame ? (
-                <>
+          {mobileTab === 'score' && (
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+              <h3 className="spy-section-title mb-3">{t('games.memory.game.scoreboardTitle')}</h3>
+              {scorePanel}
+              {winnerMessage && (
+                <div className="mt-4 rounded-xl border border-[rgba(47,167,135,0.25)] bg-[rgba(79,201,166,0.16)] px-3 py-2 text-sm font-bold text-[var(--bd-mint-deep)]">
+                  {t('games.memory.game.finishedPrefix')} {winnerMessage}
+                </div>
+              )}
+              {isFinished && canStartGame && (
+                <div className="mt-3 flex flex-col gap-2">
                   {onPlayAgain && (
                     <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
                       {t('lobby.game.playAgain')}
@@ -430,107 +871,31 @@ export default function MemoryGameBoard({
                       {t('game.ui.returnToLobby')}
                     </button>
                   )}
-                </>
-              ) : (
-                <p className="text-center text-sm font-semibold text-[var(--bd-ink-muted)]">{t('game.ui.waitingForHost')}</p>
+                </div>
+              )}
+              {isFinished && !canStartGame && (
+                <p className="mt-3 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">{t('game.ui.waitingForHost')}</p>
               )}
             </div>
           )}
-        </section>
 
-        <main className="memory-layout">
-          <section className="memory-board-panel">
-            <div
-              className="memory-grid"
-              style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-            >
-              {cards.map((card) => {
-                const isOptimisticallyFlipped = optimisticFlippedIds.includes(card.id)
-                const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
-                const isDisabled =
-                  !isMyTurn ||
-                  isSubmitting ||
-                  parsedState.status !== 'playing' ||
-                  pendingMismatchCardIds.length > 0 ||
-                  flippedCardIds.length >= 2 ||
-                  card.isMatched ||
-                  card.isFlipped ||
-                  isOptimisticallyFlipped
-
-                return (
-                  <button
-                    key={card.id}
-                    type="button"
-                    onClick={() => handleCardClick(card.id)}
-                    disabled={isDisabled}
-                    className={`memory-tile ${isDisabled ? 'cursor-default' : 'cursor-pointer'} ${card.isMatched ? 'memory-tile-matched' : ''}`}
-                  >
-                    <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
-                      <span className="memory-tile-back">
-                        <span className="memory-tile-back-mark">B</span>
-                      </span>
-                      <span className={`memory-tile-face ${symbolSizeClass}`}>
-                        {card.value}
-                      </span>
-                    </span>
-                  </button>
-                )
-              })}
+          {mobileTab === 'chat' && onSendChatMessage && (
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <Chat
+                messages={chatMessages}
+                onSendMessage={onSendChatMessage}
+                currentUserId={currentUserId || null}
+                isMinimized={false}
+                onToggleMinimize={() => {}}
+                unreadCount={chatUnreadCount}
+                someoneTyping={someoneTyping}
+                playerProfiles={playerProfiles}
+                onProfileClick={onProfileClick}
+                fullScreen
+              />
             </div>
-          </section>
-
-          <aside className="memory-side-stack">
-            <section className="memory-score-panel">
-              <h3 className="spy-section-title">{t('games.memory.game.scoreboardTitle')}</h3>
-              <div className="mt-3 space-y-2">
-                {(parsedState.players || []).map((player) => {
-                  const score = scoreByPlayerId[player.id] ?? player.score ?? 0
-                  const isCurrent = player.id === currentPlayerId
-                  return (
-                    <div key={player.id} className={`memory-score-row ${isCurrent ? 'memory-score-row-active' : ''}`}>
-                      {avatarByUserId.get(player.id) ? (
-                        <img
-                          src={avatarByUserId.get(player.id)!}
-                          alt={displayNameByUserId.get(player.id) || '?'}
-                          className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover"
-                        />
-                      ) : (
-                        <span className="bd-avatar bd-avatar-sun h-9 w-9">
-                          {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className={`flex items-center gap-1 truncate font-bold ${premiumByUserId.get(player.id) ? 'text-amber-500' : ''}`}>
-                          {displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}
-                          {premiumByUserId.get(player.id) && <span className="shrink-0 text-xs" title="Premium">👑</span>}
-                        </p>
-                        <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>
-                      </div>
-                      <span className="text-lg font-black">{score}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-
-            {onSendChatMessage && (
-              <section className="memory-chat-panel">
-                <Chat
-                  messages={chatMessages}
-                  onSendMessage={onSendChatMessage}
-                  currentUserId={currentUserId || null}
-                  isMinimized={false}
-                  onToggleMinimize={() => {}}
-                  unreadCount={chatUnreadCount}
-                  someoneTyping={someoneTyping}
-                  playerProfiles={playerProfiles}
-                  onProfileClick={onProfileClick}
-                  fullScreen
-                />
-              </section>
-            )}
-          </aside>
-        </main>
+          )}
+        </div>
       </div>
     </div>
   )

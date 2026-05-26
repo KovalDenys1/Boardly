@@ -25,7 +25,9 @@ const no = {
     optional: 'valgfritt',
     coming_soon: 'Kommer snart',
     rules: 'Regler',
-    in_development: 'Dette spillet er fortsatt under utvikling'
+    in_development: 'Dette spillet er fortsatt under utvikling',
+    enabled: 'Aktivert',
+    disabled: 'Deaktivert',
   },
   breadcrumbs: {
     home: 'Hjem',
@@ -72,6 +74,9 @@ const no = {
     ownerFallback: 'Anonym',
     gameUnknown: 'Ukjent spill',
     spectators: 'Tilskuere {{count}}',
+    spectatorWatching: '👁 Noen ser på',
+    maxSpectatorsLabel: 'Maks tilskuere',
+    maxSpectatorsUnlimited: 'Ubegrenset',
     spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
@@ -300,7 +305,10 @@ const no = {
     notificationsUnread_one: '{{count}} ulest',
     notificationsUnread_other: '{{count}} uleste',
     notificationsEmpty: 'Ingen varsler ennå',
+    notificationsError: 'Kunne ikke laste varsler',
     markAllRead: 'Marker alle som lest',
+    clearAll: 'Fjern alle',
+    dismissNotification: 'Avvis',
     notificationDefaultGame: 'spill',
     notificationsItems: {
       default: 'Åpne varsel',
@@ -309,6 +317,7 @@ const no = {
       gameInvite: '{{name}} inviterte deg til å spille {{game}}',
       rematchInvite: '{{name}} inviterte deg til en {{game}}-revansj',
       turnReminder: 'Det er din tur i {{game}}',
+      feedbackThanks: 'Takk for tilbakemeldingen din!',
     },
     settings: 'Innstillinger',
     signUp: 'Registrer deg',
@@ -639,6 +648,9 @@ const no = {
         undoDecline: 'Avslå',
         drawBtn: 'Uavgjort',
         leaveLobby: 'Forlat lobby',
+        spectator: 'Tilskuer',
+        viewBoard: 'Se brettet',
+        showResults: 'Vis resultater',
       }
     },
     memory: {
@@ -706,7 +718,12 @@ const no = {
         winnerLabel: '{{player}} vinner',
         tieLabel: 'Uavgjort',
         unknownPlayer: 'Ukjent spiller',
-        moveFailed: 'Kunne ikke sende trekk'
+        moveFailed: 'Kunne ikke sende trekk',
+        viewBoard: 'Se brettet',
+        showResults: 'Vis resultater',
+        tabBoard: 'Brett',
+        tabScore: 'Poeng',
+        tabChat: 'Chat',
       }
     },
     rps: {
@@ -804,7 +821,7 @@ const no = {
         draw: '🤝 Uavgjort!',
         unknownPlayer: 'Ukjent',
         currentTurn: '🎮 Nåværende tur',
-        playAgain: 'Spill igjen ↻',
+        playAgain: 'Spill igjen',
         errorTitle: 'Spillfeil',
         errorDescription: 'Noe gikk galt. Prøv igjen.',
         loadFailed: 'Kunne ikke laste inn spillet.',
@@ -827,6 +844,9 @@ const no = {
         disc1: 'Rød',
         disc2: 'Gul',
         noMovesYet: 'Ingen trekk ennå — Rød starter.',
+        tapToInspect: 'Se brettet',
+        showResults: 'Vis resultat',
+        spectator: 'Tilskuer',
       },
     },
     rock_paper_scissors: {
@@ -2068,6 +2088,12 @@ const no = {
     noSpectatorsConnected: 'Ingen tilskuere tilkoblet',
     chatTitle: 'Tilskuerchat',
     chatPlaceholder: 'Skriv til tilskuere...',
+    youArePlayer: 'Du er spiller i dette spillet',
+    youArePlayerDesc: 'Spillere kan ikke se på sitt eget spill.',
+    goToGame: 'Gå til spillet',
+    spyReveal: 'Spionen var',
+    limitReached: 'Tilskuergrensen er nådd',
+    limitReachedDesc: 'Denne lobbyen har nådd maksimalt antall tilskuere.',
   },
   toast: {
     copied: 'Kopiert til utklippstavle!',

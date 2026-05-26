@@ -15,6 +15,7 @@ interface LobbyInfoProps {
     maxPlayers?: number
     turnTimer?: number
     allowSpectators?: boolean
+    maxSpectators?: number
   }) => Promise<unknown>
   onSoundToggle: () => void
   onLeave: () => void
@@ -118,7 +119,7 @@ export default function LobbyInfo({
 
   const applySettingUpdate = async (
     key: EditableSettingKey,
-    updates: { maxPlayers?: number; turnTimer?: number; allowSpectators?: boolean },
+    updates: { maxPlayers?: number; turnTimer?: number; allowSpectators?: boolean; maxSpectators?: number },
   ) => {
     if (!onUpdateSettings) return
 
@@ -348,7 +349,7 @@ export default function LobbyInfo({
                         : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    Enabled
+                    {t('common.enabled')}
                   </button>
                   <button
                     type="button"
@@ -360,9 +361,37 @@ export default function LobbyInfo({
                         : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    Disabled
+                    {t('common.disabled')}
                   </button>
                 </div>
+                {lobby?.allowSpectators && (
+                  <div className="mt-3">
+                    <p className="mb-2 text-xs font-semibold text-bd-mint-deep">
+                      {t('lobby.maxSpectatorsLabel')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {([0, 5, 10, 20] as const).map((limit) => {
+                        const current = lobby?.maxSpectators ?? 0
+                        const isActive = current === limit
+                        return (
+                          <button
+                            key={limit}
+                            type="button"
+                            disabled={updatingSetting === 'allowSpectators' || isActive}
+                            onClick={() => void applySettingUpdate('allowSpectators', { maxSpectators: limit })}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                              isActive
+                                ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                                : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {limit === 0 ? t('lobby.maxSpectatorsUnlimited') : String(limit)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>

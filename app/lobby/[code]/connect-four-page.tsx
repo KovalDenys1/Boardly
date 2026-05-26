@@ -39,11 +39,43 @@ const DISC_RED = 'var(--bd-coral)'
 const DISC_YELLOW = 'var(--bd-sun)'
 const DISC_EMPTY = 'var(--bd-bg2)'
 
-function C4Disc({ disc, isWin, pop }: { disc: PlayerDisc | null; isWin?: boolean; pop?: boolean }) {
+function C4Disc({ disc, isWin, pop, ghost, ghostDisc, fallDistancePx }: {
+    disc: PlayerDisc | null; isWin?: boolean; pop?: boolean; ghost?: boolean; ghostDisc?: PlayerDisc; fallDistancePx?: number
+}) {
+    if (ghost) {
+        const fill = ghostDisc === 1 ? DISC_RED : DISC_YELLOW
+        return (
+            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: fill, position: 'relative' }}>
+                <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2.5" strokeDasharray="4.5 3" strokeLinecap="round" />
+                </svg>
+            </div>
+        )
+    }
     const color = disc === 1 ? DISC_RED : disc === 2 ? DISC_YELLOW : DISC_EMPTY
     const shadow = disc === 1 ? '0 2px 6px rgba(255,107,91,0.45)' : disc === 2 ? '0 2px 6px rgba(255,196,77,0.45)' : 'none'
-    const scale = isWin ? 'scale(1.12)' : 'scale(1)'
-    const anim = pop ? 'c4-drop 0.22s cubic-bezier(0.2,1.6,0.4,1) both' : undefined
+    const isAnimating = pop && !!fallDistancePx
+
+    if (isAnimating) {
+        const durationMs = 240 + Math.round(fallDistancePx! * 0.9)
+        return (
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                {/* Keep the empty hole visible while disc is in flight */}
+                <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: DISC_EMPTY }} />
+                {/* Falling disc, animated from above */}
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    borderRadius: '50%',
+                    background: color,
+                    boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
+                    animation: `c4-drop ${durationMs}ms linear both`,
+                    '--c4-fall-dist': `${fallDistancePx}px`,
+                    '--c4-end-scale': isWin ? '1.12' : '1',
+                } as React.CSSProperties} />
+            </div>
+        )
+    }
+
     return (
         <div style={{
             width: '100%',
@@ -51,9 +83,8 @@ function C4Disc({ disc, isWin, pop }: { disc: PlayerDisc | null; isWin?: boolean
             borderRadius: '50%',
             background: color,
             boxShadow: isWin ? `0 0 0 3px white, ${shadow}` : shadow,
-            transform: scale,
+            transform: isWin ? 'scale(1.12)' : 'scale(1)',
             transition: 'transform 0.15s, box-shadow 0.15s',
-            animation: anim,
         }} />
     )
 }
@@ -70,6 +101,21 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
     lastDroppedCol: number | null
 }) {
     const isWin = (r: number, c: number) => winningLine?.some(([wr, wc]) => wr === r && wc === c) ?? false
+    const cellRef = useRef<HTMLButtonElement>(null)
+
+    const getDropRow = (col: number): number | null => {
+        if (board[0][col] !== null) return null
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (board[r][col] === null) return r
+        }
+        return null
+    }
+    const ghostRow = hoverCol !== null && !disabled ? getDropRow(hoverCol) : null
+
+    const getFallDistancePx = (targetRow: number): number => {
+        const cellH = cellRef.current?.getBoundingClientRect().height ?? 46
+        return (targetRow + 1) * (cellH + 6)
+    }
 
     return (
         <div style={{ position: 'relative', userSelect: 'none' }}>
@@ -98,15 +144,24 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                 gridTemplateColumns: `repeat(${COLS}, 1fr)`,
                 gridTemplateRows: `repeat(${ROWS}, 1fr)`,
                 gap: 6,
+                overflow: 'hidden',
             }}>
                 {Array.from({ length: ROWS }, (_, r) =>
                     Array.from({ length: COLS }, (_, c) => {
                         const cell = board[r][c]
                         const win = isWin(r, c)
                         const colFull = board[0][c] !== null
+                        const isHoveredCol = hoverCol === c && !disabled && !colFull
+                        const isGhost = isHoveredCol && r === ghostRow && !cell
+                        const hoverTint = currentDisc === 1 ? 'rgba(255,107,91,0.28)' : 'rgba(255,196,77,0.28)'
+                        const isLastDropped = !!cell && r === lastDroppedRow && c === lastDroppedCol
+                        const fallDistancePx = isLastDropped && lastDroppedRow !== null
+                            ? getFallDistancePx(lastDroppedRow)
+                            : undefined
                         return (
                             <button
                                 key={`${r}-${c}`}
+                                ref={r === 0 && c === 0 ? cellRef : undefined}
                                 onClick={() => !colFull && !disabled && onColClick(c)}
                                 onMouseEnter={() => !disabled && !colFull && onColHover(c)}
                                 onMouseLeave={() => onColHover(null)}
@@ -117,16 +172,24 @@ function C4Board({ board, winningLine, hoverCol, onColHover, onColClick, disable
                                     height: 'clamp(34px, calc((100vw - 104px) / 7), 52px)',
                                     borderRadius: '50%',
                                     padding: 3,
-                                    background: 'rgba(255,255,255,0.10)',
+                                    background: isHoveredCol && !cell ? hoverTint : 'rgba(255,255,255,0.10)',
+                                    transition: 'background 0.1s',
                                     border: 'none',
                                     cursor: disabled || colFull ? 'not-allowed' : 'pointer',
                                     outline: 'none',
                                     display: 'grid',
                                     placeItems: 'center',
-                                    overflow: 'hidden',
+                                    overflow: 'visible',
                                 }}
                             >
-                                <C4Disc disc={cell} isWin={win} pop={!!cell && r === lastDroppedRow && c === lastDroppedCol} />
+                                <C4Disc
+                                    disc={cell}
+                                    isWin={win}
+                                    pop={isLastDropped}
+                                    fallDistancePx={fallDistancePx}
+                                    ghost={isGhost}
+                                    ghostDisc={isGhost ? currentDisc : undefined}
+                                />
                             </button>
                         )
                     })
@@ -318,9 +381,9 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     )
 }
 
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, isLoading, isHost, t }: {
+function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, t }: {
     winnerName: string | null; isDraw: boolean; isMyWin: boolean
-    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; isLoading: boolean; isHost: boolean
+    onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
@@ -335,6 +398,16 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
                 {isDraw ? t('games.connect_four.game.draw') : winnerName ? t('games.connect_four.game.playerWins', { player: winnerName }) : t('games.connect_four.game.gameWon')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 240 }}>
+                <button
+                    onClick={onInspect}
+                    style={{
+                        padding: '10px 20px', borderRadius: 14, fontWeight: 600, fontSize: 14,
+                        background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+                        border: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                >
+                    {t('games.connect_four.game.tapToInspect')}
+                </button>
                 {isHost ? (
                     <>
                         <button
@@ -470,6 +543,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
 
     const [mobileTab, setMobileTab] = useState<'board' | 'history' | 'chat'>('board')
     const [isMobile, setIsMobile] = useState(false)
+    const [overlayInspecting, setOverlayInspecting] = useState(false)
     const [localChat, setLocalChat] = useState<LocalChatMsg[]>([])
     const [chatInput, setChatInput] = useState('')
     const chatRef = useRef<HTMLDivElement>(null)
@@ -587,6 +661,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         const redirectReason = resolveLifecycleRedirectReason({ gameStatus: game?.status, lobbyIsActive: lobby?.isActive })
         if (redirectReason) triggerLifecycleRedirect(redirectReason)
     }, [game?.status, lobby?.isActive, triggerLifecycleRedirect])
+
+    useEffect(() => { setOverlayInspecting(false) }, [game?.status])
 
     const handleGameAbandoned = useCallback((data: { gameId: string; reason?: string }) => {
         clientLogger.log('📡 Connect Four game abandoned:', data)
@@ -798,6 +874,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         gameEngine,
         code,
         isGameStarted: game?.status === 'playing',
+        isSpectator,
     })
 
     const handleLeave = async () => {
@@ -1017,8 +1094,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
         if (!chatInput.trim()) return
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = myDisc === 1 ? p1Name : p2Name
-        const myColor = myDisc === 1 ? 'coral' : 'sun'
+        const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
+        const myColor = isSpectator ? 'sky' : (myDisc === 1 ? 'coral' : 'sun')
         setLocalChat(c => [...c, { id: Date.now(), who: myName, text: chatInput.trim(), time, color: myColor }])
         emitWhenConnected('chat-message', { lobbyCode: code, message: chatInput.trim(), userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
         setChatInput('')
@@ -1027,8 +1104,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     const quickReact = (emoji: string) => {
         const now = new Date()
         const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-        const myName = myDisc === 1 ? p1Name : p2Name
-        const myColor = myDisc === 1 ? 'coral' : 'sun'
+        const myName = isSpectator ? (session?.user?.name ?? t('games.connect_four.game.spectator')) : (myDisc === 1 ? p1Name : p2Name)
+        const myColor = isSpectator ? 'sky' : (myDisc === 1 ? 'coral' : 'sun')
         setLocalChat(c => [...c, { id: Date.now(), who: myName, text: emoji, time, color: myColor }])
         emitWhenConnected('chat-message', { lobbyCode: code, message: emoji, userId: getCurrentUserId(), username: myName, timestamp: Date.now() })
     }
@@ -1144,19 +1221,30 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 lastDroppedCol={gameData.lastDroppedCol}
             />
             {isFinished && !isSpectator && (
-                <div className="ttt-board-overlay" style={{ borderRadius: 16 }}>
-                    <C4ResultOverlay
-                        winnerName={winnerName}
-                        isDraw={isDraw}
-                        isMyWin={isMyWin}
-                        onPlayAgain={handlePlayAgain}
-                        onReturnToLobby={handleReturnToWaiting}
-                        onLeave={() => setShowLeaveConfirmModal(true)}
-                        isLoading={isRematchSubmitting}
-                        isHost={!!lobby && lobby.creatorId === currentUserId}
-                        t={t}
-                    />
-                </div>
+                <>
+                    {!overlayInspecting && (
+                        <C4ResultOverlay
+                            winnerName={winnerName}
+                            isDraw={isDraw}
+                            isMyWin={isMyWin}
+                            onPlayAgain={handlePlayAgain}
+                            onReturnToLobby={handleReturnToWaiting}
+                            onLeave={() => setShowLeaveConfirmModal(true)}
+                            onInspect={() => setOverlayInspecting(true)}
+                            isLoading={isRematchSubmitting}
+                            isHost={!!lobby && lobby.creatorId === currentUserId}
+                            t={t}
+                        />
+                    )}
+                    {overlayInspecting && (
+                        <button
+                            onClick={() => setOverlayInspecting(false)}
+                            style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 10, padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: 'rgba(31,27,22,0.75)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}
+                        >
+                            {t('games.connect_four.game.showResults')}
+                        </button>
+                    )}
+                </>
             )}
         </div>
     )
@@ -1275,8 +1363,13 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                         </button>
                     ))}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {mobileTab === 'board' && <>{renderBoardSection()}{actionsSection}</>}
+                <div className="ttt-mobile-content">
+                    {mobileTab === 'board' && (
+                        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {renderBoardSection()}
+                            {actionsSection}
+                        </div>
+                    )}
                     {mobileTab === 'history' && historySection}
                     {mobileTab === 'chat' && chatSection}
                 </div>

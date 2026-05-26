@@ -146,6 +146,10 @@ export default function SpectatorLobbyPage() {
   const [chatMessages, setChatMessages] = useState<SpectatorChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const channelRef = useRef<RealtimeChannel | null>(null)
+  const gameChannelRef = useRef<RealtimeChannel | null>(null)
+  const spectatorCountDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [isPlayerInGame, setIsPlayerInGame] = useState(false)
+  const [isLimitReached, setIsLimitReached] = useState(false)
 
   const parsedState = useMemo(() => {
     const raw = data?.activeGame?.state
@@ -163,6 +167,16 @@ export default function SpectatorLobbyPage() {
       const res = await fetchWithGuest(`/api/lobby/${code}/spectate`, { cache: 'no-store' })
       const json = await res.json()
       if (!res.ok) {
+        if (json?.code === 'PLAYER_IN_GAME') {
+          setIsPlayerInGame(true)
+          setLoading(false)
+          return
+        }
+        if (json?.code === 'SPECTATOR_LIMIT_REACHED') {
+          setIsLimitReached(true)
+          setLoading(false)
+          return
+        }
         throw new Error(json?.error || `HTTP ${res.status}`)
       }
       setData(json)
@@ -179,11 +193,28 @@ export default function SpectatorLobbyPage() {
     void loadSnapshot()
   }, [loadSnapshot])
 
-  // Polling fallback — ensures unauthenticated viewers get game state updates
+  // Polling fallback — safety net for network glitches; realtime handles normal updates
   useEffect(() => {
-    const id = setInterval(() => void loadSnapshot(), 5000)
+    const id = setInterval(() => void loadSnapshot(), 30000)
     return () => clearInterval(id)
   }, [loadSnapshot])
+
+  // Subscribe to lobby broadcast for realtime game state updates (legacy games: memory, yahtzee, spy)
+  useEffect(() => {
+    if (!code) return
+    const supabase = getSupabaseClient()
+    const channel = supabase
+      .channel(`lobby:${code}`)
+      .on('broadcast', { event: 'game-update' }, () => void loadSnapshot())
+      .on('broadcast', { event: 'game-started' }, () => void loadSnapshot())
+      .on('broadcast', { event: 'player-left' }, () => void loadSnapshot())
+      .subscribe()
+    gameChannelRef.current = channel
+    return () => {
+      void supabase.removeChannel(channel)
+      gameChannelRef.current = null
+    }
+  }, [code, loadSnapshot])
 
   // Supabase Realtime: Presence for spectator list, Broadcast for spectator chat
   useEffect(() => {
@@ -205,8 +236,31 @@ export default function SpectatorLobbyPage() {
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState<{ userId: string; username: string }>()
         const all = Object.values(state).flat()
+        const newCount = all.length
         setSpectators(all.map((s) => ({ userId: s.userId, username: s.username })))
-        setSpectatorCount(all.length)
+        setSpectatorCount(newCount)
+
+        // Broadcast live count to lobby channel so players see it update in real time
+        if (gameChannelRef.current) {
+          void gameChannelRef.current.send({
+            type: 'broadcast',
+            event: 'spectator-count-update',
+            payload: { count: newCount },
+          })
+        }
+
+        // Debounced DB sync so lobby list shows accurate count
+        if (spectatorCountDebounceRef.current !== null) {
+          clearTimeout(spectatorCountDebounceRef.current)
+        }
+        spectatorCountDebounceRef.current = setTimeout(() => {
+          spectatorCountDebounceRef.current = null
+          void fetchWithGuest(`/api/lobby/${code}/spectator-count`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count: newCount }),
+          })
+        }, 2000)
       })
       .on('broadcast', { event: 'spectator-chat' }, ({ payload }: { payload: SpectatorChatMessage }) => {
         if (!payload?.id || !payload?.message) return
@@ -276,6 +330,47 @@ export default function SpectatorLobbyPage() {
       setJoiningAsPlayer(false)
     }
   }, [code, data?.canJoinAsPlayer, joiningAsPlayer, router])
+
+  if (isPlayerInGame) {
+    return (
+      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            🎮
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.youArePlayer')}</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.youArePlayerDesc')}</p>
+          <a
+            href={`/lobby/${code}`}
+            className="bd-btn bd-btn-primary mx-auto mt-5 inline-flex"
+          >
+            {t('spectate.goToGame')}
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLimitReached) {
+    return (
+      <div className="bd-page bd-screen flex min-h-[calc(100dvh-64px)] items-center justify-center p-6">
+        <div className="bd-card w-full max-w-xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border-[1.5px] border-bd-line bg-bd-card-warm text-2xl shadow-[0_3px_0_var(--bd-line)]">
+            👥
+          </div>
+          <h1 className="font-display text-2xl font-black text-bd-ink">{t('spectate.limitReached')}</h1>
+          <p className="mt-2 text-sm text-bd-ink-muted">{t('spectate.limitReachedDesc')}</p>
+          <button
+            type="button"
+            onClick={() => router.push('/lobby')}
+            className="bd-btn bd-btn-primary mx-auto mt-5"
+          >
+            {t('spectate.backToLobbiesBtn')}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

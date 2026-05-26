@@ -54,13 +54,18 @@ function scrubSpyIdentity(value: unknown): unknown {
   return result
 }
 
-export function sanitizeGameStateForSpectator(gameType: string, rawState: unknown): unknown {
+export function sanitizeGameStateForSpectator(
+  gameType: string,
+  rawState: unknown,
+  gameStatus?: string
+): unknown {
   const parsed = parseGameState(rawState)
   if (!parsed) {
     return parsed
   }
 
-  if (gameType === 'guess_the_spy') {
+  // Reveal spy identity once the game is finished — spectators can discuss who was the spy
+  if (gameType === 'guess_the_spy' && gameStatus !== 'finished') {
     return scrubSpyIdentity(parsed)
   }
 

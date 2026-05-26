@@ -4,6 +4,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { sanitizeGameStateForSpectator } from '@/lib/spectator-state'
+import { getRequestAuthUser } from '@/lib/request-auth'
 
 const apiLimiter = rateLimit(rateLimitPresets.api)
 
@@ -76,7 +77,26 @@ export async function GET(
     return NextResponse.json({ error: 'Spectator mode is disabled for this lobby' }, { status: 403 })
   }
 
+  if (lobby.maxSpectators > 0 && lobby.spectatorCount >= lobby.maxSpectators) {
+    return NextResponse.json(
+      { error: 'Spectator limit reached', code: 'SPECTATOR_LIMIT_REACHED' },
+      { status: 403 }
+    )
+  }
+
   const activeGame = pickRelevantLobbyGame(lobby.games, { includeFinished })
+
+  // Block players from spectating their own active game
+  const requestUser = await getRequestAuthUser(request)
+  if (requestUser && activeGame && Array.isArray(activeGame.players)) {
+    const isPlayer = activeGame.players.some((p) => p.user?.id === requestUser.id)
+    if (isPlayer) {
+      return NextResponse.json(
+        { error: 'You are a player in this game', code: 'PLAYER_IN_GAME' },
+        { status: 403 }
+      )
+    }
+  }
   const sanitizedActiveGame = activeGame
     ? {
         ...activeGame,
@@ -86,7 +106,7 @@ export async function GET(
               return safeUser ? { ...player, user: safeUser } : player
             })
           : activeGame.players,
-        state: JSON.stringify(sanitizeGameStateForSpectator(lobby.gameType, activeGame.state)),
+        state: JSON.stringify(sanitizeGameStateForSpectator(lobby.gameType, activeGame.state, activeGame.status)),
       }
     : null
   const { creator, ...safeLobbyWithoutCreator } = lobby

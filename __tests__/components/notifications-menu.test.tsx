@@ -12,6 +12,23 @@ jest.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
 }))
 
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null }),
+}))
+
+jest.mock('@/lib/supabase-client', () => ({
+  getSupabaseClient: () => {
+    const channelObj = {
+      on: function () { return channelObj },
+      subscribe: function () { return channelObj },
+    }
+    return {
+      channel: () => channelObj,
+      removeChannel: jest.fn().mockResolvedValue(undefined),
+    }
+  },
+}))
+
 jest.mock('@/lib/i18n-helpers', () => ({
   useTranslation: () => ({
     i18n: { language: 'en' },
@@ -23,7 +40,10 @@ jest.mock('@/lib/i18n-helpers', () => ({
         'header.openNotifications': 'Open notifications',
         'header.notificationsUnread': '{{count}} unread',
         'header.notificationsEmpty': 'No notifications yet',
+        'header.notificationsError': 'Failed to load notifications',
         'header.markAllRead': 'Mark all as read',
+        'header.clearAll': 'Clear all',
+        'header.dismissNotification': 'Dismiss',
         'header.notificationsItems.default': 'Open notification',
         'header.notificationsItems.friendRequest': '{{name}} sent you a friend request',
         'header.notificationsItems.friendAccepted': '{{name}} accepted your friend request',

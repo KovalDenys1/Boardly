@@ -5,7 +5,7 @@ import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 export type InAppNotificationItem = {
   id: string
-  type: 'game_invite' | 'turn_reminder' | 'friend_request' | 'friend_accepted'
+  type: 'game_invite' | 'turn_reminder' | 'friend_request' | 'friend_accepted' | 'feedback_thanks'
   createdAt: string
   readAt: string | null
   payload: unknown
@@ -73,6 +73,8 @@ export function mapNotificationTone(
       return 'violet'
     case 'turn_reminder':
       return 'amber'
+    case 'feedback_thanks':
+      return 'emerald'
   }
 }
 
@@ -123,6 +125,10 @@ export function buildNotificationDisplayItem(
     case 'turn_reminder':
       title = t('header.notificationsItems.turnReminder', { game: gameLabel })
       subtitle = readString(payload, 'lobbyName')
+      break
+    case 'feedback_thanks':
+      title = t('header.notificationsItems.feedbackThanks')
+      subtitle = readString(payload, 'message')
       break
   }
 
