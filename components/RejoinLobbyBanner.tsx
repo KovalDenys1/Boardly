@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import GameIcon from '@/components/GameIcon'
 import { useTranslation } from '@/lib/i18n-helpers'
 import type { ActiveLobbyInfo } from '@/app/lobby/use-my-active-lobby'
+import { getGameMetadata } from '@/lib/game-catalog'
 
 interface RejoinLobbyBannerProps {
   lobby: ActiveLobbyInfo
@@ -11,17 +12,9 @@ interface RejoinLobbyBannerProps {
 }
 
 function getGamePresentation(gameType: string): { svgId: string; accent: string } {
-  switch (gameType) {
-    case 'yahtzee':             return { svgId: 'yahtzee',      accent: 'var(--bd-sky)' }
-    case 'guess_the_spy':       return { svgId: 'spy',          accent: 'var(--bd-lav)' }
-    case 'tic_tac_toe':         return { svgId: 'tic-tac-toe',  accent: 'var(--bd-coral)' }
-    case 'rock_paper_scissors': return { svgId: 'rps',          accent: 'var(--bd-sun)' }
-    case 'memory':              return { svgId: 'memory',       accent: 'var(--bd-mint)' }
-    case 'connect_four':        return { svgId: 'connect-four', accent: 'var(--bd-coral)' }
-    case 'alias':               return { svgId: 'alias',        accent: 'var(--bd-coral)' }
-    case 'liars_party':         return { svgId: 'liars-party',  accent: 'var(--bd-lav)' }
-    default:                    return { svgId: 'yahtzee',      accent: 'var(--bd-sky)' }
-  }
+  const meta = getGameMetadata(gameType)
+  if (!meta) return { svgId: 'yahtzee', accent: 'var(--bd-sky)' }
+  return { svgId: meta.svgId, accent: meta.accentColor }
 }
 
 export default function RejoinLobbyBanner({ lobby, onDismiss }: RejoinLobbyBannerProps) {

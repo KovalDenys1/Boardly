@@ -2,6 +2,8 @@
 
 import { useTranslation } from '@/lib/i18n-helpers'
 import { GAME_SVG_PATHS } from '@/components/GameIcon'
+import { getGameMetadata } from '@/lib/game-catalog'
+import type { TranslationKeys } from '@/lib/i18n-helpers'
 
 export interface LobbyCardData {
   id: string
@@ -37,16 +39,12 @@ export default function LobbyCard({ lobby, index, onOpenLobby, onWatchLobby }: L
   const { t } = useTranslation()
 
   const getGamePresentation = (gameType: string | undefined): { svgId: string; label: string; accent: string } => {
-    switch (gameType) {
-      case 'yahtzee':            return { svgId: 'yahtzee',      label: t('games.yahtzee.title', 'Yahtzee'),              accent: 'var(--bd-sky)' }
-      case 'guess_the_spy':      return { svgId: 'spy',          label: t('games.spy.name', 'Guess the Spy'),             accent: 'var(--bd-lav)' }
-      case 'tic_tac_toe':        return { svgId: 'tic-tac-toe',  label: t('games.tictactoe.name', 'Tic-Tac-Toe'),         accent: 'var(--bd-coral)' }
-      case 'rock_paper_scissors':return { svgId: 'rps',          label: t('games.rock_paper_scissors.name', 'RPS'),       accent: 'var(--bd-sun)' }
-      case 'memory':             return { svgId: 'memory',       label: t('games.memory.name', 'Memory'),                 accent: 'var(--bd-mint)' }
-      case 'connect_four':       return { svgId: 'connect-four', label: t('games.connect_four.name', 'Connect Four'),     accent: 'var(--bd-coral)' }
-      case 'alias':              return { svgId: 'alias',        label: t('games.alias.name', 'Alias'),                   accent: 'var(--bd-coral)' }
-      case 'liars_party':        return { svgId: 'liars-party',  label: t('games.liars_party.name', "Liar's Party"),      accent: 'var(--bd-lav)' }
-      default:                   return { svgId: 'yahtzee',      label: t('lobby.gameUnknown'),                           accent: 'var(--bd-sky)' }
+    const meta = gameType ? getGameMetadata(gameType) : null
+    if (!meta) return { svgId: 'yahtzee', label: t('lobby.gameUnknown'), accent: 'var(--bd-sky)' }
+    return {
+      svgId: meta.svgId,
+      label: t(`games.${meta.translationKey}.name` as TranslationKeys, meta.name),
+      accent: meta.accentColor,
     }
   }
 
