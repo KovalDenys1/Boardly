@@ -305,7 +305,10 @@ const ru = {
     notificationsUnread_one: '{{count}} непрочитано',
     notificationsUnread_other: '{{count}} непрочитано',
     notificationsEmpty: 'Пока нет уведомлений',
+    notificationsError: 'Не удалось загрузить уведомления',
     markAllRead: 'Отметить всё как прочитанное',
+    clearAll: 'Очистить всё',
+    dismissNotification: 'Скрыть',
     notificationDefaultGame: 'игру',
     notificationsItems: {
       default: 'Открыть уведомление',

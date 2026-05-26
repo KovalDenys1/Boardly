@@ -305,7 +305,10 @@ const en = {
     notificationsUnread_one: '{{count}} unread',
     notificationsUnread_other: '{{count}} unread',
     notificationsEmpty: 'No notifications yet',
+    notificationsError: 'Failed to load notifications',
     markAllRead: 'Mark all as read',
+    clearAll: 'Clear all',
+    dismissNotification: 'Dismiss',
     notificationDefaultGame: 'game',
     notificationsItems: {
       default: 'Open notification',
