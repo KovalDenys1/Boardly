@@ -1678,7 +1678,12 @@ const ru = {
       guessSubmitted: 'Ответ отправлен',
       claimSubmitted: 'Заявление отправлено',
       challengeSubmitted: 'Ответ на вызов отправлен',
-      roundAdvanced: 'Раунд продолжен'
+      roundAdvanced: 'Раунд продолжен',
+      board: {
+        redDisc: 'Красный',
+        yellowDisc: 'Жёлтый',
+        toMove: 'ходит',
+      },
     },
     gameResults: {
       title: 'Результаты игры',

@@ -1690,6 +1690,11 @@ const en = {
       claimSubmitted: 'Claim submitted',
       challengeSubmitted: 'Challenge submitted',
       roundAdvanced: 'Round advanced',
+      board: {
+        redDisc: 'Red',
+        yellowDisc: 'Yellow',
+        toMove: 'to move',
+      },
     },
     gameResults: {
       title: 'Game Results',
