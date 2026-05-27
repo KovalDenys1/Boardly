@@ -86,6 +86,8 @@ const uk: Translation = {
     spectatorWatching: '👁 Хтось спостерігає',
     maxSpectatorsLabel: 'Макс. глядачів',
     maxSpectatorsUnlimited: 'Без обмежень',
+    changeGame: 'Гра',
+    changeTheme: 'Тема',
     spectatingBanner: 'Ви спостерігаєте за цією грою',
     backToGames: 'Назад до ігор',
     leftLobby: 'Ви покинули лобі',

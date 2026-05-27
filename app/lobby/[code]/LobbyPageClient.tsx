@@ -1596,6 +1596,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
+  const isCurrentUserPremium = !!(game?.players?.find(p => p.userId === getCurrentUserId())?.user as { isPremium?: boolean } | undefined)?.isPremium
   const playerCount = game?.players?.length || 0
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
@@ -1981,6 +1982,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             game={game}
             soundEnabled={soundEnabled}
             canEditSettings={isCreator && !startingGame}
+            isPremium={isCurrentUserPremium}
             onUpdateSettings={updateLobbySettings}
             onSoundToggle={() => {
               sounds.toggle()

@@ -77,6 +77,8 @@ const en = {
     spectatorWatching: '👁 Someone is watching',
     maxSpectatorsLabel: 'Max spectators',
     maxSpectatorsUnlimited: 'Unlimited',
+    changeGame: 'Game',
+    changeTheme: 'Theme',
     spectatingBanner: 'You are spectating this game',
     backToGames: 'Back to Games',
     leftLobby: 'You left the lobby',

@@ -77,6 +77,8 @@ const ru = {
     spectatorWatching: '👁 Кто-то наблюдает',
     maxSpectatorsLabel: 'Макс. зрителей',
     maxSpectatorsUnlimited: 'Без ограничений',
+    changeGame: 'Игра',
+    changeTheme: 'Тема',
     spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',

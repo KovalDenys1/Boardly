@@ -77,6 +77,8 @@ const no = {
     spectatorWatching: '👁 Noen ser på',
     maxSpectatorsLabel: 'Maks tilskuere',
     maxSpectatorsUnlimited: 'Ubegrenset',
+    changeGame: 'Spill',
+    changeTheme: 'Tema',
     spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',

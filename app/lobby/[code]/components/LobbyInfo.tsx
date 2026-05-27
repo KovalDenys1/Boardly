@@ -1,9 +1,10 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { showToast } from '@/lib/i18n-toast'
-import { getGameMetadata } from '@/lib/game-catalog'
+import { getGameMetadata, getCatalogAvailableGames } from '@/lib/game-catalog'
 import { useTranslation } from '@/lib/i18n-helpers'
 import { getGameLobbiesRoute } from '@/lib/public-game-access'
+import { LOBBY_THEMES, LOBBY_THEME_IDS, FREE_LOBBY_THEME, type LobbyTheme } from '@/lib/lobby-themes'
 import type { Game, Lobby } from '@/types/game'
 
 interface LobbyInfoProps {
@@ -11,11 +12,14 @@ interface LobbyInfoProps {
   game: Game | null
   soundEnabled: boolean
   canEditSettings?: boolean
+  isPremium?: boolean
   onUpdateSettings?: (updates: {
     maxPlayers?: number
     turnTimer?: number
     allowSpectators?: boolean
     maxSpectators?: number
+    theme?: string
+    gameType?: string
   }) => Promise<unknown>
   onSoundToggle: () => void
   onLeave: () => void
@@ -23,13 +27,14 @@ interface LobbyInfoProps {
   variant?: 'standalone' | 'header'
 }
 
-type EditableSettingKey = 'maxPlayers' | 'turnTimer' | 'allowSpectators'
+type EditableSettingKey = 'maxPlayers' | 'turnTimer' | 'allowSpectators' | 'theme' | 'gameType'
 
 export default function LobbyInfo({
   lobby,
   game,
   soundEnabled,
   canEditSettings = false,
+  isPremium = false,
   onUpdateSettings,
   onSoundToggle,
   onLeave,
@@ -68,6 +73,8 @@ export default function LobbyInfo({
     const maxValue = Math.max(minValue, maxByGameType)
     return Array.from({ length: maxValue - minValue + 1 }, (_, index) => minValue + index)
   }, [currentPlayers, gameMeta?.maxPlayers, gameMeta?.minPlayers])
+
+  const availableGames = useMemo(() => getCatalogAvailableGames(), [])
 
   const handleCopyInvite = () => {
     if (typeof window !== 'undefined') {
@@ -119,7 +126,7 @@ export default function LobbyInfo({
 
   const applySettingUpdate = async (
     key: EditableSettingKey,
-    updates: { maxPlayers?: number; turnTimer?: number; allowSpectators?: boolean; maxSpectators?: number },
+    updates: { maxPlayers?: number; turnTimer?: number; allowSpectators?: boolean; maxSpectators?: number; theme?: string; gameType?: string },
   ) => {
     if (!onUpdateSettings) return
 
@@ -226,7 +233,7 @@ export default function LobbyInfo({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <div
             className={`rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 ${
               canEditLobbySettings
@@ -278,6 +285,36 @@ export default function LobbyInfo({
             <p className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted">{t('game.ui.spectatorsLabel')}</p>
             <p className="mt-1 break-words text-sm font-semibold text-bd-ink">{spectatorsLabel}</p>
           </div>
+          {canEditLobbySettings && (
+            <div
+              className="cursor-pointer rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 transition-colors hover:border-bd-ink hover:bg-bd-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30"
+              onClick={() => openEditor('gameType')}
+              onKeyDown={(event) => handleCardKeyDown(event, 'gameType')}
+              role="button"
+              tabIndex={0}
+              aria-label={t('lobby.changeGame')}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted">{t('lobby.changeGame')}</p>
+              <p className="mt-1 break-words text-sm font-semibold text-bd-ink">
+                {gameMeta?.icon ?? '🎮'} {gameMeta?.name ?? 'Game'}
+              </p>
+            </div>
+          )}
+          {canEditLobbySettings && (
+            <div
+              className="cursor-pointer rounded-xl border border-bd-line bg-bd-bg2 px-3 py-2 transition-colors hover:border-bd-ink hover:bg-bd-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bd-ink/30"
+              onClick={() => openEditor('theme')}
+              onKeyDown={(event) => handleCardKeyDown(event, 'theme')}
+              role="button"
+              tabIndex={0}
+              aria-label={t('lobby.changeTheme')}
+            >
+              <p className="text-[11px] font-bold uppercase tracking-wider text-bd-ink-muted">{t('lobby.changeTheme')}</p>
+              <p className="mt-1 break-words text-sm font-semibold text-bd-ink">
+                {LOBBY_THEMES[((lobby?.theme as LobbyTheme) in LOBBY_THEMES ? lobby?.theme : 'default') as LobbyTheme].name}
+              </p>
+            </div>
+          )}
         </div>
 
 
@@ -392,6 +429,75 @@ export default function LobbyInfo({
                     </div>
                   </div>
                 )}
+              </>
+            )}
+
+            {activeSettingEditor === 'gameType' && (
+              <>
+                <p className="mb-2 text-xs font-semibold text-bd-mint-deep">
+                  {t('lobby.changeGame')}
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {availableGames.map((g) => {
+                    const meta = g.gameType ? getGameMetadata(g.gameType) : null
+                    const isActive = g.gameType === lobby?.gameType
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        disabled={updatingSetting === 'gameType' || isActive}
+                        onClick={() => g.gameType && void applySettingUpdate('gameType', { gameType: g.gameType })}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                          isActive
+                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                            : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <span>{meta?.icon ?? '🎮'}</span>
+                        <span className="truncate">{meta?.name ?? g.id}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {activeSettingEditor === 'theme' && (
+              <>
+                <p className="mb-2 text-xs font-semibold text-bd-mint-deep">
+                  {t('lobby.changeTheme')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {LOBBY_THEME_IDS.map((themeId) => {
+                    const theme = LOBBY_THEMES[themeId]
+                    const isActive = (lobby?.theme ?? 'default') === themeId
+                    const isPremiumTheme = themeId !== FREE_LOBBY_THEME
+                    const isLocked = isPremiumTheme && !isPremium
+                    return (
+                      <button
+                        key={themeId}
+                        type="button"
+                        disabled={updatingSetting === 'theme' || isActive || isLocked}
+                        onClick={() => !isLocked && void applySettingUpdate('theme', { theme: themeId })}
+                        title={isLocked ? '👑 Premium' : theme.name}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                          isActive
+                            ? 'border-bd-ink bg-bd-ink text-bd-bg'
+                            : isLocked
+                              ? 'border-bd-line bg-bd-bg2 text-bd-ink-muted cursor-not-allowed opacity-60'
+                              : 'border-bd-line bg-bd-card-warm text-bd-ink hover:border-bd-ink'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <span
+                          className="inline-block h-3 w-3 rounded-full border border-bd-line/50 shrink-0"
+                          style={{ background: theme.accent }}
+                        />
+                        <span>{theme.name}</span>
+                        {isLocked && <span className="shrink-0">👑</span>}
+                      </button>
+                    )
+                  })}
+                </div>
               </>
             )}
           </div>
