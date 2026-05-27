@@ -1418,9 +1418,6 @@ const en = {
         summary: {
           totalGames: 'Total games',
           winRate: 'Win rate',
-          avgDuration: 'Avg duration',
-          minutesSuffix: 'm',
-          secondsSuffix: 's',
           favoriteGame: 'Favorite game',
           wld: 'Wins / Losses / Draws',
           wins: 'Wins',

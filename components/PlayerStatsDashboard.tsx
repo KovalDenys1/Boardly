@@ -388,14 +388,6 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
         accentClassName: 'bg-bd-lav text-[#6758d8]',
       },
       {
-        id: 'avgDuration',
-        label: t('profile.stats.dashboard.summary.avgDuration'),
-        value: `${Math.round(stats.overall.avgGameDurationMinutes * 60)}${t(
-          'profile.stats.dashboard.summary.secondsSuffix'
-        )}`,
-        accentClassName: 'bg-bd-sun text-[#9b6b00]',
-      },
-      {
         id: 'bestStreak',
         label: t('profile.stats.dashboard.summary.bestStreak'),
         value: String(stats.overall.longestWinStreak),
