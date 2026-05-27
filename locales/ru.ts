@@ -1054,6 +1054,7 @@ const ru = {
       decline: 'Отклонить',
       returnToLobby: 'Вернуться в лобби',
       kickPlayer: 'Удалить игрока',
+      settings: 'Настройки',
     }
   },
   yahtzee: {

@@ -226,15 +226,6 @@ export default function LobbyInfo({
             <span className="hidden sm:inline">{t('game.ui.copyInvite')}</span>
           </button>
           <button
-            onClick={onSoundToggle}
-            aria-label={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-            aria-pressed={soundEnabled}
-            className="bd-btn bd-btn-soft px-2.5 py-2"
-            title={soundEnabled ? t('game.ui.disableSound') : t('game.ui.enableSound')}
-          >
-            {soundEnabled ? '🔊' : '🔇'}
-          </button>
-          <button
             onClick={onLeave}
             aria-label={t('game.ui.leave')}
             className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl border-[1.5px] border-bd-coral/45 bg-bd-coral/15 px-2.5 py-2 text-xs font-semibold text-bd-coral-deep transition-all hover:border-bd-coral hover:bg-bd-coral hover:text-white active:scale-95 sm:px-3 sm:text-sm"

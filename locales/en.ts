@@ -1054,6 +1054,7 @@ const en = {
       decline: 'Decline',
       returnToLobby: 'Return to Lobby',
       kickPlayer: 'Remove player',
+      settings: 'Settings',
     },
   },
   yahtzee: {

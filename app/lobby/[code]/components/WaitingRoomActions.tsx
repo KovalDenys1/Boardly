@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { sounds } from '@/lib/sounds'
 import { hasBotSupport } from '@/lib/game-catalog'
@@ -28,9 +29,9 @@ export default function WaitingRoomActions({
   onStartGame,
   onAddBot,
   onBotDifficultyChange,
-  onInviteFriends,
 }: WaitingRoomActionsProps) {
   const { t } = useTranslation()
+  const [showSettings, setShowSettings] = useState(false)
 
   const playerCount = game?.players?.length || 0
   const maxPlayers = lobby?.maxPlayers || 4
@@ -51,7 +52,6 @@ export default function WaitingRoomActions({
     return (
       <div className="flex-shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-5 pb-[max(1.25rem,calc(1.25rem+env(safe-area-inset-bottom)))] sm:px-6">
         <div className="flex items-center justify-center gap-3">
-          {/* Sun-colored loading badge */}
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun shadow-[2px_2px_0_var(--bd-ink)]">
             <LoadingSpinner size="sm" />
           </div>
@@ -67,11 +67,9 @@ export default function WaitingRoomActions({
   }
 
   if (!canStartGame) {
-    // Non-host view — warm amber pulse dot
     return (
       <div className="flex-shrink-0 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
         <div className="flex items-center gap-3 rounded-xl border border-bd-sun/40 bg-bd-sun/10 px-4 py-3.5">
-          {/* Pulsing amber dot */}
           <span className="relative flex h-2.5 w-2.5 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-bd-sun opacity-60" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-bd-sun" />
@@ -90,48 +88,22 @@ export default function WaitingRoomActions({
   // Host view
   return (
     <div className="flex-shrink-0 space-y-3 border-t border-bd-line bg-bd-card-warm px-4 py-4 pb-[max(1rem,calc(1rem+env(safe-area-inset-bottom)))] sm:px-6">
-      {/* Bot tip */}
-      {supportsBots && playerCount === 1 && !hasBot && (
-        <div className="rounded-xl border border-bd-sky/35 bg-bd-sky/10 px-3 py-2">
-          <p className="text-xs text-bd-ink-soft">
-            💡 <strong>{t('game.ui.tip')}:</strong> {t('game.ui.botAutoAddTip')}
-          </p>
-        </div>
-      )}
-
-      {/* Secondary actions row OR lobby-full badge */}
+      {/* Lobby full badge OR settings toggle */}
       {canAddMorePlayers ? (
-        (supportsBots || onInviteFriends) && (
-          <div className="flex gap-2">
-            {supportsBots && (
-              <button
-                onClick={() => {
-                  sounds.play('click')
-                  onAddBot()
-                }}
-                className="bd-btn bd-btn-soft flex-1 justify-center px-3 py-2.5 text-sm"
-              >
-                <span className="inline-flex items-center justify-center gap-1.5">
-                  <span>🤖</span>
-                  <span>{t('game.ui.addBotPlayer')}</span>
-                </span>
-              </button>
-            )}
-            {onInviteFriends && (
-              <button
-                onClick={() => {
-                  sounds.play('click')
-                  onInviteFriends()
-                }}
-                className="bd-btn bd-btn-soft flex-1 justify-center px-3 py-2.5 text-sm"
-              >
-                <span className="inline-flex items-center justify-center gap-1.5">
-                  <span>👥</span>
-                  <span>{t('game.ui.inviteFriends')}</span>
-                </span>
-              </button>
-            )}
-          </div>
+        canConfigureBots && (
+          <button
+            onClick={() => {
+              sounds.play('click')
+              setShowSettings((s) => !s)
+            }}
+            className="bd-btn bd-btn-soft w-full justify-between px-3 py-2.5 text-sm"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span>⚙</span>
+              <span>{t('game.ui.settings')}</span>
+            </span>
+            <span className={`text-bd-ink-muted transition-transform duration-150 ${showSettings ? 'rotate-90' : ''}`}>›</span>
+          </button>
         )
       ) : (
         <div className="flex items-center justify-between rounded-xl border border-bd-mint/45 bg-bd-mint/15 px-4 py-2.5">
@@ -146,31 +118,51 @@ export default function WaitingRoomActions({
         </div>
       )}
 
-      {/* Bot difficulty — segmented control */}
-      {canConfigureBots && (
-        <div className="rounded-xl border border-bd-line bg-bd-card-warm px-3 py-2.5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-bd-ink-muted">{t('game.ui.botDifficulty')}</p>
-          {/* Single container, shared border, no gaps between segments */}
-          <div className="flex rounded-lg border border-bd-line bg-bd-bg2 p-0.5">
-            {BOT_DIFFICULTIES.map((difficulty) => (
-              <button
-                key={difficulty}
-                type="button"
-                onClick={() => {
-                  sounds.play('click')
-                  onBotDifficultyChange(difficulty)
-                }}
-                className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-all ${
-                  botDifficulty === difficulty
-                    ? 'bg-bd-ink text-bd-bg shadow-sm'
-                    : 'text-bd-ink-soft hover:text-bd-ink'
-                }`}
-                aria-pressed={botDifficulty === difficulty}
-              >
-                {difficultyLabelMap[difficulty]}
-              </button>
-            ))}
-          </div>
+      {/* Collapsible settings panel */}
+      {showSettings && canAddMorePlayers && (
+        <div className="rounded-xl border border-bd-line bg-bd-bg2/60 px-3 py-3 space-y-3">
+          {/* Add Bot */}
+          {supportsBots && (
+            <button
+              onClick={() => {
+                sounds.play('click')
+                onAddBot()
+              }}
+              className="bd-btn bd-btn-soft w-full justify-center px-3 py-2.5 text-sm"
+            >
+              <span className="inline-flex items-center justify-center gap-1.5">
+                <span>🤖</span>
+                <span>{t('game.ui.addBotPlayer')}</span>
+              </span>
+            </button>
+          )}
+
+          {/* Bot difficulty segmented control */}
+          {canConfigureBots && (
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-bd-ink-muted">{t('game.ui.botDifficulty')}</p>
+              <div className="flex rounded-lg border border-bd-line bg-bd-bg2 p-0.5">
+                {BOT_DIFFICULTIES.map((difficulty) => (
+                  <button
+                    key={difficulty}
+                    type="button"
+                    onClick={() => {
+                      sounds.play('click')
+                      onBotDifficultyChange(difficulty)
+                    }}
+                    className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-all ${
+                      botDifficulty === difficulty
+                        ? 'bg-bd-ink text-bd-bg shadow-sm'
+                        : 'text-bd-ink-soft hover:text-bd-ink'
+                    }`}
+                    aria-pressed={botDifficulty === difficulty}
+                  >
+                    {difficultyLabelMap[difficulty]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -181,7 +173,7 @@ export default function WaitingRoomActions({
         </p>
       )}
 
-      {/* Primary: Start Game */}
+      {/* Start Game */}
       <button
         onClick={() => {
           sounds.play('click')

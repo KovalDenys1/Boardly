@@ -1056,6 +1056,7 @@ const uk: Translation = {
       decline: 'Відхилити',
       returnToLobby: 'Повернутися до лобі',
       kickPlayer: 'Видалити гравця',
+      settings: 'Налаштування',
     },
   },
   yahtzee: {

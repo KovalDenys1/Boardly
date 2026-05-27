@@ -1054,6 +1054,7 @@ const no = {
       decline: 'Avslå',
       returnToLobby: 'Tilbake til venterom',
       kickPlayer: 'Fjern spiller',
+      settings: 'Innstillinger',
     }
   },
   yahtzee: {

@@ -50,6 +50,7 @@ export default function WaitingRoom({
         const isBot = !!p.user?.bot
         const playerName = p.user?.username || p.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
         const isCurrentUser = p.userId === getCurrentUserId()
+        const isHost = !isBot && !!lobby.creatorId && p.userId === lobby.creatorId
         const isPremium = !isBot && !!(p.user as { isPremium?: boolean } | undefined)?.isPremium
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined
         const difficultyLabel = botDifficulty ? t(`game.ui.botDifficulty${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)}` as Parameters<typeof t>[0]) : null
@@ -96,6 +97,11 @@ export default function WaitingRoom({
               {isCurrentUser && !isBot && (
                 <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
                   {t('game.ui.you')}
+                </span>
+              )}
+              {isHost && (
+                <span className="rounded-full bg-bd-sun px-1.5 py-0.5 text-[10px] font-bold text-bd-ink">
+                  {t('game.ui.host')}
                 </span>
               )}
               {isBot && (
