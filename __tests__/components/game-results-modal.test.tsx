@@ -127,8 +127,6 @@ describe('GameResultsModal', () => {
     expect(screen.getByText('profile.gameResults.replayReady')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.summaryWinner')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.duration')).toBeTruthy()
-    expect(screen.getByText('profile.gameResults.endedOn')).toBeTruthy()
-    expect(screen.getAllByText('ABCD1').length).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('button', { name: 'profile.gameReplay.watch' }))
 

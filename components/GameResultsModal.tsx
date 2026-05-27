@@ -299,14 +299,6 @@ export default function GameResultsModal({
           : t('profile.gameResults.winnerPending')
 
   const locale = typeof navigator === 'undefined' ? 'en' : navigator.language
-  const usesEndedAtLabel =
-    game?.status === 'finished' || game?.status === 'cancelled' || game?.status === 'abandoned'
-  const secondaryTimestampLabel = usesEndedAtLabel
-    ? t('profile.gameResults.endedOn')
-    : t('profile.gameResults.lastUpdated')
-  const secondaryTimestampValue = game
-    ? formatShortDate((usesEndedAtLabel ? game.endedAt : game.updatedAt) || game.updatedAt)
-    : '-'
   const summaryText = game
     ? winner
       ? t('profile.gameResults.summaryWinner', { player: winnerLabel })
@@ -334,22 +326,8 @@ export default function GameResultsModal({
           value: formatCompactDuration(game.durationMs, locale),
         },
         {
-          label: secondaryTimestampLabel,
-          value: secondaryTimestampValue,
-        },
-        {
           label: t('profile.gameReplay.players'),
           value: String(game.players.length),
-        },
-        {
-          label: t('profile.gameResults.replayStatus'),
-          value: game.hasReplay
-            ? t('profile.gameResults.replayAvailable')
-            : t('profile.gameResults.replayUnavailable'),
-        },
-        {
-          label: t('profile.gameResults.roomCode'),
-          value: game.lobbyCode,
         },
       ]
     : []
