@@ -29,17 +29,6 @@ const cardStyle: React.CSSProperties = {
   overflow: 'hidden',
 }
 
-const innerCardStyle: React.CSSProperties = {
-  borderRadius: 16,
-  border: '1.5px solid var(--bd-line)',
-  background: 'var(--bd-bg2)',
-}
-
-const innerCardAltStyle: React.CSSProperties = {
-  borderRadius: 16,
-  border: '1.5px solid var(--bd-line)',
-  background: 'var(--bd-bg)',
-}
 
 interface Player {
   id: string
@@ -357,167 +346,154 @@ export default function GameResultsModal({
           {error}
         </div>
       ) : game ? (
-        <div className="space-y-5">
-          <div style={cardStyle}>
+        <div className="space-y-4 p-4 sm:p-5">
+
+          {/* ── Hero card ── */}
+          <div className="overflow-hidden rounded-2xl" style={{ border: '1.5px solid var(--bd-line)' }}>
             <div
               className="px-5 py-5 sm:px-6"
-              style={{ borderBottom: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+              style={{
+                background: winner
+                  ? 'linear-gradient(145deg, rgba(255,196,77,0.15) 0%, var(--bd-bg2) 70%)'
+                  : 'var(--bd-bg2)',
+              }}
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
-                    {t('profile.gameResults.overview')}
-                  </p>
-                  <h3
-                    className="mt-3 truncate text-2xl font-bold tracking-tight"
-                    style={{ color: 'var(--bd-ink)' }}
-                    title={game.lobbyName}
-                  >
-                    {game.lobbyName}
-                  </h3>
-                  <p className="mt-2 text-sm font-medium" style={{ color: 'var(--bd-ink)' }}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(game.status)}`}
+                    >
+                      {formatStatusLabel(game.status)}
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                      style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                    >
+                      {formatGameTypeLabel(game.gameType)}
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold tracking-tight sm:text-2xl" style={{ color: 'var(--bd-ink)' }}>
                     {summaryText}
                   </p>
-                  <p className="mt-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
-                    {t('profile.gameResults.playedOn')} {formatDate(game.createdAt)}
+                  <p className="mt-1.5 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
+                    {formatDate(game.createdAt)}
                   </p>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
-                      game.status
-                    )}`}
-                  >
-                    {formatStatusLabel(game.status)}
+                {winner && (
+                  <span className="mt-1 shrink-0 text-3xl sm:text-4xl" aria-hidden>
+                    👑
                   </span>
-                  <span
-                    className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                    style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
-                  >
-                    {formatGameTypeLabel(game.gameType)}
-                  </span>
-                </div>
+                )}
               </div>
             </div>
 
-            <div className="grid gap-5 p-5 xl:grid-cols-[1.05fr_0.95fr] sm:p-6">
-              <div className="flex h-full flex-col justify-between p-5" style={innerCardStyle}>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
-                    {t('profile.gameResults.replay')}
-                  </p>
-                  <h3 className="mt-3 text-xl font-bold tracking-tight" style={{ color: 'var(--bd-ink)' }}>
-                    {t('profile.gameResults.replay')}
-                  </h3>
-                  <p className="mt-2 max-w-xl text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
-                    {game.hasReplay
-                      ? t('profile.gameResults.replayReady')
-                      : game.status === 'abandoned'
-                        ? t('profile.gameResults.replayUnavailableAbandoned')
-                        : game.status === 'cancelled'
-                          ? t('profile.gameResults.replayUnavailableCancelled')
-                          : game.status === 'playing' || game.status === 'waiting'
-                            ? t('profile.gameResults.replayUnavailableInProgress')
-                            : t('profile.gameResults.replayUnavailableFinished')}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (game.hasReplay) {
-                      onWatchReplay?.(game.id)
-                    }
-                  }}
-                  disabled={!game.hasReplay}
-                  className="mt-5 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed"
-                  style={{
-                    background: game.hasReplay ? 'var(--bd-ink)' : 'var(--bd-line)',
-                    color: game.hasReplay ? 'white' : 'var(--bd-ink-muted)',
-                    boxShadow: game.hasReplay ? '0 3px 0 var(--bd-coral)' : 'none',
-                  }}
+            <dl
+              className="flex flex-wrap items-stretch px-5 sm:px-6"
+              style={{ borderTop: '1.5px solid var(--bd-line)', background: 'var(--bd-bg)' }}
+            >
+              {quickFacts.map((fact, i) => (
+                <div
+                  key={fact.label}
+                  className={`flex flex-col gap-0.5 py-3 ${i > 0 ? 'ml-4 border-l pl-4' : ''}`}
+                  style={i > 0 ? { borderColor: 'var(--bd-line)' } : undefined}
                 >
-                  {game.hasReplay ? t('profile.gameReplay.watch') : t('profile.gameReplay.unavailable')}
-                </button>
-              </div>
-
-              <div className="p-5" style={innerCardStyle}>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
-                  {t('profile.gameResults.quickFacts')}
-                </p>
-                <dl className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-                  {quickFacts.map((fact) => (
-                    <div key={fact.label} className="min-h-[5.5rem] p-4" style={innerCardAltStyle}>
-                      <dt className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--bd-ink-muted)' }}>
-                        {fact.label}
-                      </dt>
-                      <dd className="mt-3 text-base font-semibold" style={{ color: 'var(--bd-ink)' }}>
-                        {fact.value}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                    {fact.label}
+                  </dt>
+                  <dd className="whitespace-nowrap text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                    {fact.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
-          <div style={cardStyle}>
-            <div
-              className="px-5 py-4 sm:px-6"
-              style={{ borderBottom: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+          {/* ── Replay CTA ── */}
+          {game.hasReplay ? (
+            <button
+              type="button"
+              onClick={() => onWatchReplay?.(game.id)}
+              className="flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-semibold text-white transition-all active:scale-[0.99]"
+              style={{ background: 'var(--bd-ink)', boxShadow: '0 3px 0 var(--bd-coral)' }}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
-                {t('profile.gameResults.rankings')}
-              </p>
-              <h3 className="mt-2 text-lg font-bold tracking-tight" style={{ color: 'var(--bd-ink)' }}>
-                {t('profile.gameResults.rankings')}
-              </h3>
-              <p className="mt-2 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
-                {t('profile.gameResults.standingsDescription')}
+              <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              {t('profile.gameReplay.watch')}
+            </button>
+          ) : (
+            <div
+              className="flex items-start gap-3 rounded-2xl px-4 py-3.5 text-sm"
+              style={{ background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)' }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="mt-0.5 h-4 w-4 shrink-0"
+                style={{ color: 'var(--bd-ink-muted)' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <p style={{ color: 'var(--bd-ink-soft)' }}>
+                {game.status === 'abandoned'
+                  ? t('profile.gameResults.replayUnavailableAbandoned')
+                  : game.status === 'cancelled'
+                    ? t('profile.gameResults.replayUnavailableCancelled')
+                    : game.status === 'playing' || game.status === 'waiting'
+                      ? t('profile.gameResults.replayUnavailableInProgress')
+                      : t('profile.gameResults.replayUnavailableFinished')}
               </p>
             </div>
+          )}
 
-            <div className="grid gap-3 p-5 lg:grid-cols-2 sm:p-6">
+          {/* ── Standings ── */}
+          <div>
+            <p className="mb-3 px-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+              {t('profile.gameResults.rankings')}
+            </p>
+            <div className="space-y-2">
               {rankedPlayers.map((player, index) => (
                 <div
                   key={player.id}
-                  className="flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex items-center gap-3 rounded-2xl px-4 py-3"
                   style={
                     player.isWinner
-                      ? { border: '1.5px solid #FFC44D80', background: '#FFC44D15', color: 'var(--bd-ink)' }
-                      : { border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg)', color: 'var(--bd-ink)' }
+                      ? { background: 'rgba(255,196,77,0.1)', border: '1.5px solid rgba(255,196,77,0.5)' }
+                      : { background: 'var(--bd-bg)', border: '1.5px solid var(--bd-line)' }
                   }
                 >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold"
-                      style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
-                    >
-                      #{index + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1 text-base font-semibold" title={getPlayerLabel(player, index)}>
-                        <span className="truncate">{getPlayerLabel(player, index)}</span>
-                        {player.isPremium && !player.isBot && <span className="shrink-0" title="Premium">👑</span>}
-                      </div>
-                      <p className="mt-1 text-xs opacity-70">
-                        {player.isWinner
-                          ? t('profile.gameResults.winnerBadge')
-                          : player.placement
-                            ? t('profile.gameResults.placeLabel', {
-                                place: formatOrdinalPlace(player.placement, locale),
-                              })
-                            : formatStatusLabel(game.status)}
-                      </p>
+                  <span
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                    style={{ background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}
+                  >
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-sm font-semibold" title={getPlayerLabel(player, index)}>
+                      <span className="truncate">{getPlayerLabel(player, index)}</span>
+                      {player.isPremium && !player.isBot && (
+                        <span className="shrink-0" title="Premium">👑</span>
+                      )}
                     </div>
+                    <p className="mt-0.5 text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+                      {player.isWinner
+                        ? t('profile.gameResults.winnerBadge')
+                        : player.placement
+                          ? t('profile.gameResults.placeLabel', { place: formatOrdinalPlace(player.placement, locale) })
+                          : formatStatusLabel(game.status)}
+                    </p>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold">
-                      {getScoreValue(player)} {t('profile.gameResults.points')}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-base font-bold" style={{ color: 'var(--bd-ink)' }}>
+                      {getScoreValue(player)}
                     </span>
-                    {player.isWinner ? <span aria-hidden>{'\u{1F451}'}</span> : null}
+                    <span className="text-xs" style={{ color: 'var(--bd-ink-muted)' }}>
+                      {t('profile.gameResults.points')}
+                    </span>
+                    {player.isWinner && <span aria-hidden>👑</span>}
                   </div>
                 </div>
               ))}

@@ -123,8 +123,6 @@ describe('GameResultsModal', () => {
     )
 
     expect((await screen.findAllByText('Friday Match')).length).toBeGreaterThan(0)
-    expect(screen.getByText('profile.gameResults.quickFacts')).toBeTruthy()
-    expect(screen.getByText('profile.gameResults.replayReady')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.summaryWinner')).toBeTruthy()
     expect(screen.getByText('profile.gameResults.duration')).toBeTruthy()
 
@@ -167,13 +165,7 @@ describe('GameResultsModal', () => {
 
     render(<GameResultsModal gameId="game-2" onClose={jest.fn()} />)
 
-    const replayButton = await screen.findByRole('button', {
-      name: 'profile.gameReplay.unavailable',
-    })
-
-    await waitFor(() => {
-      expect((replayButton as HTMLButtonElement).disabled).toBe(true)
-    })
+    expect(await screen.findByText('profile.gameResults.replayUnavailableFinished')).toBeTruthy()
   })
 
   it('shows cancelled games as cancelled without implying the match is still in progress', async () => {
