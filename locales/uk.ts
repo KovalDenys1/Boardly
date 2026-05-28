@@ -728,6 +728,9 @@ const uk: Translation = {
         tabBoard: 'Дошка',
         tabScore: 'Рахунок',
         tabChat: 'Чат',
+        playerTurnBanner: 'Хід {{player}}',
+        victoryBadge: 'Переможець',
+        drawBadge: 'Нічия',
       },
     },
     rps: {

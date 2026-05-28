@@ -726,6 +726,9 @@ const en = {
         tabBoard: 'Board',
         tabScore: 'Score',
         tabChat: 'Chat',
+        playerTurnBanner: "{{player}}'s Turn",
+        victoryBadge: 'Winner',
+        drawBadge: 'Tie',
       },
     },
     rps: {

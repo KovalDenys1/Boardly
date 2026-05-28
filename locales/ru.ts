@@ -726,6 +726,9 @@ const ru = {
         tabBoard: 'Доска',
         tabScore: 'Счёт',
         tabChat: 'Чат',
+        playerTurnBanner: 'Ход {{player}}',
+        victoryBadge: 'Победитель',
+        drawBadge: 'Ничья',
       }
     },
     rps: {

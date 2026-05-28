@@ -726,6 +726,9 @@ const no = {
         tabBoard: 'Brett',
         tabScore: 'Poeng',
         tabChat: 'Chat',
+        playerTurnBanner: '{{player}}s tur',
+        victoryBadge: 'Vinner',
+        drawBadge: 'Uavgjort',
       }
     },
     rps: {
