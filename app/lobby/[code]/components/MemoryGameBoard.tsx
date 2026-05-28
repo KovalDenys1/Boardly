@@ -462,6 +462,10 @@ export default function MemoryGameBoard({
     typeof gameData?.gridColumns === 'number' && Number.isFinite(gameData.gridColumns)
       ? gameData.gridColumns
       : 4
+  const gridRows =
+    typeof gameData?.gridRows === 'number' && Number.isFinite(gameData.gridRows)
+      ? gameData.gridRows
+      : 4
 
   const scoreByPlayerId = gameData?.scores || {}
   const currentPlayerId = parsedState.players?.[parsedState.currentPlayerIndex]?.id || null
@@ -867,7 +871,7 @@ export default function MemoryGameBoard({
           {statusSection}
 
           <main className="memory-layout">
-            <section className="memory-board-panel" style={{ position: 'relative' }}>
+            <section className="memory-board-panel" style={{ position: 'relative', '--grid-cols': gridColumns, '--grid-rows': gridRows } as React.CSSProperties}>
               {cardGrid}
               {isFinished && !overlayInspecting && (
                 <MemoryResultModal

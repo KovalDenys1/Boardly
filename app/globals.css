@@ -1675,9 +1675,8 @@ input[type="range"].slider-thumb::-moz-range-track {
   height: auto;
 }
 
-/* Guess the Spy and Memory game surfaces */
-.spy-screen,
-.memory-screen {
+/* Guess the Spy surface */
+.spy-screen {
   min-height: 100%;
   overflow-y: auto;
   background: var(--bd-bg);
@@ -1685,10 +1684,30 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: 14px;
 }
 
-.spy-shell,
-.memory-shell {
+.spy-shell {
   width: min(100%, 1180px);
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Memory game surface — fixed-height like TTT, overflow hidden */
+.memory-screen {
+  --memory-h: calc(100dvh - 64px);
+  height: var(--memory-h);
+  overflow: hidden;
+  padding: 10px 20px 14px;
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+  box-sizing: border-box;
+}
+
+.memory-shell {
+  flex: 1;
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1925,6 +1944,8 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-layout {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 12px;
@@ -1933,26 +1954,35 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .memory-side-stack {
   display: flex;
-  min-width: 0;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
   height: 100%;
 }
 
 .memory-board-panel {
+  container-type: size;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
   padding: clamp(10px, 2vw, 16px);
   background: var(--bd-card-warm);
 }
 
 .memory-score-panel {
+  flex-shrink: 0;
   padding: 14px;
-  max-height: 240px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
 .memory-chat-panel {
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: #fff;
   border: 1.5px solid var(--bd-line);
@@ -1966,6 +1996,15 @@ input[type="range"].slider-thumb::-moz-range-track {
   margin: 0 auto;
   display: grid;
   gap: clamp(6px, 1.3vw, 12px);
+}
+
+/* Scale grid to fit the board panel height on desktop.
+   memory-board-panel has container-type:size so cqh is valid here.
+   --grid-cols / --grid-rows are injected as CSS vars from JSX. */
+@container (min-height: 100px) {
+  .memory-grid {
+    width: min(100%, 780px, calc((100cqh - 60px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+  }
 }
 
 .memory-tile {
@@ -2051,7 +2090,7 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ===== MEMORY GAME — DESKTOP-ONLY ELEMENTS ===== */
 
-.memory-desktop-layout { display: block; }
+.memory-desktop-layout { height: 100%; display: flex; align-items: stretch; }
 .memory-mobile-layout  { display: none; }
 
 /* ===== MEMORY GAME — MOBILE LAYOUT ===== */
@@ -2061,14 +2100,10 @@ input[type="range"].slider-thumb::-moz-range-track {
   .memory-mobile-layout  { display: flex; flex-direction: column; height: 100%; }
 
   .memory-screen {
-    --memory-h: calc(100dvh - 64px);
     /* break out of LobbyPageClient py-8 / px-4 container padding */
     margin: -32px -16px -32px -16px;
     width: 100vw;
-    height: var(--memory-h);
-    overflow: hidden;
     padding: 4px 0 0 0;
-    min-height: unset;
   }
 }
 
