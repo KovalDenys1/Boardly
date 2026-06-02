@@ -1692,15 +1692,20 @@ input[type="range"].slider-thumb::-moz-range-track {
   gap: 12px;
 }
 
-/* Memory game surface — fixed-height like TTT, overflow hidden */
+/* Memory game surface — fixed below the nav, fills viewport, no page-flow hacks needed */
 .memory-screen {
   --memory-h: calc(100dvh - 64px);
-  height: var(--memory-h);
+  position: fixed;
+  top: 64px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   overflow: hidden;
   padding: 10px 20px 14px;
   background: var(--bd-bg);
   color: var(--bd-ink);
   box-sizing: border-box;
+  z-index: 1;
 }
 
 .memory-shell {
@@ -2097,20 +2102,13 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 @media (max-width: 899px) {
   .memory-desktop-layout { display: none !important; }
-  .memory-mobile-layout  { display: flex; flex-direction: column; height: 100%; }
+  .memory-mobile-layout  { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
   .memory-screen {
-    /* break out of LobbyPageClient py-8 / px-4 container padding */
-    margin: -32px -16px -32px -16px;
-    width: 100vw;
+    /* position: fixed already handles placement — just adjust padding and add flex */
     padding: 4px 0 0 0;
-  }
-}
-
-@media (min-width: 640px) and (max-width: 899px) {
-  .memory-screen {
-    margin-left: -24px;
-    margin-right: -24px;
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -2181,8 +2179,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-mobile-board-wrap {
+  /* Constrain by both viewport width and available height below fixed chrome */
   width: min(calc(100vw - 24px), calc(var(--memory-h) - 220px));
-  aspect-ratio: auto;
+  max-height: calc(var(--memory-h) - 220px);
+  overflow: hidden;
 }
 
 /* spy mobile (unchanged from existing) */
