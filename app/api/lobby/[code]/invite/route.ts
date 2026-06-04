@@ -7,6 +7,7 @@ import { apiLogger } from '@/lib/logger'
 import { getNotificationPreferences } from '@/lib/notification-preferences'
 import { recordNotificationDelivery } from '@/lib/notifications-log'
 import { createInAppNotification } from '@/lib/in-app-notifications'
+import { sendPushNotification } from '@/lib/push-send'
 import { sendGameInviteEmail } from '@/lib/email'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 
@@ -185,6 +186,15 @@ export async function POST(
         })
       )
     )
+
+    Array.from(invitedFriends.values()).forEach((friend) => {
+      void sendPushNotification(friend.id, {
+        title: `${requestUser.username || 'Someone'} invited you to play`,
+        body: lobby.name || 'Join the game',
+        url: `/lobby/${lobby.code}`,
+        tag: `game_invite:${lobby.id}:${friend.id}`,
+      })
+    })
 
     await Promise.allSettled(
       Array.from(invitedFriends.values()).map(async (friend) => {

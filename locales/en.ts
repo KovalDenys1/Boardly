@@ -1555,7 +1555,8 @@ const en = {
         inAppDesc: 'Show alerts in the header inbox for invites, reminders, and friend activity.',
         push: 'Push Notifications',
         pushDesc: 'Browser notifications for real-time updates',
-        pushSoon: 'Push notifications are not available yet.',
+        pushUnsupported: 'Push notifications are not supported in this browser.',
+        pushDenied: 'You have blocked notifications. Allow them in browser settings.',
         sound: 'Sound Effects',
         soundDesc: 'Play sounds for in-game actions and notifications',
         categories: {

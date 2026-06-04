@@ -36,6 +36,7 @@ describe('in-app notifications helper', () => {
       friendRequests: true,
       friendAccepted: true,
       unsubscribedAll: false,
+      pushNotifications: false,
     })
     mockNotifications.findFirst.mockResolvedValue(null)
     mockNotifications.create.mockResolvedValue({ id: 'notification-1' })
@@ -64,6 +65,7 @@ describe('in-app notifications helper', () => {
       friendRequests: true,
       friendAccepted: true,
       unsubscribedAll: false,
+      pushNotifications: false,
     })
 
     const result = await createInAppNotification({

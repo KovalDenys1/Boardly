@@ -51,6 +51,7 @@ model Users {
   accountPreferences      AccountPreferences?
   notificationPreferences NotificationPreferences?
   notifications           Notifications[]
+  pushSubscriptions       PushSubscriptions[]
   feedback                Feedback[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
@@ -390,11 +391,12 @@ model NotificationPreferences {
   user   Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   inAppNotifications Boolean @default(true)
-  gameInvites     Boolean @default(true)
-  turnReminders   Boolean @default(true)
-  friendRequests  Boolean @default(true)
-  friendAccepted  Boolean @default(true)
-  unsubscribedAll Boolean @default(false)
+  gameInvites        Boolean @default(true)
+  turnReminders      Boolean @default(true)
+  friendRequests     Boolean @default(true)
+  friendAccepted     Boolean @default(true)
+  pushNotifications  Boolean @default(false)
+  unsubscribedAll    Boolean @default(false)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -423,6 +425,20 @@ model Notifications {
   @@index([userId, channel, readAt, createdAt])
   @@index([type, channel, status, createdAt])
   @@index([dedupeKey])
+}
+
+model PushSubscriptions {
+  id        String   @id @default(cuid())
+  userId    String
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
 }
 
 model AdminAuditLogs {

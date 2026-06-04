@@ -60,6 +60,7 @@ type NotificationPreferences = {
   friendRequests: boolean
   friendAccepted: boolean
   unsubscribedAll: boolean
+  pushNotifications: boolean
 }
 
 type ProfileSummary = {
@@ -202,7 +203,9 @@ export default function ProfilePage() {
     friendRequests: true,
     friendAccepted: true,
     unsubscribedAll: false,
+    pushNotifications: false,
   })
+  const [pushPermission, setPushPermission] = useState<'loading' | 'unsupported' | NotificationPermission>('loading')
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS)
   const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>({
     profileVisibility: 'public',
@@ -537,6 +540,14 @@ export default function ProfilePage() {
         .catch(() => {})
     }
   }, [fetchProfileSummary, status])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushPermission('unsupported')
+      return
+    }
+    setPushPermission(Notification.permission)
+  }, [])
 
   useEffect(() => {
     const syncSettingsLanguage = (nextLanguage?: string) => {
@@ -1117,6 +1128,38 @@ export default function ProfilePage() {
 
     setNotificationPreferences(nextPreferences)
     void persistNotificationPreferences(nextPreferences, previousPreferences)
+  }
+
+  const handleTogglePush = async (enable: boolean) => {
+    if (notificationsSaving) return
+    try {
+      const { subscribeToPush, unsubscribeFromPush, getExistingPushSubscription } = await import('@/lib/push-subscription')
+      if (enable) {
+        const sub = await subscribeToPush()
+        if (!sub) return
+        setPushPermission(Notification.permission)
+        if (Notification.permission !== 'granted') return
+        await fetch('/api/push-subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: sub.endpoint, p256dh: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('p256dh')!))), auth: btoa(String.fromCharCode(...new Uint8Array(sub.getKey('auth')!))) }),
+        })
+        updateNotificationPreference('pushNotifications', true)
+      } else {
+        const sub = await getExistingPushSubscription()
+        if (sub) {
+          await unsubscribeFromPush()
+          await fetch('/api/push-subscriptions', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          })
+        }
+        updateNotificationPreference('pushNotifications', false)
+      }
+    } catch {
+      showToast.error('profile.settings.error')
+    }
   }
 
   const updateEmailNotificationsEnabled = (enabled: boolean) => {
@@ -2286,21 +2329,26 @@ export default function ProfilePage() {
                         />
                       </Label>
 
-                      <div
-                        className={`${settingsToggleCardClassName} cursor-default items-center justify-center text-center opacity-80`}
-                      >
-                        <div className="min-w-0 text-center">
-                          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-bd-ink dark:text-slate-200">
-                            <span>{t('profile.settings.notifications.push')}</span>
-                            <span className="inline-flex rounded-full bg-bd-bg2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-bd-ink-muted dark:bg-slate-700 dark:text-slate-300">
-                              {t('profile.comingSoon')}
-                            </span>
+                      <Label className={settingsToggleCardClassName}>
+                        <div className="min-w-0 pr-3">
+                          <div className="text-sm font-semibold text-bd-ink dark:text-slate-200">
+                            {t('profile.settings.notifications.push')}
                           </div>
                           <div className="mt-1 text-xs text-bd-ink-muted dark:text-slate-400">
-                            {t('profile.settings.notifications.pushSoon')}
+                            {pushPermission === 'unsupported'
+                              ? t('profile.settings.notifications.pushUnsupported')
+                              : pushPermission === 'denied'
+                                ? t('profile.settings.notifications.pushDenied')
+                                : t('profile.settings.notifications.pushDesc')}
                           </div>
                         </div>
-                      </div>
+                        <Checkbox
+                          checked={notificationPreferences.pushNotifications && pushPermission === 'granted'}
+                          onCheckedChange={(checked) => handleTogglePush(Boolean(checked))}
+                          disabled={notificationsSaving || pushPermission === 'unsupported' || pushPermission === 'denied' || pushPermission === 'loading'}
+                          className="mt-0.5 shrink-0"
+                        />
+                      </Label>
                     </div>
 
                     <div

@@ -1549,7 +1549,8 @@ const no = {
         inAppDesc: 'Vis varsler i innboksen i toppmenyen for invitasjoner, påminnelser og venneaktivitet.',
         push: 'Push-varsler',
         pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
-        pushSoon: 'Push-varsler er ikke tilgjengelige ennå.',
+        pushUnsupported: 'Push-varsler støttes ikke i denne nettleseren.',
+        pushDenied: 'Du har blokkert varsler. Tillat dem i nettleserinnstillingene.',
         sound: 'Lydeffekter',
         soundDesc: 'Spill av lyder for spillhandlinger og varsler',
         categories: {

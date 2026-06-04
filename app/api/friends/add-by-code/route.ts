@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { createInAppNotification } from '@/lib/in-app-notifications'
+import { sendPushNotification } from '@/lib/push-send'
 
 export const runtime = 'nodejs'
 
@@ -165,6 +166,13 @@ export async function POST(req: NextRequest) {
         source: 'friend_code',
         href: '/profile?tab=friends',
       },
+    })
+
+    void sendPushNotification(targetUser.id, {
+      title: `${currentUser.username || 'Someone'} sent you a friend request`,
+      body: 'Tap to respond',
+      url: '/profile?tab=friends',
+      tag: `friend_request:${friendRequest.id}`,
     })
 
     log.info('Friend request sent via friend code', {

@@ -7,6 +7,7 @@ import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { extractPublicProfileId } from '@/lib/public-profile'
 import { createInAppNotification } from '@/lib/in-app-notifications'
+import { sendPushNotification } from '@/lib/push-send'
 
 const limiter = rateLimit(rateLimitPresets.friendRequest)
 const log = apiLogger('/api/friends/request')
@@ -164,6 +165,13 @@ export async function POST(req: NextRequest) {
         source: normalizedPublicProfileId ? 'profile_link' : 'username',
         href: '/profile?tab=friends',
       },
+    })
+
+    void sendPushNotification(friendRequest.receiver.id, {
+      title: `${friendRequest.sender.username || 'Someone'} sent you a friend request`,
+      body: 'Tap to respond',
+      url: '/profile?tab=friends',
+      tag: `friend_request:${friendRequest.id}`,
     })
 
     log.info('Friend request sent', {

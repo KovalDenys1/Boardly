@@ -92,3 +92,32 @@ self.addEventListener('fetch', (event) => {
     )
   }
 })
+
+// ── Web Push handlers ─────────────────────────────────────────────────────────
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let data = {}
+  try { data = event.data.json() } catch { data = { title: event.data.text(), body: '' } }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Boardly', {
+      body: data.body || '',
+      icon: '/icons/icon-192.svg',
+      badge: '/icons/icon-maskable-192.svg',
+      data: { url: data.url || '/' },
+      tag: data.tag || 'boardly',
+      renotify: true,
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = (event.notification.data && event.notification.data.url) || '/'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const match = clients.find((c) => c.url === url)
+      return match ? match.focus() : self.clients.openWindow(url)
+    })
+  )
+})

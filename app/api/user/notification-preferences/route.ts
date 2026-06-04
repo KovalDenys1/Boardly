@@ -13,6 +13,7 @@ const updateSchema = z.object({
   turnReminders: z.boolean().optional(),
   friendRequests: z.boolean().optional(),
   friendAccepted: z.boolean().optional(),
+  pushNotifications: z.boolean().optional(),
   unsubscribedAll: z.boolean().optional(),
 })
 
