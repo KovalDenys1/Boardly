@@ -1684,7 +1684,12 @@ const no = {
       guessSubmitted: 'Gjetning sendt',
       claimSubmitted: 'Påstand sendt',
       challengeSubmitted: 'Svar på utfordring sendt',
-      roundAdvanced: 'Runden gikk videre'
+      roundAdvanced: 'Runden gikk videre',
+      board: {
+        redDisc: 'Rød',
+        yellowDisc: 'Gul',
+        toMove: 'skal flytte',
+      },
     },
     gameResults: {
       title: 'Spillresultater',

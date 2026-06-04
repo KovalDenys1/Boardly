@@ -1698,6 +1698,11 @@ const uk: Translation = {
       claimSubmitted: 'Твердження надіслано',
       challengeSubmitted: 'Відповідь на виклик надіслано',
       roundAdvanced: 'Раунд продовжено',
+      board: {
+        redDisc: 'Червоний',
+        yellowDisc: 'Жовтий',
+        toMove: 'ходить',
+      },
     },
     gameResults: {
       title: 'Результати гри',
