@@ -546,7 +546,7 @@ export default function MemoryGameBoard({
       move: Pick<Move, 'type' | 'data'>,
       options?: { autoActionContext?: AutoActionContext }
     ) => {
-      if (isSubmitting) return false
+      if (isSubmitting && move.type !== 'flip') return false
 
       setIsSubmitting(true)
       try {
@@ -642,7 +642,7 @@ export default function MemoryGameBoard({
 
   const handleCardClick = useCallback(
     (cardId: string) => {
-      if (!isMyTurn || isSubmitting || pendingMismatchCardIds.length > 0) {
+      if (!isMyTurn || pendingMismatchCardIds.length > 0 || optimisticFlippedIds.length >= 2) {
         return
       }
 
@@ -655,7 +655,7 @@ export default function MemoryGameBoard({
         }
       })
     },
-    [isMyTurn, isSubmitting, pendingMismatchCardIds.length, submitMove]
+    [isMyTurn, optimisticFlippedIds.length, pendingMismatchCardIds.length, submitMove]
   )
 
   if (!gameData || cards.length === 0) {
@@ -691,10 +691,10 @@ export default function MemoryGameBoard({
         const isFaceUp = card.isFlipped || card.isMatched || isOptimisticallyFlipped
         const isDisabled =
           !isMyTurn ||
-          isSubmitting ||
           parsedState.status !== 'playing' ||
           pendingMismatchCardIds.length > 0 ||
           flippedCardIds.length >= 2 ||
+          optimisticFlippedIds.length >= 2 ||
           card.isMatched ||
           card.isFlipped ||
           isOptimisticallyFlipped
@@ -709,7 +709,7 @@ export default function MemoryGameBoard({
           >
             <span className={`memory-tile-inner ${isFaceUp ? 'memory-tile-inner-flipped' : ''}`}>
               <span className="memory-tile-back">
-                <span className="memory-tile-back-mark">B</span>
+                <span className="memory-tile-back-mark">✦</span>
               </span>
               <span className={`memory-tile-face ${symbolSizeClass}`}>
                 {card.value}
@@ -1045,25 +1045,67 @@ export default function MemoryGameBoard({
           )}
 
           {mobileTab === 'moves' && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-              {historyPanel}
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+                {historyPanel}
+              </div>
+              {isFinished && (
+                <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
+                  {canStartGame && onPlayAgain && (
+                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
+                      {t('lobby.game.playAgain')}
+                    </button>
+                  )}
+                  {onLeave && (
+                    <button onClick={onLeave} className="bd-btn bd-btn-soft flex-1 justify-center">
+                      {t('game.ui.leave')}
+                    </button>
+                  )}
+                  {!canStartGame && (
+                    <p style={{ flex: 1, textAlign: 'center', fontSize: 13, color: 'var(--bd-ink-muted)', fontWeight: 600, margin: 0, alignSelf: 'center' }}>
+                      {t('game.ui.waitingForHost')}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {mobileTab === 'chat' && onSendChatMessage && (
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <Chat
-                messages={chatMessages}
-                onSendMessage={onSendChatMessage}
-                currentUserId={currentUserId || null}
-                isMinimized={false}
-                onToggleMinimize={() => {}}
-                unreadCount={chatUnreadCount}
-                someoneTyping={someoneTyping}
-                playerProfiles={playerProfiles}
-                onProfileClick={onProfileClick}
-                fullScreen
-              />
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <Chat
+                  messages={chatMessages}
+                  onSendMessage={onSendChatMessage}
+                  currentUserId={currentUserId || null}
+                  isMinimized={false}
+                  onToggleMinimize={() => {}}
+                  unreadCount={chatUnreadCount}
+                  someoneTyping={someoneTyping}
+                  playerProfiles={playerProfiles}
+                  onProfileClick={onProfileClick}
+                  fullScreen
+                />
+              </div>
+              {isFinished && (
+                <div style={{ flexShrink: 0, padding: '10px 16px', borderTop: '1px solid var(--bd-line)', display: 'flex', gap: 8 }}>
+                  {canStartGame && onPlayAgain && (
+                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary flex-1 justify-center">
+                      {t('lobby.game.playAgain')}
+                    </button>
+                  )}
+                  {onLeave && (
+                    <button onClick={onLeave} className="bd-btn bd-btn-soft flex-1 justify-center">
+                      {t('game.ui.leave')}
+                    </button>
+                  )}
+                  {!canStartGame && (
+                    <p style={{ flex: 1, textAlign: 'center', fontSize: 13, color: 'var(--bd-ink-muted)', fontWeight: 600, margin: 0, alignSelf: 'center' }}>
+                      {t('game.ui.waitingForHost')}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
