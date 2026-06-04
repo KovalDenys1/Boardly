@@ -739,12 +739,10 @@ export default function MemoryGameBoard({
               <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
                 #{String(moveHistory.length - index).padStart(2, '0')}
               </span>
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{m.card1Value}</span>
-              <span style={{ fontSize: 14, flexShrink: 0 }}>{m.card2Value}</span>
               <span style={{ color: 'var(--bd-ink-soft)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                 {displayNameByUserId.get(m.playerId) || t('games.memory.game.unknownPlayer')}
               </span>
-              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, flexShrink: 0, color: m.isMatch ? 'var(--bd-mint-deep)' : 'var(--bd-coral)' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, flexShrink: 0, color: m.isMatch ? 'var(--bd-mint-deep)' : 'var(--bd-coral)' }}>
                 {m.isMatch ? '✓' : '✗'}
               </span>
             </div>

@@ -147,8 +147,6 @@ export default function MemoryView({ state, players }: SpectatorViewProps) {
                 <span style={{ color: 'var(--bd-ink-muted)', fontFamily: 'ui-monospace,monospace', fontSize: 11, flexShrink: 0 }}>
                   #{String(moveHistory.length - index).padStart(2, '0')}
                 </span>
-                <span style={{ flexShrink: 0 }}>{m.card1Value}</span>
-                <span style={{ flexShrink: 0 }}>{m.card2Value}</span>
                 <span style={{ flex: 1, color: 'var(--bd-ink-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {getNameById(m.playerId)}
                 </span>
