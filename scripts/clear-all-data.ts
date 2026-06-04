@@ -22,44 +22,44 @@ async function clearAllTables() {
     const lobbies = await prisma.lobbies.deleteMany({})
     console.log(`✅ Deleted ${lobbies.count} lobbies`)
 
-    console.log('Deleting Sessions...')
-    const sessions = await prisma.sessions.deleteMany({})
-    console.log(`✅ Deleted ${sessions.count} sessions`)
-
     console.log('Deleting Accounts...')
     const accounts = await prisma.accounts.deleteMany({})
     console.log(`✅ Deleted ${accounts.count} accounts`)
 
-    console.log('Deleting Verification Tokens...')
-    const tokens = await prisma.verificationTokens.deleteMany({})
-    console.log(`✅ Deleted ${tokens.count} verification tokens`)
+    console.log('Deleting EmailVerificationTokens...')
+    const emailTokens = await prisma.emailVerificationTokens.deleteMany({})
+    console.log(`✅ Deleted ${emailTokens.count} email verification tokens`)
+
+    console.log('Deleting PasswordResetTokens...')
+    const resetTokens = await prisma.passwordResetTokens.deleteMany({})
+    console.log(`✅ Deleted ${resetTokens.count} password reset tokens`)
 
     console.log('Deleting Users...')
     const users = await prisma.users.deleteMany({})
     console.log(`✅ Deleted ${users.count} users`)
 
     console.log('\n✅ All tables cleared successfully!')
-    
+
     // Verify
     console.log('\n📊 Verifying tables are empty:')
     const counts = await Promise.all([
       prisma.users.count(),
       prisma.accounts.count(),
-      prisma.sessions.count(),
       prisma.lobbies.count(),
       prisma.games.count(),
       prisma.players.count(),
-      prisma.verificationTokens.count(),
+      prisma.emailVerificationTokens.count(),
+      prisma.passwordResetTokens.count(),
     ])
 
     console.log(`  Users: ${counts[0]}`)
     console.log(`  Accounts: ${counts[1]}`)
-    console.log(`  Sessions: ${counts[2]}`)
-    console.log(`  Lobbies: ${counts[3]}`)
-    console.log(`  Games: ${counts[4]}`)
-    console.log(`  Players: ${counts[5]}`)
-    console.log(`  Verification Tokens: ${counts[6]}`)
-    
+    console.log(`  Lobbies: ${counts[2]}`)
+    console.log(`  Games: ${counts[3]}`)
+    console.log(`  Players: ${counts[4]}`)
+    console.log(`  Email Verification Tokens: ${counts[5]}`)
+    console.log(`  Password Reset Tokens: ${counts[6]}`)
+
     const total = counts.reduce((a: number, b: number) => a + b, 0)
     if (total === 0) {
       console.log('\n✅ All tables are empty! Database is clean.')

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { Prisma } from '@/prisma/client'
+import { Prisma, GameType } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
     const openLobbies = await prisma.lobbies.findMany({
       where: {
         isActive: true,
-        gameType,
+        gameType: gameType as GameType,
         password: null,
         games: {
           some: {
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
           code,
           name: lobbyName,
           maxPlayers,
-          gameType,
+          gameType: gameType as GameType,
           creatorId: user.id,
           games: {
             create: {

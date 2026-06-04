@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { Prisma } from '@/prisma/client'
+import { Prisma, GameType } from '@/prisma/client'
 import { prisma } from '@/lib/db'
 import { generateLobbyCode } from '@/lib/lobby'
 import { createGameEngine, isSupportedGameType } from '@/lib/game-registry'
@@ -326,7 +326,7 @@ export async function GET(request: NextRequest) {
     const where: Prisma.LobbiesWhereInput = { isActive: true }
 
     if (gameType) {
-      where.gameType = gameType
+      where.gameType = gameType as GameType
     }
 
     if (search) {

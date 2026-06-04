@@ -1,8 +1,8 @@
-import type { Adapter, AdapterUser, AdapterAccount, AdapterSession, VerificationToken } from 'next-auth/adapters'
+import type { Adapter, AdapterUser, AdapterAccount } from 'next-auth/adapters'
 
 type AdapterPrismaClient = Pick<
   typeof import('./db').prisma,
-  'users' | 'accounts' | 'sessions' | 'verificationTokens'
+  'users' | 'accounts'
 >
 
 /**
@@ -123,98 +123,6 @@ export function CustomPrismaAdapter(prisma: AdapterPrismaClient): Adapter {
       await prisma.accounts.delete({
         where: { provider_providerAccountId: { provider: params.provider, providerAccountId: params.providerAccountId } },
       })
-    },
-
-    async createSession(session: {
-      sessionToken: string
-      userId: string
-      expires: Date
-    }) {
-      const created = await prisma.sessions.create({
-        data: {
-          sessionToken: session.sessionToken,
-          userId: session.userId,
-          expires: session.expires,
-        },
-      })
-      return {
-        sessionToken: created.sessionToken,
-        userId: created.userId,
-        expires: created.expires,
-      }
-    },
-
-    async getSessionAndUser(sessionToken: string) {
-      const userAndSession = await prisma.sessions.findUnique({
-        where: { sessionToken },
-        include: { user: true },
-      })
-      if (!userAndSession) return null
-      const { user, ...session } = userAndSession
-      return {
-        session: {
-          sessionToken: session.sessionToken,
-          userId: session.userId,
-          expires: session.expires,
-        },
-        user: {
-          id: user.id,
-          name: user.username,
-          email: user.email!,
-          emailVerified: user.emailVerified,
-          image: user.image,
-        },
-      }
-    },
-
-    async updateSession(
-      session: Partial<AdapterSession> & Pick<AdapterSession, 'sessionToken'>
-    ) {
-      const updated = await prisma.sessions.update({
-        where: { sessionToken: session.sessionToken },
-        data: {
-          expires: session.expires,
-        },
-      })
-      return {
-        sessionToken: updated.sessionToken,
-        userId: updated.userId,
-        expires: updated.expires,
-      }
-    },
-
-    async deleteSession(sessionToken: string) {
-      await prisma.sessions.delete({ where: { sessionToken } })
-    },
-
-    async createVerificationToken(token: VerificationToken) {
-      const created = await prisma.verificationTokens.create({
-        data: {
-          identifier: token.identifier,
-          token: token.token,
-          expires: token.expires,
-        },
-      })
-      return {
-        identifier: created.identifier,
-        token: created.token,
-        expires: created.expires,
-      }
-    },
-
-    async useVerificationToken({ identifier, token }: { identifier: string; token: string }) {
-      try {
-        const verificationToken = await prisma.verificationTokens.delete({
-          where: { identifier_token: { identifier, token } },
-        })
-        return {
-          identifier: verificationToken.identifier,
-          token: verificationToken.token,
-          expires: verificationToken.expires,
-        }
-      } catch {
-        return null
-      }
     },
   }
 }
