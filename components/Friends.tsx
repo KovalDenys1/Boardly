@@ -215,6 +215,8 @@ export default function Friends() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [addMethod, setAddMethod] = useState<AddMethod>('link')
   const [addLoading, setAddLoading] = useState(false)
+  const [acceptingId, setAcceptingId] = useState<string | null>(null)
+  const [decliningId, setDecliningId] = useState<string | null>(null)
   const canLoadFriendData = status === 'authenticated' && Boolean(session?.user?.emailVerified)
 
   const loadFriends = useCallback(async () => {
@@ -468,6 +470,7 @@ export default function Friends() {
   }
 
   const handleAcceptRequest = async (requestId: string) => {
+    setAcceptingId(requestId)
     try {
       const res = await fetch(`/api/friends/request/${requestId}/accept`, {
         method: 'POST',
@@ -484,10 +487,13 @@ export default function Friends() {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error accepting request:', err)
       showToast.errorFrom(err, 'profile.friends.errors.acceptFailed')
+    } finally {
+      setAcceptingId(null)
     }
   }
 
   const handleRejectRequest = async (requestId: string) => {
+    setDecliningId(requestId)
     try {
       const res = await fetch(`/api/friends/request/${requestId}/reject`, {
         method: 'POST',
@@ -504,6 +510,8 @@ export default function Friends() {
       const err = error instanceof Error ? error : new Error(String(error))
       clientLogger.error('Error rejecting request:', err)
       showToast.errorFrom(err, 'profile.friends.errors.rejectFailed')
+    } finally {
+      setDecliningId(null)
     }
   }
 
@@ -912,11 +920,11 @@ export default function Friends() {
                         </p>
 
                         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                          <button onClick={() => void handleAcceptRequest(request.id)} className={`${primaryButtonClassName} flex-1`}>
+                          <button onClick={() => void handleAcceptRequest(request.id)} className={`${primaryButtonClassName} flex-1`} disabled={acceptingId === request.id || decliningId === request.id}>
                             <CheckIcon />
                             {t('profile.friends.accept')}
                           </button>
-                          <button onClick={() => void handleRejectRequest(request.id)} className={`${secondaryButtonClassName} flex-1`}>
+                          <button onClick={() => void handleRejectRequest(request.id)} className={`${secondaryButtonClassName} flex-1`} disabled={acceptingId === request.id || decliningId === request.id}>
                             <CloseIcon />
                             {t('profile.friends.reject')}
                           </button>

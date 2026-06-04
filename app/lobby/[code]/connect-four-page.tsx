@@ -27,6 +27,7 @@ import ConfirmModal from '@/components/ConfirmModal'
 import { Move } from '@/lib/game-engine'
 import GameIcon from '@/components/GameIcon'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
+import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
@@ -811,8 +812,10 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                 : optimisticEngine
             const winner = resolvedEngine?.checkWinCondition()
             if (winner || resolvedEngine?.getState().status === 'finished') {
-                if (winner) showToast.success('games.connect_four.game.gameWon')
-                else showToast.info('game.ui.gameFinished')
+                if (winner) {
+                    showToast.success('games.connect_four.game.gameWon')
+                    if (winner.id === getCurrentUserId()) sounds.play('win')
+                } else showToast.info('game.ui.gameFinished')
             }
             return true
         } catch (error) {

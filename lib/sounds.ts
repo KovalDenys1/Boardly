@@ -6,6 +6,7 @@ class SoundManager {
   private userInteracted: boolean = false
   private playingSounds: Set<string> = new Set()
   private readonly retriggerableSounds: Set<string> = new Set(['click', 'diceRoll'])
+  private readonly preloadedSounds: Set<string> = new Set(['click', 'diceRoll', 'score', 'turnChange', 'cardFlip', 'gameStart', 'win'])
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -58,7 +59,7 @@ class SoundManager {
     Object.entries(soundFiles).forEach(([key, path]) => {
       try {
         const audio = new Audio()
-        audio.preload = this.retriggerableSounds.has(key) ? 'auto' : 'metadata'
+        audio.preload = this.preloadedSounds.has(key) ? 'auto' : 'metadata'
         audio.volume = 0.7 // Set default volume to 70%
         
         // Set src after creating audio element to avoid immediate loading issues
