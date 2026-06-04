@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Move, Player } from '@/lib/game-engine'
-import type { MemoryCard, MemoryGameData } from '@/lib/games/memory-game'
+import type { MemoryCard, MemoryGameData, MemoryMoveRecord } from '@/lib/games/memory-game'
 import type { ChatMessagePayload } from '@/types/game'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { showToast } from '@/lib/i18n-toast'
@@ -83,7 +83,7 @@ function getDifficultyLabel(
   return t('lobby.create.difficultyEasy')
 }
 
-type MobileTab = 'board' | 'score' | 'chat'
+type MobileTab = 'board' | 'moves' | 'chat'
 
 interface MemoryResultModalProps {
   winnerId: string | null | undefined
@@ -721,35 +721,36 @@ export default function MemoryGameBoard({
     </div>
   )
 
-  const scorePanel = (
-    <div className="mt-3 space-y-2">
-      {(parsedState.players || []).map((player) => {
-        const score = scoreByPlayerId[player.id] ?? player.score ?? 0
-        const isCurrent = player.id === currentPlayerId
-        return (
-          <div key={player.id} className={`memory-score-row ${isCurrent ? 'memory-score-row-active' : ''}`}>
-            {avatarByUserId.get(player.id) ? (
-              <img
-                src={avatarByUserId.get(player.id)!}
-                alt={displayNameByUserId.get(player.id) || '?'}
-                className="h-9 w-9 shrink-0 rounded-xl border-2 border-bd-ink object-cover"
-              />
-            ) : (
-              <span className="bd-avatar bd-avatar-sun h-9 w-9">
-                {(displayNameByUserId.get(player.id) || player.name || '?').charAt(0).toUpperCase()}
+  const moveHistory: MemoryMoveRecord[] = Array.isArray(gameData?.moveHistory) ? (gameData.moveHistory as MemoryMoveRecord[]) : []
+
+  const historyPanel = (
+    <div className="memory-history-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
+        <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('game.ui.moves')}</h3>
+        <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
+          {moveHistory.length}
+        </span>
+      </div>
+      <div className="memory-history-list">
+        {moveHistory.length === 0
+          ? <div style={{ fontSize: 12, color: 'var(--bd-ink-muted)', padding: '4px 2px' }}>{t('games.memory.game.noMovesYet')}</div>
+          : moveHistory.slice().reverse().map((m, index) => (
+            <div key={m.timestamp} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: 'var(--bd-card-warm)' }}>
+              <span style={{ color: 'var(--bd-ink-muted)', width: 22, fontSize: 11, fontFamily: 'ui-monospace,monospace', flexShrink: 0 }}>
+                #{String(moveHistory.length - index).padStart(2, '0')}
               </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className={`flex items-center gap-1 truncate font-bold ${premiumByUserId.get(player.id) ? 'text-amber-500' : ''}`}>
-                {displayNameByUserId.get(player.id) || player.name || t('games.memory.game.unknownPlayer')}
-                {premiumByUserId.get(player.id) && <span className="shrink-0 text-xs" title="Premium">👑</span>}
-              </p>
-              <p className="text-xs font-semibold opacity-70">{t('games.memory.game.pairsLabel', { count: score })}</p>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{m.card1Value}</span>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{m.card2Value}</span>
+              <span style={{ color: 'var(--bd-ink-soft)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                {displayNameByUserId.get(m.playerId) || t('games.memory.game.unknownPlayer')}
+              </span>
+              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, flexShrink: 0, color: m.isMatch ? 'var(--bd-mint-deep)' : 'var(--bd-coral)' }}>
+                {m.isMatch ? '✓' : '✗'}
+              </span>
             </div>
-            <span className="text-lg font-black">{score}</span>
-          </div>
-        )
-      })}
+          ))
+        }
+      </div>
     </div>
   )
 
@@ -904,15 +905,7 @@ export default function MemoryGameBoard({
             </section>
 
             <aside className="memory-side-stack">
-              <section className="memory-score-panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bd-line)' }}>
-                  <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: 0 }}>{t('games.memory.game.scoreboardTitle')}</h3>
-                  <span style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: 'var(--bd-bg2)', color: 'var(--bd-ink-soft)' }}>
-                    {matchedPairs}/{totalPairs}
-                  </span>
-                </div>
-                {scorePanel}
-              </section>
+              {historyPanel}
 
               {onSendChatMessage && (
                 <section className="memory-chat-panel">
@@ -995,10 +988,10 @@ export default function MemoryGameBoard({
             {t('games.memory.game.tabBoard')}
           </button>
           <button
-            className={`memory-tab-btn ${mobileTab === 'score' ? 'memory-tab-btn-active' : ''}`}
-            onClick={() => setMobileTab('score')}
+            className={`memory-tab-btn ${mobileTab === 'moves' ? 'memory-tab-btn-active' : ''}`}
+            onClick={() => setMobileTab('moves')}
           >
-            {t('games.memory.game.tabScore')} ({matchedPairs}/{totalPairs})
+            {t('games.memory.game.tabMoves')} ({moveHistory.length})
           </button>
           {onSendChatMessage && (
             <button
@@ -1051,27 +1044,9 @@ export default function MemoryGameBoard({
             </div>
           )}
 
-          {mobileTab === 'score' && (
+          {mobileTab === 'moves' && (
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
-              <h3 style={{ fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 16, color: 'var(--bd-ink)', margin: '0 0 12px' }}>{t('games.memory.game.scoreboardTitle')}</h3>
-              {scorePanel}
-              {isFinished && canStartGame && (
-                <div className="mt-3 flex flex-col gap-2">
-                  {onPlayAgain && (
-                    <button onClick={onPlayAgain} className="bd-btn bd-btn-primary w-full justify-center">
-                      {t('lobby.game.playAgain')}
-                    </button>
-                  )}
-                  {onReturnToWaiting && (
-                    <button onClick={onReturnToWaiting} className="bd-btn bd-btn-soft w-full justify-center">
-                      {t('game.ui.returnToLobby')}
-                    </button>
-                  )}
-                </div>
-              )}
-              {isFinished && !canStartGame && (
-                <p className="mt-3 text-center text-sm font-semibold text-[var(--bd-ink-muted)]">{t('game.ui.waitingForHost')}</p>
-              )}
+              {historyPanel}
             </div>
           )}
 

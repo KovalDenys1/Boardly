@@ -1983,6 +1983,31 @@ input[type="range"].slider-thumb::-moz-range-track {
   overflow-y: auto;
 }
 
+.memory-history-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow: hidden;
+  background: white;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 14px 16px;
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.memory-history-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.memory-history-list::-webkit-scrollbar { width: 6px; }
+.memory-history-list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
+
 .memory-chat-panel {
   flex: 1;
   min-height: 0;
@@ -2235,6 +2260,8 @@ html.dark .memory-tabs {
 }
 
 html.dark .spy-header,
+html.dark .memory-history-card { background: var(--bd-card-warm); }
+
 html.dark .memory-header,
 html.dark .spy-panel,
 html.dark .memory-board-panel,
