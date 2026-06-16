@@ -1675,9 +1675,8 @@ input[type="range"].slider-thumb::-moz-range-track {
   height: auto;
 }
 
-/* Guess the Spy and Memory game surfaces */
-.spy-screen,
-.memory-screen {
+/* Guess the Spy surface */
+.spy-screen {
   min-height: 100%;
   overflow-y: auto;
   background: var(--bd-bg);
@@ -1685,10 +1684,35 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: 14px;
 }
 
-.spy-shell,
-.memory-shell {
+.spy-shell {
   width: min(100%, 1180px);
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Memory game surface — fixed below the nav, fills viewport, no page-flow hacks needed */
+.memory-screen {
+  --memory-h: calc(100dvh - 64px);
+  position: fixed;
+  top: 64px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  padding: 10px 20px 14px;
+  background: var(--bd-bg);
+  color: var(--bd-ink);
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.memory-shell {
+  flex: 1;
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1697,7 +1721,6 @@ input[type="range"].slider-thumb::-moz-range-track {
 .spy-header,
 .memory-header,
 .spy-panel,
-.memory-progress-panel,
 .memory-board-panel,
 .memory-score-panel,
 .spy-role-card,
@@ -1709,8 +1732,7 @@ input[type="range"].slider-thumb::-moz-range-track {
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
 }
 
-.spy-header,
-.memory-header {
+.spy-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1718,17 +1740,11 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: 14px 16px;
 }
 
-.memory-header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
+.memory-header {
+  padding: 12px 16px;
 }
 
 .spy-header-timer,
-.memory-status,
-.memory-turn-timer,
 .spy-timer-pill {
   display: inline-flex;
   align-items: center;
@@ -1742,38 +1758,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   padding: 8px 10px;
 }
 
-.memory-turn-timer {
-  min-width: 132px;
-  align-items: stretch;
-  flex-direction: column;
-  gap: 5px;
-  color: var(--bd-ink);
-}
-
-.memory-turn-timer-warning {
-  border-color: rgba(224,75,59,0.45);
-  background: rgba(255,107,91,0.12);
-  color: var(--bd-coral-deep);
-}
-
-.memory-turn-timer-track {
-  height: 5px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--bd-bg2);
-}
-
-.memory-turn-timer-track > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--bd-mint);
-  transition: width 1s linear;
-}
-
-.memory-turn-timer-warning .memory-turn-timer-track > span {
-  background: var(--bd-coral);
-}
 
 .memory-leave-button {
   display: inline-flex;
@@ -1964,11 +1948,9 @@ input[type="range"].slider-thumb::-moz-range-track {
   background: rgba(255,107,91,0.08);
 }
 
-.memory-progress-panel {
-  padding: 14px 16px;
-}
-
 .memory-layout {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 12px;
@@ -1977,29 +1959,66 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 .memory-side-stack {
   display: flex;
-  min-width: 0;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
   height: 100%;
 }
 
 .memory-board-panel {
+  container-type: size;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
   padding: clamp(10px, 2vw, 16px);
   background: var(--bd-card-warm);
 }
 
 .memory-score-panel {
+  flex-shrink: 0;
   padding: 14px;
+  max-height: 220px;
+  overflow-y: auto;
 }
+
+.memory-history-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow: hidden;
+  background: white;
+  border-radius: 18px;
+  border: 1.5px solid var(--bd-line);
+  box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 14px 16px;
+  position: relative;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.memory-history-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+.memory-history-list::-webkit-scrollbar { width: 6px; }
+.memory-history-list::-webkit-scrollbar-thumb { background: var(--bd-line); border-radius: 3px; }
 
 .memory-chat-panel {
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: #fff;
   border: 1.5px solid var(--bd-line);
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(31,27,22,0.07);
+  padding: 0;
 }
 
 .memory-grid {
@@ -2007,6 +2026,15 @@ input[type="range"].slider-thumb::-moz-range-track {
   margin: 0 auto;
   display: grid;
   gap: clamp(6px, 1.3vw, 12px);
+}
+
+/* Scale grid to fit the board panel height on desktop.
+   memory-board-panel has container-type:size so cqh is valid here.
+   --grid-cols / --grid-rows are injected as CSS vars from JSX. */
+@container (min-height: 100px) {
+  .memory-grid {
+    width: min(100%, 780px, calc((100cqh - 60px) * var(--grid-cols, 4) / var(--grid-rows, 4)));
+  }
 }
 
 .memory-tile {
@@ -2092,31 +2120,20 @@ input[type="range"].slider-thumb::-moz-range-track {
 
 /* ===== MEMORY GAME — DESKTOP-ONLY ELEMENTS ===== */
 
-.memory-desktop-layout { display: block; }
+.memory-desktop-layout { height: 100%; display: flex; align-items: stretch; }
 .memory-mobile-layout  { display: none; }
 
 /* ===== MEMORY GAME — MOBILE LAYOUT ===== */
 
 @media (max-width: 899px) {
   .memory-desktop-layout { display: none !important; }
-  .memory-mobile-layout  { display: flex; flex-direction: column; height: 100%; }
+  .memory-mobile-layout  { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
   .memory-screen {
-    --memory-h: calc(100dvh - 64px);
-    /* break out of LobbyPageClient py-8 / px-4 container padding */
-    margin: -32px -16px -32px -16px;
-    width: 100vw;
-    height: var(--memory-h);
-    overflow: hidden;
+    /* position: fixed already handles placement — just adjust padding and add flex */
     padding: 4px 0 0 0;
-    min-height: unset;
-  }
-}
-
-@media (min-width: 640px) and (max-width: 899px) {
-  .memory-screen {
-    margin-left: -24px;
-    margin-right: -24px;
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -2130,39 +2147,6 @@ input[type="range"].slider-thumb::-moz-range-track {
   flex-shrink: 0;
 }
 
-.memory-mobile-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: var(--bd-card-warm);
-  border-bottom: 1.5px solid var(--bd-line);
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--bd-ink-soft);
-}
-
-.memory-mobile-progress-track {
-  flex: 1;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--bd-bg2);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.memory-mobile-progress-track > div {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--bd-mint);
-  transition: width 0.4s ease;
-}
-
-.memory-turn-timer-mobile {
-  min-width: 80px;
-  flex-shrink: 0;
-}
 
 .memory-tabs {
   display: flex;
@@ -2220,8 +2204,10 @@ input[type="range"].slider-thumb::-moz-range-track {
 }
 
 .memory-mobile-board-wrap {
+  /* Constrain by both viewport width and available height below fixed chrome */
   width: min(calc(100vw - 24px), calc(var(--memory-h) - 220px));
-  aspect-ratio: auto;
+  max-height: calc(var(--memory-h) - 220px);
+  overflow: hidden;
 }
 
 /* spy mobile (unchanged from existing) */
@@ -2274,9 +2260,10 @@ html.dark .memory-tabs {
 }
 
 html.dark .spy-header,
+html.dark .memory-history-card { background: var(--bd-card-warm); }
+
 html.dark .memory-header,
 html.dark .spy-panel,
-html.dark .memory-progress-panel,
 html.dark .memory-board-panel,
 html.dark .memory-score-panel,
 html.dark .spy-role-card,

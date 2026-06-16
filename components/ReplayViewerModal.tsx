@@ -694,161 +694,167 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
           </div>
         </div>
       ) : (
-        <div className="space-y-5">
-          <section className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70">
-            <div className="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/70 px-4 py-5 dark:border-slate-700/50 dark:from-slate-900/70 dark:to-slate-800/70 sm:px-6">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0 space-y-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                      {t('profile.gameReplay.overview')}
-                    </p>
-                    <h3 className="mt-2 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-2xl">
-                      {formatGameTypeLabel(data.game.gameType)}
-                    </h3>
-                    <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-                      {replaySummary}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                      {t('profile.gameReplay.replayGuide')}
-                    </p>
-                  </div>
+        <div className="space-y-4 p-4 sm:p-5">
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {finalStatus && (
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(
-                          finalStatus
-                        )}`}
-                      >
-                        {formatGameStatusLabel(finalStatus, t)}
-                      </span>
-                    )}
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {formatGameTypeLabel(data.game.gameType)}
-                    </span>
-                    {data.game.lobbyCode && (
-                      <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                        {data.game.lobbyCode}
-                      </span>
-                    )}
+          {/* ── Hero strip ── */}
+          <div className="overflow-hidden rounded-2xl" style={{ border: '1.5px solid var(--bd-line)' }}>
+            <div
+              className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6"
+              style={{ background: 'var(--bd-bg2)' }}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {finalStatus && (
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${getGameStatusBadgeColor(finalStatus)}`}>
+                    {formatGameStatusLabel(finalStatus, t)}
+                  </span>
+                )}
+                <span
+                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                >
+                  {formatGameTypeLabel(data.game.gameType)}
+                </span>
+              </div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                {replaySummary}
+              </p>
+            </div>
+            <dl
+              className="flex flex-wrap items-stretch px-5 sm:px-6"
+              style={{ borderTop: '1.5px solid var(--bd-line)', background: 'var(--bd-bg)' }}
+            >
+              {[replayOverviewFacts[5], replayOverviewFacts[2], replayOverviewFacts[3], replayOverviewFacts[0]]
+                .filter(Boolean)
+                .map((fact, i) => (
+                  <div
+                    key={fact.label}
+                    className={`flex flex-col gap-0.5 py-3 ${i > 0 ? 'ml-4 border-l pl-4' : ''}`}
+                    style={i > 0 ? { borderColor: 'var(--bd-line)' } : undefined}
+                  >
+                    <dt className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                      {fact.label}
+                    </dt>
+                    <dd className="whitespace-nowrap text-sm font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                      {fact.value}
+                    </dd>
                   </div>
+                ))}
+            </dl>
+          </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {data.game.players.map((player) => (
-                      <span
-                        key={player.userId}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                      >
-                        {playerNameById.get(player.userId) || player.userId}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+          {/* ── Playback controls ── */}
+          <div
+            className="rounded-2xl px-4 py-4 sm:px-5"
+            style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+          >
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={stepBack}
+                disabled={currentIndex === 0}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink)' }}
+                aria-label={t('profile.gameReplay.stepBack')}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                  <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+                </svg>
+              </button>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[24rem]">
-                  {replayOverviewFacts.map((fact) => (
-                    <div
-                      key={fact.label}
-                      className="rounded-2xl border border-slate-200/70 bg-white/80 p-4 dark:border-slate-700/60 dark:bg-slate-800/70"
-                    >
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                        {fact.label}
-                      </div>
-                      <div className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
-                        {fact.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <button
+                type="button"
+                onClick={togglePlayPause}
+                disabled={snapshots.length <= 1}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ background: 'var(--bd-ink)', color: 'white' }}
+                aria-label={isPlaying ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
+              >
+                {isPlaying ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={stepForward}
+                disabled={currentIndex >= snapshots.length - 1}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink)' }}
+                aria-label={t('profile.gameReplay.stepForward')}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                  <path d="M6 18l8.5-6L6 6v12zm2-8.14 5.28 2.14L8 14.14V9.86zM16 6h2v12h-2z" />
+                </svg>
+              </button>
+
+              <div className="mx-1 min-w-0 flex-1">
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(0, snapshots.length - 1)}
+                  value={currentIndex}
+                  onChange={(event) => onSeek(Number(event.target.value))}
+                  className="w-full"
+                />
               </div>
             </div>
-          </section>
 
-          <section className="rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={togglePlayPause}
-                    disabled={snapshots.length <= 1}
-                    className="min-h-11 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
-                  >
-                    {isPlaying ? t('profile.gameReplay.pause') : t('profile.gameReplay.play')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={stepBack}
-                    disabled={currentIndex === 0}
-                    className="min-h-11 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-                  >
-                    {t('profile.gameReplay.stepBack')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={stepForward}
-                    disabled={currentIndex >= snapshots.length - 1}
-                    className="min-h-11 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-                  >
-                    {t('profile.gameReplay.stepForward')}
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  <input
-                    type="range"
-                    min={0}
-                    max={Math.max(0, snapshots.length - 1)}
-                    value={currentIndex}
-                    onChange={(event) => onSeek(Number(event.target.value))}
-                    className="w-full"
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 dark:text-slate-300">
-                    <span>
-                      {t('profile.gameReplay.stepOf', {
-                        current: currentIndex + 1,
-                        total: snapshots.length,
-                      })}
-                    </span>
-                    <span>{formatDateTime(currentSnapshot?.createdAt) || '-'}</span>
-                  </div>
-                </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-3 text-xs tabular-nums" style={{ color: 'var(--bd-ink-muted)' }}>
+                <span>
+                  {t('profile.gameReplay.stepOf', {
+                    current: currentIndex + 1,
+                    total: snapshots.length,
+                  })}
+                </span>
+                <span>{formatDateTime(currentSnapshot?.createdAt) || '—'}</span>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] xl:min-w-[19rem]">
-                <div>
-                  <label
-                    htmlFor="replay-speed"
-                    className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300"
-                  >
-                    {t('profile.gameReplay.speed')}
-                  </label>
-                  <select
-                    id="replay-speed"
-                    value={speed}
-                    onChange={(event) => setSpeed(Number(event.target.value))}
-                    className="min-h-11 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                  >
-                    {REPLAY_SPEEDS.map((value) => (
-                      <option key={value} value={value}>
-                        {value}x
-                      </option>
-                    ))}
-                  </select>
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-0.5 rounded-xl p-0.5"
+                  style={{ background: 'var(--bd-bg)' }}
+                >
+                  {REPLAY_SPEEDS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSpeed(s)}
+                      className="rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors"
+                      style={
+                        speed === s
+                          ? { background: 'var(--bd-ink)', color: 'white' }
+                          : { color: 'var(--bd-ink-soft)' }
+                      }
+                    >
+                      {s}×
+                    </button>
+                  ))}
                 </div>
 
                 <a
                   href={`/api/game/${gameId}/replay?download=1`}
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl transition-opacity hover:opacity-70"
+                  style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-muted)' }}
+                  title={t('profile.gameReplay.download')}
                 >
-                  {t('profile.gameReplay.download')}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
                 </a>
               </div>
             </div>
-          </section>
+          </div>
 
+          {/* ── Main grid ── */}
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.85fr)]">
+            {/* Left column */}
             <div className="space-y-4">
               {GameRenderer && currentSnapshot && (
                 <Suspense fallback={null}>
@@ -860,103 +866,116 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                 </Suspense>
               )}
 
-              <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {t('profile.gameReplay.currentStep')}
-                    </p>
-                    <h3 className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
-                      {currentStepTitle}
-                    </h3>
-                  </div>
-                  <span className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-300">
-                    {t('profile.gameReplay.stepLabel', { value: currentIndex + 1 })}
-                  </span>
-                </div>
-
+              {/* Current moment */}
+              <div
+                className="rounded-2xl px-4 py-4 sm:px-5"
+                style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                  {t('profile.gameReplay.currentStep')}
+                </p>
+                <h3 className="mt-2 text-xl font-semibold" style={{ color: 'var(--bd-ink)' }}>
+                  {currentStepTitle}
+                </h3>
                 {currentStepDescription && (
-                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="mt-1.5 text-sm" style={{ color: 'var(--bd-ink-soft)' }}>
                     {currentStepDescription}
                   </p>
                 )}
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {currentFacts.map((fact) => (
-                    <div
-                      key={`${fact.label}-${fact.value}`}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50"
-                    >
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                        {fact.label}
-                      </div>
-                      <div className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {fact.value}
-                      </div>
+                {(currentTurnLabel || winnerLabel || phaseLabel || roundValue !== null) && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {currentTurnLabel && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                      >
+                        <span style={{ color: 'var(--bd-ink-muted)' }}>{t('profile.gameReplay.currentTurn')}:</span>
+                        {' '}{currentTurnLabel}
+                      </span>
+                    )}
+                    {winnerLabel && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ background: 'rgba(255,196,77,0.15)', color: 'var(--bd-ink)' }}
+                      >
+                        👑 {winnerLabel}
+                      </span>
+                    )}
+                    {phaseLabel && (
+                      <span
+                        className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                      >
+                        {t('profile.gameReplay.phase')}: {phaseLabel}
+                      </span>
+                    )}
+                    {roundValue !== null && (
+                      <span
+                        className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                        style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                      >
+                        {t('profile.gameReplay.roundValue', { value: roundValue })}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Compact standings */}
+              {standings.some((e) => e.score !== null) && (
+                <div
+                  className="flex flex-wrap items-center gap-4 rounded-2xl px-4 py-3"
+                  style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+                >
+                  <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                    {t('profile.gameReplay.scoreboard')}
+                  </span>
+                  {standings.map((entry, index) => (
+                    <div key={entry.id} className="flex items-center gap-2">
+                      <span
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold"
+                        style={{ background: 'var(--bd-bg)', color: 'var(--bd-ink-soft)' }}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="max-w-[8rem] truncate text-sm font-medium" style={{ color: 'var(--bd-ink)' }}>
+                        {entry.name}
+                      </span>
+                      <span className="text-base font-bold" style={{ color: 'var(--bd-ink)' }}>
+                        {entry.score ?? '-'}
+                      </span>
+                      {entry.isWinner && <span aria-hidden className="text-sm">👑</span>}
                     </div>
                   ))}
                 </div>
-              </section>
-
-              {standings.some((entry) => entry.score !== null) && (
-                <section className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {t('profile.gameReplay.scoreboard')}
-                    </h4>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {standings.map((entry, index) => (
-                      <div
-                        key={entry.id}
-                        className={`rounded-2xl border p-4 ${
-                          entry.isWinner
-                            ? 'border-amber-300 bg-amber-50 dark:border-amber-500 dark:bg-amber-950/30'
-                            : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                              {t('profile.gameReplay.rankValue', { value: index + 1 })}
-                            </div>
-                            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              {entry.name}
-                            </div>
-                          </div>
-                          {entry.isWinner && (
-                            <span className="rounded-full bg-amber-200 px-2.5 py-1 text-xs font-semibold text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
-                              {t('profile.gameReplay.winner')}
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                          {entry.score ?? '-'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
               )}
 
-              <details className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
-                <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 dark:text-slate-100">
+              {/* Technical details */}
+              <details
+                className="overflow-hidden rounded-2xl"
+                style={{ border: '1.5px solid var(--bd-line)' }}
+              >
+                <summary
+                  className="cursor-pointer select-none px-4 py-3.5 text-sm font-medium"
+                  style={{ color: 'var(--bd-ink-muted)', background: 'var(--bd-bg2)' }}
+                >
                   {t('profile.gameReplay.advancedDetails')}
                 </summary>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-3 p-4 lg:grid-cols-2" style={{ background: 'var(--bd-bg)' }}>
                   <div>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--bd-ink-muted)' }}>
                       {t('profile.gameReplay.actionPayload')}
                     </h4>
-                    <pre className="max-h-72 overflow-auto rounded-2xl bg-slate-950 p-3 text-xs text-slate-100">
+                    <pre className="max-h-72 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
                       {currentSnapshot ? toPrettyJson(currentSnapshot.actionPayload) : 'null'}
                     </pre>
                   </div>
                   <div>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <h4 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--bd-ink-muted)' }}>
                       {t('profile.gameReplay.state')}
                     </h4>
-                    <pre className="max-h-72 overflow-auto rounded-2xl bg-slate-950 p-3 text-xs text-slate-100">
+                    <pre className="max-h-72 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
                       {currentSnapshot ? toPrettyJson(currentSnapshot.state) : 'null'}
                     </pre>
                   </div>
@@ -964,16 +983,19 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
               </details>
             </div>
 
-            <aside className="rounded-3xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 sm:p-5">
-              <div className="mb-4">
-                <h4 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  {t('profile.gameReplay.timeline')}
-                </h4>
-              </div>
-              <div className="max-h-[20rem] space-y-2 overflow-auto pr-1 sm:max-h-[24rem] xl:max-h-[42rem]">
+            {/* Right column — moments timeline */}
+            <aside
+              className="rounded-2xl px-4 py-4 sm:px-5"
+              style={{ border: '1.5px solid var(--bd-line)', background: 'var(--bd-bg2)' }}
+            >
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: 'var(--bd-ink-muted)' }}>
+                {t('profile.gameReplay.timeline')}
+              </p>
+              <div className="max-h-[20rem] space-y-1 overflow-auto pr-1 sm:max-h-[24rem] xl:max-h-[42rem]">
                 {snapshots.map((snapshot, index) => {
-                  const snapshotActor =
-                    snapshot.playerId ? playerNameById.get(snapshot.playerId) || snapshot.playerId : null
+                  const snapshotActor = snapshot.playerId
+                    ? playerNameById.get(snapshot.playerId) || snapshot.playerId
+                    : null
                   const isActive = index === currentIndex
 
                   return (
@@ -981,34 +1003,36 @@ export default function ReplayViewerModal({ gameId, onClose }: ReplayViewerModal
                       key={snapshot.id}
                       type="button"
                       onClick={() => onSeek(index)}
-                      className={`w-full rounded-xl border p-3 text-left transition-colors ${
+                      className="w-full rounded-xl px-3 py-2.5 text-left transition-colors"
+                      style={
                         isActive
-                          ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/40'
-                          : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/70 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:border-blue-500 dark:hover:bg-slate-900'
-                      }`}
+                          ? { background: 'var(--bd-ink)', color: 'white' }
+                          : { background: 'var(--bd-bg)', color: 'var(--bd-ink)' }
+                      }
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                            {t('profile.gameReplay.stepLabel', { value: index + 1 })}
-                          </div>
-                          <div className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {getFriendlyReplayActionLabel(snapshot.actionType, t)}
-                          </div>
-                        </div>
-                        <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-semibold">
+                          {getFriendlyReplayActionLabel(snapshot.actionType, t)}
+                        </span>
+                        <span
+                          className="shrink-0 text-xs tabular-nums"
+                          style={isActive ? { color: 'rgba(255,255,255,0.65)' } : { color: 'var(--bd-ink-muted)' }}
+                        >
                           {new Date(snapshot.createdAt).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
                         </span>
                       </div>
-                      <div className="mt-2 truncate text-xs text-slate-600 dark:text-slate-300">
+                      <p
+                        className="mt-0.5 truncate text-xs"
+                        style={isActive ? { color: 'rgba(255,255,255,0.65)' } : { color: 'var(--bd-ink-soft)' }}
+                      >
                         {getCurrentStepDescription(
                           snapshotActor,
                           getActionDetail(snapshot.actionPayload, playerNameById)
                         ) || t('profile.gameReplay.system')}
-                      </div>
+                      </p>
                     </button>
                   )
                 })}

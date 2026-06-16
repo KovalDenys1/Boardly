@@ -613,12 +613,11 @@ export function useGameActions(props: UseGameActionsProps) {
 
         if (winner) {
           fireworks()
+          if (winner.id === userId) sounds.play('win')
           showToast.success('toast.gameOver', undefined, { player: winner.name })
         }
       } else {
         const nextPlayer = newEngine.getCurrentPlayer()
-        // Play turn change sound once when turn changes
-        sounds.play('turnChange')
 
         // Only show "next turn" toast if it's NOT our turn now
         // (don't show to the player who just scored)

@@ -7,36 +7,40 @@ import { useTranslation } from '@/lib/i18n-helpers'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { showToast } from '@/lib/i18n-toast'
 
+type VerifyState = 'idle' | 'verifying' | 'success' | 'error'
+
 export default function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session, update } = useSession()
+  const { data: session, update, status } = useSession()
   const { t } = useTranslation()
+  const [verifyState, setVerifyState] = useState<VerifyState>('idle')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const token = searchParams.get('token')
-  
+
   // Prevent duplicate verification requests
   const verificationAttemptedRef = useRef(false)
   const currentTokenRef = useRef<string | null>(null)
   const isVerifyingRef = useRef(false)
+  const sessionUpdatedRef = useRef(false)
 
   const verifyEmail = useCallback(async (verificationToken: string) => {
     // Prevent duplicate requests for the same token
     if (verificationAttemptedRef.current && currentTokenRef.current === verificationToken) {
       return
     }
-    
+
     // Prevent concurrent verification attempts
     if (isVerifyingRef.current) {
       return
     }
-    
+
     verificationAttemptedRef.current = true
     currentTokenRef.current = verificationToken
     isVerifyingRef.current = true
-    setLoading(true)
-    
+    setVerifyState('verifying')
+
     try {
       const res = await fetch('/api/auth/verify-email', {
         method: 'POST',
@@ -51,10 +55,7 @@ export default function VerifyEmailContent() {
       }
 
       showToast.success('auth.verifyEmail.successMessage')
-      
-      // Update session to reflect emailVerified status
-      await update()
-      
+      setVerifyState('success')
       setTimeout(() => router.push('/'), 2000)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : t('auth.verifyEmail.error')
@@ -63,16 +64,25 @@ export default function VerifyEmailContent() {
       verificationAttemptedRef.current = false
       currentTokenRef.current = null
       isVerifyingRef.current = false
-    } finally {
-      setLoading(false)
+      setVerifyState('error')
     }
-  }, [router, t, update])
+  }, [router, t])
 
   useEffect(() => {
     if (token && !verificationAttemptedRef.current) {
       verifyEmail(token)
     }
   }, [token, verifyEmail])
+
+  // `update()` from useSession() is a no-op while the session hook's own
+  // initial fetch is still in flight, so we defer it until `status` settles
+  // to make sure the refreshed emailVerified actually reaches the JWT/session.
+  useEffect(() => {
+    if (verifyState === 'success' && status !== 'loading' && !sessionUpdatedRef.current) {
+      sessionUpdatedRef.current = true
+      void update()
+    }
+  }, [verifyState, status, update])
 
   const resendVerification = async () => {
     if (!session?.user?.email) {
@@ -119,11 +129,28 @@ export default function VerifyEmailContent() {
     </div>
   )
 
-  if (token && loading) {
+  if (token && verifyState === 'verifying') {
     return authShell(
       <div className="bd-card w-full max-w-sm p-8 text-center">
         <LoadingSpinner />
         <p className="mt-4 text-sm font-semibold text-bd-ink-soft">{t('auth.verifyEmail.verifying')}</p>
+      </div>
+    )
+  }
+
+  if (token && verifyState === 'success') {
+    return authShell(
+      <div className="bd-card w-full max-w-sm p-8 text-center">
+        <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl border-2 border-bd-ink bg-bd-mint text-4xl shadow-[4px_4px_0_#1F1B16]">
+          ✓
+        </div>
+        <h1
+          className="mb-3 text-3xl font-extrabold text-bd-ink"
+          style={{ fontFamily: 'var(--bd-font-display)' }}
+        >
+          {t('auth.verifyEmail.success')}
+        </h1>
+        <LoadingSpinner />
       </div>
     )
   }

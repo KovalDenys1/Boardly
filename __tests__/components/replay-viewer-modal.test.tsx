@@ -156,10 +156,9 @@ describe('ReplayViewerModal', () => {
     render(<ReplayViewerModal gameId="game-1" onClose={jest.fn()} />)
 
     expect(await screen.findByText('Friday Finals')).toBeTruthy()
-    expect(screen.getByText('profile.gameReplay.replayGuide')).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.summaryWinner:Player One')).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.duration')).toBeTruthy()
-    expect(screen.getByText('profile.gameReplay.endedOn')).toBeTruthy()
+    expect(screen.getByText('profile.gameReplay.started')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'profile.gameReplay.play' })).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.timeline')).toBeTruthy()
     expect(screen.getByText('profile.gameReplay.currentStep')).toBeTruthy()

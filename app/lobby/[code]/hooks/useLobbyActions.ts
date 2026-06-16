@@ -81,6 +81,8 @@ interface LobbySettingsUpdatePayload {
   turnTimer?: number
   allowSpectators?: boolean
   maxSpectators?: number
+  theme?: string
+  gameType?: string
 }
 
 interface LobbySnapshotResult {

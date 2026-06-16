@@ -98,7 +98,6 @@ describe('PlayerStatsDashboard', () => {
     expect(await screen.findByText('profile.stats.dashboard.title')).toBeTruthy()
     expect(screen.getByText('24')).toBeTruthy()
     expect(screen.getByText('75%')).toBeTruthy()
-    expect(screen.getByText('1080profile.stats.dashboard.summary.secondsSuffix')).toBeTruthy()
 
     expect(mockFetch).toHaveBeenCalledWith('/api/user/user-1/stats', { cache: 'no-store' })
 

@@ -77,6 +77,8 @@ const no = {
     spectatorWatching: '👁 Noen ser på',
     maxSpectatorsLabel: 'Maks tilskuere',
     maxSpectatorsUnlimited: 'Ubegrenset',
+    changeGame: 'Spill',
+    changeTheme: 'Tema',
     spectatingBanner: 'Du ser på dette spillet',
     backToGames: 'Tilbake til spill',
     leftLobby: 'Du forlot lobbyen',
@@ -723,7 +725,12 @@ const no = {
         showResults: 'Vis resultater',
         tabBoard: 'Brett',
         tabScore: 'Poeng',
+        tabMoves: 'Trekk',
         tabChat: 'Chat',
+        noMovesYet: 'Ingen trekk ennå',
+        playerTurnBanner: '{{player}}s tur',
+        victoryBadge: 'Vinner',
+        drawBadge: 'Uavgjort',
       }
     },
     rps: {
@@ -1052,6 +1059,7 @@ const no = {
       decline: 'Avslå',
       returnToLobby: 'Tilbake til venterom',
       kickPlayer: 'Fjern spiller',
+      settings: 'Innstillinger',
     }
   },
   yahtzee: {
@@ -1416,9 +1424,6 @@ const no = {
         summary: {
           totalGames: 'Totalt antall spill',
           winRate: 'Vinnrate',
-          avgDuration: 'Snittvarighet',
-          minutesSuffix: 'm',
-          secondsSuffix: 's',
           favoriteGame: 'Favorittspill',
           wld: 'Seire / Tap / Uavgjort',
           wins: 'Seire',
@@ -1544,7 +1549,8 @@ const no = {
         inAppDesc: 'Vis varsler i innboksen i toppmenyen for invitasjoner, påminnelser og venneaktivitet.',
         push: 'Push-varsler',
         pushDesc: 'Nettlesermeldinger for sanntidsoppdateringer',
-        pushSoon: 'Push-varsler er ikke tilgjengelige ennå.',
+        pushUnsupported: 'Push-varsler støttes ikke i denne nettleseren.',
+        pushDenied: 'Du har blokkert varsler. Tillat dem i nettleserinnstillingene.',
         sound: 'Lydeffekter',
         soundDesc: 'Spill av lyder for spillhandlinger og varsler',
         categories: {
@@ -1679,7 +1685,12 @@ const no = {
       guessSubmitted: 'Gjetning sendt',
       claimSubmitted: 'Påstand sendt',
       challengeSubmitted: 'Svar på utfordring sendt',
-      roundAdvanced: 'Runden gikk videre'
+      roundAdvanced: 'Runden gikk videre',
+      board: {
+        redDisc: 'Rød',
+        yellowDisc: 'Gul',
+        toMove: 'skal flytte',
+      },
     },
     gameResults: {
       title: 'Spillresultater',
@@ -1697,12 +1708,6 @@ const no = {
       winnerLabel: 'Vinner',
       playedOn: 'Spilt',
       duration: 'Varighet',
-      endedOn: 'Avsluttet',
-      lastUpdated: 'Sist oppdatert',
-      replayStatus: 'Replay',
-      replayAvailable: 'Klar',
-      replayUnavailable: 'Ikke tilgjengelig',
-      roomCode: 'Romkode',
       noWinner: 'Ingen vinner',
       summaryWinner: '{{player}} vant denne kampen.',
       summaryDraw: 'Denne kampen endte uavgjort.',

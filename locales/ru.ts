@@ -77,6 +77,8 @@ const ru = {
     spectatorWatching: '👁 Кто-то наблюдает',
     maxSpectatorsLabel: 'Макс. зрителей',
     maxSpectatorsUnlimited: 'Без ограничений',
+    changeGame: 'Игра',
+    changeTheme: 'Тема',
     spectatingBanner: 'Вы наблюдаете за этой игрой',
     backToGames: 'Назад к играм',
     leftLobby: 'Вы покинули лобби',
@@ -723,7 +725,12 @@ const ru = {
         showResults: 'Показать результаты',
         tabBoard: 'Доска',
         tabScore: 'Счёт',
+        tabMoves: 'Ходы',
         tabChat: 'Чат',
+        noMovesYet: 'Ходов пока нет',
+        playerTurnBanner: 'Ход {{player}}',
+        victoryBadge: 'Победитель',
+        drawBadge: 'Ничья',
       }
     },
     rps: {
@@ -1052,6 +1059,7 @@ const ru = {
       decline: 'Отклонить',
       returnToLobby: 'Вернуться в лобби',
       kickPlayer: 'Удалить игрока',
+      settings: 'Настройки',
     }
   },
   yahtzee: {
@@ -1416,9 +1424,6 @@ const ru = {
         summary: {
           totalGames: 'Всего игр',
           winRate: 'Процент побед',
-          avgDuration: 'Средняя длительность',
-          minutesSuffix: 'м',
-          secondsSuffix: 'с',
           favoriteGame: 'Любимая игра',
           wld: 'Победы / Поражения / Ничьи',
           wins: 'Победы',
@@ -1544,7 +1549,8 @@ const ru = {
         inAppDesc: 'Показывать уведомления в inbox в хедере для приглашений, напоминаний и активности друзей.',
         push: 'Push уведомления',
         pushDesc: 'Уведомления браузера для обновлений в реальном времени',
-        pushSoon: 'Push-уведомления пока недоступны.',
+        pushUnsupported: 'Push-уведомления не поддерживаются в этом браузере.',
+        pushDenied: 'Вы заблокировали уведомления. Разрешите их в настройках браузера.',
         sound: 'Звуковые эффекты',
         soundDesc: 'Воспроизводить звуки для игровых действий и уведомлений',
         categories: {
@@ -1679,7 +1685,12 @@ const ru = {
       guessSubmitted: 'Ответ отправлен',
       claimSubmitted: 'Заявление отправлено',
       challengeSubmitted: 'Ответ на вызов отправлен',
-      roundAdvanced: 'Раунд продолжен'
+      roundAdvanced: 'Раунд продолжен',
+      board: {
+        redDisc: 'Красный',
+        yellowDisc: 'Жёлтый',
+        toMove: 'ходит',
+      },
     },
     gameResults: {
       title: 'Результаты игры',
@@ -1697,12 +1708,6 @@ const ru = {
       winnerLabel: 'Победитель',
       playedOn: 'Сыграно',
       duration: 'Длительность',
-      endedOn: 'Завершён',
-      lastUpdated: 'Последнее обновление',
-      replayStatus: 'Повтор',
-      replayAvailable: 'Готов',
-      replayUnavailable: 'Недоступен',
-      roomCode: 'Код комнаты',
       noWinner: 'Победителя нет',
       summaryWinner: '{{player}} выиграл этот матч.',
       summaryDraw: 'Этот матч завершился вничью.',

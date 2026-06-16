@@ -339,17 +339,20 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Sync avatar + username from DB (throttled to once per 30 minutes)
+      // Sync avatar + username + verification status from DB (throttled to once per 30 minutes)
+      // Acts as a backstop for emailVerified in case the client-triggered `update()` is missed
+      // (e.g. called before the session hook's initial fetch settles, where it's a silent no-op)
       const THIRTY_MINUTES = 30 * 60 * 1000
       const lastAvatarSync = token.avatarResolved as number | boolean | undefined
       const lastAvatarSyncTime = typeof lastAvatarSync === 'number' ? lastAvatarSync : 0
       if (token.id && (typeof lastAvatarSync !== 'number' || Date.now() - lastAvatarSyncTime > THIRTY_MINUTES)) {
         const dbUser = await prisma.users.findUnique({
           where: { id: String(token.id) },
-          select: { avatarUrl: true, username: true, image: true },
+          select: { avatarUrl: true, username: true, image: true, emailVerified: true },
         })
         token.picture = dbUser?.avatarUrl ?? dbUser?.image ?? null
         if (dbUser?.username) token.name = dbUser.username
+        if (dbUser?.emailVerified) token.emailVerified = dbUser.emailVerified
         token.avatarResolved = Date.now()
       }
 

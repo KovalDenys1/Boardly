@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/next-auth'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { apiLogger } from '@/lib/logger'
 import { createInAppNotification, markInAppNotificationReadByDedupeKey } from '@/lib/in-app-notifications'
+import { sendPushNotification } from '@/lib/push-send'
 
 const limiter = rateLimit(rateLimitPresets.api)
 const log = apiLogger('/api/friends/request/accept')
@@ -139,6 +140,13 @@ export async function POST(
         },
       }),
     ])
+
+    void sendPushNotification(friendRequest.sender.id, {
+      title: `${friendRequest.receiver.username || 'Someone'} accepted your friend request`,
+      body: 'You are now friends on Boardly',
+      url: '/profile?tab=friends',
+      tag: `friend_accepted:${requestId}`,
+    })
 
     return NextResponse.json({
       success: true,

@@ -318,6 +318,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   const isLeavingLobbyRef = React.useRef(false)
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const finishedGameSoundPlayedForRef = React.useRef<string | null>(null)
+  const winSoundPlayedForRef = React.useRef<string | null>(null)
   const initializedMobileUiGameIdRef = React.useRef<string | null>(null)
   const yahtzeeMobileTurnStateRef = React.useRef<{
     currentPlayerId: string | null
@@ -615,6 +616,16 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             }
           }
 
+          // Play win sound for Memory/Spy (Yahtzee handled in useGameActions)
+          if (!(newEngine instanceof YahtzeeGame) && newEngine.isGameFinished()) {
+            const winner = newEngine.checkWinCondition()
+            const currentUserId = getCurrentUserId()
+            if (winner && winner.id === currentUserId && winSoundPlayedForRef.current !== game.id) {
+              winSoundPlayedForRef.current = game.id
+              playAmbientSound('win')
+            }
+          }
+
           // Update game object with new state
           setGame((prevGame) => {
             if (!prevGame) return prevGame
@@ -678,7 +689,15 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   }, [game?.id, game?.players, gameEngine, getCurrentUserId, lobby?.gameType, playAmbientSound, triggerLifecycleRedirect])
 
   const onChatMessage = useCallback((message: ChatMessagePayload) => {
-    setChatMessages(prev => [...prev, message])
+    setChatMessages(prev => {
+      // Remove matching optimistic entry added by sendChatMessage
+      const filtered = prev.filter(m => {
+        if (!m.id.startsWith('temp-')) return true
+        const age = Date.now() - parseInt(m.id.slice(5), 10)
+        return !(m.userId === message.userId && m.message === message.message && age < 5000)
+      })
+      return [...filtered, message]
+    })
     const currentUserId = isGuest ? guestId : session?.user?.id
     const isOwnMessage = message.userId === currentUserId
     const isChatVisible = !chatMinimized || mobileActiveTab === 'chat'
@@ -962,12 +981,23 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
   })
 
   const sendChatMessage = useCallback((message: string) => {
+    const currentUserId = getCurrentUserId()
+    const currentUsername = getCurrentUserName()
+    if (currentUserId) {
+      setChatMessages(prev => [...prev, {
+        id: `temp-${Date.now()}`,
+        userId: currentUserId,
+        username: currentUsername ?? '',
+        message,
+        timestamp: Date.now(),
+      }])
+    }
     void fetchWithGuest(`/api/lobby/${code}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message }),
     })
-  }, [code])
+  }, [code, getCurrentUserId, getCurrentUserName])
 
   const [isReturningToWaiting, setIsReturningToWaiting] = React.useState(false)
 
@@ -1596,6 +1626,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
 
   const isCreator = lobby?.creatorId === session?.user?.id ||
     (isGuest && lobby?.creatorId === guestId)
+  const isCurrentUserPremium = !!(game?.players?.find(p => p.userId === getCurrentUserId())?.user as { isPremium?: boolean } | undefined)?.isPremium
   const playerCount = game?.players?.length || 0
   // Can start game if user is creator (single player games are allowed - bot will be auto-added)
   const canStartGame = isCreator
@@ -1981,6 +2012,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
             game={game}
             soundEnabled={soundEnabled}
             canEditSettings={isCreator && !startingGame}
+            isPremium={isCurrentUserPremium}
             onUpdateSettings={updateLobbySettings}
             onSoundToggle={() => {
               sounds.toggle()

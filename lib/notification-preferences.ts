@@ -7,6 +7,7 @@ export type NotificationPreferenceSnapshot = {
   turnReminders: boolean
   friendRequests: boolean
   friendAccepted: boolean
+  pushNotifications: boolean
   unsubscribedAll: boolean
 }
 
@@ -25,6 +26,7 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
       turnReminders: true,
       friendRequests: true,
       friendAccepted: true,
+      pushNotifications: true,
       unsubscribedAll: true,
     },
   })
@@ -36,6 +38,7 @@ export async function getNotificationPreferences(userId: string): Promise<Notifi
       turnReminders: true,
       friendRequests: true,
       friendAccepted: true,
+      pushNotifications: false,
       unsubscribedAll: false,
     }
   )
@@ -58,6 +61,7 @@ export async function upsertNotificationPreferences(
       turnReminders: true,
       friendRequests: true,
       friendAccepted: true,
+      pushNotifications: true,
       unsubscribedAll: true,
     },
   })

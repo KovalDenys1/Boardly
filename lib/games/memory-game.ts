@@ -9,6 +9,14 @@ export interface MemoryCard {
   isFlipped: boolean
 }
 
+export interface MemoryMoveRecord {
+  playerId: string
+  card1Value: string
+  card2Value: string
+  isMatch: boolean
+  timestamp: number
+}
+
 export interface MemoryGameData {
   difficulty: MemoryDifficulty
   gridColumns: number
@@ -19,6 +27,7 @@ export interface MemoryGameData {
   scores: Record<string, number>
   winnerId: string | null
   advanceTurnAfterMove: boolean
+  moveHistory?: MemoryMoveRecord[]
 }
 
 interface MemoryGridConfig {
@@ -58,6 +67,7 @@ export class MemoryGame extends GameEngine {
       scores: {},
       winnerId: null,
       advanceTurnAfterMove: false,
+      moveHistory: [],
     }
   }
 
@@ -78,6 +88,7 @@ export class MemoryGame extends GameEngine {
     data.flippedCardIds = []
     data.pendingMismatchCardIds = []
     data.advanceTurnAfterMove = false
+    data.moveHistory = []
     return true
   }
 
@@ -181,6 +192,15 @@ export class MemoryGame extends GameEngine {
     if (!firstCard || !secondCard) {
       return
     }
+
+    if (!data.moveHistory) data.moveHistory = []
+    data.moveHistory.push({
+      playerId: move.playerId,
+      card1Value: firstCard.value,
+      card2Value: secondCard.value,
+      isMatch: firstCard.value === secondCard.value,
+      timestamp: Date.now(),
+    })
 
     if (firstCard.value === secondCard.value) {
       firstCard.isMatched = true

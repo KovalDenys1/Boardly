@@ -26,6 +26,9 @@ model Users {
   stripeSubscriptionId  String?   @unique
   premiumUntil          DateTime? @db.Timestamptz(3)
   premiumCancelAtPeriod Boolean   @default(false)
+  totpSecret            String?
+  totpEnabled           Boolean   @default(false)
+  totpPendingSecret     String?
   isGuest           Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
@@ -36,7 +39,6 @@ model Users {
   updatedAt       DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
 
   accounts Accounts[]
-  sessions Sessions[]
   lobbies  Lobbies[]  @relation("LobbyCreator")
   players  Players[]
   bot      Bots? // One-to-one relation with Bots table
@@ -52,6 +54,7 @@ model Users {
   accountPreferences      AccountPreferences?
   notificationPreferences NotificationPreferences?
   notifications           Notifications[]
+  pushSubscriptions       PushSubscriptions[]
   feedback                Feedback[]
 
   @@index([isGuest, lastActiveAt]) // Index for efficient guest cleanup
@@ -118,24 +121,6 @@ model Accounts {
   @@index([userId])
 }
 
-model Sessions {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model VerificationTokens {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
 model PasswordResetTokens {
   id        String   @id @default(cuid())
   userId    String
@@ -169,7 +154,7 @@ model Lobbies {
   spectatorCount  Int            @default(0)
   turnTimer       Int            @default(60) // Turn time limit in seconds (30, 60, 90, 120)
   isActive        Boolean        @default(true)
-  gameType        String         @default("yahtzee")
+  gameType        GameType       @default(yahtzee)
   theme           String         @default("default")
   createdAt       DateTime       @default(now()) @db.Timestamptz(3)
   creatorId       String?
@@ -218,7 +203,7 @@ model Games {
   currentTurn Int                  @default(0)
   lastMoveAt  DateTime             @default(now()) @db.Timestamptz(3) // Track when last move was made for timer
   createdAt   DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime             @updatedAt @db.Timestamptz(3)
+  updatedAt   DateTime             @default(now()) @updatedAt @db.Timestamptz(3)
   players     Players[]
   snapshots   GameStateSnapshots[]
 
@@ -310,7 +295,6 @@ model FriendRequests {
   createdAt  DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime            @updatedAt @db.Timestamptz(3)
 
-  @@unique([senderId, receiverId])
   @@index([senderId])
   @@index([receiverId])
   @@index([status])
@@ -410,11 +394,12 @@ model NotificationPreferences {
   user   Users  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   inAppNotifications Boolean @default(true)
-  gameInvites     Boolean @default(true)
-  turnReminders   Boolean @default(true)
-  friendRequests  Boolean @default(true)
-  friendAccepted  Boolean @default(true)
-  unsubscribedAll Boolean @default(false)
+  gameInvites        Boolean @default(true)
+  turnReminders      Boolean @default(true)
+  friendRequests     Boolean @default(true)
+  friendAccepted     Boolean @default(true)
+  pushNotifications  Boolean @default(false)
+  unsubscribedAll    Boolean @default(false)
 
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -443,6 +428,20 @@ model Notifications {
   @@index([userId, channel, readAt, createdAt])
   @@index([type, channel, status, createdAt])
   @@index([dedupeKey])
+}
+
+model PushSubscriptions {
+  id        String   @id @default(cuid())
+  userId    String
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
 }
 
 model AdminAuditLogs {

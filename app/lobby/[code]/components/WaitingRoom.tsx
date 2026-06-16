@@ -44,24 +44,32 @@ export default function WaitingRoom({
       {hasCustomTheme && (
         <LobbyThemeBanner theme={lobby.theme as LobbyTheme} />
       )}
+
       {/* Players */}
       {game?.players?.map((p: GamePlayer, index: number) => {
         const isBot = !!p.user?.bot
         const playerName = p.user?.username || p.name || (isBot ? t('game.ui.aiBot') : t('game.ui.player'))
         const isCurrentUser = p.userId === getCurrentUserId()
+        const isHost = !isBot && !!lobby.creatorId && p.userId === lobby.creatorId
         const isPremium = !isBot && !!(p.user as { isPremium?: boolean } | undefined)?.isPremium
         const botDifficulty = p.user?.bot?.difficulty as BotDifficulty | undefined
         const difficultyLabel = botDifficulty ? t(`game.ui.botDifficulty${botDifficulty.charAt(0).toUpperCase() + botDifficulty.slice(1)}` as Parameters<typeof t>[0]) : null
         const avatarSrc = p.user?.avatarUrl ?? p.user?.image ?? null
-
         const canClickProfile = onProfileClick && !isBot
+
+        // Colored ring classes for avatar
+        const avatarRingClass = isCurrentUser
+          ? 'ring-2 ring-bd-mint ring-offset-2 ring-offset-bd-card-warm'
+          : isBot
+            ? 'ring-2 ring-bd-lav ring-offset-2 ring-offset-bd-card-warm'
+            : ''
 
         return (
           <div
             key={p.id}
             onClick={canClickProfile ? () => onProfileClick(p.userId) : undefined}
             role={canClickProfile ? 'button' : undefined}
-            className={`flex items-center gap-3 rounded-xl border px-3 py-3 sm:px-4 ${
+            className={`flex items-center gap-3 rounded-xl border px-3 py-4 sm:px-4 ${
               isCurrentUser
                 ? 'border-bd-mint/45 bg-bd-mint/15'
                 : isBot
@@ -73,21 +81,27 @@ export default function WaitingRoom({
               <img
                 src={avatarSrc}
                 alt={playerName}
-                className="h-8 w-8 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[2px_2px_0_var(--bd-ink)]"
+                className={`h-11 w-11 shrink-0 rounded-xl border-2 border-bd-ink object-cover shadow-[2px_2px_0_var(--bd-ink)] ${avatarRingClass}`}
               />
             ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-xs font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)]">
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-bd-ink bg-bd-sun text-sm font-extrabold text-bd-ink shadow-[2px_2px_0_var(--bd-ink)] ${avatarRingClass}`}>
                 {index + 1}
               </div>
             )}
+
             <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-              <span className={`truncate text-sm font-bold ${isPremium ? 'text-amber-500' : 'text-bd-ink'}`}>{playerName}</span>
+              <span className={`truncate text-sm font-bold ${isPremium ? 'text-bd-premium' : 'text-bd-ink'}`}>{playerName}</span>
               {isPremium && (
                 <span className="shrink-0 text-[11px]" title="Premium">👑</span>
               )}
               {isCurrentUser && !isBot && (
                 <span className="rounded-full bg-bd-mint px-1.5 py-0.5 text-[10px] font-bold text-bd-mint-deep">
                   {t('game.ui.you')}
+                </span>
+              )}
+              {isHost && (
+                <span className="rounded-full bg-bd-sun px-1.5 py-0.5 text-[10px] font-bold text-bd-ink">
+                  {t('game.ui.host')}
                 </span>
               )}
               {isBot && (
@@ -127,19 +141,27 @@ export default function WaitingRoom({
       })}
 
       {/* Empty slots */}
-      {Array.from({ length: openSlots }).map((_, i) => (
-        <div
-          key={`empty-${i}`}
-          className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-3 sm:px-4"
-        >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-bd-line bg-bd-bg2 text-xs font-bold text-bd-ink-muted">
-            {playerCount + i + 1}
+      {Array.from({ length: openSlots }).map((_, i) => {
+        const isRequired = i < missingPlayers
+        const isPulse = isRequired && i === 0
+        return (
+          <div
+            key={`empty-${i}`}
+            className="flex items-center gap-3 rounded-xl border border-dashed border-bd-line bg-bd-bg2/60 px-3 py-4 sm:px-4"
+          >
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-dashed text-sm font-bold ${
+              isPulse
+                ? 'animate-pulse border-bd-sun/60 bg-bd-sun/10 text-bd-sun-deep'
+                : 'border-bd-line bg-bd-bg2 text-bd-ink-muted'
+            }`}>
+              {playerCount + i + 1}
+            </div>
+            <span className={`text-sm italic ${isRequired ? 'text-bd-ink-soft' : 'text-bd-ink-muted'}`}>
+              {isRequired ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
+            </span>
           </div>
-          <span className="text-sm italic text-bd-ink-muted">
-            {i < missingPlayers ? t('game.ui.waitingForPlayer') : t('game.ui.openSlot')}
-          </span>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

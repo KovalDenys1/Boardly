@@ -7,7 +7,8 @@ import { apiLogger } from '@/lib/logger'
 import { rateLimit, rateLimitPresets } from '@/lib/rate-limit'
 import { getRequestAuthUser } from '@/lib/request-auth'
 import { createGameEngine, DEFAULT_GAME_TYPE, isSupportedGameType } from '@/lib/game-registry'
-import { getGameMetadata as getCatalogGameMetadata } from '@/lib/game-catalog'
+import { getGameMetadata as getCatalogGameMetadata, isAvailableGameType } from '@/lib/game-catalog'
+import { LOBBY_THEME_IDS } from '@/lib/lobby-themes'
 import { pickRelevantLobbyGame } from '@/lib/lobby-snapshot'
 import { sanitizeLobbyCreatorIdentity, sanitizeLobbyUserIdentity } from '@/lib/lobby-response'
 import { type RestorableGameState } from '@/lib/game-engine'
@@ -144,6 +145,8 @@ const updateLobbySettingsSchema = z
     turnTimer: z.number().int().min(30).max(180).optional(),
     allowSpectators: z.boolean().optional(),
     maxSpectators: z.number().int().min(0).max(100).optional(),
+    theme: z.string().optional(),
+    gameType: z.string().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one setting must be provided',
@@ -692,7 +695,19 @@ export async function PATCH(
     }
 
     const updates = parsedBody.data
-    const gameMetadata = getCatalogGameMetadata(lobby.gameType || DEFAULT_GAME_TYPE)
+
+    // Validate theme if provided
+    if (typeof updates.theme === 'string' && !LOBBY_THEME_IDS.includes(updates.theme as typeof LOBBY_THEME_IDS[number])) {
+      return NextResponse.json({ error: 'Invalid theme' }, { status: 400 })
+    }
+
+    // Validate gameType if provided
+    if (typeof updates.gameType === 'string' && !isAvailableGameType(updates.gameType)) {
+      return NextResponse.json({ error: 'Game type is not available' }, { status: 400 })
+    }
+
+    const effectiveGameType = updates.gameType ?? lobby.gameType ?? DEFAULT_GAME_TYPE
+    const gameMetadata = getCatalogGameMetadata(effectiveGameType)
     const minAllowedPlayers = Math.max(2, gameMetadata?.minPlayers ?? 2)
     const maxAllowedPlayers = Math.min(10, gameMetadata?.maxPlayers ?? 10)
     const activePlayerCount = Array.isArray(activeGame?.players) ? activeGame.players.length : 0
@@ -726,10 +741,20 @@ export async function PATCH(
       }
     }
 
+    // When switching game type, clamp maxPlayers to new game's bounds
+    let clampedMaxPlayers: number | undefined
+    if (typeof updates.gameType === 'string' && updates.gameType !== lobby.gameType) {
+      const currentMax = typeof updates.maxPlayers === 'number' ? updates.maxPlayers : lobby.maxPlayers
+      const clamped = Math.min(maxAllowedPlayers, Math.max(minAllowedPlayers, currentMax))
+      if (clamped !== lobby.maxPlayers || typeof updates.maxPlayers === 'number') {
+        clampedMaxPlayers = clamped
+      }
+    }
+
     const updatedLobby = await prisma.lobbies.update({
       where: { id: lobby.id },
       data: {
-        ...(typeof updates.maxPlayers === 'number' ? { maxPlayers: updates.maxPlayers } : {}),
+        ...(typeof updates.maxPlayers === 'number' ? { maxPlayers: updates.maxPlayers } : clampedMaxPlayers !== undefined ? { maxPlayers: clampedMaxPlayers } : {}),
         ...(typeof updates.turnTimer === 'number' ? { turnTimer: updates.turnTimer } : {}),
         ...(typeof updates.allowSpectators === 'boolean'
           ? {
@@ -740,6 +765,8 @@ export async function PATCH(
         ...(typeof updates.maxSpectators === 'number' && updates.allowSpectators !== false
           ? { maxSpectators: updates.maxSpectators }
           : {}),
+        ...(typeof updates.theme === 'string' ? { theme: updates.theme } : {}),
+        ...(typeof updates.gameType === 'string' ? { gameType: updates.gameType } : {}),
       },
       select: {
         id: true,
@@ -748,8 +775,18 @@ export async function PATCH(
         allowSpectators: true,
         maxSpectators: true,
         turnTimer: true,
+        theme: true,
+        gameType: true,
       },
     })
+
+    // If game type changed, also update the waiting game record
+    if (typeof updates.gameType === 'string' && updates.gameType !== lobby.gameType && activeGame) {
+      await prisma.games.update({
+        where: { id: activeGame.id },
+        data: { gameType: toPersistedGameType(updates.gameType) },
+      })
+    }
 
     // Postgres Changes on Lobbies table broadcasts the settings update automatically
     log.info('Lobby settings updated', {
@@ -759,6 +796,8 @@ export async function PATCH(
       maxPlayers: updatedLobby.maxPlayers,
       turnTimer: updatedLobby.turnTimer,
       allowSpectators: updatedLobby.allowSpectators,
+      theme: updatedLobby.theme,
+      gameType: updatedLobby.gameType,
     })
 
     return NextResponse.json({ success: true, lobby: updatedLobby })

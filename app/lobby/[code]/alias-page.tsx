@@ -15,6 +15,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
+import { sounds } from '@/lib/sounds'
 import { getLobbyTheme } from '@/lib/lobby-themes'
 
 interface AliasPageProps {
@@ -375,6 +376,7 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
 
   const lifecycleRedirectInFlightRef = React.useRef(false)
   const activeGameIdRef = React.useRef<string | null>(null)
+  const winSoundPlayedForRef = React.useRef<string | null>(null)
   const minPlayersRequired = 4
 
   const getCurrentUserId = useCallback(() => {
@@ -393,11 +395,24 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
     const fresh = new AliasGame(gameId)
     fresh.restoreState(authoritativeState as any)
     setGameEngine(fresh)
+
+    if (fresh.isGameFinished() && winSoundPlayedForRef.current !== gameId) {
+      const data = fresh.getState().data as AliasGameData
+      if (data.winnerId && data.winnerId !== 'tie') {
+        const userId = getCurrentUserId()
+        const myTeam = data.teams.find(t => userId && t.playerIds.includes(userId))
+        if (myTeam && myTeam.id === data.winnerId) {
+          winSoundPlayedForRef.current = gameId
+          sounds.play('win')
+        }
+      }
+    }
+
     setGame(prev => {
       if (!prev || prev.id !== gameId) return prev
       return { ...prev, status: fresh.getState().status, state: authoritativeState }
     })
-  }, [])
+  }, [getCurrentUserId])
 
   const loadLobby = useCallback(async (attempt = 1) => {
     try {
