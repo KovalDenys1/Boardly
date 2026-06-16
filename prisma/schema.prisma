@@ -26,6 +26,9 @@ model Users {
   stripeSubscriptionId  String?   @unique
   premiumUntil          DateTime? @db.Timestamptz(3)
   premiumCancelAtPeriod Boolean   @default(false)
+  totpSecret            String?
+  totpEnabled           Boolean   @default(false)
+  totpPendingSecret     String?
   isGuest           Boolean   @default(false) // Flag for guest (temporary) users
   role            UserRole  @default(user)
   suspended       Boolean   @default(false)
