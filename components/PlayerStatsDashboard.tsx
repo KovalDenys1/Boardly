@@ -17,8 +17,8 @@ interface OverallStats {
   winRate: number
   avgGameDurationMinutes: number
   favoriteGame: string | null
-  currentWinStreak: number
-  longestWinStreak: number
+  currentWinStreak: number | null
+  longestWinStreak: number | null
 }
 
 interface ByGameStats {
@@ -42,8 +42,8 @@ interface TrendPoint {
 interface StatsResponse {
   userId: string
   overall: OverallStats
-  byGame: ByGameStats[]
-  trends: TrendPoint[]
+  byGame: ByGameStats[] | null
+  trends: TrendPoint[] | null
   generatedAt: string
 }
 
@@ -342,7 +342,7 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
 
   const availableByGameStats = useMemo(() => {
     return (
-      stats?.byGame.filter((item) =>
+      stats?.byGame?.filter((item) =>
         availableGameTypes.has(item.gameType as SupportedCatalogGameType)
       ) ?? []
     )
@@ -390,7 +390,10 @@ export default function PlayerStatsDashboard({ userId }: PlayerStatsDashboardPro
       {
         id: 'bestStreak',
         label: t('profile.stats.dashboard.summary.bestStreak'),
-        value: String(stats.overall.longestWinStreak),
+        value:
+          stats.overall.longestWinStreak === null
+            ? t('profile.stats.dashboard.common.notAvailable')
+            : String(stats.overall.longestWinStreak),
         accentClassName: 'bg-bd-mint text-bd-mint-deep',
       },
     ]
