@@ -182,10 +182,8 @@ export default function GameLobbiesPage({
   }, [gameType])
 
   useEffect(() => {
-    if (status === 'loading') {
-      return
-    }
-
+    // Note: the public lobby list doesn't require auth, so this intentionally
+    // does not gate on session `status` — see #625 (infinite spinner race).
     loadLobbies()
     let isMounted = true
 
@@ -224,7 +222,7 @@ export default function GameLobbiesPage({
     router.push(`/lobby/${joinCode.toUpperCase()}`)
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="page-shell flex items-center justify-center">
         <LoadingSpinner size="lg" />
