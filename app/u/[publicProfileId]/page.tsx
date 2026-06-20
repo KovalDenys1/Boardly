@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import PublicProfileView, {
@@ -10,6 +11,42 @@ import { isValidPublicProfileId } from '@/lib/public-profile'
 
 type PublicProfilePageProps = {
   params: Promise<{ publicProfileId: string }>
+}
+
+export async function generateMetadata({ params }: PublicProfilePageProps): Promise<Metadata> {
+  const { publicProfileId } = await params
+  if (!isValidPublicProfileId(publicProfileId)) {
+    return {}
+  }
+
+  const profile = await prisma.users.findUnique({
+    where: { publicProfileId },
+    select: {
+      username: true,
+      bio: true,
+      isGuest: true,
+      bot: { select: { id: true } },
+      accountPreferences: { select: { profileVisibility: true } },
+    },
+  })
+
+  if (!profile || profile.isGuest || profile.bot) {
+    return {}
+  }
+
+  const isPublic = (profile.accountPreferences?.profileVisibility ?? 'public') === 'public'
+
+  return {
+    title: `${profile.username}'s Profile`,
+    description: profile.bio || `View ${profile.username}'s game stats and achievements on Boardly.`,
+    alternates: {
+      canonical: `https://boardly.online/u/${publicProfileId}`,
+    },
+    robots: {
+      index: isPublic,
+      follow: true,
+    },
+  }
 }
 
 export default async function PublicProfilePage({ params }: PublicProfilePageProps) {

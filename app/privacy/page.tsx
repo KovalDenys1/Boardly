@@ -2,8 +2,11 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Boardly',
+  title: 'Privacy Policy',
   description: 'Learn how Boardly collects, uses, and protects your personal information.',
+  alternates: {
+    canonical: 'https://boardly.online/privacy',
+  },
 }
 
 export default function PrivacyPolicy() {
