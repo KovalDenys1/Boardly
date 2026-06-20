@@ -17,6 +17,7 @@ import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
 import { getLobbyTheme } from '@/lib/lobby-themes'
+import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 interface AliasPageProps {
   code: string
@@ -1526,6 +1527,12 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
             )}
             <button style={linkBtn} onClick={() => router.push('/games')}>Leave game</button>
           </div>
+
+          {isGuest && (
+            <div style={{ width: '100%', maxWidth: 420 }}>
+              <GuestConversionNudge registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`} />
+            </div>
+          )}
         </main>
       </div>
     )

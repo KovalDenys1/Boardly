@@ -27,6 +27,7 @@ import { Move } from '@/lib/game-engine'
 import { trackLobbyLeaveRedirect, trackMoveSubmitApplied } from '@/lib/analytics'
 import { sounds } from '@/lib/sounds'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
+import GuestConversionNudge from '@/components/GuestConversionNudge'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { useGameTimer } from './hooks/useGameTimer'
@@ -251,9 +252,10 @@ function TttStatusBanner({ isFinished, winnerName, isDraw, currentSymbol, curren
     )
 }
 
-function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, t }: {
+function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isGuest, registerUrl, t }: {
     winnerName: string | null; winnerSymbol: string | null; isDraw: boolean; isMyWin: boolean;
     onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean;
+    isGuest: boolean; registerUrl: string;
     t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string;
 }) {
     const accentColor = winnerSymbol === 'X' ? 'var(--bd-coral)' : 'var(--bd-lav)'
@@ -318,6 +320,11 @@ function TttResultModal({ winnerName, winnerSymbol, isDraw, isMyWin, onPlayAgain
                     {t('games.tictactoe.game.leave')}
                 </button>
             </div>
+            {isGuest && (
+                <div style={{ width: '100%', maxWidth: 260 }}>
+                    <GuestConversionNudge registerUrl={registerUrl} />
+                </div>
+            )}
         </div>
     )
 }
@@ -1182,6 +1189,8 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
                     onInspect={() => setOverlayInspecting(true)}
                     isLoading={isRematchSubmitting}
                     isHost={isLobbyCreator}
+                    isGuest={isGuest}
+                    registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                     t={t}
                 />
             )}
