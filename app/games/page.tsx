@@ -8,7 +8,7 @@ import { getCatalogGames } from '@/lib/game-catalog'
 import GamesClient from './GamesClient'
 
 export const metadata: Metadata = {
-  title: 'All Free Online Board Games - Multiplayer | Boardly',
+  title: 'All Free Online Board Games - Multiplayer',
   description:
     'Browse all free online board games on Boardly. Play Yahtzee, Tic Tac Toe, Memory, Guess the Spy and more with friends in real time. No download, no account needed.',
   keywords: [
