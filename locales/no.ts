@@ -1034,6 +1034,7 @@ const no = {
       availableSlots: 'Ledige plasser',
       waitingForPlayer: 'Venter på spiller...',
       openSlot: 'Ledig plass',
+      tryBotGamesTitle: 'Venter du fortsatt? Disse spillene kan du spille akkurat nå mot en datamotstander:',
       howToPlayTitle: 'Slik spiller du',
       howToPlayDescription: 'Raske instruksjoner før spillet starter',
       howToPlayReady: 'Vent til nok spillere har blitt med i lobbyen.',

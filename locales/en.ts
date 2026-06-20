@@ -1034,6 +1034,7 @@ const en = {
       availableSlots: 'Open slots',
       waitingForPlayer: 'Waiting for player...',
       openSlot: 'Open slot',
+      tryBotGamesTitle: "Still waiting? These games are ready to play right now with a computer player:",
       howToPlayTitle: 'How to Play',
       howToPlayDescription: 'Quick instructions before the game starts',
       howToPlayReady: 'Wait for enough players to join the lobby.',

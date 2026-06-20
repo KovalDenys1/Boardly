@@ -3,7 +3,9 @@ import type { Game, Lobby, GamePlayer } from '@/types/game'
 import type { GameEngine } from '@/lib/game-engine'
 import type { BotDifficulty } from '@/lib/bot-profiles'
 import { getLobbyTheme, type LobbyTheme } from '@/lib/lobby-themes'
+import { hasBotSupport } from '@/lib/game-catalog'
 import LobbyThemeBanner, { RICH_BANNER_THEMES } from '@/components/LobbyThemeBanner'
+import TryBotGamesBanner from './TryBotGamesBanner'
 
 interface WaitingRoomProps {
   game: Game | null
@@ -37,6 +39,7 @@ export default function WaitingRoom({
   const missingPlayers = Math.max(minPlayers - playerCount, 0)
   const lobbyTheme = getLobbyTheme(lobby?.theme)
   const hasCustomTheme = lobby?.theme && lobby.theme !== 'default'
+  const showTryBotGames = missingPlayers > 0 && !!game?.createdAt && !hasBotSupport(lobby?.gameType)
 
   return (
     <div className="space-y-2 px-4 py-4 sm:px-6">
@@ -162,6 +165,10 @@ export default function WaitingRoom({
           </div>
         )
       })}
+
+      {showTryBotGames && game?.createdAt && (
+        <TryBotGamesBanner waitingSinceMs={new Date(game.createdAt).getTime()} />
+      )}
     </div>
   )
 }
