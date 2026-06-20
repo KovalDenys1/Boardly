@@ -2582,6 +2582,7 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               onPlayAgain={handleStartGame}
               onRequestRematch={handleRequestRematch}
               onBackToLobby={() => router.push(getGameLobbiesRoute(lobby.gameType) ?? '/games')}
+              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine && (lobby?.gameType as string) === 'memory' && game?.id ? (
             <MemoryGameBoard
@@ -2601,6 +2602,8 @@ function LobbyPageContent({ onSwitchToDedicatedPage }: { onSwitchToDedicatedPage
               someoneTyping={someoneTyping}
               playerProfiles={chatPlayerProfiles}
               onProfileClick={setProfileUserId}
+              isGuest={isGuest}
+              registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
             />
           ) : gameEngine ? (
             <div className="flex h-full items-center justify-center p-4">

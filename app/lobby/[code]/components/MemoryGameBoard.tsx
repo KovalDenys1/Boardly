@@ -11,6 +11,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
+import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 interface LobbyPlayer {
   id: string
@@ -66,6 +67,8 @@ interface MemoryGameBoardProps {
   someoneTyping?: boolean
   playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
   onProfileClick?: (userId: string) => void
+  isGuest?: boolean
+  registerUrl?: string
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
@@ -95,6 +98,8 @@ interface MemoryResultModalProps {
   onReturnToWaiting?: () => void
   onLeave?: () => void
   onInspect: () => void
+  isGuest?: boolean
+  registerUrl?: string
   t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string
 }
 
@@ -108,6 +113,8 @@ function MemoryResultModal({
   onReturnToWaiting,
   onLeave,
   onInspect,
+  isGuest,
+  registerUrl,
   t,
 }: MemoryResultModalProps) {
   const ghostBtn: React.CSSProperties = {
@@ -258,6 +265,11 @@ function MemoryResultModal({
           </button>
         )}
       </div>
+      {isGuest && registerUrl && (
+        <div style={{ width: '100%', maxWidth: 260 }}>
+          <GuestConversionNudge registerUrl={registerUrl} />
+        </div>
+      )}
     </div>
   )
 }
@@ -438,6 +450,8 @@ export default function MemoryGameBoard({
   someoneTyping = false,
   playerProfiles,
   onProfileClick,
+  isGuest,
+  registerUrl,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -883,6 +897,8 @@ export default function MemoryGameBoard({
                   onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
                   onLeave={onLeave}
                   onInspect={() => setOverlayInspecting(true)}
+                  isGuest={isGuest}
+                  registerUrl={registerUrl}
                   t={t}
                 />
               )}
@@ -1021,6 +1037,8 @@ export default function MemoryGameBoard({
                     onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
                     onLeave={onLeave}
                     onInspect={() => setOverlayInspecting(true)}
+                    isGuest={isGuest}
+                    registerUrl={registerUrl}
                     t={t}
                   />
                 )}
