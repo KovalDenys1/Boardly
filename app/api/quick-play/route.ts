@@ -14,6 +14,7 @@ import { toPersistedGameStateInput } from '@/lib/persisted-game-state'
 import { broadcastToLobby } from '@/lib/supabase-server'
 import { getBotDisplayName, normalizeBotDifficulty } from '@/lib/bot-profiles'
 import { getOrCreateBotUser, isPrismaUniqueConstraintError } from '@/lib/bot-helpers'
+import { resolveBotTarget } from '@/lib/quick-play'
 
 const log = apiLogger('/api/quick-play')
 
@@ -277,9 +278,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to create lobby' }, { status: 503 })
   }
 
-  // Fill with bots (1 human already in, need minPlayers - 1 bots)
+  // Fill with bots (1 human already in, need botTarget - 1 bots) — see
+  // resolveBotTarget for why this isn't always just minPlayers.
+  const botTarget = resolveBotTarget(minPlayers, forceSolo)
   try {
-    await fillWithBots(newCode, gameId, gameType, 1, minPlayers, user.id, difficulty)
+    await fillWithBots(newCode, gameId, gameType, 1, botTarget, user.id, difficulty)
   } catch (err) {
     log.error('Quick play: bot fill failed', err as Error)
     // Non-fatal — user is still in the lobby
