@@ -18,7 +18,7 @@ import { trackMoveSubmitApplied } from '@/lib/analytics'
 import { resolveLifecycleRedirectReason } from '@/lib/lobby-lifecycle'
 import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
-import { getLobbyTheme } from '@/lib/lobby-themes'
+import { getThemePageStyle } from '@/lib/lobby-themes'
 
 type RpsLifecycleStatus = 'waiting' | 'playing' | 'finished' | 'abandoned' | 'cancelled'
 
@@ -471,10 +471,8 @@ export default function RockPaperScissorsLobbyPage({ code, isSpectator = false }
         )
     }
 
-    const themeColors = getLobbyTheme(lobby?.theme)
-
     return (
-        <div className="h-[calc(100dvh-4rem)] overflow-y-auto" style={{ background: themeColors.bg, color: themeColors.text }}>
+        <div className="h-[calc(100dvh-4rem)] overflow-y-auto" style={getThemePageStyle(lobby?.theme)}>
         <div className="px-4 py-5 sm:px-6 sm:py-8 min-h-full">
             <div className="mx-auto max-w-5xl space-y-5">
                 <header className="rounded-2xl border border-[var(--bd-line)] bg-[var(--bd-bg)] p-4 shadow-sm sm:p-5">
