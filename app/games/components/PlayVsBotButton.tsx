@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTranslation, type TranslationKeys } from '@/lib/i18n-helpers'
 import { useGuest } from '@/contexts/GuestContext'
 import { fetchWithGuest } from '@/lib/fetch-with-guest'
 import { showToast } from '@/lib/i18n-toast'
+import { AuthGateModal } from '@/components/AuthGateModal'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 
@@ -24,18 +25,14 @@ interface PlayVsBotButtonProps {
 export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotButtonProps) {
   const { t } = useTranslation()
   const router = useRouter()
+  const pathname = usePathname()
   const { status } = useSession()
   const { isGuest } = useGuest()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [pendingDifficulty, setPendingDifficulty] = useState<Difficulty | null>(null)
 
-  const handleDifficulty = async (difficulty: Difficulty) => {
-    if (status === 'unauthenticated' && !isGuest) {
-      showToast.error('quickPlay.signInToPlay')
-      router.push('/auth/login')
-      return
-    }
-
+  const startQuickPlay = async (difficulty: Difficulty) => {
     setLoading(true)
     try {
       const res = await fetchWithGuest('/api/quick-play', {
@@ -53,6 +50,17 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
       setLoading(false)
       setOpen(false)
     }
+  }
+
+  const handleDifficulty = async (difficulty: Difficulty) => {
+    if (status === 'unauthenticated' && !isGuest) {
+      // Let a fresh visitor pick a guest name right here instead of bouncing
+      // them to /auth/login — Play vs Bot is meant to work without an account.
+      setPendingDifficulty(difficulty)
+      return
+    }
+
+    await startQuickPlay(difficulty)
   }
 
   return (
@@ -95,6 +103,17 @@ export default function PlayVsBotButton({ gameType, className = '' }: PlayVsBotB
           </button>
         )}
       </div>
+      {pendingDifficulty && (
+        <AuthGateModal
+          dest={pathname}
+          onClose={() => { setPendingDifficulty(null); setOpen(false) }}
+          onGuestReady={() => {
+            const difficulty = pendingDifficulty
+            setPendingDifficulty(null)
+            void startQuickPlay(difficulty)
+          }}
+        />
+      )}
     </div>
   )
 }
