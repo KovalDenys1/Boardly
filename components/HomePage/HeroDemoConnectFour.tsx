@@ -148,7 +148,7 @@ export default function HeroDemoConnectFour() {
     }}>
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 600, fontSize: 11,
-        color: 'rgba(31,27,22,0.55)', minHeight: isMobile ? 0 : 16, textAlign: 'center', width: '100%',
+        color: 'var(--bd-ink-muted)', minHeight: isMobile ? 0 : 16, textAlign: 'center', width: '100%',
       }}>
         {statusText}
       </div>
@@ -247,7 +247,7 @@ export default function HeroDemoConnectFour() {
         href="/games/connect-four"
         style={{
           fontSize: 12, fontWeight: 600,
-          color: 'rgba(31,27,22,0.5)', textDecoration: 'underline', marginTop: 2,
+          color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
         }}
       >
         Play full game →

@@ -1123,7 +1123,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // ─── Sections ─────────────────────────────────────────────────────────────
 
     const headerSection = (
-        <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
+        <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
                 <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} isPremium={p1IsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>

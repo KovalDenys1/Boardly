@@ -96,7 +96,8 @@ export default function CtaBanner() {
           <p
             style={{
               fontSize: 17,
-              color: 'rgba(251,246,238,0.7)',
+              color: 'var(--bd-bg)',
+              opacity: 0.7,
               marginBottom: 28,
               maxWidth: 420,
               lineHeight: 1.5,
