@@ -190,7 +190,7 @@ export default function GameDetailPage({
             </div>
             <ul className="grid gap-3 sm:grid-cols-2">
               {benefits.map((item) => (
-                <li key={item} className="rounded-2xl border border-bd-line bg-white px-4 py-3 text-sm font-semibold leading-relaxed text-bd-ink-soft">
+                <li key={item} className="rounded-2xl border border-bd-line bg-bd-card-warm px-4 py-3 text-sm font-semibold leading-relaxed text-bd-ink-soft">
                   {item}
                 </li>
               ))}

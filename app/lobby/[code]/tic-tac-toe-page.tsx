@@ -110,7 +110,7 @@ function TttPlayerCard({ name, symbol, isActive, isWinner, side, avatarSrc, isPr
     return (
         <div style={{
             display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-            background: isActive ? 'white' : 'transparent',
+            background: isActive ? 'var(--bd-input-bg)' : 'transparent',
             border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
             boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
             flexDirection: side === 'right' ? 'row-reverse' : 'row',
@@ -1064,7 +1064,7 @@ export default function TicTacToeLobbyPage({ code, isSpectator = false, onGameRe
 
     const headerSection = (
         <div className="ttt-card" style={{
-            background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.10) 100%)',
+            background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.10) 100%)',
             overflow: 'hidden', padding: '12px 16px',
         }}>
             <div style={{ position: 'absolute', right: -30, top: -30, opacity: 0.4, transform: 'rotate(8deg)', pointerEvents: 'none' }}>

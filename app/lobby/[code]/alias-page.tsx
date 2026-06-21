@@ -16,7 +16,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { AliasGame, type AliasGameData } from '@/lib/games/alias'
 import { sounds } from '@/lib/sounds'
-import { getLobbyTheme } from '@/lib/lobby-themes'
+import { getThemePageStyle } from '@/lib/lobby-themes'
 import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 interface AliasPageProps {
@@ -107,14 +107,12 @@ const linkBtn: React.CSSProperties = {
 }
 
 function pageBg(theme?: string): React.CSSProperties {
-  const t = getLobbyTheme(theme)
   return {
     height: 'calc(100dvh - 4rem)',
     overflowY: 'auto',
-    background: t.bg,
-    color: t.text,
     padding: '14px 24px',
     fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+    ...getThemePageStyle(theme),
   }
 }
 
