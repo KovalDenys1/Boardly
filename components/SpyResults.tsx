@@ -2,6 +2,7 @@
 
 import { useTranslation } from '@/lib/i18n-helpers'
 import { Player } from '@/lib/game-engine'
+import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 type SpyPlayer = Player & { isPremium?: boolean }
 
@@ -21,6 +22,8 @@ interface SpyResultsProps {
   onRequestRematch?: () => void
   isRequestRematchPending?: boolean
   onBackToLobby?: () => void
+  isGuest?: boolean
+  registerUrl?: string
 }
 
 export default function SpyResults({
@@ -39,6 +42,8 @@ export default function SpyResults({
   onRequestRematch,
   isRequestRematchPending = false,
   onBackToLobby,
+  isGuest = false,
+  registerUrl = '/auth/register',
 }: SpyResultsProps) {
   const { t } = useTranslation()
 
@@ -196,6 +201,10 @@ export default function SpyResults({
             </>
           )}
         </div>
+
+        {isGameOver && isGuest && (
+          <GuestConversionNudge registerUrl={registerUrl} />
+        )}
       </div>
     </div>
   )

@@ -71,7 +71,7 @@ export default function HeroDemoMemory() {
     }}>
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: isMobile ? 12 : 14,
-        color: 'rgba(31,27,22,0.8)', minHeight: isMobile ? 18 : 22,
+        color: 'var(--bd-ink-muted)', minHeight: isMobile ? 18 : 22,
       }}>
         {allMatched ? '🎉 All matched!' : `${matchedCount} / ${PAIRS.length} pairs`}
       </div>
@@ -85,15 +85,13 @@ export default function HeroDemoMemory() {
               onClick={() => handleFlip(i)}
               style={{
                 width: CARD_W, height: CARD_H,
-                background: card.matched
-                  ? 'rgba(255,255,255,0.85)'
-                  : isFlipped
-                    ? '#fff'
-                    : 'var(--bd-ink)',
+                background: card.matched || isFlipped
+                  ? 'var(--bd-input-bg)'
+                  : 'var(--bd-ink)',
                 border: `2.5px solid ${card.matched ? 'rgba(31,27,22,0.2)' : 'var(--bd-ink)'}`,
                 borderRadius: 10,
                 fontSize: isFlipped ? 24 : 16,
-                color: isFlipped ? 'var(--bd-ink)' : 'rgba(255,255,255,0.35)',
+                color: isFlipped ? 'var(--bd-ink)' : 'var(--bd-bg)',
                 cursor: card.matched || locked ? 'default' : 'pointer',
                 boxShadow: isFlipped ? 'none' : '0 4px 0 rgba(31,27,22,0.35)',
                 transition: 'background 0.18s, box-shadow 0.18s, font-size 0.12s',
@@ -111,7 +109,7 @@ export default function HeroDemoMemory() {
         href="/games/memory"
         style={{
           fontSize: 12, fontWeight: 600,
-          color: 'rgba(31,27,22,0.6)', textDecoration: 'underline', marginTop: 2,
+          color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
         }}
       >
         Play full game →

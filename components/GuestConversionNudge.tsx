@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from '@/lib/i18n-helpers'
 
-const SESSION_KEY = 'boardly_guest_upgrade_dismissed'
+const DISMISS_KEY = 'boardly:guest-conversion-dismissed:v1'
 
 interface GuestConversionNudgeProps {
   registerUrl: string
@@ -15,17 +15,17 @@ export default function GuestConversionNudge({ registerUrl }: GuestConversionNud
 
   useEffect(() => {
     try {
-      if (!sessionStorage.getItem(SESSION_KEY)) {
+      if (!localStorage.getItem(DISMISS_KEY)) {
         setVisible(true)
       }
     } catch {
-      // sessionStorage unavailable (SSR or privacy mode) — don't show
+      // localStorage unavailable (SSR or privacy mode) — don't show
     }
   }, [])
 
   const dismiss = () => {
     try {
-      sessionStorage.setItem(SESSION_KEY, '1')
+      localStorage.setItem(DISMISS_KEY, '1')
     } catch {
       // ignore
     }

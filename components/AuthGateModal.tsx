@@ -7,11 +7,15 @@ import { buildAuthUrl } from '@/lib/auth-redirect'
 import { useTranslation } from '@/lib/i18n-helpers'
 
 interface AuthGateModalProps {
+  /** Where Login/Sign Up should return to, and (if onGuestReady is omitted) where guest play navigates. */
   dest: string
   onClose: () => void
+  /** When provided, guest play calls this instead of navigating to `dest` — for flows that create
+   * their own destination after guest mode is set (e.g. Play vs Bot creating a lobby on demand). */
+  onGuestReady?: () => void
 }
 
-export function AuthGateModal({ dest, onClose }: AuthGateModalProps) {
+export function AuthGateModal({ dest, onClose, onGuestReady }: AuthGateModalProps) {
   const router = useRouter()
   const { t } = useTranslation()
   const { setGuestMode } = useGuest()
@@ -28,7 +32,11 @@ export function AuthGateModal({ dest, onClose }: AuthGateModalProps) {
     try {
       await setGuestMode(name.trim())
       onClose()
-      router.push(dest)
+      if (onGuestReady) {
+        onGuestReady()
+      } else {
+        router.push(dest)
+      }
     } catch {
       setError(t('guest.startFailed'))
       setLoading(false)

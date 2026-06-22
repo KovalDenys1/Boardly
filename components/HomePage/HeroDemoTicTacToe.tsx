@@ -80,7 +80,7 @@ export default function HeroDemoTicTacToe() {
     }}>
       <div style={{
         fontFamily: 'var(--bd-font-display)', fontWeight: 700, fontSize: 14,
-        color: 'rgba(31,27,22,0.7)', minHeight: 22,
+        color: 'var(--bd-ink-muted)', minHeight: 22,
       }}>
         {statusText}
       </div>
@@ -92,7 +92,7 @@ export default function HeroDemoTicTacToe() {
             onClick={() => handleClick(i)}
             style={{
               width: 64, height: 64,
-              background: '#fff',
+              background: 'var(--bd-input-bg)',
               border: '2.5px solid var(--bd-ink)',
               borderRadius: 14,
               fontSize: 28,
@@ -115,7 +115,7 @@ export default function HeroDemoTicTacToe() {
         href="/games/tic-tac-toe"
         style={{
           fontSize: 12, fontWeight: 600,
-          color: 'rgba(31,27,22,0.5)', textDecoration: 'underline', marginTop: 2,
+          color: 'var(--bd-ink-muted)', textDecoration: 'underline', marginTop: 2,
         }}
       >
         Play full game →

@@ -166,7 +166,9 @@ export async function GET(req: NextRequest) {
       { entries, hasMore: entries.length === PAGE_SIZE },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+          // Short max-age so profile changes (username, avatar, premium badge) show up
+          // quickly — was 300s/600s, which let stale data linger for up to ~15 min (#638).
+          'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60',
         },
       }
     )

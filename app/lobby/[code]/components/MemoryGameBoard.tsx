@@ -11,6 +11,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import Chat from '@/components/Chat'
 import { useGameTimer } from '../hooks/useGameTimer'
 import { sounds } from '@/lib/sounds'
+import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 interface LobbyPlayer {
   id: string
@@ -66,6 +67,8 @@ interface MemoryGameBoardProps {
   someoneTyping?: boolean
   playerProfiles?: Map<string, { avatarUrl?: string | null; isPremium?: boolean }>
   onProfileClick?: (userId: string) => void
+  isGuest?: boolean
+  registerUrl?: string
 }
 
 const MISMATCH_RESOLVE_DELAY_MS = 1200
@@ -95,6 +98,8 @@ interface MemoryResultModalProps {
   onReturnToWaiting?: () => void
   onLeave?: () => void
   onInspect: () => void
+  isGuest?: boolean
+  registerUrl?: string
   t: (key: TranslationKeys, opts?: string | Record<string, unknown>) => string
 }
 
@@ -108,6 +113,8 @@ function MemoryResultModal({
   onReturnToWaiting,
   onLeave,
   onInspect,
+  isGuest,
+  registerUrl,
   t,
 }: MemoryResultModalProps) {
   const ghostBtn: React.CSSProperties = {
@@ -258,6 +265,11 @@ function MemoryResultModal({
           </button>
         )}
       </div>
+      {isGuest && registerUrl && (
+        <div style={{ width: '100%', maxWidth: 260 }}>
+          <GuestConversionNudge registerUrl={registerUrl} />
+        </div>
+      )}
     </div>
   )
 }
@@ -284,7 +296,7 @@ function MemoryPlayerCard({
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 14,
-      background: isActive ? 'white' : 'transparent',
+      background: isActive ? 'var(--bd-input-bg)' : 'transparent',
       border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'transparent'),
       boxShadow: isActive ? '0 4px 0 var(--bd-ink)' : 'none',
       flexDirection: side === 'right' ? 'row-reverse' : 'row',
@@ -438,6 +450,8 @@ export default function MemoryGameBoard({
   someoneTyping = false,
   playerProfiles,
   onProfileClick,
+  isGuest,
+  registerUrl,
 }: MemoryGameBoardProps) {
   const { t } = useTranslation()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -758,7 +772,7 @@ export default function MemoryGameBoard({
 
   const headerSection = (
     <div className="memory-header" style={{
-      background: 'linear-gradient(135deg, white 0%, rgba(79,201,166,0.08) 100%)',
+      background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(79,201,166,0.08) 100%)',
     }}>
       {isTwoPlayer && player0 && player1 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16 }}>
@@ -814,7 +828,7 @@ export default function MemoryGameBoard({
             return (
               <div key={player.id} style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 12,
-                background: isActive ? 'white' : 'transparent',
+                background: isActive ? 'var(--bd-input-bg)' : 'transparent',
                 border: '2px solid ' + (isActive ? 'var(--bd-ink)' : 'var(--bd-line)'),
                 boxShadow: isActive ? '0 3px 0 var(--bd-ink)' : 'none',
                 flex: '1 1 auto', minWidth: 0, transition: 'all 0.2s',
@@ -883,6 +897,8 @@ export default function MemoryGameBoard({
                   onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
                   onLeave={onLeave}
                   onInspect={() => setOverlayInspecting(true)}
+                  isGuest={isGuest}
+                  registerUrl={registerUrl}
                   t={t}
                 />
               )}
@@ -939,7 +955,7 @@ export default function MemoryGameBoard({
               return (
                 <div key={player.id} style={{
                   display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 10,
-                  background: isActive ? 'white' : 'var(--bd-bg2)',
+                  background: isActive ? 'var(--bd-input-bg)' : 'var(--bd-bg2)',
                   border: '1.5px solid ' + (isActive ? 'var(--bd-ink)' : 'var(--bd-line)'),
                   boxShadow: isActive ? '0 2px 0 var(--bd-ink)' : 'none',
                   flex: '1 1 0', minWidth: 0, transition: 'all 0.2s',
@@ -1021,6 +1037,8 @@ export default function MemoryGameBoard({
                     onReturnToWaiting={canStartGame ? onReturnToWaiting : undefined}
                     onLeave={onLeave}
                     onInspect={() => setOverlayInspecting(true)}
+                    isGuest={isGuest}
+                    registerUrl={registerUrl}
                     t={t}
                   />
                 )}

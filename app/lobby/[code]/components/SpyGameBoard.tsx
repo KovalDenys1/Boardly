@@ -66,6 +66,7 @@ interface SpyGameBoardProps {
   onRequestRematch?: () => void
   isRequestingRematch?: boolean
   onBackToLobby?: () => void
+  registerUrl?: string
 }
 
 function computeVoteLeader(votes: Record<string, string>): string {
@@ -106,6 +107,7 @@ export default function SpyGameBoard({
   onRequestRematch,
   isRequestingRematch = false,
   onBackToLobby,
+  registerUrl = '/auth/register',
 }: SpyGameBoardProps) {
   const { t } = useTranslation()
   const showActionError = React.useCallback((message: string) => {
@@ -733,6 +735,8 @@ export default function SpyGameBoard({
             onRequestRematch={onRequestRematch}
             isRequestRematchPending={isRequestingRematch}
             onBackToLobby={onBackToLobby}
+            isGuest={isGuest}
+            registerUrl={registerUrl}
           />
         )}
       </div>

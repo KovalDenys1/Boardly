@@ -8,7 +8,6 @@ import { GuestProvider } from '@/contexts/GuestContext'
 import { OnboardingProvider } from '@/contexts/OnboardingContext'
 import DeferredGlobalEffects from '@/components/DeferredGlobalEffects'
 import i18n from '@/i18n'
-import { applyThemeMode } from '@/lib/theme'
 import { getStoredAppearanceLocale } from '@/lib/appearance-preferences'
 
 const OnboardingModal = dynamic(
@@ -27,10 +26,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     if (i18n.language !== nextLanguage) {
       void i18n.changeLanguage(nextLanguage)
     }
-  }, [])
-
-  useEffect(() => {
-    applyThemeMode('light')
   }, [])
 
   return (

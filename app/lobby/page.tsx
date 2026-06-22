@@ -64,7 +64,7 @@ function LobbyListPageContent() {
         {/* Page header */}
         <div
           className="bd-card relative mb-6 overflow-hidden p-7 sm:p-8"
-          style={{ background: 'linear-gradient(120deg, white 0%, rgba(155,140,255,0.08) 100%)' }}
+          style={{ background: 'linear-gradient(120deg, var(--bd-card-warm) 0%, rgba(155,140,255,0.08) 100%)' }}
         >
           <div className="bd-dot-grid absolute inset-0 opacity-35" />
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-stretch">

@@ -448,7 +448,7 @@ export default function PublicProfileView({
           <div
             className="relative w-full overflow-hidden rounded-[2rem] border-[1.5px]"
             style={{
-              background: pageTheme?.cardBg ?? 'white',
+              background: pageTheme?.cardBg ?? 'var(--bd-input-bg)',
               borderColor: pageTheme?.cardBorder ?? 'var(--bd-line)',
               boxShadow: pageTheme?.cardShadow ?? '0 6px 0 0 rgba(31,27,22,0.08), 0 14px 28px -10px rgba(31,27,22,0.18)',
             }}

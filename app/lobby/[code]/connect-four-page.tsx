@@ -33,6 +33,7 @@ import { getLobbyPlayerRequirements } from '@/lib/lobby-player-requirements'
 import { ReactionOverlay } from '@/components/ReactionOverlay'
 import { useGameTimer } from './hooks/useGameTimer'
 import { useBotTurn } from './hooks/useBotTurn'
+import GuestConversionNudge from '@/components/GuestConversionNudge'
 
 // ─── Design sub-components ────────────────────────────────────────────────────
 
@@ -382,9 +383,10 @@ function C4StatusBanner({ isFinished, winnerName, isDraw, currentDisc, currentPl
     )
 }
 
-function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, t }: {
+function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToLobby, onLeave, onInspect, isLoading, isHost, isGuest, registerUrl, t }: {
     winnerName: string | null; isDraw: boolean; isMyWin: boolean
     onPlayAgain: () => void; onReturnToLobby: () => void; onLeave: () => void; onInspect: () => void; isLoading: boolean; isHost: boolean
+    isGuest: boolean; registerUrl: string
     t: (k: TranslationKeys, opts?: Record<string, unknown>) => string
 }) {
     return (
@@ -455,6 +457,11 @@ function C4ResultOverlay({ winnerName, isDraw, isMyWin, onPlayAgain, onReturnToL
                     {t('games.connect_four.game.leave')}
                 </button>
             </div>
+            {isGuest && (
+                <div style={{ width: '100%', maxWidth: 240 }}>
+                    <GuestConversionNudge registerUrl={registerUrl} />
+                </div>
+            )}
         </div>
     )
 }
@@ -1116,7 +1123,7 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
     // ─── Sections ─────────────────────────────────────────────────────────────
 
     const headerSection = (
-        <div className="ttt-card" style={{ background: 'linear-gradient(135deg, white 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
+        <div className="ttt-card" style={{ background: 'linear-gradient(135deg, var(--bd-card-warm) 0%, rgba(255,196,77,0.08) 100%)', padding: '12px 16px', overflow: 'hidden' }}>
             <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 12 }}>
                 <C4PlayerCard name={p1Name} disc={1} isActive={!isFinished && gameData.currentDisc === 1} isWinner={!isDraw && winnerDisc === 1} wins={p1Wins} side="left" isLocalPlayer={myDisc === 1} avatarSrc={p1Avatar} isPremium={p1IsPremium} t={t} />
                 <div style={{ textAlign: 'center' }}>
@@ -1236,6 +1243,8 @@ export default function ConnectFourLobbyPage({ code, isSpectator = false, onGame
                             onInspect={() => setOverlayInspecting(true)}
                             isLoading={isRematchSubmitting}
                             isHost={!!lobby && lobby.creatorId === currentUserId}
+                            isGuest={isGuest}
+                            registerUrl={`/auth/register?returnUrl=${encodeURIComponent(`/lobby/${code}`)}`}
                             t={t}
                         />
                     )}
