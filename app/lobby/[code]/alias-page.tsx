@@ -1400,26 +1400,24 @@ export default function AliasPage({ code, isSpectator = false, onGameReset }: Al
                 </div>
               </div>
 
-              {isHost ? (
-                <button
-                  style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
-                  onClick={() => handleMove('next_turn', {})}
-                  disabled={isMoveSubmitting}
-                >
-                  {t('alias.nextTurn')}
-                  <span aria-hidden style={{ fontSize: 18 }}>→</span>
-                </button>
-              ) : (
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center',
-                  background: 'var(--bd-bg2)', border: '1.5px solid var(--bd-line)',
-                  borderRadius: 999, padding: '14px 18px',
-                  fontSize: 14, fontWeight: 600, color: 'var(--bd-ink-soft)',
-                }}>
-                  <span className="bd-float" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--bd-ink-muted)' }} />
-                  Waiting for host…
-                </span>
-              )}
+              {/*
+                Next Turn is open to every player, not just the host — the engine's own
+                validateMove for 'next_turn' has no player-ownership check (any player can
+                legally advance past turn_results). Gating this to isHost made the game
+                permanently soft-lock for everyone else whenever the host didn't click
+                through (closed tab, disconnected, distracted) — see #639.
+              */}
+              <button
+                style={{ ...primaryBtn, fontSize: 17, padding: '16px 22px', width: '100%', justifyContent: 'center' }}
+                onClick={() => handleMove('next_turn', {})}
+                disabled={isMoveSubmitting}
+              >
+                {t('alias.nextTurn')}
+                <span aria-hidden style={{ fontSize: 18 }}>→</span>
+              </button>
+              <button style={{ ...linkBtn, textAlign: 'center' }} onClick={() => router.push('/games')}>
+                {t('lobby.game.leaveGame')}
+              </button>
             </section>
           </main>
         </div>
