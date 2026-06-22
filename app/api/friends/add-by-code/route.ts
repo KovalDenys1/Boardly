@@ -149,11 +149,21 @@ export async function POST(req: NextRequest) {
             id: true,
             username: true,
             email: true,
-            image: true
+            image: true,
+            avatarUrl: true
           }
         }
       }
     })
+
+    const { image: receiverImage, avatarUrl: receiverAvatarUrl, ...receiverFields } = friendRequest.receiver
+    const friendRequestWithAvatar = {
+      ...friendRequest,
+      receiver: {
+        ...receiverFields,
+        avatar: receiverAvatarUrl ?? receiverImage ?? null,
+      },
+    }
 
     await createInAppNotification({
       userId: targetUser.id,
@@ -181,10 +191,14 @@ export async function POST(req: NextRequest) {
       friendCode: cleanCode
     })
 
+    const { image: targetImage, avatarUrl: targetAvatarUrl, ...targetUserFields } = targetUser
     return NextResponse.json({
       success: true,
-      request: friendRequest,
-      user: targetUser
+      request: friendRequestWithAvatar,
+      user: {
+        ...targetUserFields,
+        avatar: targetAvatarUrl ?? targetImage ?? null,
+      }
     })
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

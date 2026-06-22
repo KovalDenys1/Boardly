@@ -103,11 +103,15 @@ describe('POST /api/friends/request', () => {
         id: 'sender-1',
         username: 'sender-user',
         email: 'sender@example.com',
+        image: 'https://lh3.googleusercontent.com/oauth-photo.jpg',
+        avatarUrl: 'https://cdn.example.com/custom-avatar.png',
       },
       receiver: {
         id: 'receiver-1',
         username: 'target-user',
         email: 'target@example.com',
+        image: null,
+        avatarUrl: null,
       },
     } as any)
 
@@ -116,6 +120,8 @@ describe('POST /api/friends/request', () => {
 
     expect(response.status).toBe(200)
     expect(payload.success).toBe(true)
+    expect(payload.friendRequest.sender.avatar).toBe('https://cdn.example.com/custom-avatar.png')
+    expect(payload.friendRequest.receiver.avatar).toBeNull()
     expect(mockPrisma.users.findUnique).toHaveBeenCalledWith({
       where: { publicProfileId: 'AbC123xYz890' },
       select: { id: true, username: true, bot: true, isGuest: true },

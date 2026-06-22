@@ -139,7 +139,8 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         },
@@ -147,7 +148,8 @@ export async function POST(req: NextRequest) {
           select: {
             id: true,
             username: true,
-            
+            image: true,
+            avatarUrl: true,
             email: true
           }
         }
@@ -180,9 +182,22 @@ export async function POST(req: NextRequest) {
       requestId: friendRequest.id
     })
 
-    return NextResponse.json({ 
-      success: true, 
-      friendRequest 
+    const { sender, receiver: requestReceiver, ...friendRequestFields } = friendRequest
+    const friendRequestWithAvatar = {
+      ...friendRequestFields,
+      sender: {
+        ...sender,
+        avatar: sender.avatarUrl ?? sender.image ?? null,
+      },
+      receiver: {
+        ...requestReceiver,
+        avatar: requestReceiver.avatarUrl ?? requestReceiver.image ?? null,
+      },
+    }
+
+    return NextResponse.json({
+      success: true,
+      friendRequest: friendRequestWithAvatar
     })
 
   } catch (error) {
